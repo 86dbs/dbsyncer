@@ -1,18 +1,20 @@
 package org.dbsyncer.parser.ddl;
 
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
+import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
 import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.WriterResponse;
+import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.dbsyncer.sdk.spi.ConnectorService;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,9 +25,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.*;
+
 /**
  * 异构数据库DDL同步测试
- * 测试不同数据库类型间的DDL同步功能
+ * 测试不同数据库类型间的DDL同步功能，涵盖所有特殊类型
  *
  * @Author TestUser
  * @Version 1.0.0
@@ -36,12 +40,19 @@ public class HeterogeneousDDLSyncTest {
     private static final Logger logger = LoggerFactory.getLogger(HeterogeneousDDLSyncTest.class);
 
     private static TestDatabaseManager testDatabaseManager;
-    private static DatabaseConfig sourceConfig;
-    private static DatabaseConfig targetConfig;
+    private static DatabaseConfig mssqlConfig;
+    private static DatabaseConfig mysqlConfig;
+    private static ConnectorFactory connectorFactory;
 
-    private DDLParserImpl ddlParser;
+    private DDLParserImpl ddlParser; // 在testDDLConversion方法中使用
     private TableGroup sqlserverToMySQLTableGroup;
     private TableGroup mysqlToSQLServerTableGroup;
+    private GeneralBufferActuator generalBufferActuator;
+    private GeneralBufferActuator mysqlToSQLServerBufferActuator;
+
+    // 全局定义的ConnectorService，避免重复创建
+    private static ConnectorService sqlServerConnectorService;
+    private static ConnectorService mysqlConnectorService;
 
     @BeforeClass
     public static void setUpClass() throws IOException {
@@ -51,7 +62,14 @@ public class HeterogeneousDDLSyncTest {
         loadTestConfig();
 
         // 创建测试数据库管理器
-        testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
+        testDatabaseManager = new TestDatabaseManager(mssqlConfig, mysqlConfig);
+
+        // 初始化ConnectorFactory（用于DDL解析器）
+        connectorFactory = TestDDLHelper.createConnectorFactory();
+
+        // 初始化全局ConnectorService
+        sqlServerConnectorService = TestDDLHelper.createConnectorService(mssqlConfig);
+        mysqlConnectorService = TestDDLHelper.createConnectorService(mysqlConfig);
 
         // 初始化测试环境
         String initSql = loadSqlScript("ddl/init-test-data.sql");
@@ -77,125 +95,592 @@ public class HeterogeneousDDLSyncTest {
 
     @Before
     public void setUp() throws IOException {
+        // 确保每个测试开始时数据库表结构是初始状态
+        resetDatabaseTableStructure();
+
         ddlParser = new DDLParserImpl();
 
+        // 初始化DDLParserImpl（初始化STRATEGIES）
+        TestDDLHelper.initDDLParser(ddlParser);
+
+        // 设置ConnectorFactory到DDLParserImpl
+        TestDDLHelper.setConnectorFactory(ddlParser, connectorFactory);
+
         // 初始化SQL Server到MySQL的TableGroup配置
-        sqlserverToMySQLTableGroup = new TableGroup();
-        sqlserverToMySQLTableGroup.setId("sqlserver-to-mysql-tablegroup-id");
-        sqlserverToMySQLTableGroup.setMappingId("sqlserver-to-mysql-mapping-id");
-        // Note: TableGroup类中没有setEnableDDL方法，我们通过其他方式处理
-
-        Table sqlserverSourceTable = new Table();
-        sqlserverSourceTable.setName("ddlTestEmployee");
-
-        Table mysqlTargetTable = new Table();
-        mysqlTargetTable.setName("ddlTestEmployee");
-
-        sqlserverToMySQLTableGroup.setSourceTable(sqlserverSourceTable);
-        sqlserverToMySQLTableGroup.setTargetTable(mysqlTargetTable);
-
-        // 初始化字段映射 for SQL Server to MySQL
-        List<FieldMapping> fieldMappings1 = new ArrayList<>();
-        Field idSourceField1 = new Field("id", "INT", 4);
-        Field idTargetField1 = new Field("id", "INT", 4);
-        FieldMapping idMapping1 = new FieldMapping(idSourceField1, idTargetField1);
-        fieldMappings1.add(idMapping1);
-
-        Field firstNameSourceField1 = new Field("first_name", "NVARCHAR", 12);
-        Field firstNameTargetField1 = new Field("first_name", "VARCHAR", 12);
-        FieldMapping firstNameMapping1 = new FieldMapping(firstNameSourceField1, firstNameTargetField1);
-        fieldMappings1.add(firstNameMapping1);
-
-        Field lastNameSourceField1 = new Field("last_name", "NVARCHAR", 12);
-        Field lastNameTargetField1 = new Field("last_name", "VARCHAR", 12);
-        FieldMapping lastNameMapping1 = new FieldMapping(lastNameSourceField1, lastNameTargetField1);
-        fieldMappings1.add(lastNameMapping1);
-
-        Field departmentSourceField1 = new Field("department", "NVARCHAR", 12);
-        Field departmentTargetField1 = new Field("department", "VARCHAR", 12);
-        FieldMapping departmentMapping1 = new FieldMapping(departmentSourceField1, departmentTargetField1);
-        fieldMappings1.add(departmentMapping1);
-
-        sqlserverToMySQLTableGroup.setFieldMapping(fieldMappings1);
+        sqlserverToMySQLTableGroup = createSQLServerToMySQLTableGroup();
 
         // 初始化MySQL到SQL Server的TableGroup配置
-        mysqlToSQLServerTableGroup = new TableGroup();
-        mysqlToSQLServerTableGroup.setId("mysql-to-sqlserver-tablegroup-id");
-        mysqlToSQLServerTableGroup.setMappingId("mysql-to-sqlserver-mapping-id");
-        // Note: TableGroup类中没有setEnableDDL方法，我们通过其他方式处理
-
-        Table mysqlSourceTable = new Table();
-        mysqlSourceTable.setName("ddlTestEmployee");
-
-        Table sqlserverTargetTable = new Table();
-        sqlserverTargetTable.setName("ddlTestEmployee");
-
-        mysqlToSQLServerTableGroup.setSourceTable(mysqlSourceTable);
-        mysqlToSQLServerTableGroup.setTargetTable(sqlserverTargetTable);
-
-        // 初始化字段映射 for MySQL to SQL Server
-        List<FieldMapping> fieldMappings2 = new ArrayList<>();
-        Field idSourceField2 = new Field("id", "INT", 4);
-        Field idTargetField2 = new Field("id", "INT", 4);
-        FieldMapping idMapping2 = new FieldMapping(idSourceField2, idTargetField2);
-        fieldMappings2.add(idMapping2);
-
-        Field firstNameSourceField2 = new Field("first_name", "VARCHAR", 12);
-        Field firstNameTargetField2 = new Field("first_name", "NVARCHAR", 12);
-        FieldMapping firstNameMapping2 = new FieldMapping(firstNameSourceField2, firstNameTargetField2);
-        fieldMappings2.add(firstNameMapping2);
-
-        Field lastNameSourceField2 = new Field("last_name", "VARCHAR", 12);
-        Field lastNameTargetField2 = new Field("last_name", "NVARCHAR", 12);
-        FieldMapping lastNameMapping2 = new FieldMapping(lastNameSourceField2, lastNameTargetField2);
-        fieldMappings2.add(lastNameMapping2);
-
-        Field departmentSourceField2 = new Field("department", "VARCHAR", 12);
-        Field departmentTargetField2 = new Field("department", "NVARCHAR", 12);
-        FieldMapping departmentMapping2 = new FieldMapping(departmentSourceField2, departmentTargetField2);
-        fieldMappings2.add(departmentMapping2);
-
-        mysqlToSQLServerTableGroup.setFieldMapping(fieldMappings2);
+        mysqlToSQLServerTableGroup = createMySQLToSQLServerTableGroup();
 
         logger.info("异构数据库DDL同步测试用例环境初始化完成");
     }
 
+    @After
+    public void tearDown() {
+        // 每个测试后重置表结构，确保测试隔离
+        resetDatabaseTableStructure();
+    }
+
+    /**
+     * 重置数据库表结构到初始状态
+     */
+    private void resetDatabaseTableStructure() {
+        logger.debug("开始重置测试数据库表结构");
+        try {
+            String resetSql = loadSqlScript("ddl/reset-test-table.sql");
+            if (resetSql == null || resetSql.trim().isEmpty()) {
+                resetSql = loadSqlScript("ddl/init-test-data.sql");
+            }
+            if (resetSql != null && !resetSql.trim().isEmpty()) {
+                testDatabaseManager.resetTableStructure(resetSql, resetSql);
+                logger.debug("测试数据库表结构重置完成");
+            }
+        } catch (Exception e) {
+            logger.error("重置测试数据库表结构失败", e);
+        }
+    }
+
+    /**
+     * 创建SQL Server到MySQL的TableGroup配置
+     */
+    private TableGroup createSQLServerToMySQLTableGroup() {
+        TableGroup tableGroup = new TableGroup();
+        tableGroup.setId("sqlserver-to-mysql-tablegroup-id");
+        tableGroup.setMappingId("sqlserver-to-mysql-mapping-id");
+
+        Table sqlserverSourceTable = new Table();
+        sqlserverSourceTable.setName("ddlTestEmployee");
+        sqlserverSourceTable.setColumn(new ArrayList<>());
+
+        Table mysqlTargetTable = new Table();
+        mysqlTargetTable.setName("ddlTestEmployee");
+        mysqlTargetTable.setColumn(new ArrayList<>());
+
+        tableGroup.setSourceTable(sqlserverSourceTable);
+        tableGroup.setTargetTable(mysqlTargetTable);
+
+        // 初始化字段映射
+        List<FieldMapping> fieldMappings = new ArrayList<>();
+        Field idSourceField = new Field("id", "INT", 4);
+        Field idTargetField = new Field("id", "INT", 4);
+        FieldMapping idMapping = new FieldMapping(idSourceField, idTargetField);
+        fieldMappings.add(idMapping);
+        sqlserverSourceTable.getColumn().add(idSourceField);
+        mysqlTargetTable.getColumn().add(idTargetField);
+
+        Field firstNameSourceField = new Field("first_name", "NVARCHAR", 12);
+        Field firstNameTargetField = new Field("first_name", "VARCHAR", 12);
+        FieldMapping firstNameMapping = new FieldMapping(firstNameSourceField, firstNameTargetField);
+        fieldMappings.add(firstNameMapping);
+        sqlserverSourceTable.getColumn().add(firstNameSourceField);
+        mysqlTargetTable.getColumn().add(firstNameTargetField);
+
+        tableGroup.setFieldMapping(fieldMappings);
+
+        // 配置TableGroup
+        TestDDLHelper.setupTableGroup(tableGroup, "sqlserver-to-mysql-mapping-id",
+                "sqlserver-connector-id", "mysql-connector-id",
+                mssqlConfig, mysqlConfig);
+
+        // 创建GeneralBufferActuator
+        generalBufferActuator = TestDDLHelper.createGeneralBufferActuator(
+                connectorFactory,
+                tableGroup.profileComponent,
+                ddlParser);
+
+        return tableGroup;
+    }
+
+    /**
+     * 创建MySQL到SQL Server的TableGroup配置
+     */
+    private TableGroup createMySQLToSQLServerTableGroup() {
+        TableGroup tableGroup = new TableGroup();
+        tableGroup.setId("mysql-to-sqlserver-tablegroup-id");
+        tableGroup.setMappingId("mysql-to-sqlserver-mapping-id");
+
+        Table mysqlSourceTable = new Table();
+        mysqlSourceTable.setName("ddlTestEmployee");
+        mysqlSourceTable.setColumn(new ArrayList<>());
+
+        Table sqlserverTargetTable = new Table();
+        sqlserverTargetTable.setName("ddlTestEmployee");
+        sqlserverTargetTable.setColumn(new ArrayList<>());
+
+        tableGroup.setSourceTable(mysqlSourceTable);
+        tableGroup.setTargetTable(sqlserverTargetTable);
+
+        // 初始化字段映射
+        List<FieldMapping> fieldMappings = new ArrayList<>();
+        Field idSourceField = new Field("id", "INT", 4);
+        Field idTargetField = new Field("id", "INT", 4);
+        FieldMapping idMapping = new FieldMapping(idSourceField, idTargetField);
+        fieldMappings.add(idMapping);
+        mysqlSourceTable.getColumn().add(idSourceField);
+        sqlserverTargetTable.getColumn().add(idTargetField);
+
+        Field firstNameSourceField = new Field("first_name", "VARCHAR", 12);
+        Field firstNameTargetField = new Field("first_name", "NVARCHAR", 12);
+        FieldMapping firstNameMapping = new FieldMapping(firstNameSourceField, firstNameTargetField);
+        fieldMappings.add(firstNameMapping);
+        mysqlSourceTable.getColumn().add(firstNameSourceField);
+        sqlserverTargetTable.getColumn().add(firstNameTargetField);
+
+        tableGroup.setFieldMapping(fieldMappings);
+
+        // 配置TableGroup
+        // 注意：sourceConfig是SQL Server，targetConfig是MySQL
+        // MySQL到SQL Server：源是MySQL(targetConfig)，目标是SQL Server(sourceConfig)
+        TestDDLHelper.setupTableGroup(tableGroup, "mysql-to-sqlserver-mapping-id",
+                "mysql-connector-id", "sqlserver-connector-id",
+                mysqlConfig, mssqlConfig);
+
+        // 创建MySQL到SQL Server的GeneralBufferActuator
+        mysqlToSQLServerBufferActuator = TestDDLHelper.createGeneralBufferActuator(
+                connectorFactory,
+                tableGroup.profileComponent,
+                ddlParser);
+
+        return tableGroup;
+    }
+
+    // ========== SQL Server特殊类型测试 ==========
+
+    /**
+     * 测试SQL Server到MySQL - XML类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_XMLType() {
+        logger.info("开始测试SQL Server到MySQL的XML类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD xml_data XML";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "xml_data",
+                "SqlServer", "MySQL", mysqlConnectorService, "TEXT", "TEXT");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - UNIQUEIDENTIFIER类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_UNIQUEIDENTIFIERType() {
+        logger.info("开始测试SQL Server到MySQL的UNIQUEIDENTIFIER类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD guid UNIQUEIDENTIFIER";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "guid",
+                "SqlServer", "MySQL", mysqlConnectorService, "CHAR", "CHAR(36)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - MONEY类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_MONEYType() {
+        logger.info("开始测试SQL Server到MySQL的MONEY类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary MONEY";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "salary",
+                "SqlServer", "MySQL", mysqlConnectorService, "DECIMAL", "DECIMAL(19,4)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - SMALLMONEY类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_SMALLMONEYType() {
+        logger.info("开始测试SQL Server到MySQL的SMALLMONEY类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD bonus SMALLMONEY";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "bonus",
+                "SqlServer", "MySQL", mysqlConnectorService, "DECIMAL", "DECIMAL(10,4)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - DATETIME2类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_DATETIME2Type() {
+        logger.info("开始测试SQL Server到MySQL的DATETIME2类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "created_at",
+                "SqlServer", "MySQL", mysqlConnectorService, "DATETIME", "DATETIME");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - DATETIMEOFFSET类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_DATETIMEOFFSETType() {
+        logger.info("开始测试SQL Server到MySQL的DATETIMEOFFSET类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD updated_at DATETIMEOFFSET";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "updated_at",
+                "SqlServer", "MySQL", mysqlConnectorService, "DATETIME", "DATETIME");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - TIMESTAMP类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_TIMESTAMPType() {
+        logger.info("开始测试SQL Server到MySQL的TIMESTAMP类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD row_version TIMESTAMP";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "row_version",
+                "SqlServer", "MySQL", mysqlConnectorService, "BINARY", "BINARY(8)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - IMAGE类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_IMAGEType() {
+        logger.info("开始测试SQL Server到MySQL的IMAGE类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD photo IMAGE";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "photo",
+                "SqlServer", "MySQL", mysqlConnectorService, "BLOB", "BLOB");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - TEXT类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_TEXTType() {
+        logger.info("开始测试SQL Server到MySQL的TEXT类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD description TEXT";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "description",
+                "SqlServer", "MySQL", mysqlConnectorService, "TEXT", "TEXT");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - NTEXT类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_NTEXTType() {
+        logger.info("开始测试SQL Server到MySQL的NTEXT类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD notes NTEXT";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "notes",
+                "SqlServer", "MySQL", mysqlConnectorService, "TEXT", "TEXT");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - BINARY类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_BINARYTypes() {
+        logger.info("开始测试SQL Server到MySQL的BINARY类型转换");
+
+        String sqlserverDDL1 = "ALTER TABLE ddlTestEmployee ADD binary_data BINARY(16)";
+        testDDLConversion(sqlserverDDL1, sqlserverToMySQLTableGroup, "binary_data",
+                "SqlServer", "MySQL", mysqlConnectorService, "BINARY", "BINARY(16)");
+
+        String sqlserverDDL2 = "ALTER TABLE ddlTestEmployee ADD varbinary_data VARBINARY(MAX)";
+        testDDLConversion(sqlserverDDL2, sqlserverToMySQLTableGroup, "varbinary_data",
+                "SqlServer", "MySQL", mysqlConnectorService, "VARBINARY", "VARBINARY");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - SMALLDATETIME类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_SMALLDATETIMEType() {
+        logger.info("开始测试SQL Server到MySQL的SMALLDATETIME类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD small_date SMALLDATETIME";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "small_date",
+                "SqlServer", "MySQL", mysqlConnectorService, "DATETIME", "DATETIME");
+    }
+
+    // ========== MySQL特殊类型测试 ==========
+
+    /**
+     * 测试MySQL到SQL Server - ENUM类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_ENUMType() {
+        logger.info("开始测试MySQL到SQL Server的ENUM类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN status ENUM('active','inactive','pending')";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "status",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - SET类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_SETType() {
+        logger.info("开始测试MySQL到SQL Server的SET类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN tags SET('tag1','tag2','tag3')";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "tags",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - JSON类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_JSONType() {
+        logger.info("开始测试MySQL到SQL Server的JSON类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN metadata JSON";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "metadata",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - YEAR类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_YEARType() {
+        logger.info("开始测试MySQL到SQL Server的YEAR类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN birth_year YEAR";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "birth_year",
+                "MySQL", "SqlServer", sqlServerConnectorService, "SMALLINT", "SMALLINT");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - GEOMETRY类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_GEOMETRYType() {
+        logger.info("开始测试MySQL到SQL Server的GEOMETRY类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN location GEOMETRY";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "location",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - POINT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_POINTType() {
+        logger.info("开始测试MySQL到SQL Server的POINT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN coordinates POINT";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "coordinates",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - LINESTRING类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_LINESTRINGType() {
+        logger.info("开始测试MySQL到SQL Server的LINESTRING类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN route LINESTRING";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "route",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - POLYGON类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_POLYGONType() {
+        logger.info("开始测试MySQL到SQL Server的POLYGON类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN area POLYGON";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "area",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - MULTIPOINT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_MULTIPOINTType() {
+        logger.info("开始测试MySQL到SQL Server的MULTIPOINT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN points MULTIPOINT";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "points",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - MULTILINESTRING类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_MULTILINESTRINGType() {
+        logger.info("开始测试MySQL到SQL Server的MULTILINESTRING类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN routes MULTILINESTRING";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "routes",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - MULTIPOLYGON类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_MULTIPOLYGONType() {
+        logger.info("开始测试MySQL到SQL Server的MULTIPOLYGON类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN regions MULTIPOLYGON";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "regions",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - GEOMETRYCOLLECTION类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_GEOMETRYCOLLECTIONType() {
+        logger.info("开始测试MySQL到SQL Server的GEOMETRYCOLLECTION类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN collection GEOMETRYCOLLECTION";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "collection",
+                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - TINYTEXT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_TINYTEXTType() {
+        logger.info("开始测试MySQL到SQL Server的TINYTEXT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN short_text TINYTEXT";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "short_text",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(255)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - MEDIUMTEXT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_MEDIUMTEXTType() {
+        logger.info("开始测试MySQL到SQL Server的MEDIUMTEXT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN medium_text MEDIUMTEXT";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "medium_text",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(MAX)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - LONGTEXT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_LONGTEXTType() {
+        logger.info("开始测试MySQL到SQL Server的LONGTEXT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN long_text LONGTEXT";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "long_text",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(MAX)");
+    }
+
+    // ========== 通用DDL转换测试方法 ==========
+
+    /**
+     * 执行DDL转换并验证结果
+     *
+     * @param sourceDDL              源数据库DDL语句
+     * @param tableGroup             TableGroup配置
+     * @param expectedFieldName      期望的字段名
+     * @param sourceDbType           源数据库类型（"SqlServer" 或 "MySQL"）
+     * @param targetDbType           目标数据库类型（"SqlServer" 或 "MySQL"）
+     * @param targetConnectorService 目标数据库的ConnectorService（用于DDL解析和验证）
+     * @param expectedTargetType     期望转换后的目标类型（如 "TEXT", "NVARCHAR", "DECIMAL"等）
+     * @param expectedTargetPattern  期望的目标类型模式（用于SQL验证，可能包含长度等，如 "TEXT", "NVARCHAR(50)", "DECIMAL(19,4)"）
+     */
+    private void testDDLConversion(String sourceDDL, TableGroup tableGroup, String expectedFieldName,
+                                   String sourceDbType, String targetDbType,
+                                   ConnectorService targetConnectorService,
+                                   String expectedTargetType, String expectedTargetPattern) {
+        try {
+            // 创建WriterResponse
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", tableGroup.getSourceTable().getName());
+
+            // 创建Mapping
+            Mapping mapping = TestDDLHelper.createMapping(
+                    tableGroup.getMappingId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getSourceConnectorId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getTargetConnectorId(),
+                    true,
+                    "test-meta-id");
+
+            // 根据TableGroup选择正确的BufferActuator
+            GeneralBufferActuator actuator = (tableGroup == mysqlToSQLServerTableGroup)
+                    ? mysqlToSQLServerBufferActuator
+                    : generalBufferActuator;
+
+            // 调用完整的DDL处理流程
+            actuator.parseDDl(response, mapping, tableGroup);
+
+            // 验证字段映射是否更新
+            boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null &&
+                            expectedFieldName.equals(fieldMapping.getSource().getName()));
+
+            assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+
+            // 验证DDL转换结果（通过解析DDLConfig）
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, tableGroup, sourceDDL);
+            assertNotNull("DDL配置不应为空", ddlConfig);
+            assertNotNull("DDL配置应包含操作类型", ddlConfig.getDdlOperationEnum());
+
+            String targetSql = ddlConfig.getSql();
+            assertNotNull("DDL配置应包含SQL语句", targetSql);
+
+            // 验证转换后的SQL是否包含期望的目标类型
+            assertTrue(String.format("转换后的DDL应包含期望的目标类型 %s，实际SQL: %s", expectedTargetPattern, targetSql),
+                    targetSql.toUpperCase().contains(expectedTargetPattern.toUpperCase()) ||
+                            targetSql.toUpperCase().contains(expectedTargetType.toUpperCase()));
+
+            // 验证字段名存在于转换后的SQL中
+            assertTrue(String.format("转换后的DDL应包含字段名 %s，实际SQL: %s", expectedFieldName, targetSql),
+                    targetSql.contains(expectedFieldName));
+
+            logger.info("DDL转换测试通过 - 字段: {}, 源类型: {}, 目标类型: {}, 转换后SQL: {}",
+                    expectedFieldName, sourceDbType, targetDbType, targetSql);
+        } catch (Exception e) {
+            logger.error("DDL转换测试失败 - 字段: {}, 源类型: {}, 目标类型: {}",
+                    expectedFieldName, sourceDbType, targetDbType, e);
+            fail("DDL转换测试失败: " + e.getMessage());
+        }
+    }
+
+    // ========== 辅助方法 ==========
+
     /**
      * 加载测试配置文件
-     *
-     * @throws IOException
      */
     private static void loadTestConfig() throws IOException {
         Properties props = new Properties();
         try (InputStream input = HeterogeneousDDLSyncTest.class.getClassLoader().getResourceAsStream("test.properties")) {
             if (input == null) {
                 logger.warn("未找到test.properties配置文件，使用默认配置");
-                sourceConfig = createDefaultSQLServerConfig();
-                targetConfig = createDefaultMySQLConfig();
+                mssqlConfig = createDefaultSQLServerConfig();
+                mysqlConfig = createDefaultMySQLConfig();
                 return;
             }
             props.load(input);
         }
 
         // 创建源数据库配置(SQL Server)
-        sourceConfig = new DatabaseConfig();
-        sourceConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true"));
-        sourceConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
-        sourceConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
-        sourceConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+        mssqlConfig = new DatabaseConfig();
+        mssqlConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true"));
+        mssqlConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
+        mssqlConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
+        mssqlConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
 
         // 创建目标数据库配置(MySQL)
-        targetConfig = new DatabaseConfig();
-        targetConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/target_db"));
-        targetConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
-        targetConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
-        targetConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
+        mysqlConfig = new DatabaseConfig();
+        mysqlConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/target_db"));
+        mysqlConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
+        mysqlConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
+        mysqlConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
     }
 
     /**
      * 创建默认的SQL Server配置
-     *
-     * @return DatabaseConfig
      */
     private static DatabaseConfig createDefaultSQLServerConfig() {
         DatabaseConfig config = new DatabaseConfig();
@@ -208,8 +693,6 @@ public class HeterogeneousDDLSyncTest {
 
     /**
      * 创建默认的MySQL配置
-     *
-     * @return DatabaseConfig
      */
     private static DatabaseConfig createDefaultMySQLConfig() {
         DatabaseConfig config = new DatabaseConfig();
@@ -222,241 +705,19 @@ public class HeterogeneousDDLSyncTest {
 
     /**
      * 加载SQL脚本文件
-     *
-     * @param resourcePath 资源路径
-     * @return SQL脚本内容
      */
     private static String loadSqlScript(String resourcePath) {
-        try (InputStream input = HeterogeneousDDLSyncTest.class.getClassLoader().getResourceAsStream(resourcePath);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
+        try (InputStream input = HeterogeneousDDLSyncTest.class.getClassLoader().getResourceAsStream(resourcePath)) {
             if (input == null) {
                 logger.warn("未找到SQL脚本文件: {}", resourcePath);
                 return "";
             }
-
-            return reader.lines().collect(Collectors.joining("\n"));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
+                return reader.lines().collect(Collectors.joining("\n"));
+            }
         } catch (Exception e) {
             logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
             return "";
         }
-    }
-
-    /**
-     * 测试SQL Server到MySQL的DDL同步 - 新增字段
-     */
-    @Test
-    public void testSQLServerToMySQL_AddColumn() {
-        logger.info("开始测试SQL Server到MySQL的DDL同步 - 新增字段");
-
-        // SQL Server ADD COLUMN 语句
-        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2)";
-
-        try {
-            // 解析DDL
-            // 注意：在实际测试中，这里需要传入正确的ConnectorService实例
-            // 为简化测试，我们只验证解析逻辑
-            logger.info("SQL Server DDL语句: {}", sqlserverDDL);
-            Assert.isTrue(sqlserverDDL != null && !sqlserverDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(sqlserverDDL.contains("ADD"), "应包含ADD关键字");
-            Assert.isTrue(sqlserverDDL.contains("salary"), "应包含salary字段");
-
-            logger.info("SQL Server到MySQL的DDL同步测试通过 - 新增字段");
-        } catch (Exception e) {
-            logger.error("SQL Server到MySQL的DDL同步测试失败 - 新增字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试SQL Server到MySQL的DDL同步 - 修改字段
-     */
-    @Test
-    public void testSQLServerToMySQL_ModifyColumn() {
-        logger.info("开始测试SQL Server到MySQL的DDL同步 - 修改字段");
-
-        // SQL Server ALTER COLUMN 语句
-        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100)";
-
-        try {
-            // 解析DDL
-            logger.info("SQL Server DDL语句: {}", sqlserverDDL);
-            Assert.isTrue(sqlserverDDL != null && !sqlserverDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(sqlserverDDL.contains("ALTER COLUMN"), "应包含ALTER COLUMN关键字");
-            Assert.isTrue(sqlserverDDL.contains("first_name"), "应包含first_name字段");
-
-            logger.info("SQL Server到MySQL的DDL同步测试通过 - 修改字段");
-        } catch (Exception e) {
-            logger.error("SQL Server到MySQL的DDL同步测试失败 - 修改字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试SQL Server到MySQL的DDL同步 - 重命名字段
-     */
-    @Test
-    public void testSQLServerToMySQL_RenameColumn() {
-        logger.info("开始测试SQL Server到MySQL的DDL同步 - 重命名字段");
-
-        // SQL Server CHANGE COLUMN 语句（模拟标准SQL语法）
-        String sqlserverDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN last_name surname NVARCHAR(50)";
-
-        try {
-            // 解析DDL
-            logger.info("SQL Server DDL语句: {}", sqlserverDDL);
-            Assert.isTrue(sqlserverDDL != null && !sqlserverDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(sqlserverDDL.contains("CHANGE COLUMN"), "应包含CHANGE COLUMN关键字");
-            Assert.isTrue(sqlserverDDL.contains("last_name"), "应包含last_name字段");
-            Assert.isTrue(sqlserverDDL.contains("surname"), "应包含surname字段");
-
-            logger.info("SQL Server到MySQL的DDL同步测试通过 - 重命名字段");
-        } catch (Exception e) {
-            logger.error("SQL Server到MySQL的DDL同步测试失败 - 重命名字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试MySQL到SQL Server的DDL同步 - 新增字段
-     */
-    @Test
-    public void testMySQLToSQLServer_AddColumn() {
-        logger.info("开始测试MySQL到SQL Server的DDL同步 - 新增字段");
-
-        // MySQL ADD COLUMN 语句
-        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN salary DECIMAL(10,2)";
-
-        try {
-            // 解析DDL
-            logger.info("MySQL DDL语句: {}", mysqlDDL);
-            Assert.isTrue(mysqlDDL != null && !mysqlDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(mysqlDDL.contains("ADD COLUMN"), "应包含ADD COLUMN关键字");
-            Assert.isTrue(mysqlDDL.contains("salary"), "应包含salary字段");
-
-            logger.info("MySQL到SQL Server的DDL同步测试通过 - 新增字段");
-        } catch (Exception e) {
-            logger.error("MySQL到SQL Server的DDL同步测试失败 - 新增字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试MySQL到SQL Server的DDL同步 - 修改字段
-     */
-    @Test
-    public void testMySQLToSQLServer_ModifyColumn() {
-        logger.info("开始测试MySQL到SQL Server的DDL同步 - 修改字段");
-
-        // MySQL MODIFY COLUMN 语句
-        String mysqlDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(100)";
-
-        try {
-            // 解析DDL
-            logger.info("MySQL DDL语句: {}", mysqlDDL);
-            Assert.isTrue(mysqlDDL != null && !mysqlDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(mysqlDDL.contains("MODIFY COLUMN"), "应包含MODIFY COLUMN关键字");
-            Assert.isTrue(mysqlDDL.contains("first_name"), "应包含first_name字段");
-
-            logger.info("MySQL到SQL Server的DDL同步测试通过 - 修改字段");
-        } catch (Exception e) {
-            logger.error("MySQL到SQL Server的DDL同步测试失败 - 修改字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试MySQL到SQL Server的DDL同步 - 重命名字段
-     */
-    @Test
-    public void testMySQLToSQLServer_RenameColumn() {
-        logger.info("开始测试MySQL到SQL Server的DDL同步 - 重命名字段");
-
-        // MySQL CHANGE COLUMN 语句
-        String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN last_name surname VARCHAR(50)";
-
-        try {
-            // 解析DDL
-            logger.info("MySQL DDL语句: {}", mysqlDDL);
-            Assert.isTrue(mysqlDDL != null && !mysqlDDL.isEmpty(), "DDL语句不应为空");
-            Assert.isTrue(mysqlDDL.contains("CHANGE COLUMN"), "应包含CHANGE COLUMN关键字");
-            Assert.isTrue(mysqlDDL.contains("last_name"), "应包含last_name字段");
-            Assert.isTrue(mysqlDDL.contains("surname"), "应包含surname字段");
-
-            logger.info("MySQL到SQL Server的DDL同步测试通过 - 重命名字段");
-        } catch (Exception e) {
-            logger.error("MySQL到SQL Server的DDL同步测试失败 - 重命名字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试异构数据库的数据类型映射
-     */
-    @Test
-    public void testHeterogeneousDataTypeMapping() {
-        logger.info("开始测试异构数据库的数据类型映射");
-
-        // 测试SQL Server到MySQL的数据类型映射
-        String[][] typeMappings = {
-                {"SQL Server NVARCHAR(50)", "MySQL VARCHAR(50)"},
-                {"SQL Server DATETIME2", "MySQL DATETIME"},
-                {"SQL Server DECIMAL(10,2)", "MySQL DECIMAL(10,2)"},
-                {"SQL Server INT", "MySQL INT"},
-                {"SQL Server BIT", "MySQL TINYINT(1)"}
-        };
-
-        for (String[] mapping : typeMappings) {
-            logger.info("SQL Server类型: {} -> MySQL类型: {}", mapping[0], mapping[1]);
-            Assert.notNull(mapping[0], "SQL Server类型不能为空");
-            Assert.notNull(mapping[1], "MySQL类型不能为空");
-        }
-
-        logger.info("SQL Server到MySQL数据类型映射测试通过");
-    }
-
-    /**
-     * 测试异构数据库的语法差异处理
-     */
-    @Test
-    public void testHeterogeneousSyntaxDifferences() {
-        logger.info("开始测试异构数据库的语法差异处理");
-
-        // 测试SQL Server和MySQL的语法差异
-        String[] syntaxScenarios = {
-                "SQL Server: ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2)",
-                "MySQL: ALTER TABLE ddlTestEmployee ADD COLUMN salary DECIMAL(10,2)"
-        };
-
-        for (String scenario : syntaxScenarios) {
-            logger.info("语法场景: {}", scenario);
-            Assert.isTrue((scenario.contains("SQL Server:") || scenario.contains("MySQL:")),
-                    "语法场景应该包含数据库标识");
-        }
-
-        logger.info("异构数据库语法差异处理测试通过");
-    }
-
-    /**
-     * 测试异构数据库的约束处理
-     */
-    @Test
-    public void testHeterogeneousConstraintHandling() {
-        logger.info("开始测试异构数据库的约束处理");
-
-        // 测试SQL Server和MySQL的约束处理
-        String[][] constraintScenarios = {
-                {"SQL Server", "ALTER TABLE ddlTestEmployee ADD CONSTRAINT pk_employee PRIMARY KEY (id)"},
-                {"MySQL", "ALTER TABLE ddlTestEmployee ADD CONSTRAINT pk_employee PRIMARY KEY (id)"}
-        };
-
-        for (String[] scenario : constraintScenarios) {
-            String dbType = scenario[0];
-            String ddl = scenario[1];
-            logger.info("{} 约束DDL: {}", dbType, ddl);
-            Assert.isTrue(ddl.contains("CONSTRAINT"), "DDL应该包含约束关键字");
-            Assert.isTrue(ddl.contains("PRIMARY KEY"), "DDL应该包含PRIMARY KEY");
-        }
-
-        logger.info("异构数据库约束处理测试通过");
     }
 }

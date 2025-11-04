@@ -8,7 +8,6 @@ import net.sf.jsqlparser.statement.alter.AlterExpression;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.SourceToIRConverter;
 import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
