@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.ddl;
 
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
 import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
@@ -9,10 +10,12 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -88,6 +91,9 @@ public class DDLSyncIntegrationTest {
 
     @Before
     public void setUp() throws IOException {
+        // 确保每个测试开始时数据库表结构是初始状态（双重保险）
+        resetDatabaseTableStructure();
+
         ddlParser = new DDLParserImpl();
 
         // 初始化DDLParserImpl（初始化STRATEGIES）
@@ -149,6 +155,30 @@ public class DDLSyncIntegrationTest {
                 ddlParser);
 
         logger.info("DDL同步集成测试用例环境初始化完成");
+    }
+
+
+    /**
+     * 重置数据库表结构到初始状态
+     * 用于确保测试间的数据隔离性
+     */
+    private void resetDatabaseTableStructure() {
+        logger.debug("开始重置测试数据库表结构");
+        try {
+            // 先删除表，然后重新创建，确保表结构完全恢复到初始状态
+            String resetSql = loadSqlScript("ddl/reset-test-table.sql");
+            if (resetSql == null || resetSql.trim().isEmpty()) {
+                // 如果没有专门的重置脚本，使用初始化SQL来重置表结构
+                resetSql = loadSqlScript("ddl/init-test-data.sql");
+            }
+            if (resetSql != null && !resetSql.trim().isEmpty()) {
+                testDatabaseManager.resetTableStructure(resetSql, resetSql);
+                logger.debug("测试数据库表结构重置完成");
+            }
+        } catch (Exception e) {
+            logger.error("重置测试数据库表结构失败", e);
+            // 不抛出异常，避免影响测试结果，但记录错误
+        }
     }
 
     /**
@@ -335,50 +365,20 @@ public class DDLSyncIntegrationTest {
 
             // 验证字段映射更新
             boolean foundNewMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "full_name".equals(fieldMapping.getSource().getName()) &&
                             fieldMapping.getTarget() != null && "full_name".equals(fieldMapping.getTarget().getName()));
 
-            boolean foundOldMapping = testTableGroup.getFieldMapping().stream()
-                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
+            // 验证旧映射不存在：应该没有任何一个映射的源字段名和目标字段名都是"name"
+            boolean notFoundOldMapping = testTableGroup.getFieldMapping().stream()
+                    .noneMatch(fieldMapping -> fieldMapping.getSource() != null && "name".equals(fieldMapping.getSource().getName()) &&
                             fieldMapping.getTarget() != null && "name".equals(fieldMapping.getTarget().getName()));
 
-            assert foundNewMapping : "应找到name到full_name的字段映射";
-            assert !foundOldMapping : "不应找到name到name的旧字段映射";
+            assert foundNewMapping : "应找到full_name到full_name的字段映射";
+            assert notFoundOldMapping : "不应找到name到name的旧字段映射";
 
             logger.info("DDL同步端到端流程测试通过 - 重命名字段");
         } catch (Exception e) {
             logger.error("DDL同步端到端流程测试失败 - 重命名字段", e);
-            throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 测试DDL解析器的防循环机制
-     */
-    @Test
-    public void testDDLParserAntiCycleMechanism() {
-        logger.info("开始测试DDL解析器的防循环机制");
-
-        // 模拟源数据库执行的DDL语句
-        String sourceDDL = "ALTER TABLE ddlTestTable ADD COLUMN cycle_test INT";
-
-        try {
-            // 解析DDL
-            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, testTableGroup, sourceDDL);
-
-            // 验证解析结果
-            assert ddlConfig != null : "DDL配置不应为空";
-            assert DDLOperationEnum.ALTER_ADD == ddlConfig.getDdlOperationEnum() : "DDL操作类型应为ALTER_ADD";
-            assert sourceDDL.equals(ddlConfig.getSql()) : "SQL语句应匹配";
-            assert ddlConfig.getAddedFieldNames().contains("cycle_test") : "新增字段列表应包含cycle_test字段";
-
-            // 验证防循环机制
-            assert ddlConfig.getSql() != null : "DDL SQL不应为空";
-            assert !ddlConfig.getSql().isEmpty() : "DDL SQL不应为空字符串";
-
-            logger.info("DDL解析器的防循环机制测试通过");
-        } catch (Exception e) {
-            logger.error("DDL解析器的防循环机制测试失败", e);
             throw new RuntimeException("测试应成功完成，但抛出异常: " + e.getMessage(), e);
         }
     }

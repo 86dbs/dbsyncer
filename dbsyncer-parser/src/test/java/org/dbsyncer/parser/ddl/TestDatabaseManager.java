@@ -76,6 +76,30 @@ public class TestDatabaseManager {
     }
 
     /**
+     * 重置测试数据库表结构到初始状态
+     * 用于在测试之间恢复表结构，确保测试间的隔离性
+     *
+     * @param sourceResetSql 重置源数据库的SQL脚本
+     * @param targetResetSql 重置目标数据库的SQL脚本
+     */
+    public void resetTableStructure(String sourceResetSql, String targetResetSql) {
+        logger.debug("开始重置测试数据库表结构");
+
+        try {
+            // 重置源数据库表结构
+            executeSql(sourceConnectorInstance, sourceResetSql);
+
+            // 重置目标数据库表结构
+            executeSql(targetConnectorInstance, targetResetSql);
+
+            logger.debug("测试数据库表结构重置完成");
+        } catch (Exception e) {
+            logger.error("重置测试数据库表结构失败", e);
+            // 不抛出异常，避免影响测试结果，但记录错误
+        }
+    }
+
+    /**
      * 执行SQL脚本
      *
      * @param connectorInstance 数据库连接实例

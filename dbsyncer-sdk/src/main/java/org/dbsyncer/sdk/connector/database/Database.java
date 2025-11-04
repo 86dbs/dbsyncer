@@ -12,16 +12,6 @@ import java.util.List;
 public interface Database {
 
     /**
-     * 获取dbs唯一标识码
-     *
-     * @return
-     */
-    default String generateUniqueCode() {
-        return StringUtil.EMPTY;
-    }
-
-
-    /**
      * 获取表名称(可自定义处理系统关键字，函数名)
      *
      * @param tableName

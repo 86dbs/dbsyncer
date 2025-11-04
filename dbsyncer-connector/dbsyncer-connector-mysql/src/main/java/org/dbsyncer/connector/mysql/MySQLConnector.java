@@ -67,11 +67,6 @@ public class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String generateUniqueCode() {
-        return "/*dbs*/";
-    }
-
-    @Override
     public Map<String, String> getPosition(
             org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
         // 执行SHOW MASTER STATUS命令获取当前binlog位置
