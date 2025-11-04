@@ -15,6 +15,8 @@ trigger: always_on
 - 逻辑闭环
 - 严谨的生命周期管理
 
+如果我给出的指令你评估后没有对效果产生实质性的改进，请指出问题并暂停执行。
+
 不要在代码文件中附加 @Author @Date @Version 等注解。
 
-agent 请使用 powershell 指令，不要使用 linux 指令。
+agent 请使用 powershell 指令，不要使用 linux 指令以及“&&”。
