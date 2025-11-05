@@ -18,8 +18,14 @@ public enum DataTypeEnum {
     SHORT,
     INT,
     LONG,
+    /** 无符号整型 */
+    UNSIGNED_BYTE,
+    UNSIGNED_SHORT,
+    UNSIGNED_INT,
+    UNSIGNED_LONG,
     /** 浮点型 */
     DECIMAL,
+    UNSIGNED_DECIMAL,
     DOUBLE,
     FLOAT,
     /** 布尔型 */

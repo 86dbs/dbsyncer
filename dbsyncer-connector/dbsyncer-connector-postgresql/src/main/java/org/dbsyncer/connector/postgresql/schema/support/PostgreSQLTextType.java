@@ -1,25 +1,19 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
-package org.dbsyncer.connector.mysql.schema.support;
+package org.dbsyncer.connector.postgresql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.ShortType;
+import org.dbsyncer.sdk.schema.support.TextType;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * PostgreSQL TEXT类型支持
  */
-public final class MySQLShortType extends ShortType {
+public final class PostgreSQLTextType extends TextType {
 
     private enum TypeEnum {
-        SMALLINT("SMALLINT");
+        TEXT("text");
 
         private final String value;
 
@@ -38,11 +32,10 @@ public final class MySQLShortType extends ShortType {
     }
 
     @Override
-    protected Short merge(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).shortValue();
+    protected String merge(Object val, Field field) {
+        if (val instanceof String) {
+            return (String) val;
         }
         return throwUnsupportedException(val, field);
     }
-
 }

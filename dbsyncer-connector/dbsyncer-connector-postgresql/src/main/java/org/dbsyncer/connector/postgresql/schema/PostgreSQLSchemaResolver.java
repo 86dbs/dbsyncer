@@ -36,6 +36,7 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("ENUM", "USER-DEFINED");
         mapping.put("SET", "VARCHAR");
         mapping.put("DECIMAL", "NUMERIC");
+        mapping.put("UNSIGNED_DECIMAL", "NUMERIC"); // DECIMAL UNSIGNED → NUMERIC（PostgreSQL不支持unsigned，但NUMERIC可以存储所有值）
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "TIME");
         mapping.put("TIMESTAMP", "TIMESTAMP");
@@ -43,6 +44,11 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("BYTE", "SMALLINT");
         mapping.put("SHORT", "SMALLINT");
         mapping.put("LONG", "BIGINT");
+        // 无符号类型映射到更大的类型以避免溢出
+        mapping.put("UNSIGNED_BYTE", "INTEGER");   // TINYINT UNSIGNED (0-255) → INTEGER
+        mapping.put("UNSIGNED_SHORT", "INTEGER"); // SMALLINT UNSIGNED (0-65535) → INTEGER
+        mapping.put("UNSIGNED_INT", "BIGINT");    // INT UNSIGNED (0-4294967295) → BIGINT
+        mapping.put("UNSIGNED_LONG", "NUMERIC");  // BIGINT UNSIGNED (0-18446744073709551615) → NUMERIC
         mapping.put("FLOAT", "REAL");
         mapping.put("DOUBLE", "DOUBLE PRECISION");
         mapping.put("BYTES", "BYTEA");

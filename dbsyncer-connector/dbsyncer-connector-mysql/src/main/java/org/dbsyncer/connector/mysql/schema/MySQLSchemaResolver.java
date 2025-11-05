@@ -24,6 +24,7 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("ENUM", "ENUM");
         mapping.put("SET", "SET");
         mapping.put("DECIMAL", "DECIMAL");
+        mapping.put("UNSIGNED_DECIMAL", "DECIMAL UNSIGNED");
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "TIME");
         mapping.put("TIMESTAMP", "DATETIME");
@@ -31,6 +32,10 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("BYTE", "TINYINT");
         mapping.put("SHORT", "SMALLINT");
         mapping.put("LONG", "BIGINT");
+        mapping.put("UNSIGNED_BYTE", "TINYINT UNSIGNED");
+        mapping.put("UNSIGNED_SHORT", "SMALLINT UNSIGNED");
+        mapping.put("UNSIGNED_INT", "INT UNSIGNED");
+        mapping.put("UNSIGNED_LONG", "BIGINT UNSIGNED");
         mapping.put("FLOAT", "FLOAT");
         mapping.put("DOUBLE", "DOUBLE");
         mapping.put("BYTES", "VARBINARY");
@@ -55,7 +60,12 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
                 new MySQLStringType(),
                 new MySQLTextType(),  // 新增TEXT类型支持
                 new MySQLTimestampType(),
-                new MySQLTimeType()
+                new MySQLTimeType(),
+                new MySQLUnsignedByteType(),    // 新增无符号字节类型支持
+                new MySQLUnsignedShortType(),   // 新增无符号短整型支持
+                new MySQLUnsignedIntType(),     // 新增无符号整型支持
+                new MySQLUnsignedLongType(),    // 新增无符号长整型支持
+                new MySQLUnsignedDecimalType()  // 新增无符号精确小数类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new MySQLException("Duplicate type name: " + typeName);

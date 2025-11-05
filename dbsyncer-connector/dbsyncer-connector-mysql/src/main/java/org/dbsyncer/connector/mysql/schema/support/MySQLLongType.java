@@ -18,8 +18,7 @@ import java.util.stream.Collectors;
 public final class MySQLLongType extends LongType {
 
     private enum TypeEnum {
-        BIGINT("BIGINT"),
-        INT_UNSIGNED("INT UNSIGNED");
+        BIGINT("BIGINT");
 
         private final String value;
 

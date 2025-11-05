@@ -1,29 +1,20 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.mysql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.IntType;
+import org.dbsyncer.sdk.schema.support.UnsignedLongType;
 
-import java.sql.Date;
+import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * MySQL 无符号长整型支持
  */
-public final class MySQLIntType extends IntType {
+public final class MySQLUnsignedLongType extends UnsignedLongType {
 
     private enum TypeEnum {
-        MEDIUMINT("MEDIUMINT"),
-        INT("INT"),
-        INTEGER("INTEGER"),
-        YEAR("YEAR");
+        BIGINT_UNSIGNED("BIGINT UNSIGNED");
 
         private final String value;
 
@@ -42,14 +33,11 @@ public final class MySQLIntType extends IntType {
     }
 
     @Override
-    protected Integer merge(Object val, Field field) {
-        if (val instanceof Date) {
-            Date d = (Date) val;
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(d);
-            return calendar.get(Calendar.YEAR);
+    protected BigDecimal merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return new BigDecimal(val.toString());
         }
         return throwUnsupportedException(val, field);
     }
-
 }
+

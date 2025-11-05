@@ -2,7 +2,7 @@ package org.dbsyncer.connector.mysql.schema.support;
 
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.DecimalType;
+import org.dbsyncer.sdk.schema.support.UnsignedDecimalType;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -10,10 +10,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class MySQLDecimalType extends DecimalType {
+/**
+ * MySQL 无符号精确小数类型支持
+ */
+public final class MySQLUnsignedDecimalType extends UnsignedDecimalType {
 
     private enum TypeEnum {
-        DECIMAL("DECIMAL");
+        DECIMAL_UNSIGNED("DECIMAL UNSIGNED");
 
         private final String value;
 
@@ -34,7 +37,12 @@ public final class MySQLDecimalType extends DecimalType {
     @Override
     protected BigDecimal merge(Object val, Field field) {
         if (val instanceof Number) {
-            return new BigDecimal(val.toString());
+            BigDecimal bd = new BigDecimal(val.toString());
+            // 确保值 >= 0
+            if (bd.compareTo(BigDecimal.ZERO) < 0) {
+                return BigDecimal.ZERO;
+            }
+            return bd;
         }
         return throwUnsupportedException(val, field);
     }
@@ -68,3 +76,4 @@ public final class MySQLDecimalType extends DecimalType {
         return result;
     }
 }
+

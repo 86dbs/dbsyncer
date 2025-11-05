@@ -1,21 +1,15 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.connector.postgresql.schema.support;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DecimalType;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 23:26
- */
 public class PostgreSQLDecimalType extends DecimalType {
     private enum TypeEnum {
         NUMERIC("numeric");
@@ -40,5 +34,32 @@ public class PostgreSQLDecimalType extends DecimalType {
     protected BigDecimal merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
+    
+    @Override
+    public Field handleDDLParameters(ColDataType colDataType) {
+        Field result = new Field();
+        
+        // 处理NUMERIC类型，根据参数设置columnSize和ratio
+        List<String> argsList = colDataType.getArgumentsStringList();
+        if (argsList != null && !argsList.isEmpty()) {
+            if (argsList.size() >= 1) {
+                try {
+                    int size = Integer.parseInt(argsList.get(0));
+                    result.setColumnSize(size);
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误，使用默认值
+                }
+            }
+            if (argsList.size() >= 2) {
+                try {
+                    int ratio = Integer.parseInt(argsList.get(1));
+                    result.setRatio(ratio);
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        
+        return result;
+    }
 }

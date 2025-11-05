@@ -20,6 +20,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TEXT", "nvarchar");
         mapping.put("XML", "xml");
         mapping.put("DECIMAL", "decimal");
+        mapping.put("UNSIGNED_DECIMAL", "decimal"); // DECIMAL UNSIGNED → decimal（SQL Server不支持unsigned，但decimal可以存储所有值）
         mapping.put("DATE", "date");
         mapping.put("TIME", "time");
         mapping.put("TIMESTAMP", "datetime2");
@@ -27,6 +28,11 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         mapping.put("BYTE", "tinyint");
         mapping.put("SHORT", "smallint");
         mapping.put("LONG", "bigint");
+        // 无符号类型映射到更大的类型以避免溢出
+        mapping.put("UNSIGNED_BYTE", "int");      // TINYINT UNSIGNED (0-255) → INT
+        mapping.put("UNSIGNED_SHORT", "int");    // SMALLINT UNSIGNED (0-65535) → INT
+        mapping.put("UNSIGNED_INT", "bigint");   // INT UNSIGNED (0-4294967295) → BIGINT
+        mapping.put("UNSIGNED_LONG", "decimal"); // BIGINT UNSIGNED (0-18446744073709551615) → DECIMAL
         mapping.put("FLOAT", "real");
         mapping.put("DOUBLE", "float");
         mapping.put("BYTES", "varbinary");

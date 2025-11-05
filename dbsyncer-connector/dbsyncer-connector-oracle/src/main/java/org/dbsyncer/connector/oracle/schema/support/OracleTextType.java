@@ -1,10 +1,9 @@
 package org.dbsyncer.connector.oracle.schema.support;
 
-import net.sf.jsqlparser.statement.create.table.ColDataType;
 import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
+import org.dbsyncer.sdk.schema.support.TextType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,21 +11,17 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Oracle字符串类型支持
+ * Oracle TEXT类型支持
  */
-public final class OracleStringType extends StringType {
+public final class OracleTextType extends TextType {
 
     private enum TypeEnum {
-        VARCHAR2,  // 可变长度字符串
-        NVARCHAR2, // Unicode可变长度字符串
-        CHAR,      // 固定长度字符串
-        NCHAR      // Unicode固定长度字符串
-        // 移除了CLOB、NCLOB，因为它们有专门的DataType实现类
+        CLOB,
+        NCLOB
     }
 
     @Override
@@ -71,23 +66,5 @@ public final class OracleStringType extends StringType {
         } catch (SQLException | IOException e) {
             throw new OracleException(e);
         }
-    }
-    
-    @Override
-    public Field handleDDLParameters(ColDataType colDataType) {
-        Field result = new Field();
-        
-        // 处理字符串类型，根据参数设置columnSize
-        List<String> argsList = colDataType.getArgumentsStringList();
-        if (argsList != null && !argsList.isEmpty() && argsList.size() >= 1) {
-            try {
-                int size = Integer.parseInt(argsList.get(0));
-                result.setColumnSize(size);
-            } catch (NumberFormatException e) {
-                // 忽略解析错误，使用默认值
-            }
-        }
-        
-        return result;
     }
 }

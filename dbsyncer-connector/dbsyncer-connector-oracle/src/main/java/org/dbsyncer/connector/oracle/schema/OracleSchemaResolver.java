@@ -27,6 +27,7 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TEXT", "CLOB");
         mapping.put("XML", "XMLTYPE");
         mapping.put("DECIMAL", "NUMBER");
+        mapping.put("UNSIGNED_DECIMAL", "NUMBER"); // DECIMAL UNSIGNED → NUMBER（Oracle使用NUMBER表示所有数值类型）
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "DATE");
         mapping.put("TIMESTAMP", "TIMESTAMP");
@@ -34,6 +35,11 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         mapping.put("BYTE", "NUMBER");
         mapping.put("SHORT", "NUMBER");
         mapping.put("LONG", "NUMBER");
+        // 无符号类型映射到NUMBER类型（Oracle使用NUMBER表示所有数值类型）
+        mapping.put("UNSIGNED_BYTE", "NUMBER");   // TINYINT UNSIGNED (0-255) → NUMBER
+        mapping.put("UNSIGNED_SHORT", "NUMBER"); // SMALLINT UNSIGNED (0-65535) → NUMBER
+        mapping.put("UNSIGNED_INT", "NUMBER");    // INT UNSIGNED (0-4294967295) → NUMBER
+        mapping.put("UNSIGNED_LONG", "NUMBER");   // BIGINT UNSIGNED (0-18446744073709551615) → NUMBER
         mapping.put("FLOAT", "BINARY_FLOAT");
         mapping.put("DOUBLE", "BINARY_DOUBLE");
         mapping.put("BYTES", "BLOB");

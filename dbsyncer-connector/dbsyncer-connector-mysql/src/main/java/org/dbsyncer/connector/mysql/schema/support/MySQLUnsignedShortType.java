@@ -1,29 +1,19 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.mysql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.IntType;
+import org.dbsyncer.sdk.schema.support.UnsignedShortType;
 
-import java.sql.Date;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * MySQL 无符号短整型支持
  */
-public final class MySQLIntType extends IntType {
+public final class MySQLUnsignedShortType extends UnsignedShortType {
 
     private enum TypeEnum {
-        MEDIUMINT("MEDIUMINT"),
-        INT("INT"),
-        INTEGER("INTEGER"),
-        YEAR("YEAR");
+        SMALLINT_UNSIGNED("SMALLINT UNSIGNED");
 
         private final String value;
 
@@ -43,13 +33,16 @@ public final class MySQLIntType extends IntType {
 
     @Override
     protected Integer merge(Object val, Field field) {
-        if (val instanceof Date) {
-            Date d = (Date) val;
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(d);
-            return calendar.get(Calendar.YEAR);
+        if (val instanceof Number) {
+            Number num = (Number) val;
+            int intVal = num.intValue();
+            // 处理可能的负数（JDBC可能返回负数）
+            if (intVal < 0) {
+                intVal = intVal & 0xFFFF; // 转换为无符号
+            }
+            return Math.min(intVal, 65535);
         }
         return throwUnsupportedException(val, field);
     }
-
 }
+

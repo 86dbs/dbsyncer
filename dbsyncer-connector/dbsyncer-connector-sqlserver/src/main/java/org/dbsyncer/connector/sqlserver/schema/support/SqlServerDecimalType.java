@@ -1,23 +1,18 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlserver.schema.support;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DecimalType;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * SQL Server Decimal类型支持
  * 专门处理DECIMAL和NUMERIC类型，保持精度和小数位数
- *
- * @Author Qwen
- * @Version 1.0.0
- * @Date 2025-10-24
  */
 public final class SqlServerDecimalType extends DecimalType {
 
@@ -90,5 +85,33 @@ public final class SqlServerDecimalType extends DecimalType {
             return ((Boolean) val) ? BigDecimal.ONE : BigDecimal.ZERO;
         }
         return super.convert(val, field);
+    }
+    
+    @Override
+    public Field handleDDLParameters(ColDataType colDataType) {
+        Field result = new Field();
+        
+        // 处理DECIMAL类型，根据参数设置columnSize和ratio
+        List<String> argsList = colDataType.getArgumentsStringList();
+        if (argsList != null && !argsList.isEmpty()) {
+            if (argsList.size() >= 1) {
+                try {
+                    int size = Integer.parseInt(argsList.get(0));
+                    result.setColumnSize(size);
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误，使用默认值
+                }
+            }
+            if (argsList.size() >= 2) {
+                try {
+                    int ratio = Integer.parseInt(argsList.get(1));
+                    result.setRatio(ratio);
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        
+        return result;
     }
 }
