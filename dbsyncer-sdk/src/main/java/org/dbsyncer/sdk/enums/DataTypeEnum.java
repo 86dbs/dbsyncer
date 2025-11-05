@@ -13,6 +13,7 @@ package org.dbsyncer.sdk.enums;
 public enum DataTypeEnum {
     /** 文本 */
     STRING,
+    UNICODE_STRING,
     /** 整型 */
     BYTE,
     SHORT,
@@ -41,6 +42,7 @@ public enum DataTypeEnum {
     XML,
     /** 大文本 */
     TEXT,
+    UNICODE_TEXT,
     /** 枚举和集合 */
     ENUM,
     SET

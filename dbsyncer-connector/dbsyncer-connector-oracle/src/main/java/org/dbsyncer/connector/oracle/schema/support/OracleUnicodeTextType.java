@@ -1,32 +1,34 @@
 package org.dbsyncer.connector.oracle.schema.support;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
+import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Oracle字符串类型支持
+ * Oracle Unicode TEXT类型支持
+ * <p>
+ * Oracle的NCLOB类型容量：
+ * - NCLOB: 最大4GB字符数据（多字节字符集，如Unicode）
+ * </p>
  */
-public final class OracleStringType extends StringType {
+public final class OracleUnicodeTextType extends UnicodeTextType {
 
-    private enum TypeEnum {
-        VARCHAR2,  // 可变长度字符串
-        CHAR       // 固定长度字符串
-    }
+    /**
+     * Oracle NCLOB类型容量常量（字节数）
+     */
+    private static final long NCLOB_SIZE = 4294967295L; // 4GB
 
     @Override
-    public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+    public java.util.Set<String> getSupportedTypeName() {
+        return java.util.Collections.singleton("NCLOB");
     }
 
     @Override
@@ -67,5 +69,14 @@ public final class OracleStringType extends StringType {
             throw new OracleException(e);
         }
     }
-    
+
+    @Override
+    public Field handleDDLParameters(ColDataType colDataType) {
+        // 调用父类方法设置基础信息
+        Field result = super.handleDDLParameters(colDataType);
+        // 设置NCLOB的容量
+        result.setColumnSize(NCLOB_SIZE);
+        return result;
+    }
 }
+

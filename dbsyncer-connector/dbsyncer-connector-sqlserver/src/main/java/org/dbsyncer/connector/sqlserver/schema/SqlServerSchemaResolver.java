@@ -16,8 +16,10 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
         mapping.put("INT", "int");
-        mapping.put("STRING", "nvarchar");
-        mapping.put("TEXT", "nvarchar");
+        mapping.put("STRING", "varchar");
+        mapping.put("UNICODE_STRING", "nvarchar");
+        mapping.put("TEXT", "varchar");
+        mapping.put("UNICODE_TEXT", "nvarchar");
         mapping.put("XML", "xml");
         mapping.put("DECIMAL", "decimal");
         mapping.put("UNSIGNED_DECIMAL", "decimal"); // DECIMAL UNSIGNED → decimal（SQL Server不支持unsigned，但decimal可以存储所有值）
@@ -45,10 +47,12 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerDecimalType(),             // Decimal类型（精确小数类型）
                 new SqlServerApproximateNumericType(),  // 近似数值类型
                 new SqlServerDateTimeType(),            // 日期时间类型
-                new SqlServerStringType(),              // 字符字符串类型
+                new SqlServerStringType(),              // 字符字符串类型（CHAR, VARCHAR）
+                new SqlServerUnicodeStringType(),       // Unicode字符字符串类型（NCHAR, NVARCHAR）
                 new SqlServerBinaryStringType(),        // 二进制字符串类型
-                new SqlServerTextType(),                // 新增TEXT类型支持
-                new SqlServerXmlType()                  // 新增XML类型支持
+                new SqlServerTextType(),                // TEXT类型支持
+                new SqlServerUnicodeTextType(),         // Unicode TEXT类型支持（NTEXT）
+                new SqlServerXmlType()                  // XML类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new SqlServerException("Duplicate type name: " + typeName);

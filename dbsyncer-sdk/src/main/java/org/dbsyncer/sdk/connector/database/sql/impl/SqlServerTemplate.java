@@ -205,8 +205,9 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         String typeName = targetField.getTypeName();
         
         // 处理参数（长度、精度等）
-        switch (typeName) {
+        switch (typeName.toUpperCase()) {
             case "NVARCHAR":
+            case "VARCHAR":
                 if (column.getColumnSize() > 0) {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }

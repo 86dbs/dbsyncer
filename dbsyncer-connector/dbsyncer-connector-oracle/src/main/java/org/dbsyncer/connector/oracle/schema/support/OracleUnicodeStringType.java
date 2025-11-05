@@ -3,7 +3,7 @@ package org.dbsyncer.connector.oracle.schema.support;
 import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
+import org.dbsyncer.sdk.schema.support.UnicodeStringType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,13 +15,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Oracle字符串类型支持
+ * Oracle Unicode字符串类型支持
  */
-public final class OracleStringType extends StringType {
+public final class OracleUnicodeStringType extends UnicodeStringType {
 
     private enum TypeEnum {
-        VARCHAR2,  // 可变长度字符串
-        CHAR       // 固定长度字符串
+        NVARCHAR2, // Unicode可变长度字符串
+        NCHAR      // Unicode固定长度字符串
     }
 
     @Override
@@ -69,3 +69,4 @@ public final class OracleStringType extends StringType {
     }
     
 }
+

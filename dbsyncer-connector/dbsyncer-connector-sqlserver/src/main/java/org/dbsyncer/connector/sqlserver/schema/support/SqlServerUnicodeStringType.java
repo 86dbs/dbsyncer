@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.sqlserver.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
+import org.dbsyncer.sdk.schema.support.UnicodeStringType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * SQL Server字符串类型支持
+ * SQL Server Unicode字符串类型支持
  */
-public final class SqlServerStringType extends StringType {
+public final class SqlServerUnicodeStringType extends UnicodeStringType {
 
     private enum TypeEnum {
-        CHAR,           // 固定长度字符
-        VARCHAR         // 可变长度字符
+        NCHAR,          // 固定长度 Unicode 字符
+        NVARCHAR        // 可变长度 Unicode 字符
     }
 
     @Override
@@ -48,3 +48,4 @@ public final class SqlServerStringType extends StringType {
     }
     
 }
+

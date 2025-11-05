@@ -30,7 +30,9 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
         mapping.put("INT", "INTEGER");
         mapping.put("STRING", "VARCHAR");
+        mapping.put("UNICODE_STRING", "VARCHAR"); // PostgreSQL的VARCHAR默认支持UTF-8
         mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // PostgreSQL的TEXT默认支持UTF-8
         mapping.put("JSON", "JSON");
         mapping.put("XML", "XML");
         mapping.put("ENUM", "USER-DEFINED");

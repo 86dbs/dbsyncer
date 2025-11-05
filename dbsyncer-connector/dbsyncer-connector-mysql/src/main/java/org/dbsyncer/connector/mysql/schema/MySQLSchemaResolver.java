@@ -18,7 +18,9 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
         mapping.put("INT", "INT");
         mapping.put("STRING", "VARCHAR");
+        mapping.put("UNICODE_STRING", "VARCHAR"); // MySQL的VARCHAR默认支持UTF-8
         mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // MySQL的TEXT默认支持UTF-8
         mapping.put("JSON", "JSON");
         mapping.put("XML", "LONGTEXT");
         mapping.put("ENUM", "ENUM");

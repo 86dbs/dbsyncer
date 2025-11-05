@@ -24,7 +24,9 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
         mapping.put("INT", "NUMBER");
         mapping.put("STRING", "VARCHAR2");
+        mapping.put("UNICODE_STRING", "NVARCHAR2");
         mapping.put("TEXT", "CLOB");
+        mapping.put("UNICODE_TEXT", "NCLOB");
         mapping.put("XML", "XMLTYPE");
         mapping.put("DECIMAL", "NUMBER");
         mapping.put("UNSIGNED_DECIMAL", "NUMBER"); // DECIMAL UNSIGNED → NUMBER（Oracle使用NUMBER表示所有数值类型）
@@ -48,7 +50,8 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new OracleStringType(),
+                new OracleStringType(),          // VARCHAR2, CHAR
+                new OracleUnicodeStringType(),   // NVARCHAR2, NCHAR
                 new OracleIntType(),
                 new OracleLongType(),
                 new OracleDecimalType(),
@@ -57,8 +60,9 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
                 new OracleDateType(),
                 new OracleTimestampType(),
                 new OracleBytesType(),
-                new OracleTextType(),    // 新增TEXT类型支持
-                new OracleXmlType()      // 新增XML类型支持
+                new OracleTextType(),            // CLOB
+                new OracleUnicodeTextType(),     // NCLOB
+                new OracleXmlType()              // XML类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new OracleException("Duplicate type name: " + typeName);
