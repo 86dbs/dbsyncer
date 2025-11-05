@@ -5,12 +5,9 @@ package org.dbsyncer.connector.sqlite.schema;
 
 import org.dbsyncer.connector.sqlite.SQLiteException;
 import org.dbsyncer.connector.sqlite.schema.support.*;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -23,23 +20,21 @@ import java.util.stream.Stream;
  */
 public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
 
-    // Java标准类型到SQLite特定类型的映射
-    private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
-    
-    static {
-        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "BLOB");
+    @Override
+    protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
+        mapping.put("INT", "INTEGER");
+        mapping.put("STRING", "TEXT");
+        mapping.put("DECIMAL", "REAL");
+        mapping.put("DATE", "TEXT");
+        mapping.put("TIME", "TEXT");
+        mapping.put("TIMESTAMP", "TEXT");
+        mapping.put("BOOLEAN", "INTEGER");
+        mapping.put("BYTE", "INTEGER");
+        mapping.put("SHORT", "INTEGER");
+        mapping.put("LONG", "INTEGER");
+        mapping.put("FLOAT", "REAL");
+        mapping.put("DOUBLE", "REAL");
+        mapping.put("BYTES", "BLOB");
     }
 
     @Override
@@ -58,58 +53,13 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
     }
 
     @Override
-    public Field toStandardType(Field field) {
-        // 利用现有的DataType映射机制进行类型转换
-        DataType dataType = getDataType(field);
-        if (dataType != null) {
-            // 使用DataType的getType()方法获取标准类型
-            return new Field(field.getName(),
-                           dataType.getType().name(),
-                           getStandardTypeCode(dataType.getType()),
-                           field.isPk(),
-                           field.getColumnSize(),
-                           field.getRatio());
-        }
-
-        // 如果没有找到对应的DataType，抛出异常以发现系统不足
-        throw new UnsupportedOperationException(
-            String.format("Unsupported SQLite type: %s. Please add mapping for this type in DataType configuration.",
-                         field.getTypeName()));
+    protected String getDatabaseName() {
+        return "SQLite";
     }
 
     @Override
-    public Field fromStandardType(Field standardField) {
-        // 将Java标准类型转换为SQLite特定类型
-        String targetTypeName = getTargetTypeName(standardField.getTypeName());
-        return new Field(standardField.getName(),
-                       targetTypeName,
-                       getTargetTypeCode(targetTypeName),
-                       standardField.isPk(),
-                       standardField.getColumnSize(),
-                       standardField.getRatio());
-    }
-
-    /**
-     * 获取标准类型编码
-     */
-    private int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
-        // 使用枚举的ordinal值作为类型编码
-        return dataTypeEnum.ordinal();
-    }
-
-    /**
-     * 获取目标类型名称（将Java标准类型转换为SQLite特定类型）
-     */
-    private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toUpperCase());
-    }
-
-    /**
-     * 获取目标类型编码
-     */
-    private int getTargetTypeCode(String targetTypeName) {
-        // 这里可以根据需要实现类型编码映射
-        // 暂时返回0，实际使用时可能需要更精确的映射
-        return 0;
+    protected String getDefaultTargetTypeName(String standardTypeName) {
+        // SQLite 特殊处理：将未映射的类型转换为大写
+        return standardTypeName.toUpperCase();
     }
 }

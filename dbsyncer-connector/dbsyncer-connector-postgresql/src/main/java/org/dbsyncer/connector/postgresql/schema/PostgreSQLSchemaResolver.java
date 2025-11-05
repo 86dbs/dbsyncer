@@ -1,5 +1,5 @@
 /**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ * DBSyncer Copyright 2020-2024 All Rights Reserved.
  */
 package org.dbsyncer.connector.postgresql.schema;
 
@@ -9,17 +9,18 @@ import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLEnumType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLFloatType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLJsonType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTextType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLXmlType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -32,23 +33,26 @@ import java.util.stream.Stream;
  */
 public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
 
-    // Java标准类型到PostgreSQL特定类型的映射
-    private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
-    
-    static {
-        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "integer");
-        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "varchar");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "numeric");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "date");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "time");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "timestamp");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "boolean");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "smallint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "smallint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "bigint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "double precision");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "bytea");
+    @Override
+    protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
+        mapping.put("INT", "INTEGER");
+        mapping.put("STRING", "VARCHAR");
+        mapping.put("TEXT", "TEXT");
+        mapping.put("JSON", "JSON");
+        mapping.put("XML", "XML");
+        mapping.put("ENUM", "USER-DEFINED");
+        mapping.put("SET", "VARCHAR");
+        mapping.put("DECIMAL", "NUMERIC");
+        mapping.put("DATE", "DATE");
+        mapping.put("TIME", "TIME");
+        mapping.put("TIMESTAMP", "TIMESTAMP");
+        mapping.put("BOOLEAN", "BOOLEAN");
+        mapping.put("BYTE", "SMALLINT");
+        mapping.put("SHORT", "SMALLINT");
+        mapping.put("LONG", "BIGINT");
+        mapping.put("FLOAT", "REAL");
+        mapping.put("DOUBLE", "DOUBLE PRECISION");
+        mapping.put("BYTES", "BYTEA");
     }
 
     @Override
@@ -63,7 +67,11 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                 new PostgreSQLDateType(),
                 new PostgreSQLTimestampType(),
                 new PostgreSQLBooleanType(),
-                new PostgreSQLBytesType()
+                new PostgreSQLBytesType(),
+                new PostgreSQLJsonType(),    // 新增JSON类型支持
+                new PostgreSQLEnumType(),    // 新增ENUM类型支持
+                new PostgreSQLTextType(),    // 新增TEXT类型支持
+                new PostgreSQLXmlType()      // 新增XML类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new PostgreSQLException("Duplicate type name: " + typeName);
@@ -73,58 +81,7 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
     }
 
     @Override
-    public Field toStandardType(Field field) {
-        // 利用现有的DataType映射机制进行类型转换
-        DataType dataType = getDataType(field);
-        if (dataType != null) {
-            // 使用DataType的getType()方法获取标准类型
-            return new Field(field.getName(),
-                           dataType.getType().name(),
-                           getStandardTypeCode(dataType.getType()),
-                           field.isPk(),
-                           field.getColumnSize(),
-                           field.getRatio());
-        }
-
-        // 如果没有找到对应的DataType，抛出异常以发现系统不足
-        throw new UnsupportedOperationException(
-            String.format("Unsupported PostgreSQL type: %s. Please add mapping for this type in DataType configuration.",
-                         field.getTypeName()));
-    }
-
-    @Override
-    public Field fromStandardType(Field standardField) {
-        // 将Java标准类型转换为PostgreSQL特定类型
-        String targetTypeName = getTargetTypeName(standardField.getTypeName());
-        return new Field(standardField.getName(),
-                       targetTypeName,
-                       getTargetTypeCode(targetTypeName),
-                       standardField.isPk(),
-                       standardField.getColumnSize(),
-                       standardField.getRatio());
-    }
-
-    /**
-     * 获取标准类型编码
-     */
-    private int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
-        // 使用枚举的ordinal值作为类型编码
-        return dataTypeEnum.ordinal();
-    }
-
-    /**
-     * 获取目标类型名称（将Java标准类型转换为PostgreSQL特定类型）
-     */
-    private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName);
-    }
-
-    /**
-     * 获取目标类型编码
-     */
-    private int getTargetTypeCode(String targetTypeName) {
-        // 这里可以根据需要实现类型编码映射
-        // 暂时返回0，实际使用时可能需要更精确的映射
-        return 0;
+    protected String getDatabaseName() {
+        return "PostgreSQL";
     }
 }

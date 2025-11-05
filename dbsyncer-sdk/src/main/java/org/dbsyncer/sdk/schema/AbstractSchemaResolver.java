@@ -3,7 +3,9 @@
  */
 package org.dbsyncer.sdk.schema;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.springframework.util.Assert;
 
@@ -18,16 +20,80 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class AbstractSchemaResolver implements SchemaResolver {
 
     private final Map<String, DataType> mapping = new ConcurrentHashMap<>();
+    protected final Map<String, String> standardToTargetTypeMap = new ConcurrentHashMap<>();
 
     public AbstractSchemaResolver() {
+        initStandardToTargetTypeMapping(standardToTargetTypeMap);
         initDataTypeMapping(mapping);
         Assert.notEmpty(mapping, "At least one data type is required.");
     }
 
+    /**
+     * 初始化标准类型到目标数据库类型的映射表
+     *
+     * @param mapping 映射表，由子类填充
+     */
+    protected abstract void initStandardToTargetTypeMapping(Map<String, String> mapping);
+
+    /**
+     * 初始化数据类型映射
+     *
+     * @param mapping 映射表，由子类填充
+     */
     protected abstract void initDataTypeMapping(Map<String, DataType> mapping);
+
+    /**
+     * 获取数据库名称，用于异常消息
+     *
+     * @return 数据库名称
+     */
+    protected abstract String getDatabaseName();
 
     protected DataType getDataType(Field field) {
         return mapping.get(field.getTypeName());
+    }
+
+    /**
+     * 获取标准类型编码
+     *
+     * @param dataTypeEnum 数据类型枚举
+     * @return 类型编码
+     */
+    protected int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
+        return dataTypeEnum.ordinal();
+    }
+
+    /**
+     * 获取目标类型编码
+     *
+     * @param targetTypeName 目标类型名称
+     * @return 类型编码（默认返回0）
+     */
+    protected int getTargetTypeCode(String targetTypeName) {
+        // 这里可以根据需要实现类型编码映射
+        // 暂时返回0，实际使用时可能需要更精确的映射
+        return 0;
+    }
+
+    /**
+     * 获取目标类型名称（将标准类型转换为目标数据库类型）
+     *
+     * @param standardTypeName 标准类型名称
+     * @return 目标数据库类型名称
+     */
+    protected String getTargetTypeName(String standardTypeName) {
+        return standardToTargetTypeMap.getOrDefault(standardTypeName, getDefaultTargetTypeName(standardTypeName));
+    }
+
+    /**
+     * 获取默认目标类型名称（当映射表中不存在时）
+     * 子类可以重写此方法以提供特殊处理（如 SQLite 的 toUpperCase()）
+     *
+     * @param standardTypeName 标准类型名称
+     * @return 默认目标类型名称
+     */
+    protected String getDefaultTargetTypeName(String standardTypeName) {
+        return standardTypeName;
     }
 
     @Override
@@ -46,6 +112,67 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
             return dataType.convertValue(val, field);
         }
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
+    }
+
+    @Override
+    public Field toStandardType(Field field) {
+        // 利用现有的DataType映射机制进行类型转换
+        DataType dataType = getDataType(field);
+        if (dataType != null) {
+            // 使用DataType的getType()方法获取标准类型
+            return new Field(field.getName(),
+                    dataType.getType().name(),
+                    getStandardTypeCode(dataType.getType()),
+                    field.isPk(),
+                    field.getColumnSize(),
+                    field.getRatio());
+        }
+
+        // 如果没有找到对应的DataType，抛出异常以发现系统不足
+        throw new UnsupportedOperationException(
+                String.format("Unsupported %s type: %s. Please add mapping for this type in DataType configuration.",
+                        getDatabaseName(), field.getTypeName()));
+    }
+
+    @Override
+    public Field fromStandardType(Field standardField) {
+        // 将Java标准类型转换为目标数据库特定类型
+        String targetTypeName = getTargetTypeName(standardField.getTypeName());
+        return new Field(standardField.getName(),
+                targetTypeName,
+                getTargetTypeCode(targetTypeName),
+                standardField.isPk(),
+                standardField.getColumnSize(),
+                standardField.getRatio());
+    }
+
+    @Override
+    public Field toStandardTypeFromDDL(Field field, ColDataType colDataType) {
+        // 利用现有的DataType映射机制进行类型转换
+        DataType dataType = getDataType(field);
+        if (dataType != null) {
+            // 使用DataType的getType()方法获取标准类型
+            Field result = new Field(field.getName(),
+                    dataType.getType().name(),
+                    getStandardTypeCode(dataType.getType()),
+                    field.isPk(),
+                    field.getColumnSize(),
+                    field.getRatio());
+
+            // 让具体的DataType处理DDL参数，获取尺寸和精度信息
+            Field ddlField = dataType.handleDDLParameters(colDataType);
+
+            // 将DDL参数处理结果合并到最终结果中
+            result.setColumnSize(ddlField.getColumnSize());
+            result.setRatio(ddlField.getRatio());
+
+            return result;
+        }
+
+        // 如果没有找到对应的DataType，抛出异常以发现系统不足
+        throw new UnsupportedOperationException(
+                String.format("Unsupported %s type: %s. Please add mapping for this type in DataType configuration.",
+                        getDatabaseName(), field.getTypeName()));
     }
 
 }
