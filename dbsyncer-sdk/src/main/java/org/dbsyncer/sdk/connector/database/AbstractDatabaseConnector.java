@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2023 All Rights Reserved.
- */
 package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.model.Result;
@@ -49,10 +46,6 @@ import java.util.stream.Collectors;
 
 /**
  * 关系型数据库连接器实现
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-08 15:17
  */
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
@@ -158,7 +151,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     String columnName = columnMetadata.getString("COLUMN_NAME");
                     int columnType = columnMetadata.getInt("DATA_TYPE");
                     String typeName = columnMetadata.getString("TYPE_NAME");
-                    int columnSize = Math.max(0, columnMetadata.getInt("COLUMN_SIZE"));
+                    long columnSize = Math.max(0L, columnMetadata.getLong("COLUMN_SIZE"));
                     int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
                     fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
                 }

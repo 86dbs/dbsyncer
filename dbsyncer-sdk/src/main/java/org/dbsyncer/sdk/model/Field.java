@@ -39,7 +39,7 @@ public class Field {
     /**
      * 字段大小
      */
-    private int columnSize;
+    private long columnSize;
 
     /**
      * 字段比例
@@ -62,7 +62,7 @@ public class Field {
         this.pk = pk;
     }
 
-    public Field(String name, String typeName, int type, boolean pk,int columnSize,int ratio) {
+    public Field(String name, String typeName, int type, boolean pk, long columnSize, int ratio) {
         this.name = name;
         this.typeName = typeName.toUpperCase();
         this.type = type;
@@ -111,11 +111,11 @@ public class Field {
         this.labelName = labelName;
     }
 
-    public int getColumnSize() {
+    public long getColumnSize() {
         return columnSize;
     }
 
-    public void setColumnSize(int columnSize) {
+    public void setColumnSize(long columnSize) {
         this.columnSize = columnSize;
     }
 
