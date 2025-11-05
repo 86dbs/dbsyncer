@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.sdk.parser.ddl.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
@@ -8,6 +5,8 @@ import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 
 /**
  * 源数据库到中间表示转换器接口
+ * 
+ * 建议使用AbstractSourceToIRConverter抽象类作为基类，以简化实现
  */
 public interface SourceToIRConverter {
     

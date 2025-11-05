@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlite.schema;
 
 import org.dbsyncer.connector.sqlite.SQLiteException;
@@ -13,10 +10,6 @@ import java.util.stream.Stream;
 
 /**
  * SQLite标准数据类型解析器
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
  */
 public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
 

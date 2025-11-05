@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlserver.schema;
 
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -13,10 +10,6 @@ import java.util.stream.Stream;
 
 /**
  * SqlServer标准数据类型解析器
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2025-04-05
  */
 public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
 

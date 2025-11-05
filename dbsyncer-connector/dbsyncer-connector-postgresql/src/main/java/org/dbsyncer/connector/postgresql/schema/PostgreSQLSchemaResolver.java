@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.postgresql.schema;
 
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
@@ -26,10 +23,6 @@ import java.util.stream.Stream;
 
 /**
  * PostgreSQL标准数据类型解析器
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 23:01
  */
 public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
 
