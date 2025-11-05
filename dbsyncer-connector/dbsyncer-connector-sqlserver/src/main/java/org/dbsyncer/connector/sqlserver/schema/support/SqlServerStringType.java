@@ -1,12 +1,10 @@
 package org.dbsyncer.connector.sqlserver.schema.support;
 
-import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,21 +50,4 @@ public final class SqlServerStringType extends StringType {
         return super.convert(val, field);
     }
     
-    @Override
-    public Field handleDDLParameters(ColDataType colDataType) {
-        Field result = new Field();
-        
-        // 处理字符串类型，根据参数设置columnSize
-        List<String> argsList = colDataType.getArgumentsStringList();
-        if (argsList != null && !argsList.isEmpty() && argsList.size() >= 1) {
-            try {
-                int size = Integer.parseInt(argsList.get(0));
-                result.setColumnSize(size);
-            } catch (NumberFormatException e) {
-                // 忽略解析错误，使用默认值
-            }
-        }
-        
-        return result;
-    }
 }

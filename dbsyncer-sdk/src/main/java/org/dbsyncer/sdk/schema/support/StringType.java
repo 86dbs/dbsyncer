@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.schema.support;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -9,6 +10,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public abstract class StringType extends AbstractDataType<String> {
 
@@ -68,5 +70,24 @@ public abstract class StringType extends AbstractDataType<String> {
         }
 
         return throwUnsupportedException(val, field);
+    }
+
+    @Override
+    public Field handleDDLParameters(ColDataType colDataType) {
+        // 调用父类方法设置基础信息
+        Field result = super.handleDDLParameters(colDataType);
+
+        // 处理字符串类型，根据参数设置columnSize
+        List<String> argsList = colDataType.getArgumentsStringList();
+        if (argsList != null && !argsList.isEmpty() && argsList.size() >= 1) {
+            try {
+                int size = Integer.parseInt(argsList.get(0));
+                result.setColumnSize(size);
+            } catch (NumberFormatException e) {
+                // 忽略解析错误，使用默认值
+            }
+        }
+
+        return result;
     }
 }
