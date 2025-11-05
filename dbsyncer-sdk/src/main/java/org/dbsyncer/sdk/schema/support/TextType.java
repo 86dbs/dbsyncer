@@ -4,22 +4,26 @@ import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
 
-public abstract class DoubleType extends AbstractDataType<Double> {
+public abstract class TextType extends AbstractDataType<String> {
 
-    protected DoubleType() {
-        super(Double.class);
+    protected TextType() {
+        super(String.class);
     }
 
     @Override
     public DataTypeEnum getType() {
-        return DataTypeEnum.DOUBLE;
+        return DataTypeEnum.TEXT;
     }
 
     @Override
     protected Object convert(Object val, Field field) {
-        if (val instanceof Number) {
-            return ((Number) val).doubleValue();
+        if (val instanceof String) {
+            return val;
+        }
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
         }
         return throwUnsupportedException(val, field);
     }
 }
+

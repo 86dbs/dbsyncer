@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -12,12 +9,11 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-/**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-21 23:56
- */
 public abstract class DateType extends AbstractDataType<Date> {
+
+    protected DateType() {
+        super(Date.class);
+    }
 
     @Override
     public DataTypeEnum getType() {

@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.sdk.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -13,16 +10,27 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-21 23:56
- */
 public abstract class StringType extends AbstractDataType<String> {
+
+    protected StringType() {
+        super(String.class);
+    }
 
     @Override
     public DataTypeEnum getType() {
         return DataTypeEnum.STRING;
+    }
+
+    @Override
+    protected String merge(Object val, Field field) {
+        if (val instanceof String) {
+            return (String) val;
+        }
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
+        }
+        // 对于其他类型，转换为字符串
+        return String.valueOf(val);
     }
 
     @Override
