@@ -1,7 +1,7 @@
 package org.dbsyncer.connector.postgresql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.TextType;
+import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -9,8 +9,12 @@ import java.util.stream.Collectors;
 
 /**
  * PostgreSQL TEXT类型支持
+ * <p>
+ * PostgreSQL的TEXT类型默认支持UTF-8，
+ * 因此标准化为UNICODE_TEXT以确保数据安全性和跨数据库兼容性。
+ * </p>
  */
-public final class PostgreSQLTextType extends TextType {
+public final class PostgreSQLTextType extends UnicodeTextType {
 
     private enum TypeEnum {
         TEXT("text");

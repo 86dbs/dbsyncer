@@ -2,7 +2,7 @@ package org.dbsyncer.connector.mysql.schema.support;
 
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.TextType;
+import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -17,8 +17,12 @@ import java.util.stream.Collectors;
  * - MEDIUMTEXT: 最大16,777,215字节 (16MB)
  * - LONGTEXT: 最大4,294,967,295字节 (4GB)
  * </p>
+ * <p>
+ * MySQL的TEXT类型默认支持UTF-8（通过字符集配置），
+ * 因此标准化为UNICODE_TEXT以确保数据安全性和跨数据库兼容性。
+ * </p>
  */
-public final class MySQLTextType extends TextType {
+public final class MySQLTextType extends UnicodeTextType {
 
     /**
      * MySQL TEXT类型容量常量（字节数）
