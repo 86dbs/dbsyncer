@@ -56,17 +56,16 @@
             <artifactId>commons-io</artifactId>
         </dependency>
 
-        <!-- fastjson2 -->
+        <!-- Jackson for JSON serialization (replacing fastjson2) -->
         <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         
-        <!-- fastjson2 annotation -->
+        <!-- Jackson annotations -->
         <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2-extension</artifactId>
-            <version>${fastjson2.version}</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
         </dependency>
 
         <!-- junit -->

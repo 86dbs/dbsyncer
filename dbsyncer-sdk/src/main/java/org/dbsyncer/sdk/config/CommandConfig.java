@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Filter;
@@ -56,6 +57,13 @@ public class CommandConfig {
         return connectorInstance.getConfig();
     }
 
+    /**
+     * 获取连接器实例
+     * 注意：此方法不应被序列化，因为 ConnectorInstance 包含 Connection 对象，不应被序列化
+     *
+     * @return
+     */
+    @JsonIgnore
     public ConnectorInstance getConnectorInstance() {
         return connectorInstance;
     }

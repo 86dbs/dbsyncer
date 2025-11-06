@@ -289,7 +289,7 @@ public class TableGroupChecker extends AbstractChecker {
      * @return
      */
     private void setFieldMapping(TableGroup tableGroup, String json) {
-        List<Map> mappings = JsonUtil.parseList(json);
+        List<Map<String, Object>> mappings = JsonUtil.parseList(json);
         if (null == mappings) {
             throw new BizException("映射关系不能为空");
         }
@@ -298,7 +298,7 @@ public class TableGroupChecker extends AbstractChecker {
         final Map<String, Field> tMap = PickerUtil.convert2Map(tableGroup.getTargetTable().getColumn());
         int length = mappings.size();
         List<FieldMapping> list = new ArrayList<>();
-        Map row = null;
+        Map<String, Object> row = null;
         Field s = null;
         Field t = null;
         for (int i = 0; i < length; i++) {

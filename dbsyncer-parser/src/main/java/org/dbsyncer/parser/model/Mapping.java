@@ -1,6 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.ProfileComponent;
@@ -70,7 +70,7 @@ public class Mapping extends AbstractConfigModel {
     // 数据订正
     private boolean recoverData = true;
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public ProfileComponent profileComponent;
 
 
@@ -180,18 +180,18 @@ public class Mapping extends AbstractConfigModel {
         this.recoverData = recoverData;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public Meta getMeta() {
         return profileComponent.getMeta(this.metaId);
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public void resetMetaState() {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.resetState();
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public void updateMata(String metaSnapshot) {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.updateSnapshot(metaSnapshot);
@@ -199,7 +199,7 @@ public class Mapping extends AbstractConfigModel {
 
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public Mapping copy(SnowflakeIdWorker snowflakeIdWorker) {
         String json = JsonUtil.objToJson(this);
         Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);

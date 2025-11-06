@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.web.controller.index;
 
-import com.alibaba.fastjson2.JSON;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.ProjectGroupService;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
@@ -71,7 +71,7 @@ public class IndexController {
             model.put("mappings", projectGroup.getMappings());
             model.put("projectGroupId", projectGroupId);
             model.put("projectGroups", projectGroupService.getProjectGroupAll());
-            return JSON.toJSONString(projectGroup);
+            return JsonUtil.objToJson(projectGroup);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return "";
