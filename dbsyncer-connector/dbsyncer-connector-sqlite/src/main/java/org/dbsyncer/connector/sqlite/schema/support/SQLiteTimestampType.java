@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.schema.support.TimestampType;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite TIMESTAMP类型支持
@@ -23,13 +23,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteTimestampType extends TimestampType {
 
-    private enum TypeEnum {
-        TIMESTAMP    // 时间戳类型（功能与 DATETIME 相同）
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TIMESTAMP"));
     }
 
     @Override

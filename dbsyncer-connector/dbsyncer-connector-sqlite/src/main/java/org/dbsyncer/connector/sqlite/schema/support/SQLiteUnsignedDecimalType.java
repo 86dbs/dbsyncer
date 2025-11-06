@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.schema.support.UnsignedDecimalType;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite 无符号精确小数类型支持
@@ -26,24 +26,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteUnsignedDecimalType extends UnsignedDecimalType {
 
-    private enum TypeEnum {
-        // SQLite 不区分有符号/无符号，但为了支持标准类型转换，我们识别明确标记为 UNSIGNED 的类型
-        DECIMAL_UNSIGNED("DECIMAL UNSIGNED");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("DECIMAL UNSIGNED"));
     }
 
     @Override

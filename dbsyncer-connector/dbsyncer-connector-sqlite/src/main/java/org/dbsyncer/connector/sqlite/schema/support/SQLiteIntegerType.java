@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.LongType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite INTEGER 存储类 - 整数亲和性
@@ -35,23 +35,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteIntegerType extends LongType {
 
-    private enum TypeEnum {
-        // INTEGER 亲和性类型
-        INTEGER,     // 整数类型（原生存储类）
-        INT,         // 整数别名
-        TINYINT,     // 小整数
-        SMALLINT,    // 小整数
-        MEDIUMINT,    // 中等整数
-        BIGINT,      // 大整数
-        INT2,        // 2字节整数（功能与 SMALLINT 相同）
-        INT8,        // 8字节整数（功能与 BIGINT 相同）
-        // 其他映射到 INTEGER 亲和性的类型
-        BOOLEAN      // 布尔值（存储为 0 或 1）
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("INTEGER", "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT8", "BOOLEAN"));
     }
 
     @Override

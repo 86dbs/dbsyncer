@@ -11,22 +11,17 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Oracle Unicode字符串类型支持
  */
 public final class OracleUnicodeStringType extends UnicodeStringType {
 
-    private enum TypeEnum {
-        NVARCHAR2, // Unicode可变长度字符串
-        NCHAR      // Unicode固定长度字符串
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("NVARCHAR2", "NCHAR"));
     }
 
     @Override

@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.StringType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * MySQL GEOMETRY类型支持
@@ -18,20 +18,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLGeometryType extends StringType {
 
-    private enum TypeEnum {
-        GEOMETRY,
-        POINT,
-        LINESTRING,
-        POLYGON,
-        MULTIPOINT,
-        MULTILINESTRING,
-        MULTIPOLYGON,
-        GEOMETRYCOLLECTION
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("GEOMETRY", "POINT", "LINESTRING", "POLYGON", "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION"));
     }
 
     @Override

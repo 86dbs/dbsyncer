@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * MySQL TEXT类型支持
@@ -35,16 +35,9 @@ public final class MySQLTextType extends UnicodeTextType {
      */
     private static final long LONGTEXT_SIZE = 4294967295L;
 
-    private enum TypeEnum {
-        TINYTEXT,
-        TEXT,
-        MEDIUMTEXT,
-        LONGTEXT
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT"));
     }
 
     @Override

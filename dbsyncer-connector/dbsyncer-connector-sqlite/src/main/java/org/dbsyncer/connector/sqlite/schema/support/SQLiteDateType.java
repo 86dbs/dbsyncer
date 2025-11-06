@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.schema.support.DateType;
 
 import java.sql.Date;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite DATE类型支持
@@ -26,14 +26,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteDateType extends DateType {
 
-    private enum TypeEnum {
-        DATE,        // 日期类型
-        DATETIME     // 日期时间类型（功能与 TIMESTAMP 相同）
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("DATE", "DATETIME"));
     }
 
     @Override

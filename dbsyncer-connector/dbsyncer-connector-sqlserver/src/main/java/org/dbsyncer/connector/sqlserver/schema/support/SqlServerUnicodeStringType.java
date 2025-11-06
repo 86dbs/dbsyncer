@@ -5,22 +5,17 @@ import org.dbsyncer.sdk.schema.support.UnicodeStringType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server Unicode字符串类型支持
  */
 public final class SqlServerUnicodeStringType extends UnicodeStringType {
 
-    private enum TypeEnum {
-        NCHAR,          // 固定长度 Unicode 字符
-        NVARCHAR        // 可变长度 Unicode 字符
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("NCHAR", "NVARCHAR"));
     }
 
     @Override

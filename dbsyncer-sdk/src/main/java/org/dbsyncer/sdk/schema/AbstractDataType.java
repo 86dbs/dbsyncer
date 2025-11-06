@@ -6,11 +6,6 @@ package org.dbsyncer.sdk.schema;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
 
-/**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-24 20:58
- */
 public abstract class AbstractDataType<T> implements DataType {
 
     private final Class<T> parameterClazz;

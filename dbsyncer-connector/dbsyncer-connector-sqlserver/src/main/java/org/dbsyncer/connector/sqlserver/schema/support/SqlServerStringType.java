@@ -5,22 +5,17 @@ import org.dbsyncer.sdk.schema.support.StringType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server字符串类型支持
  */
 public final class SqlServerStringType extends StringType {
 
-    private enum TypeEnum {
-        CHAR,           // 固定长度字符
-        VARCHAR         // 可变长度字符
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("CHAR", "VARCHAR"));
     }
 
     @Override

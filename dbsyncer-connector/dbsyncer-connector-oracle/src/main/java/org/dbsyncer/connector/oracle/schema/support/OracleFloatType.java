@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.FloatType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -17,23 +17,9 @@ import java.util.stream.Collectors;
  */
 public final class OracleFloatType extends FloatType {
 
-    private enum TypeEnum {
-        BINARY_FLOAT("BINARY_FLOAT");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("BINARY_FLOAT"));
     }
 
     @Override

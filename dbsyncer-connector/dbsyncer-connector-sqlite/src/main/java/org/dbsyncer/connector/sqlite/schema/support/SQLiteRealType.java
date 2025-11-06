@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DoubleType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite REAL 存储类 - 实数亲和性
@@ -32,24 +32,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteRealType extends DoubleType {
 
-    private enum TypeEnum {
-        // REAL 亲和性类型
-        REAL,        // 实数类型（原生存储类）
-        DOUBLE,      // 双精度浮点
-        FLOAT,       // 浮点类型
-        // NUMERIC 亲和性类型（映射到 REAL）
-        NUMERIC,     // 数值类型
-        DECIMAL      // 小数类型
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        Set<String> typeNames = Arrays.stream(TypeEnum.values())
-                .map(Enum::name)
-                .collect(Collectors.toSet());
-        // DOUBLE PRECISION 包含空格，需要单独添加
-        typeNames.add("DOUBLE PRECISION");
-        return typeNames;
+        return new HashSet<>(Arrays.asList("REAL", "DOUBLE", "FLOAT", "NUMERIC", "DECIMAL", "DOUBLE PRECISION"));
     }
 
     @Override

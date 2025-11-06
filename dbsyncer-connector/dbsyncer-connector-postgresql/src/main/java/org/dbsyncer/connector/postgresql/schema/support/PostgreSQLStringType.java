@@ -4,8 +4,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.UnicodeStringType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * PostgreSQL字符串类型支持
@@ -15,16 +15,9 @@ import java.util.stream.Collectors;
  * </p>
  */
 public final class PostgreSQLStringType extends UnicodeStringType {
-    private enum TypeEnum {
-        VARCHAR, // 可变长度字符串
-        CHAR,    // 固定长度字符串
-        BPCHAR   // 固定长度空白填充字符串
-        // 移除了text、json、jsonb、xml、user-defined，因为它们有专门的DataType实现类
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("VARCHAR", "CHAR", "BPCHAR"));
     }
 
     @Override

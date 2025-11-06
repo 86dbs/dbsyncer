@@ -11,22 +11,17 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Oracle字符串类型支持
  */
 public final class OracleStringType extends StringType {
 
-    private enum TypeEnum {
-        VARCHAR2,  // 可变长度字符串
-        CHAR       // 固定长度字符串
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("VARCHAR2", "CHAR"));
     }
 
     @Override

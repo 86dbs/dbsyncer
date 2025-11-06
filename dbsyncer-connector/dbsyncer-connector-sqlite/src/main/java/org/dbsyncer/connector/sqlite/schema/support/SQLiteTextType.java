@@ -4,8 +4,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite TEXT 存储类 - 文本亲和性
@@ -25,15 +25,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteTextType extends UnicodeTextType {
 
-    private enum TypeEnum {
-        // TEXT 亲和性类型 - 大文本类型
-        TEXT,        // 文本类型（原生存储类）
-        CLOB         // 字符大对象
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TEXT", "CLOB"));
     }
 
     @Override

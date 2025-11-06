@@ -5,19 +5,15 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.EnumType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class MySQLEnumType extends EnumType {
 
-    private enum TypeEnum {
-        ENUM
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("ENUM"));
     }
 
     @Override

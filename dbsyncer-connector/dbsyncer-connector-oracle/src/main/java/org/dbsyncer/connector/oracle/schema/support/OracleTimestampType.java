@@ -8,8 +8,8 @@ import org.dbsyncer.sdk.schema.support.TimestampType;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -18,25 +18,9 @@ import java.util.stream.Collectors;
  */
 public final class OracleTimestampType extends TimestampType {
 
-    private enum TypeEnum {
-        TIMESTAMP("TIMESTAMP(6)"),
-        TIMESTAMP_WITH_TIME_ZONE("TIMESTAMP(6) WITH TIME ZONE"),
-        TIMESTAMP_WITH_LOCAL_TIME_ZONE("TIMESTAMP(6) WITH LOCAL TIME ZONE");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TIMESTAMP(6)", "TIMESTAMP(6) WITH TIME ZONE", "TIMESTAMP(6) WITH LOCAL TIME ZONE"));
     }
 
     @Override

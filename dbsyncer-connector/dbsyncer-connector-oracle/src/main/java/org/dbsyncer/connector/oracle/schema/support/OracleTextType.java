@@ -12,8 +12,8 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Oracle TEXT类型支持
@@ -30,14 +30,9 @@ public final class OracleTextType extends TextType {
      */
     private static final long CLOB_SIZE = 4294967295L; // 4GB
 
-    private enum TypeEnum {
-        CLOB
-        // NCLOB 已移至 OracleUnicodeTextType
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("CLOB"));
     }
 
     @Override

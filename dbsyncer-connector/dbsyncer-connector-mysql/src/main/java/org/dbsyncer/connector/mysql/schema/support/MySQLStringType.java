@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.schema.support.UnicodeStringType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * MySQL字符串类型支持
@@ -17,14 +17,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLStringType extends UnicodeStringType {
 
-    private enum TypeEnum {
-        CHAR, // 固定长度，最多255个字符
-        VARCHAR; // 固定长度，最多65535个字符，64K
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("CHAR", "VARCHAR"));
     }
 
     @Override

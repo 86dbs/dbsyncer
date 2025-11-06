@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite BLOB 存储类 - 二进制亲和性
@@ -28,14 +28,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteBlobType extends BytesType {
 
-    private enum TypeEnum {
-        // BLOB 亲和性类型
-        BLOB         // 二进制大对象（原生存储类）
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("BLOB"));
     }
 
     @Override

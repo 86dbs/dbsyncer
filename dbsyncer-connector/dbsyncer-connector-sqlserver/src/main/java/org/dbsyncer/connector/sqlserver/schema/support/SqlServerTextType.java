@@ -6,8 +6,8 @@ import org.dbsyncer.sdk.schema.support.TextType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server TEXT类型支持
@@ -28,14 +28,9 @@ public final class SqlServerTextType extends TextType {
      */
     private static final long TEXT_SIZE = 2147483647L; // 2^31-1 (约2GB)
 
-    private enum TypeEnum {
-        TEXT
-        // NTEXT 已移至 SqlServerUnicodeTextType
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TEXT"));
     }
 
     @Override

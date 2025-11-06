@@ -4,21 +4,17 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.XmlType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Oracle XML类型支持（使用XMLTYPE存储）
  */
 public final class OracleXmlType extends XmlType {
 
-    private enum TypeEnum {
-        XMLTYPE
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("XMLTYPE"));
     }
 
     @Override

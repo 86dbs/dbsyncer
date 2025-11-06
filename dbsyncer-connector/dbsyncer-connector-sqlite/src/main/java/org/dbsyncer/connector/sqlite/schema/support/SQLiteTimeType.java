@@ -5,8 +5,8 @@ import org.dbsyncer.sdk.schema.support.TimeType;
 
 import java.sql.Time;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite TIME类型支持
@@ -22,13 +22,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteTimeType extends TimeType {
 
-    private enum TypeEnum {
-        TIME         // 时间类型
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TIME"));
     }
 
     @Override

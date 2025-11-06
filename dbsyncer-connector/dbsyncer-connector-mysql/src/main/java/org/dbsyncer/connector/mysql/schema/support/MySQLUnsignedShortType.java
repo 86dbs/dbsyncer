@@ -4,31 +4,17 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.UnsignedShortType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * MySQL 无符号短整型支持
  */
 public final class MySQLUnsignedShortType extends UnsignedShortType {
 
-    private enum TypeEnum {
-        SMALLINT_UNSIGNED("SMALLINT UNSIGNED");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("SMALLINT UNSIGNED"));
     }
 
     @Override

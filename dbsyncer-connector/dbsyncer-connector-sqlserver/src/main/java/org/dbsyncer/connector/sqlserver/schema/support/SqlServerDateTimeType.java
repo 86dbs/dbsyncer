@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.TimestampType;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server 日期和时间类型
@@ -23,19 +23,9 @@ import java.util.stream.Collectors;
  */
 public final class SqlServerDateTimeType extends TimestampType {
 
-    private enum TypeEnum {
-        DATE,              // 日期类型 (YYYY-MM-DD)
-        TIME,              // 时间类型 (HH:MM:SS.nnnnnnn)
-        DATETIME,          // 日期时间类型 (YYYY-MM-DD HH:MM:SS.nnn)
-        DATETIME2,         // 日期时间2类型 (YYYY-MM-DD HH:MM:SS.nnnnnnn)
-        SMALLDATETIME,     // 小日期时间类型 (YYYY-MM-DD HH:MM:SS)
-        DATETIMEOFFSET,    // 日期时间偏移类型 (带时区信息)
-        TIMESTAMP          // 时间戳类型 (自动生成的唯一时间戳)
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("DATE", "TIME", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATETIMEOFFSET", "TIMESTAMP"));
     }
 
     @Override

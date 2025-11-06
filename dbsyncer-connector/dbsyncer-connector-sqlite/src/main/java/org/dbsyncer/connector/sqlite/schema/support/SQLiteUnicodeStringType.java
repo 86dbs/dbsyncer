@@ -4,8 +4,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQLite Unicode字符串类型支持
@@ -39,17 +39,9 @@ import java.util.stream.Collectors;
  */
 public final class SQLiteUnicodeStringType extends UnicodeTextType {
 
-    private enum TypeEnum {
-        // TEXT 亲和性类型 - 字符串类型
-        VARCHAR,     // 可变长度字符串
-        CHAR,        // 固定长度字符串
-        NCHAR,       // Unicode 字符串（功能与 CHAR 相同）
-        NVARCHAR     // Unicode 字符串（功能与 VARCHAR 相同）
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("VARCHAR", "CHAR", "NCHAR", "NVARCHAR"));
     }
 
     @Override

@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.LongType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -16,24 +16,9 @@ import java.util.stream.Collectors;
  * @Date 2025-06-25 23:26
  */
 public class PostgreSQLLongType extends LongType {
-    private enum TypeEnum {
-        INT8("int8"),
-        BIG_SERIAL("bigserial");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("int8", "bigserial"));
     }
 
     @Override
