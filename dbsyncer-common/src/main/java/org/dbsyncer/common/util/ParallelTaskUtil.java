@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-public abstract class ParallelProcessorUtil {
+public abstract class ParallelTaskUtil {
 
     /**
      * 默认线程池大小
