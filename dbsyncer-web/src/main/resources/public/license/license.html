@@ -27,69 +27,68 @@
         </div>
         <!-- 授权详情 -->
         <div class="card-body" style="line-height:2">
-            <div>
-                <i class="fa fa-building text-secondary"></i>
-                <label class="form-label">公司名称</label>
-                <div class="text-sm" th:text="${productInfo?.company}"></div>
-            </div>
+            <div class="grid grid-cols-2">
+                <div class="grid-cols-1">
+                    <div>
+                        <i class="fa fa-building text-secondary"></i>
+                        <label class="form-label">公司名称</label>
+                        <div class="text-sm" th:text="${productInfo?.company}"></div>
+                    </div>
+                    <div>
+                        <i class="fa fa-user text-secondary"></i>
+                        <label class="form-label">申请人</label>
+                        <div class="text-sm" th:text="${productInfo?.owner}"></div>
+                    </div>
+                    <div>
+                        <i class="fa fa-clock-o text-secondary"></i>
+                        <label class="form-label">授权时间</label>
+                        <div class="text-sm" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
+                    </div>
+                </div>
 
-            <div>
-                <i class="fa fa-user text-secondary"></i>
-                <label class="form-label">申请人</label>
-                <div class="text-sm" th:text="${productInfo?.owner}"></div>
-            </div>
+                <!-- 产品列表表格 -->
+                <div class="grid-cols-1">
+                    <table class="table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>产品名称</th>
+                            <th>有效期限</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p,state : ${productInfo?.products}">
+                        <td class="text-tertiary" th:text="${state.index + 1}"></td>
+                        <!-- 正常有效 -->
+                        <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 > ${#dates.createNow()?.time}">
+                            <span class="font-medium" th:text="${p?.name}"></span>
+                            <span class="badge badge-success ml-2"><i class="fa fa-check-circle"></i> 正常</span>
+                        </td>
+                        <!-- 即将过期 -->
+                        <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 <= ${#dates.createNow()?.time}">
+                            <span class="font-medium" th:text="${p?.name}"></span>
+                            <span class="badge badge-warning ml-2" title="即将过期, 请联系星河同步官方续期"><i class="fa fa-exclamation-triangle"></i> 即将过期
+                    </span>
+                        </td>
+                        <!-- 已过期 -->
+                        <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">
+                            <span class="font-medium" th:text="${p?.name}"></span>
+                            <span class="badge badge-error ml-2" title="已过期, 请联系星河同步官方续期"><i class="fa fa-times-circle"></i> 已过期</span>
+                        </td>
+                        <td>
+                            <span class="text-sm text-secondary" th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+                        </td>
+                    </tr>
+                    </tbody>
+                    </table>
 
-            <div>
-                <i class="fa fa-clock-o text-secondary"></i>
-                <label class="form-label">授权时间</label>
-                <div class="text-sm" th:text="${#dates.format(productInfo?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></div>
+                    <div class="form-actions m-5">
+                        <button id="removeBtn" class="btn btn-outline" type="button">删除激活码</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 产品列表表格 -->
-        <table class="table">
-            <thead>
-            <tr>
-                <th></th>
-                <th>产品名称</th>
-                <th>有效期限</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="p,state : ${productInfo?.products}">
-                <td class="text-tertiary" th:text="${state.index + 1}"></td>
-                <!-- 正常有效 -->
-                <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 > ${#dates.createNow()?.time}">
-                    <span class="font-medium" th:text="${p?.name}"></span>
-                    <span class="badge badge-success ml-2">
-                        <i class="fa fa-check-circle"></i> 正常
-                    </span>
-                </td>
-                <!-- 即将过期 -->
-                <td th:if="${#dates.createNow()?.time} < ${p?.effectiveTime} and ${p?.effectiveTime} - 864000000 <= ${#dates.createNow()?.time}">
-                    <span class="font-medium" th:text="${p?.name}"></span>
-                    <span class="badge badge-warning ml-2" title="即将过期, 请联系星河同步官方续期">
-                        <i class="fa fa-exclamation-triangle"></i> 即将过期
-                    </span>
-                </td>
-                <!-- 已过期 -->
-                <td th:if="${#dates.createNow()?.time} > ${p?.effectiveTime}">
-                    <span class="font-medium" th:text="${p?.name}"></span>
-                    <span class="badge badge-error ml-2" title="已过期, 请联系星河同步官方续期">
-                        <i class="fa fa-times-circle"></i> 已过期
-                    </span>
-
-                </td>
-                <td>
-                    <span class="text-sm text-secondary" th:text="${#dates.format(p?.effectiveTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-
-        <div class="form-actions m-5">
-            <button id="removeBtn" class="btn btn-outline" type="button">删除激活码</button>
-        </div>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-2">
@@ -114,7 +113,7 @@
                         <div class="form-item">
                             <label class="form-label">公司名称</label>
                             <div class="form-control-area">
-                                <input class="form-control" type="text" name="company" maxlength="64" placeholder="请输入公司名称"/>
+                                <input class="form-control" type="text" name="company" maxlength="64" placeholder="请输入公司名称" />
                             </div>
                         </div>
 

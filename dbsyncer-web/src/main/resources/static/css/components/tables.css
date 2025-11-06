@@ -129,7 +129,6 @@
 }
 
 .table th {
-  background-color: var(--bg-tertiary);
   color: var(--text-primary);
   font-weight: 500;
   padding: var(--spacing-md);
