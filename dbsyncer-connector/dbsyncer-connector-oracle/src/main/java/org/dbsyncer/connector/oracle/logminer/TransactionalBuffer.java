@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.Map;
  * @Date 2023-12-09 20:26
  */
 public class TransactionalBuffer {
-    private final Logger LOGGER = LoggerFactory.getLogger(TransactionalBuffer.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Map<String, Transaction> transactions;
     private BigInteger lastCommittedScn;
 
@@ -83,7 +82,7 @@ public class TransactionalBuffer {
         BigInteger smallestScn = calculateSmallestScn();
 
         if (committedScn > commitScn.longValue() || lastCommittedScn.longValue() > commitScn.longValue()) {
-            LOGGER.warn("txId {} already commit, ignore.", txId);
+            logger.warn("txId {} already commit, ignore.", txId);
             return false;
         }
 
@@ -92,10 +91,9 @@ public class TransactionalBuffer {
             try {
                 callback.execute(smallestScn, commitScn, --counter);
             } catch (InterruptedException e) {
-                LOGGER.error(e.getMessage(), e);
+                logger.error(e.getMessage(), e);
             }
         }
-
         lastCommittedScn = commitScn;
         return true;
     }
