@@ -210,17 +210,16 @@ function createTimer($projectGroupSelect) {
 }
 
 
-function refreshMappingList($projectGroupSelect) {
+function refreshMappingList() {
 
      doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
             if (data.success == true) {
 
                 if (timer2 == null) {
                     timer2 = setInterval(function () {
+                        var projectGroupId = $("#projectGroup").val();
+                        console.log(projectGroupId);
                         // 加载页面
-                        //var projectGroupId = $projectGroupSelect.selectpicker('val');
-                        var projectGroupId = $projectGroupSelect;
-                        projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
                         $.ajax({
                                url: '/index/mappingdata?projectGroupId='+ projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取驱动列表的接口
                                type: 'GET',
@@ -262,6 +261,7 @@ function refreshMappingList($projectGroupSelect) {
                                            if(stateVal == 0){
                                                 stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
                                            }else if(stateVal == 1){
+                                                stateHtmlContent += '<span class="running-through-rate well-sign-green">✔</span>';
                                                 stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
                                            }else if(stateVal == 2){
                                                 stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
@@ -369,11 +369,9 @@ $(function () {
     // 初始化select插件
     //initSelectIndex($(".select-control"));
     bindAddProjectGroup();
-    var $projectGroupSelect = $("#projectGroup").val();
 
-   // createTimer($projectGroupSelect);
    //异步刷新  同步进度 部分HTML
-    refreshMappingList($projectGroupSelect);
+    refreshMappingList();
 
     bindAddConnector();
     bindEditConnector();
