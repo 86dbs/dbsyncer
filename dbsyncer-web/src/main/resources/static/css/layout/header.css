@@ -117,49 +117,6 @@ header.bg-white {
   margin-right: var(--spacing-xl);
 }
 
-/* 搜索框区域 */
-.search {
-  flex: 1;
-  max-width: 400px;
-  margin-right: var(--spacing-lg);
-}
-
-.search-input {
-  width: 100%;
-  height: 36px;
-  padding: 0 var(--spacing-md) 0 40px;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  background-color: var(--bg-secondary);
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  transition: all var(--transition-fast);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  background-color: var(--bg-primary);
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-}
-
-.search-input::placeholder {
-  color: var(--text-tertiary);
-}
-
-.search-wrapper {
-  position: relative;
-}
-
-.search-icon {
-  position: absolute;
-  left: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
-}
-
 /* 右侧操作区域 */
 .header-actions {
   display: flex;

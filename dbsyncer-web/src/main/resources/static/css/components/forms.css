@@ -454,7 +454,6 @@ select.form-control.is-invalid,
   padding: 0 48px 0 48px;
   border: 1px solid rgba(22, 93, 255, 0.2);
   border-radius: 12px;
-  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   color: var(--text-primary);
   font-size: var(--font-size-sm);
   transition: all var(--transition-normal);
@@ -470,13 +469,11 @@ select.form-control.is-invalid,
 .search-input:hover {
   border-color: rgba(22, 93, 255, 0.35);
   box-shadow: 0 4px 12px rgba(22, 93, 255, 0.12);
-  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
 }
 
 .search-input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.15), 0 6px 20px rgba(22, 93, 255, 0.2);
-  background: linear-gradient(135deg, #ffffff 0%, #f0f5ff 100%);
 }
 
 .search-input:focus::placeholder {
