@@ -13,6 +13,21 @@ import java.util.stream.Collectors;
 /**
  * SQLite INTEGER 存储类 - 整数亲和性
  * 支持所有整数相关的类型声明
+ * <p>
+ * <b>类型分析：</b>
+ * <ul>
+ *   <li><b>INTEGER</b> - 原生存储类。有符号整数，存储为 1、2、3、4、6 或 8 字节，取决于值的大小</li>
+ *   <li><b>INT</b> - 非原生类型，映射到 INTEGER 亲和性。INTEGER 的别名</li>
+ *   <li><b>TINYINT</b> - 非原生类型，映射到 INTEGER 亲和性。小整数（通常 -128 到 127）</li>
+ *   <li><b>SMALLINT</b> - 非原生类型，映射到 INTEGER 亲和性。小整数（通常 -32768 到 32767）</li>
+ *   <li><b>MEDIUMINT</b> - 非原生类型，映射到 INTEGER 亲和性。中等整数（通常 -8388608 到 8388607）</li>
+ *   <li><b>BIGINT</b> - 非原生类型，映射到 INTEGER 亲和性。大整数（通常 -9223372036854775808 到 9223372036854775807）</li>
+ *   <li><b>INT2</b> - 非原生类型，映射到 INTEGER 亲和性。2字节整数（功能与 SMALLINT 相同）</li>
+ *   <li><b>INT8</b> - 非原生类型，映射到 INTEGER 亲和性。8字节整数（功能与 BIGINT 相同）</li>
+ *   <li><b>BOOLEAN</b> - 非原生类型，映射到 INTEGER 或 NUMERIC 亲和性。布尔值，存储为 0 或 1</li>
+ * </ul>
+ * 所有类型最终存储为 INTEGER 存储类，SQLite 会根据值的大小自动选择存储字节数。
+ * </p>
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -22,12 +37,14 @@ public final class SQLiteIntegerType extends LongType {
 
     private enum TypeEnum {
         // INTEGER 亲和性类型
-        INTEGER,     // 整数类型
+        INTEGER,     // 整数类型（原生存储类）
         INT,         // 整数别名
         TINYINT,     // 小整数
         SMALLINT,    // 小整数
-        MEDIUMINT,   // 中等整数
+        MEDIUMINT,    // 中等整数
         BIGINT,      // 大整数
+        INT2,        // 2字节整数（功能与 SMALLINT 相同）
+        INT8,        // 8字节整数（功能与 BIGINT 相同）
         // 其他映射到 INTEGER 亲和性的类型
         BOOLEAN      // 布尔值（存储为 0 或 1）
     }

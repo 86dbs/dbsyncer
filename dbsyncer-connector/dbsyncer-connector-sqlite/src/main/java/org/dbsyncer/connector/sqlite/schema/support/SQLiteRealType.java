@@ -13,6 +13,18 @@ import java.util.stream.Collectors;
 /**
  * SQLite REAL 存储类 - 实数亲和性
  * 支持所有浮点数相关的类型声明
+ * <p>
+ * <b>类型分析：</b>
+ * <ul>
+ *   <li><b>REAL</b> - 原生存储类。浮点数，存储为 8 字节的 IEEE 浮点数</li>
+ *   <li><b>DOUBLE</b> - 非原生类型，映射到 REAL 亲和性。双精度浮点数</li>
+ *   <li><b>DOUBLE PRECISION</b> - 非原生类型，映射到 REAL 亲和性。双精度浮点数（功能与 DOUBLE 相同）</li>
+ *   <li><b>FLOAT</b> - 非原生类型，映射到 REAL 亲和性。浮点类型</li>
+ *   <li><b>NUMERIC</b> - 非原生类型，映射到 NUMERIC 亲和性（实际存储为 REAL）。数值类型，支持精确小数</li>
+ *   <li><b>DECIMAL</b> - 非原生类型，映射到 NUMERIC 亲和性（实际存储为 REAL）。小数类型，支持精确小数</li>
+ * </ul>
+ * REAL 和 NUMERIC 亲和性类型最终都存储为 REAL 存储类（8 字节 IEEE 浮点数）。
+ * </p>
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -22,7 +34,7 @@ public final class SQLiteRealType extends DoubleType {
 
     private enum TypeEnum {
         // REAL 亲和性类型
-        REAL,        // 实数类型
+        REAL,        // 实数类型（原生存储类）
         DOUBLE,      // 双精度浮点
         FLOAT,       // 浮点类型
         // NUMERIC 亲和性类型（映射到 REAL）
@@ -32,7 +44,12 @@ public final class SQLiteRealType extends DoubleType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        Set<String> typeNames = Arrays.stream(TypeEnum.values())
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+        // DOUBLE PRECISION 包含空格，需要单独添加
+        typeNames.add("DOUBLE PRECISION");
+        return typeNames;
     }
 
     @Override

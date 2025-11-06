@@ -1,10 +1,7 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlite.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.StringType;
+import org.dbsyncer.sdk.schema.support.UnicodeTextType;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -12,25 +9,26 @@ import java.util.stream.Collectors;
 
 /**
  * SQLite TEXT 存储类 - 文本亲和性
- * 支持所有文本相关的类型声明
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
+ * 支持所有大文本相关的类型声明
+ * <p>
+ * SQLite 默认支持 UTF-8（类似 MySQL、PostgreSQL），
+ * 因此标准化为 UNICODE_TEXT 以确保数据安全性和跨数据库兼容性。
+ * </p>
+ * <p>
+ * <b>类型分析：</b>
+ * <ul>
+ *   <li><b>TEXT</b> - 原生存储类。文本字符串，存储为 UTF-8、UTF-16BE 或 UTF-16LE 编码，支持任意长度的文本</li>
+ *   <li><b>CLOB</b> - 非原生类型，映射到 TEXT 亲和性。字符大对象，用于存储大量文本数据（功能与 TEXT 相同）</li>
+ * </ul>
+ * 所有类型最终存储为 TEXT 存储类，SQLite 不限制文本长度（受限于数据库文件大小）。
+ * </p>
  */
-public final class SQLiteTextType extends StringType {
+public final class SQLiteTextType extends UnicodeTextType {
 
     private enum TypeEnum {
-        // TEXT 亲和性类型
-        TEXT,        // 文本类型
-        VARCHAR,     // 可变长度字符串
-        CHAR,        // 固定长度字符串
-        CLOB,        // 字符大对象
-        // 其他映射到 TEXT 亲和性的类型
-        DATETIME,    // 日期时间（存储为文本）
-        DATE,        // 日期（存储为文本）
-        TIME,        // 时间（存储为文本）
-        TIMESTAMP    // 时间戳（存储为文本）
+        // TEXT 亲和性类型 - 大文本类型
+        TEXT,        // 文本类型（原生存储类）
+        CLOB         // 字符大对象
     }
 
     @Override
