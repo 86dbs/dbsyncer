@@ -359,33 +359,46 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
+  font-size: var(--font-size-sm);
+  box-shadow: 0 2px 4px rgba(22, 93, 255, 0.08);
 }
 
-.pagination-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  text-decoration: none;
+.pagination-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
+  color: var(--info-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(22, 93, 255, 0.15);
 }
 
 .pagination-btn.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: linear-gradient(135deg, #4d8bff 0%, #165DFF 100%);
   color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.25);
+  font-weight: 500;
+}
+
+.pagination-btn.active:hover {
+  background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
 }
 
 .pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  color: var(--text-disabled);
+  box-shadow: none;
 }
 
 .pagination-page {
@@ -398,29 +411,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
+  min-width: 36px;
+  height: 36px;
   padding: 0 var(--spacing-sm);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
+  border: none;
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-decoration: none;
   font-size: var(--font-size-sm);
+  box-shadow: 0 2px 4px rgba(22, 93, 255, 0.08);
 }
 
 .pagination-page-btn:hover {
-  border-color: var(--primary-color);
+  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
   color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(22, 93, 255, 0.15);
   text-decoration: none;
 }
 
 .pagination-page-btn.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: linear-gradient(135deg, #4d8bff 0%, #165DFF 100%);
   color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.25);
+  font-weight: 500;
+}
+
+.pagination-page-btn.active:hover {
+  background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
 }
 
 /* 分页省略号 */
