@@ -201,13 +201,85 @@
   white-space: nowrap;
 }
 
+/* 表格操作图标按钮 - 优化版 */
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  margin: 0 2px;
+}
+
+.table-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 查看详情按钮 */
+.table-action-btn.view {
+  color: var(--primary-color);
+  background-color: rgba(22, 93, 255, 0.08);
+}
+
+.table-action-btn.view:hover {
+  background-color: rgba(22, 93, 255, 0.15);
+  color: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
+}
+
+/* 暂停/启动按钮 */
+.table-action-btn.pause {
+  color: var(--warning-color);
+  background-color: rgba(250, 140, 22, 0.08);
+}
+
+.table-action-btn.pause:hover {
+  background-color: rgba(250, 140, 22, 0.15);
+  color: #ffc53d;
+  box-shadow: 0 2px 8px rgba(250, 140, 22, 0.2);
+}
+
+.table-action-btn.play {
+  color: var(--success-color);
+  background-color: rgba(82, 196, 26, 0.08);
+}
+
+.table-action-btn.play:hover {
+  background-color: rgba(82, 196, 26, 0.15);
+  color: #73d13d;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+}
+
+/* 删除按钮 */
+.table-action-btn.delete {
+  color: var(--error-color);
+  background-color: rgba(245, 34, 45, 0.08);
+}
+
+.table-action-btn.delete:hover {
+  background-color: rgba(245, 34, 45, 0.15);
+  color: #ff4d4f;
+  box-shadow: 0 2px 8px rgba(245, 34, 45, 0.2);
+}
+
+/* 兼容旧样式 */
 .action-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
+  border: none;
+  background-color: transparent;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
@@ -217,56 +289,47 @@
 }
 
 .action-btn:hover {
-  border-color: var(--primary-color);
   color: var(--primary-color);
   text-decoration: none;
 }
 
 .action-btn.primary {
   background-color: var(--primary-color);
-  border-color: var(--primary-color);
   color: var(--bg-primary);
 }
 
 .action-btn.primary:hover {
   background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
   color: var(--bg-primary);
 }
 
 .action-btn.success {
   background-color: var(--success-color);
-  border-color: var(--success-color);
   color: var(--bg-primary);
 }
 
 .action-btn.success:hover {
   background-color: #73d13d;
-  border-color: #73d13d;
   color: var(--bg-primary);
 }
 
 .action-btn.warning {
   background-color: var(--warning-color);
-  border-color: var(--warning-color);
   color: var(--bg-primary);
 }
 
 .action-btn.warning:hover {
   background-color: #ffc53d;
-  border-color: #ffc53d;
   color: var(--bg-primary);
 }
 
 .action-btn.danger {
   background-color: var(--error-color);
-  border-color: var(--error-color);
   color: var(--bg-primary);
 }
 
 .action-btn.danger:hover {
   background-color: #ff4d4f;
-  border-color: #ff4d4f;
   color: var(--bg-primary);
 }
 

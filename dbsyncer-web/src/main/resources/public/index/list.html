@@ -86,10 +86,13 @@
     </div>
 
     <!-- 搜索入口 -->
-    <div class="flex items-center gap-4 mb-6">
-        <div class="relative">
-            <input type="text" placeholder="搜索连接、同步任务" class="pl-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
-            <i class="fa fa-search absolute text-gray-400"></i>
+    <div class="search-container">
+        <div class="search-wrapper">
+            <i class="fa fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="搜索连接、驱动" class="search-input">
+            <span class="search-clear" id="searchClear" title="清除">
+                <i class="fa fa-times"></i>
+            </span>
         </div>
     </div>
 
@@ -186,14 +189,14 @@
                                 10分钟前
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <button class="p-1.5 text-gray-500 hover:text-primary hover:bg-primary/5 rounded" title="查看详情">
+                                <div class="flex items-center gap-1">
+                                    <button class="table-action-btn view" title="查看详情">
                                         <i class="fa fa-eye"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 hover:text-warning hover:bg-warning/5 rounded" title="暂停任务">
+                                    <button class="table-action-btn pause" title="暂停任务">
                                         <i class="fa fa-pause"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 hover:text-error hover:bg-danger/5 rounded" title="删除任务">
+                                    <button class="table-action-btn delete" title="删除任务">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </div>
@@ -213,14 +216,14 @@
                                 2小时前
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <button class="p-1.5 text-gray-500 text-primary bg-primary rounded" title="查看详情">
+                                <div class="flex items-center gap-1">
+                                    <button class="table-action-btn view" title="查看详情">
                                         <i class="fa fa-eye"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 text-success bg-success rounded" title="重启任务">
+                                    <button class="table-action-btn play" title="重启任务">
                                         <i class="fa fa-play"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 text-error bg-danger rounded" title="删除任务">
+                                    <button class="table-action-btn delete" title="删除任务">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </div>
@@ -240,14 +243,14 @@
                                 昨天 18:30
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-2">
-                                    <button class="p-1.5 text-gray-500 text-primary rounded" title="查看详情">
+                                <div class="flex items-center gap-1">
+                                    <button class="table-action-btn view" title="查看详情">
                                         <i class="fa fa-eye"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 text-success rounded" title="启动任务">
+                                    <button class="table-action-btn play" title="启动任务">
                                         <i class="fa fa-play"></i>
                                     </button>
-                                    <button class="p-1.5 text-gray-500 badge-error rounded" title="删除任务">
+                                    <button class="table-action-btn delete" title="删除任务">
                                         <i class="fa fa-trash"></i>
                                     </button>
                                 </div>
