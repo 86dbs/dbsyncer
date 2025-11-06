@@ -22,29 +22,40 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
-        mapping.put("INT", "NUMBER");
+        // 文本
         mapping.put("STRING", "VARCHAR2");
         mapping.put("UNICODE_STRING", "NVARCHAR2");
-        mapping.put("TEXT", "CLOB");
-        mapping.put("UNICODE_TEXT", "NCLOB");
-        mapping.put("XML", "XMLTYPE");
+        // 整型
+        mapping.put("BYTE", "NUMBER");
+        mapping.put("UNSIGNED_BYTE", "NUMBER"); // Oracle使用NUMBER表示所有数值类型
+        mapping.put("SHORT", "NUMBER");
+        mapping.put("UNSIGNED_SHORT", "NUMBER"); // Oracle使用NUMBER表示所有数值类型
+        mapping.put("INT", "NUMBER");
+        mapping.put("UNSIGNED_INT", "NUMBER"); // Oracle使用NUMBER表示所有数值类型
+        mapping.put("LONG", "NUMBER");
+        mapping.put("UNSIGNED_LONG", "NUMBER"); // Oracle使用NUMBER表示所有数值类型
+        // 浮点型
         mapping.put("DECIMAL", "NUMBER");
-        mapping.put("UNSIGNED_DECIMAL", "NUMBER"); // DECIMAL UNSIGNED → NUMBER（Oracle使用NUMBER表示所有数值类型）
+        mapping.put("UNSIGNED_DECIMAL", "NUMBER"); // Oracle使用NUMBER表示所有数值类型
+        mapping.put("DOUBLE", "BINARY_DOUBLE");
+        mapping.put("FLOAT", "BINARY_FLOAT");
+        // 布尔型
+        mapping.put("BOOLEAN", "NUMBER");
+        // 时间
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "DATE");
         mapping.put("TIMESTAMP", "TIMESTAMP");
-        mapping.put("BOOLEAN", "NUMBER");
-        mapping.put("BYTE", "NUMBER");
-        mapping.put("SHORT", "NUMBER");
-        mapping.put("LONG", "NUMBER");
-        // 无符号类型映射到NUMBER类型（Oracle使用NUMBER表示所有数值类型）
-        mapping.put("UNSIGNED_BYTE", "NUMBER");   // TINYINT UNSIGNED (0-255) → NUMBER
-        mapping.put("UNSIGNED_SHORT", "NUMBER"); // SMALLINT UNSIGNED (0-65535) → NUMBER
-        mapping.put("UNSIGNED_INT", "NUMBER");    // INT UNSIGNED (0-4294967295) → NUMBER
-        mapping.put("UNSIGNED_LONG", "NUMBER");   // BIGINT UNSIGNED (0-18446744073709551615) → NUMBER
-        mapping.put("FLOAT", "BINARY_FLOAT");
-        mapping.put("DOUBLE", "BINARY_DOUBLE");
+        // 二进制
         mapping.put("BYTES", "BLOB");
+        // 结构化文本
+        mapping.put("JSON", "CLOB"); // Oracle 12c+ 支持JSON，但存储为CLOB或VARCHAR2
+        mapping.put("XML", "XMLTYPE");
+        // 大文本
+        mapping.put("TEXT", "CLOB");
+        mapping.put("UNICODE_TEXT", "NCLOB");
+        // 枚举和集合
+        mapping.put("ENUM", "VARCHAR2"); // Oracle不支持ENUM，使用VARCHAR2存储
+        mapping.put("SET", "VARCHAR2"); // Oracle不支持SET，使用VARCHAR2存储
     }
 
     @Override

@@ -16,31 +16,40 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
-        mapping.put("INT", "INT");
+        // 文本
         mapping.put("STRING", "VARCHAR");
         mapping.put("UNICODE_STRING", "VARCHAR"); // MySQL的VARCHAR默认支持UTF-8
-        mapping.put("TEXT", "TEXT");
-        mapping.put("UNICODE_TEXT", "TEXT"); // MySQL的TEXT默认支持UTF-8
-        mapping.put("JSON", "JSON");
-        mapping.put("XML", "LONGTEXT");
-        mapping.put("ENUM", "ENUM");
-        mapping.put("SET", "SET");
+        // 整型
+        mapping.put("BYTE", "TINYINT");
+        mapping.put("UNSIGNED_BYTE", "TINYINT UNSIGNED");
+        mapping.put("SHORT", "SMALLINT");
+        mapping.put("UNSIGNED_SHORT", "SMALLINT UNSIGNED");
+        mapping.put("INT", "INT");
+        mapping.put("UNSIGNED_INT", "INT UNSIGNED");
+        mapping.put("LONG", "BIGINT");
+        mapping.put("UNSIGNED_LONG", "BIGINT UNSIGNED");
+        // 浮点型
         mapping.put("DECIMAL", "DECIMAL");
         mapping.put("UNSIGNED_DECIMAL", "DECIMAL UNSIGNED");
+        mapping.put("DOUBLE", "DOUBLE");
+        mapping.put("FLOAT", "FLOAT");
+        // 布尔型
+        mapping.put("BOOLEAN", "TINYINT");
+        // 时间
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "TIME");
         mapping.put("TIMESTAMP", "DATETIME");
-        mapping.put("BOOLEAN", "TINYINT");
-        mapping.put("BYTE", "TINYINT");
-        mapping.put("SHORT", "SMALLINT");
-        mapping.put("LONG", "BIGINT");
-        mapping.put("UNSIGNED_BYTE", "TINYINT UNSIGNED");
-        mapping.put("UNSIGNED_SHORT", "SMALLINT UNSIGNED");
-        mapping.put("UNSIGNED_INT", "INT UNSIGNED");
-        mapping.put("UNSIGNED_LONG", "BIGINT UNSIGNED");
-        mapping.put("FLOAT", "FLOAT");
-        mapping.put("DOUBLE", "DOUBLE");
+        // 二进制
         mapping.put("BYTES", "VARBINARY");
+        // 结构化文本
+        mapping.put("JSON", "JSON");
+        mapping.put("XML", "LONGTEXT");
+        // 大文本
+        mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // MySQL的TEXT默认支持UTF-8
+        // 枚举和集合
+        mapping.put("ENUM", "ENUM");
+        mapping.put("SET", "SET");
     }
 
     @Override

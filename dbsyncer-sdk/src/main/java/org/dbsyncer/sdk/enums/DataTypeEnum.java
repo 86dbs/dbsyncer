@@ -1,14 +1,7 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.sdk.enums;
 
 /**
  * 标准数据类型
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-23 22:39
  */
 public enum DataTypeEnum {
     /** 文本 */
@@ -16,13 +9,12 @@ public enum DataTypeEnum {
     UNICODE_STRING,
     /** 整型 */
     BYTE,
-    SHORT,
-    INT,
-    LONG,
-    /** 无符号整型 */
     UNSIGNED_BYTE,
+    SHORT,
     UNSIGNED_SHORT,
+    INT,
     UNSIGNED_INT,
+    LONG,
     UNSIGNED_LONG,
     /** 浮点型 */
     DECIMAL,

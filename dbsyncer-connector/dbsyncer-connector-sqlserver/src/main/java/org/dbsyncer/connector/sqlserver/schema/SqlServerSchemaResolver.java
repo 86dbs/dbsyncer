@@ -15,29 +15,40 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
-        mapping.put("INT", "int");
+        // 文本
         mapping.put("STRING", "varchar");
         mapping.put("UNICODE_STRING", "nvarchar");
-        mapping.put("TEXT", "varchar");
-        mapping.put("UNICODE_TEXT", "nvarchar");
-        mapping.put("XML", "xml");
+        // 整型
+        mapping.put("BYTE", "tinyint");
+        mapping.put("UNSIGNED_BYTE", "int"); // SQL Server不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("SHORT", "smallint");
+        mapping.put("UNSIGNED_SHORT", "int"); // SQL Server不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("INT", "int");
+        mapping.put("UNSIGNED_INT", "bigint"); // SQL Server不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("LONG", "bigint");
+        mapping.put("UNSIGNED_LONG", "decimal"); // SQL Server不支持unsigned，映射到decimal以避免溢出
+        // 浮点型
         mapping.put("DECIMAL", "decimal");
-        mapping.put("UNSIGNED_DECIMAL", "decimal"); // DECIMAL UNSIGNED → decimal（SQL Server不支持unsigned，但decimal可以存储所有值）
+        mapping.put("UNSIGNED_DECIMAL", "decimal"); // SQL Server不支持unsigned，但decimal可以存储所有值
+        mapping.put("DOUBLE", "float");
+        mapping.put("FLOAT", "real");
+        // 布尔型
+        mapping.put("BOOLEAN", "bit");
+        // 时间
         mapping.put("DATE", "date");
         mapping.put("TIME", "time");
         mapping.put("TIMESTAMP", "datetime2");
-        mapping.put("BOOLEAN", "bit");
-        mapping.put("BYTE", "tinyint");
-        mapping.put("SHORT", "smallint");
-        mapping.put("LONG", "bigint");
-        // 无符号类型映射到更大的类型以避免溢出
-        mapping.put("UNSIGNED_BYTE", "int");      // TINYINT UNSIGNED (0-255) → INT
-        mapping.put("UNSIGNED_SHORT", "int");    // SMALLINT UNSIGNED (0-65535) → INT
-        mapping.put("UNSIGNED_INT", "bigint");   // INT UNSIGNED (0-4294967295) → BIGINT
-        mapping.put("UNSIGNED_LONG", "decimal"); // BIGINT UNSIGNED (0-18446744073709551615) → DECIMAL
-        mapping.put("FLOAT", "real");
-        mapping.put("DOUBLE", "float");
+        // 二进制
         mapping.put("BYTES", "varbinary");
+        // 结构化文本
+        mapping.put("JSON", "nvarchar"); // SQL Server 2016+ 支持JSON，但存储为NVARCHAR(MAX)
+        mapping.put("XML", "xml");
+        // 大文本
+        mapping.put("TEXT", "varchar");
+        mapping.put("UNICODE_TEXT", "nvarchar");
+        // 枚举和集合
+        mapping.put("ENUM", "nvarchar"); // SQL Server不支持ENUM，使用nvarchar存储
+        mapping.put("SET", "nvarchar"); // SQL Server不支持SET，使用nvarchar存储
     }
 
     @Override

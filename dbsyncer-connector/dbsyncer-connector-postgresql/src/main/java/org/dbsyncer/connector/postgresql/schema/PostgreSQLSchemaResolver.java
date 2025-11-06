@@ -28,32 +28,40 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
-        mapping.put("INT", "INTEGER");
+        // 文本
         mapping.put("STRING", "VARCHAR");
         mapping.put("UNICODE_STRING", "VARCHAR"); // PostgreSQL的VARCHAR默认支持UTF-8
-        mapping.put("TEXT", "TEXT");
-        mapping.put("UNICODE_TEXT", "TEXT"); // PostgreSQL的TEXT默认支持UTF-8
-        mapping.put("JSON", "JSON");
-        mapping.put("XML", "XML");
-        mapping.put("ENUM", "USER-DEFINED");
-        mapping.put("SET", "VARCHAR");
+        // 整型
+        mapping.put("BYTE", "SMALLINT");
+        mapping.put("UNSIGNED_BYTE", "INTEGER"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("SHORT", "SMALLINT");
+        mapping.put("UNSIGNED_SHORT", "INTEGER"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("INT", "INTEGER");
+        mapping.put("UNSIGNED_INT", "BIGINT"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("LONG", "BIGINT");
+        mapping.put("UNSIGNED_LONG", "NUMERIC"); // PostgreSQL不支持unsigned，映射到NUMERIC以避免溢出
+        // 浮点型
         mapping.put("DECIMAL", "NUMERIC");
-        mapping.put("UNSIGNED_DECIMAL", "NUMERIC"); // DECIMAL UNSIGNED → NUMERIC（PostgreSQL不支持unsigned，但NUMERIC可以存储所有值）
+        mapping.put("UNSIGNED_DECIMAL", "NUMERIC"); // PostgreSQL不支持unsigned，但NUMERIC可以存储所有值
+        mapping.put("DOUBLE", "DOUBLE PRECISION");
+        mapping.put("FLOAT", "REAL");
+        // 布尔型
+        mapping.put("BOOLEAN", "BOOLEAN");
+        // 时间
         mapping.put("DATE", "DATE");
         mapping.put("TIME", "TIME");
         mapping.put("TIMESTAMP", "TIMESTAMP");
-        mapping.put("BOOLEAN", "BOOLEAN");
-        mapping.put("BYTE", "SMALLINT");
-        mapping.put("SHORT", "SMALLINT");
-        mapping.put("LONG", "BIGINT");
-        // 无符号类型映射到更大的类型以避免溢出
-        mapping.put("UNSIGNED_BYTE", "INTEGER");   // TINYINT UNSIGNED (0-255) → INTEGER
-        mapping.put("UNSIGNED_SHORT", "INTEGER"); // SMALLINT UNSIGNED (0-65535) → INTEGER
-        mapping.put("UNSIGNED_INT", "BIGINT");    // INT UNSIGNED (0-4294967295) → BIGINT
-        mapping.put("UNSIGNED_LONG", "NUMERIC");  // BIGINT UNSIGNED (0-18446744073709551615) → NUMERIC
-        mapping.put("FLOAT", "REAL");
-        mapping.put("DOUBLE", "DOUBLE PRECISION");
+        // 二进制
         mapping.put("BYTES", "BYTEA");
+        // 结构化文本
+        mapping.put("JSON", "JSON");
+        mapping.put("XML", "XML");
+        // 大文本
+        mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // PostgreSQL的TEXT默认支持UTF-8
+        // 枚举和集合
+        mapping.put("ENUM", "USER-DEFINED");
+        mapping.put("SET", "VARCHAR");
     }
 
     @Override

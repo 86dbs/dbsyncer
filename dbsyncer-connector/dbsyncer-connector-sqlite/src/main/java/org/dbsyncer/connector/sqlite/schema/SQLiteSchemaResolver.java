@@ -15,32 +15,40 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
-        mapping.put("INT", "INTEGER");
+        // 文本
         mapping.put("STRING", "TEXT");
         mapping.put("UNICODE_STRING", "TEXT"); // SQLite的TEXT默认支持UTF-8
-        mapping.put("TEXT", "TEXT");
-        mapping.put("UNICODE_TEXT", "TEXT"); // SQLite的TEXT默认支持UTF-8
-        mapping.put("JSON", "TEXT"); // SQLite 3.38+ 支持JSON函数，但存储仍为TEXT
-        mapping.put("XML", "TEXT");
-        mapping.put("ENUM", "TEXT");
-        mapping.put("SET", "TEXT");
+        // 整型
+        mapping.put("BYTE", "INTEGER");
+        mapping.put("UNSIGNED_BYTE", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("SHORT", "INTEGER");
+        mapping.put("UNSIGNED_SHORT", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("INT", "INTEGER");
+        mapping.put("UNSIGNED_INT", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("LONG", "INTEGER");
+        mapping.put("UNSIGNED_LONG", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        // 浮点型
         mapping.put("DECIMAL", "REAL");
         mapping.put("UNSIGNED_DECIMAL", "REAL"); // SQLite不区分有符号/无符号，但REAL可以存储所有值
+        mapping.put("DOUBLE", "REAL");
+        mapping.put("FLOAT", "REAL");
+        // 布尔型
+        mapping.put("BOOLEAN", "INTEGER");
+        // 时间
         mapping.put("DATE", "TEXT");
         mapping.put("TIME", "TEXT");
         mapping.put("TIMESTAMP", "TEXT");
-        mapping.put("BOOLEAN", "INTEGER");
-        mapping.put("BYTE", "INTEGER");
-        mapping.put("SHORT", "INTEGER");
-        mapping.put("LONG", "INTEGER");
-        // 无符号类型映射到INTEGER类型（SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值）
-        mapping.put("UNSIGNED_BYTE", "INTEGER");   // TINYINT UNSIGNED (0-255) → INTEGER
-        mapping.put("UNSIGNED_SHORT", "INTEGER"); // SMALLINT UNSIGNED (0-65535) → INTEGER
-        mapping.put("UNSIGNED_INT", "INTEGER");    // INT UNSIGNED (0-4294967295) → INTEGER
-        mapping.put("UNSIGNED_LONG", "INTEGER");  // BIGINT UNSIGNED (0-18446744073709551615) → INTEGER
-        mapping.put("FLOAT", "REAL");
-        mapping.put("DOUBLE", "REAL");
+        // 二进制
         mapping.put("BYTES", "BLOB");
+        // 结构化文本
+        mapping.put("JSON", "TEXT"); // SQLite 3.38+ 支持JSON函数，但存储仍为TEXT
+        mapping.put("XML", "TEXT");
+        // 大文本
+        mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // SQLite的TEXT默认支持UTF-8
+        // 枚举和集合
+        mapping.put("ENUM", "TEXT");
+        mapping.put("SET", "TEXT");
     }
 
     @Override
