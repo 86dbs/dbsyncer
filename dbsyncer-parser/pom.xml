@@ -46,6 +46,12 @@
             <artifactId>antlr4-runtime</artifactId>
         </dependency>
 
+        <!-- Jackson annotations (for @JsonIgnore in model classes) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

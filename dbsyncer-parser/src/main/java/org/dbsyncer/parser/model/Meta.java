@@ -1,9 +1,6 @@
 package org.dbsyncer.parser.model;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -48,25 +45,25 @@ public class Meta extends ConfigModel {
     private Map<String, String> snapshot;   // 仅保存增量同步的 cursor 信息，因为增量是库级别的
     private long beginTime;
     private long endTime;
-    @JSONField(serialize = false)
+    @JsonIgnore
     private transient Listener listener;
 
     // 驱动异常信息
     private String errorMessage = "";
 
     // ProfileComponent实例，用于保存Meta对象
-    @JSONField(serialize = false)
+    @JsonIgnore
     private transient ProfileComponent profileComponent;
 
     // 混合同步阶段
     private SyncPhaseEnum syncPhase = SyncPhaseEnum.FULL;
 
     // 简化的受保护字段名常量
-    @JSONField(serialize = false)
+    @JsonIgnore
     private static final String PROTECTED_INCREMENT_INFO = "_protected_increment_info";
 
     // 回调函数支持
-    @JSONField(serialize = false)
+    @JsonIgnore
     private transient Runnable phaseHandler;
 
     public Meta() {
@@ -193,7 +190,8 @@ public class Meta extends ConfigModel {
 
     public void updateSnapshot(String metaSnapshot) {
         if (StringUtil.isNotBlank(metaSnapshot)) {
-            Map<String, String> snapshot = JsonUtil.jsonToObj(metaSnapshot, HashMap.class);
+            @SuppressWarnings("unchecked")
+        Map<String, String> snapshot = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(metaSnapshot);
             if (!CollectionUtils.isEmpty(snapshot)) {
                 this.snapshot = snapshot;
                 setUpdateTime(Instant.now().toEpochMilli());
@@ -262,20 +260,16 @@ public class Meta extends ConfigModel {
     }
 
     // 检查是否已记录增量起始点
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isIncrementStartPointRecorded() {
         return this.snapshot.containsKey(PROTECTED_INCREMENT_INFO);
     }
 
     // 记录增量起始点到受保护字段
     public void recordIncrementStartPoint(Map<String, String> position) {
-        JSONObject incrementInfo = new JSONObject();
-        // 将position中的所有信息添加到incrementInfo中
-        for (Map.Entry<String, String> entry : position.entrySet()) {
-            incrementInfo.put(entry.getKey(), entry.getValue());
-        }
-
-        this.snapshot.put(PROTECTED_INCREMENT_INFO, incrementInfo.toJSONString());
+        // 使用JsonUtil序列化position
+        String incrementInfoJson = JsonUtil.objToJson(position);
+        this.snapshot.put(PROTECTED_INCREMENT_INFO, incrementInfoJson);
 
         // 保存到持久化存储
         this.profileComponent.editConfigModel(this);
@@ -291,8 +285,8 @@ public class Meta extends ConfigModel {
         this.snapshot.remove(PROTECTED_INCREMENT_INFO);
 
         // 将 incrementInfoJson 反序列化为 Map<String, String>
-        Map<String, String> incrementInfo = JSON.parseObject(incrementInfoJson, new TypeReference<Map<String, String>>() {
-        });
+        @SuppressWarnings("unchecked")
+        Map<String, String> incrementInfo = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(incrementInfoJson);
         this.snapshot.putAll(incrementInfo);
 
         this.profileComponent.editConfigModel(this);
@@ -332,7 +326,7 @@ public class Meta extends ConfigModel {
      *
      * @return 如果处于异常状态返回true，否则返回false
      */
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isError() {
         return this.state == MetaEnum.ERROR.getCode();
     }
@@ -342,12 +336,12 @@ public class Meta extends ConfigModel {
      *
      * @return 如果处于运行状态返回true，否则返回false
      */
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isRunning() {
         return MetaEnum.isRunning(this.state);
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public static Meta create(Mapping mapping, SnowflakeIdWorker snowflakeIdWorker, ProfileComponent profileComponent) {
         Meta meta = new Meta(profileComponent);
         String newId = String.valueOf(snowflakeIdWorker.nextId());

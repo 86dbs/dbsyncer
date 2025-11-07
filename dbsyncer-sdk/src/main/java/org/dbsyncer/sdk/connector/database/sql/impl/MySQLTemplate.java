@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
-import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
@@ -89,6 +88,27 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
+            case "TEXT":
+                // 根据columnSize判断使用哪种TEXT类型
+                // MySQL的TEXT类型容量：
+                // - TINYTEXT: 最大255字节
+                // - TEXT: 最大65,535字节 (64KB)
+                // - MEDIUMTEXT: 最大16,777,215字节 (16MB)
+                // - LONGTEXT: 最大4,294,967,295字节 (4GB)
+                long columnSize = column.getColumnSize();
+                if (columnSize > 0) {
+                    if (columnSize <= 255L) {
+                        return "TINYTEXT";
+                    } else if (columnSize <= 65535L) {
+                        return "TEXT";
+                    } else if (columnSize <= 16777215L) {
+                        return "MEDIUMTEXT";
+                    } else {
+                        return "LONGTEXT";
+                    }
+                }
+                // 如果没有columnSize信息，默认使用TEXT
+                return "TEXT";
             case "DECIMAL":
                 if (column.getColumnSize() > 0 && column.getRatio() >= 0) {
                     return typeName + "(" + column.getColumnSize() + "," + column.getRatio() + ")";

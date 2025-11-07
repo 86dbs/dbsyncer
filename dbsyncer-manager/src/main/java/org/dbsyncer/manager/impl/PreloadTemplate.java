@@ -175,14 +175,16 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (null == config) {
             return;
         }
-        Group group = JsonUtil.jsonToObj(config.toString(), Group.class);
+        // 使用JsonUtil.objToJson而不是toString()，因为toString()生成的是{key=value}格式，不是JSON
+        Group group = JsonUtil.jsonToObj(JsonUtil.objToJson(config), Group.class);
         if (null == group || group.isEmpty()) {
             return;
         }
 
         for (String id : group.getIndex()) {
             Map m = map.get(id);
-            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, m.toString()));
+            // 使用JsonUtil.objToJson而不是toString()，确保生成有效的JSON格式
+            ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, JsonUtil.objToJson(m)));
             operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
             // Load tableGroups
             if (CommandEnum.PRELOAD_MAPPING == commandEnum) {

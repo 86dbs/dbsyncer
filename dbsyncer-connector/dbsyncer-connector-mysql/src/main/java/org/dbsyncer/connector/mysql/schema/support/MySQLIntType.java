@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.IntType;
 import java.sql.Date;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -19,28 +19,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLIntType extends IntType {
 
-    private enum TypeEnum {
-        SMALLINT_UNSIGNED("SMALLINT UNSIGNED"),
-        MEDIUMINT("MEDIUMINT"),
-        MEDIUMINT_UNSIGNED("MEDIUMINT UNSIGNED"),
-        INT("INT"),
-        INTEGER("INTEGER"),
-        YEAR("YEAR");
-
-        private final String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("MEDIUMINT", "INT", "INTEGER", "YEAR"));
     }
 
     @Override

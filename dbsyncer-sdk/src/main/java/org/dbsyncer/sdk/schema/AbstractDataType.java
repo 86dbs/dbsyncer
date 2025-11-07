@@ -6,19 +6,17 @@ package org.dbsyncer.sdk.schema;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
 
-import java.lang.reflect.ParameterizedType;
-
-/**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-24 20:58
- */
 public abstract class AbstractDataType<T> implements DataType {
 
     private final Class<T> parameterClazz;
 
-    public AbstractDataType() {
-        parameterClazz = (Class<T>) ((ParameterizedType) getClass().getSuperclass().getGenericSuperclass()).getActualTypeArguments()[0];
+    /**
+     * 构造函数
+     *
+     * @param parameterClazz 泛型参数类型，用于类型检查和优化
+     */
+    protected AbstractDataType(Class<T> parameterClazz) {
+        this.parameterClazz = parameterClazz;
     }
 
     /**

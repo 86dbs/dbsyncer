@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.BytesType;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -19,18 +19,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLBytesType extends BytesType {
 
-    private enum TypeEnum {
-        TINYBLOB,
-        BLOB,
-        MEDIUMBLOB,
-        LONGBLOB,
-        BINARY,
-        VARBINARY;
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB", "BINARY", "VARBINARY"));
     }
 
     @Override

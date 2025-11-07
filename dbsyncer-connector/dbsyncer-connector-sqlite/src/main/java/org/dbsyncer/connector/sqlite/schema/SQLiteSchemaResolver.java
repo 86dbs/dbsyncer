@@ -1,54 +1,80 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlite.schema;
 
 import org.dbsyncer.connector.sqlite.SQLiteException;
 import org.dbsyncer.connector.sqlite.schema.support.*;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * SQLite标准数据类型解析器
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
  */
 public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
 
-    // Java标准类型到SQLite特定类型的映射
-    private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
-    
-    static {
-        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "TEXT");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "INTEGER");
-        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "REAL");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "BLOB");
+    @Override
+    protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
+        // 文本
+        mapping.put("STRING", "TEXT");
+        mapping.put("UNICODE_STRING", "TEXT"); // SQLite的TEXT默认支持UTF-8
+        // 整型
+        mapping.put("BYTE", "INTEGER");
+        mapping.put("UNSIGNED_BYTE", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("SHORT", "INTEGER");
+        mapping.put("UNSIGNED_SHORT", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("INT", "INTEGER");
+        mapping.put("UNSIGNED_INT", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        mapping.put("LONG", "INTEGER");
+        mapping.put("UNSIGNED_LONG", "INTEGER"); // SQLite不区分有符号/无符号，但INTEGER可以存储更大范围的值
+        // 浮点型
+        mapping.put("DECIMAL", "REAL");
+        mapping.put("UNSIGNED_DECIMAL", "REAL"); // SQLite不区分有符号/无符号，但REAL可以存储所有值
+        mapping.put("DOUBLE", "REAL");
+        mapping.put("FLOAT", "REAL");
+        // 布尔型
+        mapping.put("BOOLEAN", "INTEGER");
+        // 时间
+        mapping.put("DATE", "TEXT");
+        mapping.put("TIME", "TEXT");
+        mapping.put("TIMESTAMP", "TEXT");
+        // 二进制
+        mapping.put("BYTES", "BLOB");
+        // 结构化文本
+        mapping.put("JSON", "TEXT"); // SQLite 3.38+ 支持JSON函数，但存储仍为TEXT
+        mapping.put("XML", "TEXT");
+        // 大文本
+        mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // SQLite的TEXT默认支持UTF-8
+        // 枚举和集合
+        mapping.put("ENUM", "TEXT");
+        mapping.put("SET", "TEXT");
     }
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new SQLiteTextType(),      // TEXT 存储类 - 文本亲和性
-                new SQLiteIntegerType(),   // INTEGER 存储类 - 整数亲和性
-                new SQLiteRealType(),      // REAL 存储类 - 实数亲和性
-                new SQLiteBlobType()       // BLOB 存储类 - 二进制亲和性
+                // TEXT 存储类 - 文本亲和性
+                new SQLiteUnicodeStringType(),  // VARCHAR, CHAR, NCHAR, NVARCHAR - Unicode文本类型（SQLite无长度限制，标准化为UNICODE_TEXT）
+                new SQLiteTextType(),           // TEXT, CLOB - Unicode大文本类型
+                // INTEGER 存储类 - 整数亲和性
+                new SQLiteIntegerType(),        // INTEGER, INT, TINYINT, SMALLINT, MEDIUMINT, BIGINT, BOOLEAN
+                // 无符号整数类型（SQLite不区分有符号/无符号，但支持标准类型转换）
+                new SQLiteUnsignedByteType(),   // TINYINT UNSIGNED
+                new SQLiteUnsignedShortType(),  // SMALLINT UNSIGNED
+                new SQLiteUnsignedIntType(),    // INT UNSIGNED, INTEGER UNSIGNED, MEDIUMINT UNSIGNED
+                new SQLiteUnsignedLongType(),   // BIGINT UNSIGNED
+                // REAL 存储类 - 实数亲和性
+                new SQLiteRealType(),           // REAL, DOUBLE, FLOAT, NUMERIC, DECIMAL
+                new SQLiteUnsignedDecimalType(), // DECIMAL UNSIGNED
+                // BLOB 存储类 - 二进制亲和性
+                new SQLiteBlobType(),           // BLOB
+                // 日期时间类型（SQLite存储为TEXT）
+                new SQLiteDateType(),           // DATE, DATETIME
+                new SQLiteTimeType(),           // TIME
+                new SQLiteTimestampType()       // TIMESTAMP
+                // 注意：SQLite 不原生支持 ENUM、SET、JSON、XML 类型
+                // 这些标准类型通过 initStandardToTargetTypeMapping() 映射到 TEXT 类型
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new SQLiteException("Duplicate type name: " + typeName);
@@ -58,58 +84,13 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
     }
 
     @Override
-    public Field toStandardType(Field field) {
-        // 利用现有的DataType映射机制进行类型转换
-        DataType dataType = getDataType(field);
-        if (dataType != null) {
-            // 使用DataType的getType()方法获取标准类型
-            return new Field(field.getName(),
-                           dataType.getType().name(),
-                           getStandardTypeCode(dataType.getType()),
-                           field.isPk(),
-                           field.getColumnSize(),
-                           field.getRatio());
-        }
-
-        // 如果没有找到对应的DataType，抛出异常以发现系统不足
-        throw new UnsupportedOperationException(
-            String.format("Unsupported SQLite type: %s. Please add mapping for this type in DataType configuration.",
-                         field.getTypeName()));
+    protected String getDatabaseName() {
+        return "SQLite";
     }
 
     @Override
-    public Field fromStandardType(Field standardField) {
-        // 将Java标准类型转换为SQLite特定类型
-        String targetTypeName = getTargetTypeName(standardField.getTypeName());
-        return new Field(standardField.getName(),
-                       targetTypeName,
-                       getTargetTypeCode(targetTypeName),
-                       standardField.isPk(),
-                       standardField.getColumnSize(),
-                       standardField.getRatio());
-    }
-
-    /**
-     * 获取标准类型编码
-     */
-    private int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
-        // 使用枚举的ordinal值作为类型编码
-        return dataTypeEnum.ordinal();
-    }
-
-    /**
-     * 获取目标类型名称（将Java标准类型转换为SQLite特定类型）
-     */
-    private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName.toUpperCase());
-    }
-
-    /**
-     * 获取目标类型编码
-     */
-    private int getTargetTypeCode(String targetTypeName) {
-        // 这里可以根据需要实现类型编码映射
-        // 暂时返回0，实际使用时可能需要更精确的映射
-        return 0;
+    protected String getDefaultTargetTypeName(String standardTypeName) {
+        // SQLite 特殊处理：将未映射的类型转换为大写
+        return standardTypeName.toUpperCase();
     }
 }

@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.DateType;
 
 import java.sql.Date;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -19,13 +19,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLDateType extends DateType {
 
-    private enum TypeEnum {
-        DATE
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("DATE"));
     }
 
     @Override

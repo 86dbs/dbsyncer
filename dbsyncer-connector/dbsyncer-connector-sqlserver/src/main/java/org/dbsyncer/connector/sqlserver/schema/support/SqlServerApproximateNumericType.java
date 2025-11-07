@@ -7,8 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DoubleType;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server 近似数值类型
@@ -21,14 +21,9 @@ import java.util.stream.Collectors;
  */
 public final class SqlServerApproximateNumericType extends DoubleType {
 
-    private enum TypeEnum {
-        FLOAT,         // 浮点数 (8字节双精度)
-        REAL           // 实数 (4字节单精度)
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("FLOAT", "REAL"));
     }
 
     @Override

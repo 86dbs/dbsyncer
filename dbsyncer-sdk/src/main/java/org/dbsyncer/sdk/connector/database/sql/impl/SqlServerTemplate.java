@@ -5,7 +5,6 @@ package org.dbsyncer.sdk.connector.database.sql.impl;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
@@ -199,14 +198,21 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
     }
 
     @Override
+    public String buildUpsertSql(String schemaTable, List<Field> fields, List<String> primaryKeys) {
+        return "";
+    }
+
+
+    @Override
     public String convertToDatabaseType(Field column) {
         // 使用SchemaResolver进行类型转换，完全委托给SchemaResolver处理
         Field targetField = schemaResolver.fromStandardType(column);
         String typeName = targetField.getTypeName();
-        
+
         // 处理参数（长度、精度等）
-        switch (typeName) {
+        switch (typeName.toUpperCase()) {
             case "NVARCHAR":
+            case "VARCHAR":
                 if (column.getColumnSize() > 0) {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }

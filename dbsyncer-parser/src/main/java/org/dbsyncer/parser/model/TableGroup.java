@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
-import com.alibaba.fastjson2.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.logging.log4j.util.Strings;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -40,15 +40,15 @@ public class TableGroup extends AbstractConfigModel {
         super.setName(ConfigConstant.TABLE_GROUP);
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public static final int Version = 1;
     public int currentVersion;
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean isInit = false;
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public ParserComponent parserComponent;
-    @JSONField(serialize = false)
+    @JsonIgnore
     public ProfileComponent profileComponent;
 
     // 排序索引
@@ -67,15 +67,15 @@ public class TableGroup extends AbstractConfigModel {
     private List<FieldMapping> fieldMapping = new ArrayList<>();
 
     // 执行命令，例SQL等
-    @JSONField(serialize = false)
+    @JsonIgnore
     private Map<String, String> command = new HashMap<>();
 
     // 缓存的字段列表SQL片段（避免重复构建）
-    @JSONField(serialize = false)
+    @JsonIgnore
     private String cachedFieldListSql;
 
     // 缓存的主键列表字符串（避免重复构建）
-    @JSONField(serialize = false)
+    @JsonIgnore
     private String cachedPrimaryKeys;
 
     public int getIndex() {
@@ -148,7 +148,7 @@ public class TableGroup extends AbstractConfigModel {
         return this;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public void initTableGroup(ParserComponent parserComponent, ProfileComponent profileComponent, ConnectorFactory connectorFactory) {
         if (isInit) return;
         this.parserComponent = parserComponent;
@@ -162,7 +162,7 @@ public class TableGroup extends AbstractConfigModel {
         isInit = true;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public void initCommand(Mapping mapping, ConnectorFactory connectorFactory) {
         ConnectorConfig sConnConfig = profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
         ConnectorConfig tConnConfig = profileComponent.getConnector(mapping.getTargetConnectorId()).getConfig();
@@ -242,7 +242,7 @@ public class TableGroup extends AbstractConfigModel {
         this.errorMessage = errorMessage;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public boolean hasError() {
         return Strings.isNotBlank(errorMessage);
     }
@@ -250,14 +250,14 @@ public class TableGroup extends AbstractConfigModel {
     /**
      * 清理错误状态
      */
-    @JSONField(serialize = false)
+    @JsonIgnore
     public void clear() {
         fullCompleted = false;
         cursors = null;
         this.errorMessage = null;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public static TableGroup create(String mappingId, String sourceTable, ParserComponent parserComponent, ProfileComponent profileComponent) {
         TableGroup tableGroup = new TableGroup();
         tableGroup.setName(mappingId + ":" + sourceTable);
@@ -268,7 +268,7 @@ public class TableGroup extends AbstractConfigModel {
         return tableGroup;
     }
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) {
         String tableGroupJson = JsonUtil.objToJson(this);
         TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);

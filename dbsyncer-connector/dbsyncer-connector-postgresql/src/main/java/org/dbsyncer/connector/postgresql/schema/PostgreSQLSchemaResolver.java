@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.connector.postgresql.schema;
 
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
@@ -9,46 +6,62 @@ import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLEnumType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLFloatType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLJsonType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTextType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
-import org.dbsyncer.sdk.enums.DataTypeEnum;
-import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLXmlType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * PostgreSQL标准数据类型解析器
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 23:01
  */
 public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
 
-    // Java标准类型到PostgreSQL特定类型的映射
-    private static final Map<String, String> STANDARD_TO_TARGET_TYPE_MAP = new HashMap<>();
-    
-    static {
-        STANDARD_TO_TARGET_TYPE_MAP.put("INT", "integer");
-        STANDARD_TO_TARGET_TYPE_MAP.put("STRING", "varchar");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DECIMAL", "numeric");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DATE", "date");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIME", "time");
-        STANDARD_TO_TARGET_TYPE_MAP.put("TIMESTAMP", "timestamp");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BOOLEAN", "boolean");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTE", "smallint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("SHORT", "smallint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("LONG", "bigint");
-        STANDARD_TO_TARGET_TYPE_MAP.put("FLOAT", "real");
-        STANDARD_TO_TARGET_TYPE_MAP.put("DOUBLE", "double precision");
-        STANDARD_TO_TARGET_TYPE_MAP.put("BYTES", "bytea");
+    @Override
+    protected void initStandardToTargetTypeMapping(Map<String, String> mapping) {
+        // 文本
+        mapping.put("STRING", "VARCHAR");
+        mapping.put("UNICODE_STRING", "VARCHAR"); // PostgreSQL的VARCHAR默认支持UTF-8
+        // 整型
+        mapping.put("BYTE", "SMALLINT");
+        mapping.put("UNSIGNED_BYTE", "INTEGER"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("SHORT", "SMALLINT");
+        mapping.put("UNSIGNED_SHORT", "INTEGER"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("INT", "INTEGER");
+        mapping.put("UNSIGNED_INT", "BIGINT"); // PostgreSQL不支持unsigned，映射到更大的类型以避免溢出
+        mapping.put("LONG", "BIGINT");
+        mapping.put("UNSIGNED_LONG", "NUMERIC"); // PostgreSQL不支持unsigned，映射到NUMERIC以避免溢出
+        // 浮点型
+        mapping.put("DECIMAL", "NUMERIC");
+        mapping.put("UNSIGNED_DECIMAL", "NUMERIC"); // PostgreSQL不支持unsigned，但NUMERIC可以存储所有值
+        mapping.put("DOUBLE", "DOUBLE PRECISION");
+        mapping.put("FLOAT", "REAL");
+        // 布尔型
+        mapping.put("BOOLEAN", "BOOLEAN");
+        // 时间
+        mapping.put("DATE", "DATE");
+        mapping.put("TIME", "TIME");
+        mapping.put("TIMESTAMP", "TIMESTAMP");
+        // 二进制
+        mapping.put("BYTES", "BYTEA");
+        // 结构化文本
+        mapping.put("JSON", "JSON");
+        mapping.put("XML", "XML");
+        // 大文本
+        mapping.put("TEXT", "TEXT");
+        mapping.put("UNICODE_TEXT", "TEXT"); // PostgreSQL的TEXT默认支持UTF-8
+        // 枚举和集合
+        mapping.put("ENUM", "USER-DEFINED");
+        mapping.put("SET", "VARCHAR");
     }
 
     @Override
@@ -63,7 +76,11 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                 new PostgreSQLDateType(),
                 new PostgreSQLTimestampType(),
                 new PostgreSQLBooleanType(),
-                new PostgreSQLBytesType()
+                new PostgreSQLBytesType(),
+                new PostgreSQLJsonType(),    // 新增JSON类型支持
+                new PostgreSQLEnumType(),    // 新增ENUM类型支持
+                new PostgreSQLTextType(),    // 新增TEXT类型支持
+                new PostgreSQLXmlType()      // 新增XML类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new PostgreSQLException("Duplicate type name: " + typeName);
@@ -73,58 +90,7 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
     }
 
     @Override
-    public Field toStandardType(Field field) {
-        // 利用现有的DataType映射机制进行类型转换
-        DataType dataType = getDataType(field);
-        if (dataType != null) {
-            // 使用DataType的getType()方法获取标准类型
-            return new Field(field.getName(),
-                           dataType.getType().name(),
-                           getStandardTypeCode(dataType.getType()),
-                           field.isPk(),
-                           field.getColumnSize(),
-                           field.getRatio());
-        }
-
-        // 如果没有找到对应的DataType，抛出异常以发现系统不足
-        throw new UnsupportedOperationException(
-            String.format("Unsupported PostgreSQL type: %s. Please add mapping for this type in DataType configuration.",
-                         field.getTypeName()));
-    }
-
-    @Override
-    public Field fromStandardType(Field standardField) {
-        // 将Java标准类型转换为PostgreSQL特定类型
-        String targetTypeName = getTargetTypeName(standardField.getTypeName());
-        return new Field(standardField.getName(),
-                       targetTypeName,
-                       getTargetTypeCode(targetTypeName),
-                       standardField.isPk(),
-                       standardField.getColumnSize(),
-                       standardField.getRatio());
-    }
-
-    /**
-     * 获取标准类型编码
-     */
-    private int getStandardTypeCode(DataTypeEnum dataTypeEnum) {
-        // 使用枚举的ordinal值作为类型编码
-        return dataTypeEnum.ordinal();
-    }
-
-    /**
-     * 获取目标类型名称（将Java标准类型转换为PostgreSQL特定类型）
-     */
-    private String getTargetTypeName(String standardTypeName) {
-        return STANDARD_TO_TARGET_TYPE_MAP.getOrDefault(standardTypeName, standardTypeName);
-    }
-
-    /**
-     * 获取目标类型编码
-     */
-    private int getTargetTypeCode(String targetTypeName) {
-        // 这里可以根据需要实现类型编码映射
-        // 暂时返回0，实际使用时可能需要更精确的映射
-        return 0;
+    protected String getDatabaseName() {
+        return "PostgreSQL";
     }
 }

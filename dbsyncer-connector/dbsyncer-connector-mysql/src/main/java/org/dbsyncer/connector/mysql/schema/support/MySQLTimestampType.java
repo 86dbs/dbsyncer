@@ -9,8 +9,8 @@ import org.dbsyncer.sdk.schema.support.TimestampType;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @Author 穿云
@@ -19,14 +19,9 @@ import java.util.stream.Collectors;
  */
 public final class MySQLTimestampType extends TimestampType {
 
-    private enum TypeEnum {
-        DATETIME,
-        TIMESTAMP;
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("DATETIME", "TIMESTAMP"));
     }
 
     @Override

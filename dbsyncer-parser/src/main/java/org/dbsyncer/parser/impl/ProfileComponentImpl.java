@@ -46,14 +46,17 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public Connector parseConnector(String json) {
-        Map conn = JsonUtil.parseMap(json);
-        Map config = (Map) conn.remove("config");
-        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
+        Map<String, Object> conn = JsonUtil.parseMap(json);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> config = (Map<String, Object>) conn.remove("config");
+        // 使用JsonUtil.objToJson而不是toString()，因为toString()生成的是{key=value}格式，不是JSON
+        Connector connector = JsonUtil.jsonToObj(JsonUtil.objToJson(conn), Connector.class);
         Assert.notNull(connector, "Connector can not be null.");
         String connectorType = (String) config.get("connectorType");
         ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
         Class<ConnectorConfig> configClass = connectorService.getConfigClass();
-        connector.setConfig(JsonUtil.jsonToObj(config.toString(), configClass));
+        // 使用JsonUtil.objToJson而不是toString()，确保生成有效的JSON格式
+        connector.setConfig(JsonUtil.jsonToObj(JsonUtil.objToJson(config), configClass));
 
         return connector;
     }

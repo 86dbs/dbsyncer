@@ -8,8 +8,8 @@ import org.dbsyncer.sdk.schema.support.BytesType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SQL Server 二进制字符串类型
@@ -22,15 +22,9 @@ import java.util.stream.Collectors;
  */
 public final class SqlServerBinaryStringType extends BytesType {
 
-    private enum TypeEnum {
-        BINARY,         // 固定长度二进制
-        VARBINARY,      // 可变长度二进制
-        IMAGE           // 图像类型 (已弃用，建议使用 VARBINARY(MAX))
-    }
-
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return new HashSet<>(Arrays.asList("BINARY", "VARBINARY", "IMAGE"));
     }
 
     @Override
