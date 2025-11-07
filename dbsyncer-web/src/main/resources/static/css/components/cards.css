@@ -1,7 +1,6 @@
 /**
  * DBSyncer 卡片组件样式
  */
-
 /* ========== 基础卡片 ========== */
 .card {
   background-color: var(--bg-primary);
@@ -44,7 +43,7 @@
   padding: var(--spacing-lg);
 }
 
-/* 卡片中的轻量交互元素（从主题迁移） */
+/* 卡片中的轻量交互元素 */
 .card button:not(.btn):not([class*='btn-']) {
   background: transparent;
   border: 0;
@@ -60,104 +59,77 @@
   background: #fff;
 }
 
-/* ========== 进度卡片 ========== */
+/* ========== 进度条卡片 ========== */
 .progress-card {
-  background-color: var(--bg-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-secondary);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  padding: 20px;
 }
 
-.progress-card-header {
+.progress-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.progress-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.progress-card-title {
-  font-size: var(--font-size-md);
-  font-weight: 500;
+.progress-title {
+  font-size: 14px;
   color: var(--text-primary);
-  margin: 0;
+  font-weight: 500;
 }
 
-.progress-card-value {
-  font-size: var(--font-size-lg);
+.progress-value {
+  font-size: 24px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--primary-color);
 }
 
-.progress-card-bar {
-  width: 100%;
+.progress-value-success { color: #52c41a; }
+.progress-value-warning { color: #faad14; }
+.progress-value-danger { color: #ff4d4f; }
+
+.progress-bar {
   height: 8px;
-  background-color: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
+  background: #f0f0f0;
+  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 8px;
 }
 
-.progress-card-fill {
+.progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
-  border-radius: var(--radius-sm);
-  transition: width var(--transition-normal);
+  background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
-.progress-card-fill.success {
-  background: linear-gradient(90deg, var(--success-color), #73d13d);
+.progress-fill.success {
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
 }
 
-.progress-card-fill.warning {
-  background: linear-gradient(90deg, var(--warning-color), #ffc53d);
+.progress-fill.warning {
+  background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
 }
 
-.progress-card-fill.error {
-  background: linear-gradient(90deg, var(--error-color), #ff4d4f);
+.progress-fill.danger {
+  background: linear-gradient(90deg, #ff4d4f 0%, #ff7875 100%);
 }
 
-.progress-card-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--spacing-sm);
-}
-
-.progress-card-detail {
-  text-align: center;
-}
-
-.progress-card-detail-label {
-  font-size: var(--font-size-xs);
+.progress-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
   color: var(--text-tertiary);
-  margin-bottom: 2px;
 }
 
-.progress-card-detail-value {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+.progress-detail strong {
   color: var(--text-primary);
-}
-
-/* ========== 响应式设计 ========== */
-@media (max-width: 768px) {
-  .stat-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  
-  .stat-icon {
-    margin-bottom: var(--spacing-md);
-  }
-  
-  .progress-card-details {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .progress-card-details {
-    grid-template-columns: 1fr;
-  }
+  font-weight: 600;
 }

@@ -460,212 +460,6 @@ function initQRCodePopover(options) {
     }, 500);
 }
 
-/**
- * 初始化多选下拉框
- * @param {string} wrapperId - 容器 ID
- * @param {object} options - 配置选项
- */
-function initMultiSelect(wrapperId, options) {
-    var wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
-    
-    var config = {
-        linkTo: options.linkTo || null, // 联动的目标选择器ID
-        onSelectChange: options.onSelectChange || function() {}
-    };
-    
-    var trigger = wrapper.querySelector('.dbsyncer-multi-select-trigger');
-    var searchInput = wrapper.querySelector('.dbsyncer-multi-select-search');
-    var dropdown = wrapper.querySelector('.dbsyncer-multi-select-dropdown');
-    var optionsContainer = wrapper.querySelector('.dbsyncer-multi-select-options');
-    var originalSelect = wrapper.querySelector('select');
-    var actionBtns = wrapper.querySelectorAll('.dbsyncer-multi-select-action-btn');
-    
-    // 打开/关闭下拉框
-    trigger.addEventListener('click', function(e) {
-        wrapper.classList.toggle('open');
-        if (wrapper.classList.contains('open')) {
-            searchInput.focus();
-        }
-    });
-    
-    // 阻止点击下拉框内部时关闭
-    dropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-    
-    // 搜索功能
-    searchInput.addEventListener('input', function(e) {
-        var query = e.target.value.toLowerCase();
-        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
-        
-        options.forEach(function(option) {
-            var text = option.querySelector('span').textContent.toLowerCase();
-            if (text.indexOf(query) !== -1) {
-                option.classList.remove('hidden');
-            } else {
-                option.classList.add('hidden');
-            }
-        });
-    });
-    
-    // 复选框变化
-    var checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(function(checkbox) {
-        checkbox.addEventListener('change', function() {
-            syncToOriginalSelect();
-            updateSearchPlaceholder();
-            config.onSelectChange();
-            
-            // 联动选择：数据源表勾选/取消勾选，目标源表同步勾选/取消勾选
-            if (config.linkTo) {
-                var linkWrapper = document.getElementById(config.linkTo);
-                if (linkWrapper) {
-                    var linkCheckbox = linkWrapper.querySelector('input[value="' + checkbox.value + '"]');
-                    if (linkCheckbox) {
-                        // 同步勾选状态（避免无限递归）
-                        if (linkCheckbox.checked !== checkbox.checked && !linkCheckbox.hasAttribute('data-syncing')) {
-                            linkCheckbox.setAttribute('data-syncing', 'true');
-                            linkCheckbox.checked = checkbox.checked;
-                            
-                            // 手动触发目标源的同步逻辑
-                            var linkOptionsContainer = linkWrapper.querySelector('.dbsyncer-multi-select-options');
-                            var linkOriginalSelect = linkWrapper.querySelector('select');
-                            
-                            // 更新目标源的原始 select
-                            if (linkOriginalSelect) {
-                                var selectedValues = [];
-                                var linkCheckboxes = linkOptionsContainer.querySelectorAll('input[type="checkbox"]');
-                                linkCheckboxes.forEach(function(cb) {
-                                    if (cb.checked) {
-                                        selectedValues.push(cb.value);
-                                    }
-                                });
-                                
-                                Array.from(linkOriginalSelect.options).forEach(function(option) {
-                                    option.selected = selectedValues.indexOf(option.value) !== -1;
-                                });
-                                linkOriginalSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                            
-                            // 更新目标源的搜索框 placeholder
-                            var linkSearchInput = linkWrapper.querySelector('.dbsyncer-multi-select-search');
-                            if (linkSearchInput) {
-                                var linkCheckedCount = Array.from(linkWrapper.querySelectorAll('input[type="checkbox"]')).filter(function(cb) { 
-                                    return cb.checked; 
-                                }).length;
-                                if (linkCheckedCount > 0) {
-                                    linkSearchInput.placeholder = '已选择 ' + linkCheckedCount + ' 项';
-                                } else {
-                                    linkSearchInput.placeholder = '搜索表...';
-                                }
-                            }
-                            
-                            linkCheckbox.removeAttribute('data-syncing');
-                        }
-                    }
-                }
-            }
-        });
-    });
-    
-    // 按钮事件
-    actionBtns[0].addEventListener('click', function() { // 全选
-        checkboxes.forEach(function(cb) {
-            if (!cb.closest('.dbsyncer-multi-select-option').classList.contains('hidden')) {
-                cb.checked = true;
-            }
-        });
-        syncToOriginalSelect();
-        updateSearchPlaceholder();
-    });
-    
-    actionBtns[1].addEventListener('click', function() { // 取消全选
-        checkboxes.forEach(function(cb) {
-            cb.checked = false;
-        });
-        syncToOriginalSelect();
-        updateSearchPlaceholder();
-    });
-    
-    actionBtns[2].addEventListener('click', function() { // 取消过滤
-        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
-        options.forEach(function(option) {
-            option.style.display = '';
-            option.removeAttribute('data-filtered');
-        });
-    });
-    
-    actionBtns[3].addEventListener('click', function() { // 过滤（隐藏已添加的表）
-        var addedTables = getAddedTables();
-        var options = optionsContainer.querySelectorAll('.dbsyncer-multi-select-option');
-        
-        options.forEach(function(option) {
-            var checkbox = option.querySelector('input[type="checkbox"]');
-            if (addedTables.indexOf(checkbox.value) !== -1) {
-                option.style.display = 'none';
-                option.setAttribute('data-filtered', 'true');
-            }
-        });
-    });
-    
-    // 获取已添加的表列表
-    function getAddedTables() {
-        var tables = [];
-        var tableGroupList = document.getElementById('tableGroupList');
-        if (tableGroupList) {
-            var rows = tableGroupList.querySelectorAll('tr[data-source-name]');
-            rows.forEach(function(row) {
-                var sourceName = row.getAttribute('data-source-name');
-                if (sourceName) {
-                    tables.push(sourceName);
-                }
-            });
-        }
-        return tables;
-    }
-    
-    // 同步到原始 select
-    function syncToOriginalSelect() {
-        var selectedValues = [];
-        checkboxes.forEach(function(cb) {
-            if (cb.checked) {
-                selectedValues.push(cb.value);
-            }
-        });
-        
-        // 更新原始 select
-        if (originalSelect) {
-            Array.from(originalSelect.options).forEach(function(option) {
-                option.selected = selectedValues.indexOf(option.value) !== -1;
-            });
-            // 触发 change 事件
-            originalSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-    }
-    
-    // 更新搜索框 placeholder
-    function updateSearchPlaceholder() {
-        var checkedCount = Array.from(checkboxes).filter(function(cb) { return cb.checked; }).length;
-        if (checkedCount > 0) {
-            searchInput.placeholder = '已选择 ' + checkedCount + ' 项';
-        } else {
-            searchInput.placeholder = '搜索表...';
-        }
-    }
-    
-    // 初始化
-    syncToOriginalSelect();
-    updateSearchPlaceholder();
-    
-    // 点击外部关闭
-    document.addEventListener('click', function(e) {
-        if (!wrapper.contains(e.target)) {
-            wrapper.classList.remove('open');
-        }
-    });
-}
-
 $(function () {
     // 导出到全局
     window.DBSyncerTheme = {
@@ -674,16 +468,13 @@ $(function () {
         showEmpty: showEmpty,
         validateForm: validateForm,
         notify: notify,
-        enhanceSelects: enhanceSelects,
         initFileUpload: initFileUpload,
         initQRCodePopover: initQRCodePopover,
-        initMultipleInputTags: initMultipleInputTags,
-        initMultiSelect: initMultiSelect
+        initMultipleInputTags: initMultipleInputTags
     };
     
     // 向后兼容
     window.initMultipleInputTags = initMultipleInputTags;
-    window.initMultiSelect = initMultiSelect;
 
     // // 刷新登录用户
     // refreshLoginUser();
@@ -692,7 +483,7 @@ $(function () {
 
     // 初始化版权信息
     doGetter("/index/version.json", {}, function (data) {
-        if (data.success == true) {
+        if (data.success === true) {
             // 获取底部版权信息
             $("#copyRight").html(data.resultValue.appCopyRight);
             settings.watermark_txt = data.resultValue.watermark;
@@ -737,7 +528,6 @@ $(function () {
         $dropdown.toggleClass("open");
         $$dropdownMenu.addClass("hidden");
     });
-    enhanceSelects();
 });
 
 function validateForm($form) {
@@ -787,128 +577,8 @@ function validateForm($form) {
     return isValid;
 }
 
-var dbsyncerSelects = [];
-var dbsyncerSelectEventsBound = false;
-
-function enhanceSelects(root) {
-    var scope = root || document;
-    var nodes = scope.querySelectorAll('select.select-control:not([data-dbs-enhanced])');
-    if (!nodes.length) { return; }
-
-    nodes.forEach(function (select) {
-        if (select.dataset.dbsEnhanced === 'true') { return; }
-        select.dataset.dbsEnhanced = 'true';
-
-        var container = document.createElement('div');
-        container.className = 'select-wrapper';
-
-        var trigger = document.createElement('button');
-        trigger.type = 'button';
-        trigger.className = 'select-wrapper-trigger';
-
-        var textSpan = document.createElement('span');
-        textSpan.className = 'select-wrapper-text';
-        trigger.appendChild(textSpan);
-
-        var arrow = document.createElement('span');
-        arrow.className = 'select-wrapper-arrow';
-        trigger.appendChild(arrow);
-
-        var panel = document.createElement('div');
-        panel.className = 'select-wrapper-panel';
-
-        var parent = select.parentNode;
-        parent.insertBefore(container, select);
-        container.appendChild(trigger);
-        container.appendChild(panel);
-        container.appendChild(select);
-        select.classList.add('select-wrapper-original');
-
-        function buildOptions() {
-            panel.innerHTML = '';
-            Array.from(select.options).forEach(function (opt) {
-                var optionBtn = document.createElement('button');
-                optionBtn.type = 'button';
-                optionBtn.className = 'select-wrapper-option' + (opt.selected ? ' active' : '');
-                optionBtn.textContent = opt.textContent;
-                optionBtn.dataset.value = opt.value;
-                optionBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    Array.from(panel.querySelectorAll('.select-wrapper-option')).forEach(function (btn) {
-                        btn.classList.remove('active');
-                    });
-                    optionBtn.classList.add('active');
-                    select.value = opt.value;
-                    updateFromSelect();
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    closeAllSelects();
-                });
-                panel.appendChild(optionBtn);
-            });
-        }
-
-        function updateFromSelect() {
-            var selectedOption = select.options[select.selectedIndex];
-            textSpan.textContent = selectedOption ? selectedOption.text : (select.getAttribute('placeholder') || '请选择');
-            Array.from(panel.querySelectorAll('.select-wrapper-option')).forEach(function (btn) {
-                btn.classList.toggle('active', btn.dataset.value === select.value);
-            });
-            if (select.disabled) {
-                container.classList.add('disabled');
-                trigger.disabled = true;
-            } else {
-                container.classList.remove('disabled');
-                trigger.disabled = false;
-            }
-        }
-
-        buildOptions();
-        updateFromSelect();
-
-        trigger.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (container.classList.contains('disabled')) { return; }
-            var isOpen = container.classList.contains('open');
-            closeAllSelects(container);
-            if (!isOpen) {
-                container.classList.add('open');
-            } else {
-                container.classList.remove('open');
-            }
-        });
-
-        panel.addEventListener('click', function (e) { e.stopPropagation(); });
-
-        select.addEventListener('change', function () {
-            updateFromSelect();
-        });
-
-        dbsyncerSelects.push(container);
-    });
-
-    if (!dbsyncerSelectEventsBound) {
-        document.addEventListener('click', function () {
-            closeAllSelects();
-        });
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                closeAllSelects();
-            }
-        });
-        dbsyncerSelectEventsBound = true;
-    }
-}
-
-function closeAllSelects(except) {
-    dbsyncerSelects.forEach(function (container) {
-        if (container !== except) {
-            container.classList.remove('open');
-        }
-    });
-}
-
 function ensureToastContainer() {
-    var container = document.querySelector('.toast-container');
+    let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
         container.className = 'toast-container';
@@ -1000,14 +670,6 @@ function removeToast(toast) {
 
 window.bootGrowl = function (message, type, duration) {
     notify({ message: message, type: type || 'info', duration: duration || 3200 });
-};
-
-window.initSelectIndex = function ($select) {
-    if (!$select || !$select.length) { return $select; }
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects($select[0].parentNode || document);
-    }
-    return $select;
 };
 
 /**

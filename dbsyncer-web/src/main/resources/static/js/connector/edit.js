@@ -10,12 +10,6 @@ function submit(data) {
 }
 
 $(function () {
-    // 兼容IE PlaceHolder
-    $('input[type="text"],input[type="password"],textarea').PlaceHolder();
-
-    // 初始化select插件
-    initSelect($(".select-control"));
-
     //保存
     $("#connectorSubmitBtn").click(function () {
         var $form = $("#connectorModifyForm");

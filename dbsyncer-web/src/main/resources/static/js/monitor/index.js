@@ -222,7 +222,7 @@ $(function () {
         if (progressBar) {
             progressBar.style.width = percent + '%';
             // 根据百分比动态调整颜色
-            progressBar.className = 'monitor-progress-fill';
+            progressBar.className = 'progress-fill';
             if (percent >= 80) {
                 progressBar.classList.add('danger');
             } else if (percent >= 60) {
@@ -235,13 +235,13 @@ $(function () {
         if (valueElement) {
             valueElement.textContent = percent + '%';
             // 根据百分比动态调整文字颜色
-            valueElement.className = 'monitor-progress-value';
+            valueElement.className = 'progress-value';
             if (percent >= 80) {
-                valueElement.classList.add('monitor-progress-value-danger');
+                valueElement.classList.add('progress-value-danger');
             } else if (percent >= 60) {
-                valueElement.classList.add('monitor-progress-value-warning');
+                valueElement.classList.add('progress-value-warning');
             } else {
-                valueElement.classList.add('monitor-progress-value-success');
+                valueElement.classList.add('progress-value-success');
             }
         }
     }
@@ -370,19 +370,9 @@ $(function () {
         });
     }
     
-    /**
-     * 初始化下拉框
-     */
-    function initSelects() {
-        if (window.DBSyncerTheme && DBSyncerTheme.enhanceSelects) {
-            DBSyncerTheme.enhanceSelects(document);
-        }
-    }
-    
     // 页面加载完成后初始化
     initCharts();
     initEvents();
-    initSelects();
     
     // 开始定时更新数据（每3秒更新一次）
     setInterval(updateMonitorData, 3000);

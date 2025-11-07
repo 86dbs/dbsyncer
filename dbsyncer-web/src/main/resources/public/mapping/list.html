@@ -337,16 +337,6 @@ function initAddMappingPage() {
     $('#mappingSubmitBtn').off('click').on('click', function() {
         submitMappingForm();
     });
-
-    // 初始化select插件
-    if (typeof initSelectIndex === 'function') {
-        initSelectIndex($(".select-control"), 0);
-    }
-
-    // 初始化开关
-    if (typeof initSwitch === 'function') {
-        initSwitch();
-    }
 }
 
 /**
@@ -847,11 +837,6 @@ function initMappingEditPage() {
     // 绑定刷新数据表按钮点击事件
     if (typeof bindRefreshTablesClick === 'function') {
         bindRefreshTablesClick();
-    }
-
-    // 初始化select插件
-    if (typeof initSelectIndex === 'function') {
-        initSelectIndex($(".select-control-table"), -1);
     }
     
     // 绑定下拉过滤按钮点击事件

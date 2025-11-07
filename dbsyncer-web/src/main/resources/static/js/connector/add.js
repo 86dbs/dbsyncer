@@ -24,18 +24,6 @@ function submitConnector(data) {
 
 window.submitConnector = submitConnector;
 
-function enhanceScope($scope) {
-    if (!$scope || !$scope.length) {
-        return;
-    }
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects($scope[0]);
-    }
-    if (typeof $.fn.PlaceHolder === 'function') {
-        $scope.find('input[type="text"],input[type="password"],textarea').PlaceHolder();
-    }
-}
-
 // 绑定连接器类型切换事件
 function bindConnectorChangeEvent($select) {
     if (!$select || !$select.length) {
@@ -70,9 +58,7 @@ function changeConnectorType($select) {
     $connectorConfig.load($basePath + "/connector/page/add" + connType, function (response, status) {
         if (status !== 'success') {
             $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-warning"></i></div><div class="empty-text">加载配置失败，请稍后重试</div></div>');
-            return;
         }
-        enhanceScope($connectorConfig);
     });
 }
 
@@ -81,8 +67,6 @@ function setupConnectorAddForm() {
     if (!$form.length) {
         return;
     }
-
-    enhanceScope($form);
 
     var $select = $("#connectorType");
     bindConnectorChangeEvent($select);

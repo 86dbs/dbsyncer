@@ -228,15 +228,10 @@ function loadDatabaseList(connectorId, type) {
 }
 
 $(function () {
-    // 兼容IE PlaceHolder
- 
     // 分别初始化两个select插件，避免状态冲突
     var $sourceSelect = $("select[name='sourceConnectorId']");
     var $targetSelect = $("select[name='targetConnectorId']");
-    
-    initSelectIndex($sourceSelect, 0);
-    initSelectIndex($targetSelect, 0);
-   
+
     // 监听数据源选择变化
     $sourceSelect.on('change', function() {
         var connectorId = $(this).val();

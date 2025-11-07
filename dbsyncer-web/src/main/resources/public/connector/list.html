@@ -280,10 +280,6 @@ function initConnectorListPage() {
     // 绑定表格行事件
     bindTableRowEvents();
 
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects(document.querySelector('.table-filter'));
-    }
-
 }
 
 // 提交连接器表单
@@ -407,10 +403,6 @@ $(document).ready(function() {
     $('#typeFilter').on('change', function() {
         filterConnectors();
     });
-
-    if (window.DBSyncerTheme) {
-        DBSyncerTheme.enhanceSelects(document.querySelector('.table-filter'));
-    }
 });
 
 /**
@@ -458,16 +450,6 @@ function initConnectorEditPage() {
             submitConnectorEditForm(data);
         }
     });
-
-    // 初始化select插件
-    if (typeof initSelect === 'function') {
-        initSelect($(".select-control"));
-    }
-
-    // 兼容IE PlaceHolder
-    if (typeof $.fn.PlaceHolder === 'function') {
-        $('input[type="text"],input[type="password"],textarea').PlaceHolder();
-    }
 }
 
 /**

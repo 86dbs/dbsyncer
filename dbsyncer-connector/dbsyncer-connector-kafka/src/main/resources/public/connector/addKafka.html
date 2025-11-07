@@ -217,13 +217,6 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
         $(function () {
             format();
 
-            // 初始化select插件
-            if (window.DBSyncerTheme && typeof DBSyncerTheme.enhanceSelects === 'function') {
-                DBSyncerTheme.enhanceSelects(document.querySelector('[th\\:fragment="content"]'));
-            } else if (typeof initSelectIndex === 'function') {
-                initSelectIndex($(".select-control"), 1);
-            }
-
             // 绑定下拉联动切换事件
             $("#maxPartitionFetchBytesSelect").on('changed.bs.select',function(e){
                 $("#maxRequestSizeSelect").selectpicker('val', $(this).selectpicker('val'));

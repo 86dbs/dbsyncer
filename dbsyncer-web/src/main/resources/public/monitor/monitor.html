@@ -63,15 +63,15 @@
     <!-- 右侧：系统状态 -->
     <div class="container-no-bg">
         <!-- CPU使用率 -->
-        <div class="monitor-progress-card mb-3">
-            <div class="monitor-progress-header">
-                <span class="monitor-progress-title">CPU使用率</span>
-                <span class="monitor-progress-value" id="cpuPercentValue">68%</span>
+        <div class="progress-card mb-3">
+            <div class="progress-header">
+                <span class="progress-title">CPU使用率</span>
+                <span class="progress-value" id="cpuPercentValue">68%</span>
             </div>
-            <div class="monitor-progress-bar">
-                <div class="monitor-progress-fill" id="cpuProgressBar" style="width: 68%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="cpuProgressBar" style="width: 68%"></div>
             </div>
-            <div class="monitor-progress-detail">
+            <div class="progress-detail">
                 <span>核心数 <strong id="cpuCores">8</strong></span>
                 <span>用户态 <strong id="cpuUser">45%</strong></span>
                 <span>系统态 <strong id="cpuSystem">23%</strong></span>
@@ -79,30 +79,30 @@
         </div>
 
         <!-- 内存使用率 -->
-        <div class="monitor-progress-card mb-3">
-            <div class="monitor-progress-header">
-                <span class="monitor-progress-title">内存使用率</span>
-                <span class="monitor-progress-value monitor-progress-value-warning" id="memoryPercentValue">72%</span>
+        <div class="progress-card mb-3">
+            <div class="progress-header">
+                <span class="progress-title">内存使用率</span>
+                <span class="progress-value progress-value-warning" id="memoryPercentValue">72%</span>
             </div>
-            <div class="monitor-progress-bar">
-                <div class="monitor-progress-fill warning" id="memoryProgressBar" style="width: 72%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill warning" id="memoryProgressBar" style="width: 72%"></div>
             </div>
-            <div class="monitor-progress-detail">
+            <div class="progress-detail">
                 <span>总内存 <strong id="memoryTotal">32 GB</strong></span>
                 <span>已使用 <strong id="memoryUsed">23 GB</strong></span>
             </div>
         </div>
 
         <!-- 磁盘使用率 -->
-        <div class="monitor-progress-card mb-3">
-            <div class="monitor-progress-header">
-                <span class="monitor-progress-title">磁盘使用率</span>
-                <span class="monitor-progress-value monitor-progress-value-success" id="diskPercentValue">35%</span>
+        <div class="progress-card mb-3">
+            <div class="progress-header">
+                <span class="progress-title">磁盘使用率</span>
+                <span class="progress-value progress-value-success" id="diskPercentValue">35%</span>
             </div>
-            <div class="monitor-progress-bar">
-                <div class="monitor-progress-fill" id="diskProgressBar" style="width: 35%"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="diskProgressBar" style="width: 35%"></div>
             </div>
-            <div class="monitor-progress-detail">
+            <div class="progress-detail">
                 <span>总容量 <strong id="diskTotal">1.2 TB</strong></span>
                 <span>已使用 <strong id="diskUsed">420 GB</strong></span>
             </div>

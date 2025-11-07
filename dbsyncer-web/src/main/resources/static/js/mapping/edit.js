@@ -313,8 +313,6 @@ $(function () {
     //绑定刷新数据表按钮点击事件
     bindRefreshTablesClick();
 
-    // 初始化select插件
-    initSelectIndex($(".select-control-table"), -1);
     // 绑定下拉过滤按钮点击事件
     bindMultipleSelectFilterBtnClick();
 
