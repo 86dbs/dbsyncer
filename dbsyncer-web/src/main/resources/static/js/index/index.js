@@ -62,19 +62,6 @@ const trendChart = new Chart(trendCtx, {
     
     if (!searchInput) return;
     
-    // 防抖函数
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-    
     // 搜索过滤函数
     function performSearch(keyword) {
         const keywordLower = keyword.toLowerCase().trim();
@@ -121,16 +108,11 @@ const trendChart = new Chart(trendCtx, {
         searchInput.focus();
     }
     
-    // 防抖搜索函数（300ms延迟）
-    const debouncedSearch = debounce(performSearch, 300);
-    
     // 绑定事件
     searchInput.addEventListener('input', function(e) {
         const value = e.target.value;
         // 立即更新清除按钮显示状态
         updateSearchState(value);
-        // 防抖执行搜索过滤
-        debouncedSearch(value);
     });
     
     searchClear.addEventListener('click', clearSearch);

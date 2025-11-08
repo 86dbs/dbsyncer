@@ -114,23 +114,19 @@
     </div>
 
     <!-- 搜索入口 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3">
-        <div class="lg:col-span-1">
-            <div class="search-container">
-                <div class="search-wrapper">
-                    <i class="fa fa-search search-icon"></i>
-                    <input type="text" id="searchInput" placeholder="搜索连接、驱动名称" class="search-input">
-                    <span class="search-clear" id="searchClear" title="清除">
-                        <i class="fa fa-times"></i>
-                    </span>
-                </div>
-            </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 mb-5">
+        <div class="search-wrapper">
+            <i class="fa fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="搜索连接、驱动名称" class="search-input">
+            <span class="search-clear" id="searchClear" title="清除">
+                <i class="fa fa-times"></i>
+            </span>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3">
         <!-- 左侧：连接列表 -->
-        <div class="form-container lg:col-span-1 p-5">
+        <div class="form-container p-5">
             <div class="border-gray-100 flex justify-end mb-5">
                 <button class="btn btn-info text-sm">
                     <i class="fa fa-plus"></i>
@@ -212,10 +208,10 @@
                             <div class="font-medium">用户数据同步</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge text-primary">增量同步</span>
+                            <span class="badge badge-primary">增量同步</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge text-success">运行中</span>
+                            <span class="badge badge-success">运行中</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             10分钟前

@@ -179,16 +179,11 @@ select.form-control.is-invalid,
 }
 
 /* 搜索组件 */
-.search-container {
-  position: relative;
-  max-width: 100%;
-  margin-bottom: var(--spacing-lg);
-}
 .search-wrapper {
   position: relative;
+  max-width: 100%;
   display: flex;
   align-items: center;
-  width: 100%;
 }
 .search-wrapper:focus-within .search-icon {
   color: var(--primary-color);
