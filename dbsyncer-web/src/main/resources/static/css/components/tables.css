@@ -1,11 +1,31 @@
 /**
  * DBSyncer 表格组件样式
  */
-
-.table {
-  width: 100%;
+table {
   border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
   font-size: var(--font-size-sm);
+}
+
+/* 表格拖拽样式 */
+tr[draggable="true"] {
+  cursor: move;
+  transition: all 0.3s ease;
+}
+
+tr.dragging {
+  opacity: 0.5;
+  background-color: var(--primary-color) !important;
+  color: white;
+}
+
+tr.drag-over {
+  border-top: 2px solid var(--primary-color);
+}
+
+tr[draggable="true"]:hover {
+  background-color: var(--bg-tertiary);
 }
 
 .table th {

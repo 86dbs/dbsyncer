@@ -1,15 +1,3 @@
-/* ========== 顶部导航栏容器（HTML中使用的是普通header） ========== */
-header.bg-white {
-  height: 56px;
-  background-color: #fff;
-  border-bottom: 1px solid #e8e8e8;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  position: relative;
-  z-index: 1000;
-}
 
 /* ========== 许可证信息样式 ========== */
 .license-info-item {
@@ -51,7 +39,6 @@ header.bg-white {
   z-index: 1000;
   padding: 4px 0;
   list-style: none;
-  margin: 0;
 }
 
 .dropdown-menu li {
@@ -94,92 +81,6 @@ header.bg-white {
   display: none;
 }
 
-/* ========== 原有的 dbsyncer-header 样式（保留兼容） ========== */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--header-height);
-  background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--border-secondary);
-  box-shadow: var(--shadow-sm);
-  z-index: var(--z-fixed);
-  display: flex;
-  align-items: center;
-  padding: 0 var(--spacing-lg);
-}
-
-/* Logo区域 */
-.logo {
-  display: flex;
-  align-items: center;
-  margin-right: var(--spacing-xl);
-}
-
-/* 右侧操作区域 */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.header-btn {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: none;
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-btn:hover {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.header-btn.active {
-  background-color: var(--primary-color);
-  color: var(--bg-primary);
-}
-
-/* 通知按钮 */
-.notification-btn {
-  position: relative;
-}
-
-.notification-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
-  background-color: var(--error-color);
-  border-radius: var(--radius-round);
-  border: 2px solid var(--bg-primary);
-}
-
-/* 用户信息区域 */
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.user-info:hover {
-  background-color: var(--bg-tertiary);
-}
-
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -188,46 +89,4 @@ header.bg-white {
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-sm);
-}
-
-.user-name {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.user-dropdown {
-  color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
-  transition: transform var(--transition-fast);
-}
-
-.user-info:hover .user-dropdown {
-  transform: rotate(180deg);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .header {
-    padding: 0 var(--spacing-md);
-  }
-  
-  .search {
-    max-width: 200px;
-    margin-right: var(--spacing-md);
-  }
-  
-  .user-name {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .search {
-    display: none;
-  }
-  
-  .header-actions {
-    gap: var(--spacing-sm);
-  }
 }

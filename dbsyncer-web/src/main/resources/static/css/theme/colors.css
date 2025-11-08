@@ -28,31 +28,3 @@
 .border-primary { border-color: var(--border-primary) !important; }
 .border-secondary { border-color: var(--border-secondary) !important; }
 .border-tertiary { border-color: var(--border-tertiary) !important; }
-
-/* 状态指示器 */
-.status-indicator {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-round);
-  margin-right: var(--spacing-sm);
-}
-
-.status-indicator.success { background-color: var(--success-color); }
-.status-indicator.warning { background-color: var(--warning-color); }
-.status-indicator.error { background-color: var(--error-color); }
-.status-indicator.info { background-color: var(--info-color); }
-.status-indicator.primary { background-color: var(--primary-color); }
-
-/* 进度条颜色 */
-.progress-bar-primary { background-color: var(--primary-color); }
-.progress-bar-success { background-color: var(--success-color); }
-.progress-bar-warning { background-color: var(--warning-color); }
-.progress-bar-error { background-color: var(--error-color); }
-
-/* 图表颜色 */
-.chart-color-primary { color: var(--primary-color); }
-.chart-color-success { color: var(--success-color); }
-.chart-color-warning { color: var(--warning-color); }
-.chart-color-error { color: var(--error-color); }
-.chart-color-info { color: var(--info-color); }

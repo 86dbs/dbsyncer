@@ -39,6 +39,10 @@
 .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.grid { display: grid; gap: var(--spacing-lg);}
+.grid-2 { grid-template-columns: repeat(2, 1fr);}
+.grid-3 { grid-template-columns: repeat(3, 1fr);}
+.grid-4 { grid-template-columns: repeat(4, 1fr);}
 
 /* ========== 间距工具类 ========== */
 /* Margin */
@@ -203,9 +207,9 @@
 .cursor-default { cursor: default; }
 
 /* ========== 过渡动画 ========== */
-.transition { transition: all var(--transition-base); }
+.transition { transition: all var(--transition-normal); }
 .transition-fast { transition: all var(--transition-fast); }
-.transition-colors { transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base); }
+.transition-colors { transition: color var(--transition-slow), background-color var(--transition-slow), border-color var(--transition-slow); }
 
 /* ========== 对象适配工具类 ========== */
 .object-cover {

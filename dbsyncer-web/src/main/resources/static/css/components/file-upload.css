@@ -287,16 +287,6 @@
   }
 }
 
-/* 旋转动画（已在 base 中定义，这里备用） */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* 响应式 */
 @media (max-width: 768px) {
   .upload-area {

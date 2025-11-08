@@ -15,7 +15,6 @@
 @import url('./layout/main.css');
 
 /* ========== 导入UI组件 ========== */
-@import url('./components/containers.css');
 @import url('./components/cards.css');
 @import url('./components/buttons.css');
 @import url('./components/tables.css');
@@ -95,29 +94,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden; /* 防止整个页面滚动 */
 }
+/* ========== 基础容器 ========== */
+.container-base {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+/* ========== 无背景容器 ========== */
+.container-no-bg {
+  padding: 0;
+  background: transparent;
+}
 
 /* ========== 滚动条样式 ========== */
-/* 表格拖拽样式 */
-tr[draggable="true"] {
-  cursor: move;
-  transition: all 0.3s ease;
-}
-
-tr.dragging {
-  opacity: 0.5;
-  background-color: var(--primary-color) !important;
-  color: white;
-}
-
-tr.drag-over {
-  border-top: 2px solid var(--primary-color);
-}
-
-tr[draggable="true"]:hover {
-  background-color: var(--bg-tertiary);
-}
-
-/* 滚动条样式 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -171,13 +160,6 @@ input, textarea, select, button {
   line-height: inherit;
 }
 
-/* ========== 表格基础样式 ========== */
-table {
-  border-collapse: collapse;
-  border-spacing: 0;
-  width: 100%;
-}
-
 /* ========== 动画效果 ========== */
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -228,8 +210,6 @@ table {
 .animate-slideInDown { animation: slideInDown 0.3s ease-out; }
 .animate-spin { animation: spin 1s linear infinite; }
 .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
-/* ========== 特殊组件样式（保留少量必要的） ========== */
 
 /* 标签输入组件 */
 .tagsinput {
@@ -465,4 +445,23 @@ table {
   background: var(--success-color);
   border-color: var(--success-color);
   color: #fff;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-tertiary);
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-primary);
+  border-top: 2px solid var(--primary-color);
+  border-radius: var(--radius-round);
+  animation: spin 1s linear infinite;
+  margin-right: var(--spacing-sm);
 }

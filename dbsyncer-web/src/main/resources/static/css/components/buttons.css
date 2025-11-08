@@ -175,11 +175,6 @@
   opacity: 0;
 }
 
-@keyframes btn-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* 按钮图标 */
 .btn-icon-left {
   margin-right: var(--spacing-xs);
