@@ -225,6 +225,7 @@
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .lg\:col-span-2 { grid-column: span 2 / span 2; }
+  .lg\:col-span-3 { grid-column: span 3 / span 3; }
   .lg\:col-span-9 { grid-column: span 9 / span 9; }
   .lg\:flex { display: flex; }
   .lg\:hidden { display: none; }

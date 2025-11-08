@@ -3,279 +3,311 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="index">
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-4 mb-5">
+        <div class="card px-6">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-500">总任务数</p>
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <i class="fa fa-tasks"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2 success">
+                <span class="text-3xl font-bold">24</span>
+                <span class="text-success text-sm mb-1 flex items-center">
+    <i class="fa fa-arrow-up mr-1"></i> 3 个
+</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较上周增长 14%</p>
+        </div>
+
+        <div class="card px-6">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-500">运行中任务</p>
+                <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                    <i class="fa fa-play"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold">18</span>
+                <span class="text-success text-sm mb-1 flex items-center">
+                        <i class="fa fa-check mr-1"></i> 正常
+                    </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">占总任务数 75%</p>
+        </div>
+
+        <div class="card px-6">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-500">失败任务</p>
+                <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center text-error">
+                    <i class="fa fa-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold">2</span>
+                <span class="text-error text-sm mb-1 flex items-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 1 个
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
+        </div>
+
+        <div class="card px-6">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-500">同步数据量</p>
+                <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+                    <i class="fa fa-database"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold">14.2 GB</span>
+                <span class="text-success text-sm mb-1 flex items-center">
+                    <i class="fa fa-arrow-up mr-1"></i> 23%
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较昨日增长</p>
+        </div>
+    </div>
 
     <!-- 同步趋势图表 -->
-    <div class="form-container lg:col-span-2 p-5 mb-6">
-        <div class="flex items-center justify-between mb-5">
-            <h3 class="font-bold text-lg">同步趋势</h3>
-            <div class="flex gap-2">
-                <button class="btn btn-outline text-sm">今日</button>
-                <button class="btn btn-outline text-sm text-primary">本周</button>
-                <button class="btn btn-outline text-sm">本月</button>
+    <div class="grid grid-cols-4 mb-5">
+        <!-- 同步趋势图表 -->
+        <div class="lg:col-span-3">
+            <div class="form-container p-5">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-lg">同步趋势</h3>
+                    <div class="flex gap-2">
+                        <button class="btn btn-outline text-sm">今日</button>
+                        <button class="btn btn-outline text-sm text-primary">本周</button>
+                        <button class="btn btn-outline text-sm">本月</button>
+                    </div>
+                </div>
+                <div>
+                    <canvas id="syncTrendChart"></canvas>
+                </div>
             </div>
         </div>
-        <div class="mb-5">
-            <canvas id="syncTrendChart"></canvas>
-        </div>
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-4">
-            <div class="card px-6">
-                <div class="flex items-center justify-between">
-                    <p class="text-gray-500">总任务数</p>
-                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <i class="fa fa-tasks"></i>
-                    </div>
-                </div>
-                <div class="flex items-end gap-2 success">
-                    <span class="text-3xl font-bold">24</span>
-                    <span class="text-success text-sm mb-1 flex items-center">
-        <i class="fa fa-arrow-up mr-1"></i> 3 个
-    </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">较上周增长 14%</p>
-            </div>
 
-            <div class="card px-6">
-                <div class="flex items-center justify-between">
-                    <p class="text-gray-500">运行中任务</p>
-                    <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
-                        <i class="fa fa-play"></i>
-                    </div>
-                </div>
-                <div class="flex items-end gap-2">
-                    <span class="text-3xl font-bold">18</span>
-                    <span class="text-success text-sm mb-1 flex items-center">
-                            <i class="fa fa-check mr-1"></i> 正常
-                        </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">占总任务数 75%</p>
+        <div class="form-container lg:col-span-1 p-5">
+            <div class="flex items-center gap-2 mr-2">
+                成功
+                <span class="badge badge-success font-medium">10009999</span>
             </div>
-
-            <div class="card px-6">
-                <div class="flex items-center justify-between">
-                    <p class="text-gray-500">失败任务</p>
-                    <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center text-error">
-                        <i class="fa fa-exclamation-triangle"></i>
-                    </div>
-                </div>
-                <div class="flex items-end gap-2">
-                    <span class="text-3xl font-bold">2</span>
-                    <span class="text-error text-sm mb-1 flex items-center">
-                        <i class="fa fa-arrow-up mr-1"></i> 1 个
-                    </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
+            <div class="flex items-center gap-2 mr-2">
+                失败
+                <span class="badge badge-error">10009999</span>
             </div>
-
-            <div class="card px-6">
-                <div class="flex items-center justify-between">
-                    <p class="text-gray-500">同步数据量</p>
-                    <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
-                        <i class="fa fa-database"></i>
-                    </div>
-                </div>
-                <div class="flex items-end gap-2">
-                    <span class="text-3xl font-bold">14.2 GB</span>
-                    <span class="text-success text-sm mb-1 flex items-center">
-                        <i class="fa fa-arrow-up mr-1"></i> 23%
-                    </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">较昨日增长</p>
+            <div class="flex items-center gap-2 mr-2">
+                新增
+                <span class="badge badge-primary">10009999</span>
+            </div>
+            <div class="flex items-center gap-2 mr-2">
+                修改
+                <span class="badge badge-info">10009999</span>
+            </div>
+            <div class="flex items-center gap-2 mr-2">
+                删除
+                <span class="badge badge-warning">10009999</span>
             </div>
         </div>
     </div>
 
     <!-- 搜索入口 -->
-    <div class="search-container">
-        <div class="search-wrapper">
-            <i class="fa fa-search search-icon"></i>
-            <input type="text" id="searchInput" placeholder="搜索连接、驱动名称" class="search-input">
-            <span class="search-clear" id="searchClear" title="清除">
-                <i class="fa fa-times"></i>
-            </span>
+    <div class="grid grid-cols-1 lg:grid-cols-3">
+        <div class="lg:col-span-1">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fa fa-search search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="搜索连接、驱动名称" class="search-input">
+                    <span class="search-clear" id="searchClear" title="清除">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 mb-6">
-            <!-- 左侧：连接列表 -->
-            <div class="form-container lg:col-span-1 p-5">
-                <div class="border-gray-100 flex items-center mb-5">
-                    <button class="btn btn-info text-sm">
-                        <i class="fa fa-plus"></i>
-                        <span>添加连接</span>
-                    </button>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3">
+        <!-- 左侧：连接列表 -->
+        <div class="form-container lg:col-span-1 p-5">
+            <div class="border-gray-100 flex justify-end mb-5">
+                <button class="btn btn-info text-sm">
+                    <i class="fa fa-plus"></i>
+                    <span>添加连接</span>
+                </button>
+            </div>
 
-                <div class="card flex items-center justify-between border rounded-md mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center justify-center ml-3">
-                            <img draggable="false" src="/img/MySQL.png" alt="MySQL">
-                        </div>
-                        <div>
-                            <p class="font-medium">MySQL - 用户库</p>
-                            <p class="text-xs text-gray-500">192.168.1.100:3306</p>
-                        </div>
+            <div class="card flex justify-between border rounded-md mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center ml-3">
+                        <img draggable="false" src="/img/MySQL.png" alt="MySQL">
                     </div>
-                    <div class="flex items-center gap-2 mr-2">
-                        <span class="badge badge-success">在线</span>
-                        <i class="fa fa-cog"></i>
+                    <div>
+                        <p class="font-medium">MySQL - 用户库</p>
+                        <p class="text-xs text-gray-500">192.168.1.100:3306</p>
                     </div>
                 </div>
-
-                <div class="card flex items-center justify-between border rounded-md mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center justify-center ml-3">
-                            <img draggable="false" src="/img/Oracle.png" alt="Oracle">
-                        </div>
-                        <div>
-                            <p class="font-medium">Oracle - 订单库</p>
-                            <p class="text-xs text-gray-500">192.168.1.101:1521</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 mr-2">
-                        <span class="badge badge-success">在线</span>
-                        <i class="fa fa-cog"></i>
-                    </div>
-                </div>
-
-                <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                    <p class="text-sm text-gray-500">共 9 条</p>
-                    <div class="flex items-center gap-2">
-                        <button class="pagination-btn" disabled>
-                            <i class="fa fa-angle-left"></i>
-                        </button>
-                        <button class="pagination-btn active">1</button>
-                        <button class="pagination-btn">2</button>
-                        <button class="pagination-btn">3</button>
-                        <button class="pagination-btn">
-                            <i class="fa fa-angle-right"></i>
-                        </button>
-                    </div>
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="badge badge-success">在线</span>
+                    <i class="fa fa-cog"></i>
                 </div>
             </div>
 
-            <!-- 右侧：驱动列表 -->
-            <div class="form-container lg:col-span-2 p-5">
-                <div class="border-gray-100 flex items-center mb-5">
-                    <button class="btn btn-info">
-                        <i class="fa fa-plus"></i>
-                        <span>新建驱动</span>
-                    </button>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                        <tr class="bg-gray-50 text-left">
-                            <th class="px-6 py-4 text-xs font-medium text-gray-500">名称</th>
-                            <th class="px-6 py-4 text-xs font-medium text-gray-500">类型</th>
-                            <th class="px-6 py-4 text-xs font-medium text-gray-500">状态</th>
-                            <th class="px-6 py-4 text-xs font-medium text-gray-500">最后同步</th>
-                            <th class="px-6 py-4 text-xs font-medium text-gray-500">操作</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr class="transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="font-medium">用户数据同步</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge text-primary">增量同步</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge text-success">运行中</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                10分钟前
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-1">
-                                    <button class="table-action-btn view" title="查看详情">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                    <button class="table-action-btn pause" title="暂停任务">
-                                        <i class="fa fa-pause"></i>
-                                    </button>
-                                    <button class="table-action-btn delete" title="删除任务">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="font-medium">订单数据同步</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge badge-info">全量同步</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge badge-error">已失败</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                2小时前
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-1">
-                                    <button class="table-action-btn view" title="查看详情">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                    <button class="table-action-btn play" title="重启任务">
-                                        <i class="fa fa-play"></i>
-                                    </button>
-                                    <button class="table-action-btn delete" title="删除任务">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="font-medium">商品信息同步</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge badge-primary">增量同步</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge badge-success">未运行</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                昨天 18:30
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-1">
-                                    <button class="table-action-btn view" title="查看详情">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                    <button class="table-action-btn play" title="启动任务">
-                                        <i class="fa fa-play"></i>
-                                    </button>
-                                    <button class="table-action-btn delete" title="删除任务">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                    <p class="text-sm text-gray-500">共 24 条</p>
-                    <div class="flex items-center gap-2">
-                        <button class="pagination-btn" disabled>
-                            <i class="fa fa-angle-left"></i>
-                        </button>
-                        <button class="pagination-btn active">1</button>
-                        <button class="pagination-btn">2</button>
-                        <button class="pagination-btn">3</button>
-                        <button class="pagination-btn">
-                            <i class="fa fa-angle-right"></i>
-                        </button>
+            <div class="card flex items-center justify-between border rounded-md mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center ml-3">
+                        <img draggable="false" src="/img/Oracle.png" alt="Oracle">
                     </div>
+                    <div>
+                        <p class="font-medium">Oracle - 订单库</p>
+                        <p class="text-xs text-gray-500">192.168.1.101:1521</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mr-2">
+                    <span class="badge badge-success">在线</span>
+                    <i class="fa fa-cog"></i>
+                </div>
+            </div>
+
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+                <p class="text-sm text-gray-500">共 9 条</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- 右侧：驱动列表 -->
+        <div class="form-container lg:col-span-2 p-5">
+            <div class="border-gray-100 flex items-center justify-end mb-5">
+                <button class="btn btn-info">
+                    <i class="fa fa-plus"></i>
+                    <span>新建驱动</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                    <tr class="bg-gray-50 text-left">
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500">名称</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500">类型</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500">状态</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500">最后同步</th>
+                        <th class="px-6 py-4 text-xs font-medium text-gray-500">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium">用户数据同步</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge text-primary">增量同步</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge text-success">运行中</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            10分钟前
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-1">
+                                <button class="table-action-btn view" title="查看详情">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="table-action-btn pause" title="暂停任务">
+                                    <i class="fa fa-pause"></i>
+                                </button>
+                                <button class="table-action-btn delete" title="删除任务">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium">订单数据同步</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge badge-info">全量同步</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge badge-error">已失败</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            2小时前
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-1">
+                                <button class="table-action-btn view" title="查看详情">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="table-action-btn play" title="重启任务">
+                                    <i class="fa fa-play"></i>
+                                </button>
+                                <button class="table-action-btn delete" title="删除任务">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium">商品信息同步</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge badge-primary">增量同步</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge badge-success">未运行</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            昨天 18:30
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-1">
+                                <button class="table-action-btn view" title="查看详情">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="table-action-btn play" title="启动任务">
+                                    <i class="fa fa-play"></i>
+                                </button>
+                                <button class="table-action-btn delete" title="删除任务">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+                <p class="text-sm text-gray-500">共 24 条</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script th:src="@{/js/index/index.js}"></script>
 </div>

@@ -25,7 +25,6 @@ main.flex-1 {
   overflow-y: auto;
   overflow-x: hidden;
   background-color: var(--bg-secondary);
-  /* padding 由 HTML 中的 p-4 类提供 */
 }
 
 /* 确保mainContent可以正确滚动 */
@@ -58,142 +57,6 @@ main.flex-1 {
 /* 侧边栏折叠时的主内容区 */
 .sidebar.collapsed + .main-content {
   margin-left: var(--sidebar-collapsed-width);
-}
-
-/* 页面容器 */
-.page {
-  padding: var(--spacing-lg);
-  margin: 0 auto;
-}
-
-/* 页面头部 */
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-title {
-  font-size: var(--font-size-xxl);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-sm);
-}
-
-.page-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-  margin-bottom: 0;
-}
-
-/* 页面工具栏 */
-.page-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-}
-
-.page-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.page-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-/* 时间筛选器 */
-.time-filter {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.time-filter-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.time-filter-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.time-filter-btn.active {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--bg-primary);
-}
-
-/* 导出按钮 */
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.export-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-/* 刷新和间隔控制 */
-.refresh-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.refresh-btn:hover {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.interval-select {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-primary);
-  background-color: var(--bg-primary);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.interval-select:hover {
-  border-color: var(--primary-color);
 }
 
 /* 内容区域 */
@@ -233,20 +96,7 @@ main.flex-1 {
   .grid-2 {
     grid-template-columns: 1fr;
   }
-  
-  .page {
-    padding: var(--spacing-lg);
-  }
-  
-  .page-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .page-toolbar-left,
-  .page-toolbar-right {
-    justify-content: center;
-  }
+
 }
 
 /* 移动端侧边栏状态 */

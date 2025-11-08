@@ -181,7 +181,7 @@ select.form-control.is-invalid,
 /* 搜索组件 */
 .search-container {
   position: relative;
-  max-width: 32%;
+  max-width: 100%;
   margin-bottom: var(--spacing-lg);
 }
 .search-wrapper {
