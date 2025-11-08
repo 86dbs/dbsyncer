@@ -3,6 +3,43 @@
  * 减少重复，提高复用性
  */
 
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-xxl { font-size: var(--font-size-xxl); }
+
+/* 字重 */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-mono { font-family: 'Courier New', monospace; }
+
+/* 行高 */
+.leading-tight { line-height: var(--line-height-sm); }
+.leading-normal { line-height: var(--line-height-md); }
+.leading-relaxed { line-height: var(--line-height-lg); }
+
+/* 文本对齐 */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* 文本装饰 */
+.text-underline { text-decoration: underline; }
+.text-no-underline { text-decoration: none; }
+.text-line-through { text-decoration: line-through; }
+
+/* 文本截断 */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ========== 布局工具类 ========== */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
@@ -114,14 +151,12 @@
 .min-w-0 { min-width: 0; }
 .min-w-200 { min-width: 200px; }
 .min-w-300 { min-width: 300px; }
-
 .max-w-full { max-width: 100%; }
 
 /* ========== 文本工具类 ========== */
 .text-left { text-align: left; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
-
 .text-xs { font-size: 0.75rem; }
 .text-sm { font-size: 0.875rem; }
 .text-base { font-size: 1rem; }
@@ -141,7 +176,6 @@
 }
 
 .whitespace-nowrap { white-space: nowrap; }
-
 .hover-underline:hover { text-decoration: underline; }
 
 /* ========== 边框工具类 ========== */
@@ -171,7 +205,6 @@
 /* ========== 背景工具类 ========== */
 .bg-white { background-color: #fff; }
 .bg-transparent { background-color: transparent; }
-
 .bg-primary { background-color: var(--primary-color); }
 .bg-success { background-color: var(--success-color); }
 .bg-warning { background-color: var(--warning-color); }
@@ -211,11 +244,6 @@
 .transition-fast { transition: all var(--transition-fast); }
 .transition-colors { transition: color var(--transition-slow), background-color var(--transition-slow), border-color var(--transition-slow); }
 
-/* ========== 对象适配工具类 ========== */
-.object-cover {
-  object-fit: cover;
-}
-
 /* ========== 响应式工具类 ========== */
 @media (min-width: 768px) {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -241,4 +269,3 @@
 
 .disabled\:opacity-50:disabled { opacity: 0.5; }
 .disabled\:cursor-not-allowed:disabled { cursor: not-allowed; }
-

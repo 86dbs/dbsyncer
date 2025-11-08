@@ -6,7 +6,6 @@
 /* ========== 导入设计系统 ========== */
 @import url('./theme/variables.css');
 @import url('./theme/colors.css');
-@import url('./theme/typography.css');
 @import url('./theme/utilities.css');
 
 /* ========== 导入布局组件 ========== */
@@ -20,7 +19,6 @@
 @import url('./components/tables.css');
 @import url('./components/dropdown.css');
 @import url('./components/forms.css');
-@import url('./components/badges.css');
 @import url('./components/notifications.css');
 @import url('./components/file-upload.css');
 
@@ -94,47 +92,60 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden; /* 防止整个页面滚动 */
 }
-/* ========== 基础容器 ========== */
-.container-base {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-/* ========== 无背景容器 ========== */
-.container-no-bg {
-  padding: 0;
-  background: transparent;
-}
 
-/* ========== 滚动条样式 ========== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-tertiary);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-primary);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
-}
-
-/* ========== 选择文本样式 ========== */
-::selection {
-  background-color: rgba(24, 144, 255, 0.2);
+/* 标题样式 */
+h1, .h1 {
+  font-size: var(--font-size-xxxl);
+  font-weight: 600;
+  line-height: var(--line-height-sm);
   color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
 }
 
-::-moz-selection {
-  background-color: rgba(24, 144, 255, 0.2);
+h2, .h2 {
+  font-size: var(--font-size-xxl);
+  font-weight: 600;
+  line-height: var(--line-height-sm);
   color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+h3, .h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  line-height: var(--line-height-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+h4, .h4 {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  line-height: var(--line-height-md);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+h5, .h5 {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  line-height: var(--line-height-md);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+h6, .h6 {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: var(--line-height-md);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* 段落和文本 */
+p {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
 }
 
 /* ========== 链接样式 ========== */
@@ -158,6 +169,26 @@ input, textarea, select, button {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+}
+
+/* ========== 滚动条样式 ========== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 /* ========== 动画效果 ========== */
@@ -465,3 +496,48 @@ input, textarea, select, button {
   animation: spin 1s linear infinite;
   margin-right: var(--spacing-sm);
 }
+
+/* 空状态 */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: var(--font-size-xxxl);
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+/* 基础徽章 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 语义颜色 */
+.badge-primary { background-color: rgba(24, 144, 255, 0.12); color: var(--primary-color); }
+.badge-success { background-color: rgba(82, 196, 26, 0.12); color: var(--success-color); }
+.badge-warning { background-color: rgba(250, 140, 22, 0.12); color: var(--warning-color); }
+.badge-error { background-color: rgba(245, 34, 45, 0.12); color: var(--error-color); }
+.badge-info { background-color: rgba(24, 144, 255, 0.12); color: var(--info-color); }

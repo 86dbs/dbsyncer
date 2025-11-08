@@ -53,30 +53,3 @@ main.flex-1 {
   background-color: var(--bg-secondary);
   transition: margin-left var(--transition-normal);
 }
-
-/* 空状态 */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: var(--text-tertiary);
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: var(--font-size-xxxl);
-  margin-bottom: var(--spacing-md);
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: var(--font-size-md);
-  margin-bottom: var(--spacing-sm);
-}
-
-.empty-description {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-}
