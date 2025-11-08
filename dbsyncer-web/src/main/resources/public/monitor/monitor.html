@@ -173,17 +173,9 @@
     <div class="card-body">
 
         <!-- 表格工具栏 -->
-        <div class="table-toolbar">
+        <!--<div class="table-toolbar">
             <div class="table-toolbar-left">
                 <div class="table-filter">
-                    <select id="searchMetaData" class="form-control">
-                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                    </select>
-
-                    <select id="searchDataStatus" class="form-control">
-                        <option value="" selected="selected">无</option>
-                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
-                    </select>
                 </div>
 
                 <div class="table-search">
@@ -193,9 +185,30 @@
             </div>
             <div class="table-toolbar-right">
                 <button th:id="${metaId}" class="btn btn-outline">
-                    清空数据
+                    清空
                 </button>
             </div>
+        </div>-->
+
+        <div class="flex items-center justify-between">
+            <div class="search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
+                <span id="searchClear" class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+                <select id="searchMetaData" class="form-control">
+                    <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                </select>
+                <select id="searchDataStatus" class="form-control">
+                    <option value="" selected="selected">无</option>
+                    <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
+                </select>
+            </div>
+
+            <button th:id="${metaId}" type="button" class="btn btn-outline">
+                清空数据
+            </button>
         </div>
 
         <div class="table-wrapper">
@@ -266,7 +279,7 @@
             <div class="search-wrapper">
                 <i class="fa fa-search search-icon"></i>
                 <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
-                <span class="search-clear" id="searchClear" title="清除">
+                <span id="searchClear" class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
             </div>

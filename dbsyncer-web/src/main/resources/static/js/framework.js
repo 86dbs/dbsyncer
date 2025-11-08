@@ -460,6 +460,47 @@ function initQRCodePopover(options) {
     }, 500);
 }
 
+function initSelect() {
+    const searchInput = document.getElementById("searchInput");
+    const searchClear = document.getElementById("searchClear");
+
+    if (!searchInput) return;
+
+    // 更新搜索状态（显示/隐藏清除按钮）
+    function updateSearchState(keyword) {
+        if (keyword && keyword.trim() !== '') {
+            searchClear.classList.add('active');
+        } else {
+            searchClear.classList.remove('active');
+        }
+    }
+
+    // 绑定事件
+    searchInput.addEventListener('input', function(e) {
+        const value = e.target.value;
+        // 立即更新清除按钮显示状态
+        updateSearchState(value);
+    });
+
+    // 清除搜索
+    searchClear.addEventListener('click', function (){
+        searchInput.value = '';
+        searchInput.focus();
+    });
+
+    // 回车键搜索
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            updateSearchState(e.target.value);
+            console.log(e.target.value);
+        }
+    });
+
+    // 初始化状态
+    updateSearchState('');
+}
+
 $(function () {
     // 导出到全局
     window.DBSyncerTheme = {
@@ -470,7 +511,8 @@ $(function () {
         notify: notify,
         initFileUpload: initFileUpload,
         initQRCodePopover: initQRCodePopover,
-        initMultipleInputTags: initMultipleInputTags
+        initMultipleInputTags: initMultipleInputTags,
+        initSelect: initSelect
     };
     
     // 向后兼容

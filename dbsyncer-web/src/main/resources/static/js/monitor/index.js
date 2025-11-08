@@ -379,4 +379,6 @@ $(function () {
     
     // 立即执行一次更新
     updateMonitorData();
+    // 搜索功能
+    initSelect();
 });
