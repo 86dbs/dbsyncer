@@ -1275,7 +1275,7 @@ function bindRefreshTablesClick() {
     $refreshBtn.bind('click', function() {
         let id = $(this).attr("tableGroupId");
         doPoster("/mapping/refreshTables", {'id': id}, function (data) {
-            if (data.success == true) {
+            if (data.success === true) {
                 bootGrowl("刷新表成功!", "success");
                 refreshMappingEditPage(id);
             } else {

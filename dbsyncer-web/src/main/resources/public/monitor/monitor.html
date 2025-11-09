@@ -172,43 +172,30 @@
     </div>
     <div class="card-body">
 
-        <!-- 表格工具栏 -->
-        <!--<div class="table-toolbar">
-            <div class="table-toolbar-left">
-                <div class="table-filter">
-                </div>
-
-                <div class="table-search">
-                    <i class="fa fa-search table-search-icon"></i>
-                    <input id="searchDataKeyword" class="table-search-input" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)" />
-                </div>
-            </div>
-            <div class="table-toolbar-right">
-                <button th:id="${metaId}" class="btn btn-outline">
-                    清空
-                </button>
-            </div>
-        </div>-->
-
-        <div class="flex items-center justify-between">
+        <div class="grid grid-cols-6 items-center">
             <div class="search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
+                <input id="searchInput" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
                 <span id="searchClear" class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
+            </div>
+            <div>
                 <select id="searchMetaData" class="form-control">
                     <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
                 </select>
+            </div>
+            <div>
                 <select id="searchDataStatus" class="form-control">
                     <option value="" selected="selected">无</option>
                     <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
                 </select>
             </div>
-
-            <button th:id="${metaId}" type="button" class="btn btn-outline">
-                清空数据
-            </button>
+            <div class="lg:col-span-3 flex items-center justify-end">
+                <button th:id="${metaId}" type="button" class="btn btn-outline">
+                    清空数据
+                </button>
+            </div>
         </div>
 
         <div class="table-wrapper">
@@ -275,17 +262,20 @@
     <div class="card-body">
 
         <!-- 表格工具栏 -->
-        <div class="flex items-center justify-between">
+        <div class="grid grid-cols-6 items-center">
             <div class="search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
+                <input id="searchInput" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
                 <span id="searchClear" class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
             </div>
-            <button th:id="${metaId}" type="button" class="btn btn-outline clearLogBtn">
-                清空日志
-            </button>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-3 flex items-center justify-end">
+                <button th:id="${metaId}" type="button" class="btn btn-outline clearLogBtn">
+                    清空日志
+                </button>
+            </div>
         </div>
 
         <table class="table">
