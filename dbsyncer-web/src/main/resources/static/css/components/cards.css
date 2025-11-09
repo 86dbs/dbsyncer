@@ -133,3 +133,131 @@
   color: var(--text-primary);
   font-weight: 600;
 }
+
+/* ========== 迷你统计卡片 ========== */
+.mini-stats-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 320px) {
+  .mini-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 512px) {
+  .mini-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mini-stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-primary);
+  border: 1px solid rgba(22, 93, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.mini-stat-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+.mini-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.mini-stat-card:hover::after {
+  opacity: 0.24;
+}
+
+.mini-stat-info {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.mini-stat-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.mini-stat-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.mini-stat-number {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mini-stat-card--success::after {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.65) 0%, rgba(82, 196, 26, 0.15) 100%);
+}
+
+.mini-stat-card--success .mini-stat-number {
+  color: var(--success-color);
+}
+
+.mini-stat-card--error::after {
+  background: linear-gradient(135deg, rgba(245, 34, 45, 0.65) 0%, rgba(245, 34, 45, 0.15) 100%);
+}
+
+.mini-stat-card--error .mini-stat-number {
+  color: var(--error-color);
+}
+
+.mini-stat-card--primary::after {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.6) 0%, rgba(22, 93, 255, 0.18) 100%);
+}
+
+.mini-stat-card--primary .mini-stat-number {
+  color: var(--primary-color);
+}
+
+.mini-stat-card--info::after {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.6) 0%, rgba(24, 144, 255, 0.15) 100%);
+}
+
+.mini-stat-card--info .mini-stat-number {
+  color: var(--info-color);
+}
+
+.mini-stat-card--warning::after {
+  background: linear-gradient(135deg, rgba(250, 140, 22, 0.65) 0%, rgba(250, 140, 22, 0.18) 100%);
+}
+
+.mini-stat-card--warning .mini-stat-number {
+  color: var(--warning-color);
+}
+
+.mini-stat-card--violet::after {
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.65) 0%, rgba(114, 46, 209, 0.18) 100%);
+}
+
+.mini-stat-card--violet .mini-stat-number {
+  color: #722ed1;
+}

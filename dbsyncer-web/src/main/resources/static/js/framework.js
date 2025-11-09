@@ -461,44 +461,58 @@ function initQRCodePopover(options) {
 }
 
 function initSelect() {
-    const searchInput = document.getElementById("searchInput");
-    const searchClear = document.getElementById("searchClear");
+    const searchWrappers = document.querySelectorAll('.search-wrapper');
 
-    if (!searchInput) return;
-
-    // 更新搜索状态（显示/隐藏清除按钮）
-    function updateSearchState(keyword) {
-        if (keyword && keyword.trim() !== '') {
-            searchClear.classList.add('active');
-        } else {
-            searchClear.classList.remove('active');
-        }
+    if (!searchWrappers.length) {
+        return;
     }
 
-    // 绑定事件
-    searchInput.addEventListener('input', function(e) {
-        const value = e.target.value;
-        // 立即更新清除按钮显示状态
-        updateSearchState(value);
-    });
+    searchWrappers.forEach(function(wrapper) {
+        const searchInput = wrapper.querySelector('.search-input');
+        const searchClear = wrapper.querySelector('.search-clear');
 
-    // 清除搜索
-    searchClear.addEventListener('click', function (){
-        searchInput.value = '';
-        searchInput.focus();
-    });
-
-    // 回车键搜索
-    searchInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            updateSearchState(e.target.value);
-            console.log(e.target.value);
+        if (!searchInput || !searchClear || searchInput.dataset.selectBound === 'true') {
+            return;
         }
-    });
 
-    // 初始化状态
-    updateSearchState('');
+        // 更新搜索状态（显示/隐藏清除按钮）
+        function updateSearchState(keyword) {
+            if (keyword && keyword.trim() !== '') {
+                searchClear.classList.add('active');
+            } else {
+                searchClear.classList.remove('active');
+            }
+        }
+
+        // 绑定事件
+        searchInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            // 立即更新清除按钮显示状态
+            updateSearchState(value);
+        });
+
+        // 清除搜索
+        searchClear.addEventListener('click', function () {
+            searchInput.value = '';
+            searchInput.focus();
+            updateSearchState('');
+        });
+
+        // 回车键搜索
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateSearchState(e.target.value);
+                console.log(e.target.value);
+            }
+        });
+
+        // 避免重复绑定
+        searchInput.dataset.selectBound = 'true';
+
+        // 初始化状态
+        updateSearchState(searchInput.value || '');
+    });
 }
 
 $(function () {

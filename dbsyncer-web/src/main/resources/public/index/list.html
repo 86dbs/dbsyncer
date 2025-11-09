@@ -71,44 +71,72 @@
     </div>
 
     <!-- 同步趋势图表 -->
-    <div class="grid grid-cols-4 mb-5">
+    <div class="grid grid-cols-2 mb-5">
         <!-- 同步趋势图表 -->
-        <div class="lg:col-span-3">
-            <div class="form-container p-5">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-bold text-lg">同步趋势</h3>
-                    <div class="flex gap-2">
-                        <button class="btn btn-outline text-sm">今日</button>
-                        <button class="btn btn-outline text-sm text-primary">本周</button>
-                        <button class="btn btn-outline text-sm">本月</button>
-                    </div>
+        <div class="form-container p-5">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg">同步趋势</h3>
+                <div class="flex gap-2">
+                    <button class="btn btn-outline text-sm">今日</button>
+                    <button class="btn btn-outline text-sm text-primary">本周</button>
+                    <button class="btn btn-outline text-sm">本月</button>
                 </div>
-                <div>
-                    <canvas id="syncTrendChart"></canvas>
-                </div>
+            </div>
+            <div>
+                <canvas id="syncTrendChart"></canvas>
             </div>
         </div>
 
-        <div class="form-container lg:col-span-1 p-5">
-            <div class="flex items-center gap-2 mr-2">
-                成功
-                <span class="badge badge-success font-medium">10009999</span>
-            </div>
-            <div class="flex items-center gap-2 mr-2">
-                失败
-                <span class="badge badge-error">10009999</span>
-            </div>
-            <div class="flex items-center gap-2 mr-2">
-                新增
-                <span class="badge badge-primary">10009999</span>
-            </div>
-            <div class="flex items-center gap-2 mr-2">
-                修改
-                <span class="badge badge-info">10009999</span>
-            </div>
-            <div class="flex items-center gap-2 mr-2">
-                删除
-                <span class="badge badge-warning">10009999</span>
+        <div class="form-container p-5">
+            <div class="mini-stats-grid">
+                <div class="mini-stat-card mini-stat-card--success">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">成功</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
+                <div class="mini-stat-card mini-stat-card--error">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">失败</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
+                <div class="mini-stat-card mini-stat-card--primary">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">新增</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
+                <div class="mini-stat-card mini-stat-card--info">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">修改</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
+                <div class="mini-stat-card mini-stat-card--warning">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">删除</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
+                <div class="mini-stat-card mini-stat-card--violet">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">DDL</p>
+                    </div>
+                    <div class="mini-stat-value">
+                        <span class="mini-stat-number">10,009,999</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
