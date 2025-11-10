@@ -147,17 +147,17 @@
             <tbody>
             <tr>
                 <td>1</td>
-                <td>[阿里云同步星河]xhtb_license_customer_product</td>
+                <td>[阿里云同步]xhtb_user</td>
                 <td>堆积:8907/10000 线程:1/1 完成:999</td>
             </tr>
             <tr>
                 <td>2</td>
-                <td>[阿里云同步星河]xhtb_license_customer</td>
+                <td>[阿里云同步]xhtb_user_order</td>
                 <td>堆积:5677/10000 线程:1/1 完成:111</td>
             </tr>
             <tr>
                 <td>3</td>
-                <td>[阿里云同步星河]xhtb_product</td>
+                <td>[阿里云同步]xhtb_task</td>
                 <td>堆积:0/10000 线程:0/1 完成:0</td>
             </tr>
             </tbody>
@@ -192,7 +192,7 @@
                 </select>
             </div>
             <div class="lg:col-span-2 flex items-center justify-end">
-                <button th:id="${metaId}" type="button" class="btn btn-outline">
+                <button id="clearDataBtn" th:metaId="${metaId}" type="button" class="btn btn-outline">
                     清空数据
                 </button>
             </div>
@@ -272,7 +272,7 @@
             </div>
             <div></div>
             <div class="lg:col-span-3 flex items-center justify-end">
-                <button th:id="${metaId}" type="button" class="btn btn-outline clearLogBtn">
+                <button id="clearLogBtn" type="button" class="btn btn-outline">
                     清空日志
                 </button>
             </div>
@@ -288,9 +288,9 @@
             </thead>
             <tbody id="logList">
             <tr th:each="l,s : ${pagingLog?.data}">
-                <td class="text-center text-tertiary" th:text="${s.index}+1"></td>
-                <td class="font-mono text-sm" th:text="${l?.json}"></td>
-                <td class="text-sm text-secondary" th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                <td th:text="${s.index}+1"></td>
+                <td th:text="${l?.json}"></td>
+                <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
             </tr>
             </tbody>
         </table>

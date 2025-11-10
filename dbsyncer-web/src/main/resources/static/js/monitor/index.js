@@ -143,6 +143,24 @@ function bindQueryDataMoreEvent() {
     });
 }
 
+// 清空数据
+function bindClearEvent($btn, $title, $msg, $url, $callback) {
+    $btn.click(function () {
+        if (confirm($title)) {
+            const $id = null != $callback ? $callback() : $(this).attr("metaId");
+            const data = {"id": $id};
+            doPoster($url, data, function (data) {
+                if (data.success === true) {
+                    bootGrowl($msg, "success");
+                    doLoader('/monitor?id=' + $id);
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        }
+    });
+}
+
 $(function () {
     // 图表实例
     let charts = {
@@ -453,4 +471,9 @@ $(function () {
     bindQueryLogMoreEvent();
     bindQueryDataEvent();
     bindQueryDataMoreEvent();
+    bindClearEvent($("#clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData", function (){
+        // todo 刷新驱动数据
+    });
+    bindClearEvent($("#clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
+
 });
