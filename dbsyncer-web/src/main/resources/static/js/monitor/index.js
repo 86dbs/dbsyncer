@@ -1,6 +1,148 @@
 /**
  * 监控页面 - 实时性能监控
  */
+
+// 显示更多
+function showMore($this, $url, $params, $call) {
+    $params.pageNum = parseInt($this.attr("num")) + 1;
+    $params.pageSize = 10;
+    doGetter($url, $params, function (data) {
+        if (data.success === true) {
+            if (data.resultValue.data.length > 0) {
+                $this.attr("num", $params.pageNum);
+            }
+            $call(data.resultValue);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
+}
+
+function showLog($logList, arr, append) {
+    const size = arr.length;
+    let html = '';
+    if (size > 0) {
+        const start = append ? $logList.find("tr").size() : 0;
+        for (i = 0; i < size; i++) {
+            html += '<tr>';
+            html += '<td>' + (start + i + 1) + '</td>';
+            html += '<td>' + arr[i].json + '</td>';
+            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
+            html += '</tr>';
+        }
+    }
+    return html;
+}
+
+function refreshLogList(resultValue, append) {
+    const $logList = $("#logList");
+    const $logTotal = $("#logTotal");
+    const html = showLog($logList, resultValue.data, append);
+    if (append) {
+        $logList.append(html);
+    } else {
+        $logList.html(html);
+        $("#queryLogMore").attr("num", 1);
+    }
+    $logTotal.html(resultValue.total);
+}
+
+function showData($dataList, arr, append) {
+    let html = '';
+    const size = arr.length;
+    if (size > 0) {
+        const start = append ? $dataList.find("tr").size() : 0;
+        for (i = 0; i < size; i++) {
+            html += '<tr>';
+            html += '<td>' + (start + i + 1) + '</td>';
+            html += '<td>' + arr[i].targetTableName + '</td>';
+            html += '<td>' + arr[i].event + '</td>';
+            html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
+            html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
+            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
+            html += '<td><div class="hidden">' + arr[i].json + '</div><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;';
+            html += (arr[i].success ? '' : '<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a>');
+            html += '</td>';
+            html += '</tr>';
+        }
+    }
+    return html;
+}
+
+function refreshDataList(resultValue, append) {
+    const $dataList = $("#dataList");
+    const $dataTotal = $("#dataTotal");
+    const html = showData($dataList, resultValue.data, append);
+    if (append) {
+        $dataList.append(html);
+    } else {
+        $dataList.html(html);
+        $("#queryDataMore").attr("num", 1);
+    }
+    $dataTotal.html(resultValue.total);
+    // bindQueryDataDetailEvent();
+    // bindQueryDataRetryEvent();
+    // bindQueryErrorDetailEvent();
+}
+
+// 查看日志
+function bindQueryLogEvent() {
+    initSelect("searchLog", function(value){
+        doGetter("/monitor/queryLog", {'json': value, 'pageNum': 1, 'pageSize': 10}, function (data) {
+            if (data.success === true) {
+                refreshLogList(data.resultValue);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
+
+function bindQueryLogMoreEvent() {
+    $("#queryLogMore").click(function () {
+        const keyword = $("#searchLogKeyword").val();
+        showMore($(this), '/monitor/queryLog', {"json": keyword}, function (resultValue) {
+            refreshLogList(resultValue, true)
+        });
+    });
+}
+
+// 查看数据
+function bindQueryDataEvent() {
+    initSelect("searchData", function(value){
+        const id = $("#searchMetaData").val();
+        const success = $("#searchDataSuccess").val();
+        doGetter('/monitor/queryData', {
+            "error": value,
+            "success": success,
+            "id": id,
+            "pageNum": 1,
+            "pageSize": 10
+        }, function (data) {
+            if (data.success === true) {
+                refreshDataList(data.resultValue);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
+
+function bindQueryDataMoreEvent() {
+    $("#queryDataMore").click(function () {
+        const keyword = $("#searchDataKeyword").val();
+        const id = $("#searchMetaData").val();
+        const success = $("#searchDataSuccess").val();
+        showMore($(this), '/monitor/queryData', {
+            "error": keyword,
+            "success": success,
+            "id": id
+        }, function (resultValue) {
+            refreshDataList(resultValue, true)
+        });
+    });
+}
+
 $(function () {
     // 图表实例
     let charts = {
@@ -269,11 +411,6 @@ $(function () {
         const memoryPercent = Math.floor(Math.random() * 20 + 60); // 60-80%
         const diskPercent = Math.floor(Math.random() * 20 + 30); // 30-50%
         
-        // 更新统计卡片
-        // $('#totalSpan').text(随机数);
-        // $('#successSpan').text(随机数);
-        // 等等...
-        
         // 更新仪表盘
         updateGaugeChart(charts.queue, queueValue, 320000);
         updateGaugeChart(charts.storage, storageValue, 50000);
@@ -303,82 +440,17 @@ $(function () {
         $('#diskUsed').text(diskUsed + ' GB');
     }
     
-    /**
-     * 初始化事件监听
-     */
-    function initEvents() {
-        // 查询数据按钮
-        $('#queryDataBtn').on('click', function() {
-            // TODO: 实现查询数据逻辑
-            console.log('查询数据');
-        });
-        
-        // 清空数据按钮
-        $('.clearDataBtn').on('click', function() {
-            if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
-                // TODO: 实现清空数据逻辑
-                console.log('清空数据');
-            }
-        });
-        
-        // 查询日志按钮
-        $('#queryLogBtn').on('click', function() {
-            // TODO: 实现查询日志逻辑
-            console.log('查询日志');
-        });
-        
-        // 清空日志按钮
-        $('.clearLogBtn').on('click', function() {
-            if (confirm('确定要清空所有日志吗？此操作不可恢复！')) {
-                // TODO: 实现清空日志逻辑
-                console.log('清空日志');
-            }
-        });
-        
-        // 查看数据详情
-        $(document).on('click', '.queryData', function() {
-            const jsonData = $(this).attr('json');
-            // TODO: 弹窗显示JSON数据
-            console.log('查看数据:', jsonData);
-        });
-        
-        // 重试失败数据
-        $(document).on('click', '.retryData', function() {
-            const dataId = $(this).attr('id');
-            // TODO: 实现重试逻辑
-            console.log('重试数据:', dataId);
-        });
-        
-        // 查看错误详情
-        $(document).on('click', '.queryError', function() {
-            const errorMsg = $(this).text();
-            if (errorMsg && errorMsg !== 'null' && errorMsg.trim() !== '') {
-                bootGrowl(errorMsg, 'danger');
-            }
-        });
-        
-        // 显示更多数据
-        $('#queryDataMore').on('click', function() {
-            // TODO: 实现加载更多逻辑
-            console.log('加载更多数据');
-        });
-        
-        // 显示更多日志
-        $('#queryLogMore').on('click', function() {
-            // TODO: 实现加载更多逻辑
-            console.log('加载更多日志');
-        });
-    }
-    
     // 页面加载完成后初始化
     initCharts();
-    initEvents();
     
     // 开始定时更新数据（每3秒更新一次）
     setInterval(updateMonitorData, 3000);
     
     // 立即执行一次更新
     updateMonitorData();
-    // 搜索功能
-    initSelect();
+
+    bindQueryLogEvent();
+    bindQueryLogMoreEvent();
+    bindQueryDataEvent();
+    bindQueryDataMoreEvent();
 });

@@ -14,6 +14,16 @@ function hideLoading() {
 function showEmpty(element, message) {
     $(element).html('<div class="empty"><div class="empty-icon"><i class="fa fa-inbox"></i></div><div class="empty-text">' + (message || '暂无数据') + '</div></div>');
 }
+function formatDate(time) {
+    const date = new Date(time);
+    const YY = date.getFullYear() + '-';
+    const MM = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1) + '-';
+    const DD = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
+    const hh = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
+    const mm = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()) + ':';
+    const ss = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
+    return YY + MM + DD + " " + hh + mm + ss;
+}
 
 /**
  * 判断字符串是否为空串
@@ -537,59 +547,53 @@ function initQRCodePopover(options) {
     }, 500);
 }
 
-function initSelect() {
-    const searchWrappers = document.querySelectorAll('.search-wrapper');
+function initSelect(searchWrapperId, callback) {
+    const wrapper = document.getElementById(searchWrapperId);
+    const searchInput = wrapper.querySelector('.search-input');
+    const searchClear = wrapper.querySelector('.search-clear');
 
-    if (!searchWrappers.length) {
+    if (!searchInput || !searchClear || searchInput.dataset.selectBound === 'true') {
         return;
     }
 
-    searchWrappers.forEach(function(wrapper) {
-        const searchInput = wrapper.querySelector('.search-input');
-        const searchClear = wrapper.querySelector('.search-clear');
-
-        if (!searchInput || !searchClear || searchInput.dataset.selectBound === 'true') {
-            return;
+    // 更新搜索状态（显示/隐藏清除按钮）
+    function updateSearchState(keyword) {
+        if (keyword && keyword.trim() !== '') {
+            searchClear.classList.add('active');
+        } else {
+            searchClear.classList.remove('active');
         }
+    }
 
-        // 更新搜索状态（显示/隐藏清除按钮）
-        function updateSearchState(keyword) {
-            if (keyword && keyword.trim() !== '') {
-                searchClear.classList.add('active');
-            } else {
-                searchClear.classList.remove('active');
-            }
-        }
-
-        // 绑定事件
-        searchInput.addEventListener('input', function(e) {
-            const value = e.target.value;
-            // 立即更新清除按钮显示状态
-            updateSearchState(value);
-        });
-
-        // 清除搜索
-        searchClear.addEventListener('click', function () {
-            searchInput.value = '';
-            searchInput.focus();
-            updateSearchState('');
-        });
-
-        // 回车键搜索
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                updateSearchState(e.target.value);
-                console.log(e.target.value);
-            }
-        });
-
-        // 避免重复绑定
-        searchInput.dataset.selectBound = 'true';
-
-        // 初始化状态
-        updateSearchState(searchInput.value || '');
+    // 绑定事件
+    searchInput.addEventListener('input', function(e) {
+        const value = e.target.value;
+        // 立即更新清除按钮显示状态
+        updateSearchState(value);
     });
+
+    // 清除搜索
+    searchClear.addEventListener('click', function () {
+        searchInput.value = '';
+        searchInput.focus();
+        updateSearchState('');
+        callback(searchInput.value);
+    });
+
+    // 回车键搜索
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            updateSearchState(e.target.value);
+            callback(e.target.value);
+        }
+    });
+
+    // 避免重复绑定
+    searchInput.dataset.selectBound = 'true';
+
+    // 初始化状态
+    updateSearchState(searchInput.value || '');
 }
 
 $(function () {
@@ -598,6 +602,7 @@ $(function () {
         showLoading: showLoading,
         hideLoading: hideLoading,
         showEmpty: showEmpty,
+        formatDate: formatDate,
         validateForm: validateForm,
         notify: notify,
         initFileUpload: initFileUpload,
