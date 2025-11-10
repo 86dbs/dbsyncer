@@ -374,8 +374,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试SQL Server到MySQL的TIMESTAMP类型转换");
 
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD row_version TIMESTAMP";
+        // SQL Server的TIMESTAMP是行版本控制类型（8字节二进制），转换为long类型，在MySQL中映射为BIGINT
         testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "row_version",
-                "SqlServer", "MySQL", mysqlConnectorService, "BINARY", "BINARY(8)");
+                "SqlServer", "MySQL", mysqlConnectorService, "BIGINT", "BIGINT");
     }
 
     /**

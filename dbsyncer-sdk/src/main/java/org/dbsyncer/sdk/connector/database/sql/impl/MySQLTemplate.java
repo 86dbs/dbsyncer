@@ -116,6 +116,26 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
                 return "DECIMAL(10,0)";
+            case "VARBINARY":
+                // 对于固定长度的二进制数据，使用BINARY类型
+                // MySQL的BINARY类型用于固定长度二进制数据，VARBINARY用于可变长度
+                // 当columnSize存在且<=255时，使用BINARY以获得更好的性能
+                long binarySize = column.getColumnSize();
+                if (binarySize > 0 && binarySize <= 255) {
+                    // 固定长度且小于等于255，使用BINARY
+                    return "BINARY(" + binarySize + ")";
+                } else if (binarySize > 0) {
+                    // 有长度但大于255，使用VARBINARY
+                    return "VARBINARY(" + binarySize + ")";
+                }
+                // 没有长度信息，使用VARBINARY
+                return "VARBINARY";
+            case "BINARY":
+                // 如果已经是BINARY类型，保持BINARY并添加长度
+                if (column.getColumnSize() > 0) {
+                    return "BINARY(" + column.getColumnSize() + ")";
+                }
+                return "BINARY";
             default:
                 return typeName;
         }
