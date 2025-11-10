@@ -3,7 +3,8 @@
  */
 package org.dbsyncer.web.controller.index;
 
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.biz.vo.MappingJsonVo;
+import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.ProjectGroupService;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author cdeluser
@@ -57,7 +60,7 @@ public class IndexController {
 
     @ResponseBody
     @GetMapping("/mappingdata")
-    public String mappingdata(ModelMap model, String projectGroupId) {
+    public RestResult mappingdata(ModelMap model, String projectGroupId) {
         try {
             ProjectGroupVo projectGroup = new ProjectGroupVo();
             if ("".equals(projectGroupId)) {
@@ -66,15 +69,24 @@ public class IndexController {
             }else {
                 projectGroup = projectGroupService.getProjectGroup(projectGroupId);
             }
-            model.put("connectorSize", projectGroup.getConnectorSize());
-            model.put("connectors", projectGroup.getConnectors());
-            model.put("mappings", projectGroup.getMappings());
-            model.put("projectGroupId", projectGroupId);
-            model.put("projectGroups", projectGroupService.getProjectGroupAll());
-            return JsonUtil.objToJson(projectGroup);
+            List<MappingVo> mappings = projectGroup.getMappings();
+//            model.put("connectorSize", projectGroup.getConnectorSize());
+//            model.put("connectors", projectGroup.getConnectors());
+//            model.put("mappings",mappings);
+//            model.put("projectGroupId", projectGroupId);
+//            model.put("projectGroups", projectGroupService.getProjectGroupAll());
+            List<MappingJsonVo> resultMapping = new ArrayList<>();
+            for (MappingVo mapping : mappings){
+                MappingJsonVo mappingJsonVo =new MappingJsonVo();
+                mappingJsonVo.setId(mapping.getId());
+                mappingJsonVo.setMeta(mapping.getMeta());
+                mappingJsonVo.setModel(mapping.getModel());
+                resultMapping.add(mappingJsonVo);
+            }
+            return RestResult.restSuccess(resultMapping);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            return "";
+            return RestResult.restFail(e.getMessage(),-10);
         }
     }
 

@@ -24,7 +24,7 @@ public class AppConfig {
 
     private String copyright;
 
-    private String company = "四川星河同步科技有限公司";
+    private String company = "";
 
     public String getName() {
         return name;
@@ -45,12 +45,13 @@ public class AppConfig {
     public String getCopyright() {
         if (StringUtil.isBlank(copyright)) {
             StringBuilder copy = new StringBuilder();
-            copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
+       /*     copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
             copy.append(name);
             copy.append("(").append(version).append(")");
             copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' target='_blank' >");
             copy.append(company);
-            copy.append("</a></footer>");
+            copy.append("</a>");
+            copy.append("</footer>");*/
             this.copyright = copy.toString();
         }
         return copyright;

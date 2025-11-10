@@ -3,6 +3,8 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
+import org.dbsyncer.biz.vo.MappingJsonVo;
+import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -58,7 +60,13 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult get(@RequestParam(value = "id") String id) {
         try {
-            return RestResult.restSuccess(mappingService.getMapping(id));
+            MappingVo mapping = mappingService.getMapping(id);
+            //因为meta属性被@JsonIgnore了  使用新的数据类型
+            MappingJsonVo mappingJsonVo = new MappingJsonVo();
+            mappingJsonVo.setId(mapping.getId());
+            mappingJsonVo.setModel(mapping.getModel());
+            mappingJsonVo.setMeta(mapping.getMeta());
+            return RestResult.restSuccess(mappingJsonVo);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

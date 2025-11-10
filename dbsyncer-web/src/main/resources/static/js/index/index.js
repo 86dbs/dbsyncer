@@ -218,118 +218,116 @@ function refreshMappingList() {
                 if (timer2 == null) {
                     timer2 = setInterval(function () {
                         var projectGroupId = $("#projectGroup").val();
-                        console.log(projectGroupId);
                         // 加载页面
                         $.ajax({
                                url: '/index/mappingdata?projectGroupId='+ projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取驱动列表的接口
                                type: 'GET',
                                success: function(data) {
-
-                                   // 重新绑定事件处理器（如果需要）
-                                   var dataJson = JSON.parse(data);
-                                   var datalist = dataJson.mappings;
-                                   if(Array.isArray(datalist) ){
-                                      // 遍历数组并拼接 div 字符串
-                                        $.each(datalist, function(index, m) {
-
-                                          var htmlContent = '';
-                                          // 安全访问对象属性
-                                          var mid = m && m.id ? m.id : '';
-                                          var model = m && m.model ? m.model : '';
-                                          var modelname =  '';
-                                          if(model == 'full'){
-                                            modelname= '全量';
-                                          }else if(model == 'increment'){
-                                            modelname= '增量';
-                                          }else if(model == 'fullIncrement'){
-                                           modelname= '混合';
-                                          }
-                                          var meta = m && m.meta ? m.meta : {};
-                                          var total = meta.total || 0;
-                                          var success = meta.success || 0;
-                                          var fail = meta.fail || 0;
-                                          var beginTime = meta.beginTime || 0;
-                                          var updateTime = meta.updateTime || 0;
-                                          var syncPhase = meta.syncPhase || {};
-                                          var syncPhaseCode = syncPhase.code || 0;
-                                          var counting = meta.counting || false;
-                                          var errorMessage = meta.errorMessage || '';
-                                          var id = meta.id || '';
-                                         var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
-
-                                           var stateHtmlContent = '';
-                                           if(stateVal == 0){
-                                                stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
-                                           }else if(stateVal == 1){
-                                                stateHtmlContent += '<span class="running-through-rate well-sign-green">✔</span>';
-                                                stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
-                                           }else if(stateVal == 2){
-                                                stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
-                                           }else if(stateVal == 3){
-                                                stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
-                                                stateHtmlContent += '<span title=" '+errorMessage +' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
-                                           }
+                                    if(data.success && data.status == 200 ){
+                                         var datalist = data.resultValue;
+                                         if(Array.isArray(datalist) ){
+                                            // 遍历数组并拼接 div 字符串
+                                              $.each(datalist, function(index, m) {
+                                                var htmlContent = '';
+                                                // 安全访问对象属性
+                                                var mid = m && m.id ? m.id : '';
+                                                var model = m && m.model ? m.model : '';
+                                                var modelname =  '';
+                                                if(model == 'full'){
+                                                  modelname= '全量';
+                                                }else if(model == 'increment'){
+                                                  modelname= '增量';
+                                                }else if(model == 'fullIncrement'){
+                                                 modelname= '混合';
+                                                }
+                                                var meta = m && m.meta ? m.meta : {};
+                                                var total = meta.total || 0;
+                                                var success = meta.success || 0;
+                                                var fail = meta.fail || 0;
+                                                var beginTime = meta.beginTime || 0;
+                                                var updateTime = meta.updateTime || 0;
+                                                var syncPhase = meta.syncPhase || {};
+                                                var syncPhaseCode = syncPhase.code || 0;
+                                                var counting = meta.counting || false;
+                                                var errorMessage = meta.errorMessage || '';
+                                                var id = meta.id || '';
+                                                var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
+                                                 var stateHtmlContent = '';
+                                                 if(stateVal == 0){
+                                                      stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
+                                                 }else if(stateVal == 1){
+                                                      stateHtmlContent += '<span class="running-through-rate well-sign-green">✔</span>';
+                                                      stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
+                                                 }else if(stateVal == 2){
+                                                      stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
+                                                 }else if(stateVal == 3){
+                                                      stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
+                                                      stateHtmlContent += '<span title=" '+errorMessage +' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
+                                                 }
 
 
-                                          htmlContent += '<tbody>';
-                                          htmlContent += '<tr>';
-                                          htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
-                                          htmlContent += modelname + '同步>总数:' + total;
+                                                htmlContent += '<tbody>';
+                                                htmlContent += '<tr>';
+                                                htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
+                                                htmlContent += modelname + '同步>总数:' + total;
 
-                                          // 检查同步阶段是否为0（正在统计中）
-                                          if (syncPhaseCode === 0) {
-                                       	   if (counting) {
-                                       		   htmlContent += '(正在统计中)';
-                                       	   }
-                                       	   if (total > 0 && (success + fail) > 0) {
-                                       		   var progress = ((success + fail) / total * 100).toFixed(2);
-                                       		   htmlContent += ',进度:' + progress + '%';
-                                       	   }
+                                                // 检查同步阶段是否为0（正在统计中）
+                                                if (syncPhaseCode === 0) {
+                                                   if (counting) {
+                                                       htmlContent += '(正在统计中)';
+                                                   }
+                                                   if (total > 0 && (success + fail) > 0) {
+                                                       var progress = ((success + fail) / total * 100).toFixed(2);
+                                                       htmlContent += ',进度:' + progress + '%';
+                                                   }
 
-                                       	   // 计算耗时
-                                       	   var seconds = Math.floor((updateTime - beginTime) / 1000);
-                                       	   htmlContent += ',耗时:';
-                                       	   if (seconds < 60) {
-                                       		   htmlContent += seconds + '秒';
-                                       	   } else {
-                                       		   var minutes = Math.floor(seconds / 60);
-                                       		   htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
-                                       	   }
-                                          }
+                                                   // 计算耗时
+                                                   var seconds = Math.floor((updateTime - beginTime) / 1000);
+                                                   htmlContent += ',耗时:';
+                                                   if (seconds < 60) {
+                                                       htmlContent += seconds + '秒';
+                                                   } else {
+                                                       var minutes = Math.floor(seconds / 60);
+                                                       htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
+                                                   }
+                                                }
 
-                                          if (success > 0) {
-                                       	   htmlContent += ',成功:' + success;
-                                          }
-                                          if (fail > 0) {
-                                       	   htmlContent += ',失败:' + fail;
-                                       	   htmlContent += ' <a id="' + id + '" href="javascript:;" class="label label-danger queryData">日志</a>';
-                                          }
-                                          htmlContent += '</td>';
-                                          htmlContent += '</tr>';
+                                                if (success > 0) {
+                                                   htmlContent += ',成功:' + success;
+                                                }
+                                                if (fail > 0) {
+                                                   htmlContent += ',失败:' + fail;
+                                                   htmlContent += ' <a id="' + id + '" href="javascript:;" class="label label-danger queryData">日志</a>';
+                                                }
+                                                htmlContent += '</td>';
+                                                htmlContent += '</tr>';
 
-                                          // 启动时间行
-                                          htmlContent += '<tr>';
-                                          htmlContent += '<td class="text-left">';
-                                          htmlContent += '启动时间>';
-                                          if (beginTime > 0) {
-                                       	   var date = new Date(beginTime);
-                                       	   htmlContent += date.getFullYear() + '-' +
-                                       					 String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                                       					 String(date.getDate()).padStart(2, '0') + ' ' +
-                                       					 String(date.getHours()).padStart(2, '0') + ':' +
-                                       					 String(date.getMinutes()).padStart(2, '0') + ':' +
-                                       					 String(date.getSeconds()).padStart(2, '0');
-                                          }
-                                          htmlContent += '</td>';
-                                          htmlContent += '</tr>';
-                                          htmlContent += '</tbody>';
-                                          $("#"+mid).find(".table-hover").html(htmlContent);
-                                          $("#"+mid).find("#stateId").html(stateHtmlContent);
-                                       });
-                                   }
+                                                // 启动时间行
+                                                htmlContent += '<tr>';
+                                                htmlContent += '<td class="text-left">';
+                                                htmlContent += '启动时间>';
+                                                if (beginTime > 0) {
+                                                   var date = new Date(beginTime);
+                                                   htmlContent += date.getFullYear() + '-' +
+                                                                 String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                                                                 String(date.getDate()).padStart(2, '0') + ' ' +
+                                                                 String(date.getHours()).padStart(2, '0') + ':' +
+                                                                 String(date.getMinutes()).padStart(2, '0') + ':' +
+                                                                 String(date.getSeconds()).padStart(2, '0');
+                                                }
+                                                htmlContent += '</td>';
+                                                htmlContent += '</tr>';
+                                                htmlContent += '</tbody>';
+                                                $("#"+mid).find(".table-hover").html(htmlContent);
+                                                $("#"+mid).find("#stateId").html(stateHtmlContent);
+                                             });
+                                         }
+                                    }else{
+                                         bootGrowl(data.resultValue, "danger");
+                                    }
                                },
                                error: function() {
-                                  // alert('刷新失败');
+                                   bootGrowl('刷新失败', "danger");
                                }
                            });
                     }, data.resultValue * 1000);
