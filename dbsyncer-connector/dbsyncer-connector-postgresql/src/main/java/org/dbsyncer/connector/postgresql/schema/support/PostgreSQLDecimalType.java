@@ -11,7 +11,7 @@ import java.util.Set;
 public class PostgreSQLDecimalType extends DecimalType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("numeric"));
+        return new HashSet<>(Arrays.asList("NUMERIC"));
     }
 
     @Override

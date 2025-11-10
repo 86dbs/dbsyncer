@@ -19,7 +19,7 @@ public class PostgreSQLBytesType extends BytesType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("bytea"));
+        return new HashSet<>(Arrays.asList("BYTEA"));
     }
 
     @Override

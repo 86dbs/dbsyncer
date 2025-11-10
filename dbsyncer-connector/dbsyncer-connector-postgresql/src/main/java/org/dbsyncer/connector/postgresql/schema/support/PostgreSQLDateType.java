@@ -19,7 +19,7 @@ import java.util.Set;
 public class PostgreSQLDateType extends DateType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("date"));
+        return new HashSet<>(Arrays.asList("DATE"));
     }
 
     @Override

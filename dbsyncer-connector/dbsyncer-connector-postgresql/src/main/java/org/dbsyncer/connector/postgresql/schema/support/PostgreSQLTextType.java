@@ -18,7 +18,7 @@ public final class PostgreSQLTextType extends UnicodeTextType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("text"));
+        return new HashSet<>(Arrays.asList("TEXT"));
     }
 
     @Override

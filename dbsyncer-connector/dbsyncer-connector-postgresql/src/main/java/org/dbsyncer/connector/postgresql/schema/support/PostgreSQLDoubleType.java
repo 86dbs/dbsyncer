@@ -18,7 +18,7 @@ import java.util.Set;
 public class PostgreSQLDoubleType extends DoubleType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("float8"));
+        return new HashSet<>(Arrays.asList("FLOAT8"));
     }
 
     @Override

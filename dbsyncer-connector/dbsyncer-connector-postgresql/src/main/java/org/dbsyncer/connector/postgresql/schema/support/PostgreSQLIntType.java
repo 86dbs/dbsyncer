@@ -18,7 +18,7 @@ import java.util.Set;
 public class PostgreSQLIntType extends IntType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("int2", "int4", "serial"));
+        return new HashSet<>(Arrays.asList("INT2","SMALLINT", "INT4","INTEGER", "SERIAL"));
     }
 
     @Override

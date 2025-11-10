@@ -20,7 +20,7 @@ import java.util.Set;
 public class PostgreSQLTimestampType extends TimestampType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("timestamp", "timestamptz"));
+        return new HashSet<>(Arrays.asList("TIMESTAMP", "TIMESTAMPTZ"));
     }
 
     @Override

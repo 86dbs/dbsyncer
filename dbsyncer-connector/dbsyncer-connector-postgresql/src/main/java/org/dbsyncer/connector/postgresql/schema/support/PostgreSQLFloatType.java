@@ -18,7 +18,7 @@ import java.util.Set;
 public class PostgreSQLFloatType extends FloatType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("float4"));
+        return new HashSet<>(Arrays.asList("FLOAT4"));
     }
 
     @Override

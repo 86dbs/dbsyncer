@@ -16,7 +16,7 @@ public final class PostgreSQLJsonType extends JsonType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("json", "jsonb"));
+        return new HashSet<>(Arrays.asList("JSON", "JSONB"));
     }
 
     @Override

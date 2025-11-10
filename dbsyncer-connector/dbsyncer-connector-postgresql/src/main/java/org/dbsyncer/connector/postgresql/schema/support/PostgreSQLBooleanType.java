@@ -18,7 +18,7 @@ import java.util.Set;
 public class PostgreSQLBooleanType extends BooleanType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("bool"));
+        return new HashSet<>(Arrays.asList("BOOL"));
     }
 
     @Override

@@ -14,8 +14,7 @@ public final class PostgreSQLEnumType extends EnumType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        // PostgreSQL ENUM类型在JDBC中被识别为"user-defined"
-        return new HashSet<>(Arrays.asList("user-defined"));
+        return new HashSet<>(Arrays.asList("ENUM"));
     }
 
     @Override

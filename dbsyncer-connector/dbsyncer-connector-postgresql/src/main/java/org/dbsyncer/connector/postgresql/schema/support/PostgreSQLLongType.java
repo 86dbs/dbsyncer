@@ -18,7 +18,7 @@ import java.util.Set;
 public class PostgreSQLLongType extends LongType {
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("int8", "bigserial"));
+        return new HashSet<>(Arrays.asList("INT8", "BIGINT", "BIGSERIAL"));
     }
 
     @Override

@@ -15,7 +15,7 @@ public final class SqlServerXmlType extends XmlType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("xml"));
+        return new HashSet<>(Arrays.asList("XML"));
     }
 
     @Override
