@@ -218,46 +218,22 @@
   background: linear-gradient(135deg, rgba(82, 196, 26, 0.65) 0%, rgba(82, 196, 26, 0.15) 100%);
 }
 
-.mini-stat-card--success .mini-stat-number {
-  color: var(--success-color);
-}
-
 .mini-stat-card--error::after {
   background: linear-gradient(135deg, rgba(245, 34, 45, 0.65) 0%, rgba(245, 34, 45, 0.15) 100%);
-}
-
-.mini-stat-card--error .mini-stat-number {
-  color: var(--error-color);
 }
 
 .mini-stat-card--primary::after {
   background: linear-gradient(135deg, rgba(22, 93, 255, 0.6) 0%, rgba(22, 93, 255, 0.18) 100%);
 }
 
-.mini-stat-card--primary .mini-stat-number {
-  color: var(--primary-color);
-}
-
 .mini-stat-card--info::after {
   background: linear-gradient(135deg, rgba(24, 144, 255, 0.6) 0%, rgba(24, 144, 255, 0.15) 100%);
-}
-
-.mini-stat-card--info .mini-stat-number {
-  color: var(--info-color);
 }
 
 .mini-stat-card--warning::after {
   background: linear-gradient(135deg, rgba(250, 140, 22, 0.65) 0%, rgba(250, 140, 22, 0.18) 100%);
 }
 
-.mini-stat-card--warning .mini-stat-number {
-  color: var(--warning-color);
-}
-
 .mini-stat-card--violet::after {
   background: linear-gradient(135deg, rgba(114, 46, 209, 0.65) 0%, rgba(114, 46, 209, 0.18) 100%);
-}
-
-.mini-stat-card--violet .mini-stat-number {
-  color: #722ed1;
 }

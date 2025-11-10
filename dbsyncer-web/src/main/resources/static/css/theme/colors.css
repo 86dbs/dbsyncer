@@ -8,6 +8,7 @@
 .text-warning { color: var(--warning-color) !important; }
 .text-error { color: var(--error-color) !important; }
 .text-info { color: var(--info-color) !important; }
+.text-violet { color: var(--violet-color) !important; }
 
 .text-primary-light { color: var(--text-primary) !important; }
 .text-secondary { color: var(--text-secondary) !important; }
