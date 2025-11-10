@@ -90,15 +90,15 @@
                 let sqlName = this.sqlNameInput.val();
                 this.sqlTableArray.push({"sqlName": sqlName, "table": this.tableInput.val(), "sql": this.sqlInput.val()});
                 this.selector.append('<option>' + sqlName + '</option>');
-                this.selector.selectpicker('refresh');
-                this.selector.selectpicker('val', sqlName);
+                // 设置选中值（不需要 refresh，原生 select 会自动更新）
+                this.selector.val(sqlName);
                 this.stash();
             },
             // 删除下拉选中项
             removeOption: function () {
                 this.removeSqlTable(this.selectedVal());
                 this.selector.find('option:selected').remove();
-                this.selector.selectpicker('refresh');
+                // 不需要 refresh，原生 select 会自动更新
                 this.stash();
             },
             // 暂存配置
@@ -114,7 +114,7 @@
             // 显示默认配置
             popStash: function(){
                 if (this.hasOption()) {
-                    this.selector.selectpicker('val', this.sqlTableArray[0].sqlName);
+                    this.selector.val(this.sqlTableArray[0].sqlName);
                 }
             },
             // 回显下拉选中配置
@@ -147,7 +147,7 @@
             },
             // 下拉选择值
             selectedVal: function () {
-                return this.selector.selectpicker('val');
+                return this.selector.val();
             },
             // 清空美化记录
             reset: function () {
@@ -183,9 +183,22 @@
         }
 
         $template.showMenu();
-        $template.selector.on('changed.bs.select', function () {
+        
+        // 增强 select 元素（替代 Bootstrap selectpicker）
+        if (typeof enhanceSelect === 'function') {
+            enhanceSelect($template.selector);
+        }
+        
+        // 绑定 change 事件（替代 Bootstrap 的 changed.bs.select）
+        $template.selector.on('change', function () {
             $template.apply();
         });
+        
+        // 也监听自定义的 select:changed 事件（兼容性）
+        $template.selector.on('select:changed', function () {
+            $template.apply();
+        });
+        
         $template.stash();
         $template.popStash();
         bindSqlTableAddEvent($template);

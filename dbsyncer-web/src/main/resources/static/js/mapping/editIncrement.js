@@ -3,9 +3,11 @@
 function bindMappingIncrementStrategyConfigChange(){
     var $mappingIncrementStrategyConfig = $("#mappingIncrementStrategyConfig");
     var $radio = $mappingIncrementStrategyConfig.find('input:radio[type="radio"]');
-    
+
+    console.log($radio)
     // 使用原生 change 事件替代 iCheck
     $radio.on('change', function(event) {
+        console.log("12312")
         showIncrementStrategyConfig($(this).val());
     });
 

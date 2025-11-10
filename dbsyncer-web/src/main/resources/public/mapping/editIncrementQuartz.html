@@ -3,51 +3,112 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">Insert</label>
-                <div class="col-sm-9">
-                    <input name="timingInsert" type="text" class="form-control" data-role="tagsinput" th:value="${mapping?.listener?.insert}?:'I'" />
-                </div>
+    <!-- 定时同步配置标题 -->
+    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
+            <i class="fa fa-clock-o" style="color: var(--success-color); margin-right: 6px;"></i>
+            定时同步配置
+        </h4>
+    </div>
+
+    <!-- 第一行：Insert、Update、Delete -->
+    <div class="form-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+        <!-- Insert -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-plus" style="color: var(--success-color); margin-right: 4px;"></i>
+                Insert
+            </label>
+            <div class="form-control-area">
+                <input name="timingInsert" 
+                       type="text" 
+                       class="form-control" 
+                       data-role="tagsinput" 
+                       placeholder="I"
+                       th:value="${mapping?.listener?.insert}?:'I'" />
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">Update</label>
-                <div class="col-sm-9">
-                    <input name="timingUpdate" type="text" class="form-control" data-role="tagsinput" th:value="${mapping?.listener?.update}?:'U'"/>
-                </div>
+        </div>
+
+        <!-- Update -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-pencil" style="color: var(--warning-color); margin-right: 4px;"></i>
+                Update
+            </label>
+            <div class="form-control-area">
+                <input name="timingUpdate" 
+                       type="text" 
+                       class="form-control" 
+                       data-role="tagsinput" 
+                       placeholder="U"
+                       th:value="${mapping?.listener?.update}?:'U'"/>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">Delete</label>
-                <div class="col-sm-9">
-                    <input name="timingDelete" type="text" class="form-control" data-role="tagsinput" th:value="${mapping?.listener?.delete?:'D'}"/>
-                </div>
+        </div>
+
+        <!-- Delete -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-trash" style="color: var(--danger-color); margin-right: 4px;"></i>
+                Delete
+            </label>
+            <div class="form-control-area">
+                <input name="timingDelete" 
+                       type="text" 
+                       class="form-control" 
+                       data-role="tagsinput" 
+                       placeholder="D"
+                       th:value="${mapping?.listener?.delete?:'D'}"/>
             </div>
         </div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">Cron<strong class="text-primary">*</strong></label>
-                <div class="col-sm-9">
-                    <input class="form-control" dbsyncer-valid="require" name="timingCronExpression"
-                           th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" type="text"/>
-                </div>
+    <!-- 第二行：Cron、事件 -->
+    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <!-- Cron -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-clock-o" style="color: var(--primary-color); margin-right: 4px;"></i>
+                Cron
+                <strong class="text-primary" style="margin-left: 4px;">*</strong>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" 
+                       dbsyncer-valid="require" 
+                       name="timingCronExpression"
+                       th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" 
+                       type="text"
+                       placeholder="*/30 * * * * ?" />
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">事件</label>
-                <div class="col-sm-9" title="区分增删改">
-                    <select name="timingEventFieldName" class="form-control select-control-default">
-                        <option value="" selected="selected">无</option>
-                        <option th:each="c,s:${mapping?.sourceColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
-                    </select>
-                </div>
+        </div>
+
+        <!-- 事件 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-tag" style="color: var(--success-color); margin-right: 4px;"></i>
+                事件
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="区分增删改事件"></i>
+            </label>
+            <div class="form-control-area">
+                <select name="timingEventFieldName" class="form-control">
+                    <option value="" selected="selected">无</option>
+                    <option th:each="c,s:${mapping?.sourceColumn}" 
+                            th:value="${c?.name}" 
+                            th:text="${c?.name} +' (' + ${c?.typeName} +')'" 
+                            th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
+                </select>
             </div>
-            <div class="col-md-4"></div>
         </div>
     </div>
 
+    <!-- 配置说明 -->
+    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--success-color);">
+        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
+            <i class="fa fa-info-circle" style="color: var(--success-color); margin-right: 6px;"></i>
+            <strong>配置说明：</strong>定时同步配置用于设置增量同步的定时任务。Insert/Update/Delete 表示监听的事件类型，Cron 表达式用于配置定时执行频率，事件字段用于区分不同类型的操作。
+        </p>
+    </div>
 </div>
 
 </html>

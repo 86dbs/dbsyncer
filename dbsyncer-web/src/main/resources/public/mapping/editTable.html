@@ -150,8 +150,9 @@
                     <i class="fa fa-hand-rock-o" style="color: var(--warning-color); margin-right: 4px;"></i>
                     拖动
                 </th>
-                <th style="width: 10%; text-align: center;">
-                    <input type="checkbox" class="tableGroupCheckboxAll" style="width: 16px; height: 16px; cursor: pointer;" />
+                <th style="width: 10%; text-align: center;" onclick="event.stopPropagation();">
+                    <input type="checkbox" class="tableGroupCheckboxAll" style="width: 16px; height: 16px; cursor: pointer;" 
+                           onclick="event.stopPropagation();" />
                 </th>
             </tr>
             </thead>
@@ -163,9 +164,10 @@
                     <td style="text-align: center;">
                         <i class="fa fa-arrows" style="color: var(--text-tertiary); cursor: move;"></i>
                     </td>
-                    <td style="text-align: center;">
+                    <td style="text-align: center;" onclick="event.stopPropagation();">
                         <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" 
-                               class="tableGroupCheckbox" style="width: 16px; height: 16px; cursor: pointer;" />
+                               class="tableGroupCheckbox" style="width: 16px; height: 16px; cursor: pointer;" 
+                               onclick="event.stopPropagation();" />
                     </td>
                 </tr>
             </tbody>

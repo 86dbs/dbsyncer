@@ -95,9 +95,10 @@ function bindConditionAddClick() {
     var $conditionAdd = $("#conditionAdd");
     $conditionAdd.unbind("click");
     $conditionAdd.bind('click', function () {
-        var conditionOperation = $("#conditionOperation").selectpicker("val");
-        var conditionSourceField = $("#conditionSourceField").selectpicker("val");
-        var conditionFilter = $("#conditionFilter").selectpicker("val");
+        // 使用原生 val() 方法替代 selectpicker
+        var conditionOperation = $("#conditionOperation").val();
+        var conditionSourceField = $("#conditionSourceField").val();
+        var conditionFilter = $("#conditionFilter").val();
         var conditionArg = $("#conditionArg").val();
         var $conditionList = $("#conditionList");
         // 自定义SQL
@@ -161,9 +162,10 @@ function bindConvertAddClick() {
     $convertAdd.unbind("click");
     $convertAdd.bind('click', function () {
         var $convertOperator = $("#convertOperator");
-        var convertOperatorVal = $convertOperator.selectpicker("val");
+        // 使用原生 val() 方法替代 selectpicker
+        var convertOperatorVal = $convertOperator.val();
         var convertOperatorText = $convertOperator.find("option:selected")[0].text;
-        var convertTargetField = $("#convertTargetField").selectpicker("val");
+        var convertTargetField = $("#convertTargetField").val();
         var convertArg = $(".convertArg:eq(0)").val();
         var convertArg1 = $(".convertArg:eq(1)").val();
         // 多个参数时，英文符号“,”拼接

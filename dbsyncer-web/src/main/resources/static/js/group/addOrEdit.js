@@ -25,11 +25,24 @@ function submit(data) {
 }
 
 $(function () {
-    // 初始化select插件
-    initSelect($(".select-control-table"));
+    // 增强所有 select 元素（替代 Bootstrap selectpicker）
+    if (typeof enhanceAllSelects === 'function') {
+        enhanceAllSelects();
+    }
 
-    $("#connectorIds").selectpicker('val', splitStrByDelimiter($("#selectedConnectorIds").val(), ","));
-    $("#mappingIds").selectpicker('val', splitStrByDelimiter($("#selectedMappingIds").val(), ","));
+    // 设置初始值（使用原生 jQuery val() 方法替代 selectpicker）
+    var $connectorIds = $("#connectorIds");
+    var $mappingIds = $("#mappingIds");
+    
+    if ($connectorIds.length) {
+        var connectorValues = splitStrByDelimiter($("#selectedConnectorIds").val(), ",");
+        $connectorIds.val(connectorValues);
+    }
+    
+    if ($mappingIds.length) {
+        var mappingValues = splitStrByDelimiter($("#selectedMappingIds").val(), ",");
+        $mappingIds.val(mappingValues);
+    }
 
     //保存
     $("#projectGroupSubmitBtn").click(function () {

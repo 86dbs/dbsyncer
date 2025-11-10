@@ -3,25 +3,60 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">插件</label>
-                <div class="col-sm-9">
-                    <select id="pluginId" name="pluginId" class="form-control select-control-default">
-                        <option value="" selected="selected">无</option>
-                        <option th:value="${p?.className +'_'+ p?.version}" th:text="${p?.name +'_'+ p?.version}" th:each="p,state : ${plugin}" th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
-                    </select>
-                </div>
+    <!-- 插件配置标题 -->
+    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
+            <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 6px;"></i>
+            插件配置
+        </h4>
+    </div>
+
+    <!-- 插件配置表单 -->
+    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <!-- 插件选择 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 4px;"></i>
+                插件
+            </label>
+            <div class="form-control-area">
+                <select id="pluginId" name="pluginId" class="form-control">
+                    <option value="" selected="selected">无</option>
+                    <option th:value="${p?.className +'_'+ p?.version}" 
+                            th:text="${p?.name +'_'+ p?.version}" 
+                            th:each="p,state : ${plugin}" 
+                            th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
+                    </option>
+                </select>
             </div>
-            <div id="pluginExtInfo" class="col-md-4 hidden">
-                <label class="col-sm-3 control-label">参数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于插件内部使用，推荐填写JSON格式"></i></label>
-                <div class="col-sm-9">
-                    <input name="pluginExtInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="2" th:value="${tableGroup eq null ? mapping?.pluginExtInfo : tableGroup?.pluginExtInfo}" />
-                </div>
-            </div>
-            <div class="col-md-8"></div>
         </div>
+
+        <!-- 插件参数 -->
+        <div id="pluginExtInfo" class="form-item hidden">
+            <label class="form-label">
+                <i class="fa fa-code" style="color: var(--success-color); margin-right: 4px;"></i>
+                参数
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="用于插件内部使用，推荐填写JSON格式"></i>
+            </label>
+            <div class="form-control-area">
+                <input name="pluginExtInfo" 
+                       class="form-control" 
+                       type="text"
+                       maxlength="512" 
+                       placeholder="请输入插件参数（JSON格式）"
+                       th:value="${tableGroup eq null ? mapping?.pluginExtInfo : tableGroup?.pluginExtInfo}" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置说明 -->
+    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--primary-color);">
+        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
+            <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 6px;"></i>
+            <strong>配置说明：</strong>插件配置允许您使用自定义插件扩展同步功能。选择合适的插件后，可在参数框中配置插件所需的参数，推荐使用JSON格式。
+        </p>
     </div>
 </div>
 

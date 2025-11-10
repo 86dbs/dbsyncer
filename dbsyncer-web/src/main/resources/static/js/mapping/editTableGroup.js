@@ -23,10 +23,13 @@ function initFieldMappingParams(){
             "pk":($pk != "" || $.trim($pk).length > 0)
         });
     });
+    
     let $fieldMappingTable = $("#fieldMappingTable");
     if (0 >= row.length) {
+        console.log('[初始化映射参数] 没有字段映射，隐藏表格');
         $fieldMappingTable.addClass("hidden");
     } else {
+        console.log('[初始化映射参数] 找到', row.length, '个字段映射，显示表格');
         $fieldMappingTable.removeClass("hidden");
     }
     $("#fieldMapping").val(JSON.stringify(row));
@@ -102,7 +105,9 @@ function getCheckedBoxElements($checkbox){
     let checked = [];
     $checkbox.each(function(){
         if($(this).prop('checked')){
-            checked.push($(this).parent().parent().parent());
+            // 修复：使用 closest('tr') 获取最近的 tr 元素
+            // 原来的 parent().parent().parent() 会获取到 tbody，导致删除整个表格
+            checked.push($(this).closest('tr'));
         }
     });
     return checked;
@@ -159,7 +164,8 @@ function bindFieldMappingListClick(){
         let $pk = $(this).find("td:eq(2)");
         let $text = $pk.html();
         let isPk = $text == "" || $.trim($text).length == 0;
-        $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
+        // 更新为新的图标样式
+        $pk.html(isPk ? '<i title="主键" class="fa fa-key" style="color: var(--warning-color); font-size: 16px;"></i>' : '');
         initFieldMappingParams();
     });
 }
@@ -167,6 +173,12 @@ function bindFieldMappingListClick(){
 function bindTableFieldSelect(){
     let $sourceSelect = $("#sourceTableField");
     let $targetSelect = $("#targetTableField");
+    
+    // 增强 select 元素（替代 Bootstrap selectpicker）
+    if (typeof enhanceSelect === 'function') {
+        enhanceSelect($sourceSelect);
+        enhanceSelect($targetSelect);
+    }
 
     // 绑定数据源下拉切换事件（使用原生 change 事件）
     $sourceSelect.on('change',function(e){
@@ -203,7 +215,12 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         if(repeated){ return; }
 
         let index = $tr.size();
-        let trHtml = "<tr id='fieldMapping_"+ (index + 1) +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
+        let trHtml = "<tr id='fieldMapping_"+ (index + 1) +"' title='双击设置/取消主键 | 拖动排序' class='dbsyncer_pointer' style='transition: background-color 0.2s ease;'>" +
+                     "<td>" + sField + "</td>" +
+                     "<td>" + tField + "</td>" +
+                     "<td style='text-align: center;'></td>" +
+                     "<td style='text-align: center;'><input type='checkbox' class='fieldMappingDeleteCheckbox' style='width: 16px; height: 16px; cursor: pointer;' /></td>" +
+                     "</tr>";
         $fieldMappingList.append(trHtml);
 
         initFieldMappingParams();
@@ -220,12 +237,22 @@ function bindFieldMappingDelClick(){
     $fieldMappingDelBtn.click(function () {
         let elements = getCheckedBoxElements($('.fieldMappingDeleteCheckbox'));
         if (elements.length > 0) {
+            console.log('[删除字段映射] 删除', elements.length, '行');
             let len = elements.length;
             for(let i = 0; i < len; i++){
                 elements[i].remove();
             }
+            
+            // 取消全选复选框的选中状态
+            $('.fieldMappingDeleteCheckboxAll').prop('checked', false);
+            
+            // 禁用删除按钮
             $fieldMappingDelBtn.prop('disabled', true);
+            
+            // 更新映射参数（会自动显示/隐藏表格）
             initFieldMappingParams();
+            
+            console.log('[删除字段映射] 删除完成，剩余行数:', $("#fieldMappingList tr").length);
         }
     });
 }

@@ -208,3 +208,119 @@
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
 }
+
+/* ========================= DBSyncer 按钮样式 ========================= */
+/* 基础按钮样式 */
+.dbsyncer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+  min-height: 32px;
+}
+
+.dbsyncer-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.dbsyncer-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 主要按钮 */
+.dbsyncer-btn-primary {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-btn-primary:active {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+}
+
+/* 次要按钮 */
+.dbsyncer-btn-secondary {
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+.dbsyncer-btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dbsyncer-btn-secondary:active {
+  background-color: var(--bg-quaternary);
+}
+
+/* 成功按钮 */
+.dbsyncer-btn-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-btn-success:hover {
+  background-color: #73d13d;
+  border-color: #73d13d;
+  color: var(--bg-primary);
+}
+
+/* 警告按钮 */
+.dbsyncer-btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-btn-warning:hover {
+  background-color: #ffc53d;
+  border-color: #ffc53d;
+  color: var(--bg-primary);
+}
+
+/* 危险按钮 */
+.dbsyncer-btn-danger {
+  background-color: var(--error-color);
+  border-color: var(--error-color);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-btn-danger:hover {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+  color: var(--bg-primary);
+}
+
+/* 按钮图标 */
+.dbsyncer-btn-icon-left {
+  margin-right: var(--spacing-xs);
+}
+
+.dbsyncer-btn-icon-right {
+  margin-left: var(--spacing-xs);
+}
