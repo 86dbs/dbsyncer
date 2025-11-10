@@ -50,6 +50,8 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         // 枚举和集合
         mapping.put("ENUM", "ENUM");
         mapping.put("SET", "SET");
+        // UUID/GUID
+        mapping.put("UUID", "CHAR(36)"); // MySQL使用CHAR(36)存储UUID字符串
     }
 
     @Override

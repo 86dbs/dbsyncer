@@ -62,6 +62,8 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         // 枚举和集合
         mapping.put("ENUM", "USER-DEFINED");
         mapping.put("SET", "VARCHAR");
+        // UUID/GUID
+        mapping.put("UUID", "UUID"); // PostgreSQL原生支持UUID类型
     }
 
     @Override

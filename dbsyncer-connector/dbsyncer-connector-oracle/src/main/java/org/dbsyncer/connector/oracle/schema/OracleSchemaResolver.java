@@ -56,6 +56,8 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         // 枚举和集合
         mapping.put("ENUM", "VARCHAR2"); // Oracle不支持ENUM，使用VARCHAR2存储
         mapping.put("SET", "VARCHAR2"); // Oracle不支持SET，使用VARCHAR2存储
+        // UUID/GUID
+        mapping.put("UUID", "VARCHAR2(36)"); // Oracle不支持UUID类型，使用VARCHAR2(36)存储UUID字符串
     }
 
     @Override

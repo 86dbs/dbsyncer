@@ -49,6 +49,8 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
         // 枚举和集合
         mapping.put("ENUM", "TEXT");
         mapping.put("SET", "TEXT");
+        // UUID/GUID
+        mapping.put("UUID", "TEXT"); // SQLite不支持UUID类型，使用TEXT存储UUID字符串
     }
 
     @Override

@@ -37,5 +37,7 @@ public enum DataTypeEnum {
     UNICODE_TEXT,
     /** 枚举和集合 */
     ENUM,
-    SET
+    SET,
+    /** UUID/GUID */
+    UUID
 }
