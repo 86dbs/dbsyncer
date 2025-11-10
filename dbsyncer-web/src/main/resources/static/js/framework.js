@@ -133,6 +133,83 @@ $.fn.serializeJson = function () {
     return o;
 };
 
+/**
+ * 表单验证方法
+ * 验证表单中所有带有 required 属性的字段
+ * @returns {boolean} true-验证通过，false-验证失败
+ */
+$.fn.formValidate = function () {
+    var $form = $(this);
+    var isValid = true;
+    var firstInvalidField = null;
+    
+    // 清除之前的错误提示
+    $form.find('.form-error-message').remove();
+    $form.find('.form-control-error').removeClass('form-control-error');
+    
+    // 查找所有必填字段
+    $form.find('input[required], select[required], textarea[required]').each(function() {
+        var $field = $(this);
+        var value = $field.val();
+        var fieldName = $field.attr('name');
+        var fieldLabel = $field.attr('placeholder') || fieldName || '此字段';
+        
+        // 跳过隐藏的字段
+        if ($field.is(':hidden') || $field.closest('.hidden').length > 0) {
+            return true; // continue
+        }
+        
+        // 检查值是否为空
+        var isEmpty = false;
+        if (value === null || value === undefined || value === '') {
+            isEmpty = true;
+        } else if (Array.isArray(value) && value.length === 0) {
+            isEmpty = true;
+        } else if (typeof value === 'string' && value.trim() === '') {
+            isEmpty = true;
+        }
+        
+        if (isEmpty) {
+            isValid = false;
+            
+            // 标记字段为错误状态
+            $field.addClass('form-control-error');
+            
+            // 添加错误提示（如果还没有）
+            if ($field.next('.form-error-message').length === 0) {
+                var errorMsg = '请填写' + fieldLabel;
+                if ($field.is('select')) {
+                    errorMsg = '请选择' + fieldLabel;
+                }
+                $field.after('<div class="form-error-message">' + errorMsg + '</div>');
+            }
+            
+            // 记录第一个无效字段
+            if (!firstInvalidField) {
+                firstInvalidField = $field;
+            }
+        }
+    });
+    
+    // 如果验证失败，聚焦到第一个无效字段并显示提示
+    if (!isValid && firstInvalidField) {
+        // 滚动到第一个错误字段
+        $('html, body').animate({
+            scrollTop: firstInvalidField.offset().top - 100
+        }, 300);
+        
+        // 聚焦字段
+        firstInvalidField.focus();
+        
+        // 显示全局提示
+        if (typeof bootGrowl === 'function') {
+            bootGrowl('请填写完整表单信息', 'danger');
+        }
+    }
+    
+    return isValid;
+};
+
 // 全局加载页面
 function doLoader(url) {
     // 使用统一的内容区域
@@ -1029,4 +1106,245 @@ function initFileUpload(selector, options) {
             });
         }
     };
+}
+
+/**
+ * 初始化多选下拉框组件
+ * @param {string} wrapperId - 包装器元素的ID
+ * @param {object} options - 配置选项
+ *   - linkTo: 联动的目标下拉框ID
+ *   - onSelectChange: 选择变化时的回调函数
+ */
+function initMultiSelect(wrapperId, options) {
+    options = options || {};
+    var $wrapper = $('#' + wrapperId);
+    if (!$wrapper.length) {
+        console.warn('[initMultiSelect] 包装器元素未找到:', wrapperId);
+        return;
+    }
+    
+    // 防止重复初始化
+    if ($wrapper.data('multiSelectInitialized')) {
+        console.log('[initMultiSelect] 已经初始化过，跳过:', wrapperId);
+        return;
+    }
+    $wrapper.data('multiSelectInitialized', true);
+    
+    var $trigger = $wrapper.find('.dbsyncer-multi-select-trigger');
+    var $dropdown = $wrapper.find('.dbsyncer-multi-select-dropdown');
+    var $search = $wrapper.find('.dbsyncer-multi-select-search');
+    var $options = $wrapper.find('.dbsyncer-multi-select-option');
+    var $checkboxes = $options.find('input[type="checkbox"]');
+    var $select = $wrapper.find('select');
+    var $actions = $wrapper.find('.dbsyncer-multi-select-action-btn');
+    
+    // 调试信息
+    console.log('[initMultiSelect] 初始化:', {
+        wrapperId: wrapperId,
+        trigger: $trigger.length,
+        dropdown: $dropdown.length,
+        options: $options.length,
+        checkboxes: $checkboxes.length,
+        select: $select.length,
+        actions: $actions.length
+    });
+    
+    // 检查必要元素
+    if (!$trigger.length || !$dropdown.length) {
+        console.error('[initMultiSelect] 缺少必要元素:', wrapperId);
+        return;
+    }
+    
+    // 切换下拉框显示/隐藏
+    $trigger.off('click').on('click', function(e) {
+        // 如果点击的是搜索框，不切换下拉框
+        if ($(e.target).hasClass('dbsyncer-multi-select-search')) {
+            return;
+        }
+        
+        var isOpen = $wrapper.hasClass('open');
+        // 关闭所有其他打开的下拉框
+        $('.dbsyncer-multi-select').removeClass('open');
+        
+        if (!isOpen) {
+            $wrapper.addClass('open');
+            $search.focus();
+        }
+    });
+    
+    // 点击外部关闭下拉框
+    $(document).off('click.multiSelect_' + wrapperId).on('click.multiSelect_' + wrapperId, function(e) {
+        if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
+            $wrapper.removeClass('open');
+        }
+    });
+    
+    // 搜索功能
+    $search.off('input').on('input', function() {
+        var searchText = $(this).val().toLowerCase();
+        $options.each(function() {
+            var text = $(this).find('span').text().toLowerCase();
+            if (text.indexOf(searchText) > -1) {
+                $(this).removeClass('hidden');
+            } else {
+                $(this).addClass('hidden');
+            }
+        });
+    });
+    
+    // 复选框变化事件
+    $checkboxes.off('change').on('change', function() {
+        updateSelectValue();
+        if (options.onSelectChange) {
+            options.onSelectChange();
+        }
+        
+        // 如果配置了联动，自动匹配相似项
+        if (options.linkTo) {
+            autoMatchSimilarItems(wrapperId, options.linkTo);
+        }
+    });
+    
+    // 更新隐藏的select元素值
+    function updateSelectValue() {
+        var selectedValues = [];
+        $checkboxes.filter(':checked').each(function() {
+            selectedValues.push($(this).val());
+        });
+        $select.val(selectedValues);
+    }
+    
+    // 操作按钮事件
+    $actions.eq(0).off('click').on('click', function(e) {
+        e.stopPropagation();
+        // 全选（仅可见项）
+        $options.filter(':not(.hidden)').find('input[type="checkbox"]').prop('checked', true);
+        updateSelectValue();
+        if (options.onSelectChange) {
+            options.onSelectChange();
+        }
+    });
+    
+    $actions.eq(1).off('click').on('click', function(e) {
+        e.stopPropagation();
+        // 取消全选
+        $checkboxes.prop('checked', false);
+        updateSelectValue();
+        if (options.onSelectChange) {
+            options.onSelectChange();
+        }
+    });
+    
+    $actions.eq(2).off('click').on('click', function(e) {
+        e.stopPropagation();
+        // 取消过滤
+        $search.val('');
+        $options.removeClass('hidden');
+    });
+    
+    $actions.eq(3).off('click').on('click', function(e) {
+        e.stopPropagation();
+        // 过滤：只显示已选中的项
+        $options.each(function() {
+            var $checkbox = $(this).find('input[type="checkbox"]');
+            if ($checkbox.prop('checked')) {
+                $(this).removeClass('hidden');
+            } else {
+                $(this).addClass('hidden');
+            }
+        });
+    });
+    
+    // 阻止选项点击时关闭下拉框
+    $options.off('click').on('click', function(e) {
+        e.stopPropagation();
+        var $checkbox = $(this).find('input[type="checkbox"]');
+        // 如果点击的不是复选框本身，则切换复选框状态
+        if (!$(e.target).is('input[type="checkbox"]')) {
+            $checkbox.prop('checked', !$checkbox.prop('checked')).trigger('change');
+        }
+    });
+    
+    // 初始化select值
+    updateSelectValue();
+}
+
+/**
+ * 增强 select 下拉框功能（替代 Bootstrap selectpicker）
+ * @param {jQuery} $select - jQuery 选择的 select 元素
+ * @returns {jQuery} 返回增强后的 select 元素
+ */
+function enhanceSelect($select) {
+    if (!$select || !$select.length) {
+        return $select;
+    }
+    
+    // 标记已经增强过，避免重复处理
+    if ($select.data('enhanced')) {
+        return $select;
+    }
+    $select.data('enhanced', true);
+    
+    // 添加change事件的自定义触发器
+    // 当select的值改变时，触发自定义事件
+    $select.on('change', function() {
+        // 触发自定义事件，兼容之前的 Bootstrap Select 事件
+        $(this).trigger('select:changed');
+    });
+    
+    return $select;
+}
+
+/**
+ * 批量增强页面中所有的 select 元素
+ */
+function enhanceAllSelects() {
+    $('select').each(function() {
+        enhanceSelect($(this));
+    });
+}
+
+/**
+ * 自动匹配相似表名
+ * @param {string} sourceWrapperId - 源下拉框ID
+ * @param {string} targetWrapperId - 目标下拉框ID
+ */
+function autoMatchSimilarItems(sourceWrapperId, targetWrapperId) {
+    var $sourceWrapper = $('#' + sourceWrapperId);
+    var $targetWrapper = $('#' + targetWrapperId);
+    
+    if (!$sourceWrapper.length || !$targetWrapper.length) return;
+    
+    var $sourceCheckboxes = $sourceWrapper.find('.dbsyncer-multi-select-option input[type="checkbox"]:checked');
+    var $targetOptions = $targetWrapper.find('.dbsyncer-multi-select-option');
+    
+    // 取消目标所有选中
+    $targetWrapper.find('input[type="checkbox"]').prop('checked', false);
+    
+    // 遍历源选中项，匹配目标项
+    $sourceCheckboxes.each(function() {
+        var sourceValue = $(this).val();
+        // 优先精确匹配
+        var $exactMatch = $targetOptions.find('input[type="checkbox"][value="' + sourceValue + '"]');
+        if ($exactMatch.length) {
+            $exactMatch.prop('checked', true);
+        } else {
+            // 模糊匹配：找到包含相同单词的项
+            $targetOptions.each(function() {
+                var $targetCheckbox = $(this).find('input[type="checkbox"]');
+                var targetValue = $targetCheckbox.val();
+                if (targetValue && targetValue.toLowerCase().indexOf(sourceValue.toLowerCase()) > -1) {
+                    $targetCheckbox.prop('checked', true);
+                    return false; // 找到一个就退出
+                }
+            });
+        }
+    });
+    
+    // 更新目标select值
+    var selectedValues = [];
+    $targetWrapper.find('input[type="checkbox"]:checked').each(function() {
+        selectedValues.push($(this).val());
+    });
+    $targetWrapper.find('select').val(selectedValues);
 }

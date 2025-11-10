@@ -1,11 +1,26 @@
 //*********************************** 驱动保存 开始位置***********************************//
 function submit(data) {
-    doPoster("/mapping/edit", data, function (data) {
-        if (data.success == true) {
+    doPoster("/mapping/edit", data, function (response) {
+        if (response.success == true) {
             bootGrowl("修改驱动成功!", "success");
-            backIndexPage();
+            // 优先返回到同步任务管理页面，如果该函数不存在则返回到默认主页
+            if (typeof loadMappingListPage === 'function') {
+                // 返回到同步任务管理页面
+                loadMappingListPage();
+            } else if (typeof backIndexPage === 'function') {
+                // 返回到默认主页
+                backIndexPage();
+            } else {
+                // 最后的兜底方案：使用doLoader加载同步任务列表
+                if (typeof doLoader === 'function') {
+                    doLoader('/mapping/list', 0);
+                } else {
+                    // 如果都不存在，直接跳转
+                    window.location.href = '/mapping/list';
+                }
+            }
         } else {
-            bootGrowl(data.resultValue, "danger");
+            bootGrowl(response.resultValue, "danger");
         }
     });
 }
@@ -17,11 +32,17 @@ function refresh(id){
 
 // 绑定修改驱动同步方式切换事件（移除 iCheck 依赖）
 function bindMappingModelChange() {
+
+
     var $mappingModelChange = $("#mappingModelChange");
     var $radio = $mappingModelChange.find('input:radio[type="radio"]');
-    
+
+    console.log($radio)
+
     // 使用原生 change 事件替代 iCheck
     $radio.on('change', function (event) {
+
+
         var $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
@@ -54,6 +75,20 @@ function bindMappingTableGroupCheckBoxClick(){
     var $checkboxAll = $('.tableGroupCheckboxAll');
     var $checkbox = $('.tableGroupCheckbox');
     var $delBtn = $("#tableGroupDelBtn");
+    
+    // 检查元素是否存在
+    if (!$checkboxAll.length || !$checkbox.length || !$delBtn.length) {
+        return;
+    }
+    
+    // 阻止复选框点击事件冒泡
+    $checkboxAll.on('click', function (event) {
+        event.stopPropagation();
+    });
+    
+    $checkbox.on('click', function (event) {
+        event.stopPropagation();
+    });
     
     // 全选复选框事件
     $checkboxAll.on('change', function (event) {
@@ -90,8 +125,18 @@ function getCheckedBoxSize($checkbox){
 // 绑定表关系点击事件（移除 tableDnD 依赖）
 function bindMappingTableGroupListClick() {
     var $tableGroupList = $("#tableGroupList");
+    
+    // 检查元素是否存在
+    if (!$tableGroupList.length) {
+        return;
+    }
+    
     $tableGroupList.unbind("click");
-    $tableGroupList.find("tr").bind('click', function () {
+    $tableGroupList.find("tr").bind('click', function (e) {
+        // 如果点击的是复选框或其父元素的td，不执行跳转
+        if ($(e.target).is('input[type="checkbox"]') || $(e.target).closest('td').find('input[type="checkbox"]').length > 0) {
+            return;
+        }
         doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
     });
 
@@ -162,29 +207,60 @@ function bindMappingTableGroupListClick() {
 
 // 绑定下拉选择事件自动匹配相似表事件（使用新的多选下拉框）
 function bindTableSelect(){
+    console.log("[bindTableSelect] 开始绑定表选择器");
+    
     const $sourceSelect = $("#sourceTable");
     const $targetSelect = $("#targetTable");
+    const $sourceWrapper = $("#sourceTableWrapper");
+    const $targetWrapper = $("#targetTableWrapper");
+    
+    console.log("[bindTableSelect] 元素检查:", {
+        sourceSelect: $sourceSelect.length,
+        targetSelect: $targetSelect.length,
+        sourceWrapper: $sourceWrapper.length,
+        targetWrapper: $targetWrapper.length
+    });
+    
+    // 检查元素是否存在
+    if (!$sourceSelect.length || !$targetSelect.length) {
+        console.warn('[bindTableSelect] 表选择器元素未找到');
+        return;
+    }
     
     // 初始化多选下拉框
     if (typeof initMultiSelect === 'function') {
-        // 初始化数据源表选择器，联动到目标源表
-        initMultiSelect('sourceTableWrapper', {
-            linkTo: 'targetTableWrapper',
-            onSelectChange: function() {
-                // 选择变化时的回调
-            }
-        });
+        // 检查包装器是否存在
+        if ($sourceWrapper.length) {
+            console.log("[bindTableSelect] 初始化数据源表选择器");
+            // 初始化数据源表选择器，联动到目标源表
+            initMultiSelect('sourceTableWrapper', {
+                linkTo: 'targetTableWrapper',
+                onSelectChange: function() {
+                    console.log("[bindTableSelect] 数据源表选择变化");
+                }
+            });
+        } else {
+            console.warn("[bindTableSelect] sourceTableWrapper 元素未找到");
+        }
         
-        // 初始化目标源表选择器
-        initMultiSelect('targetTableWrapper', {
-            linkTo: null,
-            onSelectChange: function() {
-                // 选择变化时的回调
-            }
-        });
+        if ($targetWrapper.length) {
+            console.log("[bindTableSelect] 初始化目标源表选择器");
+            // 初始化目标源表选择器
+            initMultiSelect('targetTableWrapper', {
+                linkTo: null,
+                onSelectChange: function() {
+                    console.log("[bindTableSelect] 目标源表选择变化");
+                }
+            });
+        } else {
+            console.warn("[bindTableSelect] targetTableWrapper 元素未找到");
+        }
+    } else {
+        console.error("[bindTableSelect] initMultiSelect 函数未定义");
     }
     
     bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
+    console.log("[bindTableSelect] 表选择器绑定完成");
 }
 
 // 绑定下拉过滤按钮点击事件
@@ -197,6 +273,12 @@ function bindMultipleSelectFilterBtnClick() {
 // 绑定新增表关系点击事件
 function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     let $addBtn = $("#tableGroupAddBtn");
+    
+    // 检查按钮是否存在
+    if (!$addBtn.length) {
+        return;
+    }
+    
     $addBtn.unbind("click");
     $addBtn.bind('click', function () {
         let m = {};
@@ -249,7 +331,14 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
 
 // 绑定删除表关系点击事件
 function bindMappingTableGroupDelClick() {
-    $("#tableGroupDelBtn").click(function () {
+    var $delBtn = $("#tableGroupDelBtn");
+    
+    // 检查按钮是否存在
+    if (!$delBtn.length) {
+        return;
+    }
+    
+    $delBtn.unbind("click").click(function () {
         var ids = getCheckedBoxSize($(".tableGroupCheckbox"));
         if (ids.length > 0) {
             var $mappingId = $(this).attr("mappingId");
@@ -283,7 +372,13 @@ function mappingModifyName(){
 // 绑定刷新表事件
 function bindRefreshTablesClick() {
     let $refreshBtn = $("#refreshTableBtn");
-    $refreshBtn.bind('click', function(){
+    
+    // 检查按钮是否存在
+    if (!$refreshBtn.length) {
+        return;
+    }
+    
+    $refreshBtn.unbind("click").bind('click', function(){
         let id = $(this).attr("tableGroupId");
         doPoster("/mapping/refreshTables", {'id': id}, function (data) {
             if (data.success == true) {
@@ -297,6 +392,8 @@ function bindRefreshTablesClick() {
 }
 
 $(function () {
+
+    
     // 绑定同步方式切换事件
     bindMappingModelChange();
     // 绑定删除表映射事件
@@ -307,7 +404,9 @@ $(function () {
     // 绑定下拉选择事件自动匹配相似表事件
     bindTableSelect();
     // 绑定多值输入框事件
-    initMultipleInputTags();
+    if (typeof initMultipleInputTags === 'function') {
+        initMultipleInputTags();
+    }
     // 绑定删除表关系点击事件
     bindMappingTableGroupDelClick();
     //绑定刷新数据表按钮点击事件
@@ -317,16 +416,37 @@ $(function () {
     bindMultipleSelectFilterBtnClick();
 
     // 保存
-    $("#mappingSubmitBtn").click(function () {
-        let $form = $("#mappingModifyForm");
-        if ($form.formValidate() == true) {
-            let data = $form.serializeJson();
-            submit(data);
-        }
-    });
+    var $submitBtn = $("#mappingSubmitBtn");
+    if ($submitBtn.length) {
+        $submitBtn.click(function () {
+            let $form = $("#mappingModifyForm");
+            if ($form.length && $form.formValidate() == true) {
+                let data = $form.serializeJson();
+                submit(data);
+            }
+        });
+    }
 
     // 返回
-    $("#mappingBackBtn").click(function () {
-        backIndexPage();
-    });
+    var $backBtn = $("#mappingBackBtn");
+    if ($backBtn.length) {
+        $backBtn.click(function () {
+            // 优先返回到同步任务管理页面，如果该函数不存在则返回到默认主页
+            if (typeof loadMappingListPage === 'function') {
+                // 返回到同步任务管理页面
+                loadMappingListPage();
+            } else if (typeof backIndexPage === 'function') {
+                // 返回到默认主页
+                backIndexPage();
+            } else {
+                // 最后的兜底方案：使用doLoader加载同步任务列表
+                if (typeof doLoader === 'function') {
+                    doLoader('/mapping/list', 0);
+                } else {
+                    // 如果都不存在，直接跳转
+                    window.location.href = '/mapping/list';
+                }
+            }
+        });
+    }
 })

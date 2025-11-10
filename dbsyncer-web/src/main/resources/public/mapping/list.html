@@ -126,6 +126,68 @@ var mappingListAutoRefreshTimer = null;
 // 自动刷新间隔（毫秒），默认5秒
 var MAPPING_LIST_REFRESH_INTERVAL = 5000;
 
+// 是否启用自动刷新（如果遇到问题可以设置为false临时禁用）
+var ENABLE_AUTO_REFRESH = true;
+
+// 调试模式（设置为true可以看到详细日志）
+var MAPPING_LIST_DEBUG = false;
+
+/**
+ * 控制台命令：启用调试模式
+ * 在浏览器控制台执行：enableMappingDebug()
+ */
+window.enableMappingDebug = function() {
+    MAPPING_LIST_DEBUG = true;
+    console.log('[调试] 已启用映射列表调试模式');
+};
+
+/**
+ * 控制台命令：禁用调试模式
+ * 在浏览器控制台执行：disableMappingDebug()
+ */
+window.disableMappingDebug = function() {
+    MAPPING_LIST_DEBUG = false;
+    console.log('[调试] 已禁用映射列表调试模式');
+};
+
+/**
+ * 控制台命令：禁用自动刷新
+ * 在浏览器控制台执行：disableAutoRefresh()
+ */
+window.disableAutoRefresh = function() {
+    ENABLE_AUTO_REFRESH = false;
+    stopMappingListAutoRefresh();
+    console.log('[调试] 已禁用自动刷新');
+};
+
+/**
+ * 控制台命令：启用自动刷新
+ * 在浏览器控制台执行：enableAutoRefresh()
+ */
+window.enableAutoRefresh = function() {
+    ENABLE_AUTO_REFRESH = true;
+    startMappingListAutoRefresh();
+    console.log('[调试] 已启用自动刷新');
+};
+
+/**
+ * 控制台命令：查看当前状态
+ * 在浏览器控制台执行：getMappingListStatus()
+ */
+window.getMappingListStatus = function() {
+    console.log('=== 映射列表状态 ===');
+    console.log('自动刷新启用:', ENABLE_AUTO_REFRESH);
+    console.log('调试模式:', MAPPING_LIST_DEBUG);
+    console.log('刷新间隔(秒):', MAPPING_LIST_REFRESH_INTERVAL / 1000);
+    console.log('定时器运行中:', mappingListAutoRefreshTimer !== null);
+    console.log('表格存在:', $('#mappingTable').length > 0);
+    console.log('表格Body存在:', $('#mappingTableBody').length > 0);
+    console.log('当前行数:', $('#mappingTableBody tr').length);
+    console.log('当前页码:', currentPage);
+    console.log('总页数:', totalPages);
+    console.log('====================');
+};
+
 // 分页配置
 var ITEMS_PER_PAGE = 10; // 每页显示条数
 var currentPage = 1; // 当前页码
@@ -144,23 +206,33 @@ function loadMappingList() {
  * 智能刷新当前页面
  */
 function refreshCurrentMappingPage() {
-    var contentDiv = $('#mainContent');
-    if (!contentDiv.length) {
-        return;
-    }
-
-    // 检测当前页面类型
-    var currentContent = contentDiv.html();
+    // 直接检查关键元素是否存在，而不是检查 HTML 内容
+    var $mappingTable = $('#mappingTable');
+    var $mappingTableBody = $('#mappingTableBody');
+    var $mappingAddForm = $('#mappingAddForm');
+    var $mappingModifyForm = $('#mappingModifyForm');
     
     // 判断当前是否在同步任务列表页面
-    if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('同步任务管理')) {
-        // 当前在同步任务列表页面，刷新列表数据
-        refreshMappingListData();
-    } else if (currentContent.includes('mappingAddForm') || currentContent.includes('添加驱动')) {
+    if ($mappingTable.length && $mappingTableBody.length) {
+        console.log('[刷新] 检测到列表页面，刷新列表数据');
+        // 当前在同步任务列表页面，刷新列表数据（非静默模式，显示成功提示）
+        refreshMappingListData(false);
+    } else if ($mappingAddForm.length) {
+        console.log('[刷新] 检测到添加页面，重新加载添加页面');
         // 当前在添加任务页面，刷新添加页面
         loadAddMappingPage();
+    } else if ($mappingModifyForm.length) {
+        console.log('[刷新] 检测到编辑页面，重新加载编辑页面');
+        // 当前在编辑页面，刷新编辑页面
+        var mappingId = $('#mappingId').val();
+        if (mappingId) {
+            editMapping(mappingId);
+        } else {
+            loadMappingListPage();
+        }
     } else {
-        // 其他情况，默认刷新同步任务列表页面
+        console.log('[刷新] 未检测到已知页面，加载列表页面');
+        // 其他情况，默认加载同步任务列表页面
         loadMappingListPage();
     }
 }
@@ -173,64 +245,152 @@ function refreshMappingListData(silent) {
     // 默认不是静默刷新
     silent = silent || false;
     
+    // ✅ 在发送请求前先检查表格是否存在
+    var $targetTableBody = $('#mappingTableBody');
+    var $mappingTable = $('#mappingTable');
+    
+    if ($targetTableBody.length === 0 || $mappingTable.length === 0) {
+        console.warn('[刷新数据] 表格元素不存在，无法刷新');
+        if (!silent && typeof bootGrowl === 'function') {
+            bootGrowl('页面已切换，无法刷新', 'warning');
+        }
+        return;
+    }
+    
     // 保存当前页码和搜索条件
     var savedPage = currentPage;
     var searchQuery = $('#searchInput').val();
     
-    // 使用全局加载提示（如果可用且非静默模式）
-    showLoading();
+    console.log('[刷新数据] 开始刷新，当前页:', savedPage, '搜索:', searchQuery || '无');
+    
+    // ✅ 不使用 showLoading()，因为它会清空整个 #mainContent
+    // 使用简单的视觉反馈
+    if (!silent) {
+        // 添加一个半透明遮罩层到表格上
+        var $tableWrapper = $('.table-wrapper');
+        if ($tableWrapper.length && !$tableWrapper.find('.refreshing-overlay').length) {
+            $tableWrapper.css('position', 'relative').append(
+                '<div class="refreshing-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; ' +
+                'background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10;">' +
+                '<div style="text-align: center;"><i class="fa fa-spinner fa-spin" style="font-size: 24px; color: var(--primary-color);"></i>' +
+                '<p style="margin-top: 8px; color: var(--text-secondary);">刷新中...</p></div></div>'
+            );
+        }
+    }
     
     // 通过AJAX获取最新的同步任务列表数据
     $.ajax({
         url: '/mapping/list',
         type: 'GET',
         success: function(response) {
-            // 隐藏加载提示
-            hideLoading();
+            console.log('[刷新数据] AJAX请求成功返回');
             
-            // 解析响应内容，提取表格数据
-            var $response = $(response);
-            var tableBody = $response.find('#mappingTableBody');
+            // ✅ 移除加载遮罩层
+            if (!silent) {
+                $('.refreshing-overlay').remove();
+            }
             
-            if (tableBody.length) {
-                // 更新表格内容
-                $('#mappingTableBody').html(tableBody.html());
-                
-                // 重新绑定启动/停止按钮事件
-                bindMappingActionButtons();
-                
-                // 如果有搜索条件，重新应用搜索
-                if (searchQuery && searchQuery.trim() !== '') {
-                    filterMappings(searchQuery);
-                } else {
-                    // 重新初始化分页
-                    initPagination();
+            // 创建一个临时容器来解析HTML
+            var $tempDiv = $('<div>').html(response);
+            var tableBody = $tempDiv.find('#mappingTableBody');
+            
+            if (tableBody.length && tableBody.html().trim() !== '') {
+                try {
+                    // 在更新前再次检查目标表格是否存在（防止在请求过程中页面被切换）
+                    var $targetTableBody = $('#mappingTableBody');
+                    var $mappingTable = $('#mappingTable');
                     
-                    // 尝试恢复之前的页码
-                    if (savedPage > 1 && savedPage <= totalPages) {
-                        goToPage(savedPage);
+                    if ($targetTableBody.length === 0 || $mappingTable.length === 0) {
+                        console.warn('[刷新数据] 目标表格不存在，停止刷新');
+                        stopMappingListAutoRefresh();
+                        return;
                     }
-                }
-                
-                // 显示成功提示（仅非静默模式）
-                if (!silent) {
-                    bootGrowl('数据刷新成功', 'success');
+                    
+                    // 保存当前的 tbody 以便失败时恢复
+                    var oldTableBodyHtml = $targetTableBody.html();
+                    
+                    // 获取新的HTML内容
+                    var newTableBodyHtml = tableBody.html();
+                    
+                    if (MAPPING_LIST_DEBUG) {
+                        console.log('[刷新数据] 准备更新表格');
+                        console.log('[刷新数据] - 旧内容行数:', $targetTableBody.find('tr').length);
+                        console.log('[刷新数据] - 新内容长度:', newTableBodyHtml.length);
+                    }
+                    
+                    // 更新表格内容
+                    $targetTableBody.html(newTableBodyHtml);
+                    
+                    // 验证更新是否成功
+                    var updatedHtml = $('#mappingTableBody').html();
+                    var $updatedTableBody = $('#mappingTableBody');
+                    
+                    if (!$updatedTableBody.length || !updatedHtml || updatedHtml.trim() === '') {
+                        console.error('[刷新数据] 更新失败，表格body元素丢失或内容为空');
+                        console.error('[刷新数据] - tbody存在:', $updatedTableBody.length > 0);
+                        console.error('[刷新数据] - 内容长度:', updatedHtml ? updatedHtml.length : 0);
+                        
+                        // 尝试恢复
+                        if ($('#mappingTable').length > 0) {
+                            console.log('[刷新数据] 尝试恢复旧内容');
+                            $('#mappingTableBody').html(oldTableBodyHtml);
+                            bindMappingActionButtons();
+                        } else {
+                            console.error('[刷新数据] 整个表格都不存在了，停止自动刷新');
+                            stopMappingListAutoRefresh();
+                        }
+                        return;
+                    }
+                    
+                    console.log('[刷新数据] 表格内容已更新，当前行数:', $updatedTableBody.find('tr').length);
+                    
+                    // 重新绑定启动/停止按钮事件
+                    bindMappingActionButtons();
+                    
+                    // 如果有搜索条件，重新应用搜索
+                    if (searchQuery && searchQuery.trim() !== '') {
+                        filterMappings(searchQuery);
+                    } else {
+                        // 重新初始化分页
+                        initPagination();
+                        
+                        // 尝试恢复之前的页码
+                        if (savedPage > 1 && savedPage <= totalPages) {
+                            goToPage(savedPage);
+                        }
+                    }
+                    
+                    // 显示成功提示（仅非静默模式）
+                    if (!silent && typeof bootGrowl === 'function') {
+                        bootGrowl('数据刷新成功', 'success');
+                    }
+                    
+                    console.log('[刷新数据] 刷新完成');
+                } catch (error) {
+                    console.error('[刷新数据] 更新过程出错:', error);
+                    console.error('[刷新数据] 错误堆栈:', error.stack);
+                    // 停止自动刷新，避免持续报错
+                    stopMappingListAutoRefresh();
                 }
             } else {
                 // 如果无法解析响应，且不是静默模式，回退到重新加载整个页面
+                console.warn('[刷新数据] 无法解析响应内容，表格数据为空');
                 if (!silent) {
                     loadMappingListPage();
                 }
             }
         },
-        error: function() {
-            // 隐藏加载提示
+        error: function(xhr, status, error) {
+            // 移除加载遮罩层
             if (!silent) {
-               hideLoading();
+                $('.refreshing-overlay').remove();
             }
             
+            // 记录错误信息
+            console.error('刷新数据失败:', status, error);
+            
             // 显示错误提示（仅非静默模式）
-            if (!silent) {
+            if (!silent && typeof bootGrowl === 'function') {
                 bootGrowl('数据刷新失败，请稍后重试', 'danger');
             }
         }
@@ -241,30 +401,52 @@ function refreshMappingListData(silent) {
  * 启动同步任务列表自动刷新定时器
  */
 function startMappingListAutoRefresh() {
+    // 检查是否启用自动刷新
+    if (!ENABLE_AUTO_REFRESH) {
+        console.log('[自动刷新] 自动刷新功能已禁用');
+        return;
+    }
+    
     // 先清除已存在的定时器
     stopMappingListAutoRefresh();
     
     // 启动新的定时器
     mappingListAutoRefreshTimer = setInterval(function() {
-        // 检查当前是否还在同步任务列表页面
-        var contentDiv = $('#mainContent');
-        if (contentDiv.length) {
-            var currentContent = contentDiv.html();
-            // 只有在同步任务列表页面时才刷新
-            if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('同步任务管理')) {
+        try {
+            // 检查表格是否存在（更准确的判断方法）
+            var $mappingTable = $('#mappingTable');
+            var $mappingTableBody = $('#mappingTableBody');
+            
+            if (MAPPING_LIST_DEBUG) {
+                console.log('[自动刷新] 检查表格元素:', {
+                    tableExists: $mappingTable.length > 0,
+                    tableBodyExists: $mappingTableBody.length > 0,
+                    currentTime: new Date().toLocaleTimeString()
+                });
+            }
+            
+            // 只有当表格存在时才执行刷新
+            if ($mappingTable.length && $mappingTableBody.length) {
+                if (MAPPING_LIST_DEBUG) {
+                    console.log('[自动刷新] 开始静默刷新数据');
+                }
                 // 静默刷新（不显示加载提示和成功消息）
                 refreshMappingListData(true);
             } else {
-                // 如果不在列表页面，停止定时器
+                // 如果表格不存在，说明已经离开列表页面，停止定时器
+                console.log('[自动刷新] 表格元素不存在，停止自动刷新');
                 stopMappingListAutoRefresh();
             }
-        } else {
-            // 如果内容区域不存在，停止定时器
+        } catch (e) {
+            // 如果出现错误，停止定时器
+            console.error('[自动刷新] 出错:', e);
             stopMappingListAutoRefresh();
         }
     }, MAPPING_LIST_REFRESH_INTERVAL);
     
-    console.log('同步任务列表自动刷新已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
+    if (MAPPING_LIST_DEBUG) {
+        console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
+    }
 }
 
 /**
@@ -274,7 +456,9 @@ function stopMappingListAutoRefresh() {
     if (mappingListAutoRefreshTimer !== null) {
         clearInterval(mappingListAutoRefreshTimer);
         mappingListAutoRefreshTimer = null;
-        console.log('同步任务列表自动刷新已停止');
+        if (MAPPING_LIST_DEBUG) {
+            console.log('[自动刷新] 已停止');
+        }
     }
 }
 
@@ -380,7 +564,20 @@ function initMappingListPage() {
     });
 
     $('#refreshBtn').on('click', function() {
-        loadMappingList();
+        console.log('[刷新按钮] 点击刷新按钮');
+        // 检查是否在列表页面
+        var $mappingTable = $('#mappingTable');
+        var $mappingTableBody = $('#mappingTableBody');
+        
+        if ($mappingTable.length && $mappingTableBody.length) {
+            // 在列表页面，直接刷新数据（非静默模式）
+            console.log('[刷新按钮] 刷新列表数据');
+            refreshMappingListData(false);
+        } else {
+            // 不在列表页面，使用智能刷新
+            console.log('[刷新按钮] 使用智能刷新');
+            loadMappingList();
+        }
     });
 
     $('#searchInput').on('input', function() {
@@ -411,11 +608,18 @@ function initMappingListPage() {
  * 绑定启动/停止按钮事件
  */
 function bindMappingActionButtons() {
-    $('.mapping-action-btn').on('click', function() {
+    // 先解绑，避免重复绑定
+    $('.mapping-action-btn').off('click');
+    
+    // 重新绑定
+    $('.mapping-action-btn').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         var id = $(this).data('id');
         var isRunning = $(this).data('running');
         
-        if (isRunning === true || isRunning === 'true') {
+        if (isRunning === true || isRunning === 'true' || isRunning === '1' || isRunning === 1) {
             stopMapping(id);
         } else {
             startMapping(id);
@@ -722,7 +926,20 @@ $(document).ready(function() {
 
     // 刷新按钮点击事件
     $('#refreshBtn').on('click', function() {
-        loadMappingList();
+        console.log('[刷新按钮] 点击刷新按钮（document.ready）');
+        // 检查是否在列表页面
+        var $mappingTable = $('#mappingTable');
+        var $mappingTableBody = $('#mappingTableBody');
+        
+        if ($mappingTable.length && $mappingTableBody.length) {
+            // 在列表页面，直接刷新数据（非静默模式）
+            console.log('[刷新按钮] 刷新列表数据');
+            refreshMappingListData(false);
+        } else {
+            // 不在列表页面，使用智能刷新
+            console.log('[刷新按钮] 使用智能刷新');
+            loadMappingList();
+        }
     });
 
     // 搜索框输入事件
@@ -785,64 +1002,89 @@ function editMapping(id) {
  * 初始化同步任务编辑页面
  */
 function initMappingEditPage() {
+    console.log('[initMappingEditPage] 开始初始化编辑页面');
+    
     // 重写backIndexPage函数，使其返回到同步任务列表页面
     window.backIndexPage = function() {
         loadMappingListPage();
     };
 
-    // 绑定返回按钮事件
-    $('#mappingBackBtn').off('click').on('click', function() {
-        loadMappingListPage();
-    });
-
-    // 绑定保存按钮事件
-    $('#mappingSubmitBtn').off('click').on('click', function() {
-        var $form = $("#mappingModifyForm");
-        if (typeof $form.formValidate === 'function' && $form.formValidate() === true) {
-            var data = $form.serializeJson();
-            submitMappingEditForm(data);
+    // 使用 setTimeout 确保 DOM 完全渲染后再初始化
+    setTimeout(function() {
+        console.log('[initMappingEditPage] 延迟初始化开始');
+        
+        // 绑定返回按钮事件（先检查元素是否存在）
+        var $backBtn = $('#mappingBackBtn');
+        if ($backBtn.length) {
+            $backBtn.off('click').on('click', function() {
+                loadMappingListPage();
+            });
+            console.log('[initMappingEditPage] 返回按钮已绑定');
         }
-    });
 
-    // 绑定同步方式切换事件
-    if (typeof bindMappingModelChange === 'function') {
-        bindMappingModelChange();
-    }
-    
-    // 绑定删除表映射事件
-    if (typeof bindMappingTableGroupCheckBoxClick === 'function') {
-        bindMappingTableGroupCheckBoxClick();
-    }
+        // 绑定保存按钮事件（先检查元素是否存在）
+        var $submitBtn = $('#mappingSubmitBtn');
+        if ($submitBtn.length) {
+            $submitBtn.off('click').on('click', function() {
+                var $form = $("#mappingModifyForm");
+                if ($form.length && typeof $form.formValidate === 'function' && $form.formValidate() === true) {
+                    var data = $form.serializeJson();
+                    submitMappingEditForm(data);
+                }
+            });
+            console.log('[initMappingEditPage] 保存按钮已绑定');
+        }
 
-    // 绑定表关系点击事件
-    if (typeof bindMappingTableGroupListClick === 'function') {
-        bindMappingTableGroupListClick();
-    }
-    
-    // 绑定下拉选择事件自动匹配相似表事件
-    if (typeof bindTableSelect === 'function') {
-        bindTableSelect();
-    }
-    
-    // 绑定多值输入框事件
-    if (typeof initMultipleInputTags === 'function') {
-        initMultipleInputTags();
-    }
-    
-    // 绑定删除表关系点击事件
-    if (typeof bindMappingTableGroupDelClick === 'function') {
-        bindMappingTableGroupDelClick();
-    }
-    
-    // 绑定刷新数据表按钮点击事件
-    if (typeof bindRefreshTablesClick === 'function') {
-        bindRefreshTablesClick();
-    }
-    
-    // 绑定下拉过滤按钮点击事件
-    if (typeof bindMultipleSelectFilterBtnClick === 'function') {
-        bindMultipleSelectFilterBtnClick();
-    }
+        // 绑定同步方式切换事件
+        if (typeof bindMappingModelChange === 'function') {
+            bindMappingModelChange();
+            console.log('[initMappingEditPage] bindMappingModelChange 已调用');
+        }
+        
+        // 绑定删除表映射事件
+        if (typeof bindMappingTableGroupCheckBoxClick === 'function') {
+            bindMappingTableGroupCheckBoxClick();
+            console.log('[initMappingEditPage] bindMappingTableGroupCheckBoxClick 已调用');
+        }
+
+        // 绑定表关系点击事件
+        if (typeof bindMappingTableGroupListClick === 'function') {
+            bindMappingTableGroupListClick();
+            console.log('[initMappingEditPage] bindMappingTableGroupListClick 已调用');
+        }
+        
+        // 绑定下拉选择事件自动匹配相似表事件
+        if (typeof bindTableSelect === 'function') {
+            bindTableSelect();
+            console.log('[initMappingEditPage] bindTableSelect 已调用');
+        }
+        
+        // 绑定多值输入框事件
+        if (typeof initMultipleInputTags === 'function') {
+            initMultipleInputTags();
+            console.log('[initMappingEditPage] initMultipleInputTags 已调用');
+        }
+        
+        // 绑定删除表关系点击事件
+        if (typeof bindMappingTableGroupDelClick === 'function') {
+            bindMappingTableGroupDelClick();
+            console.log('[initMappingEditPage] bindMappingTableGroupDelClick 已调用');
+        }
+        
+        // 绑定刷新数据表按钮点击事件
+        if (typeof bindRefreshTablesClick === 'function') {
+            bindRefreshTablesClick();
+            console.log('[initMappingEditPage] bindRefreshTablesClick 已调用');
+        }
+        
+        // 绑定下拉过滤按钮点击事件
+        if (typeof bindMultipleSelectFilterBtnClick === 'function') {
+            bindMultipleSelectFilterBtnClick();
+            console.log('[initMappingEditPage] bindMultipleSelectFilterBtnClick 已调用');
+        }
+        
+        console.log('[initMappingEditPage] 延迟初始化完成');
+    }, 100); // 延迟 100ms，确保 DOM 和脚本都已加载
 }
 
 /**
@@ -1041,17 +1283,14 @@ function refreshMappingEditPage(id) {
 }
 
 /**
- * 绑定修改驱动同步方式切换事件
+ * 绑定修改驱动同步方式切换事件（备用定义，优先使用edit.js中的实现）
  */
 function bindMappingModelChange() {
     var $mappingModelChange = $("#mappingModelChange");
     var $radio = $mappingModelChange.find('input:radio[type="radio"]');
-    // 初始化icheck插件
-    $radio.iCheck({
-        labelHover: false,
-        cursor: true,
-        radioClass: 'iradio_flat-blue',
-    }).on('ifChecked', function (event) {
+    
+    // 使用原生 change 事件替代 iCheck
+    $radio.on('change', function (event) {
         var $form = $("#mappingModifyForm");
         if ($form.formValidate() == true) {
             var data = $form.serializeJson();
@@ -1080,31 +1319,32 @@ function bindMappingModelChange() {
 }
 
 /**
- * 绑定删除表关系复选框事件
+ * 绑定删除表关系复选框事件（备用定义，优先使用edit.js中的实现）
  */
 function bindMappingTableGroupCheckBoxClick() {
     var $checkboxAll = $('.tableGroupCheckboxAll');
     var $checkbox = $('.tableGroupCheckbox');
     var $delBtn = $("#tableGroupDelBtn");
-    $checkboxAll.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        labelHover: false,
-        cursor: true
-    }).on('ifChecked', function (event) {
-        $checkbox.iCheck('check');
-    }).on('ifUnchecked', function (event) {
-        $checkbox.iCheck('uncheck');
-    }).on('ifChanged', function (event) {
+    
+    // 全选复选框事件
+    $checkboxAll.on('change', function (event) {
+        var isChecked = $(this).prop('checked');
+        $checkbox.prop('checked', isChecked);
         $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
 
-    // 初始化icheck插件
-    $checkbox.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        cursor: true
-    }).on('ifChanged', function (event) {
+    // 单个复选框事件
+    $checkbox.on('change', function (event) {
+        // 更新全选复选框状态
+        var allChecked = $checkbox.length === $checkbox.filter(':checked').length;
+        $checkboxAll.prop('checked', allChecked);
+        
+        // 更新删除按钮状态
         $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
     });
+    
+    // 初始化删除按钮状态
+    $delBtn.prop('disabled', getCheckedBoxSize($checkbox).length < 1);
 }
 
 /**
@@ -1121,7 +1361,7 @@ function getCheckedBoxSize($checkbox) {
 }
 
 /**
- * 绑定表关系点击事件
+ * 绑定表关系点击事件（备用定义，优先使用edit.js中的实现）
  */
 function bindMappingTableGroupListClick() {
     var $tableGroupList = $("#tableGroupList");
@@ -1133,51 +1373,113 @@ function bindMappingTableGroupListClick() {
         }
     });
 
-    // 绑定表格拖拽事件
-    if (typeof $.fn.tableDnD === 'function') {
-        $tableGroupList.tableDnD({
-            onDrop: function(table, row) {
-                var newData = [];
-                var $trList = $(table).find("tr");
-                $.each($trList, function () {
-                    newData.push($(this).attr('id'));
-                });
-                $("#sortedTableGroupIds").val(newData.join('|'));
-            }
+    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
+    var rows = $tableGroupList.find("tr");
+    rows.each(function() {
+        var row = $(this)[0];
+        row.setAttribute('draggable', 'true');
+        
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
+    });
+    
+    var dragSrcEl = null;
+    
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+    
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        var rows = $tableGroupList.find('tr');
+        rows.removeClass('drag-over');
+        
+        // 更新排序
+        var newData = [];
+        rows.each(function () {
+            newData.push($(this).attr('id'));
         });
+        $("#sortedTableGroupIds").val(newData.join('|'));
+    }
+    
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+    
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        if (dragSrcEl !== this) {
+            var srcIndex = $(dragSrcEl).index();
+            var destIndex = $(this).index();
+            
+            if (srcIndex < destIndex) {
+                $(this).after(dragSrcEl);
+            } else {
+                $(this).before(dragSrcEl);
+            }
+        }
+        
+        this.classList.remove('drag-over');
+        return false;
     }
 }
 
 /**
- * 绑定下拉选择事件自动匹配相似表事件
+ * 绑定下拉选择事件自动匹配相似表事件（备用定义，优先使用edit.js中的实现）
  */
 function bindTableSelect() {
     const $sourceSelect = $("#sourceTable");
     const $targetSelect = $("#targetTable");
-    $sourceSelect.on('changed.bs.select', function(e) {
-        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
-    });
+    
+    // 初始化多选下拉框
+    if (typeof initMultiSelect === 'function') {
+        // 初始化数据源表选择器，联动到目标源表
+        initMultiSelect('sourceTableWrapper', {
+            linkTo: 'targetTableWrapper',
+            onSelectChange: function() {
+                // 选择变化时的回调
+            }
+        });
+        
+        // 初始化目标源表选择器
+        initMultiSelect('targetTableWrapper', {
+            linkTo: null,
+            onSelectChange: function() {
+                // 选择变化时的回调
+            }
+        });
+    }
+    
     bindMappingTableGroupAddClick($sourceSelect, $targetSelect);
 }
 
 /**
- * 绑定下拉过滤按钮点击事件
+ * 绑定下拉过滤按钮点击事件（备用定义，优先使用edit.js中的实现）
  */
 function bindMultipleSelectFilterBtnClick() {
-    $(".actions-btn").parent().append('<button type="button" class="actions-btn bs-show-all btn btn-default" title="显示所有表，包含已添加的表">取消过滤</button><button type="button" class="actions-btn bs-exclude-all btn btn-default" title="不显示已添加的表">过滤</button>');
-    $(".actions-btn").css('width', '25%');
-    $(".bs-show-all").bind("click", function () {
-        editMapping($("#mappingId").val() + '&exclude=1');
-        bootGrowl("取消过滤成功!", "success");
-    });
-    $(".bs-exclude-all").bind("click", function () {
-        refreshMappingEditPage($("#mappingId").val());
-        bootGrowl("过滤成功!", "success");
-    });
+    // 新的多选下拉框已经内置了"取消过滤"和"过滤"按钮
+    // 无需额外添加，但保留此函数以向后兼容
 }
 
 /**
- * 绑定新增表关系点击事件
+ * 绑定新增表关系点击事件（备用定义，优先使用edit.js中的实现）
  */
 function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     let $addBtn = $("#tableGroupAddBtn");
@@ -1185,8 +1487,9 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     $addBtn.bind('click', function () {
         let m = {};
         m.mappingId = $(this).attr("mappingId");
-        m.sourceTable = $sourceSelect.selectpicker('val');
-        m.targetTable = $targetSelect.selectpicker('val');
+        // 获取选中的值（兼容新的多选下拉框）
+        m.sourceTable = $sourceSelect.val();
+        m.targetTable = $targetSelect.val();
         if (undefined == m.sourceTable) {
             bootGrowl("请选择数据源表", "danger");
             return;

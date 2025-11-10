@@ -2,33 +2,99 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content">
+<div th:fragment="content" th:if="${tableGroup} == null">
+    <!-- 策略配置标题 -->
+    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
+            <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 6px;"></i>
+            策略配置
+        </h4>
+    </div>
 
-    <p th:if="${tableGroup} == null" class="text-muted">策略配置</p>
+    <!-- 策略配置选项 -->
+    <div class="form-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+        <!-- 覆盖策略 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-refresh" style="color: var(--primary-color); margin-right: 4px;"></i>
+                覆盖
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="Yes-目标表不存在数据时，执行insert，存在会执行update; No-不生效"></i>
+            </label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="forceUpdate" 
+                           class="dbsyncer_switch" 
+                           th:checked="${mapping?.forceUpdate}" 
+                           type="checkbox">
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">开启</span>
+                        <span class="switch-option switch-option-off">关闭</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+            </div>
+        </div>
 
-    <div th:if="${tableGroup} == null" class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">覆盖<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Yes-目标表不存在数据时， 执行insert，存在会执行update; No-不生效"></i></label>
-                <div class="col-sm-9">
-                    <input name="forceUpdate" class="dbsyncer_switch" th:checked="${mapping?.forceUpdate}" type="checkbox">
-                </div>
+        <!-- 校验策略 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-check-circle" style="color: var(--success-color); margin-right: 4px;"></i>
+                校验
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="【开发中..】Yes-校验数据源表与目标表差异数据; No-不生效"></i>
+            </label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="compareData" 
+                           class="dbsyncer_switch" 
+                           th:checked="${mapping?.compareData}" 
+                           disabled 
+                           type="checkbox">
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">开启</span>
+                        <span class="switch-option switch-option-off">关闭</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">校验<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="【开发中..】Yes-校验数据源表与目标表差异数据; No-不生效"></i></label>
-                <div class="col-sm-9">
-                    <input name="compareData" class="dbsyncer_switch" th:checked="${mapping?.compareData}" disabled type="checkbox" />
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">订正<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="【开发中..】Yes-校验数据源表与目标表差异数据，以源表为准，覆盖写入目标表; No-不生效"></i></label>
-                <div class="col-sm-9">
-                    <input name="recoverData" class="dbsyncer_switch" th:checked="${mapping?.recoverData}" disabled type="checkbox" />
-                </div>
+        </div>
+
+        <!-- 订正策略 -->
+        <div class="form-item">
+            <label class="form-label">
+                <i class="fa fa-wrench" style="color: var(--warning-color); margin-right: 4px;"></i>
+                订正
+                <i class="fa fa-question-circle" 
+                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
+                   title="【开发中..】Yes-校验数据源表与目标表差异数据，以源表为准，覆盖写入目标表; No-不生效"></i>
+            </label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="recoverData" 
+                           class="dbsyncer_switch" 
+                           th:checked="${mapping?.recoverData}" 
+                           disabled 
+                           type="checkbox">
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">开启</span>
+                        <span class="switch-option switch-option-off">关闭</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
             </div>
         </div>
     </div>
 
+    <!-- 配置说明 -->
+    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--warning-color);">
+        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
+            <i class="fa fa-lightbulb-o" style="color: var(--warning-color); margin-right: 6px;"></i>
+            <strong>配置说明：</strong>策略配置用于控制数据同步的行为模式。覆盖策略会在数据存在时执行更新，不存在时执行插入。校验和订正功能正在开发中。
+        </p>
+    </div>
 </div>
 
 </html>
