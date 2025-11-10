@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.ddl;
 
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ddl.impl.DDLParserImpl;
 import org.dbsyncer.parser.flush.impl.GeneralBufferActuator;
@@ -9,7 +11,9 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.junit.*;
@@ -72,8 +76,22 @@ public class HeterogeneousDDLSyncTest {
         mysqlConnectorService = TestDDLHelper.createConnectorService(mysqlConfig);
 
         // 初始化测试环境
-        String initSql = loadSqlScript("ddl/init-test-data.sql");
-        testDatabaseManager.initializeTestEnvironment(initSql, initSql);
+        // 由于SQL Server不支持IF NOT EXISTS，需要分别处理
+        String sqlServerInitSql =
+                "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
+                        "CREATE TABLE ddlTestEmployee (\n" +
+                        "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                        "    first_name NVARCHAR(50) NOT NULL\n" +
+                        ");";
+
+        String mysqlInitSql =
+                "DROP TABLE IF EXISTS ddlTestEmployee;\n" +
+                        "CREATE TABLE ddlTestEmployee (\n" +
+                        "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
+                        "    first_name VARCHAR(50) NOT NULL\n" +
+                        ");";
+
+        testDatabaseManager.initializeTestEnvironment(sqlServerInitSql, mysqlInitSql);
 
         logger.info("异构数据库DDL同步测试环境初始化完成");
     }
@@ -127,16 +145,46 @@ public class HeterogeneousDDLSyncTest {
     private void resetDatabaseTableStructure() {
         logger.debug("开始重置测试数据库表结构");
         try {
-            String resetSql = loadSqlScript("ddl/reset-test-table.sql");
-            if (resetSql == null || resetSql.trim().isEmpty()) {
-                resetSql = loadSqlScript("ddl/init-test-data.sql");
-            }
-            if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql, resetSql);
-                logger.debug("测试数据库表结构重置完成");
-            }
+            // 先删除表（如果存在），然后重新创建
+            // 这样可以确保表结构完全重置，并且兼容SQL Server和MySQL
+            ensureTableExists();
+            logger.debug("测试数据库表结构重置完成");
         } catch (Exception e) {
             logger.error("重置测试数据库表结构失败", e);
+        }
+    }
+
+    /**
+     * 确保测试表存在，如果不存在则创建
+     * 由于测试可能从SQL Server到MySQL或MySQL到SQL Server，需要在两个数据库中都创建表
+     */
+    private void ensureTableExists() {
+        logger.debug("确保测试表存在");
+        try {
+            // SQL Server: 先删除表（如果存在），然后创建
+            // 注意：testDatabaseManager的第一个参数是SQL Server（mssqlConfig），第二个是MySQL（mysqlConfig）
+            String sqlServerDropAndCreate =
+                    "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
+                            "CREATE TABLE ddlTestEmployee (\n" +
+                            "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                            "    first_name NVARCHAR(50) NOT NULL\n" +
+                            ");";
+
+            // MySQL: 先删除表（如果存在），然后创建
+            String mysqlDropAndCreate =
+                    "DROP TABLE IF EXISTS ddlTestEmployee;\n" +
+                            "CREATE TABLE ddlTestEmployee (\n" +
+                            "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
+                            "    first_name VARCHAR(50) NOT NULL\n" +
+                            ");";
+
+            // 在SQL Server和MySQL中都创建表（因为测试可能从任一方向进行）
+            // testDatabaseManager的第一个参数是SQL Server，第二个是MySQL
+            testDatabaseManager.resetTableStructure(sqlServerDropAndCreate, mysqlDropAndCreate);
+        } catch (Exception e) {
+            logger.error("确保测试表存在失败", e);
+            // 不抛出异常，避免影响测试，但记录错误
+            // 如果表创建失败，后续测试会失败，这样可以清楚地看到问题
         }
     }
 
@@ -255,7 +303,7 @@ public class HeterogeneousDDLSyncTest {
 
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD xml_data XML";
         testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "xml_data",
-                "SqlServer", "MySQL", mysqlConnectorService, "TEXT", "TEXT");
+                "SqlServer", "MySQL", mysqlConnectorService, "LONGTEXT", "LONGTEXT");
     }
 
     /**
@@ -392,6 +440,30 @@ public class HeterogeneousDDLSyncTest {
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD small_date SMALLDATETIME";
         testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "small_date",
                 "SqlServer", "MySQL", mysqlConnectorService, "DATETIME", "DATETIME");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - BIT类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_BITType() {
+        logger.info("开始测试SQL Server到MySQL的BIT类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD is_active BIT";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "is_active",
+                "SqlServer", "MySQL", mysqlConnectorService, "TINYINT", "TINYINT(1)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - HIERARCHYID类型转换
+     */
+    @Test
+    public void testSQLServerToMySQL_HIERARCHYIDType() {
+        logger.info("开始测试SQL Server到MySQL的HIERARCHYID类型转换");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD org_path HIERARCHYID";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "org_path",
+                "SqlServer", "MySQL", mysqlConnectorService, "VARBINARY", "VARBINARY(MAX)");
     }
 
     // ========== MySQL特殊类型测试 ==========
@@ -576,6 +648,83 @@ public class HeterogeneousDDLSyncTest {
                 "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(MAX)");
     }
 
+    /**
+     * 测试MySQL到SQL Server - BIT类型转换
+     */
+    @Test
+    public void testMySQLToSQLServer_BITType() {
+        logger.info("开始测试MySQL到SQL Server的BIT类型转换");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN is_verified BIT(1)";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "is_verified",
+                "MySQL", "SqlServer", sqlServerConnectorService, "TINYINT", "TINYINT");
+    }
+
+    // ========== DDL操作测试 ==========
+
+    /**
+     * 测试SQL Server到MySQL - MODIFY COLUMN操作
+     */
+    @Test
+    public void testSQLServerToMySQL_ModifyColumn() {
+        logger.info("开始测试SQL Server到MySQL的MODIFY COLUMN操作");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100)";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "first_name",
+                "SqlServer", "MySQL", mysqlConnectorService, "VARCHAR", "VARCHAR(100)");
+    }
+
+    /**
+     * 测试MySQL到SQL Server - CHANGE COLUMN操作
+     */
+    @Test
+    public void testMySQLToSQLServer_ChangeColumn() {
+        logger.info("开始测试MySQL到SQL Server的CHANGE COLUMN操作");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN first_name given_name VARCHAR(100)";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "given_name",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(100)");
+    }
+
+    /**
+     * 测试SQL Server到MySQL - DROP COLUMN操作
+     */
+    @Test
+    public void testSQLServerToMySQL_DropColumn() {
+        logger.info("开始测试SQL Server到MySQL的DROP COLUMN操作");
+
+        testDDLDropOperation("ALTER TABLE ddlTestEmployee DROP COLUMN first_name",
+                sqlserverToMySQLTableGroup, "first_name",
+                "SqlServer", "MySQL", mysqlConnectorService);
+    }
+
+    // ========== 复杂场景测试 ==========
+
+    /**
+     * 测试多字段同时添加
+     */
+    @Test
+    public void testSQLServerToMySQL_AddMultipleColumns() {
+        logger.info("开始测试SQL Server到MySQL的多字段添加");
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2), bonus DECIMAL(8,2)";
+        testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "salary",
+                "SqlServer", "MySQL", mysqlConnectorService, "DECIMAL", "DECIMAL(10,2)");
+        // 还需要验证bonus字段也被正确转换
+    }
+
+    /**
+     * 测试带约束的字段添加
+     */
+    @Test
+    public void testMySQLToSQLServer_AddColumnWithConstraint() {
+        logger.info("开始测试MySQL到SQL Server的带约束字段添加");
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN email VARCHAR(100) NOT NULL DEFAULT 'unknown@example.com'";
+        testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "email",
+                "MySQL", "SqlServer", sqlServerConnectorService, "NVARCHAR", "NVARCHAR(100)");
+    }
+
     // ========== 通用DDL转换测试方法 ==========
 
     /**
@@ -595,10 +744,14 @@ public class HeterogeneousDDLSyncTest {
                                    ConnectorService targetConnectorService,
                                    String expectedTargetType, String expectedTargetPattern) {
         try {
-            // 创建WriterResponse
+            // 1. 先在源数据库执行DDL（模拟真实的DDL变更）
+            DatabaseConfig sourceConfig = getSourceConfig(tableGroup);
+            executeDDLToSourceDatabase(sourceDDL, sourceConfig);
+
+            // 2. 创建WriterResponse
             WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", tableGroup.getSourceTable().getName());
 
-            // 创建Mapping
+            // 3. 创建Mapping
             Mapping mapping = TestDDLHelper.createMapping(
                     tableGroup.getMappingId(),
                     tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getSourceConnectorId(),
@@ -606,22 +759,33 @@ public class HeterogeneousDDLSyncTest {
                     true,
                     "test-meta-id");
 
-            // 根据TableGroup选择正确的BufferActuator
+            // 4. 根据TableGroup选择正确的BufferActuator
             GeneralBufferActuator actuator = (tableGroup == mysqlToSQLServerTableGroup)
                     ? mysqlToSQLServerBufferActuator
                     : generalBufferActuator;
 
-            // 调用完整的DDL处理流程
+            // 5. 调用完整的DDL处理流程（解析DDL → 执行DDL到目标数据库 → 刷新表结构 → 更新字段映射）
             actuator.parseDDl(response, mapping, tableGroup);
 
-            // 验证字段映射是否更新
-            boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null &&
-                            expectedFieldName.equals(fieldMapping.getSource().getName()));
+            // 6. 验证字段映射是否更新
+            boolean isAddOperation = sourceDDL.toUpperCase().contains("ADD");
+            if (isAddOperation) {
+                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                        .anyMatch(fieldMapping -> fieldMapping.getSource() != null &&
+                                expectedFieldName.equals(fieldMapping.getSource().getName()) &&
+                                fieldMapping.getTarget() != null &&
+                                expectedFieldName.equals(fieldMapping.getTarget().getName()));
 
-            assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+                assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+            } else {
+                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                        .anyMatch(fieldMapping -> fieldMapping.getSource() != null &&
+                                expectedFieldName.equals(fieldMapping.getSource().getName()));
 
-            // 验证DDL转换结果（通过解析DDLConfig）
+                assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+            }
+
+            // 7. 验证DDL转换结果（通过解析DDLConfig）
             DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, tableGroup, sourceDDL);
             assertNotNull("DDL配置不应为空", ddlConfig);
             assertNotNull("DDL配置应包含操作类型", ddlConfig.getDdlOperationEnum());
@@ -629,14 +793,23 @@ public class HeterogeneousDDLSyncTest {
             String targetSql = ddlConfig.getSql();
             assertNotNull("DDL配置应包含SQL语句", targetSql);
 
-            // 验证转换后的SQL是否包含期望的目标类型
+            // 8. 验证SQL语法正确性
+            validateSQLSyntax(targetSql);
+
+            // 9. 验证转换后的SQL是否包含期望的目标类型
             assertTrue(String.format("转换后的DDL应包含期望的目标类型 %s，实际SQL: %s", expectedTargetPattern, targetSql),
                     targetSql.toUpperCase().contains(expectedTargetPattern.toUpperCase()) ||
                             targetSql.toUpperCase().contains(expectedTargetType.toUpperCase()));
 
-            // 验证字段名存在于转换后的SQL中
+            // 10. 验证字段名存在于转换后的SQL中
             assertTrue(String.format("转换后的DDL应包含字段名 %s，实际SQL: %s", expectedFieldName, targetSql),
                     targetSql.contains(expectedFieldName));
+
+            // 11. 验证目标数据库中字段是否真实存在（对于ADD操作）
+            if (isAddOperation) {
+                DatabaseConfig targetConfig = getTargetConfig(tableGroup);
+                verifyFieldExistsInTargetDatabase(expectedFieldName, tableGroup.getTargetTable().getName(), targetConfig);
+            }
 
             logger.info("DDL转换测试通过 - 字段: {}, 源类型: {}, 目标类型: {}, 转换后SQL: {}",
                     expectedFieldName, sourceDbType, targetDbType, targetSql);
@@ -644,6 +817,84 @@ public class HeterogeneousDDLSyncTest {
             logger.error("DDL转换测试失败 - 字段: {}, 源类型: {}, 目标类型: {}",
                     expectedFieldName, sourceDbType, targetDbType, e);
             fail("DDL转换测试失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 测试DDL DROP操作的通用方法
+     */
+    private void testDDLDropOperation(String sourceDDL, TableGroup tableGroup, String expectedFieldName,
+                                      String sourceDbType, String targetDbType,
+                                      ConnectorService targetConnectorService) {
+        try {
+            // 1. 先在源数据库执行DDL（模拟真实的DDL变更）
+            DatabaseConfig sourceConfig = getSourceConfig(tableGroup);
+            executeDDLToSourceDatabase(sourceDDL, sourceConfig);
+
+            // 2. 创建WriterResponse
+            WriterResponse response = TestDDLHelper.createWriterResponse(sourceDDL, "ALTER", tableGroup.getSourceTable().getName());
+
+            // 3. 创建Mapping
+            Mapping mapping = TestDDLHelper.createMapping(
+                    tableGroup.getMappingId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getSourceConnectorId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getTargetConnectorId(),
+                    true,
+                    "test-meta-id");
+
+            // 4. 根据TableGroup选择正确的BufferActuator
+            GeneralBufferActuator actuator = (tableGroup == mysqlToSQLServerTableGroup)
+                    ? mysqlToSQLServerBufferActuator
+                    : generalBufferActuator;
+
+            // 5. 调用完整的DDL处理流程（解析DDL → 执行DDL到目标数据库 → 刷新表结构 → 更新字段映射）
+            actuator.parseDDl(response, mapping, tableGroup);
+
+            // 6. 验证字段映射是否已移除
+            boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                    .anyMatch(fieldMapping -> fieldMapping.getSource() != null &&
+                            expectedFieldName.equals(fieldMapping.getSource().getName()));
+
+            assertFalse("应移除字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+
+            // 7. 验证DDL转换结果
+            DDLConfig ddlConfig = ddlParser.parse(targetConnectorService, tableGroup, sourceDDL);
+            assertNotNull("DDL配置不应为空", ddlConfig);
+            assertNotNull("DDL配置应包含操作类型", ddlConfig.getDdlOperationEnum());
+
+            String targetSql = ddlConfig.getSql();
+            assertNotNull("DDL配置应包含SQL语句", targetSql);
+            validateSQLSyntax(targetSql);
+
+            // 8. 验证转换后的SQL是否包含DROP COLUMN关键字和字段名
+            assertTrue(String.format("转换后的DDL应包含DROP COLUMN关键字，实际SQL: %s", targetSql),
+                    targetSql.toUpperCase().contains("DROP COLUMN"));
+            assertTrue(String.format("转换后的DDL应包含字段名 %s，实际SQL: %s", expectedFieldName, targetSql),
+                    targetSql.contains(expectedFieldName));
+
+            // 9. 验证目标数据库中字段是否已被删除
+            DatabaseConfig targetConfig = getTargetConfig(tableGroup);
+            verifyFieldNotExistsInTargetDatabase(expectedFieldName, tableGroup.getTargetTable().getName(), targetConfig);
+
+            logger.info("DDL DROP操作测试通过 - 字段: {}, 源类型: {}, 目标类型: {}, 转换后SQL: {}",
+                    expectedFieldName, sourceDbType, targetDbType, targetSql);
+        } catch (Exception e) {
+            logger.error("DDL DROP操作测试失败 - 字段: {}, 源类型: {}, 目标类型: {}",
+                    expectedFieldName, sourceDbType, targetDbType, e);
+            fail("DDL DROP操作测试失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证转换后的SQL语法正确性
+     */
+    private void validateSQLSyntax(String sql) {
+        try {
+            CCJSqlParserUtil.parse(sql);
+            logger.debug("SQL语法验证通过: {}", sql);
+        } catch (JSQLParserException e) {
+            logger.error("SQL语法验证失败: {}", sql, e);
+            fail("转换后的SQL语法不正确: " + sql);
         }
     }
 
@@ -718,6 +969,86 @@ public class HeterogeneousDDLSyncTest {
         } catch (Exception e) {
             logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
             return "";
+        }
+    }
+
+    /**
+     * 获取源数据库配置
+     */
+    private DatabaseConfig getSourceConfig(TableGroup tableGroup) {
+        String sourceConnectorId = tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getSourceConnectorId();
+        return (DatabaseConfig) tableGroup.profileComponent.getConnector(sourceConnectorId).getConfig();
+    }
+
+    /**
+     * 获取目标数据库配置
+     */
+    private DatabaseConfig getTargetConfig(TableGroup tableGroup) {
+        String targetConnectorId = tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getTargetConnectorId();
+        return (DatabaseConfig) tableGroup.profileComponent.getConnector(targetConnectorId).getConfig();
+    }
+
+    /**
+     * 在源数据库执行DDL（模拟真实的DDL变更）
+     */
+    private void executeDDLToSourceDatabase(String sourceDDL, DatabaseConfig sourceConfig) {
+        logger.debug("在源数据库执行DDL: {}", sourceDDL);
+        try {
+            DatabaseConnectorInstance sourceConnectorInstance = new DatabaseConnectorInstance(sourceConfig);
+            sourceConnectorInstance.execute(databaseTemplate -> {
+                try (java.sql.Connection connection = databaseTemplate.getSimpleConnection().getConnection();
+                     java.sql.Statement statement = connection.createStatement()) {
+                    statement.execute(sourceDDL);
+                    logger.debug("源数据库DDL执行成功: {}", sourceDDL);
+                    return null;
+                } catch (java.sql.SQLException e) {
+                    logger.error("在源数据库执行DDL失败: {}", sourceDDL, e);
+                    throw new RuntimeException("在源数据库执行DDL失败", e);
+                }
+            });
+        } catch (Exception e) {
+            logger.error("在源数据库执行DDL失败: {}", sourceDDL, e);
+            throw new RuntimeException("在源数据库执行DDL失败", e);
+        }
+    }
+
+    /**
+     * 验证目标数据库中字段是否存在
+     */
+    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig targetConfig) {
+        logger.debug("验证目标数据库中字段是否存在 - 表: {}, 字段: {}", tableName, fieldName);
+        try {
+            DatabaseConnectorInstance targetConnectorInstance = new DatabaseConnectorInstance(targetConfig);
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(targetConnectorInstance, tableName);
+
+            boolean fieldExists = metaInfo.getColumn().stream()
+                    .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
+
+            assertTrue(String.format("目标数据库中应存在字段 %s，表: %s", fieldName, tableName), fieldExists);
+            logger.debug("目标数据库中字段验证通过 - 表: {}, 字段: {}", tableName, fieldName);
+        } catch (Exception e) {
+            logger.error("验证目标数据库中字段是否存在失败 - 表: {}, 字段: {}", tableName, fieldName, e);
+            fail("验证目标数据库中字段是否存在失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证目标数据库中字段是否不存在（用于DROP操作）
+     */
+    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig targetConfig) {
+        logger.debug("验证目标数据库中字段是否不存在 - 表: {}, 字段: {}", tableName, fieldName);
+        try {
+            DatabaseConnectorInstance targetConnectorInstance = new DatabaseConnectorInstance(targetConfig);
+            MetaInfo metaInfo = connectorFactory.getMetaInfo(targetConnectorInstance, tableName);
+
+            boolean fieldExists = metaInfo.getColumn().stream()
+                    .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
+
+            assertFalse(String.format("目标数据库中不应存在字段 %s，表: %s", fieldName, tableName), fieldExists);
+            logger.debug("目标数据库中字段删除验证通过 - 表: {}, 字段: {}", tableName, fieldName);
+        } catch (Exception e) {
+            logger.error("验证目标数据库中字段是否不存在失败 - 表: {}, 字段: {}", tableName, fieldName, e);
+            fail("验证目标数据库中字段是否不存在失败: " + e.getMessage());
         }
     }
 }

@@ -72,15 +72,7 @@ public class DDLParserImpl implements DDLParser {
         Statement statement = CCJSqlParserUtil.parse(sql);
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
-            // 使用SQL模板构建带引号的表名
-            String quotedTableName = tableGroup.getTargetTable().getName();
-            if (connectorService instanceof AbstractDatabaseConnector) {
-                AbstractDatabaseConnector dbConnector = (AbstractDatabaseConnector) connectorService;
-                quotedTableName = dbConnector.sqlTemplate.buildQuotedTableName(tableGroup.getTargetTable().getName());
-            }
-            // 替换成目标表名
-            alter.getTable().setName(quotedTableName);
-
+            
             // 设置源和目标连接器类型
             // 从TableGroup中获取ProfileComponent，再获取源和目标连接器配置
             Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
@@ -88,11 +80,18 @@ public class DDLParserImpl implements DDLParser {
                     .getConnector(mapping.getSourceConnectorId()).getConfig();
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
             String targetConnectorType = connectorService.getConnectorType();
-
+            
+            // 获取目标表名（原始表名，不带引号）
+            String targetTableName = tableGroup.getTargetTable().getName();
+            
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
             if (!StringUtil.equals(sourceConnectorType, targetConnectorType)) {
+                // 对于异构数据库转换，使用原始表名（不带引号）
+                // 因为IRToTargetConverter的buildAddColumnSql会自己加引号
+                alter.getTable().setName(targetTableName);
+                
                 // 从源连接器获取源到IR转换器
                 ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
                 SourceToIRConverter sourceToIRConverter = sourceConnectorService.getSourceToIRConverter();
@@ -109,7 +108,9 @@ public class DDLParserImpl implements DDLParser {
                 // 直接转换源DDL到目标DDL
                 // 1. 源DDL转中间表示
                 DDLIntermediateRepresentation ir = sourceToIRConverter.convert(alter);
-                // 2. 中间表示转目标DDL
+                // 2. 确保IR中的表名是原始表名（不带引号）
+                ir.setTableName(targetTableName);
+                // 3. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
             }
 
