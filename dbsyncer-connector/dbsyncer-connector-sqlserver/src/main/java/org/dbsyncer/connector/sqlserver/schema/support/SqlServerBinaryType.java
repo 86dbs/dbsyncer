@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.schema.support;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
@@ -20,7 +21,7 @@ import java.util.Set;
  * @Version 1.0.0
  * @Date 2024-12-24 23:45
  */
-public final class SqlServerBinaryStringType extends BytesType {
+public final class SqlServerBinaryType extends BytesType {
 
     @Override
     public Set<String> getSupportedTypeName() {
@@ -49,5 +50,21 @@ public final class SqlServerBinaryStringType extends BytesType {
             return ((String) val).getBytes(StandardCharsets.UTF_8);
         }
         return super.convert(val, field);
+    }
+
+    @Override
+    public Field handleDDLParameters(ColDataType colDataType) {
+        // 调用父类方法设置基础信息
+        Field result = super.handleDDLParameters(colDataType);
+        
+        // SQL Server IMAGE类型可以存储最大2GB的数据
+        // 如果类型是IMAGE且没有指定长度，设置默认容量为2GB
+        String typeName = colDataType.getDataType().toUpperCase();
+        if ("IMAGE".equals(typeName) && result.getColumnSize() == 0L) {
+            // IMAGE类型最大容量：2,147,483,647字节 (2^31-1)
+            result.setColumnSize(2147483647L);
+        }
+        
+        return result;
     }
 }

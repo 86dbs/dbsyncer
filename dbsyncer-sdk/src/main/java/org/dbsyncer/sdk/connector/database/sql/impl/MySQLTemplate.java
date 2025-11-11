@@ -124,12 +124,25 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                 if (binarySize > 0 && binarySize <= 255) {
                     // 固定长度且小于等于255，使用BINARY
                     return "BINARY(" + binarySize + ")";
-                } else if (binarySize > 0) {
-                    // 有长度但大于255，使用VARBINARY
+                } else if (binarySize > 255 && binarySize <= 65535) {
+                    // 有长度但大于255且<=65535，使用VARBINARY
                     return "VARBINARY(" + binarySize + ")";
+                } else if (binarySize > 65535) {
+                    // 长度大于65535，根据大小选择合适的BLOB类型
+                    // MySQL的BLOB类型容量：
+                    // - TINYBLOB: 最大255字节
+                    // - BLOB: 最大65,535字节 (64KB)
+                    // - MEDIUMBLOB: 最大16,777,215字节 (16MB)
+                    // - LONGBLOB: 最大4,294,967,295字节 (4GB)
+                    if (binarySize <= 16777215L) {
+                        return "MEDIUMBLOB";
+                    } else {
+                        return "LONGBLOB";
+                    }
                 }
-                // 没有长度信息，使用VARBINARY
-                return "VARBINARY";
+                // 没有长度信息，使用BLOB（默认中等大小，适合大多数场景）
+                // 对于SQL Server的IMAGE类型（最大2GB），如果没有columnSize信息，使用LONGBLOB
+                return "BLOB";
             case "BINARY":
                 // 如果已经是BINARY类型，保持BINARY并添加长度
                 if (column.getColumnSize() > 0) {

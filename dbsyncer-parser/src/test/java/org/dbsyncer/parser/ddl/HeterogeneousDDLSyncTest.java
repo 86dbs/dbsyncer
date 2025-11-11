@@ -387,8 +387,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试SQL Server到MySQL的IMAGE类型转换");
 
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD photo IMAGE";
+        // SQL Server的IMAGE类型最大2GB，应映射到MySQL的LONGBLOB
         testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "photo",
-                "SqlServer", "MySQL", mysqlConnectorService, "BLOB", "BLOB");
+                "SqlServer", "MySQL", mysqlConnectorService, "LONGBLOB", "LONGBLOB");
     }
 
     /**

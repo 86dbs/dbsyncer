@@ -62,7 +62,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerDateTimeType(),            // 日期时间类型
                 new SqlServerStringType(),              // 字符字符串类型（CHAR, VARCHAR）
                 new SqlServerUnicodeStringType(),       // Unicode字符字符串类型（NCHAR, NVARCHAR）
-                new SqlServerBinaryStringType(),        // 二进制字符串类型
+                new SqlServerBinaryType(),        // 二进制字符串类型
                 new SqlServerTextType(),                // TEXT类型支持
                 new SqlServerUnicodeTextType(),         // Unicode TEXT类型支持（NTEXT）
                 new SqlServerXmlType(),                 // XML类型支持
