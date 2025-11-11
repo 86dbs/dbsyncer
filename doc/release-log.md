@@ -3,7 +3,7 @@
 ## 2.7.0
 
 - 新功能：DDL 支持异构同步。 
-- 优化：对标准类型进行扩展(XML,JSON,ENUM,SET,TEXT,UNSIGNED,unicode,UUID),移除 ARRAY 类型，增强异构 DDL 的容错能力。
+- 优化：对标准类型进行扩展(XML,JSON,ENUM,SET,TEXT,UNSIGNED,unicode,UUID,BLOB),移除 ARRAY 类型，增强异构 DDL 的容错能力。
 - 结构优化：重构中间标准化类型，提高可维护性与性能。
 - 结构优化：大幅度改善不同数据库的 schema 解析工作的抽象，提供其可维护能力。
 - 优化：停止同时使用两套json框架，移除 fastjson 的使用，给维护减压。

@@ -57,9 +57,25 @@
 - **TIME**: 时间类型，JDBC类型为TIME
 - **TIMESTAMP**: 时间戳类型，JDBC类型为TIMESTAMP
 
+### 二进制类型
+- **BYTES**: 小容量二进制数据，JDBC类型为VARBINARY/BINARY
+  - MySQL: JDBC类型为VARBINARY/BINARY
+  - PostgreSQL: JDBC类型为BYTEA
+  - SQL Server: JDBC类型为VARBINARY
+  - Oracle: JDBC类型为RAW
+  - SQLite: JDBC类型为BLOB
+  
+- **BLOB**: 大容量二进制数据，JDBC类型为BLOB
+  - MySQL: JDBC类型为BLOB/MEDIUMBLOB/LONGBLOB（根据大小自动选择）
+  - PostgreSQL: JDBC类型为BYTEA（PostgreSQL使用BYTEA存储所有二进制数据）
+  - SQL Server: JDBC类型为VARBINARY(MAX)
+  - Oracle: JDBC类型为BLOB
+  - SQLite: JDBC类型为BLOB
+
+**设计说明**：与字符串类型的设计保持一致，`BYTES` 对应 `STRING`（小容量），`BLOB` 对应 `TEXT`（大容量）。这样可以更精确地控制二进制数据类型的选择，简化类型转换逻辑。
+
 ### 其他类型
 - **BOOLEAN**: 布尔类型，JDBC类型为BIT/BOOLEAN
-- **BYTES**: 二进制数据，JDBC类型为VARBINARY/BLOB
 
 ## 实现策略
 

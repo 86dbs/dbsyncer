@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
 import org.dbsyncer.common.util.StringUtil;
@@ -217,6 +214,31 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
+            case "VARBINARY":
+                // 根据标准类型判断：如果是BLOB类型，使用VARBINARY(MAX)；如果是BYTES类型，使用指定长度
+                // column是标准类型字段，targetField是转换后的目标数据库类型字段
+                String standardType = column.getTypeName();
+                if ("BLOB".equals(standardType)) {
+                    // BLOB类型：使用VARBINARY(MAX)存储大容量二进制数据
+                    return "VARBINARY(MAX)";
+                } else {
+                    // BYTES类型：小容量二进制数据，使用指定长度
+                    if (column.getColumnSize() > 0 && column.getColumnSize() <= 8000) {
+                        return typeName + "(" + column.getColumnSize() + ")";
+                    } else if (column.getColumnSize() > 8000) {
+                        // 如果长度超过8000，使用MAX（实际上应该使用BLOB类型）
+                        return "VARBINARY(MAX)";
+                    }
+                    // 没有长度信息，默认使用VARBINARY(8000)作为小容量二进制
+                    return "VARBINARY(8000)";
+                }
+            case "BINARY":
+                // BINARY类型：固定长度二进制数据
+                if (column.getColumnSize() > 0 && column.getColumnSize() <= 8000) {
+                    return typeName + "(" + column.getColumnSize() + ")";
+                }
+                // 没有长度信息或超过8000，默认使用BINARY(8000)
+                return "BINARY(8000)";
             case "DECIMAL":
                 if (column.getColumnSize() > 0 && column.getRatio() >= 0) {
                     return typeName + "(" + column.getColumnSize() + "," + column.getRatio() + ")";

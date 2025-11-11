@@ -1,10 +1,7 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlite.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.BytesType;
+import org.dbsyncer.sdk.schema.support.BlobType;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -12,7 +9,7 @@ import java.util.Set;
 
 /**
  * SQLite BLOB 存储类 - 二进制亲和性
- * 支持所有二进制数据相关的类型声明
+ * 用于大容量二进制数据
  * <p>
  * <b>类型分析：</b>
  * <ul>
@@ -21,12 +18,8 @@ import java.util.Set;
  * </ul>
  * BLOB 存储类不限制数据长度（受限于数据库文件大小），数据以原始字节形式存储。
  * </p>
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
  */
-public final class SQLiteBlobType extends BytesType {
+public final class SQLiteBlobType extends BlobType {
 
     @Override
     public Set<String> getSupportedTypeName() {

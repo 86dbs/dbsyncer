@@ -41,6 +41,8 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TIMESTAMP", "DATETIME");
         // 二进制
         mapping.put("BYTES", "VARBINARY");
+        // 大容量二进制
+        mapping.put("BLOB", "BLOB");
         // 结构化文本
         mapping.put("JSON", "JSON");
         mapping.put("XML", "LONGTEXT");
@@ -58,6 +60,7 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
                 new MySQLBytesType(),
+                new MySQLBlobType(),  // 新增BLOB类型支持
                 new MySQLByteType(),
                 new MySQLDateType(),
                 new MySQLDecimalType(),

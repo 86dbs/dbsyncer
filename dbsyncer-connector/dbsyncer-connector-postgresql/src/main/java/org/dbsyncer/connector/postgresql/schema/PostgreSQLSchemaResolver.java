@@ -53,6 +53,8 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TIMESTAMP", "TIMESTAMP");
         // 二进制
         mapping.put("BYTES", "BYTEA");
+        // 大容量二进制
+        mapping.put("BLOB", "BYTEA"); // PostgreSQL使用BYTEA存储大容量二进制数据
         // 结构化文本
         mapping.put("JSON", "JSON");
         mapping.put("XML", "XML");

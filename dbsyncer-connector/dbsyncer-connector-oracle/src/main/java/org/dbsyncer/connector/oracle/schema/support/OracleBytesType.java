@@ -1,15 +1,9 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.oracle.schema.support;
 
-import oracle.sql.BLOB;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,7 +17,9 @@ public final class OracleBytesType extends BytesType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("BLOB", "RAW", "LONG RAW", "BFILE"));
+        // BYTES类型：用于小容量二进制数据，只支持RAW、LONG RAW、BFILE
+        // BLOB类型（大容量二进制）由OracleBlobType处理
+        return new HashSet<>(Arrays.asList("RAW", "LONG RAW", "BFILE"));
     }
 
     @Override
@@ -33,14 +29,6 @@ public final class OracleBytesType extends BytesType {
 
     @Override
     protected byte[] merge(Object val, Field field) {
-        if (val instanceof BLOB) {
-            try {
-                BLOB blob = (BLOB) val;
-                return blob.getBytes(1, (int) blob.length());
-            } catch (SQLException e) {
-                throw new OracleException(e);
-            }
-        }
         return throwUnsupportedException(val, field);
     }
 

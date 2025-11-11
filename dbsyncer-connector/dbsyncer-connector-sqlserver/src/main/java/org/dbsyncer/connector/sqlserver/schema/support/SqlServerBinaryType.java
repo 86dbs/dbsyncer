@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlserver.schema.support;
 
 import net.sf.jsqlparser.statement.create.table.ColDataType;
@@ -16,16 +13,14 @@ import java.util.Set;
  * SQL Server 二进制字符串类型
  * 包括二进制数据类型
  * 注意：二进制字符串类型不支持 IDENTITY 属性
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
  */
 public final class SqlServerBinaryType extends BytesType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("BINARY", "VARBINARY", "IMAGE"));
+        // BYTES类型：用于小容量二进制数据，只支持BINARY和VARBINARY
+        // IMAGE类型（大容量二进制）由SqlServerBlobType处理
+        return new HashSet<>(Arrays.asList("BINARY", "VARBINARY"));
     }
 
     @Override
@@ -57,14 +52,40 @@ public final class SqlServerBinaryType extends BytesType {
         // 调用父类方法设置基础信息
         Field result = super.handleDDLParameters(colDataType);
         
-        // SQL Server IMAGE类型可以存储最大2GB的数据
-        // 如果类型是IMAGE且没有指定长度，设置默认容量为2GB
         String typeName = colDataType.getDataType().toUpperCase();
-        if ("IMAGE".equals(typeName) && result.getColumnSize() == 0L) {
-            // IMAGE类型最大容量：2,147,483,647字节 (2^31-1)
-            result.setColumnSize(2147483647L);
+        java.util.List<String> argsList = colDataType.getArgumentsStringList();
+        
+        if ("VARBINARY".equals(typeName)) {
+            // 检查 VARBINARY 的参数是否为 MAX
+            if (argsList != null && !argsList.isEmpty()) {
+                String arg = argsList.get(0).trim().toUpperCase();
+                if ("MAX".equals(arg)) {
+                    // VARBINARY(MAX) 类型最大容量：2,147,483,647字节 (2^31-1)
+                    // 设置一个特殊标记，让 SchemaResolver 识别并修正为 BLOB 类型
+                    result.setColumnSize(2147483647L);
+                } else {
+                    // 解析长度参数
+                    try {
+                        long size = Long.parseLong(arg);
+                        result.setColumnSize(size);
+                    } catch (NumberFormatException e) {
+                        // 忽略解析错误，使用默认值
+                    }
+                }
+            }
+        } else if ("BINARY".equals(typeName)) {
+            // 处理 BINARY 类型的长度参数
+            if (argsList != null && !argsList.isEmpty()) {
+                try {
+                    long size = Long.parseLong(argsList.get(0).trim());
+                    result.setColumnSize(size);
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误，使用默认值
+                }
+            }
         }
         
         return result;
     }
+
 }

@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.oracle.schema;
 
 import org.dbsyncer.connector.oracle.OracleException;
@@ -13,10 +10,6 @@ import java.util.stream.Stream;
 
 /**
  * Oracle标准数据类型解析器
- *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2025-04-05
  */
 public final class OracleSchemaResolver extends AbstractSchemaResolver {
 
@@ -46,7 +39,9 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TIME", "DATE");
         mapping.put("TIMESTAMP", "TIMESTAMP");
         // 二进制
-        mapping.put("BYTES", "BLOB");
+        mapping.put("BYTES", "RAW"); // Oracle的RAW类型用于小容量二进制数据
+        // 大容量二进制
+        mapping.put("BLOB", "BLOB"); // Oracle原生支持BLOB类型
         // 结构化文本
         mapping.put("JSON", "CLOB"); // Oracle 12c+ 支持JSON，但存储为CLOB或VARCHAR2
         mapping.put("XML", "XMLTYPE");
@@ -72,7 +67,8 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
                 new OracleDoubleType(),
                 new OracleDateType(),
                 new OracleTimestampType(),
-                new OracleBytesType(),
+                new OracleBytesType(),           // RAW, LONG RAW, BFILE
+                new OracleBlobType(),            // BLOB
                 new OracleTextType(),            // CLOB
                 new OracleUnicodeTextType(),     // NCLOB
                 new OracleXmlType()              // XML类型支持

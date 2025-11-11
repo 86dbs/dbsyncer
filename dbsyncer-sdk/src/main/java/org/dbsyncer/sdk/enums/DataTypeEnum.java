@@ -29,6 +29,8 @@ public enum DataTypeEnum {
     TIMESTAMP,
     /** 二进制 */
     BYTES,
+    /** 大容量二进制 */
+    BLOB,
     /** 结构化文本 */
     JSON,
     XML,

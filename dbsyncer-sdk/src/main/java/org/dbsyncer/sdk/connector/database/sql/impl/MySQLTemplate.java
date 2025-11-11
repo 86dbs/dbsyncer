@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
 import org.dbsyncer.sdk.model.Field;
@@ -117,6 +114,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                 }
                 return "DECIMAL(10,0)";
             case "VARBINARY":
+                // BYTES类型：用于小容量二进制数据
                 // 对于固定长度的二进制数据，使用BINARY类型
                 // MySQL的BINARY类型用于固定长度二进制数据，VARBINARY用于可变长度
                 // 当columnSize存在且<=255时，使用BINARY以获得更好的性能
@@ -127,21 +125,29 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                 } else if (binarySize > 255 && binarySize <= 65535) {
                     // 有长度但大于255且<=65535，使用VARBINARY
                     return "VARBINARY(" + binarySize + ")";
-                } else if (binarySize > 65535) {
-                    // 长度大于65535，根据大小选择合适的BLOB类型
-                    // MySQL的BLOB类型容量：
-                    // - TINYBLOB: 最大255字节
-                    // - BLOB: 最大65,535字节 (64KB)
-                    // - MEDIUMBLOB: 最大16,777,215字节 (16MB)
-                    // - LONGBLOB: 最大4,294,967,295字节 (4GB)
-                    if (binarySize <= 16777215L) {
+                }
+                // 没有长度信息或长度超过65535，默认使用VARBINARY(65535)
+                return "VARBINARY(65535)";
+            case "BLOB":
+                // BLOB类型：用于大容量二进制数据
+                // MySQL的BLOB类型容量：
+                // - TINYBLOB: 最大255字节
+                // - BLOB: 最大65,535字节 (64KB)
+                // - MEDIUMBLOB: 最大16,777,215字节 (16MB)
+                // - LONGBLOB: 最大4,294,967,295字节 (4GB)
+                long blobSize = column.getColumnSize();
+                if (blobSize > 0) {
+                    if (blobSize <= 255L) {
+                        return "TINYBLOB";
+                    } else if (blobSize <= 65535L) {
+                        return "BLOB";
+                    } else if (blobSize <= 16777215L) {
                         return "MEDIUMBLOB";
                     } else {
                         return "LONGBLOB";
                     }
                 }
-                // 没有长度信息，使用BLOB（默认中等大小，适合大多数场景）
-                // 对于SQL Server的IMAGE类型（最大2GB），如果没有columnSize信息，使用LONGBLOB
+                // 没有长度信息，默认使用BLOB（适合大多数场景）
                 return "BLOB";
             case "BINARY":
                 // 如果已经是BINARY类型，保持BINARY并添加长度

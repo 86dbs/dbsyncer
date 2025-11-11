@@ -1,7 +1,9 @@
 package org.dbsyncer.connector.sqlserver.schema;
 
+import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.schema.support.*;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -40,6 +42,8 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TIMESTAMP", "datetime2"); // 注意：这是标准TIMESTAMP（日期时间类型），SQL Server的TIMESTAMP类型由SqlServerExactNumericType处理，映射为LONG
         // 二进制
         mapping.put("BYTES", "varbinary");
+        // 大容量二进制
+        mapping.put("BLOB", "varbinary"); // SQL Server使用VARBINARY(MAX)存储大容量二进制数据
         // 结构化文本
         mapping.put("JSON", "nvarchar"); // SQL Server 2016+ 支持JSON，但存储为NVARCHAR(MAX)
         mapping.put("XML", "xml");
@@ -62,7 +66,8 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerDateTimeType(),            // 日期时间类型
                 new SqlServerStringType(),              // 字符字符串类型（CHAR, VARCHAR）
                 new SqlServerUnicodeStringType(),       // Unicode字符字符串类型（NCHAR, NVARCHAR）
-                new SqlServerBinaryType(),        // 二进制字符串类型
+                new SqlServerBinaryType(),              // 二进制字符串类型（BINARY, VARBINARY）
+                new SqlServerBlobType(),                // BLOB类型支持（IMAGE）
                 new SqlServerTextType(),                // TEXT类型支持
                 new SqlServerUnicodeTextType(),         // Unicode TEXT类型支持（NTEXT）
                 new SqlServerXmlType(),                 // XML类型支持
@@ -78,6 +83,28 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected String getDatabaseName() {
         return "SQL Server";
+    }
+
+    @Override
+    public Field toStandardTypeFromDDL(Field field, ColDataType colDataType) {
+        // 先调用父类实现
+        Field result = super.toStandardTypeFromDDL(field, colDataType);
+        
+        // 特殊处理：如果 VARBINARY(MAX)，修正为标准类型 BLOB
+        String typeName = field.getTypeName().toUpperCase();
+        if ("VARBINARY".equals(typeName)) {
+            java.util.List<String> argsList = colDataType.getArgumentsStringList();
+            if (argsList != null && !argsList.isEmpty()) {
+                String arg = argsList.get(0).trim().toUpperCase();
+                if ("MAX".equals(arg)) {
+                    // VARBINARY(MAX) 应该映射到 BLOB 类型
+                    result.setTypeName("BLOB");
+                    result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.BLOB));
+                }
+            }
+        }
+        
+        return result;
     }
 
 }

@@ -1,10 +1,7 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.mysql.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.support.BytesType;
+import org.dbsyncer.sdk.schema.support.BlobType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -13,17 +10,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-26 22:59
+ * MySQL BLOB类型：用于大容量二进制数据
+ * 支持 TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB
  */
-public final class MySQLBytesType extends BytesType {
+public final class MySQLBlobType extends BlobType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        // BYTES类型：用于小容量二进制数据，只支持BINARY和VARBINARY
-        // BLOB类型（TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB）由MySQLBlobType处理
-        return new HashSet<>(Arrays.asList("BINARY", "VARBINARY"));
+        return new HashSet<>(Arrays.asList("TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB"));
     }
 
     @Override
@@ -39,3 +33,4 @@ public final class MySQLBytesType extends BytesType {
     }
 
 }
+

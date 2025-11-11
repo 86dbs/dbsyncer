@@ -39,7 +39,9 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
         mapping.put("TIME", "TEXT");
         mapping.put("TIMESTAMP", "TEXT");
         // 二进制
-        mapping.put("BYTES", "BLOB");
+        mapping.put("BYTES", "BLOB"); // SQLite的BLOB类型用于二进制数据
+        // 大容量二进制
+        mapping.put("BLOB", "BLOB"); // SQLite使用BLOB存储大容量二进制数据
         // 结构化文本
         mapping.put("JSON", "TEXT"); // SQLite 3.38+ 支持JSON函数，但存储仍为TEXT
         mapping.put("XML", "TEXT");
