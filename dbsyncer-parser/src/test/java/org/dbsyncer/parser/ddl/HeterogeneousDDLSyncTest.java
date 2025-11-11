@@ -890,7 +890,10 @@ public class HeterogeneousDDLSyncTest {
      */
     private void validateSQLSyntax(String sql) {
         try {
-            CCJSqlParserUtil.parse(sql);
+            // JSQLParser 不支持 SQL Server 的方括号语法，需要转换为双引号
+            // 将方括号 [ 和 ] 转换为双引号 " 以便 JSQLParser 能够解析
+            String normalizedSql = sql.replace("[", "\"").replace("]", "\"");
+            CCJSqlParserUtil.parse(normalizedSql);
             logger.debug("SQL语法验证通过: {}", sql);
         } catch (JSQLParserException e) {
             logger.error("SQL语法验证失败: {}", sql, e);
