@@ -217,7 +217,12 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                 if ("JSON".equals(standardType) || "TEXT".equals(standardType) || "UNICODE_TEXT".equals(standardType)) {
                     return typeName + "(MAX)";
                 }
+                // SQL Server 的 VARCHAR/NVARCHAR 最大长度是 8000，超过 8000 必须使用 MAX
                 if (column.getColumnSize() > 0) {
+                    if (column.getColumnSize() > 8000) {
+                        // 如果长度超过 8000，使用 MAX
+                        return typeName + "(MAX)";
+                    }
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());

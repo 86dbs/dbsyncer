@@ -91,16 +91,26 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         // 先调用父类实现
         Field result = super.toStandardTypeFromDDL(field, colDataType);
         
-        // 特殊处理：如果 VARBINARY(MAX)，修正为标准类型 BLOB
+        // 特殊处理：检查所有支持 MAX 的类型
         String typeName = field.getTypeName().toUpperCase();
-        if ("VARBINARY".equals(typeName)) {
-            java.util.List<String> argsList = colDataType.getArgumentsStringList();
-            if (argsList != null && !argsList.isEmpty()) {
-                String arg = argsList.get(0).trim().toUpperCase();
-                if ("MAX".equals(arg)) {
+        java.util.List<String> argsList = colDataType.getArgumentsStringList();
+        
+        if (argsList != null && !argsList.isEmpty()) {
+            String arg = argsList.get(0).trim().toUpperCase();
+            if ("MAX".equals(arg)) {
+                // 处理支持 MAX 的类型
+                if ("VARBINARY".equals(typeName)) {
                     // VARBINARY(MAX) 应该映射到 BLOB 类型
                     result.setTypeName("BLOB");
                     result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.BLOB));
+                } else if ("VARCHAR".equals(typeName)) {
+                    // VARCHAR(MAX) 应该映射到 TEXT 类型
+                    result.setTypeName("TEXT");
+                    result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.TEXT));
+                } else if ("NVARCHAR".equals(typeName)) {
+                    // NVARCHAR(MAX) 应该映射到 UNICODE_TEXT 类型
+                    result.setTypeName("UNICODE_TEXT");
+                    result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.UNICODE_TEXT));
                 }
             }
         }

@@ -56,14 +56,10 @@ public final class SqlServerBinaryType extends BytesType {
         java.util.List<String> argsList = colDataType.getArgumentsStringList();
         
         if ("VARBINARY".equals(typeName)) {
-            // 检查 VARBINARY 的参数是否为 MAX
+            // 处理 VARBINARY(n) 的长度参数（MAX 由 SchemaResolver 处理，这里不需要处理）
             if (argsList != null && !argsList.isEmpty()) {
                 String arg = argsList.get(0).trim().toUpperCase();
-                if ("MAX".equals(arg)) {
-                    // VARBINARY(MAX) 类型最大容量：2,147,483,647字节 (2^31-1)
-                    // 设置一个特殊标记，让 SchemaResolver 识别并修正为 BLOB 类型
-                    result.setColumnSize(2147483647L);
-                } else {
+                if (!"MAX".equals(arg)) { // Only process if not MAX
                     // 解析长度参数
                     try {
                         long size = Long.parseLong(arg);
