@@ -63,8 +63,15 @@ var connectorTypes = {
  * @param {string} type - 'source' 或 'target'
  */
 function handleConnectorChange(connectorId, type) {
+    console.log('[连接器变化] 连接器ID:', connectorId, '类型:', type);
+    
     if (!connectorId) {
         connectorTypes[type] = null;
+        
+        // 清空数据库和Schema字段
+        $("#" + type + "Database").html('<option value="">请先选择连接器</option>');
+        $("#" + type + "Schema").val('');
+        
         updateFieldsVisibility();
         return;
     }
@@ -80,25 +87,26 @@ function handleConnectorChange(connectorId, type) {
                 var connector = response.resultValue;
                 var connectorType = connector.config.connectorType.toLowerCase();
                 
+                console.log('[连接器变化] 连接器类型:', connectorType);
+                
                 // 保存连接器类型
                 connectorTypes[type] = connectorType;
                 
-                // 根据连接器类型加载数据
-                if (connectorType.indexOf('mysql') !== -1) {
-                    loadDatabaseList(connectorId, type);
-                } else {
-                    // 清空对应的字段
-                    $("#" + type + "Database").empty().append('<option value="">请选择数据库</option>');
-                    $("#" + type + "Schema").val('');
-                }
+                // 无论什么类型的连接器，都尝试加载数据库列表
+                loadDatabaseList(connectorId, type);
                 
                 // 更新字段显示状态
                 updateFieldsVisibility();
             }
         },
         error: function(xhr, status, error) {
-            console.error('获取连接器信息失败:', error);
+            console.error('[连接器变化] 获取连接器信息失败:', error);
             connectorTypes[type] = null;
+            
+            // 清空数据库和Schema字段
+            $("#" + type + "Database").html('<option value="">获取连接器信息失败</option>');
+            $("#" + type + "Schema").val('');
+            
             updateFieldsVisibility();
         }
     });
@@ -118,12 +126,14 @@ function updateFieldsVisibility() {
     var sourceType = connectorTypes.source;
     var targetType = connectorTypes.target;
     
-    // 判断是否需要显示数据库组
+    console.log('[字段可见性] 源类型:', sourceType, '目标类型:', targetType);
+    
+    // 判断是否需要显示数据库组和Schema组
     var showDatabaseGroup = false;
     var showSchemaGroup = false;
     
-    // 源连接器需要数据库配置
-    if (sourceType && sourceType.indexOf('mysql') !== -1) {
+    // 源连接器：只要选中了连接器就显示数据库配置
+    if (sourceType) {
         showDatabaseGroup = true;
         sourceDb.closest('.form-item').show();
     } else {
@@ -131,8 +141,8 @@ function updateFieldsVisibility() {
         sourceDb.val('');
     }
     
-    // 目标连接器需要数据库配置
-    if (targetType && targetType.indexOf('mysql') !== -1) {
+    // 目标连接器：只要选中了连接器就显示数据库配置
+    if (targetType) {
         showDatabaseGroup = true;
         targetDb.closest('.form-item').show();
     } else {
@@ -140,7 +150,7 @@ function updateFieldsVisibility() {
         targetDb.val('');
     }
     
-    // 源连接器需要Schema配置
+    // 源连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
     if (sourceType && (sourceType.indexOf('oracle') !== -1 || 
                        sourceType.indexOf('sqlserver') !== -1 || 
                        sourceType.indexOf('postgresql') !== -1)) {
@@ -151,7 +161,7 @@ function updateFieldsVisibility() {
         sourceSchema.val('');
     }
     
-    // 目标连接器需要Schema配置
+    // 目标连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
     if (targetType && (targetType.indexOf('oracle') !== -1 || 
                        targetType.indexOf('sqlserver') !== -1 || 
                        targetType.indexOf('postgresql') !== -1)) {
@@ -165,64 +175,74 @@ function updateFieldsVisibility() {
     // 显示或隐藏整个组
     if (showDatabaseGroup) {
         databaseGroup.show();
+        console.log('[字段可见性] 显示数据库配置组');
     } else {
         databaseGroup.hide();
+        console.log('[字段可见性] 隐藏数据库配置组');
     }
     
     if (showSchemaGroup) {
         schemaGroup.show();
+        console.log('[字段可见性] 显示Schema配置组');
     } else {
         schemaGroup.hide();
+        console.log('[字段可见性] 隐藏Schema配置组');
     }
 }
 
 /**
- * 加载数据库列表（用于MySQL）
+ * 加载数据库列表
  * 
  * @param {string} connectorId - 连接器ID
  * @param {string} type - 'source' 或 'target'
  */
 function loadDatabaseList(connectorId, type) {
+    console.log('[加载数据库] 连接器ID:', connectorId, '类型:', type);
+    
     var databaseSelect = $("#" + type + "Database");
     
+    // 显示加载状态
+    databaseSelect.html('<option value="">加载中...</option>');
+    
     $.ajax({
-        url: '/mapping/getDatabaseOrSchemaList',
+        url: $basePath + '/connector/getDatabases',
         type: 'GET',
         data: { connectorId: connectorId },
         dataType: 'json',
         success: function(response) {
-            if (response.success && response.resultValue) {
-                var connector = response.resultValue;
+            console.log('[加载数据库] 响应结果:', response);
+            
+            if (response.success) {
+                var databases = response.resultValue;
                 
-                // 优先使用连接器中保存的数据库列表
-                if (connector.dataBaseName && connector.dataBaseName.length > 0) {
-                    // 从dataBaseName字段获取数据库列表
-                    connector.dataBaseName.forEach(function(dbName) {
+                // 清空并添加默认选项
+                databaseSelect.html('<option value="">请选择数据库</option>');
+                
+                if (databases && databases.length > 0) {
+                    // 添加数据库选项
+                    databases.forEach(function(dbName) {
                         databaseSelect.append('<option value="' + dbName + '">' + dbName + '</option>');
                     });
-                    
-                    // 如果URL中包含数据库名，自动选中
-                    if (connector.config && connector.config.url) {
-                        var url = connector.config.url;
-                        var match = url.match(/\/([^\/\?]+)(\?|$)/);
-                        if (match && match[1]) {
-                            databaseSelect.val(match[1]);
-                        }
-                    }
-                } else if (connector.config && connector.config.url) {
-                    // 兼容旧版本：从URL中提取数据库名
-                    var url = connector.config.url;
-                    var match = url.match(/\/([^\/\?]+)(\?|$)/);
-                    if (match && match[1]) {
-                        databaseSelect.append('<option value="' + match[1] + '">' + match[1] + '</option>');
-                        databaseSelect.val(match[1]);
-                    }
+                    console.log('[加载数据库] 成功加载 ' + databases.length + ' 个数据库');
+                } else {
+                    console.warn('[加载数据库] 数据库列表为空');
+                    databaseSelect.html('<option value="">暂无数据库</option>');
                 }
+                
+                // 增强 select 元素（如果 enhanceAllSelects 函数存在）
+                if (typeof enhanceAllSelects === 'function') {
+                    enhanceAllSelects();
+                }
+            } else {
+                console.error('[加载数据库] 失败:', response.resultValue);
+                databaseSelect.html('<option value="">加载失败</option>');
+                bootGrowl("获取数据库列表失败: " + response.resultValue, "danger");
             }
         },
         error: function(xhr, status, error) {
-            console.error('获取数据库列表失败:', error);
-            databaseSelect.append('<option value="">获取数据库列表失败</option>');
+            console.error('[加载数据库] 请求异常:', status, error);
+            databaseSelect.html('<option value="">加载失败</option>');
+            bootGrowl("获取数据库列表失败: " + error, "danger");
         }
     });
 }
