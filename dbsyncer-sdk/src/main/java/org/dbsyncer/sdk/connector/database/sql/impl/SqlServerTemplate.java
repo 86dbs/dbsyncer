@@ -205,11 +205,18 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 使用SchemaResolver进行类型转换，完全委托给SchemaResolver处理
         Field targetField = schemaResolver.fromStandardType(column);
         String typeName = targetField.getTypeName();
+        
+        // 获取标准类型名称，用于判断是否需要使用 MAX
+        String standardType = column.getTypeName();
 
         // 处理参数（长度、精度等）
         switch (typeName.toUpperCase()) {
             case "NVARCHAR":
             case "VARCHAR":
+                // 检查标准类型，如果是 JSON、TEXT 或 UNICODE_TEXT，使用 MAX
+                if ("JSON".equals(standardType) || "TEXT".equals(standardType) || "UNICODE_TEXT".equals(standardType)) {
+                    return typeName + "(MAX)";
+                }
                 if (column.getColumnSize() > 0) {
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
@@ -217,7 +224,6 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             case "VARBINARY":
                 // 根据标准类型判断：如果是BLOB类型，使用VARBINARY(MAX)；如果是BYTES类型，使用指定长度
                 // column是标准类型字段，targetField是转换后的目标数据库类型字段
-                String standardType = column.getTypeName();
                 if ("BLOB".equals(standardType)) {
                     // BLOB类型：使用VARBINARY(MAX)存储大容量二进制数据
                     return "VARBINARY(MAX)";
