@@ -12,12 +12,13 @@ import java.util.Set;
 /**
  * SQL Server BLOB类型：用于大容量二进制数据
  * 支持 IMAGE 类型（已废弃，建议使用 VARBINARY(MAX)，但为了兼容性仍支持）
+ * 支持 HIERARCHYID 类型（SQL Server层次结构类型，存储为二进制数据）
  */
 public final class SqlServerBlobType extends BlobType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("IMAGE"));
+        return new HashSet<>(Arrays.asList("IMAGE", "HIERARCHYID"));
     }
 
     @Override
@@ -54,6 +55,10 @@ public final class SqlServerBlobType extends BlobType {
         String typeName = colDataType.getDataType().toUpperCase();
         if ("IMAGE".equals(typeName) && result.getColumnSize() == 0L) {
             // IMAGE类型最大容量：2,147,483,647字节 (2^31-1)
+            result.setColumnSize(2147483647L);
+        } else if ("HIERARCHYID".equals(typeName) && result.getColumnSize() == 0L) {
+            // HIERARCHYID类型在SQL Server中最大892字节，但转换为VARBINARY(MAX)以支持所有情况
+            // 设置为2GB以匹配VARBINARY(MAX)的容量
             result.setColumnSize(2147483647L);
         }
         

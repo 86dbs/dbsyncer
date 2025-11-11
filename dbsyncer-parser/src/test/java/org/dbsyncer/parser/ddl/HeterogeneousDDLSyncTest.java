@@ -461,8 +461,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试SQL Server到MySQL的HIERARCHYID类型转换");
 
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD org_path HIERARCHYID";
+        // HIERARCHYID 类型映射到标准类型 BLOB（columnSize = 2GB），在 MySQL 中转换为 LONGBLOB
         testDDLConversion(sqlserverDDL, sqlserverToMySQLTableGroup, "org_path",
-                "SqlServer", "MySQL", mysqlConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "SqlServer", "MySQL", mysqlConnectorService, "LONGBLOB", "LONGBLOB");
     }
 
     // ========== MySQL特殊类型测试 ==========
