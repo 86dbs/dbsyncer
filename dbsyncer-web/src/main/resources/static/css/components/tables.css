@@ -42,6 +42,10 @@ tr[draggable="true"]:hover {
   border-bottom: 1px solid var(--border-tertiary);
   color: var(--text-secondary);
   vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
 }
 
 .table tbody tr {

@@ -5,7 +5,7 @@
 <!-- 图表和任务列表 -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-5">
     <!-- 同步趋势图表 -->
-    <div class="container-no-bg lg:col-span-2">
+    <div class="lg:col-span-2">
         <!-- 顶部：图表区域 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <!-- TPS图表 -->
@@ -138,48 +138,10 @@
     </div>
 </div>
 
-<div class="form-container mb-4">
-    <div class="card-header">
-        <h3 class="card-title">查询执行器任务</h3>
-    </div>
-    <div class="table-wrapper mb-3">
-        <table class="table">
-            <tbody>
-            <tr>
-                <td>1</td>
-                <td>[阿里云同步]xhtb_user</td>
-                <td>堆积:8907/10000 线程:1/1 完成:999</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>[阿里云同步]xhtb_user_order</td>
-                <td>堆积:5677/10000 线程:1/1 完成:111</td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>[阿里云同步]xhtb_task</td>
-                <td>堆积:0/10000 线程:0/1 完成:0</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
 <!-- 查询数据 -->
 <div class="form-container mb-4">
     <div class="card-header">
-        <h3 class="card-title">查询数据</h3>
-    </div>
-    <div class="card-body">
-
         <div class="grid grid-cols-6 items-center">
-            <div id="searchData" class="lg:col-span-2 search-wrapper">
-                <i class="fa fa-search search-icon"></i>
-                <input id="searchDataKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字">
-                <span class="search-clear" title="清除">
-                    <i class="fa fa-times"></i>
-                </span>
-            </div>
             <div>
                 <select id="searchMetaData" class="form-control">
                     <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
@@ -191,13 +153,21 @@
                     <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
                 </select>
             </div>
+            <div id="searchData" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchDataKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索异常关键字">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
             <div class="lg:col-span-2 flex items-center justify-end">
                 <button id="clearDataBtn" th:metaId="${metaId}" type="button" class="btn btn-outline">
                     清空数据
                 </button>
             </div>
         </div>
-
+    </div>
+    <div class="card-body">
         <div class="table-wrapper">
             <table class="table metaDataList">
                 <thead>
@@ -254,56 +224,95 @@
     </div>
 </div>
 
-<!-- 查询日志 -->
-<div class="form-container">
-    <div class="card-header">
-        <h3 class="card-title">查询日志</h3>
-    </div>
-    <div class="card-body">
-
-        <!-- 表格工具栏 -->
-        <div class="grid grid-cols-6 items-center">
-            <div id="searchLog" class="lg:col-span-2 search-wrapper">
-                <i class="fa fa-search search-icon"></i>
-                <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索关键字" />
-                <span class="search-clear" title="清除">
-                    <i class="fa fa-times"></i>
-                </span>
-            </div>
-            <div></div>
-            <div class="lg:col-span-3 flex items-center justify-end">
-                <button id="clearLogBtn" type="button" class="btn btn-outline">
-                    清空日志
-                </button>
+<div class="grid grid-cols-2">
+    <!-- 查询执行器任务 -->
+    <div class="form-container">
+        <div class="card-header">
+            <!-- 表格工具栏 -->
+            <div class="grid grid-cols-3 items-center">
+                <div id="searchTableActuator" class="lg:col-span-2 search-wrapper">
+                    <i class="fa fa-search search-icon"></i>
+                    <input id="searchActuatorKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索驱动或表关键字" />
+                    <span class="search-clear" title="清除">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>
             </div>
         </div>
+        <div class="table-wrapper mb-3">
+            <table class="table">
+                <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>[阿里云同步]xhtb_user</td>
+                    <td>堆积:8907/10000 线程:1/1 完成:999</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>[阿里云同步]xhtb_user_order</td>
+                    <td>堆积:5677/10000 线程:1/1 完成:111</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>[阿里云同步]xhtb_task</td>
+                    <td>堆积:0/10000 线程:0/1 完成:0</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>[阿里云同步]xhtb_task1</td>
+                    <td>堆积:0/10000 线程:0/1 完成:0</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>[阿里云同步]xhtb_task2</td>
+                    <td>堆积:0/10000 线程:0/1 完成:0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        <table class="table">
-            <thead>
-            <tr>
-                <th>序号</th>
-                <th>内容</th>
-                <th>时间</th>
-            </tr>
-            </thead>
-            <tbody id="logList">
-            <tr th:each="l,s : ${pagingLog?.data}">
-                <td th:text="${s.index}+1"></td>
-                <td th:text="${l?.json}"></td>
-                <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-            </tr>
-            </tbody>
-        </table>
-
-        <!-- 分页信息 -->
-        <div class="flex items-center justify-between px-4 py-3 border-t">
-            <div class="text-sm text-secondary">
-                共计: <span id="logTotal" class="font-medium text-primary">[[${pagingLog?.total}]]</span> 条
+    <!-- 查询日志 -->
+    <div class="form-container">
+        <div class="card-header">
+            <!-- 表格工具栏 -->
+            <div class="grid grid-cols-3 items-center">
+                <div id="searchLog" class="lg:col-span-2 search-wrapper">
+                    <i class="fa fa-search search-icon"></i>
+                    <input id="searchLogKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索日志关键字" />
+                    <span class="search-clear" title="清除">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>
+                <div class="flex items-center justify-end">
+                    <button id="clearLogBtn" type="button" class="btn btn-outline">
+                        清空日志
+                    </button>
+                </div>
             </div>
-            <div>
-                <a href="javascript:void(0);" id="queryLogMore" num="1" class="text-primary hover-underline">
-                    显示更多 <i class="fa fa-angle-double-down"></i>
-                </a>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tbody id="logList">
+                <tr th:each="l,s : ${pagingLog?.data}">
+                    <td th:text="${s.index}+1"></td>
+                    <!--<td th:text="${l?.json}"></td>-->
+                    <td title="dwqdwqdqwdwqdwqdwqdqwdqwqdwqwdwqdqwdwqdqwdqwdqwdwqdqwd">dwqdwqdqwdwqdwqdwqdqwdqwqdwqwdwqdqwdwqdqwdqwdqwdwqdqwd</td>
+                    <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- 分页信息 -->
+            <div class="flex items-center justify-between px-4 py-3 border-t">
+                <div class="text-sm text-secondary">
+                    共计: <span id="logTotal" class="font-medium text-primary">[[${pagingLog?.total}]]</span> 条
+                </div>
+                <div>
+                    <a href="javascript:void(0);" id="queryLogMore" num="1" class="text-primary hover-underline">
+                        显示更多 <i class="fa fa-angle-double-down"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
