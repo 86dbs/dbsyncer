@@ -1,7 +1,7 @@
 function submit(data) {
     doPoster("/connector/edit", data, function (data) {
         if (data.success == true) {
-            bootGrowl("修改连接成功!", "success");
+            bootGrowl("修改成功!", "success");
             backIndexPage();
         } else {
             bootGrowl(data.resultValue, "danger");

@@ -40,34 +40,32 @@ import java.util.Map;
 
 /**
  * 任务配置管理
- * 
+ *
  * @Author wuji
  * @Version 1.0.0
  * @Date 2025-10-18 19:52
  */
-
 @Controller
 @RequestMapping("/task")
 public class TaskController extends BaseController {
 
-
     private static final Logger log = LoggerFactory.getLogger(TaskController.class);
-    
+
     @Resource
-    TaskService taskService;
-    
+    private TaskService taskService;
+
     @Resource
-    ConnectorService connectorService;
-    
+    private ConnectorService connectorService;
+
     @Resource
-    ConnectorFactory connectorFactory;
+    private ConnectorFactory connectorFactory;
 
     /**
      * 任务配置首页
      */
     @RequestMapping("")
     public String index(ModelMap model) {
-        return "task/task";
+        return "task/list";
     }
 
     /**
@@ -96,7 +94,6 @@ public class TaskController extends BaseController {
             return RestResult.restFail("新增失败: " + e.getMessage());
         }
     }
-
 
     /**
      * 修改任务
@@ -174,7 +171,7 @@ public class TaskController extends BaseController {
             }
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
             List<String> databases = getDatabaseList(connectorInstance);
-            
+
             return RestResult.restSuccess(databases);
         } catch (Exception e) {
             log.error("获取数据库列表失败", e);
@@ -187,15 +184,13 @@ public class TaskController extends BaseController {
      */
     @GetMapping("/getTables")
     @ResponseBody
-    public RestResult getTables(@RequestParam("connectorId") String connectorId, 
-                               @RequestParam(value = "database", required = false) String database,
-                               @RequestParam(value = "schema", required = false) String schema) {
+    public RestResult getTables(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema) {
         try {
             Connector connector = connectorService.getConnector(connectorId);
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            
+
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
             List<Table> tables = connectorFactory.getTable(connectorInstance, context);
@@ -211,16 +206,13 @@ public class TaskController extends BaseController {
      */
     @GetMapping("/getTableFields")
     @ResponseBody
-    public RestResult getTableFields(@RequestParam("connectorId") String connectorId,
-                                     @RequestParam(value = "database", required = false) String database,
-                                     @RequestParam(value = "schema", required = false) String schema,
-                                    @RequestParam("tableName") String tableName) {
+    public RestResult getTableFields(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema, @RequestParam("tableName") String tableName) {
         try {
             Connector connector = connectorService.getConnector(connectorId);
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            
+
             ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
             List<MetaInfo> metaInfos = connectorFactory.getMetaInfo(connectorInstance, context);
@@ -228,7 +220,7 @@ public class TaskController extends BaseController {
             if (metaInfo == null || metaInfo.getColumn() == null) {
                 return RestResult.restFail("获取表字段失败");
             }
-            
+
             return RestResult.restSuccess(metaInfo.getColumn());
         } catch (Exception e) {
             log.error("获取表字段失败", e);
@@ -247,7 +239,7 @@ public class TaskController extends BaseController {
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            
+
             return RestResult.restSuccess(connector.getConfig().getConnectorType());
         } catch (Exception e) {
             log.error("获取连接器类型失败", e);
@@ -269,8 +261,7 @@ public class TaskController extends BaseController {
                 // MySQL: SHOW DATABASES
                 databases = connection.execute(databaseTemplate -> {
                     List<String> dbList = new ArrayList<>();
-                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                            .executeQuery("SHOW DATABASES")) {
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SHOW DATABASES")) {
                         while (rs.next()) {
                             String dbName = rs.getString(1);
                             // 过滤系统数据库
@@ -285,8 +276,7 @@ public class TaskController extends BaseController {
                 // PostgreSQL: SELECT datname FROM pg_database
                 databases = connection.execute(databaseTemplate -> {
                     List<String> dbList = new ArrayList<>();
-                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                            .executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")) {
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")) {
                         while (rs.next()) {
                             String dbName = rs.getString(1);
                             if (!isSystemDatabase(dbName)) {
@@ -300,8 +290,7 @@ public class TaskController extends BaseController {
                 // Oracle: SELECT username FROM all_users
                 databases = connection.execute(databaseTemplate -> {
                     List<String> dbList = new ArrayList<>();
-                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                            .executeQuery("SELECT username FROM all_users ORDER BY username")) {
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT username FROM all_users ORDER BY username")) {
                         while (rs.next()) {
                             String dbName = rs.getString(1);
                             if (!isSystemDatabase(dbName)) {
@@ -315,8 +304,7 @@ public class TaskController extends BaseController {
                 // SQL Server: SELECT name FROM sys.databases
                 databases = connection.execute(databaseTemplate -> {
                     List<String> dbList = new ArrayList<>();
-                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                            .executeQuery("SELECT name FROM sys.databases WHERE database_id > 4")) {
+                    try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT name FROM sys.databases WHERE database_id > 4")) {
                         while (rs.next()) {
                             String dbName = rs.getString(1);
                             if (!isSystemDatabase(dbName)) {
@@ -330,7 +318,7 @@ public class TaskController extends BaseController {
                 // 其他数据库类型，返回默认数据库
                 databases.add("default_database");
             }
-            
+
         } catch (Exception e) {
             log.error("获取数据库列表异常", e);
             databases.add("default_database");
@@ -343,19 +331,9 @@ public class TaskController extends BaseController {
      */
     private boolean isSystemDatabase(String dbName) {
         if (dbName == null) return true;
-        
+
         String lowerDbName = dbName.toLowerCase();
-        return lowerDbName.equals("information_schema") ||
-               lowerDbName.equals("mysql") ||
-               lowerDbName.equals("performance_schema") ||
-               lowerDbName.equals("sys") ||
-               lowerDbName.equals("postgres") ||
-               lowerDbName.equals("template0") ||
-               lowerDbName.equals("template1") ||
-               lowerDbName.equals("master") ||
-               lowerDbName.equals("tempdb") ||
-               lowerDbName.equals("model") ||
-               lowerDbName.equals("msdb");
+        return lowerDbName.equals("information_schema") || lowerDbName.equals("mysql") || lowerDbName.equals("performance_schema") || lowerDbName.equals("sys") || lowerDbName.equals("postgres") || lowerDbName.equals("template0") || lowerDbName.equals("template1") || lowerDbName.equals("master") || lowerDbName.equals("tempdb") || lowerDbName.equals("model") || lowerDbName.equals("msdb");
     }
 
 }

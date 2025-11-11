@@ -35,63 +35,6 @@
 
 textarea.form-control { min-height: 80px; line-height: 1.5; }
 
-/* ========== Select 下拉框 ========== */
-select.form-control, .form-select {
-  width: 100%;
-  padding: 8px 32px 8px 12px;
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 12px;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  cursor: pointer;
-  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
-}
-
-select.form-control:hover, .form-select:hover {
-  border-color: var(--primary-color);
-}
-
-select.form-control:focus, .form-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
-  outline: none;
-  background-color: #fff;
-}
-
-select.form-control:disabled, .form-select:disabled {
-  background-color: var(--bg-secondary);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* 多选 select */
-select[multiple].form-control, select[multiple].form-select {
-  padding: 8px 12px;
-  background-image: none;
-  min-height: 100px;
-}
-
-select[multiple].form-control option, select[multiple].form-select option {
-  padding: 6px 8px;
-  border-radius: 4px;
-  margin: 2px 0;
-}
-
-select[multiple].form-control option:hover, select[multiple].form-select option:hover {
-  background-color: rgba(24, 144, 255, 0.08);
-}
-
-select[multiple].form-control option:checked, select[multiple].form-select option:checked {
-  background-color: var(--primary-color);
-  color: white;
-}
-
 /* 水平表单的间距与标签风格 */
 .form-horizontal .form-group { margin-bottom: 16px; }
 .control-label { color: var(--text-secondary); font-weight: 500; padding-top: 6px; }
@@ -100,21 +43,12 @@ select[multiple].form-control option:checked, select[multiple].form-select optio
 .form-control.is-invalid,
 textarea.form-control.is-invalid,
 select.form-control.is-invalid,
-.form-select.is-invalid,
-.form-control-error {
-  border-color: var(--error-color) !important;
-  box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.12) !important;
-  background-color: rgba(245, 34, 45, 0.02);
+.form-select.is-invalid {
+  border-color: var(--error-color);
+  box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.12);
 }
 
-.form-control.is-invalid:focus,
-.form-control-error:focus {
-  border-color: var(--error-color) !important;
-  box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.2) !important;
-}
-
-.form-error-msg,
-.form-error-message {
+.form-error-msg {
   margin-top: 6px;
   color: var(--error-color);
   font-size: var(--font-size-xs);
@@ -124,10 +58,7 @@ select.form-control.is-invalid,
   animation: shake 0.3s ease-in-out;
 }
 
-.form-error-msg i,
-.form-error-message i { 
-  font-size: 12px; 
-}
+.form-error-msg i { font-size: 12px; }
 
 /* 错误抖动动画 */
 @keyframes shake {

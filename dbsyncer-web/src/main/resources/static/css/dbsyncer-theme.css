@@ -497,17 +497,6 @@ input, textarea, select, button {
   margin-right: var(--spacing-sm);
 }
 
-/* 空状态 */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: var(--text-tertiary);
-  text-align: center;
-}
-
 .empty-icon {
   font-size: var(--font-size-xxxl);
   margin-bottom: var(--spacing-md);
