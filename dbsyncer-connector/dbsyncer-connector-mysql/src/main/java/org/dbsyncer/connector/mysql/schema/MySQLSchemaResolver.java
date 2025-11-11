@@ -77,6 +77,7 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
                 new MySQLTextType(),  // 新增TEXT类型支持
                 new MySQLTimestampType(),
                 new MySQLTimeType(),
+                new MySQLYearType(),   // 新增YEAR类型支持
                 new MySQLUnsignedByteType(),    // 新增无符号字节类型支持
                 new MySQLUnsignedShortType(),   // 新增无符号短整型支持
                 new MySQLUnsignedIntType(),     // 新增无符号整型支持

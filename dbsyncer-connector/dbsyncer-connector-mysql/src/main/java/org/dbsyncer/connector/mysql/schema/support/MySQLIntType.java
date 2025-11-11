@@ -21,17 +21,12 @@ public final class MySQLIntType extends IntType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return new HashSet<>(Arrays.asList("MEDIUMINT", "INT", "INTEGER", "YEAR"));
+        // YEAR类型由MySQLYearType处理，不再由本类处理
+        return new HashSet<>(Arrays.asList("MEDIUMINT", "INT", "INTEGER"));
     }
 
     @Override
     protected Integer merge(Object val, Field field) {
-        if (val instanceof Date) {
-            Date d = (Date) val;
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(d);
-            return calendar.get(Calendar.YEAR);
-        }
         return throwUnsupportedException(val, field);
     }
 
