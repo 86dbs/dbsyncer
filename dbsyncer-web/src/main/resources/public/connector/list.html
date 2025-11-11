@@ -2,17 +2,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- 数据源列表表格 -->
-<div class="table-container">
-
-    <!-- 表格工具栏 -->
-    <div class="table-toolbar">
-        <div class="table-toolbar-left">
-            <div class="table-search">
-                <i class="fa fa-search table-search-icon"></i>
-                <input type="text" class="table-search-input" placeholder="搜索数据源名称..." id="searchInput">
+<!-- 查询连接器列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchConnector" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
             </div>
-            <div class="table-filter">
+            <div class="lg:col-span-2">
                 <select class="select-control" id="typeFilter">
                     <option value="">全部类型</option>
                     <option value="mysql">MySQL</option>
@@ -25,88 +26,79 @@
                     <option value="file">文件</option>
                 </select>
             </div>
-        </div>
-        <div class="table-toolbar-right">
-            <button class="btn btn-primary" id="addConnectorBtn">
-                <i class="fa fa-plus btn-icon-left"></i>
-                添加连接
-            </button>
-            <button class="btn btn-secondary" id="refreshBtn">
-                <i class="fa fa-refresh btn-icon-left"></i>
-                刷新
-            </button>
-        </div>
-    </div>
-
-    <!-- 表格主体 -->
-    <div class="table-wrapper">
-        <table class="table" id="connectorTable">
-            <thead>
-                <tr>
-                    <th style="width: 5%;">序号</th>
-                    <th style="width: 15%;">数据源名称</th>
-                    <th style="width: 10%;">类型</th>
-                    <th style="width: 50%;">连接信息</th>
-                    <th style="width: 10%;">操作</th>
-                </tr>
-            </thead>
-            <tbody id="connectorTableBody">
-                <!-- 动态数据 -->
-                <tr th:each="connector, iterStat : ${connectors}" th:if="${connectors != null and !connectors.isEmpty()}">
-                    <td th:text="${iterStat.index + 1}">1</td>
-                    <td>
-                        <div class="d-flex align-center">
-                            <i th:class="'fa fa-database connector-icon'" th:style="'color: #007bff; margin-right: 8px;'"></i>
-                            <span th:text="${connector.name}">名称</span>
-                        </div>
-                    </td>
-                    <td th:text="${connector.config.connectorType}">类型</td>
-                    <td th:text="${connector?.config?.url}">连接信息</td>
-
-                    <td class="table-actions-cell">
-                        <a href="javascript:void(0);" class="action-btn" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
-                            <i class="fa fa-edit"></i>
-                            编辑
-                        </a>
-                        <a href="javascript:void(0);" class="action-btn" th:data-id="${connector.id}" onclick="testConnector(this.dataset.id)">
-                            <i class="fa fa-plug"></i>
-                            测试
-                        </a>
-                        <a href="javascript:void(0);" class="action-btn danger" th:data-id="${connector.id}" onclick="deleteConnector(this.dataset.id)">
-                            <i class="fa fa-trash"></i>
-                            删除
-                        </a>
-                    </td>
-                </tr>
-                <!-- 空数据提示 -->
-                <tr th:if="${connectors == null or connectors.isEmpty()}">
-                    <td colspan="7" class="table-empty">
-                        <div class="empty-state">
-                            <i class="fa fa-database empty-icon"></i>
-                            <p class="empty-text">暂无数据源</p>
-                            <p class="empty-subtext">点击"添加连接"按钮创建第一个数据源</p>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- 分页组件 -->
-    <div class="pagination" th:if="${connectors != null and !connectors.isEmpty()}">
-        <div class="pagination-info">
-            共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
-        </div>
-        <div class="pagination-controls">
-            <button class="pagination-btn" id="prevBtn" disabled>
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <div class="pagination-page">
-                <button class="pagination-page-btn active">1</button>
+            <div class="lg:col-span-2 flex items-center justify-end gap-4">
+                <button class="btn btn-primary" id="addConnectorBtn">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
             </div>
-            <button class="pagination-btn" id="nextBtn" disabled>
-                <i class="fa fa-chevron-right"></i>
-            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>连接地址</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="connectorTableBody">
+                    <!-- 动态数据 -->
+                    <tr th:each="connector, iterStat : ${connectors}" th:if="${connectors != null and !connectors.isEmpty()}">
+                        <td th:text="${iterStat.index + 1}">1</td>
+                        <td>
+                            <div class="d-flex align-center">
+                                <i th:class="'fa fa-database connector-icon'" th:style="'color: #007bff; margin-right: 8px;'"></i>
+                                <span th:text="${connector.name}">名称</span>
+                            </div>
+                        </td>
+                        <td th:text="${connector.config.connectorType}">类型</td>
+                        <td th:text="${connector?.config?.url}">连接信息</td>
+                        <td>
+                            <div class="flex items-center gap-1">
+                                <button class="table-action-btn view" title="编辑" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="table-action-btn play" title="测试" th:data-id="${connector.id}" onclick="testConnector(this.dataset.id)">
+                                    <i class="fa fa-plug"></i>
+                                </button>
+                                <button class="table-action-btn delete" title="删除" th:data-id="${connector.id}" onclick="deleteConnector(this.dataset.id)">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- 空数据提示 -->
+                    <tr th:if="${connectors == null or connectors.isEmpty()}">
+                        <td colspan="7" class="table-empty">
+                            <div class="empty-state">
+                                <i class="fa fa-database empty-icon"></i>
+                                <p class="empty-text">暂无连接</p>
+                                <p class="empty-subtext">点击"添加"按钮创建第一个连接</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 分页信息 -->
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${connectors != null and !connectors.isEmpty()}">
+                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -521,9 +513,9 @@ function submitConnectorEditForm(data) {
 // 测试连接
 function testConnector(id) {
     // 显示加载状态
-    var btn = event.target.closest('.action-btn');
+    var btn = event.target.closest('.table-action-btn');
     var originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 测试中...';
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     btn.disabled = true;
 
     // 调用后端API测试连接
@@ -536,24 +528,24 @@ function testConnector(id) {
             btn.disabled = false;
             
             if (response.success) {
-                alert('连接测试成功');
+                bootGrowl('连接测试成功', 'success');
                 // 动态重新加载数据源列表页面以更新状态
                 loadConnectorListPage();
             } else {
-                alert('连接测试失败: ' + response.message);
+                bootGrowl('连接测试失败: ' + response.message, 'danger');
             }
         },
         error: function() {
             btn.innerHTML = originalText;
             btn.disabled = false;
-            alert('连接测试失败，请稍后重试');
+            bootGrowl('连接测试失败，请稍后重试', 'danger');
         }
     });
 }
 
 // 删除数据源
 function deleteConnector(id) {
-    if (confirm('确定要删除这个数据源吗？删除后无法恢复。')) {
+    if (confirm('确定要删除连接器？')) {
         // 调用后端API删除数据源
         $.ajax({
             url: '/connector/remove',
@@ -561,15 +553,15 @@ function deleteConnector(id) {
             data: { id: id },
             success: function(response) {
                 if (response.success) {
-                    alert('删除成功');
+                    bootGrowl('删除成功', 'success');
                     // 动态重新加载数据源列表页面
                     loadConnectorListPage();
                 } else {
-                    alert('删除失败: ' + response.message);
+                    bootGrowl('删除失败: ' + response.message, 'danger');
                 }
             },
             error: function() {
-                alert('删除失败，请稍后重试');
+                bootGrowl('删除失败，请稍后重试', 'danger');
             }
         });
     }

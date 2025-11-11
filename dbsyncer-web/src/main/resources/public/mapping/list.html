@@ -2,120 +2,112 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- 同步任务列表表格 -->
-<div class="table-container">
-
-    <!-- 表格工具栏 -->
-    <div class="table-toolbar">
-        <div class="table-toolbar-left">
-            <div class="table-search">
-                <i class="fa fa-search table-search-icon"></i>
-                <input type="text" class="table-search-input" placeholder="搜索名称..." id="searchInput">
+<!-- 查询驱动列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchMapping" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end gap-4">
+                <button class="btn btn-primary" id="addMappingBtn">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
             </div>
         </div>
-        <div class="table-toolbar-right">
-            <button class="btn btn-primary" id="addMappingBtn">
-                <i class="fa fa-plus btn-icon-left"></i>
-                添加任务
-            </button>
-            <button class="btn btn-secondary" id="refreshBtn">
-                <i class="fa fa-refresh btn-icon-left"></i>
-                刷新
-            </button>
-        </div>
     </div>
-
-    <!-- 表格主体 -->
-    <div class="table-wrapper">
-        <table class="table" id="mappingTable">
-            <thead>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
                 <tr>
-                    <th style="width: 5%;">序号</th>
-                    <th style="width: 15%;">任务名称</th>
-                    <th style="width: 15%;">数据源</th>
-                    <th style="width: 15%;">目标源</th>
-                    <th style="width: 15%;">类型</th>
-                    <th style="width: 10%;">状态</th>
-                    <th style="width: 10%;">同步情况</th>
-                    <th style="width: 10%;">操作</th>
+                    <th>序号</th>
+                    <th>名称</th>
+                    <th>数据源</th>
+                    <th>目标源</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>结果</th>
+                    <th>操作</th>
                 </tr>
-            </thead>
-            <tbody id="mappingTableBody">
-                <!-- 动态数据 -->
-                <tr th:each="mapping, iterStat : ${mappings}" th:if="${mappings != null and !mappings.isEmpty()}">
-                    <td th:text="${iterStat.index + 1}">1</td>
-                    <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-exchange connector-icon" style="color: #28a745; margin-right: 8px;"></i>
-                            <span th:text="${mapping.name}">名称</span>
-                        </div>
-                    </td>
-                    <td th:text="${mapping.sourceConnector != null ? mapping.sourceConnector.name : 'N/A'}">数据源</td>
-                    <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
-                    <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
-                    <td>
-                        <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
-                        <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
-                        <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
-                    </td>
-                    <td>
-                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
-                        <span  th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
-                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
-                    </td>
+                </thead>
+                <tbody id="mappingTableBody">
+                    <!-- 动态数据 -->
+                    <tr th:each="mapping, iterStat : ${mappings}" th:if="${mappings != null and !mappings.isEmpty()}">
+                        <td th:text="${iterStat.index + 1}">1</td>
+                        <td>
+                            <div class="d-flex align-center">
+                                <i class="fa fa-exchange"></i>
+                                <span th:text="${mapping.name}">名称</span>
+                            </div>
+                        </td>
+                        <td th:text="${mapping.sourceConnector != null ? mapping.sourceConnector.name : 'N/A'}">数据源</td>
+                        <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
+                        <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
+                        <td>
+                            <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
+                            <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
+                            <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
+                        </td>
+                        <td>
+                            <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
+                            <span th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
+                            <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
+                        </td>
 
-                    <td class="table-actions-cell">
-                        <a href="javascript:void(0);" class="action-btn" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
-                            <i class="fa fa-edit"></i>
-                            编辑
-                        </a>
-                        <!-- 根据状态显示启动或停止按钮 -->
-                        <a href="javascript:void(0);" 
-                           class="action-btn mapping-action-btn" 
-                           th:data-id="${mapping.id}"
-                           th:data-state="${mapping?.meta?.state}"
-                           th:data-running="${mapping?.meta?.state eq 1}">
-                            <i th:class="${mapping?.meta?.state eq 1 ? 'fa fa-stop' : 'fa fa-play'}"></i>
-                            <span th:text="${mapping?.meta?.state eq 1 ? '停止' : '启动'}">启动</span>
-                        </a>
-                        <a href="javascript:void(0);" class="action-btn danger" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
-                            <i class="fa fa-trash"></i>
-                            删除
-                        </a>
-                    </td>
-                </tr>
-                <!-- 空数据提示 -->
-                <tr th:if="${mappings == null or mappings.isEmpty()}">
-                    <td colspan="9" class="table-empty">
-                        <div class="empty-state">
-                            <i class="fa fa-exchange empty-icon"></i>
-                            <p class="empty-text">暂无同步任务</p>
-                            <p class="empty-subtext">点击"添加任务"按钮创建第一个同步任务</p>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+                        <td>
+                            <div class="flex items-center gap-1">
+                                <button class="table-action-btn view" title="编辑" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="table-action-btn play mapping-action-btn" th:data-id="${mapping.id}"
+                                        th:data-state="${mapping?.meta?.state}"
+                                        th:data-running="${mapping?.meta?.state eq 1}"
+                                        onclick="testConnector(this.dataset.id)">
+                                    <i th:class="${mapping?.meta?.state eq 1 ? 'fa fa-stop' : 'fa fa-play'}"></i>
+                                    <span th:text="${mapping?.meta?.state eq 1 ? '停止' : '启动'}">启动</span>
+                                </button>
+                                <button class="table-action-btn delete" title="删除" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- 空数据提示 -->
+                    <tr th:if="${mappings == null or mappings.isEmpty()}">
+                        <td colspan="9" class="table-empty">
+                            <div class="empty-state">
+                                <i class="fa fa-exchange empty-icon"></i>
+                                <p class="empty-text">暂无驱动</p>
+                                <p class="empty-subtext">点击"添加"按钮创建第一个驱动</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-    <!-- 分页组件 -->
-    <div class="pagination" th:if="${mappings != null and !mappings.isEmpty()}">
-        <div class="pagination-info">
-            共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条记录，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
-        </div>
-        <div class="pagination-controls">
-            <button class="pagination-btn" id="prevBtn" disabled>
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <div class="pagination-page">
-                <button class="pagination-page-btn active">1</button>
+            <!-- 分页信息 -->
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${mappings != null and !mappings.isEmpty()}">
+                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
+                </div>
             </div>
-            <button class="pagination-btn" id="nextBtn" disabled>
-                <i class="fa fa-chevron-right"></i>
-            </button>
+
         </div>
     </div>
-
 </div>
 
 <script>

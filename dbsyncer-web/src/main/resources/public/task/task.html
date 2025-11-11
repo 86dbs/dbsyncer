@@ -2,52 +2,73 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="table-container">
-
-    <!-- 表格工具栏 -->
-    <div class="table-toolbar">
-        <div class="table-toolbar-left">
-            <div class="table-search">
-                <i class="fa fa-search table-search-icon"></i>
-                <input type="text" class="table-search-input" placeholder="搜索名称..." id="searchInput">
+<!-- 查询订正校验列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchTask" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索任务名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" id="addTaskBtn">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
             </div>
         </div>
-        <div class="table-toolbar-right">
-            <button id="addTaskBtn" class="btn btn-primary">
-                <i class="fa fa-plus btn-icon-left"></i>
-                创建任务
-            </button>
-            <button class="btn btn-secondary" id="refreshBtn">
-                <i class="fa fa-refresh btn-icon-left"></i>
-                刷新
-            </button>
+    </div>
+    <div class="card-body">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>结果</th>
+                    <th>更新时间</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="taskTableBody">
+                <!-- 空数据提示 -->
+                <tr th:if="${tasks == null or tasks.isEmpty()}">
+                    <td colspan="9" class="table-empty">
+                        <div class="empty-state">
+                            <i class="fa fa-exchange empty-icon"></i>
+                            <p class="empty-text">暂无任务</p>
+                            <p class="empty-subtext">点击"添加"按钮创建第一个任务</p>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- 分页信息 -->
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${tasks != null and !tasks.isEmpty()}">
+                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${tasks.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
-
-    <!-- 任务列表 -->
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
-            <tr>
-                <th>序号</th>
-                <th>任务ID</th>
-                <th>任务名称</th>
-                <th>任务类型</th>
-                <th>任务状态</th>
-                <th>创建时间</th>
-                <th>更新时间</th>
-                <th>操作</th>
-            </tr>
-            </thead>
-            <tbody id="taskList">
-            </tbody>
-        </table>
-    </div>
-
 </div>
 
 <script th:src="@{/js/task/index.js}"></script>
-
 <script th:inline="javascript">
 
     $(document).ready(function() {
