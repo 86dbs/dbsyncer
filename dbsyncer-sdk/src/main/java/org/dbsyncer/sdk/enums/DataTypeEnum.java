@@ -41,5 +41,7 @@ public enum DataTypeEnum {
     ENUM,
     SET,
     /** UUID/GUID */
-    UUID
+    UUID,
+    /** 空间几何类型 */
+    GEOMETRY
 }

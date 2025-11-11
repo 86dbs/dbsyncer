@@ -53,6 +53,8 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
         mapping.put("SET", "VARCHAR2"); // Oracle不支持SET，使用VARCHAR2存储
         // UUID/GUID
         mapping.put("UUID", "VARCHAR2(36)"); // Oracle不支持UUID类型，使用VARCHAR2(36)存储UUID字符串
+        // 空间几何类型
+        mapping.put("GEOMETRY", "SDO_GEOMETRY"); // Oracle使用SDO_GEOMETRY类型存储空间几何数据
     }
 
     @Override
@@ -71,7 +73,8 @@ public final class OracleSchemaResolver extends AbstractSchemaResolver {
                 new OracleBlobType(),            // BLOB
                 new OracleTextType(),            // CLOB
                 new OracleUnicodeTextType(),     // NCLOB
-                new OracleXmlType()              // XML类型支持
+                new OracleXmlType(),             // XML类型支持
+                new OracleGeometryType()          // GEOMETRY类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new OracleException("Duplicate type name: " + typeName);

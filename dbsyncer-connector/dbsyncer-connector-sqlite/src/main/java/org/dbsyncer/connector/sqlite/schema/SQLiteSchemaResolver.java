@@ -53,6 +53,8 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
         mapping.put("SET", "TEXT");
         // UUID/GUID
         mapping.put("UUID", "TEXT"); // SQLite不支持UUID类型，使用TEXT存储UUID字符串
+        // 空间几何类型
+        mapping.put("GEOMETRY", "BLOB"); // SQLite通过SpatiaLite扩展支持GEOMETRY类型，或使用BLOB存储WKB格式
     }
 
     @Override
@@ -73,6 +75,7 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
                 new SQLiteUnsignedDecimalType(), // DECIMAL UNSIGNED
                 // BLOB 存储类 - 二进制亲和性
                 new SQLiteBlobType(),           // BLOB
+                new SQLiteGeometryType(),       // GEOMETRY类型支持（通过SpatiaLite扩展或BLOB存储）
                 // 日期时间类型（SQLite存储为TEXT）
                 new SQLiteDateType(),           // DATE, DATETIME
                 new SQLiteTimeType(),           // TIME

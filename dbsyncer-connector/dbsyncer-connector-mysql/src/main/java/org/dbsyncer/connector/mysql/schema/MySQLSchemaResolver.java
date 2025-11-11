@@ -54,6 +54,8 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("SET", "SET");
         // UUID/GUID
         mapping.put("UUID", "CHAR(36)"); // MySQL使用CHAR(36)存储UUID字符串
+        // 空间几何类型
+        mapping.put("GEOMETRY", "GEOMETRY"); // MySQL原生支持GEOMETRY类型
     }
 
     @Override

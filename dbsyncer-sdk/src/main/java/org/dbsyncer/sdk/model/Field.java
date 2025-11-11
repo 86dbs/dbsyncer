@@ -46,6 +46,12 @@ public class Field {
      */
     private int ratio;
 
+    /**
+     * 空间参考系统标识符（SRID），用于Geometry类型
+     * 例如：4326 (WGS84), 3857 (Web Mercator) 等
+     */
+    private Integer srid;
+
     public Field() {
     }
 
@@ -69,6 +75,16 @@ public class Field {
         this.pk = pk;
         this.columnSize = columnSize;
         this.ratio = ratio;
+    }
+
+    public Field(String name, String typeName, int type, boolean pk, long columnSize, int ratio, Integer srid) {
+        this.name = name;
+        this.typeName = typeName.toUpperCase();
+        this.type = type;
+        this.pk = pk;
+        this.columnSize = columnSize;
+        this.ratio = ratio;
+        this.srid = srid;
     }
 
     public String getName() {
@@ -125,6 +141,22 @@ public class Field {
 
     public void setRatio(int ratio) {
         this.ratio = ratio;
+    }
+
+    /**
+     * 获取空间参考系统标识符（SRID）
+     * @return SRID值，如果未设置则返回null
+     */
+    public Integer getSrid() {
+        return srid;
+    }
+
+    /**
+     * 设置空间参考系统标识符（SRID）
+     * @param srid SRID值，例如：4326 (WGS84), 3857 (Web Mercator) 等
+     */
+    public void setSrid(Integer srid) {
+        this.srid = srid;
     }
 
     @Override

@@ -55,6 +55,8 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         mapping.put("SET", "nvarchar"); // SQL Server不支持SET，使用nvarchar存储
         // UUID/GUID
         mapping.put("UUID", "uniqueidentifier"); // SQL Server原生支持UNIQUEIDENTIFIER类型
+        // 空间几何类型
+        mapping.put("GEOMETRY", "geometry"); // SQL Server原生支持GEOMETRY类型
     }
 
     @Override
@@ -72,7 +74,8 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerTextType(),                // TEXT类型支持
                 new SqlServerUnicodeTextType(),         // Unicode TEXT类型支持（NTEXT）
                 new SqlServerXmlType(),                 // XML类型支持
-                new SqlServerUniqueIdentifierType()     // UNIQUEIDENTIFIER类型支持
+                new SqlServerUniqueIdentifierType(),    // UNIQUEIDENTIFIER类型支持
+                new SqlServerGeometryType()              // GEOMETRY类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new SqlServerException("Duplicate type name: " + typeName);

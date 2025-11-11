@@ -15,6 +15,7 @@ import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTextType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLXmlType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLGeometryType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -66,6 +67,8 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         mapping.put("SET", "VARCHAR");
         // UUID/GUID
         mapping.put("UUID", "UUID"); // PostgreSQL原生支持UUID类型
+        // 空间几何类型
+        mapping.put("GEOMETRY", "GEOMETRY"); // PostgreSQL通过PostGIS扩展支持GEOMETRY类型
     }
 
     @Override
@@ -84,7 +87,8 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                 new PostgreSQLJsonType(),    // 新增JSON类型支持
                 new PostgreSQLEnumType(),    // 新增ENUM类型支持
                 new PostgreSQLTextType(),    // 新增TEXT类型支持
-                new PostgreSQLXmlType()      // 新增XML类型支持
+                new PostgreSQLXmlType(),     // 新增XML类型支持
+                new PostgreSQLGeometryType() // 新增GEOMETRY类型支持
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new PostgreSQLException("Duplicate type name: " + typeName);

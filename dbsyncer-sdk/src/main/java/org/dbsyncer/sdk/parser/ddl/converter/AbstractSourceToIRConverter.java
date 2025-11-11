@@ -73,6 +73,10 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                     column.setType(standardField.getType());
                     column.setColumnSize(standardField.getColumnSize());
                     column.setRatio(standardField.getRatio());
+                    // 保留SRID信息（用于Geometry类型）
+                    if (standardField.getSrid() != null) {
+                        column.setSrid(standardField.getSrid());
+                    }
                 }
                 columns.add(column);
             }

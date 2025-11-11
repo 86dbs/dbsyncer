@@ -524,8 +524,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的GEOMETRY类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN location GEOMETRY";
+        // MySQL的GEOMETRY类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "location",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -536,8 +537,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的POINT类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN coordinates POINT";
+        // MySQL的POINT类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "coordinates",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -548,8 +550,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的LINESTRING类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN route LINESTRING";
+        // MySQL的LINESTRING类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "route",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -560,8 +563,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的POLYGON类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN area POLYGON";
+        // MySQL的POLYGON类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "area",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -572,8 +576,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的MULTIPOINT类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN points MULTIPOINT";
+        // MySQL的MULTIPOINT类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "points",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -584,8 +589,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的MULTILINESTRING类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN routes MULTILINESTRING";
+        // MySQL的MULTILINESTRING类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "routes",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -596,8 +602,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的MULTIPOLYGON类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN regions MULTIPOLYGON";
+        // MySQL的MULTIPOLYGON类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "regions",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**
@@ -608,8 +615,9 @@ public class HeterogeneousDDLSyncTest {
         logger.info("开始测试MySQL到SQL Server的GEOMETRYCOLLECTION类型转换");
 
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN collection GEOMETRYCOLLECTION";
+        // MySQL的GEOMETRYCOLLECTION类型映射到标准类型GEOMETRY，在SQL Server中转换为geometry类型
         testDDLConversion(mysqlDDL, mysqlToSQLServerTableGroup, "collection",
-                "MySQL", "SqlServer", sqlServerConnectorService, "VARBINARY", "VARBINARY(MAX)");
+                "MySQL", "SqlServer", sqlServerConnectorService, "GEOMETRY", "geometry");
     }
 
     /**

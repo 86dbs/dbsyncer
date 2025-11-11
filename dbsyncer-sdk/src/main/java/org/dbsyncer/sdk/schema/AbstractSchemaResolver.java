@@ -120,12 +120,17 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
         DataType dataType = getDataType(field);
         if (dataType != null) {
             // 使用DataType的getType()方法获取标准类型
-            return new Field(field.getName(),
+            Field result = new Field(field.getName(),
                     dataType.getType().name(),
                     getStandardTypeCode(dataType.getType()),
                     field.isPk(),
                     field.getColumnSize(),
                     field.getRatio());
+            // 保留SRID信息（用于Geometry类型）
+            if (field.getSrid() != null) {
+                result.setSrid(field.getSrid());
+            }
+            return result;
         }
 
         // 如果没有找到对应的DataType，抛出异常以发现系统不足
@@ -138,12 +143,17 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
     public Field fromStandardType(Field standardField) {
         // 将Java标准类型转换为目标数据库特定类型
         String targetTypeName = getTargetTypeName(standardField.getTypeName());
-        return new Field(standardField.getName(),
+        Field result = new Field(standardField.getName(),
                 targetTypeName,
                 getTargetTypeCode(targetTypeName),
                 standardField.isPk(),
                 standardField.getColumnSize(),
                 standardField.getRatio());
+        // 保留SRID信息（用于Geometry类型）
+        if (standardField.getSrid() != null) {
+            result.setSrid(standardField.getSrid());
+        }
+        return result;
     }
 
     @Override
@@ -165,6 +175,10 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
             // 将DDL参数处理结果合并到最终结果中
             result.setColumnSize(ddlField.getColumnSize());
             result.setRatio(ddlField.getRatio());
+            // 合并SRID信息（用于Geometry类型）
+            if (ddlField.getSrid() != null) {
+                result.setSrid(ddlField.getSrid());
+            }
 
             return result;
         }
