@@ -52,4 +52,6 @@ public class IndexController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return RestResult.restSuccess(appConfigService.getVersionInfo(authentication.getName()));
     }
+
+
 }

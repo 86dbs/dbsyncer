@@ -115,6 +115,7 @@
             </button>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -175,17 +176,17 @@ window.enableAutoRefresh = function() {
  * 在浏览器控制台执行：getMappingListStatus()
  */
 window.getMappingListStatus = function() {
-    console.log('=== 映射列表状态 ===');
-    console.log('自动刷新启用:', ENABLE_AUTO_REFRESH);
-    console.log('调试模式:', MAPPING_LIST_DEBUG);
-    console.log('刷新间隔(秒):', MAPPING_LIST_REFRESH_INTERVAL / 1000);
-    console.log('定时器运行中:', mappingListAutoRefreshTimer !== null);
-    console.log('表格存在:', $('#mappingTable').length > 0);
-    console.log('表格Body存在:', $('#mappingTableBody').length > 0);
-    console.log('当前行数:', $('#mappingTableBody tr').length);
-    console.log('当前页码:', currentPage);
-    console.log('总页数:', totalPages);
-    console.log('====================');
+    // console.log('=== 映射列表状态 ===');
+    // console.log('自动刷新启用:', ENABLE_AUTO_REFRESH);
+    // console.log('调试模式:', MAPPING_LIST_DEBUG);
+    // console.log('刷新间隔(秒):', MAPPING_LIST_REFRESH_INTERVAL / 1000);
+    // console.log('定时器运行中:', mappingListAutoRefreshTimer !== null);
+    // console.log('表格存在:', $('#mappingTable').length > 0);
+    // console.log('表格Body存在:', $('#mappingTableBody').length > 0);
+    // console.log('当前行数:', $('#mappingTableBody tr').length);
+    // console.log('当前页码:', currentPage);
+    // console.log('总页数:', totalPages);
+    // console.log('====================');
 };
 
 // 分页配置
@@ -552,6 +553,7 @@ function loadMappingListPage() {
 function initMappingListPage() {
     // 先解绑事件，避免重复绑定
     $('#addMappingBtn').off('click');
+
     $('#refreshBtn').off('click');
     $('#searchInput').off('input');
     $('#prevBtn').off('click');

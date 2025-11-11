@@ -2,6 +2,7 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -105,6 +107,27 @@ public class ConnectorController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+
+    /**
+     * 获取连接器的数据库列表
+     */
+    @GetMapping("/getDatabases")
+    @ResponseBody
+    public RestResult getDatabases(@RequestParam("connectorId") String connectorId) {
+        try {
+            Connector connector = connectorService.getConnector(connectorId);
+            if (connector == null) {
+                return RestResult.restFail("连接器不存在");
+            }
+            List<String> databases =connector.getDataBaseName();
+
+            return RestResult.restSuccess(databases);
+        } catch (Exception e) {
+            logger.error("获取数据库列表失败", e);
+            return RestResult.restFail("获取数据库列表失败: " + e.getMessage());
         }
     }
 

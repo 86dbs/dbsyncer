@@ -47,6 +47,24 @@
 </div>
 
 <script th:src="@{/js/task/index.js}"></script>
+
+<script th:inline="javascript">
+
+    $(document).ready(function() {
+        // 创建任务按钮点击事件
+        $('#addTaskBtn').click(function() {
+            console.log('[创建任务] 点击创建任务按钮');
+            doLoader('/task/page/add');
+        });
+        
+        // 刷新按钮点击事件
+        $('#refreshBtn').click(function() {
+            console.log('[刷新任务] 点击刷新按钮');
+            doLoader('/task?refresh=' + new Date().getTime());
+        });
+    });
+
+</script>
 </html>
 
 
