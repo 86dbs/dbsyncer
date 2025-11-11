@@ -155,6 +155,18 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                     return "BINARY(" + column.getColumnSize() + ")";
                 }
                 return "BINARY";
+            case "TINYINT":
+                // BOOLEAN类型映射到TINYINT，对于布尔类型使用TINYINT(1)
+                // 检查是否是BOOLEAN标准类型（通过column的typeName判断）
+                String standardType = column.getTypeName();
+                if ("BOOLEAN".equals(standardType)) {
+                    return "TINYINT(1)";
+                }
+                // 如果是普通的TINYINT类型，根据columnSize处理
+                if (column.getColumnSize() > 0) {
+                    return typeName + "(" + column.getColumnSize() + ")";
+                }
+                return typeName;
             default:
                 return typeName;
         }

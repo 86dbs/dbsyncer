@@ -27,7 +27,8 @@ public final class SqlServerExactNumericType extends LongType {
     public Set<String> getSupportedTypeName() {
         // 注意：TIMESTAMP是SQL Server的行版本控制类型，是8字节二进制数据，可以转换为long
         // TIMESTAMP本质上是一个递增的版本号，用long表示更符合语义
-        return new HashSet<>(Arrays.asList("BIT", "TINYINT", "SMALLINT", "INT", "BIGINT", "INT IDENTITY", "BIGINT IDENTITY", "SMALLINT IDENTITY", "TINYINT IDENTITY", "TIMESTAMP"));
+        // BIT类型由SqlServerBooleanType处理，不再由本类处理
+        return new HashSet<>(Arrays.asList("TINYINT", "SMALLINT", "INT", "BIGINT", "INT IDENTITY", "BIGINT IDENTITY", "SMALLINT IDENTITY", "TINYINT IDENTITY", "TIMESTAMP"));
     }
 
     @Override

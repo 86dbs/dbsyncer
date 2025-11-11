@@ -34,10 +34,6 @@ import static org.junit.Assert.*;
 /**
  * 异构数据库DDL同步测试
  * 测试不同数据库类型间的DDL同步功能，涵盖所有特殊类型
- *
- * @Author TestUser
- * @Version 1.0.0
- * @Date 2025-10-28
  */
 public class HeterogeneousDDLSyncTest {
 
@@ -428,8 +424,9 @@ public class HeterogeneousDDLSyncTest {
                 "SqlServer", "MySQL", mysqlConnectorService, "BINARY", "BINARY(16)");
 
         String sqlserverDDL2 = "ALTER TABLE ddlTestEmployee ADD varbinary_data VARBINARY(MAX)";
+        // VARBINARY(MAX) 应该映射到标准类型 BLOB，然后转换为 MySQL 的 LONGBLOB（因为 MAX 表示 2GB）
         testDDLConversion(sqlserverDDL2, sqlserverToMySQLTableGroup, "varbinary_data",
-                "SqlServer", "MySQL", mysqlConnectorService, "VARBINARY", "VARBINARY");
+                "SqlServer", "MySQL", mysqlConnectorService, "LONGBLOB", "LONGBLOB");
     }
 
     /**

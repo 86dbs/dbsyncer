@@ -64,6 +64,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 new SqlServerDecimalType(),             // Decimal类型（精确小数类型）
                 new SqlServerApproximateNumericType(),  // 近似数值类型
                 new SqlServerDateTimeType(),            // 日期时间类型
+                new SqlServerBooleanType(),              // BOOLEAN类型支持（BIT）
                 new SqlServerStringType(),              // 字符字符串类型（CHAR, VARCHAR）
                 new SqlServerUnicodeStringType(),       // Unicode字符字符串类型（NCHAR, NVARCHAR）
                 new SqlServerBinaryType(),              // 二进制字符串类型（BINARY, VARBINARY）
