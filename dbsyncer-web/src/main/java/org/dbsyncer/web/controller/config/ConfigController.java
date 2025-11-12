@@ -52,7 +52,7 @@ public class ConfigController {
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getConfigModelAll());
         model.put("fileSize", JsonUtil.objToJson(cacheService.getAll()).getBytes(Charset.defaultCharset()).length);
-        return "config/config";
+        return "config/list";
     }
 
     @PostMapping(value = "/getAll")

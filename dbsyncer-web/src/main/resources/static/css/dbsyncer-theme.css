@@ -173,7 +173,6 @@ input, textarea, select, button {
 
 textarea {
   resize: none;
-  overflow: hidden;
 }
 
 /* ========== 滚动条样式 ========== */

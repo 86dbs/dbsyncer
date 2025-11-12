@@ -9,13 +9,14 @@
     </div>
     <div class="card-body">
         <div class="grid grid-cols-6 items-center">
-            <div id="searchConnector" class="lg:col-span-3 search-wrapper">
+            <div id="searchConnector" class="lg:col-span-2 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
                 <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
             </div>
+            <div></div>
             <div class="lg:col-span-3 flex items-center justify-end gap-4">
                 <button class="btn btn-primary" id="addConnectorBtn">
                     <i class="fa fa-plus"></i> 添加
@@ -47,7 +48,7 @@
                     <td th:text="${connector?.config?.url}">连接信息</td>
                     <td>
                         <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="编辑" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
+                            <button class="table-action-btn view" title="修改" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
                                 <i class="fa fa-edit"></i>
                             </button>
                             <button class="table-action-btn play" title="测试" th:data-id="${connector.id}" onclick="testConnector(this.dataset.id)">

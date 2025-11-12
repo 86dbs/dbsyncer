@@ -89,7 +89,7 @@ public class MonitorController extends BaseController {
         model.put("dataStatus", NumberUtil.toInt(params.get("dataStatus"), -1));
         model.put("pagingData", monitorService.queryData(params));
         model.put("pagingLog", monitorService.queryLog(params));
-        return "monitor/monitor.html";
+        return "monitor/list.html";
     }
 
     @GetMapping("/page/retry")

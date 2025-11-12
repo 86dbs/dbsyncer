@@ -40,7 +40,7 @@ public class UserController extends BaseController {
     public String index(ModelMap model) {
         model.put("currentUser", getUserInfoVo());
         model.put("users", userConfigService.getUserInfoAll(getUserName()));
-        return "user/user";
+        return "user/list";
     }
 
     @GetMapping("/page/add")

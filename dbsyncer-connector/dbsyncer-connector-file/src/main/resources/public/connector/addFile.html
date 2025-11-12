@@ -3,8 +3,6 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="dbsyncer-section-title">File 连接配置</div>
-    
     <div class="form-grid-2">
         <div class="form-item">
             <label class="form-label">
@@ -12,29 +10,31 @@
                 <strong class="text-primary">*</strong>
             </label>
             <div class="form-control-area">
-                <input class="form-control" name="fileDir" type="text" maxlength="512" dbsyncer-valid="require" placeholder="/soft" th:value="${connector?.config?.fileDir}?:'/soft'"/>
+                <input class="form-control" name="fileDir" type="text" maxlength="512" required placeholder="/soft" th:value="${connector?.config?.fileDir}?:'/soft'"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">分割符<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="separator" type="text" maxlength="512" dbsyncer-valid="require" placeholder="|" th:value="${connector?.config?.separator}?:'|'"/>
+                <input class="form-control" name="separator" type="text" maxlength="512" required placeholder="|" th:value="${connector?.config?.separator}?:'|'"/>
             </div>
         </div>
     </div>
 
-    <div class="form-item-full">
-        <label class="form-label">
-            Schema<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持10种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
-            <strong class="text-primary">*</strong>
-        </label>
-        <div class="form-control-area">
-            <div style="text-align: right; margin-bottom: 8px;">
-                <a href="javascript:format();" class="dbsyncer-link">
-                    <span class="fa fa-magic fa-flip-horizontal" title="美化"></span> 美化
-                </a>
+    <div class="form-grid-1">
+        <div class="form-item">
+            <label class="form-label">
+                Schema<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持10种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
+                <strong class="text-primary">*</strong>
+            </label>
+            <div class="form-control-area">
+                <div style="text-align: right; margin-bottom: 8px;">
+                    <a href="javascript:format();" class="btn btn-link">
+                        <span class="fa fa-magic fa-flip-horizontal" title="美化"></span> 美化
+                    </a>
+                </div>
+                <textarea id="schema" name="schema" class="form-control" maxlength="4096" required rows="20" th:text="${connector?.config?.schema}"></textarea>
             </div>
-            <textarea id="schema" name="schema" class="form-control" maxlength="4096" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.schema}"></textarea>
         </div>
     </div>
 

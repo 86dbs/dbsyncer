@@ -30,7 +30,7 @@ public class SystemController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getSystemConfigVo());
-        return "system/system";
+        return "system/list";
     }
 
     @PostMapping("/edit")

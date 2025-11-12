@@ -41,7 +41,7 @@ public class PluginController {
     public String index(ModelMap model) {
         model.put("plugins", pluginService.getPluginAll());
         model.put("version", appConfig.getVersion());
-        return "plugin/plugin";
+        return "plugin/list";
     }
 
     @PostMapping(value = "/upload")
