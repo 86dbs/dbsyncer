@@ -87,7 +87,7 @@ function refreshDataList(resultValue, append) {
 
 // 查看日志
 function bindQueryLogEvent() {
-    initSelect("searchLog", function(value){
+    initSearch("searchLog", function(value){
         doGetter("/monitor/queryLog", {'json': value, 'pageNum': 1, 'pageSize': 10}, function (data) {
             if (data.success === true) {
                 refreshLogList(data.resultValue);
@@ -109,7 +109,7 @@ function bindQueryLogMoreEvent() {
 
 // 查看数据
 function bindQueryDataEvent() {
-    initSelect("searchData", function(value){
+    initSearch("searchData", function(value){
         const id = $("#searchMetaData").val();
         const success = $("#searchDataSuccess").val();
         doGetter('/monitor/queryData', {

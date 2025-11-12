@@ -5,26 +5,16 @@
 <!-- 查询连接器列表 -->
 <div class="form-container">
     <div class="card-header">
+        <h3 class="card-title text-center">连接管理</h3>
+    </div>
+    <div class="card-body">
         <div class="grid grid-cols-6 items-center">
-            <div id="searchConnector" class="lg:col-span-2 search-wrapper">
+            <div id="searchConnector" class="lg:col-span-3 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
                 <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
-            </div>
-            <div>
-                <select class="form-control" id="typeFilter">
-                    <option value="">全部类型</option>
-                    <option value="mysql">MySQL</option>
-                    <option value="oracle">Oracle</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="sqlserver">SQL Server</option>
-                    <option value="sqlite">SQLite</option>
-                    <option value="elasticsearch">Elasticsearch</option>
-                    <option value="kafka">Kafka</option>
-                    <option value="file">文件</option>
-                </select>
             </div>
             <div class="lg:col-span-3 flex items-center justify-end gap-4">
                 <button class="btn btn-primary" id="addConnectorBtn">
@@ -32,8 +22,7 @@
                 </button>
             </div>
         </div>
-    </div>
-    <div class="card-body">
+
         <table class="table">
             <thead>
             <tr>

@@ -57,5 +57,7 @@ const trendChart = new Chart(trendCtx, {
 
 // 搜索功能
 $(function () {
-    initSelect("searchInput");
+    initSearch("searchInput", function(data){
+        console.log(data);
+    });
 });

@@ -1,10 +1,10 @@
 function submit(data) {
-    doPoster("/connector/edit", data, function (data) {
-        if (data.success == true) {
-            bootGrowl("修改成功!", "success");
+    doPoster("/connector/edit", data, function (response) {
+        if (response.success === true) {
+            bootGrowl("保存成功!", "success");
             backIndexPage();
         } else {
-            bootGrowl(data.resultValue, "danger");
+            bootGrowl(response.resultValue || '保存失败', "danger");
         }
     });
 }
@@ -12,10 +12,9 @@ function submit(data) {
 $(function () {
     //保存
     $("#connectorSubmitBtn").click(function () {
-        var $form = $("#connectorModifyForm");
-        if ($form.formValidate() == true) {
-            var data = $form.serializeJson();
-            submit(data);
+        const $form = $("#connectorModifyForm");
+        if ($form.formValidate() === true) {
+            submit($form.serializeJson());
         }
     });
 

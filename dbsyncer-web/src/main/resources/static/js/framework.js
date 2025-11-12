@@ -547,7 +547,7 @@ function initQRCodePopover(options) {
     }, 500);
 }
 
-function initSelect(searchWrapperId, callback) {
+function initSearch(searchWrapperId, callback) {
     const wrapper = document.getElementById(searchWrapperId);
     const searchInput = wrapper.querySelector('.search-input');
     const searchClear = wrapper.querySelector('.search-clear');
@@ -608,7 +608,7 @@ $(function () {
         initFileUpload: initFileUpload,
         initQRCodePopover: initQRCodePopover,
         initMultipleInputTags: initMultipleInputTags,
-        initSelect: initSelect
+        initSearch: initSearch
     };
     
     // 向后兼容
