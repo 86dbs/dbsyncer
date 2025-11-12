@@ -3,42 +3,56 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="dbsyncer-section-title">MySQL 连接配置</div>
-    
     <div class="form-grid-2">
         <div class="form-item">
             <label class="form-label">主机<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="host" type="text" maxlength="32" dbsyncer-valid="require" placeholder="localhost" th:value="${connector?.config?.host}?: 'localhost'"/>
+                <input class="form-control" name="host" type="text" maxlength="32" required placeholder="localhost" th:value="${connector?.config?.host}?: 'localhost'"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">端口<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="port" type="number" maxlength="64" dbsyncer-valid="require" placeholder="3306" th:value="${connector?.config?.port}?: '3306'"/>
+                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="3306" th:value="${connector?.config?.port}?: '3306'"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">用户名<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="username" type="text" maxlength="32" dbsyncer-valid="require" placeholder="root" th:value="${connector?.config?.username}"/>
+                <input class="form-control" name="username" type="text" maxlength="32" required placeholder="root" th:value="${connector?.config?.username}"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">密码<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+                <input class="form-control" name="password" type="password" maxlength="64" required placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="maxActive" type="number" required min="1" max="512"
+                       th:value="${connector?.config?.maxActive}?:128" placeholder="默认128"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="keepAlive" type="number" required min="10000" max="120000"
+                       th:value="${connector?.config?.keepAlive}?:60000" placeholder="默认60000"/>
             </div>
         </div>
     </div>
 
-    <div th:replace="connector/addDataBaseProperties :: content"></div>
-    
-    <div class="form-item-full">
-        <label class="form-label">连接参数</label>
-        <div class="form-control-area">
-            <textarea name="properties" class="form-control" maxlength="1024" rows="5"
-                      th:text="${connector?.config?.properties} ?: 'rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;verifyServerCertificate=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;tinyInt1isBit=false&allowPublicKeyRetrieval=true'"></textarea>
+    <div class="form-grid-1">
+        <div class="form-item">
+            <label class="form-label">连接参数</label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="5"
+                          th:text="${connector?.config?.properties} ?: 'rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;verifyServerCertificate=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;tinyInt1isBit=false&allowPublicKeyRetrieval=true'"></textarea>
+            </div>
         </div>
     </div>
 

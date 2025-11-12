@@ -109,7 +109,7 @@
         </div>
 
         <!-- 应用状态 -->
-        <div class="table-wrapper mb-3">
+        <div class="mb-3">
             <table class="table">
                 <tbody>
                 <tr>
@@ -168,59 +168,61 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="table-wrapper">
-            <table class="table metaDataList">
-                <thead>
-                <tr>
-                    <th>序号</th>
-                    <th>目标表</th>
-                    <th>事件</th>
-                    <th>结果</th>
-                    <th>异常</th>
-                    <th>时间</th>
-                    <th>操作</th>
-                </tr>
-                </thead>
-                <tbody id="dataList">
-                <tr th:each="d,s : ${pagingData?.data}">
-                    <td class="text-center text-tertiary" th:text="${s.index}+1" />
-                    <td class="font-medium" th:text="${d?.targetTableName}" />
-                    <td th:text="${d?.event}" />
-                    <td>
-                        <span th:if="${d?.success == 1}" class="badge badge-success">成功</span>
-                        <span th:if="${d?.success == 0}" class="badge badge-warning">失败</span>
-                    </td>
-                    <td class="text-ellipsis" style="max-width: 300px;">
-                        <a href="javascript:;" class="text-secondary hover-underline queryError" th:text="${d?.error}"></a>
-                    </td>
-                    <td class="text-sm text-secondary" th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
-                    <td>
-                        <div class="flex gap-2">
-                            <a th:json="${d?.json}" href="javascript:;" class="btn btn-sm btn-info queryData">
-                                <i class="fa fa-eye"></i> 查看数据
-                            </a>
-                            <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="btn btn-sm btn-warning retryData">
-                                <i class="fa fa-refresh"></i> 重试
-                            </a>
-                        </div>
-                        <div class="hidden" th:text="${d?.json}"></div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>目标表</th>
+                <th>事件</th>
+                <th>结果</th>
+                <th>异常</th>
+                <th>时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="dataList">
+            <tr th:each="d,s : ${pagingData?.data}">
+                <td class="text-center text-tertiary" th:text="${s.index}+1" />
+                <td class="font-medium" th:text="${d?.targetTableName}" />
+                <td th:text="${d?.event}" />
+                <td>
+                    <span th:if="${d?.success == 1}" class="badge badge-success">成功</span>
+                    <span th:if="${d?.success == 0}" class="badge badge-warning">失败</span>
+                </td>
+                <td class="text-ellipsis" style="max-width: 300px;">
+                    <a href="javascript:;" class="text-secondary hover-underline queryError" th:text="${d?.error}"></a>
+                </td>
+                <td class="text-sm text-secondary" th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
+                <td>
+                    <div class="flex gap-2">
+                        <a th:json="${d?.json}" href="javascript:;" class="btn btn-sm btn-info queryData">
+                            <i class="fa fa-eye"></i> 查看数据
+                        </a>
+                        <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="btn btn-sm btn-warning retryData">
+                            <i class="fa fa-refresh"></i> 重试
+                        </a>
+                    </div>
+                    <div class="hidden" th:text="${d?.json}"></div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
 
-            <!-- 分页信息 -->
-            <div class="flex items-center justify-between px-4 py-3 border-t">
-                <div class="text-sm text-secondary">
-                    共计: <span id="dataTotal" class="font-medium text-primary">[[${pagingData?.total}]]</span> 条
-                </div>
-                <div>
-                    <a href="javascript:void(0);" id="queryDataMore" num="1" class="text-primary hover-underline">
-                        显示更多 <i class="fa fa-angle-double-down"></i>
-                    </a>
-                </div>
+        <!-- 分页信息 -->
+        <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+            <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingData?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+            <div class="flex items-center gap-2">
+                <button class="pagination-btn" disabled>
+                    <i class="fa fa-angle-left"></i>
+                </button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">
+                    <i class="fa fa-angle-right"></i>
+                </button>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -241,6 +243,13 @@
         </div>
         <div class="card-body">
             <table class="table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>[驱动]数据源表</th>
+                    <th>结果</th>
+                </tr>
+                </thead>
                 <tbody>
                 <tr>
                     <td>1</td>
@@ -269,6 +278,21 @@
                 </tr>
                 </tbody>
             </table>
+
+            <!-- 分页信息 -->
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+                <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingTask?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -293,27 +317,37 @@
         </div>
         <div class="card-body">
             <table class="table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>日志</th>
+                    <th>时间</th>
+                </tr>
+                </thead>
                 <tbody id="logList">
                 <tr th:each="l,s : ${pagingLog?.data}">
                     <td th:text="${s.index}+1"></td>
-                    <!--<td th:text="${l?.json}"></td>-->
-                    <td title="dwqdwqdqwdwqdwqdwqdqwdqwqdwqwdwqdqwdwqdqwdqwdqwdwqdqwd">dwqdwqdqwdwqdwqdwqdqwdqwqdwqwdwqdqwdwqdqwdqwdqwdwqdqwd</td>
+                    <td th:text="${l?.json}"></td>
                     <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
                 </tr>
                 </tbody>
             </table>
 
             <!-- 分页信息 -->
-            <div class="flex items-center justify-between px-4 py-3 border-t">
-                <div class="text-sm text-secondary">
-                    共计: <span id="logTotal" class="font-medium text-primary">[[${pagingLog?.total}]]</span> 条
-                </div>
-                <div>
-                    <a href="javascript:void(0);" id="queryLogMore" num="1" class="text-primary hover-underline">
-                        显示更多 <i class="fa fa-angle-double-down"></i>
-                    </a>
+            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
+                <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingLog?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+                <div class="flex items-center gap-2">
+                    <button class="pagination-btn" disabled>
+                        <i class="fa fa-angle-left"></i>
+                    </button>
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">
+                        <i class="fa fa-angle-right"></i>
+                    </button>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

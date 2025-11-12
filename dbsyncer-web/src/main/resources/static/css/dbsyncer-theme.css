@@ -171,6 +171,11 @@ input, textarea, select, button {
   line-height: inherit;
 }
 
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
 /* ========== 滚动条样式 ========== */
 ::-webkit-scrollbar {
   width: 6px;

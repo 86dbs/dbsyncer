@@ -2,54 +2,42 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="page">
-    <div class="page-header">
-        <h2 class="page-title">修改连接</h2>
-        <p class="page-subtitle">编辑现有数据源连接配置</p>
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">修改连接</h3>
     </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button id="connectorBackBtn" type="button" class="btn btn-outline">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
 
-    <div class="form-container">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">连接信息</h3>
-            </div>
-            <div class="card-body">
-                <form id="connectorModifyForm" method="post">
-                    <input type="hidden" name="id" th:value="${connector?.id}" />
-                    
-                    <div class="form-grid-2">
-                        <div class="form-item">
-                            <label class="form-label">类型</label>
-                            <div class="form-control-area">
-                                <input class="form-control" name="connectorType" readonly="readonly" type="text" th:value="${connector?.config?.connectorType}" />
-                            </div>
-                        </div>
+        <form id="connectorModifyForm" class="form-grid-1">
+            <input type="hidden" name="id" th:value="${connector?.id}" />
 
-                        <div class="form-item">
-                            <label class="form-label">名称<strong class="text-primary">*</strong></label>
-                            <div class="form-control-area">
-                                <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="请输入连接名称" th:value="${connector?.name}" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 连接配置 -->
-                    <div class="connectorConfig connector-advanced-section">
-                        <div th:replace="'connector/add'+${connector?.config?.connectorType} :: content"></div>
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer">
-                <div class="form-actions">
-                    <button id="connectorBackBtn" type="button" class="btn btn-secondary">
-                        <span class="fa fa-reply"></span> 返回
-                    </button>
-                    <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
-                        <span class="fa fa-save"></span> 保存
-                    </button>
+            <div class="form-item">
+                <label class="form-label">类型</label>
+                <div class="bg-gray-100">
+                    <input class="form-control" name="connectorType" readonly="readonly" type="text" th:value="${connector?.config?.connectorType}" />
                 </div>
             </div>
-        </div>
+
+            <div class="form-item">
+                <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                <div class="form-control-area">
+                    <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称" th:value="${connector?.name}" />
+                </div>
+            </div>
+
+            <!-- 连接配置 -->
+            <div class="connectorConfig">
+                <div th:replace="'connector/add'+${connector?.config?.connectorType} :: content"></div>
+            </div>
+        </form>
     </div>
 </div>
 

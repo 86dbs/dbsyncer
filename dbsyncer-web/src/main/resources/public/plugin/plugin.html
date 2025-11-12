@@ -9,40 +9,38 @@
     <div class="card-body">
         <h3 class="card-title">插件列表</h3>
         <p class="text-xs text-tertiary">上传插件后，选择同步任务，进入高级配置关联插件。</p>
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>名称</th>
-                    <th>运行驱动</th>
-                    <th>类名</th>
-                    <th>版本</th>
-                    <th>文件</th>
-                </tr>
-                </thead>
-                <tbody id="pluginList">
-                <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
-                    <td>
-                        <div th:if="${p?.unmodifiable}" class="flex items-center" title="内置插件">
-                            <i class="fa fa-plug mr-2"></i>
-                            <span class="font-medium">[[${p?.name}]]</span>
-                            <span class="badge badge-info ml-2 text-xs">内置</span>
-                        </div>
-                        <div th:if="${not p?.unmodifiable}" class="flex items-center" title="普通插件">
-                            <i class="fa fa-star text-warning mr-2"></i>
-                            <span class="font-medium">[[${p?.name}]]</span>
-                        </div>
-                    </td>
-                    <td th:text="${p?.mappingName}"/>
-                    <td th:text="${p?.className}"/>
-                    <td>
-                        <span class="badge badge-success" th:text="${p?.version}"></span>
-                    </td>
-                    <td class="text-sm" th:text="${p?.fileName}"/>
-                </tr>
-                </tbody>
-            </table>
-        </div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>名称</th>
+                <th>运行驱动</th>
+                <th>类名</th>
+                <th>版本</th>
+                <th>文件</th>
+            </tr>
+            </thead>
+            <tbody id="pluginList">
+            <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
+                <td>
+                    <div th:if="${p?.unmodifiable}" class="flex items-center" title="内置插件">
+                        <i class="fa fa-plug mr-2"></i>
+                        <span class="font-medium">[[${p?.name}]]</span>
+                        <span class="badge badge-info ml-2 text-xs">内置</span>
+                    </div>
+                    <div th:if="${not p?.unmodifiable}" class="flex items-center" title="普通插件">
+                        <i class="fa fa-star text-warning mr-2"></i>
+                        <span class="font-medium">[[${p?.name}]]</span>
+                    </div>
+                </td>
+                <td th:text="${p?.mappingName}"/>
+                <td th:text="${p?.className}"/>
+                <td>
+                    <span class="badge badge-success" th:text="${p?.version}"></span>
+                </td>
+                <td class="text-sm" th:text="${p?.fileName}"/>
+            </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="card-body">

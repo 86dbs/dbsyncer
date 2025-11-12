@@ -83,18 +83,18 @@
 
         <!-- 分页信息 -->
         <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${connectors != null and !connectors.isEmpty()}">
-                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
+            <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
+            <div class="flex items-center gap-2">
+                <button class="pagination-btn" disabled>
+                    <i class="fa fa-angle-left"></i>
+                </button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">
+                    <i class="fa fa-angle-right"></i>
+                </button>
             </div>
+        </div>
     </div>
 </div>
 

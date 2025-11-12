@@ -13,8 +13,7 @@
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
-        <div class="table-wrapper">
-            <table class="table">
+        <table class="table">
                 <thead>
                 <tr>
                     <th>用户</th>
@@ -56,27 +55,20 @@
                         <span class="text-sm text-secondary" th:text="${u?.phone ?: '-'}"></span>
                     </td>
                     <td>
-                        <div class="btn-group-sm">
+                        <div class="flex items-center gap-1">
                             <!-- 管理员或本人可以修改 -->
-                            <button th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}"
-                                    type="button"
-                                    th:data-username="${u?.username}"
-                                    class="btn btn-sm btn-info editUserBtn">
-                                <i class="fa fa-pencil"></i> 修改
+                            <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
+                                <i class="fa fa-edit"></i>
                             </button>
                             <!-- 仅管理员可以删除其他用户 -->
-                            <button th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}"
-                                    type="button"
-                                    th:data-username="${u?.username}"
-                                    class="btn btn-sm btn-outline removeUserBtn">
-                                <i class="fa fa-trash"></i> 删除
+                            <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}">
+                                <i class="fa fa-trash"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
