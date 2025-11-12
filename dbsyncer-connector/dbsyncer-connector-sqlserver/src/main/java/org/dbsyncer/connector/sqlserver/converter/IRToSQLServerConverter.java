@@ -55,13 +55,30 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
     }
 
     private String convertColumnsToAdd(String tableName, List<Field> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return "";
+        }
+        
+        // SQL Server支持在单个ALTER TABLE语句中添加多个列
+        // 格式: ALTER TABLE [table] ADD [col1] type1, [col2] type2
         StringBuilder result = new StringBuilder();
+        String quotedTableName = sqlServerTemplate.buildQuotedTableName(tableName);
+        result.append("ALTER TABLE ").append(quotedTableName).append(" ADD ");
+        
+        // 从buildAddColumnSql的结果中提取列定义部分
+        // buildAddColumnSql返回: "ALTER TABLE [table] ADD [col] type"
+        // 我们需要提取 "[col] type" 部分
+        String prefix = "ALTER TABLE " + quotedTableName + " ADD ";
+        
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            result.append(sqlServerTemplate.buildAddColumnSql(tableName, column));
+            String fullSql = sqlServerTemplate.buildAddColumnSql(tableName, column);
+            // 提取列定义部分（去掉 "ALTER TABLE [table] ADD " 前缀）
+            String columnDef = fullSql.substring(prefix.length());
+            result.append(columnDef);
         }
         return result.toString();
     }

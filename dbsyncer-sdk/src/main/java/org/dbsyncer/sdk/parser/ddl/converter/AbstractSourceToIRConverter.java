@@ -41,18 +41,21 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         ir.setTableName(removeIdentifier(alter.getTable().getName()));
 
         for (AlterExpression expr : alter.getAlterExpressions()) {
+            AlterOperation currentOperation = null;
+            List<Field> newColumns = null;
+            
             switch (expr.getOperation()) {
                 case ADD:
-                    ir.setOperationType(AlterOperation.ADD);
-                    ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    currentOperation = AlterOperation.ADD;
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
                     break;
                 case DROP:
-                    ir.setOperationType(AlterOperation.DROP);
-                    ir.setColumns(convertColumnDataTypesForDrop(expr.getColumnName()));
+                    currentOperation = AlterOperation.DROP;
+                    newColumns = convertColumnDataTypesForDrop(expr.getColumnName());
                     break;
                 case MODIFY:
-                    ir.setOperationType(AlterOperation.MODIFY);
-                    ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    currentOperation = AlterOperation.MODIFY;
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
                     break;
                 case ALTER:
                     // ALTER 操作的映射由子类根据数据库类型决定
@@ -63,12 +66,12 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                             String.format("Unsupported ALTER operation for this database type. Expression: %s", expr));
                     }
                     expr.setOperation(mappedType); // IMPORTANT: 修改 ALTER 操作的类型
-                    ir.setOperationType(mappedType);
-                    ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    currentOperation = mappedType;
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
                     break;
                 case CHANGE:
-                    ir.setOperationType(AlterOperation.CHANGE);
-                    ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    currentOperation = AlterOperation.CHANGE;
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
                     // 保存旧字段名到新字段名的映射
                     if (expr.getColumnOldName() != null && expr.getColDataTypeList() != null) {
                         String oldColumnName = removeIdentifier(expr.getColumnOldName());
@@ -82,6 +85,24 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                     // 不支持的操作类型，抛出异常而不是静默忽略
                     throw new UnsupportedOperationException(
                         String.format("Unsupported DDL operation type: %s", expr.getOperation()));
+            }
+            
+            // 合并相同操作的列列表，而不是覆盖
+            if (ir.getOperationType() == null) {
+                // 第一次设置操作类型和列列表
+                ir.setOperationType(currentOperation);
+                ir.setColumns(newColumns != null ? new ArrayList<>(newColumns) : new ArrayList<>());
+            } else if (ir.getOperationType() == currentOperation) {
+                // 相同操作类型，合并列列表
+                if (newColumns != null && !newColumns.isEmpty()) {
+                    ir.getColumns().addAll(newColumns);
+                }
+            } else {
+                // 不同的操作类型，抛出异常（一个ALTER语句通常只包含一种操作类型）
+                throw new IllegalStateException(
+                    String.format("Mixed DDL operations in a single ALTER statement are not supported. " +
+                            "Previous operation: %s, Current operation: %s", 
+                            ir.getOperationType(), currentOperation));
             }
         }
         
