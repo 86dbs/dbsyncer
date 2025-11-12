@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.parser.ddl.impl;
 
 import net.sf.jsqlparser.JSQLParserException;
@@ -22,7 +19,6 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
-import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -51,7 +47,7 @@ import java.util.stream.Collectors;
 public class DDLParserImpl implements DDLParser {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Map<AlterOperation, AlterStrategy> STRATEGIES = new ConcurrentHashMap();
+    private final Map<AlterOperation, AlterStrategy> STRATEGIES = new ConcurrentHashMap<>();
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -72,7 +68,7 @@ public class DDLParserImpl implements DDLParser {
         Statement statement = CCJSqlParserUtil.parse(sql);
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
-            
+
             // 设置源和目标连接器类型
             // 从TableGroup中获取ProfileComponent，再获取源和目标连接器配置
             Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
@@ -80,10 +76,10 @@ public class DDLParserImpl implements DDLParser {
                     .getConnector(mapping.getSourceConnectorId()).getConfig();
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
             String targetConnectorType = connectorService.getConnectorType();
-            
+
             // 获取目标表名（原始表名，不带引号）
             String targetTableName = tableGroup.getTargetTable().getName();
-            
+
             // 对于异构数据库，进行DDL语法转换
             String targetSql = alter.toString();
             // 如果是异构数据库，尝试进行转换
@@ -91,7 +87,7 @@ public class DDLParserImpl implements DDLParser {
                 // 对于异构数据库转换，使用原始表名（不带引号）
                 // 因为IRToTargetConverter的buildAddColumnSql会自己加引号
                 alter.getTable().setName(targetTableName);
-                
+
                 // 从源连接器获取源到IR转换器
                 ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
                 SourceToIRConverter sourceToIRConverter = sourceConnectorService.getSourceToIRConverter();

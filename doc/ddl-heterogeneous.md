@@ -42,7 +42,7 @@ DDLChangedEvent → DDLParser解析SQL → 表名替换 → 操作类型识别 �
 ```java
 public class DDLIntermediateRepresentation {
     private String tableName;
-    private DDLOperationType operationType; // ADD, MODIFY, DROP, CHANGE
+    private AlterOperation operationType; // ADD, MODIFY, DROP, CHANGE
     private List<Field> columns;  // 直接复用现有的Field类
 }
 ```

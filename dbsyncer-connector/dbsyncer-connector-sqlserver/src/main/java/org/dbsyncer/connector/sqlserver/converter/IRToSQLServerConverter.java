@@ -24,6 +24,14 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
 
     @Override
     public String convert(DDLIntermediateRepresentation ir) {
+        if (ir == null) {
+            throw new IllegalArgumentException("DDLIntermediateRepresentation cannot be null");
+        }
+        
+        if (ir.getOperationType() == null) {
+            throw new IllegalArgumentException("AlterOperation cannot be null in DDLIntermediateRepresentation");
+        }
+        
         StringBuilder sql = new StringBuilder();
 
         switch (ir.getOperationType()) {
@@ -39,6 +47,8 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
             case DROP:
                 sql.append(convertColumnsToDrop(ir.getTableName(), ir.getColumns()));
                 break;
+            default:
+                throw new IllegalArgumentException("Unsupported AlterOperation: " + ir.getOperationType());
         }
         return sql.toString();
     }

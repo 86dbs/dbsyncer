@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.parser.ddl.ir;
 
+import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.List;
 public class DDLIntermediateRepresentation {
 
     private String tableName;
-    private DDLOperationType operationType;
+    private AlterOperation operationType;
     private List<Field> columns = new ArrayList<>();
 
     public String getTableName() {
@@ -22,11 +23,11 @@ public class DDLIntermediateRepresentation {
         this.tableName = tableName;
     }
 
-    public DDLOperationType getOperationType() {
+    public AlterOperation getOperationType() {
         return operationType;
     }
 
-    public void setOperationType(DDLOperationType operationType) {
+    public void setOperationType(AlterOperation operationType) {
         this.operationType = operationType;
     }
 

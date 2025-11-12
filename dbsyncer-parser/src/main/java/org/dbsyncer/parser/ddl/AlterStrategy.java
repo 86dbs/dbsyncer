@@ -16,7 +16,7 @@ import org.dbsyncer.sdk.config.DDLConfig;
 public interface AlterStrategy {
 
     /**
-     * 解析DDLConfig
+     * 解析DDLConfig（从AlterExpression）
      *
      * @param expression
      * @param ddlConfig

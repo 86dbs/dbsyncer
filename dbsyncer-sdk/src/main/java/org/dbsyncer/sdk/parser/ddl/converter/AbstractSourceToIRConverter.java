@@ -2,10 +2,10 @@ package org.dbsyncer.sdk.parser.ddl.converter;
 
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterExpression;
+import net.sf.jsqlparser.statement.alter.AlterOperation;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
-import org.dbsyncer.sdk.parser.ddl.ir.DDLOperationType;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.util.ArrayList;
@@ -23,6 +23,18 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
     // 子类需要提供具体的移除标识符方法
     protected abstract String removeIdentifier(String name);
 
+    /**
+     * 将 ALTER 操作映射到具体的 DDL 操作类型
+     * 不同数据库对 ALTER 操作的语义不同，子类需要根据数据库特性实现此方法
+     * 
+     * @param expr AlterExpression 对象
+     * @return 映射后的 AlterOperation，如果该数据库不支持此 ALTER 操作，返回 null
+     */
+    protected AlterOperation mapAlterOperation(AlterExpression expr) {
+        // 默认实现：不支持 ALTER 操作，子类需要重写
+        return null;
+    }
+
     @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
         DDLIntermediateRepresentation ir = new DDLIntermediateRepresentation();
@@ -31,26 +43,45 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         for (AlterExpression expr : alter.getAlterExpressions()) {
             switch (expr.getOperation()) {
                 case ADD:
-                    ir.setOperationType(DDLOperationType.ADD);
+                    ir.setOperationType(AlterOperation.ADD);
                     ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
                     break;
                 case DROP:
-                    ir.setOperationType(DDLOperationType.DROP);
+                    ir.setOperationType(AlterOperation.DROP);
                     ir.setColumns(convertColumnDataTypesForDrop(expr.getColumnName()));
                     break;
                 case MODIFY:
-                    ir.setOperationType(DDLOperationType.MODIFY);
+                    ir.setOperationType(AlterOperation.MODIFY);
+                    ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    break;
+                case ALTER:
+                    // ALTER 操作的映射由子类根据数据库类型决定
+                    // 例如：SQL Server 的 ALTER COLUMN 映射到 MODIFY，其他数据库可能不同
+                    AlterOperation mappedType = mapAlterOperation(expr);
+                    if (mappedType == null) {
+                        throw new UnsupportedOperationException(
+                            String.format("Unsupported ALTER operation for this database type. Expression: %s", expr));
+                    }
+                    expr.setOperation(mappedType); // IMPORTANT: 修改 ALTER 操作的类型
+                    ir.setOperationType(mappedType);
                     ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
                     break;
                 case CHANGE:
-                    ir.setOperationType(DDLOperationType.CHANGE);
+                    ir.setOperationType(AlterOperation.CHANGE);
                     ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
                     break;
                 default:
-                    // 不支持的操作类型
-                    break;
+                    // 不支持的操作类型，抛出异常而不是静默忽略
+                    throw new UnsupportedOperationException(
+                        String.format("Unsupported DDL operation type: %s", expr.getOperation()));
             }
         }
+        
+        // 确保operationType已设置
+        if (ir.getOperationType() == null) {
+            throw new IllegalStateException("No valid DDL operation found in Alter statement");
+        }
+        
         return ir;
     }
 
