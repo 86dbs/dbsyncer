@@ -901,7 +901,23 @@ public class HeterogeneousDDLSyncTest {
             // JSQLParser 不支持 SQL Server 的方括号语法，需要转换为双引号
             // 将方括号 [ 和 ] 转换为双引号 " 以便 JSQLParser 能够解析
             String normalizedSql = sql.replace("[", "\"").replace("]", "\"");
-            CCJSqlParserUtil.parse(normalizedSql);
+            
+            // 处理多语句SQL（用分号分隔）
+            // 按分号分割SQL语句并分别验证
+            String[] statements = normalizedSql.split(";");
+            for (String statement : statements) {
+                String trimmedStatement = statement.trim();
+                if (!trimmedStatement.isEmpty()) {
+                    // 跳过EXEC语句（JSQLParser可能无法解析）
+                    if (trimmedStatement.toUpperCase().startsWith("EXEC") || 
+                        trimmedStatement.toUpperCase().startsWith("EXECUTE")) {
+                        logger.debug("跳过EXEC语句的语法验证: {}", trimmedStatement);
+                        continue;
+                    }
+                    // 验证其他语句
+                    CCJSqlParserUtil.parse(trimmedStatement);
+                }
+            }
             logger.debug("SQL语法验证通过: {}", sql);
         } catch (JSQLParserException e) {
             logger.error("SQL语法验证失败: {}", sql, e);

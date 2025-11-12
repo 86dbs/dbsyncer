@@ -102,7 +102,7 @@ public class DDLParserImpl implements DDLParser {
                 }
 
                 // 直接转换源DDL到目标DDL
-                // 1. 源DDL转中间表示
+                // 1. 源DDL转中间表示（注意：convert方法会修改AlterExpression的操作类型）
                 DDLIntermediateRepresentation ir = sourceToIRConverter.convert(alter);
                 // 2. 确保IR中的表名是原始表名（不带引号）
                 ir.setTableName(targetTableName);
@@ -112,6 +112,8 @@ public class DDLParserImpl implements DDLParser {
 
             ddlConfig.setSql(targetSql);
 
+            // 统一使用策略模式处理（同构和异构数据库都适用）
+            // 注意：对于异构数据库，AbstractSourceToIRConverter已经修改了AlterExpression的操作类型
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);
@@ -138,7 +140,9 @@ public class DDLParserImpl implements DDLParser {
                 removeFieldMappings(tableGroup, targetDDLConfig.getDroppedFieldNames());
                 break;
             default:
-                break;
+                logger.error("不支持的DDL操作类型: {}, DDL SQL: {}, 无法更新字段映射", 
+                        targetDDLConfig.getDdlOperationEnum(), targetDDLConfig.getSql());
+                throw new RuntimeException("不支持的DDL操作类型");
         }
     }
 

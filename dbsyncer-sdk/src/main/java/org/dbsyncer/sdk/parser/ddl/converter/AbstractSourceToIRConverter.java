@@ -69,6 +69,14 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                 case CHANGE:
                     ir.setOperationType(AlterOperation.CHANGE);
                     ir.setColumns(convertColumnDataTypes(expr.getColDataTypeList()));
+                    // 保存旧字段名到新字段名的映射
+                    if (expr.getColumnOldName() != null && expr.getColDataTypeList() != null) {
+                        String oldColumnName = removeIdentifier(expr.getColumnOldName());
+                        for (AlterExpression.ColumnDataType columnDataType : expr.getColDataTypeList()) {
+                            String newColumnName = removeIdentifier(columnDataType.getColumnName());
+                            ir.getOldToNewColumnNames().put(oldColumnName, newColumnName);
+                        }
+                    }
                     break;
                 default:
                     // 不支持的操作类型，抛出异常而不是静默忽略

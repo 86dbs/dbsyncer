@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
 import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 中间表示到SQL Server转换器
@@ -42,7 +43,7 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
                 sql.append(convertColumnsToModify(ir.getTableName(), ir.getColumns()));
                 break;
             case CHANGE:
-                sql.append(convertColumnsToChange(ir.getTableName(), ir.getColumns()));
+                sql.append(convertColumnsToChange(ir.getTableName(), ir.getColumns(), ir.getOldToNewColumnNames()));
                 break;
             case DROP:
                 sql.append(convertColumnsToDrop(ir.getTableName(), ir.getColumns()));
@@ -77,17 +78,35 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
         return result.toString();
     }
 
-    private String convertColumnsToChange(String tableName, List<Field> columns) {
+    private String convertColumnsToChange(String tableName, List<Field> columns, Map<String, String> oldToNewColumnNames) {
         StringBuilder result = new StringBuilder();
         // SQL Server使用sp_rename存储过程进行重命名
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
-                result.append(", ");
+                result.append("; ");
             }
             Field column = columns.get(i);
-            // 对于CHANGE操作，我们假设字段名不变，仅类型改变
-            // 实际应用中可能需要更复杂的处理
-            result.append(sqlServerTemplate.buildRenameColumnSql(tableName, column.getName(), column));
+            String newColumnName = column.getName();
+            // 从映射中获取旧字段名
+            String oldColumnName = null;
+            for (Map.Entry<String, String> entry : oldToNewColumnNames.entrySet()) {
+                if (entry.getValue().equals(newColumnName)) {
+                    oldColumnName = entry.getKey();
+                    break;
+                }
+            }
+            // 如果找不到旧字段名，说明字段名没有改变，只改变了类型，使用MODIFY操作
+            if (oldColumnName == null || oldColumnName.equals(newColumnName)) {
+                // 字段名没有改变，只改变类型，使用ALTER COLUMN
+                result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
+            } else {
+                // 字段名改变了，需要两步操作：
+                // 1. 先使用sp_rename重命名字段
+                result.append(sqlServerTemplate.buildRenameColumnSql(tableName, oldColumnName, column));
+                // 2. 然后使用ALTER COLUMN修改类型（CHANGE操作总是包含新的类型定义）
+                result.append("; ");
+                result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
+            }
         }
         return result.toString();
     }
