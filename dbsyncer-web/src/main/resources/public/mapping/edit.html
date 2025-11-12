@@ -2,161 +2,140 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- 编辑驱动表单页面 -->
-<div class="dbsyncer-form-container">
-    
-    <!-- 页面头部工具栏 -->
-    <div class="dbsyncer-table-toolbar">
-        <div class="dbsyncer-table-toolbar-left">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: var(--text-primary);">
-                <i class="fa fa-edit" style="color: var(--primary-color); margin-right: 8px;"></i>
-                <span id="mappingModifyName">[[${mapping?.name}]]</span>
-                <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-pencil dbsyncer_pointer" style="font-size: 14px; margin-left: 8px; color: var(--success-color); cursor: pointer;"></i>
-            </h3>
-            <p style="margin: 4px 0 0 32px; font-size: 12px; color: var(--text-tertiary);">ID: [[${mapping?.id}]]</p>
-        </div>
-        <div class="dbsyncer-table-toolbar-right">
-            <button id="mappingSubmitBtn" type="button" class="dbsyncer-btn dbsyncer-btn-primary">
-                <i class="fa fa-save dbsyncer-btn-icon-left"></i>
-                保存
-            </button>
-            <button id="mappingBackBtn" type="button" class="dbsyncer-btn dbsyncer-btn-secondary">
-                <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
-                返回
-            </button>
-        </div>
+<div class="form-container">
+    <div class="card-header">
+        <h3>
+            <i class="fa fa-edit text-info"></i>
+            <span id="mappingModifyName">[[${mapping?.name}]]</span>
+            <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-pencil"></i>
+        </h3>
+        <p>ID: [[${mapping?.id}]]</p>
     </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button id="mappingBackBtn" type="button" class="btn btn-outline">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
 
-    <!-- 表单主体 -->
-    <div class="dbsyncer-table-wrapper" style="padding: 24px;">
-        <form id="mappingModifyForm" class="form-horizontal" role="form" method="post">
-            
-            <!-- 隐藏表单值 -->
-            <div class="form-group hidden">
-                <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
-                <input name="name" type="text" th:value="${mapping?.name}"/>
-            </div>
-
-            <!-- 驱动信息卡片 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-body" style="padding: 32px 48px;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 80px;">
-                        <!-- 数据源 -->
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="flex-shrink: 0;">
-                                <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" 
-                                     style="width: 56px; height: 56px; object-fit: contain;">
-                            </div>
-                            <div>
-                                <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.sourceConnector?.name}]]</p>
-                                <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
-                                    数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- 箭头 -->
-                        <div style="flex-shrink: 0;">
-                            <i class="fa fa-arrow-right" style="font-size: 36px; color: #333;"></i>
-                        </div>
-
-                        <!-- 目标源 -->
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="flex-shrink: 0;">
-                                <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" 
-                                     style="width: 56px; height: 56px; object-fit: contain;">
-                            </div>
-                            <div>
-                                <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.targetConnector?.name}]]</p>
-                                <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
-                                    目标源：[[${mapping?.targetConnector?.config?.connectorType}]]
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+        <!-- 驱动同步关系 -->
+        <div>
+            <!-- 数据源 -->
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="flex-shrink: 0;">
+                    <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}"
+                         style="width: 56px; height: 56px; object-fit: contain;">
+                </div>
+                <div>
+                    <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.sourceConnector?.name}]]</p>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
+                        数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]
+                    </p>
                 </div>
             </div>
 
-            <!-- 同步模式选择 -->
-            <div class="dbsyncer-card" id="mappingModelChange" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);">
-                    <h3 class="dbsyncer-card-title">
-                        <i class="fa fa-refresh" style="color: var(--primary-color); margin-right: 8px;"></i>
-                        同步模式
-                    </h3>
+            <!-- 箭头 -->
+            <div style="flex-shrink: 0;">
+                <i class="fa fa-arrow-right" style="font-size: 36px; color: #333;"></i>
+            </div>
+
+            <!-- 目标源 -->
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="flex-shrink: 0;">
+                    <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}"
+                         style="width: 56px; height: 56px; object-fit: contain;">
                 </div>
-                <div class="dbsyncer-card-body">
-                    <div style="display: flex; align-items: center; gap: 32px;">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                            <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}"
-                                   style="width: 18px; height: 18px; cursor: pointer;" />
-                            <span style="font-size: 15px; color: var(--text-primary);">
+                <div>
+                    <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.targetConnector?.name}]]</p>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
+                        目标源：[[${mapping?.targetConnector?.config?.connectorType}]]
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 同步模式选择 -->
+        <div class="dbsyncer-card" id="mappingModelChange">
+            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);">
+                <h3 class="dbsyncer-card-title">
+                    <i class="fa fa-refresh" style="color: var(--primary-color); margin-right: 8px;"></i>
+                    同步模式
+                </h3>
+            </div>
+            <div class="dbsyncer-card-body">
+                <div style="display: flex; align-items: center; gap: 32px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}"
+                               style="width: 18px; height: 18px; cursor: pointer;" />
+                        <span style="font-size: 15px; color: var(--text-primary);">
                                 <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
                                 全量同步
                             </span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                            <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}"
-                                   style="width: 18px; height: 18px; cursor: pointer;" />
-                            <span style="font-size: 15px; color: var(--text-primary);">
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}"
+                               style="width: 18px; height: 18px; cursor: pointer;" />
+                        <span style="font-size: 15px; color: var(--text-primary);">
                                 <i class="fa fa-clock-o" style="color: var(--success-color); margin-right: 4px;"></i>
                                 增量同步
                             </span>
-                        </label>
-                    </div>
+                    </label>
                 </div>
             </div>
+        </div>
 
-            <!-- 映射关系区域 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
-                    <h3 class="dbsyncer-card-title">
-                        <i class="fa fa-table" style="color: var(--success-color); margin-right: 8px;"></i>
-                        映射关系
+        <!-- 映射关系区域 -->
+        <div class="dbsyncer-card" style="margin-bottom: 24px;">
+            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                <h3 class="dbsyncer-card-title">
+                    <i class="fa fa-table" style="color: var(--success-color); margin-right: 8px;"></i>
+                    映射关系
 
-                    </h3>
-                </div>
-                <div id="mappingBaseConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                    <!-- 表映射 -->
-                    <div th:replace="mapping/editTable :: content"></div>
-                </div>
+                </h3>
             </div>
-
-            <!-- 高级配置区域 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%);">
-                    <h3 class="dbsyncer-card-title">
-                        <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 8px;"></i>
-                        高级配置
-                        <span style="font-size: 12px; color: var(--text-tertiary); font-weight: normal; margin-left: 8px;">该配置使所有映射关系都生效</span>
-                    </h3>
-                </div>
-                <div id="mappingSuperConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                    <!-- 全量配置 -->
-                    <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
-                        <div th:replace="mapping/editFull :: content"></div>
-                    </div>
-
-                    <!-- 增量配置 -->
-                    <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
-                        <div th:replace="mapping/editIncrement :: content"></div>
-                    </div>
-
-                    <!-- 过滤条件 -->
-                    <div th:replace="mapping/editFilter :: content"></div>
-
-                    <!-- 转换配置 -->
-                    <div th:replace="mapping/editConvert :: content"></div>
-
-                    <!-- 策略配置 -->
-                    <div th:replace="mapping/editParameter :: content"></div>
-
-                    <!-- 插件配置 -->
-                    <div th:replace="mapping/editPlugin :: content"></div>
-                </div>
+            <div id="mappingBaseConfig" class="dbsyncer-card-body panel-collapse collapse in">
+                <!-- 表映射 -->
+                <div th:replace="mapping/editTable :: content"></div>
             </div>
+        </div>
 
-        </form>
+        <!-- 高级配置区域 -->
+        <div class="dbsyncer-card" style="margin-bottom: 24px;">
+            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%);">
+                <h3 class="dbsyncer-card-title">
+                    <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 8px;"></i>
+                    高级配置
+                    <span style="font-size: 12px; color: var(--text-tertiary); font-weight: normal; margin-left: 8px;">该配置使所有映射关系都生效</span>
+                </h3>
+            </div>
+            <div id="mappingSuperConfig" class="dbsyncer-card-body panel-collapse collapse in">
+                <!-- 全量配置 -->
+                <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
+                    <div th:replace="mapping/editFull :: content"></div>
+                </div>
+
+                <!-- 增量配置 -->
+                <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
+                    <div th:replace="mapping/editIncrement :: content"></div>
+                </div>
+
+                <!-- 过滤条件 -->
+                <div th:replace="mapping/editFilter :: content"></div>
+
+                <!-- 转换配置 -->
+                <div th:replace="mapping/editConvert :: content"></div>
+
+                <!-- 策略配置 -->
+                <div th:replace="mapping/editParameter :: content"></div>
+
+                <!-- 插件配置 -->
+                <div th:replace="mapping/editPlugin :: content"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
