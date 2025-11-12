@@ -55,7 +55,7 @@ test.db.sqlserver.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
 ### 测试执行
 ```bash
 # 在项目根目录执行Maven测试
-mvn test -Dtest=org.dbsyncer.parser.ddl.DDLSyncIntegrationTest
+mvn test -Dtest=org.dbsyncer.parser.ddl.DDLMysqlTest
 mvn test -Dtest=org.dbsyncer.parser.ddl.MySQLToMySQLDDLSyncTest
 mvn test -Dtest=org.dbsyncer.parser.ddl.SQLServerToSQLServerDDLSyncTest
 mvn test -Dtest=org.dbsyncer.parser.ddl.HeterogeneousDDLSyncTest
