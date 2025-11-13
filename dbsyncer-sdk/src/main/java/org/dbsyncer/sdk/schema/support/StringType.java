@@ -78,16 +78,38 @@ public abstract class StringType extends AbstractDataType<String> {
         Field result = super.handleDDLParameters(colDataType);
 
         // 处理字符串类型，根据参数设置columnSize
+        // 注意：MAX 等数据库特定语法由各数据库的实现类自行处理
         List<String> argsList = colDataType.getArgumentsStringList();
         if (argsList != null && !argsList.isEmpty() && argsList.size() >= 1) {
             try {
                 int size = Integer.parseInt(argsList.get(0));
                 result.setColumnSize(size);
             } catch (NumberFormatException e) {
-                // 忽略解析错误，使用默认值
+                // 忽略解析错误（可能是数据库特定语法如MAX），由各数据库实现类处理
             }
         }
 
+        // 根据原始类型名称判断字段长度是否固定
+        // 固定长度：CHAR、NCHAR
+        // 可变长度：VARCHAR、NVARCHAR、TEXT等
+        String originalTypeName = colDataType.getDataType();
+        if (originalTypeName != null) {
+            Boolean isSizeFixed = determineIsSizeFixed(originalTypeName);
+            result.setIsSizeFixed(isSizeFixed);
+        }
+
         return result;
+    }
+
+    /**
+     * 判断字符串类型字段长度是否固定
+     * 基类不处理任何类型判断，由各数据库的实现类自行处理
+     * 
+     * @param typeName 原始类型名称（如 CHAR, VARCHAR, NCHAR, NVARCHAR 等）
+     * @return true表示固定长度，false表示可变长度，null表示未设置或不适用
+     */
+    protected Boolean determineIsSizeFixed(String typeName) {
+        // 基类不处理任何类型判断，由各数据库的实现类自行处理
+        return null;
     }
 }

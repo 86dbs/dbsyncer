@@ -38,4 +38,25 @@ public final class MySQLStringType extends UnicodeStringType {
         return super.convert(val, field);
     }
 
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // MySQL固定长度类型：CHAR
+        if ("CHAR".equals(upperTypeName)) {
+            return true;
+        }
+        
+        // MySQL可变长度类型：VARCHAR
+        if ("VARCHAR".equals(upperTypeName)) {
+            return false;
+        }
+        
+        return null;
+    }
+
 }

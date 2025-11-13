@@ -46,4 +46,26 @@ public final class OracleBytesType extends BytesType {
         }
         return super.convert(val, field);
     }
+
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // Oracle特定类型：RAW是固定长度二进制类型
+        if ("RAW".equals(upperTypeName)) {
+            return true;
+        }
+        
+        // LONG RAW、BFILE等特殊类型不适用
+        if ("LONG RAW".equals(upperTypeName) || "BFILE".equals(upperTypeName)) {
+            return null;
+        }
+        
+        // 其他类型由父类处理
+        return super.determineIsSizeFixed(typeName);
+    }
 }

@@ -41,5 +41,26 @@ public final class SqlServerStringType extends StringType {
         }
         return super.convert(val, field);
     }
+
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // SQL Server固定长度类型：CHAR、NCHAR
+        if ("CHAR".equals(upperTypeName) || "NCHAR".equals(upperTypeName)) {
+            return true;
+        }
+        
+        // SQL Server可变长度类型：VARCHAR、NVARCHAR
+        if ("VARCHAR".equals(upperTypeName) || "NVARCHAR".equals(upperTypeName)) {
+            return false;
+        }
+        
+        return null;
+    }
     
 }

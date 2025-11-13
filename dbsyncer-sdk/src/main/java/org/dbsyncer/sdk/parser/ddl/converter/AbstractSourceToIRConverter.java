@@ -137,6 +137,10 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                     if (standardField.getSrid() != null) {
                         column.setSrid(standardField.getSrid());
                     }
+                    // 保留isSizeFixed信息（由DataType的handleDDLParameters方法设置）
+                    if (standardField.getIsSizeFixed() != null) {
+                        column.setIsSizeFixed(standardField.getIsSizeFixed());
+                    }
                 }
                 columns.add(column);
             }

@@ -179,6 +179,10 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
             if (ddlField.getSrid() != null) {
                 result.setSrid(ddlField.getSrid());
             }
+            // 合并isSizeFixed信息（用于区分固定长度和可变长度字符串/二进制）
+            if (ddlField.getIsSizeFixed() != null) {
+                result.setIsSizeFixed(ddlField.getIsSizeFixed());
+            }
 
             return result;
         }

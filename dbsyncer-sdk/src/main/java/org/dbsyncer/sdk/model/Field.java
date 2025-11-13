@@ -52,6 +52,14 @@ public class Field {
      */
     private Integer srid;
 
+    /**
+     * 字段长度是否固定
+     * true: 固定长度（如CHAR、NCHAR、BINARY）
+     * false: 可变长度（如VARCHAR、NVARCHAR、VARBINARY）
+     * null: 未设置或不适用（如数值类型、日期类型等）
+     */
+    private Boolean isSizeFixed;
+
     public Field() {
     }
 
@@ -157,6 +165,22 @@ public class Field {
      */
     public void setSrid(Integer srid) {
         this.srid = srid;
+    }
+
+    /**
+     * 获取字段长度是否固定
+     * @return true表示固定长度，false表示可变长度，null表示未设置或不适用
+     */
+    public Boolean getIsSizeFixed() {
+        return isSizeFixed;
+    }
+
+    /**
+     * 设置字段长度是否固定
+     * @param isSizeFixed true表示固定长度（如CHAR、NCHAR、BINARY），false表示可变长度（如VARCHAR、NVARCHAR、VARBINARY），null表示未设置或不适用
+     */
+    public void setIsSizeFixed(Boolean isSizeFixed) {
+        this.isSizeFixed = isSizeFixed;
     }
 
     @Override

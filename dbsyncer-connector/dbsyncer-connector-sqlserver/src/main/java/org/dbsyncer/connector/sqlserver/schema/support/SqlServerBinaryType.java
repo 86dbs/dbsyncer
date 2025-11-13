@@ -56,11 +56,13 @@ public final class SqlServerBinaryType extends BytesType {
         java.util.List<String> argsList = colDataType.getArgumentsStringList();
         
         if ("VARBINARY".equals(typeName)) {
-            // 处理 VARBINARY(n) 的长度参数（MAX 由 SchemaResolver 处理，这里不需要处理）
+            // 处理 VARBINARY(n) 的长度参数
+            // MAX 是 SQL Server 特有语法，VARBINARY(MAX) 会被 SchemaResolver 转换为 BLOB 类型
+            // 这里只处理数字长度参数，MAX 会被跳过（不设置 columnSize）
             if (argsList != null && !argsList.isEmpty()) {
                 String arg = argsList.get(0).trim().toUpperCase();
-                if (!"MAX".equals(arg)) { // Only process if not MAX
-                    // 解析长度参数
+                if (!"MAX".equals(arg)) {
+                    // 解析数字长度参数
                     try {
                         long size = Long.parseLong(arg);
                         result.setColumnSize(size);
@@ -68,6 +70,7 @@ public final class SqlServerBinaryType extends BytesType {
                         // 忽略解析错误，使用默认值
                     }
                 }
+                // 如果是 MAX，不设置 columnSize，由 SchemaResolver 处理
             }
         } else if ("BINARY".equals(typeName)) {
             // 处理 BINARY 类型的长度参数
@@ -82,6 +85,27 @@ public final class SqlServerBinaryType extends BytesType {
         }
         
         return result;
+    }
+
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // SQL Server固定长度类型：BINARY
+        if ("BINARY".equals(upperTypeName)) {
+            return true;
+        }
+        
+        // SQL Server可变长度类型：VARBINARY
+        if ("VARBINARY".equals(upperTypeName)) {
+            return false;
+        }
+        
+        return null;
     }
 
 }

@@ -27,4 +27,21 @@ public class PostgreSQLBytesType extends BytesType {
         return throwUnsupportedException(val, field);
     }
 
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // PostgreSQL特定类型：BYTEA是可变长度二进制类型
+        if ("BYTEA".equals(upperTypeName)) {
+            return false;
+        }
+        
+        // 其他类型由父类处理
+        return super.determineIsSizeFixed(typeName);
+    }
+
 }

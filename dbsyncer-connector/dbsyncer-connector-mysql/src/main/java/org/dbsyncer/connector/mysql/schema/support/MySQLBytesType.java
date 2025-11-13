@@ -38,4 +38,25 @@ public final class MySQLBytesType extends BytesType {
         return throwUnsupportedException(val, field);
     }
 
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // MySQL固定长度类型：BINARY
+        if ("BINARY".equals(upperTypeName)) {
+            return true;
+        }
+        
+        // MySQL可变长度类型：VARBINARY
+        if ("VARBINARY".equals(upperTypeName)) {
+            return false;
+        }
+        
+        return null;
+    }
+
 }

@@ -208,9 +208,23 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         
         // 获取标准类型名称，用于判断是否需要使用 MAX
         String standardType = column.getTypeName();
+        
+        // 在 IR to Target 阶段使用 isSizeFixed 信息，区分固定长度和可变长度字符串
+        // 例如：MySQL的CHAR（固定长度）应该转换为SQL Server的NCHAR，而不是NVARCHAR
+        Boolean isSizeFixed = column.getIsSizeFixed();
+        if (isSizeFixed != null && isSizeFixed) {
+            // 如果字段是固定长度，且目标类型是NVARCHAR，则改为NCHAR
+            if ("NVARCHAR".equals(typeName.toUpperCase())) {
+                typeName = "NCHAR";
+            } else if ("VARCHAR".equals(typeName.toUpperCase())) {
+                typeName = "CHAR";
+            }
+        }
 
         // 处理参数（长度、精度等）
         switch (typeName.toUpperCase()) {
+            case "NCHAR":
+            case "CHAR":
             case "NVARCHAR":
             case "VARCHAR":
                 // 检查标准类型，如果是 JSON、TEXT 或 UNICODE_TEXT，使用 MAX
@@ -218,9 +232,15 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                     return typeName + "(MAX)";
                 }
                 // SQL Server 的 VARCHAR/NVARCHAR 最大长度是 8000，超过 8000 必须使用 MAX
+                // CHAR/NCHAR 最大长度是 8000，超过 8000 必须使用 NVARCHAR(MAX)/VARCHAR(MAX)
                 if (column.getColumnSize() > 0) {
                     if (column.getColumnSize() > 8000) {
-                        // 如果长度超过 8000，使用 MAX
+                        // 如果长度超过 8000，对于固定长度类型，降级为可变长度类型
+                        if ("NCHAR".equals(typeName.toUpperCase())) {
+                            return "NVARCHAR(MAX)";
+                        } else if ("CHAR".equals(typeName.toUpperCase())) {
+                            return "VARCHAR(MAX)";
+                        }
                         return typeName + "(MAX)";
                     }
                     return typeName + "(" + column.getColumnSize() + ")";

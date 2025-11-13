@@ -62,5 +62,22 @@ public final class OracleStringType extends StringType {
             throw new OracleException(e);
         }
     }
+
+    @Override
+    protected Boolean determineIsSizeFixed(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        
+        String upperTypeName = typeName.toUpperCase();
+        
+        // Oracle特定类型：VARCHAR2是可变长度（虽然包含VARCHAR，但为了明确性单独处理）
+        if ("VARCHAR2".equals(upperTypeName)) {
+            return false;
+        }
+        
+        // 其他类型由父类处理
+        return super.determineIsSizeFixed(typeName);
+    }
     
 }
