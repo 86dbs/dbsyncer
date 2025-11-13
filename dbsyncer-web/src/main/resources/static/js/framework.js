@@ -655,16 +655,26 @@ $(function () {
 
     // 下拉菜单
     const $dropdown = $(".dropdown");
-    const $$dropdownBtn = $(".dropdown button");
-    const $$dropdownMenu = $(".dropdown .dropdown-menu");
-    $$dropdownBtn.on('click', function (){
+    const $dropdownBtn = $(".dropdown button");
+    const $dropdownMenu = $(".dropdown .dropdown-menu");
+    $dropdownBtn.on('click', function (){
         event.stopPropagation();
-        $dropdown.toggleClass("open");
-        $$dropdownMenu.toggleClass("hidden");
+        // 只切换当前下拉菜单，不影响其他下拉菜单
+        const $currentDropdown = $(this).closest('.dropdown');
+        const $currentMenu = $currentDropdown.find('.dropdown-menu');
+        // 关闭其他下拉菜单
+        $dropdown.not($currentDropdown).removeClass("open");
+        $dropdownMenu.not($currentMenu).addClass("hidden");
+        // 切换当前下拉菜单
+        $currentDropdown.toggleClass("open");
+        $currentMenu.toggleClass("hidden");
     });
+    // 只有点击下拉菜单按钮或菜单项外才关闭
     $(document).on('click', function(event) {
-        $dropdown.toggleClass("open");
-        $$dropdownMenu.addClass("hidden");
+        if (!$(event.target).closest('.dropdown').length) {
+            $dropdown.removeClass("open");
+            $dropdownMenu.addClass("hidden");
+        }
     });
 });
 

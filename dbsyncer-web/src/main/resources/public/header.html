@@ -14,17 +14,17 @@
             <img id="licenseWarning" class="hidden license-info-item" draggable="false" title="已过期, 请联系星河同步官方续期" width="17px" height="17px" th:src="@{'/img/license/warning.png'}">
             <span id="effectiveContent" class="license-info-item">还剩10个月8天</span>
         </div>
-        <div class="dropdown flex items-center gap-3 data-toggle open">
-            <button class="flex items-center gap-3 text-gray-500" data-toggle>
+        <div class="dropdown flex items-center mr-3">
+            <button class="flex items-center text-gray-500" data-toggle>
                 <i class="fa fa-user-circle user-avatar badge-primary"></i>
                 <span id="currentUser" class="md:inline font-medium">admin</span>
                 <i class="fa fa-angle-down"></i>
             </button>
             <!-- 用户下拉菜单 -->
             <ul class="dropdown-menu hidden">
-                <li><a href="javascript:void(0);" id="edit_personal"><i class="fa fa-pencil"></i> 修改</a></li>
+                <li><button id="edit_personal"><i class="fa fa-pencil"></i> 修改</button></li>
                 <div class="dropdown-divider"></div>
-                <li><a href="javascript:void(0);" id="nav_logout"><i class="fa fa-power-off"></i> 注销</a></li>
+                <li><button id="nav_logout"><i class="fa fa-power-off"></i> 注销</button></li>
             </ul>
         </div>
     </div>
