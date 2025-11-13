@@ -35,10 +35,27 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         return null;
     }
 
+    /**
+     * 推断 UNSPECIFIC 操作的实际类型
+     * 当 JSQLParser 无法确定操作类型时（如 SQL Server 的 ALTER TABLE ... ADD column1, column2），
+     * 根据表达式的内容推断实际的操作类型
+     * 不同数据库对 UNSPECIFIC 操作的解析可能不同，子类需要根据数据库特性实现此方法
+     * 
+     * @param expr AlterExpression 对象
+     * @return 推断后的 AlterOperation，如果无法推断，返回 null
+     */
+    protected AlterOperation inferUnspecificOperation(AlterExpression expr) {
+        // 默认实现：不支持 UNSPECIFIC 操作，子类需要重写
+        return null;
+    }
+
     @Override
     public DDLIntermediateRepresentation convert(Alter alter) {
         DDLIntermediateRepresentation ir = new DDLIntermediateRepresentation();
         ir.setTableName(removeIdentifier(alter.getTable().getName()));
+
+        // 跟踪前一个操作类型，用于 UNSPECIFIC 推断失败时复用
+        AlterOperation previousOperation = null;
 
         for (AlterExpression expr : alter.getAlterExpressions()) {
             AlterOperation currentOperation = null;
@@ -81,37 +98,97 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                         }
                     }
                     break;
+                case UNSPECIFIC:
+                    // UNSPECIFIC 操作的推断由子类根据数据库类型决定
+                    // 例如：SQL Server 的 ALTER TABLE ... ADD column1, column2 可能被解析为 UNSPECIFIC
+                    AlterOperation inferredType = inferUnspecificOperation(expr);
+                    // 如果推断失败，尝试复用前一个操作类型（同一 ALTER TABLE 语句中的多个表达式通常具有相同的操作类型）
+                    if (inferredType == null) {
+                        if (previousOperation != null) {
+                            inferredType = previousOperation;
+                        } else {
+                            throw new UnsupportedOperationException(
+                                String.format("Unsupported UNSPECIFIC operation for this database type. Expression: %s", expr));
+                        }
+                    }
+                    expr.setOperation(inferredType); // IMPORTANT: 修改 UNSPECIFIC 操作的类型
+                    currentOperation = inferredType;
+                    // 根据推断的操作类型处理列数据
+                    switch (inferredType) {
+                        case ADD:
+                        case MODIFY:
+                            // UNSPECIFIC 可能使用 getColumnDataType（单数）而不是 getColDataTypeList（复数）
+                            // 需要将单个 ColumnDataType 转换为列表
+                            List<AlterExpression.ColumnDataType> columnDataTypes = getColumnDataTypes(expr);
+                            if (columnDataTypes != null && !columnDataTypes.isEmpty()) {
+                                newColumns = convertColumnDataTypes(columnDataTypes);
+                            } else {
+                                // 如果 getColumnDataTypes 返回空列表，尝试直接从表达式创建 Field
+                                newColumns = convertColumnFromUnspecific(expr, inferredType);
+                            }
+                            break;
+                        case DROP:
+                            newColumns = convertColumnDataTypesForDrop(expr.getColumnName());
+                            break;
+                        case CHANGE:
+                            List<AlterExpression.ColumnDataType> changeColumnDataTypes = getColumnDataTypes(expr);
+                            newColumns = convertColumnDataTypes(changeColumnDataTypes);
+                            // 保存旧字段名到新字段名的映射
+                            if (expr.getColumnOldName() != null && changeColumnDataTypes != null) {
+                                String oldColumnName = removeIdentifier(expr.getColumnOldName());
+                                for (AlterExpression.ColumnDataType columnDataType : changeColumnDataTypes) {
+                                    String newColumnName = removeIdentifier(columnDataType.getColumnName());
+                                    ir.getOldToNewColumnNames().put(oldColumnName, newColumnName);
+                                }
+                            }
+                            break;
+                        default:
+                            throw new UnsupportedOperationException(
+                                String.format("Unsupported inferred operation type: %s", inferredType));
+                    }
+                    break;
                 default:
                     // 不支持的操作类型，抛出异常而不是静默忽略
                     throw new UnsupportedOperationException(
                         String.format("Unsupported DDL operation type: %s", expr.getOperation()));
             }
             
-            // 合并相同操作的列列表，而不是覆盖
-            if (ir.getOperationType() == null) {
-                // 第一次设置操作类型和列列表
-                ir.setOperationType(currentOperation);
-                ir.setColumns(newColumns != null ? new ArrayList<>(newColumns) : new ArrayList<>());
-            } else if (ir.getOperationType() == currentOperation) {
-                // 相同操作类型，合并列列表
-                if (newColumns != null && !newColumns.isEmpty()) {
-                    ir.getColumns().addAll(newColumns);
-                }
-            } else {
-                // 不同的操作类型，抛出异常（一个ALTER语句通常只包含一种操作类型）
-                throw new IllegalStateException(
-                    String.format("Mixed DDL operations in a single ALTER statement are not supported. " +
-                            "Previous operation: %s, Current operation: %s", 
-                            ir.getOperationType(), currentOperation));
+            // 添加列到对应操作类型（统一使用 columnsByOperation 作为数据源）
+            if (newColumns != null && !newColumns.isEmpty()) {
+                ir.addColumns(currentOperation, newColumns);
+            }
+            
+            // 更新前一个操作类型，供后续 UNSPECIFIC 表达式复用
+            if (currentOperation != null) {
+                previousOperation = currentOperation;
             }
         }
         
-        // 确保operationType已设置
-        if (ir.getOperationType() == null) {
+        // 确保至少有一个操作类型
+        if (ir.getColumnsByOperation().isEmpty()) {
             throw new IllegalStateException("No valid DDL operation found in Alter statement");
         }
         
         return ir;
+    }
+
+    /**
+     * 获取列数据类型列表
+     * 处理 UNSPECIFIC 类型表达式可能没有正确解析列信息的情况
+     * 
+     * @param expr AlterExpression 对象
+     * @return 列数据类型列表
+     */
+    protected List<AlterExpression.ColumnDataType> getColumnDataTypes(AlterExpression expr) {
+        // 优先使用列表形式
+        if (expr.getColDataTypeList() != null && !expr.getColDataTypeList().isEmpty()) {
+            return expr.getColDataTypeList();
+        }
+        
+        // 如果列表为空，但表达式有列名，可能需要手动构建 ColumnDataType
+        // 这种情况通常发生在 UNSPECIFIC 类型表达式中
+        // 子类可以重写此方法以提供更精确的处理逻辑
+        return new ArrayList<>();
     }
 
     protected List<Field> convertColumnDataTypes(List<AlterExpression.ColumnDataType> columnDataTypes) {
@@ -156,5 +233,18 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
             columns.add(column);
         }
         return columns;
+    }
+
+    /**
+     * 从 UNSPECIFIC 表达式直接创建 Field 对象
+     * 当 getColumnDataTypes 返回空列表时，使用此方法作为后备方案
+     * 
+     * @param expr AlterExpression 对象
+     * @param operation 推断的操作类型
+     * @return Field 列表
+     */
+    protected List<Field> convertColumnFromUnspecific(AlterExpression expr, AlterOperation operation) {
+        // 默认实现：返回空列表，子类可以重写此方法
+        return new ArrayList<>();
     }
 }

@@ -1,12 +1,9 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlserver.converter;
 
+import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
-import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
+import org.dbsyncer.sdk.parser.ddl.converter.AbstractIRToTargetConverter;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +11,7 @@ import java.util.Map;
 /**
  * 中间表示到SQL Server转换器
  */
-public class IRToSQLServerConverter implements IRToTargetConverter {
+public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
 
     private final SqlTemplate sqlServerTemplate;
 
@@ -24,34 +21,20 @@ public class IRToSQLServerConverter implements IRToTargetConverter {
     }
 
     @Override
-    public String convert(DDLIntermediateRepresentation ir) {
-        if (ir == null) {
-            throw new IllegalArgumentException("DDLIntermediateRepresentation cannot be null");
-        }
-        
-        if (ir.getOperationType() == null) {
-            throw new IllegalArgumentException("AlterOperation cannot be null in DDLIntermediateRepresentation");
-        }
-        
-        StringBuilder sql = new StringBuilder();
-
-        switch (ir.getOperationType()) {
+    protected String convertOperation(String tableName, AlterOperation operation, List<Field> columns, 
+                                      Map<String, String> oldToNewColumnNames) {
+        switch (operation) {
             case ADD:
-                sql.append(convertColumnsToAdd(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToAdd(tableName, columns);
             case MODIFY:
-                sql.append(convertColumnsToModify(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToModify(tableName, columns);
             case CHANGE:
-                sql.append(convertColumnsToChange(ir.getTableName(), ir.getColumns(), ir.getOldToNewColumnNames()));
-                break;
+                return convertColumnsToChange(tableName, columns, oldToNewColumnNames);
             case DROP:
-                sql.append(convertColumnsToDrop(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToDrop(tableName, columns);
             default:
-                throw new IllegalArgumentException("Unsupported AlterOperation: " + ir.getOperationType());
+                throw new IllegalArgumentException("Unsupported AlterOperation: " + operation);
         }
-        return sql.toString();
     }
 
     private String convertColumnsToAdd(String tableName, List<Field> columns) {

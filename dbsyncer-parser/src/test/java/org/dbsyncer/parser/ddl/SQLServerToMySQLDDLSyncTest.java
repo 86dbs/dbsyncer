@@ -446,9 +446,44 @@ public class SQLServerToMySQLDDLSyncTest {
     public void testAddMultipleColumns() {
         logger.info("开始测试多字段同时添加");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2), bonus DECIMAL(8,2)";
-        testDDLConversion(sqlserverDDL, "salary", "DECIMAL", "DECIMAL(10,2)");
-        // 验证bonus字段也被正确转换
-        verifyFieldExistsInTargetDatabase("bonus", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        try {
+            // 1. 先在源数据库执行DDL
+            executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+
+            // 2. 创建WriterResponse和Mapping
+            WriterResponse response = TestDDLHelper.createWriterResponse(sqlserverDDL, "ALTER", tableGroup.getSourceTable().getName());
+            Mapping mapping = TestDDLHelper.createMapping(
+                    tableGroup.getMappingId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getSourceConnectorId(),
+                    tableGroup.profileComponent.getMapping(tableGroup.getMappingId()).getTargetConnectorId(),
+                    true, "test-meta-id");
+
+            // 3. 调用完整的DDL处理流程
+            generalBufferActuator.parseDDl(response, mapping, tableGroup);
+
+            // 4. 验证DDL转换结果
+            DDLConfig ddlConfig = ddlParser.parse(mysqlConnectorService, tableGroup, sqlserverDDL);
+            assertNotNull("DDL配置不应为空", ddlConfig);
+            String targetSql = ddlConfig.getSql();
+            assertNotNull("DDL配置应包含SQL语句", targetSql);
+            logger.info("转换后的SQL: {}", targetSql);
+
+            // 5. 验证转换后的SQL包含两个字段
+            assertTrue(String.format("转换后的DDL应包含salary字段，实际SQL: %s", targetSql),
+                    targetSql.contains("salary"));
+            assertTrue(String.format("转换后的DDL应包含bonus字段，实际SQL: %s", targetSql),
+                    targetSql.contains("bonus"));
+
+            // 6. 验证目标数据库中两个字段都存在
+            verifyFieldExistsInTargetDatabase("salary", tableGroup.getTargetTable().getName(), mysqlConfig);
+            verifyFieldExistsInTargetDatabase("bonus", tableGroup.getTargetTable().getName(), mysqlConfig);
+
+            logger.info("多字段添加测试通过 - salary和bonus字段都已正确转换");
+        } catch (Exception e) {
+            logger.error("多字段添加测试失败", e);
+            fail("多字段添加测试失败: " + e.getMessage());
+        }
     }
 
     @Test

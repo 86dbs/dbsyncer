@@ -1,19 +1,17 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.connector.mysql.converter;
 
+import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.parser.ddl.converter.IRToTargetConverter;
-import org.dbsyncer.sdk.parser.ddl.ir.DDLIntermediateRepresentation;
+import org.dbsyncer.sdk.parser.ddl.converter.AbstractIRToTargetConverter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 中间表示到MySQL转换器，用于 DDL 处理
  */
-public class IRToMySQLConverter implements IRToTargetConverter {
+public class IRToMySQLConverter extends AbstractIRToTargetConverter {
 
     private final SqlTemplate mysqlTemplate;
 
@@ -23,44 +21,48 @@ public class IRToMySQLConverter implements IRToTargetConverter {
     }
 
     @Override
-    public String convert(DDLIntermediateRepresentation ir) {
-        if (ir == null) {
-            throw new IllegalArgumentException("DDLIntermediateRepresentation cannot be null");
-        }
-        
-        if (ir.getOperationType() == null) {
-            throw new IllegalArgumentException("AlterOperation cannot be null in DDLIntermediateRepresentation");
-        }
-        
-        StringBuilder sql = new StringBuilder();
-
-        switch (ir.getOperationType()) {
+    protected String convertOperation(String tableName, AlterOperation operation, List<Field> columns, 
+                                      Map<String, String> oldToNewColumnNames) {
+        // MySQL 的 CHANGE 操作不需要 oldToNewColumnNames，忽略该参数
+        switch (operation) {
             case ADD:
-                sql.append(convertColumnsToAdd(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToAdd(tableName, columns);
             case MODIFY:
-                sql.append(convertColumnsToModify(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToModify(tableName, columns);
             case CHANGE:
-                sql.append(convertColumnsToChange(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToChange(tableName, columns);
             case DROP:
-                sql.append(convertColumnsToDrop(ir.getTableName(), ir.getColumns()));
-                break;
+                return convertColumnsToDrop(tableName, columns);
             default:
-                throw new IllegalArgumentException("Unsupported AlterOperation: " + ir.getOperationType());
+                throw new IllegalArgumentException("Unsupported AlterOperation: " + operation);
         }
-        return sql.toString();
     }
 
     private String convertColumnsToAdd(String tableName, List<Field> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return "";
+        }
+        
+        // MySQL支持在单个ALTER TABLE语句中添加多个列
+        // 格式: ALTER TABLE `table` ADD COLUMN `col1` type1, ADD COLUMN `col2` type2
         StringBuilder result = new StringBuilder();
+        String quotedTableName = mysqlTemplate.buildQuotedTableName(tableName);
+        result.append("ALTER TABLE ").append(quotedTableName).append(" ADD COLUMN ");
+        
+        // 从buildAddColumnSql的结果中提取列定义部分
+        // buildAddColumnSql返回: "ALTER TABLE `table` ADD COLUMN `col` type"
+        // 我们需要提取 "`col` type" 部分
+        String prefix = "ALTER TABLE " + quotedTableName + " ADD COLUMN ";
+        
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
-                result.append(", ");
+                result.append(", ADD COLUMN ");
             }
             Field column = columns.get(i);
-            result.append(mysqlTemplate.buildAddColumnSql(tableName, column));
+            String fullSql = mysqlTemplate.buildAddColumnSql(tableName, column);
+            // 提取列定义部分（去掉 "ALTER TABLE `table` ADD COLUMN " 前缀）
+            String columnDef = fullSql.substring(prefix.length());
+            result.append(columnDef);
         }
         return result.toString();
     }
