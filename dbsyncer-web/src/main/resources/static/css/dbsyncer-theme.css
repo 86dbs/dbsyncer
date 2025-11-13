@@ -21,6 +21,7 @@
 @import url('./components/forms.css');
 @import url('./components/notifications.css');
 @import url('./components/file-upload.css');
+@import url('./components/confirm.css');
 
 /* 解决 Chrome "Slow network detected" */
 @font-face {

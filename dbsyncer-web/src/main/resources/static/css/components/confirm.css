@@ -1,0 +1,276 @@
+/**
+ * DBSyncer Confirm 对话框组件样式
+ */
+
+/* 确认对话框容器 */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+  z-index: 1000;
+  animation: confirm-overlay-show 0.2s ease;
+  overflow-y: auto;
+}
+
+.confirm-overlay.hidden {
+  display: none !important;
+}
+
+/* 确认对话框 */
+.confirm-dialog {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12),
+              0 6px 16px 0 rgba(0, 0, 0, 0.08),
+              0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  max-width: 90%;
+  animation: confirm-dialog-show 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-dialog.hidden {
+  display: none !important;
+}
+
+/* 对话框尺寸 */
+.confirm-dialog.size-normal {
+  width: 400px;
+}
+
+.confirm-dialog.size-large {
+  width: 500px;
+}
+
+.confirm-dialog.size-max {
+  width: 600px;
+}
+
+/* 对话框头部 */
+.confirm-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+/* 对话框 icon */
+.confirm-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.confirm-icon.icon-info {
+  color: var(--info-color);
+}
+
+.confirm-icon.icon-warning {
+  color: var(--warning-color);
+}
+
+.confirm-icon.icon-error {
+  color: var(--error-color);
+}
+
+.confirm-icon.icon-success {
+  color: var(--success-color);
+}
+
+/* 对话框标题和内容容器 */
+.confirm-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.confirm-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.confirm-message {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 对话框主体 */
+.confirm-body {
+  padding: var(--spacing-lg);
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.confirm-body:empty {
+  padding: 0;
+}
+
+/* 对话框脚部 */
+.confirm-footer {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
+/* 按钮样式 */
+.confirm-btn {
+  min-width: 80px;
+}
+
+.confirm-btn-cancel {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.confirm-btn-cancel:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.confirm-btn-confirm {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--bg-primary);
+  transition: all var(--transition-fast);
+}
+
+.confirm-btn-confirm:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* 按钮类型 - 主要 */
+.confirm-btn-type-primary {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--bg-primary);
+}
+
+.confirm-btn-type-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* 按钮类型 - 成功 */
+.confirm-btn-type-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+  color: var(--bg-primary);
+}
+
+.confirm-btn-type-success:hover {
+  background-color: #73d13d;
+  border-color: #73d13d;
+}
+
+/* 按钮类型 - 警告 */
+.confirm-btn-type-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: var(--bg-primary);
+}
+
+.confirm-btn-type-warning:hover {
+  background-color: #ffc53d;
+  border-color: #ffc53d;
+}
+
+/* 按钮类型 - 危险 */
+.confirm-btn-type-danger {
+  background-color: var(--error-color);
+  border-color: var(--error-color);
+  color: var(--bg-primary);
+}
+
+.confirm-btn-type-danger:hover {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+/* 按钮类型 - 信息 */
+.confirm-btn-type-info {
+  background-color: var(--info-color);
+  border-color: var(--info-color);
+  color: var(--bg-primary);
+}
+
+.confirm-btn-type-info:hover {
+  background-color: #69b1ff;
+  border-color: #69b1ff;
+}
+
+/* 动画 */
+@keyframes confirm-overlay-show {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-dialog-show {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .confirm-dialog.size-normal,
+  .confirm-dialog.size-large,
+  .confirm-dialog.size-max {
+    width: 85%;
+    max-width: none;
+  }
+
+  .confirm-header {
+    padding: var(--spacing-md);
+  }
+
+  .confirm-body {
+    padding: var(--spacing-md);
+  }
+
+  .confirm-footer {
+    padding: var(--spacing-md);
+    flex-direction: column-reverse;
+  }
+
+  .confirm-btn {
+    width: 100%;
+  }
+}

@@ -202,15 +202,6 @@
 .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
 .shadow-none { box-shadow: none; }
 
-/* ========== 背景工具类 ========== */
-.bg-white { background-color: #fff; }
-.bg-transparent { background-color: transparent; }
-.bg-primary { background-color: var(--primary-color); }
-.bg-success { background-color: var(--success-color); }
-.bg-warning { background-color: var(--warning-color); }
-.bg-error { background-color: var(--error-color); }
-.bg-info { background-color: var(--info-color); }
-
 /* ========== 溢出工具类 ========== */
 .overflow-hidden { overflow: hidden; }
 .overflow-auto { overflow: auto; }

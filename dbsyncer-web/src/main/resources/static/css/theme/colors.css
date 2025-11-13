@@ -24,6 +24,8 @@
 .bg-success { background-color: var(--success-color) !important; }
 .bg-warning { background-color: var(--warning-color) !important; }
 .bg-error { background-color: var(--error-color) !important; }
+.bg-white { background-color: #fff; }
+.bg-transparent { background-color: transparent; }
 
 /* 边框色类 */
 .border-primary { border-color: var(--border-primary) !important; }
