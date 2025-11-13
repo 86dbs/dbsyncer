@@ -706,7 +706,7 @@ $.fn.dbSelect = function(options) {
             const inputType = config.type === 'single' ? 'radio' : 'checkbox';
             const inputName = selectId + '-' + inputType;
 
-            // 单选时不显示复选框，多选时显示
+            // 单选时隐藏复选框，多选时显示
             const checkboxClass = config.type === 'single' ? 'dbsyncer-select-option-checkbox hidden' : 'dbsyncer-select-option-checkbox';
 
             const $option = $(`
@@ -772,10 +772,10 @@ $.fn.dbSelect = function(options) {
             });
 
             if (config.type === 'single') {
-                // 单选：显示选中的值
                 $text.text(labels[0]).show();
             } else {
                 // 多选：显示前3个标签 + 计数
+                $text.hide();
                 const displayCount = 3;
                 if (labels.length <= displayCount) {
                     labels.forEach(function(label) {
@@ -811,12 +811,10 @@ $.fn.dbSelect = function(options) {
                     const count = labels.length - displayCount;
                     $tags.append(`<span class="dbsyncer-select-count">+${count}</span>`);
                 }
-                // 多选时隐藏提示文字
-                $text.hide();
             }
         } else {
             // 没有选中任何值时显示提示文字
-            $text.text(config.type === 'single' ? '请选择' : '请选择').show();
+            $text.text('请选择').show();
         }
     }
 

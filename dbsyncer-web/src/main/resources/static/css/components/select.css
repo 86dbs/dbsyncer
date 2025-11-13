@@ -208,6 +208,13 @@
   gap: var(--spacing-sm);
 }
 
+/* 隐藏空的操作按钮容器（单选时） */
+.dbsyncer-select-actions:empty {
+  display: none !important;
+  padding: 0;
+  border-bottom: none;
+}
+
 .dbsyncer-select-action-btn {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-xs);
