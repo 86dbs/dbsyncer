@@ -80,17 +80,17 @@ public class DDLParserImpl implements DDLParser {
             // 获取目标表名（原始表名，不带引号）
             String targetTableName = tableGroup.getTargetTable().getName();
 
-            // 对于异构数据库，进行DDL语法转换
-            String targetSql = alter.toString();
-            // 如果是异构数据库，尝试进行转换
-            if (!StringUtil.equals(sourceConnectorType, targetConnectorType)) {
-                // 对于异构数据库转换，使用原始表名（不带引号）
-                // 因为IRToTargetConverter的buildAddColumnSql会自己加引号
-                alter.getTable().setName(targetTableName);
+            // 从源连接器获取源到IR转换器（用于统一处理操作类型映射，如同构数据库的 ALTER -> MODIFY）
+            ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
+            SourceToIRConverter sourceToIRConverter = sourceConnectorService.getSourceToIRConverter();
 
-                // 从源连接器获取源到IR转换器
-                ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
-                SourceToIRConverter sourceToIRConverter = sourceConnectorService.getSourceToIRConverter();
+            String targetSql;
+            boolean isHeterogeneous = !StringUtil.equals(sourceConnectorType, targetConnectorType);
+            
+            if (isHeterogeneous) {
+                // 对于异构数据库，进行DDL语法转换
+                // 使用原始表名（不带引号），因为IRToTargetConverter的buildAddColumnSql会自己加引号
+                alter.getTable().setName(targetTableName);
 
                 // 从目标连接器获取IR到目标转换器
                 IRToTargetConverter irToTargetConverter = connectorService.getIRToTargetConverter();
@@ -108,12 +108,22 @@ public class DDLParserImpl implements DDLParser {
                 ir.setTableName(targetTableName);
                 // 3. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
+            } else {
+                // 对于同构数据库，直接使用原生SQL，不需要转换
+                targetSql = alter.toString();
+                
+                // 但是需要调用 SourceToIRConverter.convert 来统一处理操作类型映射
+                // 例如：SQL Server 的 ALTER COLUMN 需要映射为 MODIFY，才能被策略模式处理
+                if (sourceToIRConverter != null) {
+                    sourceToIRConverter.convert(alter);
+                }
             }
 
             ddlConfig.setSql(targetSql);
 
             // 统一使用策略模式处理（同构和异构数据库都适用）
-            // 注意：对于异构数据库，AbstractSourceToIRConverter已经修改了AlterExpression的操作类型
+            // 策略模式的作用是解析DDL提取字段信息，用于更新字段映射（FieldMapping）
+            // SourceToIRConverter.convert 已经修改了 AlterExpression 的操作类型（如 ALTER -> MODIFY）
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
                     strategy.parse(expression, ddlConfig);

@@ -634,15 +634,17 @@ public class DDLSqlServerTest {
 
         String invalidDDL = "ALTER TABLE ddlTestEmployee DROP COLUMN non_existent_column";
 
-        try {
-            WriterResponse response = TestDDLHelper.createWriterResponse(invalidDDL, "ALTER", "ddlTestEmployee");
-            Mapping mapping = TestDDLHelper.createMapping("sqlserver-test-mapping-id",
-                    "sqlserver-test-source-connector-id", "sqlserver-test-target-connector-id", true, "sqlserver-test-meta-id");
+        // parseDDl 方法会捕获异常并记录，不会抛出异常
+        // 这是预期的行为：系统应该优雅地处理错误，而不是崩溃
+        WriterResponse response = TestDDLHelper.createWriterResponse(invalidDDL, "ALTER", "ddlTestEmployee");
+        Mapping mapping = TestDDLHelper.createMapping("sqlserver-test-mapping-id",
+                "sqlserver-test-source-connector-id", "sqlserver-test-target-connector-id", true, "sqlserver-test-meta-id");
 
-            generalBufferActuator.parseDDl(response, mapping, testTableGroup);
-            logger.warn("处理不存在字段的DDL时未抛出异常，可能需要检查实现");
-        } catch (Exception e) {
-            logger.info("异常处理机制测试通过，捕获到预期异常: {}", e.getMessage());
-        }
+        // 调用 parseDDl，期望它能够优雅地处理错误（记录日志但不抛出异常）
+        generalBufferActuator.parseDDl(response, mapping, testTableGroup);
+        
+        // 验证：方法应该正常返回，不会抛出异常
+        // 错误信息会被记录到日志中（ERROR级别），这是预期的行为
+        logger.info("异常处理机制测试通过：系统优雅地处理了不存在的字段错误，未抛出异常");
     }
 }
