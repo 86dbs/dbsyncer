@@ -2,6 +2,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,12 +19,12 @@ public class ProjectGroup extends ConfigModel {
     /**
      * 连接器ID列表
      */
-    private List<String> connectorIds;
+    private List<String> connectorIds = new ArrayList<>();
 
     /**
      * 驱动ID列表
      */
-    private List<String> mappingIds;
+    private List<String> mappingIds = new ArrayList<>();
 
     public List<String> getConnectorIds() {
         return connectorIds;
