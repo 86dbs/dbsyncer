@@ -104,16 +104,22 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
                 // 处理支持 MAX 的类型
                 if ("VARBINARY".equals(typeName)) {
                     // VARBINARY(MAX) 应该映射到 BLOB 类型
+                    // 设置一个足够大的 columnSize，让 MySQL 选择 LONGBLOB（最大 4GB）
                     result.setTypeName("BLOB");
                     result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.BLOB));
+                    result.setColumnSize(4294967295L); // LONGBLOB 的最大值，确保 MySQL 选择 LONGBLOB
                 } else if ("VARCHAR".equals(typeName)) {
                     // VARCHAR(MAX) 应该映射到 TEXT 类型
+                    // 设置一个足够大的 columnSize，让 MySQL 选择 LONGTEXT（最大 4GB）
                     result.setTypeName("TEXT");
                     result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.TEXT));
+                    result.setColumnSize(4294967295L); // LONGTEXT 的最大值，确保 MySQL 选择 LONGTEXT
                 } else if ("NVARCHAR".equals(typeName)) {
                     // NVARCHAR(MAX) 应该映射到 UNICODE_TEXT 类型
+                    // 设置一个足够大的 columnSize，让 MySQL 选择 LONGTEXT（最大 4GB）
                     result.setTypeName("UNICODE_TEXT");
                     result.setType(getStandardTypeCode(org.dbsyncer.sdk.enums.DataTypeEnum.UNICODE_TEXT));
+                    result.setColumnSize(4294967295L); // LONGTEXT 的最大值，确保 MySQL 选择 LONGTEXT
                 }
             }
         }
