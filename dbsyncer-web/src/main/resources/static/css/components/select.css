@@ -1,0 +1,371 @@
+/**
+ * DBSyncer Select 组件样式
+ */
+
+/* Select 容器 */
+.dbsyncer-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  font-size: var(--font-size-sm);
+}
+
+/* 触发按钮 */
+.dbsyncer-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 32px;
+  user-select: none;
+}
+
+.dbsyncer-select-trigger:hover {
+  border-color: var(--primary-color);
+  background-color: var(--bg-tertiary);
+}
+
+.dbsyncer-select-trigger:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.dbsyncer-select.disabled .dbsyncer-select-trigger {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-primary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 触发按钮内容 */
+.dbsyncer-select-trigger-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.dbsyncer-select-trigger-text {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dbsyncer-select-trigger-tags {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* 标签 */
+.dbsyncer-select-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background-color: var(--primary-active);
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  animation: tag-enter 0.2s ease;
+}
+
+.dbsyncer-select-tag .dbsyncer-select-tag-remove {
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbsyncer-select-tag .dbsyncer-select-tag-remove:hover {
+  opacity: 1;
+}
+
+/* 计数提示 */
+.dbsyncer-select-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 下拉箭头 */
+.dbsyncer-select-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  margin-left: var(--spacing-xs);
+}
+
+.dbsyncer-select.open .dbsyncer-select-arrow {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单 */
+.dbsyncer-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  max-height: 300px;
+  overflow-y: auto;
+  animation: dropdown-show 0.2s ease;
+}
+
+.dbsyncer-select-dropdown.hidden {
+  display: none !important;
+}
+
+/* 搜索框 */
+.dbsyncer-select-search-wrapper {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-primary);
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-primary);
+  z-index: 10;
+}
+
+.dbsyncer-select-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-secondary);
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-select-search:focus-within {
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+}
+
+.dbsyncer-select-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  outline: none;
+  font-size: var(--font-size-sm);
+}
+
+.dbsyncer-select-search input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.dbsyncer-select-search-clear {
+  flex-shrink: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: color var(--transition-fast);
+}
+
+.dbsyncer-select-search-clear:hover {
+  color: var(--text-primary);
+}
+
+.dbsyncer-select-search-clear.active {
+  display: flex;
+}
+
+/* 操作按钮 */
+.dbsyncer-select-actions {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.dbsyncer-select-action-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex: 1;
+  min-width: 60px;
+}
+
+.dbsyncer-select-action-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dbsyncer-select-action-btn:active {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* 选项 */
+.dbsyncer-select-options {
+  max-height: 230px;
+  overflow-y: auto;
+}
+
+.dbsyncer-select-option {
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border-left: 3px solid transparent;
+}
+
+.dbsyncer-select-option:hover {
+  background-color: var(--bg-tertiary);
+  border-left-color: var(--primary-color);
+}
+
+.dbsyncer-select-option.selected {
+  background-color: rgba(24, 144, 255, 0.08);
+  border-left-color: var(--primary-color);
+  font-weight: 500;
+}
+
+.dbsyncer-select-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: transparent;
+}
+
+.dbsyncer-select-option.disabled:hover {
+  background-color: transparent;
+  border-left-color: transparent;
+}
+
+.dbsyncer-select-option.hidden {
+  display: none !important;
+}
+
+.dbsyncer-select-option-checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  transition: all var(--transition-fast);
+}
+
+.dbsyncer-select-option-checkbox.hidden {
+  display: none !important;
+}
+
+.dbsyncer-select-option input[type="radio"],
+.dbsyncer-select-option input[type="checkbox"] {
+  display: none;
+}
+
+.dbsyncer-select-option input[type="radio"]:checked ~ .dbsyncer-select-option-checkbox,
+.dbsyncer-select-option input[type="checkbox"]:checked ~ .dbsyncer-select-option-checkbox {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--bg-primary);
+}
+
+.dbsyncer-select-option-checkbox::after {
+  content: '✓';
+  font-size: 12px;
+  font-weight: bold;
+  display: none;
+}
+
+.dbsyncer-select-option input[type="radio"]:checked ~ .dbsyncer-select-option-checkbox::after,
+.dbsyncer-select-option input[type="checkbox"]:checked ~ .dbsyncer-select-option-checkbox::after {
+  display: block;
+}
+
+.dbsyncer-select-option-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 空状态 */
+.dbsyncer-select-empty {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 动画 */
+@keyframes dropdown-show {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tag-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .dbsyncer-select-dropdown {
+    max-height: 250px;
+  }
+
+  .dbsyncer-select-options {
+    max-height: 150px;
+  }
+
+  .dbsyncer-select-action-btn {
+    min-width: 50px;
+    padding: var(--spacing-xs) var(--spacing-xs);
+    font-size: var(--font-size-xs);
+  }
+}

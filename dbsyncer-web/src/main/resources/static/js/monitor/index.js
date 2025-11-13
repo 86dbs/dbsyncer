@@ -476,4 +476,7 @@ $(function () {
     });
     bindClearEvent($("#clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
+    $('#searchDataStatus').dbSelect({
+        type: 'single'
+    });
 });

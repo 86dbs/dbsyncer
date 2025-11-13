@@ -597,6 +597,395 @@ function initSearch(searchWrapperId, callback) {
 }
 
 /**
+ * jQuery Select 组件插件
+ * @param {Object} options - 配置选项
+ *   - type: 'single' 或 'multiple'（默认 'single'）
+ *   - data: 选项数据数组 [{label: '', value: ''}, ...]
+ *   - defaultValue: 默认选中值
+ *   - disabled: 是否禁用
+ *   - customButtons: 自定义按钮数组，最多2个
+ *     [{text: '按钮文本', callback: function() {}}]
+ *   - onSelect: 选择变化时的回调
+ *   - onCustomButton: 自定义按钮点击时的回调
+ */
+$.fn.dbSelect = function(options) {
+    options = options || {};
+    
+    const $select = $(this);
+    if (!$select.length) return $select;
+    
+    // 防止重复初始化
+    if ($select.data('dbSelectInitialized')) {
+        return $select;
+    }
+    $select.data('dbSelectInitialized', true);
+
+    // 默认配置
+    const config = {
+        type: options.type || 'single',
+        data: options.data || [],
+        defaultValue: options.defaultValue || null,
+        disabled: options.disabled || false,
+        customButtons: (options.customButtons || []).slice(0, 2), // 最多2个
+        onSelect: options.onSelect || function() {},
+        onCustomButton: options.onCustomButton || function() {}
+    };
+
+    // 从 HTML 中读取选项
+    if ($select.is('select') && config.data.length === 0) {
+        config.data = [];
+        $select.find('option').each(function() {
+            config.data.push({
+                label: $(this).text(),
+                value: $(this).val(),
+                disabled: $(this).prop('disabled')
+            });
+        });
+    }
+
+    // 创建 Select 组件 HTML
+    const selectId = 'dbsyncer-select-' + Date.now();
+    const dropdownId = 'dbsyncer-select-dropdown-' + Date.now();
+    
+    const selectHTML = `
+        <div class="dbsyncer-select ${config.disabled ? 'disabled' : ''}" id="${selectId}">
+            <div class="dbsyncer-select-trigger" data-toggle>
+                <div class="dbsyncer-select-trigger-content">
+                    <span class="dbsyncer-select-trigger-text">${config.type === 'single' ? '请选择' : '请选择'}</span>
+                    <div class="dbsyncer-select-trigger-tags"></div>
+                </div>
+                <div class="dbsyncer-select-arrow">
+                    <i class="fa fa-angle-down"></i>
+                </div>
+            </div>
+            <div class="dbsyncer-select-dropdown hidden" id="${dropdownId}">
+                <div class="dbsyncer-select-search-wrapper">
+                    <div class="dbsyncer-select-search">
+                        <i class="fa fa-search"></i>
+                        <input type="text" class="dbsyncer-select-search-input" placeholder="搜索...">
+                        <div class="dbsyncer-select-search-clear"><i class="fa fa-times"></i></div>
+                    </div>
+                </div>
+                <div class="dbsyncer-select-actions"></div>
+                <div class="dbsyncer-select-options"></div>
+                <div class="dbsyncer-select-empty hidden">暂无数据</div>
+            </div>
+        </div>
+    `;
+
+    $select.hide();
+    // 在原有元素后添加自定义组件
+    $select.after(selectHTML);
+    const $component = $('#' + selectId);
+    const $trigger = $component.find('.dbsyncer-select-trigger');
+    const $dropdown = $component.find('.dbsyncer-select-dropdown');
+    const $searchInput = $component.find('.dbsyncer-select-search-input');
+    const $searchClear = $component.find('.dbsyncer-select-search-clear');
+    const $options = $component.find('.dbsyncer-select-options');
+    const $actions = $component.find('.dbsyncer-select-actions');
+    const $empty = $component.find('.dbsyncer-select-empty');
+    const $tags = $component.find('.dbsyncer-select-trigger-tags');
+    const $text = $component.find('.dbsyncer-select-trigger-text');
+
+    // 已选值
+    let selectedValues = config.defaultValue ? (Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue]) : [];
+
+    // 渲染选项
+    function renderOptions(filterText = '') {
+        $options.empty();
+        const filterLower = filterText.toLowerCase();
+        let hasVisible = false;
+
+        config.data.forEach(function(item, index) {
+            const matches = !filterText || item.label.toLowerCase().indexOf(filterLower) > -1;
+            if (matches) {
+                hasVisible = true;
+            }
+
+            const isSelected = selectedValues.indexOf(item.value) > -1;
+            const inputType = config.type === 'single' ? 'radio' : 'checkbox';
+            const inputName = selectId + '-' + inputType;
+
+            // 单选时不显示复选框，多选时显示
+            const checkboxClass = config.type === 'single' ? 'dbsyncer-select-option-checkbox hidden' : 'dbsyncer-select-option-checkbox';
+
+            const $option = $(`
+                <label class="dbsyncer-select-option ${matches ? '' : 'hidden'} ${isSelected ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}">
+                    <input type="${inputType}" name="${inputName}" value="${escapeAttr(item.value)}" ${isSelected ? 'checked' : ''} ${item.disabled ? 'disabled' : ''}>
+                    <div class="${checkboxClass}"></div>
+                    <span class="dbsyncer-select-option-text">${escapeHtml(item.label)}</span>
+                </label>
+            `);
+
+            $option.on('click', function(e) {
+                if (item.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+                e.preventDefault();
+                handleOptionChange($option, item.value, item.label);
+            });
+
+            $options.append($option);
+        });
+
+        $empty.toggleClass('hidden', hasVisible);
+    }
+
+    // 处理选项变化
+    function handleOptionChange($option, value, label) {
+        if (config.type === 'single') {
+            selectedValues = [value];
+            $options.find('label').removeClass('selected');
+            $option.addClass('selected');
+            // 单选时自动关闭下拉菜单
+            closeDropdown();
+        } else {
+            const index = selectedValues.indexOf(value);
+            if (index > -1) {
+                selectedValues.splice(index, 1);
+                $option.removeClass('selected');
+            } else {
+                selectedValues.push(value);
+                $option.addClass('selected');
+            }
+        }
+
+        updateDisplay();
+        triggerSelectEvent();
+    }
+
+    // 更新显示
+    function updateDisplay() {
+        // 更新原生 select
+        if ($select.is('select')) {
+            $select.val(config.type === 'single' ? (selectedValues[0] || '') : selectedValues);
+        }
+
+        // 更新标签显示
+        $tags.empty();
+
+        if (selectedValues.length > 0) {
+            const labels = selectedValues.map(function(value) {
+                const item = config.data.find(d => d.value === value);
+                return item ? item.label : value;
+            });
+
+            if (config.type === 'single') {
+                // 单选：显示选中的值
+                $text.text(labels[0]).show();
+            } else {
+                // 多选：显示前3个标签 + 计数
+                const displayCount = 3;
+                if (labels.length <= displayCount) {
+                    labels.forEach(function(label) {
+                        const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
+                        $tag.find('.dbsyncer-select-tag-remove').on('click', function(e) {
+                            e.stopPropagation();
+                            const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
+                            if (idx > -1) {
+                                selectedValues.splice(idx, 1);
+                                updateDisplay();
+                                triggerSelectEvent();
+                                renderOptions($searchInput.val());
+                            }
+                        });
+                        $tags.append($tag);
+                    });
+                } else {
+                    for (let i = 0; i < displayCount; i++) {
+                        const label = labels[i];
+                        const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
+                        $tag.find('.dbsyncer-select-tag-remove').on('click', function(e) {
+                            e.stopPropagation();
+                            const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
+                            if (idx > -1) {
+                                selectedValues.splice(idx, 1);
+                                updateDisplay();
+                                triggerSelectEvent();
+                                renderOptions($searchInput.val());
+                            }
+                        });
+                        $tags.append($tag);
+                    }
+                    const count = labels.length - displayCount;
+                    $tags.append(`<span class="dbsyncer-select-count">+${count}</span>`);
+                }
+                // 多选时隐藏提示文字
+                $text.hide();
+            }
+        } else {
+            // 没有选中任何值时显示提示文字
+            $text.text(config.type === 'single' ? '请选择' : '请选择').show();
+        }
+    }
+
+    // 触发选择事件
+    function triggerSelectEvent() {
+        // 回调函数
+        if (typeof config.onSelect === 'function') {
+            config.onSelect(selectedValues, config.type);
+        }
+        // 触发自定义事件
+        $component.trigger('dbselect:change', [selectedValues]);
+    }
+
+    // 打开下拉菜单
+    function openDropdown() {
+        if (!config.disabled) {
+            $component.addClass('open');
+            $dropdown.removeClass('hidden');
+            $searchInput.focus();
+            renderOptions('');
+        }
+    }
+
+    // 关闭下拉菜单
+    function closeDropdown() {
+        $component.removeClass('open');
+        $dropdown.addClass('hidden');
+        $searchInput.val('');
+        $searchClear.removeClass('active');
+        renderOptions('');
+    }
+
+    // 全选
+    function selectAll() {
+        if (config.type === 'multiple') {
+            config.data.forEach(function(item) {
+                if (!item.disabled && selectedValues.indexOf(item.value) === -1) {
+                    selectedValues.push(item.value);
+                }
+            });
+            updateDisplay();
+            triggerSelectEvent();
+            renderOptions($searchInput.val());
+        }
+    }
+
+    // 取消全选
+    function deselectAll() {
+        selectedValues = [];
+        updateDisplay();
+        triggerSelectEvent();
+        renderOptions($searchInput.val());
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // 属性转义
+    function escapeAttr(text) {
+        return String(text).replace(/[&<>"']/g, function(s) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[s];
+        });
+    }
+
+    // 绑定事件
+    $trigger.on('click', function(e) {
+        e.stopPropagation();
+        if ($dropdown.hasClass('hidden')) {
+            openDropdown();
+        } else {
+            closeDropdown();
+        }
+    });
+
+    // 搜索
+    $searchInput.on('input', function() {
+        const text = $(this).val();
+        $searchClear.toggleClass('active', text.length > 0);
+        renderOptions(text);
+    });
+
+    // 清除搜索
+    $searchClear.on('click', function(e) {
+        e.stopPropagation();
+        $searchInput.val('').focus();
+        $searchClear.removeClass('active');
+        renderOptions('');
+    });
+
+    // 点击外部关闭
+    $(document).on('click.dbselect_' + selectId, function(e) {
+        if (!$component.is(e.target) && $component.has(e.target).length === 0) {
+            closeDropdown();
+        }
+    });
+
+    // 操作按钮
+    if (config.type === 'multiple') {
+        // 添加默认按钮
+        const $selectAllBtn = $(`<button class="dbsyncer-select-action-btn">全选</button>`);
+        const $deselectAllBtn = $(`<button class="dbsyncer-select-action-btn">取消全选</button>`);
+
+        $selectAllBtn.on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectAll();
+        });
+
+        $deselectAllBtn.on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            deselectAll();
+        });
+
+        $actions.append($selectAllBtn).append($deselectAllBtn);
+
+        // 添加自定义按钮
+        config.customButtons.forEach(function(btn, index) {
+            const $btn = $(`<button class="dbsyncer-select-action-btn">${escapeHtml(btn.text)}</button>`);
+            $btn.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof btn.callback === 'function') {
+                    btn.callback(selectedValues);
+                }
+                // 触发自定义事件
+                $component.trigger('dbselect:button', [index, selectedValues]);
+                // 调用全局回调
+                if (typeof config.onCustomButton === 'function') {
+                    config.onCustomButton(index, selectedValues, btn.text);
+                }
+            });
+            $actions.append($btn);
+        });
+    }
+
+    // 初始化显示
+    renderOptions('');
+    updateDisplay();
+
+    // 保存配置
+    $component.data('dbSelect', {
+        getValues: function() { return selectedValues; },
+        setValues: function(values) {
+            selectedValues = Array.isArray(values) ? values : [values];
+            updateDisplay();
+            renderOptions($searchInput.val());
+            triggerSelectEvent();
+        },
+        clear: function() {
+            selectedValues = [];
+            updateDisplay();
+            renderOptions('');
+            triggerSelectEvent();
+        },
+        destroy: function() {
+            $(document).off('click.dbselect_' + selectId);
+            $component.remove();
+        }
+    });
+
+    return $select;
+};
+
+/**
  * 确认对话框组件
  * @param {Object} options - 配置选项
  *   - title: 对话框标题（必需）
