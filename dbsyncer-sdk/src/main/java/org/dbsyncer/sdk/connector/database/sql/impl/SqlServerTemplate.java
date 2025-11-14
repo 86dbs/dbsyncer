@@ -357,13 +357,15 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
     public String buildDropDefaultConstraintSql(String tableName, String columnName) {
         String quotedTableName = buildQuotedTableName(tableName);
         
+        // 注意：整个语句作为一个批处理执行，DECLARE 和后续语句之间不使用分号
+        // 这样按分号分割时，整个语句会作为一个完整的批处理执行
         return String.format(
-            "DECLARE @constraintName NVARCHAR(200); " +
+            "DECLARE @constraintName NVARCHAR(200) " +
             "SELECT @constraintName = name FROM sys.default_constraints " +
             "WHERE parent_object_id = OBJECT_ID('%s') " +
-            "  AND parent_column_id = COLUMNPROPERTY(OBJECT_ID('%s'), '%s', 'ColumnId'); " +
+            "  AND parent_column_id = COLUMNPROPERTY(OBJECT_ID('%s'), '%s', 'ColumnId') " +
             "IF @constraintName IS NOT NULL " +
-            "  EXEC('ALTER TABLE %s DROP CONSTRAINT ' + @constraintName);",
+            "  EXEC('ALTER TABLE %s DROP CONSTRAINT ' + @constraintName)",
             tableName, tableName, columnName, quotedTableName
         );
     }

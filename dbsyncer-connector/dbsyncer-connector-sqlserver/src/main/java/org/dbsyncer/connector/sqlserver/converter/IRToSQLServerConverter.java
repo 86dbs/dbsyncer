@@ -188,13 +188,29 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
     }
 
     private String convertColumnsToDrop(String tableName, List<Field> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return "";
+        }
+        
+        // SQL Server删除列时，如果列有DEFAULT约束，需要先删除约束
+        // 格式: 先删除约束，然后删除列
         StringBuilder result = new StringBuilder();
+        org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate sqlServerTemplateImpl = 
+            (org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate;
+        
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
-                result.append(", ");
+                result.append("; ");
             }
             Field column = columns.get(i);
-            result.append(sqlServerTemplate.buildDropColumnSql(tableName, column.getName()));
+            String columnName = column.getName();
+            
+            // 1. 先删除该列的 DEFAULT 约束（如果存在）
+            result.append(sqlServerTemplateImpl.buildDropDefaultConstraintSql(tableName, columnName));
+            
+            // 2. 然后删除列
+            result.append("; ");
+            result.append(sqlServerTemplate.buildDropColumnSql(tableName, columnName));
         }
         return result.toString();
     }
