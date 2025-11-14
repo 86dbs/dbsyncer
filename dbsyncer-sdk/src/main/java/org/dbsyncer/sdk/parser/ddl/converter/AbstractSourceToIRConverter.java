@@ -249,33 +249,50 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         }
         
         // 解析列规范
-        for (String spec : columnSpecs) {
+        // JSQLParser 将列规范拆分成单独的单词，例如: ["NOT", "NULL", "DEFAULT", "0", "COMMENT", "'年龄'"]
+        for (int i = 0; i < columnSpecs.size(); i++) {
+            String spec = columnSpecs.get(i);
             if (spec == null) {
                 continue;
             }
             
             String upperSpec = spec.toUpperCase().trim();
             
-            // 处理 NOT NULL
-            if (upperSpec.equals("NOT NULL")) {
-                column.setNullable(false);
+            // 处理 NOT NULL（需要检查连续的 "NOT" 和 "NULL"）
+            if (upperSpec.equals("NOT") && i + 1 < columnSpecs.size()) {
+                String nextSpec = columnSpecs.get(i + 1);
+                if (nextSpec != null && nextSpec.toUpperCase().trim().equals("NULL")) {
+                    column.setNullable(false);
+                    i++; // 跳过下一个 "NULL"
+                    continue;
+                }
             } else if (upperSpec.equals("NULL")) {
+                // 单独的 NULL（不是 NOT NULL）
                 column.setNullable(true);
             }
-            // 处理 DEFAULT 值
-            else if (upperSpec.startsWith("DEFAULT ")) {
-                String defaultValue = spec.substring(8).trim(); // 去掉 "DEFAULT " 前缀
-                column.setDefaultValue(defaultValue);
-            }
-            // 处理 COMMENT
-            else if (upperSpec.startsWith("COMMENT ")) {
-                String comment = spec.substring(8).trim(); // 去掉 "COMMENT " 前缀
-                // 去掉可能的引号
-                if ((comment.startsWith("'") && comment.endsWith("'")) 
-                    || (comment.startsWith("\"") && comment.endsWith("\""))) {
-                    comment = comment.substring(1, comment.length() - 1);
+            // 处理 DEFAULT 值（DEFAULT 后面跟着值）
+            else if (upperSpec.equals("DEFAULT") && i + 1 < columnSpecs.size()) {
+                String defaultValue = columnSpecs.get(i + 1);
+                if (defaultValue != null && !defaultValue.trim().isEmpty()) {
+                    column.setDefaultValue(defaultValue.trim());
+                    i++; // 跳过下一个值
+                    continue;
                 }
-                column.setComment(comment);
+            }
+            // 处理 COMMENT（COMMENT 后面跟着注释内容）
+            else if (upperSpec.equals("COMMENT") && i + 1 < columnSpecs.size()) {
+                String comment = columnSpecs.get(i + 1);
+                if (comment != null && !comment.trim().isEmpty()) {
+                    comment = comment.trim();
+                    // 去掉可能的引号
+                    if ((comment.startsWith("'") && comment.endsWith("'")) 
+                        || (comment.startsWith("\"") && comment.endsWith("\""))) {
+                        comment = comment.substring(1, comment.length() - 1);
+                    }
+                    column.setComment(comment);
+                    i++; // 跳过下一个注释内容
+                    continue;
+                }
             }
         }
     }
