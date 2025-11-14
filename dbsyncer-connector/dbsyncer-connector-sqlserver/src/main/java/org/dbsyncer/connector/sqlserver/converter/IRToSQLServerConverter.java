@@ -21,15 +21,15 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
     }
 
     @Override
-    protected String convertOperation(String tableName, AlterOperation operation, List<Field> columns, 
+    protected String convertOperation(String tableName, String schema, AlterOperation operation, List<Field> columns, 
                                       Map<String, String> oldToNewColumnNames) {
         switch (operation) {
             case ADD:
-                return convertColumnsToAdd(tableName, columns);
+                return convertColumnsToAdd(tableName, schema, columns);
             case MODIFY:
-                return convertColumnsToModify(tableName, columns);
+                return convertColumnsToModify(tableName, schema, columns);
             case CHANGE:
-                return convertColumnsToChange(tableName, columns, oldToNewColumnNames);
+                return convertColumnsToChange(tableName, schema, columns, oldToNewColumnNames);
             case DROP:
                 return convertColumnsToDrop(tableName, columns);
             default:
@@ -37,7 +37,7 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
         }
     }
 
-    private String convertColumnsToAdd(String tableName, List<Field> columns) {
+    private String convertColumnsToAdd(String tableName, String schema, List<Field> columns) {
         if (columns == null || columns.isEmpty()) {
             return "";
         }
@@ -46,39 +46,113 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
         // 格式: ALTER TABLE [table] ADD [col1] type1, [col2] type2
         StringBuilder result = new StringBuilder();
         String quotedTableName = sqlServerTemplate.buildQuotedTableName(tableName);
-        result.append("ALTER TABLE ").append(quotedTableName).append(" ADD ");
         
-        // 从buildAddColumnSql的结果中提取列定义部分
-        // buildAddColumnSql返回: "ALTER TABLE [table] ADD [col] type"
-        // 我们需要提取 "[col] type" 部分
-        String prefix = "ALTER TABLE " + quotedTableName + " ADD ";
+        // 收集需要添加 COMMENT 的列
+        java.util.List<Field> columnsWithComment = new java.util.ArrayList<>();
+        
+        // 直接构建列定义，避免字符串提取可能的问题
+        org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate sqlServerTemplateImpl = 
+            (org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate;
+        
+        // 收集要添加的列定义
+        java.util.List<String> columnDefinitions = new java.util.ArrayList<>();
         
         for (int i = 0; i < columns.size(); i++) {
-            if (i > 0) {
-                result.append(", ");
-            }
             Field column = columns.get(i);
-            String fullSql = sqlServerTemplate.buildAddColumnSql(tableName, column);
-            // 提取列定义部分（去掉 "ALTER TABLE [table] ADD " 前缀）
-            String columnDef = fullSql.substring(prefix.length());
-            result.append(columnDef);
+            
+            // 直接构建列定义：[col] type [NOT NULL] [DEFAULT value]
+            StringBuilder columnDef = new StringBuilder();
+            columnDef.append(sqlServerTemplate.buildColumn(column.getName()))
+                     .append(" ").append(sqlServerTemplateImpl.convertToDatabaseType(column));
+            
+            // 添加 NOT NULL 约束
+            if (column.getNullable() != null && !column.getNullable()) {
+                columnDef.append(" NOT NULL");
+            }
+            
+            // 添加 DEFAULT 值
+            if (column.getDefaultValue() != null && !column.getDefaultValue().isEmpty()) {
+                columnDef.append(" DEFAULT ").append(column.getDefaultValue());
+            }
+            
+            columnDefinitions.add(columnDef.toString());
+            
+            // 收集有 COMMENT 的列
+            if (column.getComment() != null && !column.getComment().isEmpty()) {
+                columnsWithComment.add(column);
+            }
         }
+        
+        // 如果有要添加的列，生成 ALTER TABLE 语句（使用 IF NOT EXISTS 检查，避免列已存在时报错）
+        if (!columnDefinitions.isEmpty()) {
+            String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+            
+            // 为每个列生成独立的 IF NOT EXISTS 检查
+            for (int i = 0; i < columnDefinitions.size(); i++) {
+                if (i > 0) {
+                    result.append("; ");
+                }
+                Field column = columns.get(i);
+                String columnName = column.getName();
+                
+                // 使用 IF NOT EXISTS 检查列是否存在，如果不存在才添加
+                result.append("IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('")
+                      .append(effectiveSchema).append(".").append(tableName)
+                      .append("') AND name = '").append(columnName).append("') ");
+                result.append("BEGIN ");
+                result.append("ALTER TABLE ").append(quotedTableName).append(" ADD ")
+                      .append(columnDefinitions.get(i));
+                result.append(" END");
+            }
+        }
+        
+        // 如果有 COMMENT，追加 COMMENT 语句（使用分号分隔，作为独立的 SQL 语句）
+        if (!columnsWithComment.isEmpty()) {
+            String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+            for (Field column : columnsWithComment) {
+                result.append("; ");
+                result.append(sqlServerTemplateImpl
+                    .buildCommentSql(effectiveSchema, tableName, column.getName(), column.getComment()));
+            }
+        }
+        
         return result.toString();
     }
 
-    private String convertColumnsToModify(String tableName, List<Field> columns) {
+    private String convertColumnsToModify(String tableName, String schema, List<Field> columns) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
-                result.append(", ");
+                result.append("; ");
             }
             Field column = columns.get(i);
+            // 1. 生成 ALTER COLUMN 语句
             result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
+            
+            // 2. 如果有 DEFAULT 值，处理 DEFAULT 约束
+            if (column.getDefaultValue() != null && !column.getDefaultValue().isEmpty()) {
+                result.append("; ");
+                // 删除旧的 DEFAULT 约束
+                result.append(((org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate)
+                    .buildDropDefaultConstraintSql(tableName, column.getName()));
+                // 添加新的 DEFAULT 约束
+                result.append("; ");
+                result.append(((org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate)
+                    .buildAddDefaultConstraintSql(tableName, column.getName(), column.getDefaultValue()));
+            }
+            
+            // 3. 如果有 COMMENT，添加 COMMENT 语句
+            if (column.getComment() != null && !column.getComment().isEmpty()) {
+                result.append("; ");
+                String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+                result.append(((org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate)
+                    .buildCommentSql(effectiveSchema, tableName, column.getName(), column.getComment()));
+            }
         }
         return result.toString();
     }
 
-    private String convertColumnsToChange(String tableName, List<Field> columns, Map<String, String> oldToNewColumnNames) {
+    private String convertColumnsToChange(String tableName, String schema, List<Field> columns, Map<String, String> oldToNewColumnNames) {
         StringBuilder result = new StringBuilder();
         // SQL Server使用sp_rename存储过程进行重命名
         for (int i = 0; i < columns.size(); i++) {
@@ -97,15 +171,17 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             }
             // 如果找不到旧字段名，说明字段名没有改变，只改变了类型，使用MODIFY操作
             if (oldColumnName == null || oldColumnName.equals(newColumnName)) {
-                // 字段名没有改变，只改变类型，使用ALTER COLUMN
-                result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
+                // 字段名没有改变，只改变类型，使用ALTER COLUMN（包含 DEFAULT 和 COMMENT 处理）
+                String modifySql = convertColumnsToModify(tableName, schema, java.util.Collections.singletonList(column));
+                result.append(modifySql);
             } else {
                 // 字段名改变了，需要两步操作：
                 // 1. 先使用sp_rename重命名字段
                 result.append(sqlServerTemplate.buildRenameColumnSql(tableName, oldColumnName, column));
-                // 2. 然后使用ALTER COLUMN修改类型（CHANGE操作总是包含新的类型定义）
+                // 2. 然后使用ALTER COLUMN修改类型（CHANGE操作总是包含新的类型定义，包含 DEFAULT 和 COMMENT 处理）
                 result.append("; ");
-                result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
+                String modifySql = convertColumnsToModify(tableName, schema, java.util.Collections.singletonList(column));
+                result.append(modifySql);
             }
         }
         return result.toString();

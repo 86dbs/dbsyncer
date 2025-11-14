@@ -27,6 +27,7 @@ public abstract class AbstractIRToTargetConverter implements IRToTargetConverter
         // 统一处理：为每个操作类型生成SQL，用分号连接
         StringBuilder sql = new StringBuilder();
         boolean first = true;
+        String schema = ir.getSchema();
         for (Map.Entry<AlterOperation, List<Field>> entry : columnsByOperation.entrySet()) {
             if (!first) {
                 sql.append("; ");
@@ -34,7 +35,7 @@ public abstract class AbstractIRToTargetConverter implements IRToTargetConverter
             first = false;
             AlterOperation operation = entry.getKey();
             List<Field> columns = entry.getValue();
-            sql.append(convertOperation(ir.getTableName(), operation, columns, ir.getOldToNewColumnNames()));
+            sql.append(convertOperation(ir.getTableName(), schema, operation, columns, ir.getOldToNewColumnNames()));
         }
         return sql.toString();
     }
@@ -44,12 +45,13 @@ public abstract class AbstractIRToTargetConverter implements IRToTargetConverter
      * 子类需要实现此方法以提供数据库特定的SQL生成逻辑
      * 
      * @param tableName 表名
+     * @param schema 数据库架构名（可能为null，某些数据库可能使用默认值）
      * @param operation 操作类型
      * @param columns 列列表
      * @param oldToNewColumnNames 旧字段名到新字段名的映射（用于CHANGE操作，不需要的数据库可以忽略）
      * @return SQL语句
      */
-    protected abstract String convertOperation(String tableName, AlterOperation operation, 
+    protected abstract String convertOperation(String tableName, String schema, AlterOperation operation, 
                                                List<Field> columns, Map<String, String> oldToNewColumnNames);
 }
 

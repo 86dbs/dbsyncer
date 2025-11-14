@@ -14,6 +14,14 @@ import java.util.Map;
 public class DDLIntermediateRepresentation {
 
     private String tableName;
+    
+    /**
+     * 数据库架构名（Schema）
+     * 例如：SQL Server 的 'dbo'，PostgreSQL 的 'public'，Oracle 的用户名等
+     * 如果未设置，某些数据库转换器可能使用默认值
+     */
+    private String schema;
+    
     /**
      * 按操作类型分组的列列表（统一数据源）
      * Key: 操作类型, Value: 该操作类型对应的列列表
@@ -31,6 +39,14 @@ public class DDLIntermediateRepresentation {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     /**

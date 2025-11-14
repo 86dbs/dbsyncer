@@ -308,4 +308,83 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                 return typeName;
         }
     }
+
+    /**
+     * 构建 SQL Server 列注释 SQL
+     * 使用扩展属性存储注释，如果注释已存在则更新，不存在则添加
+     * 
+     * @param schema 架构名（如 'dbo'）
+     * @param tableName 表名
+     * @param columnName 列名
+     * @param comment 注释内容
+     * @return COMMENT SQL 语句
+     */
+    public String buildCommentSql(String schema, String tableName, String columnName, String comment) {
+        // 转义单引号
+        String escapedComment = comment.replace("'", "''");
+        // 转义表名和列名中的单引号（虽然通常不会有，但为了安全）
+        String escapedTableName = tableName.replace("'", "''");
+        String escapedColumnName = columnName.replace("'", "''");
+        
+        // 使用 IF EXISTS 检查并更新/添加 COMMENT
+        // 注意：EXEC 语句中不使用分号，因为整个 IF-ELSE 块应该作为一个完整的语句执行
+        return String.format(
+            "IF EXISTS (SELECT 1 FROM sys.extended_properties " +
+            "WHERE major_id = OBJECT_ID('%s.%s') " +
+            "  AND minor_id = COLUMNPROPERTY(OBJECT_ID('%s.%s'), '%s', 'ColumnId') " +
+            "  AND name = 'MS_Description') " +
+            "BEGIN " +
+            "  EXEC sp_updateextendedproperty 'MS_Description', '%s', 'SCHEMA', '%s', 'TABLE', '%s', 'COLUMN', '%s' " +
+            "END " +
+            "ELSE " +
+            "BEGIN " +
+            "  EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', '%s', 'TABLE', '%s', 'COLUMN', '%s' " +
+            "END",
+            schema, escapedTableName, schema, escapedTableName, escapedColumnName,
+            escapedComment, schema, escapedTableName, escapedColumnName,
+            escapedComment, schema, escapedTableName, escapedColumnName
+        );
+    }
+
+    /**
+     * 构建删除 DEFAULT 约束的 SQL
+     * 需要先查询约束名，然后删除
+     * 
+     * @param tableName 表名
+     * @param columnName 列名
+     * @return 删除约束的 SQL 语句
+     */
+    public String buildDropDefaultConstraintSql(String tableName, String columnName) {
+        String quotedTableName = buildQuotedTableName(tableName);
+        
+        return String.format(
+            "DECLARE @constraintName NVARCHAR(200); " +
+            "SELECT @constraintName = name FROM sys.default_constraints " +
+            "WHERE parent_object_id = OBJECT_ID('%s') " +
+            "  AND parent_column_id = COLUMNPROPERTY(OBJECT_ID('%s'), '%s', 'ColumnId'); " +
+            "IF @constraintName IS NOT NULL " +
+            "  EXEC('ALTER TABLE %s DROP CONSTRAINT ' + @constraintName);",
+            tableName, tableName, columnName, quotedTableName
+        );
+    }
+
+    /**
+     * 构建添加 DEFAULT 约束的 SQL
+     * 
+     * @param tableName 表名
+     * @param columnName 列名
+     * @param defaultValue 默认值
+     * @return 添加约束的 SQL 语句
+     */
+    public String buildAddDefaultConstraintSql(String tableName, String columnName, String defaultValue) {
+        String quotedTableName = buildQuotedTableName(tableName);
+        String quotedColumnName = buildColumn(columnName);
+        // 约束名格式：DF_表名_列名
+        String constraintName = "DF_" + tableName + "_" + columnName;
+        
+        return String.format(
+            "ALTER TABLE %s ADD CONSTRAINT %s DEFAULT %s FOR %s;",
+            quotedTableName, constraintName, defaultValue, quotedColumnName
+        );
+    }
 }

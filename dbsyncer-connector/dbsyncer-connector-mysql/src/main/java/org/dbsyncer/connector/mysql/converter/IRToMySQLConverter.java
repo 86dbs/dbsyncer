@@ -21,9 +21,10 @@ public class IRToMySQLConverter extends AbstractIRToTargetConverter {
     }
 
     @Override
-    protected String convertOperation(String tableName, AlterOperation operation, List<Field> columns, 
+    protected String convertOperation(String tableName, String schema, AlterOperation operation, List<Field> columns, 
                                       Map<String, String> oldToNewColumnNames) {
         // MySQL 的 CHANGE 操作不需要 oldToNewColumnNames，忽略该参数
+        // MySQL 不需要 schema 参数（忽略）
         switch (operation) {
             case ADD:
                 return convertColumnsToAdd(tableName, columns);

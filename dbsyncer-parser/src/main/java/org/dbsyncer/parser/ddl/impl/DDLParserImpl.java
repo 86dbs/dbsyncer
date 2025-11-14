@@ -74,11 +74,21 @@ public class DDLParserImpl implements DDLParser {
             Mapping mapping = tableGroup.profileComponent.getMapping(tableGroup.getMappingId());
             ConnectorConfig sourceConnectorConfig = tableGroup.profileComponent
                     .getConnector(mapping.getSourceConnectorId()).getConfig();
+            ConnectorConfig targetConnectorConfig = tableGroup.profileComponent
+                    .getConnector(mapping.getTargetConnectorId()).getConfig();
             String sourceConnectorType = sourceConnectorConfig.getConnectorType();
-            String targetConnectorType = connectorService.getConnectorType();
+            String targetConnectorType = targetConnectorConfig.getConnectorType();
 
             // 获取目标表名（原始表名，不带引号）
             String targetTableName = tableGroup.getTargetTable().getName();
+            
+            // 获取目标数据库的 schema（如果配置了的话）
+            String targetSchema = null;
+            if (targetConnectorConfig instanceof org.dbsyncer.sdk.config.DatabaseConfig) {
+                org.dbsyncer.sdk.config.DatabaseConfig targetDatabaseConfig = 
+                    (org.dbsyncer.sdk.config.DatabaseConfig) targetConnectorConfig;
+                targetSchema = targetDatabaseConfig.getSchema();
+            }
 
             // 从源连接器获取源到IR转换器（用于统一处理操作类型映射，如同构数据库的 ALTER -> MODIFY）
             ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig);
@@ -106,7 +116,9 @@ public class DDLParserImpl implements DDLParser {
                 DDLIntermediateRepresentation ir = sourceToIRConverter.convert(alter);
                 // 2. 确保IR中的表名是原始表名（不带引号）
                 ir.setTableName(targetTableName);
-                // 3. 中间表示转目标DDL
+                // 3. 设置目标数据库的 schema
+                ir.setSchema(targetSchema);
+                // 4. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
             } else {
                 // 对于同构数据库，直接使用原生SQL，不需要转换
