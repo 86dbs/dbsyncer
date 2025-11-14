@@ -78,18 +78,40 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
     
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" ADD COLUMN ").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        // PostgreSQL 的注释需要使用 COMMENT ON COLUMN，这里暂时不处理
+        // 如果需要添加注释，可以使用：
+        // COMMENT ON COLUMN tableName.fieldName IS 'comment';
+        
+        return sql.toString();
     }
 
     @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ALTER COLUMN %s TYPE %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" ALTER COLUMN ").append(buildColumn(field.getName()))
+           .append(" TYPE ").append(convertToDatabaseType(field));
+        
+        // PostgreSQL 的 ALTER COLUMN TYPE 和设置约束需要分开执行
+        // 这里只处理类型修改，NOT NULL 和 DEFAULT 需要单独的语句
+        // 如果需要完整的修改，应该生成多个 ALTER TABLE 语句
+        
+        return sql.toString();
     }
 
     @Override

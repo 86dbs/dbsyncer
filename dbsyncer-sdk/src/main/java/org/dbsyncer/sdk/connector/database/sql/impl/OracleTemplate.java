@@ -94,18 +94,50 @@ public class OracleTemplate extends AbstractSqlTemplate {
 
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD (%s %s)",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" ADD (").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        sql.append(")");
+        
+        // Oracle 的注释需要使用 COMMENT ON COLUMN，这里暂时不处理
+        // 如果需要添加注释，可以使用：
+        // COMMENT ON COLUMN tableName.fieldName IS 'comment';
+        
+        return sql.toString();
     }
 
     @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s MODIFY (%s %s)",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" MODIFY (").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        sql.append(")");
+        
+        return sql.toString();
     }
 
     @Override

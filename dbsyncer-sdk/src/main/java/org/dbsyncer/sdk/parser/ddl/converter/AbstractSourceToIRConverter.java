@@ -219,11 +219,67 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                         column.setIsSizeFixed(standardField.getIsSizeFixed());
                     }
                 }
+                
+                // 提取列规范信息（NOT NULL、DEFAULT、COMMENT等）
+                extractColumnSpecs(columnDataType, column);
+                
                 columns.add(column);
             }
         }
         return columns;
     }
+
+    /**
+     * 从 ColumnDataType 中提取列规范信息（NOT NULL、DEFAULT、COMMENT等）
+     * 
+     * @param columnDataType JSQLParser 的 ColumnDataType 对象
+     * @param column 目标 Field 对象
+     */
+    protected void extractColumnSpecs(AlterExpression.ColumnDataType columnDataType, Field column) {
+        if (columnDataType == null || column == null) {
+            return;
+        }
+        
+        // 从 ColumnDataType 获取列规范列表
+        List<String> columnSpecs = columnDataType.getColumnSpecs();
+        
+        // 如果 ColumnDataType 没有列规范，尝试从字符串表示中解析（后备方案）
+        if (columnSpecs == null || columnSpecs.isEmpty()) {
+            return;
+        }
+        
+        // 解析列规范
+        for (String spec : columnSpecs) {
+            if (spec == null) {
+                continue;
+            }
+            
+            String upperSpec = spec.toUpperCase().trim();
+            
+            // 处理 NOT NULL
+            if (upperSpec.equals("NOT NULL")) {
+                column.setNullable(false);
+            } else if (upperSpec.equals("NULL")) {
+                column.setNullable(true);
+            }
+            // 处理 DEFAULT 值
+            else if (upperSpec.startsWith("DEFAULT ")) {
+                String defaultValue = spec.substring(8).trim(); // 去掉 "DEFAULT " 前缀
+                column.setDefaultValue(defaultValue);
+            }
+            // 处理 COMMENT
+            else if (upperSpec.startsWith("COMMENT ")) {
+                String comment = spec.substring(8).trim(); // 去掉 "COMMENT " 前缀
+                // 去掉可能的引号
+                if ((comment.startsWith("'") && comment.endsWith("'")) 
+                    || (comment.startsWith("\"") && comment.endsWith("\""))) {
+                    comment = comment.substring(1, comment.length() - 1);
+                }
+                column.setComment(comment);
+            }
+        }
+    }
+
 
     protected List<Field> convertColumnDataTypesForDrop(String columnName) {
         List<Field> columns = new ArrayList<>();

@@ -42,27 +42,78 @@ public class MySQLTemplate extends AbstractSqlTemplate {
 
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" ADD COLUMN ").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        // 添加 COMMENT
+        if (field.getComment() != null && !field.getComment().isEmpty()) {
+            sql.append(" COMMENT '").append(field.getComment().replace("'", "''")).append("'");
+        }
+        
+        return sql.toString();
     }
 
     @Override
     public String buildModifyColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s MODIFY COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" MODIFY COLUMN ").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        // 添加 COMMENT
+        if (field.getComment() != null && !field.getComment().isEmpty()) {
+            sql.append(" COMMENT '").append(field.getComment().replace("'", "''")).append("'");
+        }
+        
+        return sql.toString();
     }
 
     @Override
     public String buildRenameColumnSql(String tableName, String oldFieldName, Field newField) {
-        return String.format("ALTER TABLE %s CHANGE COLUMN %s %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(oldFieldName),
-                buildColumn(newField.getName()),
-                convertToDatabaseType(newField));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" CHANGE COLUMN ").append(buildColumn(oldFieldName))
+           .append(" ").append(buildColumn(newField.getName()))
+           .append(" ").append(convertToDatabaseType(newField));
+        
+        // 添加 NOT NULL 约束
+        if (newField.getNullable() != null && !newField.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (newField.getDefaultValue() != null && !newField.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(newField.getDefaultValue());
+        }
+        
+        // 添加 COMMENT
+        if (newField.getComment() != null && !newField.getComment().isEmpty()) {
+            sql.append(" COMMENT '").append(newField.getComment().replace("'", "''")).append("'");
+        }
+        
+        return sql.toString();
     }
 
     @Override

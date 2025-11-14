@@ -28,6 +28,8 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
+import java.sql.ResultSetMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -154,7 +156,31 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     String typeName = columnMetadata.getString("TYPE_NAME");
                     long columnSize = Math.max(0L, columnMetadata.getLong("COLUMN_SIZE"));
                     int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
-                    fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
+                    
+                    Field field = new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio);
+                    
+                    // 填充 nullable 属性
+                    int nullable = columnMetadata.getInt("NULLABLE");
+                    if (nullable == ResultSetMetaData.columnNoNulls) {
+                        field.setNullable(false); // NOT NULL
+                    } else if (nullable == ResultSetMetaData.columnNullable) {
+                        field.setNullable(true); // NULL
+                    }
+                    // columnNullableUnknown 时保持 null，表示未知
+                    
+                    // 填充 defaultValue 属性
+                    String columnDef = columnMetadata.getString("COLUMN_DEF");
+                    if (columnDef != null && !columnDef.trim().isEmpty()) {
+                        field.setDefaultValue(columnDef);
+                    }
+                    
+                    // 填充 comment 属性
+                    String remarks = columnMetadata.getString("REMARKS");
+                    if (remarks != null && !remarks.trim().isEmpty()) {
+                        field.setComment(remarks);
+                    }
+                    
+                    fields.add(field);
                 }
             }
             return fields;

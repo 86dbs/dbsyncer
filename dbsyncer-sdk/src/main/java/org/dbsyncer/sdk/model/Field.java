@@ -60,6 +60,26 @@ public class Field {
      */
     private Boolean isSizeFixed;
 
+    /**
+     * 字段是否允许为空
+     * true: 允许为空（NULL）
+     * false: 不允许为空（NOT NULL）
+     * null: 未设置（使用数据库默认值）
+     */
+    private Boolean nullable;
+
+    /**
+     * 字段默认值
+     * 例如：0, 'default', CURRENT_TIMESTAMP 等
+     */
+    private String defaultValue;
+
+    /**
+     * 字段注释
+     * 例如：'年龄', '用户ID' 等
+     */
+    private String comment;
+
     public Field() {
     }
 
@@ -181,6 +201,54 @@ public class Field {
      */
     public void setIsSizeFixed(Boolean isSizeFixed) {
         this.isSizeFixed = isSizeFixed;
+    }
+
+    /**
+     * 获取字段是否允许为空
+     * @return true表示允许为空，false表示不允许为空，null表示未设置
+     */
+    public Boolean getNullable() {
+        return nullable;
+    }
+
+    /**
+     * 设置字段是否允许为空
+     * @param nullable true表示允许为空（NULL），false表示不允许为空（NOT NULL），null表示未设置
+     */
+    public void setNullable(Boolean nullable) {
+        this.nullable = nullable;
+    }
+
+    /**
+     * 获取字段默认值
+     * @return 默认值字符串，如果未设置则返回null
+     */
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    /**
+     * 设置字段默认值
+     * @param defaultValue 默认值字符串，例如：0, 'default', CURRENT_TIMESTAMP 等
+     */
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    /**
+     * 获取字段注释
+     * @return 注释字符串，如果未设置则返回null
+     */
+    public String getComment() {
+        return comment;
+    }
+
+    /**
+     * 设置字段注释
+     * @param comment 注释字符串，例如：'年龄', '用户ID' 等
+     */
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 
     @Override

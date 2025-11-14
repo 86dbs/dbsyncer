@@ -64,7 +64,7 @@ public class DDLParserImpl implements DDLParser {
     public DDLConfig parse(ConnectorService connectorService, TableGroup tableGroup, String sql)
             throws JSQLParserException {
         DDLConfig ddlConfig = new DDLConfig();
-        logger.info("ddl:{}", sql);
+        logger.info("source ddl: {}", sql);
         Statement statement = CCJSqlParserUtil.parse(sql);
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
@@ -124,6 +124,7 @@ public class DDLParserImpl implements DDLParser {
             }
 
             ddlConfig.setSql(targetSql);
+            logger.info("target ddl: {}", targetSql);
 
             // 统一使用策略模式处理（同构和异构数据库都适用）
             // 策略模式的作用是解析DDL提取字段信息，用于更新字段映射（FieldMapping）

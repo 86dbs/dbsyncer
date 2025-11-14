@@ -72,10 +72,24 @@ public class SQLiteTemplate extends AbstractSqlTemplate {
 
     @Override
     public String buildAddColumnSql(String tableName, Field field) {
-        return String.format("ALTER TABLE %s ADD COLUMN %s %s",
-                buildQuotedTableName(tableName),
-                buildColumn(field.getName()),
-                convertToDatabaseType(field));
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
+           .append(" ADD COLUMN ").append(buildColumn(field.getName()))
+           .append(" ").append(convertToDatabaseType(field));
+        
+        // 添加 NOT NULL 约束
+        if (field.getNullable() != null && !field.getNullable()) {
+            sql.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+            sql.append(" DEFAULT ").append(field.getDefaultValue());
+        }
+        
+        // SQLite 不支持列注释
+        
+        return sql.toString();
     }
 
     @Override
