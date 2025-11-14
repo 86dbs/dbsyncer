@@ -24,6 +24,8 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -117,7 +119,15 @@ public class DataSyncServiceImpl implements DataSyncService {
         BinlogMap message = BinlogMap.parseFrom(bytes);
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
         if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
-            message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
+            // DDL事件：从BINLOG_DATA键中获取DDLConfig的JSON字符串
+            message.getRowMap().forEach((k, v) -> {
+                if (ConfigConstant.BINLOG_DATA.equals(k)) {
+                    // 保存完整的DDLConfig JSON字符串，以便重做时反序列化
+                    target.put(k, v.toStringUtf8());
+                } else {
+                    target.put(k, v.toStringUtf8());
+                }
+            });
             return target;
         }
 
@@ -164,21 +174,61 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
-        // 有修改同步值
-        String retryDataParams = params.get("retryDataParams");
-        if (StringUtil.isNotBlank(retryDataParams)) {
-            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
-        }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
 
-        // 转换为源字段
-        final Picker picker = new Picker(tableGroup);
-        List<Object> changedRow = picker.pickSourceData(binlogData);
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
-
-        // 执行同步是否成功
-        bufferActuatorRouter.execute(metaId, changedEvent);
+        // 判断是否为DDL事件
+        if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
+            // DDL重做：从binlogData中获取DDLConfig的JSON字符串并反序列化
+            String ddlConfigJson = (String) binlogData.get(ConfigConstant.BINLOG_DATA);
+            if (StringUtil.isBlank(ddlConfigJson)) {
+                logger.warn("DDL重做失败：无法从存储中获取DDLConfig数据, messageId={}", messageId);
+                return messageId;
+            }
+            
+            try {
+                // 反序列化为DDLConfig对象
+                DDLConfig ddlConfig = JsonUtil.jsonToObj(ddlConfigJson, DDLConfig.class);
+                if (ddlConfig == null || StringUtil.isBlank(ddlConfig.getSql())) {
+                    logger.warn("DDL重做失败：DDLConfig数据无效, messageId={}", messageId);
+                    return messageId;
+                }
+                
+                // 创建DDLChangedEvent，通过BufferActuatorRouter执行，会自动调用parseDDl方法
+                // parseDDl方法会执行DDL、更新表结构、更新字段映射、持久化配置
+                DDLChangedEvent ddlChangedEvent = new DDLChangedEvent(
+                    sourceTableName, 
+                    event, 
+                    ddlConfig.getSql(), 
+                    null, 
+                    null
+                );
+                
+                // 设置ChangedOffset的metaId（changedOffset是final的，需要通过getChangedOffset()获取后设置）
+                ddlChangedEvent.getChangedOffset().setMetaId(metaId);
+                
+                // 执行DDL重做（会自动调用parseDDl方法，更新字段映射）
+                bufferActuatorRouter.execute(metaId, ddlChangedEvent);
+            } catch (Exception e) {
+                logger.error("DDL重做失败：反序列化DDLConfig异常, messageId={}, error={}", messageId, e.getMessage(), e);
+                return messageId;
+            }
+        } else {
+            // 数据同步重做：处理ROW事件
+            // 有修改同步值
+            String retryDataParams = params.get("retryDataParams");
+            if (StringUtil.isNotBlank(retryDataParams)) {
+                JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+            }
+            
+            // 转换为源字段
+            final Picker picker = new Picker(tableGroup);
+            List<Object> changedRow = picker.pickSourceData(binlogData);
+            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+            
+            // 执行同步是否成功
+            bufferActuatorRouter.execute(metaId, changedEvent);
+        }
         storageService.remove(StorageEnum.DATA, metaId, messageId);
         // 更新失败数
         Meta meta = profileComponent.getMeta(metaId);

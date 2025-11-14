@@ -110,13 +110,17 @@ public class DDLParserImpl implements DDLParser {
                 targetSql = irToTargetConverter.convert(ir);
             } else {
                 // 对于同构数据库，直接使用原生SQL，不需要转换
-                targetSql = alter.toString();
+                // 但是需要先替换表名为目标表名，否则会执行到源库
+                alter.getTable().setName(targetTableName);
                 
                 // 但是需要调用 SourceToIRConverter.convert 来统一处理操作类型映射
                 // 例如：SQL Server 的 ALTER COLUMN 需要映射为 MODIFY，才能被策略模式处理
                 if (sourceToIRConverter != null) {
                     sourceToIRConverter.convert(alter);
                 }
+                
+                // 在替换表名和转换操作类型后，生成目标SQL
+                targetSql = alter.toString();
             }
 
             ddlConfig.setSql(targetSql);

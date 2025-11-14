@@ -2,6 +2,7 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -710,7 +711,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
-        Result result = new Result();
+        Result result = new Result<DDLConfig>();
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
             connectorInstance.execute(databaseTemplate -> {
@@ -723,6 +724,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             result.addSuccessData(Collections.singletonList(successMap));
         } catch (Exception e) {
             logger.error("执行DDL失败: {}", e.getMessage());
+            // 将DDLConfig转换为Map格式，以便FlushStrategyImpl可以正确序列化
+            // 使用JSON序列化保存完整的DDLConfig信息，以便将来可以反序列化并重新处理
+            Map<String, Object> failMap = new HashMap<>();
+            failMap.put(ConfigConstant.BINLOG_DATA, JsonUtil.objToJson(config));
+            result.addFailData(Collections.singletonList(failMap));
             result.error = String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage());
         }
         return result;
