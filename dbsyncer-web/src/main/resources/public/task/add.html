@@ -327,11 +327,6 @@
                             <i class="fa fa-exchange" style="color: var(--primary-color); margin-right: 8px;"></i>
                             表映射配置
                         </h3>
-                        <button type="button" class="dbsyncer-btn dbsyncer-btn-primary" id="addTableMappingBtn"
-                                style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%);">
-                            <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                            添加表映射
-                        </button>
 
 
                     </div>
@@ -510,10 +505,13 @@
     let savedTaskId = null; // 保存的任务ID
     let tableMappingIndex = 2; // 下一个表映射的索引
     let fieldMappingIndex = {}; // 每个表的字段映射索引
+    let step1Data = null; // 第一步的数据（暂存，不提交）
 
     // 初始化
     $(document).ready(function () {
         console.log('[任务添加] 页面初始化');
+        console.log('[任务添加] step1Content 是否存在:', $('#step1Content').length > 0);
+        console.log('[任务添加] step2Content 是否存在:', $('#step2Content').length > 0);
         
         // 初始化字段映射索引
         $('.table-mapping-item').each(function () {
@@ -537,6 +535,8 @@
         });
         
         $('#step2PrevBtn').click(function () {
+            console.log('[第二步] 返回第一步');
+            // 返回第一步时不清空数据，允许用户修改
             goToStep(1);
         });
         
@@ -610,10 +610,7 @@
             }
         });
 
-        // 添加表映射
-        $('#addTableMappingBtn').click(function () {
-            addTableMapping();
-        });
+
 
         // 删除表映射
         $(document).on('click', '.remove-table-mapping', function () {
@@ -641,8 +638,8 @@
         currentStep = step;
         
         if (step === 1) {
-            $('#step1Content').show();
-            $('#step2Content').hide();
+            $('#step1Content').removeClass('hidden').show();
+            $('#step2Content').addClass('hidden').hide();
             
             // 更新步骤指示器
             $('#step1Indicator').addClass('active');
@@ -660,8 +657,8 @@
             $('#step2Indicator .step-label > div:first-child').css('color', 'var(--text-secondary)');
             
         } else if (step === 2) {
-            $('#step1Content').hide();
-            $('#step2Content').show();
+            $('#step1Content').addClass('hidden').hide();
+            $('#step2Content').removeClass('hidden').show();
             
             // 更新步骤指示器
             $('#step1Indicator .step-circle').css({
@@ -714,10 +711,10 @@
     }
 
     /**
-     * 保存第一步并进入下一步
+     * 验证第一步并进入下一步（不保存到服务器）
      */
     function saveStep1AndGoNext() {
-        console.log('[第一步] 开始保存基础配置');
+        console.log('[第一步] 开始验证基础配置');
         
         // 表单验证
         const $form = $("#taskAddForm");
@@ -757,45 +754,34 @@
             return;
         }
 
-        // 使用 JSON 格式发送请求体
-        showLoading();
-        $.ajax({
-            url: $basePath + "/task/add",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-                name: config.name,
-                type: config.type,
-                json: JSON.stringify(config)
-            }),
-            success: function (result) {
-                hideLoading();
-                if (result.success == true) {
-                    savedTaskId = result.resultValue;
-                    bootGrowl("基础配置保存成功！", "success");
-                    console.log('[第一步] 保存成功，任务ID:', savedTaskId);
-                    
-                    // 进入第二步
-                    goToStep(2);
-                } else {
-                    bootGrowl(result.resultValue, "danger");
-                }
-            },
-            error: function (xhr, status, info) {
-                hideLoading();
-                bootGrowl("访问异常，请刷新或重试.", "danger");
-            }
-        });
+        // 暂存第一步数据（不提交到服务器）
+        step1Data = config;
+        console.log('[第一步] 验证通过，数据已暂存');
+        bootGrowl("基础配置验证通过！", "success");
+        
+        // 确保 DOM 元素存在
+        if ($('#step2Content').length === 0) {
+            console.error('[第一步] 错误：第二步的 DOM 元素不存在！');
+            bootGrowl("页面错误，请刷新后重试", "danger");
+            return;
+        }
+        
+        // 直接进入第二步
+        setTimeout(function() {
+            goToStep(2);
+            console.log('[第一步] 已切换到第二步');
+        }, 300);
     }
 
     /**
-     * 保存第二步（表映射配置）并完成
+     * 保存第二步（表映射配置）并完成（一次性提交所有配置）
      */
     function saveStep2AndComplete() {
         console.log('[第二步] 开始保存表映射配置');
         
-        if (!savedTaskId) {
-            bootGrowl("任务ID不存在，请先完成第一步！", "danger");
+        // 检查第一步数据
+        if (!step1Data) {
+            bootGrowl("缺少第一步数据，请先完成第一步！", "danger");
             goToStep(1);
             return;
         }
@@ -842,27 +828,32 @@
             return;
         }
 
-        // 更新任务配置（添加表映射）
-        // 先获取当前任务配置
+        // 合并第一步和第二步的配置
+        const completeConfig = Object.assign({}, step1Data);
+        completeConfig.tableMappings = tableMappings;
+        
+        console.log('[第二步] 完整配置:', completeConfig);
+        
+        // 一次性提交所有配置创建任务
         showLoading();
-        
-        // 构建完整的配置
-        const step1Config = buildStep1Config();
-        step1Config.tableMappings = tableMappings;
-        
         $.ajax({
-            url: $basePath + "/task/modify",
+            url: $basePath + "/task/add",
             type: "POST",
             contentType: "application/json",
+            dataType: "json",
             data: JSON.stringify({
-                id: savedTaskId,
-                json: JSON.stringify(step1Config)
+                name: completeConfig.name,
+                type: completeConfig.type,
+                json: JSON.stringify(completeConfig)
             }),
             success: function (result) {
                 hideLoading();
+                console.log('[第二步] Ajax 响应结果:', result);
+                
                 if (result.success == true) {
+                    savedTaskId = result.resultValue;
                     bootGrowl("任务创建完成！", "success");
-                    console.log('[第二步] 保存成功');
+                    console.log('[第二步] 保存成功，任务ID:', savedTaskId);
                     
                     // 返回任务列表
                     setTimeout(function () {
@@ -874,115 +865,12 @@
             },
             error: function (xhr, status, info) {
                 hideLoading();
+                console.error('[第二步] Ajax 请求失败:', status, info);
                 bootGrowl("访问异常，请刷新或重试.", "danger");
             }
         });
     }
 
-    /**
-     * 添加表映射
-     */
-    function addTableMapping() {
-        const tableIndex = tableMappingIndex++;
-        fieldMappingIndex[tableIndex] = 0;
-
-        const tableMappingHtml = `
-            <div class="table-mapping-item" data-index="${tableIndex}" 
-                style="margin-bottom: 24px; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-                <div style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <h4 style="margin: 0; font-size: 16px; font-weight: 500; color: var(--text-primary);">
-                        <i class="fa fa-sitemap" style="color: var(--primary-color); margin-right: 8px;"></i>
-                        表映射 ${tableIndex + 1}
-                    </h4>
-                    <button type="button" class="dbsyncer-btn dbsyncer-btn-danger remove-table-mapping"
-                        style="padding: 6px 12px; font-size: 13px;">
-                        <i class="fa fa-trash dbsyncer-btn-icon-left"></i>
-                        删除
-                    </button>
-                </div>
-                <div style="padding: 24px;">
-                    <!-- 表配置区域 -->
-                    <div style="display: grid; grid-template-columns: 5fr 1fr 5fr; gap: 24px; margin-bottom: 24px;">
-                        <!-- 源表配置 -->
-                        <div>
-                            <h5 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 8px;">
-                                <i class="fa fa-table" style="margin-right: 6px;"></i>
-                                源表配置
-                            </h5>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <label class="form-label" style="display: block; margin-bottom: 6px; font-size: 13px;">表名</label>
-                                    <select class="form-control source-table-select select-control" 
-                                        name="tableMappings[${tableIndex}].sourceTable.name" 
-                                        data-table-index="${tableIndex}" data-type="source">
-                                        <option value="">请选择源表</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" style="display: block; margin-bottom: 6px; font-size: 13px;">Schema</label>
-                                    <input class="form-control" name="tableMappings[${tableIndex}].sourceTable.schema" 
-                                        type="text" value="public" placeholder="请输入Schema"/>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 箭头 -->
-                        <div style="display: flex; align-items: center; justify-content: center;">
-                            <i class="fa fa-arrow-right" style="font-size: 32px; color: var(--primary-color);"></i>
-                        </div>
-
-                        <!-- 目标表配置 -->
-                        <div>
-                            <h5 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 500; color: var(--success-color); border-bottom: 2px solid var(--success-color); padding-bottom: 8px;">
-                                <i class="fa fa-table" style="margin-right: 6px;"></i>
-                                目标表配置
-                            </h5>
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <label class="form-label" style="display: block; margin-bottom: 6px; font-size: 13px;">表名</label>
-                                    <select class="form-control target-table-select select-control" 
-                                        name="tableMappings[${tableIndex}].targetTable.name" 
-                                        data-table-index="${tableIndex}" data-type="target">
-                                        <option value="">请选择目标表</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" style="display: block; margin-bottom: 6px; font-size: 13px;">Schema</label>
-                                    <input class="form-control" name="tableMappings[${tableIndex}].targetTable.schema" 
-                                        type="text" value="public" placeholder="请输入Schema"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 字段映射配置 -->
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <h5 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-                                <i class="fa fa-exchange" style="color: var(--warning-color); margin-right: 6px;"></i>
-                                字段映射配置
-                            </h5>
-                            <button type="button" class="dbsyncer-btn dbsyncer-btn-primary add-field-mapping" 
-                                data-table-index="${tableIndex}" style="padding: 6px 12px; font-size: 13px;">
-                                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                                添加字段映射
-                            </button>
-                        </div>
-                        <div class="field-mappings" data-table-index="${tableIndex}" 
-                            style="display: flex; flex-direction: column; gap: 12px;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        $('#tableMappingsContainer').append(tableMappingHtml);
-        
-        // 增强新添加的 select 元素
-        if (typeof enhanceAllSelects === 'function') {
-            enhanceAllSelects();
-        }
-    }
 
     /**
      * 添加字段映射
@@ -1103,6 +991,7 @@
         $.ajax({
             url: $basePath + "/connector/getDatabases",
             type: "GET",
+            dataType: "json",
             data: { connectorId: connectorId },
             success: function (result) {
                 console.log('[加载数据库] 响应结果:', result);
@@ -1150,6 +1039,7 @@
         $.ajax({
             url: $basePath + "/task/getTables",
             type: "GET",
+            dataType: "json",
             data: {
                 connectorId: connectorId,
                 database: '',
@@ -1192,6 +1082,7 @@
         $.ajax({
             url: $basePath + "/task/getTableFields",
             type: "GET",
+            dataType: "json",
             data: { 
                 connectorId: connectorId,
                 tableName: tableName
@@ -1247,6 +1138,7 @@
         $.ajax({
             url: $basePath + "/task/getConnectorType",
             type: "GET",
+            dataType: "json",
             data: { connectorId: connectorId },
             success: function (result) {
                 if (result.success) {
