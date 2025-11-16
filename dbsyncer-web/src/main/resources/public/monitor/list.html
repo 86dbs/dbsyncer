@@ -324,27 +324,13 @@
                     <th>时间</th>
                 </tr>
                 </thead>
-                <tbody id="logList">
-                <tr th:each="l,s : ${pagingLog?.data}">
-                    <td th:text="${s.index}+1"></td>
-                    <td th:text="${l?.json}"></td>
-                    <td th:text="${#dates.format(l?.createTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
-                </tr>
-                </tbody>
+                <tbody id="logList"></tbody>
             </table>
 
             <!-- 分页信息 -->
             <div id="logPagination" class="p-5 border-t border-gray-100 flex items-center justify-between">
-                <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingLog?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+                <p class="text-sm text-gray-500">共 <span class="totalCount">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
                 <div class="pagination-bar flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
                 </div>
             </div>
 

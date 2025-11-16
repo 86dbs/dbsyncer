@@ -88,7 +88,6 @@ public class MonitorController extends BaseController {
         model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
         model.put("dataStatus", NumberUtil.toInt(params.get("dataStatus"), -1));
         model.put("pagingData", monitorService.queryData(params));
-        model.put("pagingLog", monitorService.queryLog(params));
         return "monitor/list.html";
     }
 

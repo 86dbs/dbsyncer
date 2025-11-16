@@ -34,59 +34,13 @@
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody id="connectorTableBody">
-                <!-- 动态数据 -->
-                <tr th:each="connector, iterStat : ${connectors}" th:if="${connectors != null and !connectors.isEmpty()}">
-                    <td th:text="${iterStat.index + 1}">1</td>
-                    <td>
-                        <div class="d-flex align-center">
-                            <i th:class="'fa fa-database connector-icon'" th:style="'color: #007bff; margin-right: 8px;'"></i>
-                            <span th:text="${connector.name}">名称</span>
-                        </div>
-                    </td>
-                    <td th:text="${connector.config.connectorType}">类型</td>
-                    <td th:text="${connector?.config?.url}">连接信息</td>
-                    <td>
-                        <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="修改" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
-                                <i class="fa fa-edit"></i>
-                            </button>
-                            <button class="table-action-btn copy" title="复制" th:data-id="${connector.id}" onclick="copyConnector(this.dataset.id)">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                            <button class="table-action-btn play" title="测试" th:data-id="${connector.id}" onclick="testConnector(this.dataset.id)">
-                                <i class="fa fa-plug"></i>
-                            </button>
-                            <button class="table-action-btn delete" title="删除" th:data-id="${connector.id}" onclick="deleteConnector(this.dataset.id)">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <!-- 空数据提示 -->
-                <tr th:if="${connectors == null or connectors.isEmpty()}">
-                    <td colspan="5" class="text-center">
-                        <i class="fa fa-database empty-icon"></i>
-                        <p class="empty-text">暂无连接</p>
-                        <p class="empty-description">点击"添加"按钮创建第一个连接</p>
-                    </td>
-                </tr>
-            </tbody>
+            <tbody id="connectorTableBody"></tbody>
         </table>
 
         <!-- 分页信息 -->
-        <div id="connectorPagination" class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${connectors != null and !connectors.isEmpty()}">
-            <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
-            <div class="pagination-bar flex items-center gap-2">
-                <button class="pagination-btn" disabled>
-                    <i class="fa fa-angle-left"></i>
-                </button>
-                <button class="pagination-btn active">1</button>
-                <button class="pagination-btn">2</button>
-                <button class="pagination-btn">
-                    <i class="fa fa-angle-right"></i>
-                </button>
-            </div>
+        <div id="connectorPagination" class="p-5 border-t border-gray-100 flex items-center justify-between">
+            <p class="text-sm text-gray-500">共 <span class="totalCount">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+            <div class="pagination-bar flex items-center gap-2"></div>
         </div>
     </div>
 </div>
@@ -110,7 +64,7 @@ $(document).ready(function() {
                     <td>${index}</td>
                     <td>
                         <div class="d-flex align-center">
-                            <i class="fa fa-database connector-icon"></i>
+                            <i class="fa fa-database connector-icon text-info"></i>
                             <span>${escapeHtml(connector.name)}</span>
                         </div>
                     </td>

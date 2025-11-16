@@ -30,8 +30,6 @@ public class ConnectorController extends BaseController {
 
     @GetMapping("/list")
     public String pageList(HttpServletRequest request, ModelMap model) {
-        // 获取所有连接器数据
-        model.put("connectors", connectorService.getConnectorAll());
         return "connector/list";
     }
 
