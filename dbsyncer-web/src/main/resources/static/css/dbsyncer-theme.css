@@ -177,6 +177,16 @@ textarea {
   resize: none;
 }
 
+/* readonly 属性样式 */
+input[readonly],
+textarea[readonly],
+select[readonly] {
+  background-color: var(--bg-tertiary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
 /* ========== 滚动条样式 ========== */
 ::-webkit-scrollbar {
   width: 6px;

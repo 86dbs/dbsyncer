@@ -55,8 +55,12 @@ const trendChart = new Chart(trendCtx, {
     }
 });
 
-// 搜索功能
 $(function () {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/index');
+    };
+
     initSearch("searchInput", function(data){
         console.log(data);
     });

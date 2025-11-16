@@ -96,6 +96,17 @@ tr[draggable="true"]:hover {
   box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
 }
 
+.table-action-btn.copy {
+  color: var(--info-color);
+  background-color: rgba(109, 133, 151, 0.08);
+}
+
+.table-action-btn.copy:hover {
+  background-color: rgba(109, 133, 151, 0.15);
+  color: var(--info-color);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
+}
+
 /* 暂停/启动按钮 */
 .table-action-btn.pause {
   color: var(--warning-color);

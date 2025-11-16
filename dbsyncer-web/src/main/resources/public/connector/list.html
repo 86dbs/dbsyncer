@@ -51,6 +51,9 @@
                             <button class="table-action-btn view" title="修改" th:data-id="${connector.id}" onclick="editConnector(this.dataset.id)">
                                 <i class="fa fa-edit"></i>
                             </button>
+                            <button class="table-action-btn copy" title="复制" th:data-id="${connector.id}" onclick="copyConnector(this.dataset.id)">
+                                <i class="fa fa-copy"></i>
+                            </button>
                             <button class="table-action-btn play" title="测试" th:data-id="${connector.id}" onclick="testConnector(this.dataset.id)">
                                 <i class="fa fa-plug"></i>
                             </button>
@@ -120,6 +123,18 @@ function editConnector(id) {
     doLoader('/connector/page/edit?id=' + id)
 }
 
+// 复制连接
+function copyConnector(id) {
+    doPoster("/connector/copy", { id: id }, function (response) {
+        if (response.success) {
+            bootGrowl('复制成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl('复制失败: ' + response.message, 'danger');
+        }
+    });
+}
+
 // 测试连接
 function testConnector(id) {
     // 显示加载状态
@@ -149,7 +164,7 @@ function deleteConnector(id) {
             doPoster("/connector/remove", { id: id }, function (response) {
                 if (response.success) {
                     bootGrowl('删除成功', 'success');
-                    doLoader('/connector/list');
+                    backIndexPage();
                 } else {
                     bootGrowl('删除失败: ' + response.message, 'danger');
                 }
