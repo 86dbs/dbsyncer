@@ -87,14 +87,24 @@ function refreshDataList(resultValue, append) {
 
 // 查看日志
 function bindQueryLogEvent() {
-    initSearch("searchLog", function(value){
-        doGetter("/monitor/queryLog", {'json': value, 'pageNum': 1, 'pageSize': 10}, function (data) {
-            if (data.success === true) {
-                refreshLogList(data.resultValue);
-            } else {
-                bootGrowl(data.resultValue, "danger");
-            }
-        });
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/monitor/queryLog',
+        tableBodySelector: '#logList',
+        paginationSelector: '#logPagination',
+        renderRow: function(row, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td>${escapeHtml(row.json || '')}</td>
+                    <td>${formatDate(row.createTime || '')}</td>
+                </tr>
+            `;
+        }
+    });
+    // 搜索框输入事件
+    initSearch('searchLog', function (searchKey) {
+        pagination.doSearch({'json': searchKey, 'pageNum': 1, 'pageSize': 10});
     });
 }
 

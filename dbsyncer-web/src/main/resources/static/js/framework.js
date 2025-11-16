@@ -14,6 +14,14 @@ function hideLoading() {
 function showEmpty(element, message) {
     $(element).html('<div class="empty"><div class="empty-icon"><i class="fa fa-inbox"></i></div><div class="empty-text">' + (message || '暂无数据') + '</div></div>');
 }
+
+// HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function formatDate(time) {
     const date = new Date(time);
     const YY = date.getFullYear() + '-';
@@ -665,7 +673,8 @@ function PaginationManager(options) {
             return;
         }
         data.forEach((item, index) => {
-            const html = config.renderRow(item, index, this.currentPage, this.pageSize);
+            const i = (this.currentPage - 1) * this.pageSize + index + 1;
+            const html = config.renderRow(item, i);
             tbody.append(html);
         });
     };

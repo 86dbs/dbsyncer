@@ -131,7 +131,7 @@ public class MonitorController extends BaseController {
         }
     }
 
-    @GetMapping("/queryLog")
+    @PostMapping("/queryLog")
     @ResponseBody
     public RestResult queryLog(HttpServletRequest request) {
         try {

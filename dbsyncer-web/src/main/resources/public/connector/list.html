@@ -65,7 +65,7 @@
                 </tr>
                 <!-- 空数据提示 -->
                 <tr th:if="${connectors == null or connectors.isEmpty()}">
-                    <td colspan="7" class="text-center">
+                    <td colspan="5" class="text-center">
                         <i class="fa fa-database empty-icon"></i>
                         <p class="empty-text">暂无连接</p>
                         <p class="empty-description">点击"添加"按钮创建第一个连接</p>
@@ -104,10 +104,10 @@ $(document).ready(function() {
         requestUrl: '/connector/search',
         tableBodySelector: '#connectorTableBody',
         paginationSelector: '#connectorPagination',
-        renderRow: function(connector, index, pageNo, pageSize) {
+        renderRow: function(connector, index) {
             return `
                 <tr>
-                    <td>${(pageNo - 1) * pageSize + index + 1}</td>
+                    <td>${index}</td>
                     <td>
                         <div class="d-flex align-center">
                             <i class="fa fa-database connector-icon"></i>
@@ -143,13 +143,6 @@ $(document).ready(function() {
         pagination.doSearch({'searchKey': searchKey});
     });
 });
-
-// HTML转义
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
 
 // 编辑连接
 function editConnector(id) {
