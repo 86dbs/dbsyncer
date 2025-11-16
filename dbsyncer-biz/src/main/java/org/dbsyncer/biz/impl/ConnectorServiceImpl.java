@@ -6,8 +6,10 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogService;
@@ -121,6 +123,23 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
                 .stream()
                 .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Paging<Connector> search(Map<String, String> params) {
+        String searchKey = params.get("searchKey");
+        List<Connector> list = getConnectorAll();
+        if (StringUtil.isNotBlank(searchKey)) {
+            list = list.stream().filter(c -> StringUtil.contains(c.getName(), searchKey)).collect(Collectors.toList());
+        }
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        Paging<Connector> paging = new Paging<>(pageNum, pageSize);
+        if (!CollectionUtils.isEmpty(list)) {
+            paging.setTotal(list.size());
+            paging.setData(list.stream().skip(pageNum - 1).limit(pageSize).collect(Collectors.toList()));
+        }
+        return paging;
     }
 
     @Override

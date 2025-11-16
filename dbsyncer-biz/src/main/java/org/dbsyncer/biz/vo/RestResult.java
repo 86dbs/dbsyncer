@@ -101,8 +101,8 @@ public class RestResult implements Serializable {
 
 	@Override
 	public String toString() {
-		return new StringBuilder().append("RestResult [success=").append(success).append(", resultValue=")
-				.append(resultValue).append(", status=").append(status).append("]").toString();
+		return "RestResult [success=" + success + ", resultValue=" +
+                resultValue + ", status=" + status + "]";
 	}
 
 }

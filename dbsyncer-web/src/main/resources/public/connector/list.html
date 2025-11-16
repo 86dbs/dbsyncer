@@ -104,13 +104,12 @@ $(document).ready(function() {
 
     // 搜索框输入事件
     initSearch('searchConnector', function (data){
-        doPoster('/connector/list', {'keyword' : data}, function(data){
+        doPoster('/connector/search', {'searchKey' : data}, function(data){
             if (data.success === true) {
                 // 更新分页信息
                 updatePaginationInfo();
-                bootGrowl('数据刷新成功', 'success');
             } else {
-                bootGrowl('数据刷新失败，请稍后重试', 'danger');
+                bootGrowl('搜索异常，请重试', 'danger');
             }
         });
     })
@@ -132,9 +131,9 @@ function testConnector(id) {
         btn.innerHTML = originalText;
         btn.disabled = false;
         if (response.success) {
-            bootGrowl('连接测试成功', 'success');
+            bootGrowl('测试成功', 'success');
         } else {
-            bootGrowl('连接测试失败: ' + response.message, 'danger');
+            bootGrowl('测试失败: ' + response.message, 'danger');
         }
     });
 }

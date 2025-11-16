@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -51,6 +50,18 @@ public class ConnectorController extends BaseController {
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
         model.put("connector", connectorService.getConnector(id));
         return "connector/edit";
+    }
+
+    @PostMapping("/search")
+    @ResponseBody
+    public RestResult search(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.search(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @PostMapping("/copy")
@@ -110,7 +121,6 @@ public class ConnectorController extends BaseController {
         }
     }
 
-
     /**
      * 获取连接器的数据库列表
      */
@@ -122,9 +132,7 @@ public class ConnectorController extends BaseController {
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            List<String> databases =connector.getDataBaseName();
-
-            return RestResult.restSuccess(databases);
+            return RestResult.restSuccess(connector.getDataBaseName());
         } catch (Exception e) {
             logger.error("获取数据库列表失败", e);
             return RestResult.restFail("获取数据库列表失败: " + e.getMessage());

@@ -61,7 +61,7 @@ $(document).ready(function() {
             const submitBtn = $('#connectorSubmitBtn');
             const originalText = submitBtn.html();
             submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-            doPoster("/connector/edit", $form.serializeJson(), function (response) {
+            doPoster("/connector/add", $form.serializeJson(), function (response) {
                 submitBtn.html(originalText).prop('disabled', false);
                 if (response.success === true) {
                     bootGrowl("保存成功!", "success");
