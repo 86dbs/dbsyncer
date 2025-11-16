@@ -515,7 +515,6 @@ select[readonly] {
 
 .empty-icon {
   font-size: var(--font-size-xxxl);
-  margin-bottom: var(--spacing-md);
   opacity: 0.5;
 }
 

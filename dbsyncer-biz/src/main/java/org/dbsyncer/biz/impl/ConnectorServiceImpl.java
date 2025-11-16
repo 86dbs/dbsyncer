@@ -137,7 +137,8 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         Paging<Connector> paging = new Paging<>(pageNum, pageSize);
         if (!CollectionUtils.isEmpty(list)) {
             paging.setTotal(list.size());
-            paging.setData(list.stream().skip(pageNum - 1).limit(pageSize).collect(Collectors.toList()));
+            int offset = (pageNum * pageSize) - pageSize;
+            paging.setData(list.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
         }
         return paging;
     }

@@ -75,9 +75,9 @@
         </table>
 
         <!-- 分页信息 -->
-        <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${connectors != null and !connectors.isEmpty()}">
-            <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
-            <div class="flex items-center gap-2">
+        <div id="connectorPagination" class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${connectors != null and !connectors.isEmpty()}">
+            <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${connectors.size()}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+            <div class="pagination-bar flex items-center gap-2">
                 <button class="pagination-btn" disabled>
                     <i class="fa fa-angle-left"></i>
                 </button>
@@ -92,12 +92,6 @@
 </div>
 
 <script>
-// 更新分页信息
-function updatePaginationInfo() {
-    const visibleRows = $('#connectorTableBody tr:visible').length;
-    $('#totalCount').text(visibleRows);
-}
-
 // 页面初始化
 $(document).ready(function() {
     // 定义返回函数，子页面返回
@@ -105,18 +99,57 @@ $(document).ready(function() {
         doLoader('/connector/list');
     };
 
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/connector/search',
+        tableBodySelector: '#connectorTableBody',
+        paginationSelector: '#connectorPagination',
+        renderRow: function(connector, index, pageNo, pageSize) {
+            return `
+                <tr>
+                    <td>${(pageNo - 1) * pageSize + index + 1}</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-database connector-icon"></i>
+                            <span>${escapeHtml(connector.name)}</span>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(connector.config?.connectorType || '')}</td>
+                    <td>${escapeHtml(connector.config?.url || '')}</td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <button class="table-action-btn view" title="修改" onclick="editConnector('${connector.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button class="table-action-btn copy" title="复制" onclick="copyConnector('${connector.id}')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                            <button class="table-action-btn play" title="测试" onclick="testConnector('${connector.id}')">
+                                <i class="fa fa-plug"></i>
+                            </button>
+                            <button class="table-action-btn delete" title="删除" onclick="deleteConnector('${connector.id}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+        emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></td>'
+    });
+
     // 搜索框输入事件
-    initSearch('searchConnector', function (data){
-        doPoster('/connector/search', {'searchKey' : data}, function(data){
-            if (data.success === true) {
-                // 更新分页信息
-                updatePaginationInfo();
-            } else {
-                bootGrowl('搜索异常，请重试', 'danger');
-            }
-        });
-    })
+    initSearch('searchConnector', function (searchKey) {
+        pagination.doSearch({'searchKey': searchKey});
+    });
 });
+
+// HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 // 编辑连接
 function editConnector(id) {
