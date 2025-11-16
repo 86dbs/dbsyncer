@@ -11,7 +11,7 @@
             <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="connectorBackBtn" type="button" class="btn btn-outline">
+            <button class="btn btn-outline" onclick="backIndexPage()">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
@@ -31,72 +31,48 @@
                     <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称"/>
                 </div>
             </div>
-            <div id="connectorConfig" class="text-center">
-                <div class="empty-icon"><i class="fa fa-cog"></i></div>
-                <div class="empty-text">请选择类型</div>
-            </div>
+            <div id="connectorConfig"></div>
         </form>
 
     </div>
 </div>
 
-<script th:src="@{/js/connector/add.js}"></script>
 <script>
-(function () {
-    function gotoConnectorList() {
-        if (typeof loadConnectorListPage === 'function') {
-            loadConnectorListPage();
-            return;
+$(document).ready(function() {
+    $('#connectorType').dbSelect({
+        type: 'single',
+        onSelect: function (data) {
+            const $connectorConfig = $("#connectorConfig");
+            $connectorConfig.html('<div class="loading"><div class="loading-spinner"></div>加载中...</div>');
+            $connectorConfig.load($basePath + "/connector/page/add" + data, function (response, status) {
+                if (status !== 'success') {
+                    $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-warning"></i></div><div class="empty-text">加载连接失败</div></div>');
+                }
+            });
         }
-        if (typeof doLoader === 'function') {
-            doLoader('/connector/list');
-            return;
+    });
+
+    // 绑定保存按钮事件
+    $('#connectorSubmitBtn').off('click').on('click', function () {
+        const $form = $("#connectorAddForm");
+        // 验证表单
+        if (validateForm($form)) {
+            // 显示提交状态
+            const submitBtn = $('#connectorSubmitBtn');
+            const originalText = submitBtn.html();
+            submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster("/connector/edit", $form.serializeJson(), function (response) {
+                submitBtn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    bootGrowl("保存成功!", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(response.resultValue, "danger");
+                }
+            });
         }
-        window.location.href = ($basePath || '') + '/connector/list';
-    }
-
-    function handleSubmit() {
-        var $form = $('#connectorAddForm');
-        if (!$form.length) {
-            return;
-        }
-
-        var isValid = true;
-        if (window.DBSyncerTheme && typeof DBSyncerTheme.validateForm === 'function') {
-            isValid = DBSyncerTheme.validateForm($form);
-        } else if (typeof $form.formValidate === 'function') {
-            isValid = $form.formValidate();
-        }
-
-        if (!isValid) {
-            return;
-        }
-
-        var data = typeof $form.serializeJson === 'function' ? $form.serializeJson() : $form.serialize();
-        if (typeof window.submitConnector === 'function') {
-            window.submitConnector(data);
-        }
-    }
-
-    function initializePage() {
-        if (typeof window.setupConnectorAddForm === 'function') {
-            window.setupConnectorAddForm();
-        }
-
-        window.backIndexPage = gotoConnectorList;
-
-        $('#connectorBackBtn').off('click.dbsyncer').on('click.dbsyncer', gotoConnectorList);
-        $('#connectorSubmitBtn').off('click.dbsyncer').on('click.dbsyncer', handleSubmit);
-    }
-
-    window.initializeConnectorAddPage = initializePage;
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializePage);
-    } else {
-        initializePage();
-    }
-})();
+    });
+})
 </script>
 
 </html>

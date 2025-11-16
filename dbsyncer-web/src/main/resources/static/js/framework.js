@@ -221,7 +221,7 @@ $.fn.formValidate = function () {
 };
 
 // 全局加载页面
-function doLoader(url, callback) {
+function doLoader(url) {
     // 使用统一的内容区域
     if ($mainContent.length) {
         // 显示加载状态
@@ -233,9 +233,6 @@ function doLoader(url, callback) {
             if (status !== 'success') {
                 bootGrowl('页面加载失败，请稍后重试', "danger");
                 return;
-            }
-            if (callback) {
-                callback();
             }
         });
     }

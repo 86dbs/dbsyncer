@@ -18,7 +18,7 @@
             </div>
             <div></div>
             <div class="lg:col-span-3 flex items-center justify-end gap-4">
-                <button class="btn btn-primary" id="addConnectorBtn">
+                <button class="btn btn-primary" onclick="doLoader('/connector/page/add')">
                     <i class="fa fa-plus"></i> 添加
                 </button>
             </div>
@@ -89,171 +89,6 @@
 </div>
 
 <script>
-
-// 加载数据源列表
-function loadConnectorList() {
-    // 智能刷新：根据当前页面类型执行相应的刷新操作
-    refreshCurrentPage();
-}
-
-// 智能刷新当前页面
-function refreshCurrentPage() {
-    var contentDiv = $('#mainContent');
-    if (!contentDiv.length) {
-        return;
-    }
-
-    // 检测当前页面类型
-    var currentContent = contentDiv.html();
-    
-    // 判断当前是否在数据源列表页面
-    if (currentContent.includes('dbsyncer-page-title') && currentContent.includes('数据源管理')) {
-        // 当前在数据源列表页面，刷新列表数据
-        refreshConnectorListData();
-    } else if (currentContent.includes('connectorAddForm') || currentContent.includes('添加连接')) {
-        // 当前在添加连接页面，刷新添加页面
-        loadAddConnectorPage();
-    } else {
-        // 其他情况，默认刷新数据源列表页面
-        loadConnectorListPage();
-    }
-}
-
-// 刷新数据源列表数据（不重新加载整个页面）
-function refreshConnectorListData() {
-    // 使用全局加载提示（如果可用）
-    showLoading();
-    doPoster('/connector/list', {}, function(data){
-        if (data.success === true) {
-            // 重新绑定事件
-            bindTableRowEvents();
-            // 更新分页信息
-            updatePaginationInfo();
-            bootGrowl('数据刷新成功', 'success');
-        } else {
-            bootGrowl('数据刷新失败，请稍后重试', 'danger');
-        }
-    });
-}
-
-// 绑定表格行事件
-function bindTableRowEvents() {
-    // 注意：由于HTML中已经使用了onclick属性，这里不需要重新绑定
-    // 全局函数 editConnector, testConnector, deleteConnector 会被onclick直接调用
-    // 这个函数保留用于未来可能的扩展
-}
-
-// 动态加载添加连接页面
-function loadAddConnectorPage() {
-    // 显示加载状态
-    showLoadingState();
-    
-    // 使用doLoader函数动态加载添加连接页面
-    if (typeof doLoader === 'function') {
-        doLoader('/connector/page/add', 0);
-    } else {
-        // 如果没有doLoader函数，使用jQuery load方法
-        loadAddConnectorPageDirectly();
-    }
-}
-
-// 直接加载添加连接页面
-function loadAddConnectorPageDirectly() {
-    // 使用统一的内容区域
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        // 显示加载状态
-        showLoadingState();
-        
-        // 加载添加连接页面内容
-        contentDiv.load('/connector/page/add', function(response, status, xhr) {
-            if (status === 'success') {
-                hideLoadingState();
-                // 初始化添加连接页面的脚本
-                if (typeof window.initializeConnectorAddPage === 'function') {
-                    window.initializeConnectorAddPage();
-                }
-            } else {
-                hideLoadingState();
-                bootGrowl('加载添加连接页面失败，请稍后重试', "danger");
-            }
-        });
-    }
-}
-
-// 显示加载状态
-function showLoadingState() {
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        contentDiv.html('<div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">加载中...</div></div>');
-    }
-}
-
-// 隐藏加载状态
-function hideLoadingState() {
-    // 加载状态会在内容加载完成后自动替换
-}
-
-// 初始化添加连接页面
-function initAddConnectorPage() {
-    if (typeof window.initializeConnectorAddPage === 'function') {
-        window.initializeConnectorAddPage();
-    }
-}
-
-// 加载数据源列表页面
-function loadConnectorListPage() {
-    // 使用统一的内容区域
-    const contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        // 显示加载状态
-        showLoadingState();
-        
-        // 加载数据源列表页面内容
-        contentDiv.load('/connector/list', function(response, status, xhr) {
-            if (status === 'success') {
-                hideLoadingState();
-                // 重新初始化数据源列表页面的脚本
-                initConnectorListPage();
-            } else {
-                hideLoadingState();
-                alert('加载数据源列表页面失败，请稍后重试');
-            }
-        });
-    }
-}
-
-// 初始化数据源列表页面
-function initConnectorListPage() {
-    // 先解绑事件，避免重复绑定
-    $('#addConnectorBtn').off('click');
-    $('#refreshBtn').off('click');
-    $('#searchInput').off('input');
-    $('#typeFilter').off('change');
-    
-    // 重新绑定事件
-    $('#addConnectorBtn').on('click', function() {
-        loadAddConnectorPage();
-    });
-
-    $('#refreshBtn').on('click', function() {
-        loadConnectorList();
-    });
-
-    $('#searchInput').on('input', function() {
-        var query = $(this).val();
-        filterConnectors(query);
-    });
-
-    $('#typeFilter').on('change', function() {
-        filterConnectors();
-    });
-
-    // 绑定表格行事件
-    bindTableRowEvents();
-
-}
-
 // 更新分页信息
 function updatePaginationInfo() {
     const visibleRows = $('#connectorTableBody tr:visible').length;
@@ -262,53 +97,28 @@ function updatePaginationInfo() {
 
 // 页面初始化
 $(document).ready(function() {
-    // 添加连接按钮点击事件 - 动态加载添加连接页面
-    $('#addConnectorBtn').on('click', function() {
-        loadAddConnectorPage();
-    });
-
-    // 刷新按钮点击事件
-    $('#refreshBtn').on('click', function() {
-        loadConnectorList();
-    });
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/connector/list');
+    };
 
     // 搜索框输入事件
-    $('#searchInput').on('input', function() {
-        var query = $(this).val();
-        filterConnectors(query);
-    });
-
-    $('#typeFilter').on('change', function() {
-        filterConnectors();
-    });
+    initSearch('searchConnector', function (data){
+        doPoster('/connector/list', {'keyword' : data}, function(data){
+            if (data.success === true) {
+                // 更新分页信息
+                updatePaginationInfo();
+                bootGrowl('数据刷新成功', 'success');
+            } else {
+                bootGrowl('数据刷新失败，请稍后重试', 'danger');
+            }
+        });
+    })
 });
 
-/**
- * 编辑连接器
- */
+// 编辑连接
 function editConnector(id) {
-    // // 使用统一的内容区域
-    // const contentDiv = $('#mainContent');
-    // if (contentDiv.length) {
-    //     // 显示加载状态
-    //     showLoading();
-    //     // 加载编辑页面内容
-    //     contentDiv.load('/connector/page/edit?id=' + id, function(response, status, xhr) {
-    //         hideLoading();
-    //         if (status === 'success') {
-    //             // 初始化编辑页面的脚本
-    //             initConnectorEditPage();
-    //         } else {
-    //             bootGrowl('加载修改页面失败，请稍后重试', 'danger');
-    //         }
-    //     });
-    // }
-
-    doLoader('/connector/page/edit?id=' + id, function () {
-        window.backIndexPage = function () {
-            loadConnectorListPage();
-        };
-    })
+    doLoader('/connector/page/edit?id=' + id)
 }
 
 // 测试连接
@@ -323,15 +133,13 @@ function testConnector(id) {
         btn.disabled = false;
         if (response.success) {
             bootGrowl('连接测试成功', 'success');
-            // 动态重新加载数据源列表页面以更新状态
-            loadConnectorListPage();
         } else {
             bootGrowl('连接测试失败: ' + response.message, 'danger');
         }
     });
 }
 
-// 删除数据源
+// 删除连接
 function deleteConnector(id) {
     showConfirm({
         title: '确定要删除连接？',
@@ -342,8 +150,7 @@ function deleteConnector(id) {
             doPoster("/connector/remove", { id: id }, function (response) {
                 if (response.success) {
                     bootGrowl('删除成功', 'success');
-                    // 动态重新加载数据源列表页面
-                    loadConnectorListPage();
+                    doLoader('/connector/list');
                 } else {
                     bootGrowl('删除失败: ' + response.message, 'danger');
                 }
