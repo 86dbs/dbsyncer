@@ -124,14 +124,9 @@ function refreshConnectorListData() {
     // 使用全局加载提示（如果可用）
     showLoading();
     doPoster('/connector/list', {}, function(data){
-        if (data.success == true) {
-            renderTaskList(data.resultValue);
-            // 更新表格内容
-            $('#connectorTableBody').html('');
-
+        if (data.success === true) {
             // 重新绑定事件
             bindTableRowEvents();
-
             // 更新分页信息
             updatePaginationInfo();
             bootGrowl('数据刷新成功', 'success');
@@ -209,7 +204,7 @@ function initAddConnectorPage() {
 // 加载数据源列表页面
 function loadConnectorListPage() {
     // 使用统一的内容区域
-    var contentDiv = $('#mainContent');
+    const contentDiv = $('#mainContent');
     if (contentDiv.length) {
         // 显示加载状态
         showLoadingState();
@@ -259,103 +254,9 @@ function initConnectorListPage() {
 
 }
 
-// 提交连接器表单
-function submitConnectorForm() {
-    var form = $('#connectorAddForm');
-    
-    // 使用现有的表单验证
-    if (typeof form.formValidate === 'function' && form.formValidate() === true) {
-        var data = form.serializeJson();
-        
-        // 显示提交状态
-        var submitBtn = $('#connectorSubmitBtn');
-        var originalText = submitBtn.html();
-        submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-        
-        // 使用现有的doPoster函数提交表单
-        if (typeof doPoster === 'function') {
-            doPoster("/connector/add", data, function(response) {
-                submitBtn.html(originalText).prop('disabled', false);
-                
-                if (response.success === true) {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl("新增连接成功!", "success");
-                    } else {
-                        alert('连接器添加成功');
-                    }
-                    // 返回到数据源列表页面
-                    loadConnectorListPage();
-                } else {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl(response.resultValue, "danger");
-                    } else {
-                        alert('添加失败: ' + response.resultValue);
-                    }
-                }
-            });
-        } else {
-            // 如果没有doPoster函数，使用jQuery Ajax
-            $.ajax({
-                url: '/connector/add',
-                type: 'POST',
-                data: data,
-                success: function(response) {
-                    submitBtn.html(originalText).prop('disabled', false);
-                    
-                    if (response.success) {
-                        alert('连接器添加成功');
-                        loadConnectorListPage();
-                    } else {
-                        alert('添加失败: ' + response.message);
-                    }
-                },
-                error: function() {
-                    submitBtn.html(originalText).prop('disabled', false);
-                    alert('添加失败，请稍后重试');
-                }
-            });
-        }
-    }
-}
-
-// 筛选数据源
-function filterConnectors(query) {
-    var typeFilter = $('#typeFilter').val();
-    var statusFilter = $('#statusFilter').val();
-    
-    // 获取所有表格行
-    var rows = $('#connectorTableBody tr');
-    
-    rows.each(function() {
-        var row = $(this);
-        var name = row.find('td:nth-child(2) span').text().toLowerCase();
-        var type = row.find('td:nth-child(3)').text().toLowerCase();
-        
-        var showRow = true;
-        
-        // 按名称搜索
-        if (query && name.indexOf(query.toLowerCase()) === -1) {
-            showRow = false;
-        }
-        
-        // 按类型筛选
-        if (typeFilter && type !== typeFilter) {
-            showRow = false;
-        }
-        
-        // 状态筛选已移除，因为状态列已被删除
-        // 如果需要状态筛选，可以通过API调用实现
-        
-        row.toggle(showRow);
-    });
-    
-    // 更新分页信息
-    updatePaginationInfo();
-}
-
 // 更新分页信息
 function updatePaginationInfo() {
-    var visibleRows = $('#connectorTableBody tr:visible').length;
+    const visibleRows = $('#connectorTableBody tr:visible').length;
     $('#totalCount').text(visibleRows);
 }
 
@@ -383,116 +284,31 @@ $(document).ready(function() {
 });
 
 /**
- * 编辑数据源 - 动态加载编辑页面
+ * 编辑连接器
  */
 function editConnector(id) {
-    // 使用统一的内容区域
-    var contentDiv = $('#mainContent');
-    if (contentDiv.length) {
-        // 显示加载状态
-        showLoading();
-        
-        // 加载编辑页面内容
-        contentDiv.load('/connector/page/edit?id=' + id, function(response, status, xhr) {
-            hideLoading();
-            if (status === 'success') {
-                // 初始化编辑页面的脚本
-                initConnectorEditPage();
-            } else {
-                bootGrowl('加载编辑页面失败，请稍后重试', 'danger');
-            }
-        });
-    }
-}
+    // // 使用统一的内容区域
+    // const contentDiv = $('#mainContent');
+    // if (contentDiv.length) {
+    //     // 显示加载状态
+    //     showLoading();
+    //     // 加载编辑页面内容
+    //     contentDiv.load('/connector/page/edit?id=' + id, function(response, status, xhr) {
+    //         hideLoading();
+    //         if (status === 'success') {
+    //             // 初始化编辑页面的脚本
+    //             initConnectorEditPage();
+    //         } else {
+    //             bootGrowl('加载修改页面失败，请稍后重试', 'danger');
+    //         }
+    //     });
+    // }
 
-/**
- * 初始化数据源编辑页面
- */
-function initConnectorEditPage() {
-    // 重写backIndexPage函数，使其返回到数据源列表页面
-    window.backIndexPage = function() {
-        loadConnectorListPage();
-    };
-
-    // 绑定返回按钮事件
-    $('#connectorBackBtn').off('click').on('click', function() {
-        loadConnectorListPage();
-    });
-
-    // 绑定保存按钮事件
-    $('#connectorSubmitBtn').off('click').on('click', function() {
-        var $form = $("#connectorModifyForm");
-        if (typeof $form.formValidate === 'function' && $form.formValidate() === true) {
-            var data = $form.serializeJson();
-            submitConnectorEditForm(data);
-        }
-    });
-}
-
-/**
- * 提交编辑数据源表单
- */
-function submitConnectorEditForm(data) {
-    // 显示提交状态
-    var submitBtn = $('#connectorSubmitBtn');
-    var originalText = submitBtn.html();
-    submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 修改中...').prop('disabled', true);
-    
-    // 使用现有的doPoster函数提交表单
-    if (typeof doPoster === 'function') {
-        doPoster("/connector/edit", data, function(response) {
-            submitBtn.html(originalText).prop('disabled', false);
-            
-            if (response.success === true) {
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl("修改成功!", "success");
-                } else {
-                    alert('修改成功');
-                }
-                // 返回到数据源列表页面
-                loadConnectorListPage();
-            } else {
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl(response.resultValue, "danger");
-                } else {
-                    alert('修改失败: ' + response.resultValue);
-                }
-            }
-        });
-    } else {
-        // 如果没有doPoster函数，使用jQuery Ajax
-        $.ajax({
-            url: '/connector/edit',
-            type: 'POST',
-            data: data,
-            success: function(response) {
-                submitBtn.html(originalText).prop('disabled', false);
-                
-                if (response.success) {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl("修改连接成功!", "success");
-                    } else {
-                        alert('修改连接成功');
-                    }
-                    loadConnectorListPage();
-                } else {
-                    if (typeof bootGrowl === 'function') {
-                        bootGrowl(response.resultValue || response.message, "danger");
-                    } else {
-                        alert('修改失败: ' + (response.resultValue || response.message));
-                    }
-                }
-            },
-            error: function() {
-                submitBtn.html(originalText).prop('disabled', false);
-                if (typeof bootGrowl === 'function') {
-                    bootGrowl('修改失败，请稍后重试', 'danger');
-                } else {
-                    alert('修改失败，请稍后重试');
-                }
-            }
-        });
-    }
+    doLoader('/connector/page/edit?id=' + id, function () {
+        window.backIndexPage = function () {
+            loadConnectorListPage();
+        };
+    })
 }
 
 // 测试连接
@@ -502,41 +318,28 @@ function testConnector(id) {
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="测试中"></i>';
     btn.disabled = true;
-
-    // 调用后端API测试连接
-    $.ajax({
-        url: '/connector/test',
-        type: 'POST',
-        data: { id: id },
-        success: function(response) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            
-            if (response.success) {
-                bootGrowl('连接测试成功', 'success');
-                // 动态重新加载数据源列表页面以更新状态
-                loadConnectorListPage();
-            } else {
-                bootGrowl('连接测试失败: ' + response.message, 'danger');
-            }
-        },
-        error: function() {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            bootGrowl('连接测试失败，请稍后重试', 'danger');
+    doPoster("/connector/test", { id: id }, function (response) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if (response.success) {
+            bootGrowl('连接测试成功', 'success');
+            // 动态重新加载数据源列表页面以更新状态
+            loadConnectorListPage();
+        } else {
+            bootGrowl('连接测试失败: ' + response.message, 'danger');
         }
     });
 }
 
 // 删除数据源
 function deleteConnector(id) {
-    if (confirm('确定要删除连接？')) {
-        // 调用后端API删除数据源
-        $.ajax({
-            url: '/connector/remove',
-            type: 'POST',
-            data: { id: id },
-            success: function(response) {
+    showConfirm({
+        title: '确定要删除连接？',
+        icon: 'warning',
+        size: 'large',
+        confirmType: 'danger',
+        onConfirm: function() {
+            doPoster("/connector/remove", { id: id }, function (response) {
                 if (response.success) {
                     bootGrowl('删除成功', 'success');
                     // 动态重新加载数据源列表页面
@@ -544,12 +347,9 @@ function deleteConnector(id) {
                 } else {
                     bootGrowl('删除失败: ' + response.message, 'danger');
                 }
-            },
-            error: function() {
-                bootGrowl('删除失败，请稍后重试', 'danger');
-            }
-        });
-    }
+            });
+        }
+    });
 }
 </script>
 

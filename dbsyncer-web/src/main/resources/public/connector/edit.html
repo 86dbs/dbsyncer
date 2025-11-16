@@ -41,5 +41,34 @@
     </div>
 </div>
 
-<script th:src="@{/js/connector/edit.js}"></script>
+<script>
+$(document).ready(function() {
+    // 绑定返回按钮事件
+    $('#connectorBackBtn').off('click').on('click', function() {
+        backIndexPage();
+    });
+
+    // 绑定保存按钮事件
+    $('#connectorSubmitBtn').off('click').on('click', function() {
+        const $form = $("#connectorModifyForm");
+        // 验证表单
+        if (validateForm($form)) {
+            // 显示提交状态
+            const submitBtn = $('#connectorSubmitBtn');
+            const originalText = submitBtn.html();
+            submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster("/connector/edit", $form.serializeJson(), function(response) {
+                submitBtn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    bootGrowl("保存成功!", "success");
+                    // 返回到数据源列表页面
+                    loadConnectorListPage();
+                } else {
+                    bootGrowl(response.resultValue, "danger");
+                }
+            });
+        }
+    });
+})
+</script>
 </html>

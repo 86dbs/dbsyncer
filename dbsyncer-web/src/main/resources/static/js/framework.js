@@ -221,7 +221,7 @@ $.fn.formValidate = function () {
 };
 
 // 全局加载页面
-function doLoader(url) {
+function doLoader(url, callback) {
     // 使用统一的内容区域
     if ($mainContent.length) {
         // 显示加载状态
@@ -232,6 +232,10 @@ function doLoader(url) {
             hideLoading();
             if (status !== 'success') {
                 bootGrowl('页面加载失败，请稍后重试', "danger");
+                return;
+            }
+            if (callback) {
+                callback();
             }
         });
     }
@@ -959,6 +963,29 @@ $.fn.dbSelect = function(options) {
     renderOptions('');
     updateDisplay();
 
+    // 如果没有设置默认值，检查是否有 selected 属性或默认选中第一个
+    if (selectedValues.length === 0 && $select.is('select')) {
+        // 检查是否有 selected 属性的选项
+        const $selectedOption = $select.find('option:selected');
+        if ($selectedOption.length && $selectedOption.val()) {
+            selectedValues = [$selectedOption.val()];
+        } else {
+            // 没有 selected 属性，默认选中第一个非空选项
+            const $firstOption = $select.find('option').filter(function() {
+                return $(this).val() && $(this).val() !== '';
+            }).first();
+            if ($firstOption.length) {
+                selectedValues = [$firstOption.val()];
+            }
+        }
+        // 重新更新显示
+        if (selectedValues.length > 0) {
+            updateDisplay();
+            renderOptions('');
+            triggerSelectEvent();
+        }
+    }
+
     // 保存配置
     $component.data('dbSelect', {
         getValues: function() { return selectedValues; },
@@ -1214,11 +1241,11 @@ $(function () {
     $("#nav_logout").click(function () {
         // 基础用法
         showConfirm({
-            title: '确定要注销吗？',
+            title: '确定要注销？',
             message: '确定后将跳转至登录页面',
             icon: 'info',
             size: 'large',
-            confirmType: 'danger',
+            confirmType: 'info',
             onConfirm: function() {
                 doPoster("/logout", null, function (data) {
                     location.href = $basePath;
