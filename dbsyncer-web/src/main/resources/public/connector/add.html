@@ -58,7 +58,7 @@ $(document).ready(function() {
         // 验证表单
         if (validateForm($form)) {
             // 显示提交状态
-            const submitBtn = $('#connectorSubmitBtn');
+            const submitBtn = $(this);
             const originalText = submitBtn.html();
             submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
             doPoster("/connector/add", $form.serializeJson(), function (response) {
