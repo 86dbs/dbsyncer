@@ -1337,7 +1337,29 @@ function showConfirm(options) {
     };
 }
 
+// 注销
+function logout() {
+    // 基础用法
+    showConfirm({
+        title: '确定要注销？',
+        message: '确定后将跳转至登录页面',
+        icon: 'info',
+        size: 'large',
+        confirmType: 'info',
+        onConfirm: function () {
+            doPoster("/logout", null, function (data) {
+                location.href = $basePath;
+            });
+        }
+    });
+}
+
 $(function () {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/index');
+    };
+
     // 导出到全局
     window.DBSyncerTheme = {
         showLoading: showLoading,
@@ -1352,14 +1374,48 @@ $(function () {
         initSearch: initSearch,
         showConfirm: showConfirm
     };
-    
-    // 向后兼容
-    window.initMultipleInputTags = initMultipleInputTags;
 
-    // // 刷新登录用户
-    // refreshLoginUser();
-    // // 刷新授权信息
-    // refreshLicenseInfo();
+    // 刷新授权信息
+    doGetter("/license/query.json", {}, function (data) {
+        if (data.success === true) {
+            // 社区版
+            if (isBlank(data.resultValue.key)) {
+                return;
+            }
+            $("#licenseInfo").show();
+            // 专业版
+            const licenseInfo = data.resultValue;
+            const $content = $("#effectiveContent");
+            const $effectiveTime = licenseInfo.effectiveTime;
+            if ($effectiveTime <= 0) {
+                $content.text('未激活');
+                $content.addClass('text-warning');
+                return;
+            }
+            const $currentTime = licenseInfo.currentTime;
+            const $10days = 864000000;
+            // 有效期内
+            if ($currentTime < $effectiveTime && $effectiveTime - $10days > $currentTime) {
+                $("#licenseCheck").removeClass("hidden");
+            }
+            // 即将过期
+            else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
+                $("#licenseRemind").removeClass("hidden");
+            }
+            // 已过期
+            else if ($currentTime > $effectiveTime) {
+                $("#licenseWarning").removeClass("hidden");
+            }
+            $content.text(licenseInfo.effectiveContent);
+        }
+    });
+
+    // 刷新登录用户
+    doGetter("/user/getUserInfo.json", {}, function (data) {
+        if (data.success === true) {
+            $("#currentUser").text(data.resultValue.nickname);
+        }
+    });
 
     // 初始化版权信息
     doGetter("/index/version.json", {}, function (data) {
@@ -1369,28 +1425,6 @@ $(function () {
             settings.watermark_txt = data.resultValue.watermark;
             watermark();
         }
-    });
-
-    // 修改登录用户
-    $("#edit_personal").click(function () {
-        doLoader("/user/page/edit?username=" + $(this).attr("username"));
-    });
-
-    // 注销
-    $("#nav_logout").click(function () {
-        // 基础用法
-        showConfirm({
-            title: '确定要注销？',
-            message: '确定后将跳转至登录页面',
-            icon: 'info',
-            size: 'large',
-            confirmType: 'info',
-            onConfirm: function() {
-                doPoster("/logout", null, function (data) {
-                    location.href = $basePath;
-                });
-            }
-        });
     });
 
     // 新导航链接点击事件
