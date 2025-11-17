@@ -8,10 +8,10 @@
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button id="userSubmitBtn" type="button" class="btn btn-primary">
+            <button id="userSubmitBtn" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="userBackBtn" type="button" class="btn btn-outline">
+            <button class="btn btn-outline" onclick="backIndexPage()">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
@@ -72,27 +72,21 @@
 
 <script type="text/javascript">
     // 绑定多值输入框事件
-    initMultipleInputTags();
+    DBSyncerTheme.initMultipleInputTags();
 
     //保存
     $("#userSubmitBtn").on('click', function () {
         const $form = $("#user-form-add");
-        const $btn = $(this);
-        // 防止重复提交
-        if ($btn.prop('disabled')) {
-            return;
-        }
         if (!DBSyncerTheme.validateForm($form)) {
             bootGrowl("保存失败，请检查表单", "warning");
             return;
         }
 
-        $btn.prop('disabled', true);
+        const $btn = $(this);
         const originalText = $btn.html();
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
         doPoster("/user/add", $form.serializeJson(), function (response) {
-            $btn.prop('disabled', false);
-            $btn.html(originalText);
+            $btn.html(originalText).prop('disabled', false);
             if (response.success === true) {
                 bootGrowl("新增用户成功！", "success");
                 doLoader("/user?refresh=" + new Date().getTime());
@@ -100,11 +94,6 @@
                 bootGrowl(response.resultValue || "新增失败", "danger");
             }
         });
-    });
-
-    //返回
-    $("#userBackBtn").on('click', function () {
-        doLoader("/user?refresh=" + new Date().getTime());
     });
 </script>
 </html>

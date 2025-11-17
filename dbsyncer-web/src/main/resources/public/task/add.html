@@ -835,7 +835,7 @@
         console.log('[第二步] 完整配置:', completeConfig);
         
         // 一次性提交所有配置创建任务
-        showLoading();
+        DBSyncerTheme.showLoading();
         $.ajax({
             url: $basePath + "/task/add",
             type: "POST",
@@ -847,7 +847,7 @@
                 json: JSON.stringify(completeConfig)
             }),
             success: function (result) {
-                hideLoading();
+                DBSyncerTheme.hideLoading();
                 console.log('[第二步] Ajax 响应结果:', result);
                 
                 if (result.success == true) {
@@ -864,7 +864,7 @@
                 }
             },
             error: function (xhr, status, info) {
-                hideLoading();
+                DBSyncerTheme.hideLoading();
                 console.error('[第二步] Ajax 请求失败:', status, info);
                 bootGrowl("访问异常，请刷新或重试.", "danger");
             }

@@ -251,8 +251,7 @@ function refreshMappingListData(silent) {
     var searchQuery = $('#searchInput').val();
     
     console.log('[刷新数据] 开始刷新，当前页:', savedPage, '搜索:', searchQuery || '无');
-    
-    // ✅ 不使用 showLoading()，因为它会清空整个 #mainContent
+
     // 使用简单的视觉反馈
     if (!silent) {
         // 添加一个半透明遮罩层到表格上
@@ -475,11 +474,11 @@ function loadAddMappingPageDirectly() {
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
         // 显示加载状态
-        showLoading();
+        DBSyncerTheme.showLoading();
         
         // 加载添加任务页面内容
         contentDiv.load('/mapping/pageAdd', function(response, status, xhr) {
-            hideLoading();
+            DBSyncerTheme.hideLoading();
             
             if (status === 'success') {
                 // 初始化添加任务页面的脚本
@@ -519,11 +518,11 @@ function loadMappingListPage() {
     // 使用统一的内容区域
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
-        showLoading();
+        DBSyncerTheme.showLoading();
         
         // 加载同步任务列表页面内容
         contentDiv.load('/mapping/list', function(response, status, xhr) {
-            hideLoading();
+            DBSyncerTheme.hideLoading();
             
             if (status === 'success') {
                 // 重新初始化同步任务列表页面的脚本
@@ -972,11 +971,11 @@ function editMapping(id) {
     // 使用统一的内容区域
     var contentDiv = $('#mainContent');
     if (contentDiv.length) {
-        showLoading();
+        DBSyncerTheme.showLoading();
         
         // 加载编辑页面内容
         contentDiv.load('/mapping/page/edit?id=' + id, function(response, status, xhr) {
-            hideLoading();
+            DBSyncerTheme.hideLoading();
             
             if (status === 'success') {
                 // 初始化编辑页面的脚本

@@ -240,7 +240,6 @@ function doLoader(url) {
             hideLoading();
             if (status !== 'success') {
                 bootGrowl('页面加载失败，请稍后重试', "danger");
-                return;
             }
         });
     }
@@ -262,7 +261,7 @@ function doRequest(action, data) {
 
 // 异常响应
 function doErrorResponse(xhr, status, info) {
-    hideLoading();
+    DBSyncerTheme.hideLoading();
     bootGrowl("访问异常，请刷新或重试.", "danger");
 }
 
@@ -1354,27 +1353,18 @@ function logout() {
     });
 }
 
-$(function () {
-    // 定义返回函数，子页面返回
-    window.backIndexPage = function () {
-        doLoader('/index');
-    };
+// 刷新登录人信息
+function refreshLoginUser() {
+    // 刷新登录用户
+    doGetter("/user/getUserInfo.json", {}, function (data) {
+        if (data.success === true) {
+            $("#currentUser").text(data.resultValue.nickname);
+        }
+    });
+}
 
-    // 导出到全局
-    window.DBSyncerTheme = {
-        showLoading: showLoading,
-        hideLoading: hideLoading,
-        showEmpty: showEmpty,
-        formatDate: formatDate,
-        validateForm: validateForm,
-        notify: notify,
-        initFileUpload: initFileUpload,
-        initQRCodePopover: initQRCodePopover,
-        initMultipleInputTags: initMultipleInputTags,
-        initSearch: initSearch,
-        showConfirm: showConfirm
-    };
-
+// 刷新授权信息
+function refreshLicense() {
     // 刷新授权信息
     doGetter("/license/query.json", {}, function (data) {
         if (data.success === true) {
@@ -1409,14 +1399,31 @@ $(function () {
             $content.text(licenseInfo.effectiveContent);
         }
     });
+}
 
-    // 刷新登录用户
-    doGetter("/user/getUserInfo.json", {}, function (data) {
-        if (data.success === true) {
-            $("#currentUser").text(data.resultValue.nickname);
-        }
-    });
+$(function () {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/index');
+    };
 
+    // 导出到全局
+    window.DBSyncerTheme = {
+        showLoading: showLoading,
+        hideLoading: hideLoading,
+        showEmpty: showEmpty,
+        formatDate: formatDate,
+        validateForm: validateForm,
+        notify: notify,
+        initFileUpload: initFileUpload,
+        initQRCodePopover: initQRCodePopover,
+        initMultipleInputTags: initMultipleInputTags,
+        initSearch: initSearch,
+        showConfirm: showConfirm
+    };
+
+    refreshLoginUser();
+    refreshLicense();
     // 初始化版权信息
     doGetter("/index/version.json", {}, function (data) {
         if (data.success === true) {

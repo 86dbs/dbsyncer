@@ -1,18 +1,14 @@
 $(function () {
     // 初始化标签输入框
-    if (window.initMultipleInputTags) {
-        initMultipleInputTags();
-    }
+    DBSyncerTheme.initMultipleInputTags();
     
     // 初始化二维码悬浮提示
-    if (window.DBSyncerTheme && DBSyncerTheme.initQRCodePopover) {
-        DBSyncerTheme.initQRCodePopover({
-            url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
-            selector: '.qrcode-trigger',
-            size: 150,
-            position: 'top'
-        });
-    }
+    DBSyncerTheme.initQRCodePopover({
+        url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
+        selector: '.qrcode-trigger',
+        size: 150,
+        position: 'top'
+    });
 
     // 删除激活码
     $("#removeBtn").on('click', function(){
@@ -118,23 +114,21 @@ $(function () {
     }
 
     // 初始化文件上传组件
-    if (window.DBSyncerTheme && DBSyncerTheme.initFileUpload) {
-        DBSyncerTheme.initFileUpload('#licenseUploader', {
-            uploadUrl: $basePath + '/license/upload',
-            maxFiles: 1,
-            maxSize: 10 * 1024 * 1024, // 10MB
-            autoUpload: true,
-            onSuccess: function(file, response) {
-                if (response.success) {
-                    bootGrowl("激活码上传成功！", "success");
-                    doLoader("/license");
-                } else {
-                    bootGrowl(response.resultValue || "上传失败", "danger");
-                }
-            },
-            onError: function(file, error) {
-                bootGrowl(error || "上传失败", "danger");
+    DBSyncerTheme.initFileUpload('#licenseUploader', {
+        uploadUrl: $basePath + '/license/upload',
+        maxFiles: 1,
+        maxSize: 10 * 1024 * 1024, // 10MB
+        autoUpload: true,
+        onSuccess: function(file, response) {
+            if (response.success) {
+                bootGrowl("激活码上传成功！", "success");
+                doLoader("/license");
+            } else {
+                bootGrowl(response.resultValue || "上传失败", "danger");
             }
-        });
-    }
+        },
+        onError: function(file, error) {
+            bootGrowl(error || "上传失败", "danger");
+        }
+    });
 });

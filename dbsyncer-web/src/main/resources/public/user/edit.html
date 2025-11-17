@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
     <div class="card-header">
@@ -8,10 +8,10 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button id="user-btn-submit" type="button" class="btn btn-primary">
+            <button id="user-btn-submit" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="user-btn-back" type="button" class="btn btn-outline">
+            <button class="btn btn-outline" onclick="backIndexPage()">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
@@ -21,7 +21,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">角色</label>
                     <div class="form-control-area">
-                        <input class="form-control" name="roleName" type="text" readonly th:value="${currentUser?.roleName}"/>
+                        <input class="form-control" name="roleName" type="text" readonly
+                               th:value="${currentUser?.roleName}"/>
                     </div>
                 </div>
 
@@ -29,7 +30,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">账号</label>
                     <div class="form-control-area">
-                        <input class="form-control" name="username" type="text" maxlength="50" readonly th:value="${currentUser?.username}"/>
+                        <input class="form-control" name="username" type="text" maxlength="50" readonly
+                               th:value="${currentUser?.username}"/>
                     </div>
                 </div>
 
@@ -37,7 +39,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">昵称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="nickname" type="text" maxlength="50" required placeholder="请输入昵称" th:value="${currentUser?.nickname}"/>
+                        <input class="form-control" name="nickname" type="text" maxlength="50" required
+                               placeholder="请输入昵称" th:value="${currentUser?.nickname}"/>
                     </div>
                 </div>
 
@@ -45,7 +48,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">旧密码</label>
                     <div class="form-control-area">
-                        <input class="form-control" name="oldPwd" type="password" maxlength="64" placeholder="如需修改密码请输入旧密码"/>
+                        <input class="form-control" name="oldPwd" type="password" maxlength="64"
+                               placeholder="如需修改密码请输入旧密码"/>
                     </div>
                 </div>
 
@@ -53,17 +57,20 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">新密码</label>
                     <div class="form-control-area">
-                        <input class="form-control" name="newPwd" type="password" maxlength="64" placeholder="请输入新密码"/>
+                        <input class="form-control" name="newPwd" type="password" maxlength="64"
+                               placeholder="请输入新密码"/>
                     </div>
                 </div>
 
                 <!-- 邮箱 -->
                 <div class="form-item">
                     <label class="form-label">邮箱
-                        <i class="fa fa-question-circle text-tertiary" aria-hidden="true" title="支持多个邮箱，用逗号分隔"></i>
+                        <i class="fa fa-question-circle text-tertiary" aria-hidden="true"
+                           title="支持多个邮箱，用逗号分隔"></i>
                     </label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" name="email" data-role="tagsinput" th:value="${currentUser?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
+                        <input type="text" class="form-control" name="email" data-role="tagsinput"
+                               th:value="${currentUser?.email}" placeholder="请输入邮箱地址，支持多个邮箱"/>
                     </div>
                 </div>
 
@@ -71,7 +78,8 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 <div class="form-item">
                     <label class="form-label">手机</label>
                     <div class="form-control-area">
-                        <input type="tel" class="form-control" maxlength="13" name="phone" th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
+                        <input type="tel" class="form-control" maxlength="13" name="phone"
+                               th:value="${currentUser?.phone}" placeholder="请输入手机号码"/>
                     </div>
                 </div>
             </div>
@@ -80,56 +88,46 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 </div>
 
 <script type="text/javascript" th:inline="javascript">
-  const currentUserName = [[${currentUserName}]];
+    const currentUserName = [[${currentUserName}]];
 
-  // 绑定多值输入框事件
-  initMultipleInputTags();
+    // 绑定多值输入框事件
+    DBSyncerTheme.initMultipleInputTags();
 
-  //保存
-  $("#user-btn-submit").on('click', function () {
-      const $form = $("#user-form-edit");
-      const $btn = $(this);
-      // 防止重复提交
-      if ($btn.prop('disabled')) {
-          return;
-      }
-      if (!DBSyncerTheme.validateForm($form)) {
-          bootGrowl("保存失败，请检查表单", "warning");
-          return;
-      }
+    //保存
+    $("#user-btn-submit").on('click', function () {
+        const $form = $("#user-form-edit");
+        if (!DBSyncerTheme.validateForm($form)) {
+            bootGrowl("保存失败，请检查表单", "warning");
+            return;
+        }
 
-      $btn.prop('disabled', true);
-      const originalText = $btn.html();
-      $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...');
-      const data = $form.serializeJson();
-      doPoster("/user/edit", data, function (response) {
-          $btn.prop('disabled', false);
-          $btn.html(originalText);
-          if (response.success !== true) {
-              bootGrowl(response.resultValue || "修改失败", "danger");
-              return;
-          }
-          // 刷新个人信息
-          if (currentUserName === data.username) {
-              // 修改个人密码后需要重新登录
-              if (!isBlank(data.newPwd)) {
-                  bootGrowl("重置密码成功，3秒后将跳转至登录页面", "success");
-                  setTimeout(function () {
-                      doPoster("/logout", null, function (data) {
-                          location.href = $basePath;
-                      });
-                  }, 3000);
-                  return;
-              }
-          }
-          bootGrowl("修改成功！", "success");
-          doLoader("/user?refresh=" + new Date().getTime());
-      });
-  });
-
-  //返回
-  $("#user-btn-back").on('click', function () {
-      doLoader("/user?refresh=" + new Date().getTime());
-  });
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+        const data = $form.serializeJson();
+        doPoster("/user/edit", data, function (response) {
+            $btn.html(originalText).prop('disabled', false);
+            if (response.success !== true) {
+                bootGrowl(response.resultValue || "修改失败", "danger");
+                return;
+            }
+            // 刷新个人信息
+            if (currentUserName === data.username) {
+                // 修改个人密码后需要重新登录
+                if (!isBlank(data.newPwd)) {
+                    bootGrowl("重置密码成功，3秒后将跳转至登录页面", "success");
+                    setTimeout(function () {
+                        doPoster("/logout", null, function (data) {
+                            location.href = $basePath;
+                        });
+                    }, 3000);
+                    return;
+                }
+                refreshLoginUser();
+            }
+            bootGrowl("修改成功！", "success");
+            backIndexPage();
+        });
+    });
 </script>
 </html>
