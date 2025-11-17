@@ -78,7 +78,6 @@
     $("#userSubmitBtn").on('click', function () {
         const $form = $("#user-form-add");
         if (!DBSyncerTheme.validateForm($form)) {
-            bootGrowl("保存失败，请检查表单", "warning");
             return;
         }
 

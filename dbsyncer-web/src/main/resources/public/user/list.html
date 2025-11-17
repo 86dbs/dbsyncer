@@ -96,8 +96,8 @@
                 confirmType: 'danger',
                 onConfirm: function () {
                     // 禁用按钮，防止重复点击
-                    const originalText = $btn.html().prop('disabled', true);
-                    $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...');
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
                     doPoster('/user/remove', {username: username}, function (data) {
                         $btn.html(originalText).prop('disabled', false);
                         if (data.success === true) {
