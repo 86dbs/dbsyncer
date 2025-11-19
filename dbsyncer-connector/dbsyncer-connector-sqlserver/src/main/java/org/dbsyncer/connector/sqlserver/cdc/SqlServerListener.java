@@ -3,18 +3,28 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.enums.TableOperationEnum;
 import org.dbsyncer.connector.sqlserver.model.CDCEvent;
+import org.dbsyncer.connector.sqlserver.model.DDLEvent;
+import org.dbsyncer.connector.sqlserver.model.UnifiedChangeEvent;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
@@ -63,6 +73,13 @@ public class SqlServerListener extends AbstractDatabaseListener {
      */
     private static final String GET_ALL_CHANGES_FOR_TABLE = "select * from cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC";
 
+    // DDL 相关 SQL
+    private static final String GET_DDL_CHANGES =
+            "SELECT source_object_id, object_id, ddl_command, ddl_lsn, ddl_time " +
+            "FROM cdc.ddl_history " +
+            "WHERE ddl_lsn > ? AND ddl_lsn <= ? " +
+            "ORDER BY ddl_lsn ASC";
+
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
     private final Lock connectLock = new ReentrantLock();
@@ -79,6 +96,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private Lock lock = new ReentrantLock(true);
     private Condition isFull = lock.newCondition();
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
+
+    // 表名缓存：使用 Caffeine 本地缓存，10分钟过期
+    private final Cache<Integer, String> objectIdToTableNameCache = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .build();
 
     @Override
     public void start() {
@@ -242,6 +265,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private void pull(Lsn stopLsn) {
         Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
+
+        // 1. 查询 DDL 变更（使用统一的 LSN）
+        List<DDLEvent> ddlEvents = pullDDLChanges(startLsn, stopLsn);
+
+        // 2. 查询 DML 变更（提取 LSN 用于排序）
+        List<CDCEvent> dmlEvents = new ArrayList<>();
         changeTables.forEach(changeTable -> {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
             List<CDCEvent> list = queryAndMapList(query, statement -> {
@@ -251,25 +280,37 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 int columnCount = rs.getMetaData().getColumnCount();
                 List<Object> row = null;
                 List<CDCEvent> data = new ArrayList<>();
+
                 while (rs.next()) {
-                    // skip update before
-                    final int operation = rs.getInt(3);
+                    final int operation = rs.getInt(3);  // __$operation 是第 3 列
                     if (TableOperationEnum.isUpdateBefore(operation)) {
                         continue;
                     }
+
+                    // 提取 LSN（第 1 列是 __$start_lsn）
+                    Lsn eventLsn = new Lsn(rs.getBytes(1));
+
                     row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
                     for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
                         row.add(rs.getObject(i));
                     }
-                    data.add(new CDCEvent(changeTable.getTableName(), operation, row));
+
+                    // 创建 CDCEvent，包含 LSN 信息
+                    data.add(new CDCEvent(changeTable.getTableName(), operation, row, eventLsn));
                 }
                 return data;
             });
 
             if (!CollectionUtils.isEmpty(list)) {
-                parseEvent(list, stopLsn);
+                dmlEvents.addAll(list);
             }
         });
+
+        // 3. 合并并按 LSN 排序
+        List<UnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
+
+        // 4. 按顺序解析和发送（统一更新 LSN）
+        parseUnifiedEvents(unifiedEvents, stopLsn);
     }
 
     private void trySendEvent(RowChangedEvent event){
@@ -306,6 +347,238 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
             }
         }
+    }
+
+    /**
+     * 查询 DDL 变更（使用统一的 LSN）
+     */
+    private List<DDLEvent> pullDDLChanges(Lsn startLsn, Lsn stopLsn) {
+        return queryAndMapList(GET_DDL_CHANGES, statement -> {
+            statement.setBytes(1, startLsn.getBinary());
+            statement.setBytes(2, stopLsn.getBinary());
+        }, rs -> {
+            List<DDLEvent> events = new ArrayList<>();
+            while (rs.next()) {
+                int sourceObjectId = rs.getInt(1);
+                String ddlCommand = rs.getString(3);
+                Lsn ddlLsn = new Lsn(rs.getBytes(4));
+                java.util.Date ddlTime = rs.getTimestamp(5);
+
+                // 根据 object_id 查找完整表名（包含 schema）
+                String fullTableName = getTableNameByObjectId(sourceObjectId);
+                if (fullTableName == null) {
+                    logger.warn("无法找到 object_id={} 对应的表，可能已被删除，跳过该 DDL 事件", sourceObjectId);
+                    continue;
+                }
+
+                // 过滤 DDL 类型：只处理 ALTER TABLE
+                if (!isTableAlterDDL(ddlCommand)) {
+                    continue;
+                }
+
+                // 解析 schema 和表名
+                String[] parts = parseSchemaAndTableName(fullTableName);
+                String tableSchema = parts[0];
+                String tableName = parts[1];
+
+                // 检查 schema 和表名是否匹配
+                if (isFilterTable(tableSchema, tableName)) {
+                    events.add(new DDLEvent(tableName, ddlCommand, ddlLsn, ddlTime));
+                }
+            }
+            return events;
+        });
+    }
+
+    /**
+     * 根据 object_id 获取表名（包含 schema）
+     */
+    private String getTableNameByObjectId(int objectId) {
+        return objectIdToTableNameCache.get(objectId, id -> {
+            return queryAndMap(
+                    "SELECT s.name + '.' + t.name FROM sys.tables t " +
+                            "INNER JOIN sys.schemas s ON t.schema_id = s.schema_id " +
+                            "WHERE t.object_id = ?",
+                    statement -> statement.setInt(1, id),
+                    rs -> rs.next() ? rs.getString(1) : null
+            );
+        });
+    }
+
+    /**
+     * 解析完整表名为 schema 和表名
+     */
+    private String[] parseSchemaAndTableName(String fullTableName) {
+        if (fullTableName == null) {
+            return new String[]{null, null};
+        }
+        int dotIndex = fullTableName.indexOf('.');
+        if (dotIndex > 0) {
+            String schema = fullTableName.substring(0, dotIndex);
+            String tableName = fullTableName.substring(dotIndex + 1);
+            return new String[]{schema, tableName};
+        }
+        // 如果没有 schema，返回 null 和表名
+        return new String[]{null, fullTableName};
+    }
+
+    /**
+     * 判断是否为 ALTER TABLE 类型的 DDL
+     */
+    private boolean isTableAlterDDL(String ddlCommand) {
+        if (ddlCommand == null) {
+            return false;
+        }
+        return ddlCommand.toUpperCase().trim().startsWith("ALTER TABLE");
+    }
+
+    /**
+     * 检查表是否在过滤列表中
+     */
+    private boolean isFilterTable(String tableSchema, String tableName) {
+        if (schema != null && !schema.equalsIgnoreCase(tableSchema)) {
+            return false;
+        }
+        return filterTable.contains(tableName);
+    }
+
+    /**
+     * 合并并排序 DDL 和 DML 事件
+     */
+    private List<UnifiedChangeEvent> mergeAndSortEvents(
+            List<DDLEvent> ddlEvents,
+            List<CDCEvent> dmlEvents) {
+
+        List<UnifiedChangeEvent> unifiedEvents = new ArrayList<>();
+
+        // 转换 DDL 事件
+        ddlEvents.forEach(ddlEvent -> {
+            UnifiedChangeEvent event = new UnifiedChangeEvent();
+            event.setLsn(ddlEvent.getDdlLsn());
+            event.setEventType("DDL");
+            event.setTableName(ddlEvent.getTableName());
+            event.setDdlCommand(ddlEvent.getDdlCommand());
+            unifiedEvents.add(event);
+        });
+
+        // 转换 DML 事件
+        dmlEvents.forEach(dmlEvent -> {
+            UnifiedChangeEvent event = new UnifiedChangeEvent();
+            event.setLsn(dmlEvent.getLsn());
+            event.setEventType("DML");
+            event.setTableName(dmlEvent.getTableName());
+            event.setCdcEvent(dmlEvent);
+            unifiedEvents.add(event);
+        });
+
+        // 按 LSN 排序
+        unifiedEvents.sort((e1, e2) -> {
+            Lsn lsn1 = e1.getLsn();
+            Lsn lsn2 = e2.getLsn();
+            if (lsn1 == null && lsn2 == null) return 0;
+            if (lsn1 == null) return -1;
+            if (lsn2 == null) return 1;
+            return lsn1.compareTo(lsn2);
+        });
+
+        return unifiedEvents;
+    }
+
+    /**
+     * 解析并发送统一事件（统一更新 LSN）
+     */
+    private void parseUnifiedEvents(List<UnifiedChangeEvent> events, Lsn stopLsn) {
+        for (int i = 0; i < events.size(); i++) {
+            boolean isEnd = i == events.size() - 1;
+            UnifiedChangeEvent unifiedEvent = events.get(i);
+
+            if ("DDL".equals(unifiedEvent.getEventType())) {
+                trySendDDLEvent(
+                        unifiedEvent.getTableName(),
+                        unifiedEvent.getDdlCommand(),
+                        isEnd ? stopLsn : null
+                );
+            } else {
+                // 发送 DML 事件
+                CDCEvent cdcEvent = unifiedEvent.getCdcEvent();
+                if (TableOperationEnum.isUpdateAfter(cdcEvent.getCode())) {
+                    trySendEvent(new RowChangedEvent(
+                            cdcEvent.getTableName(),
+                            ConnectorConstant.OPERTION_UPDATE,
+                            cdcEvent.getRow(),
+                            null,
+                            (isEnd ? stopLsn : null)
+                    ));
+                } else if (TableOperationEnum.isInsert(cdcEvent.getCode())) {
+                    trySendEvent(new RowChangedEvent(
+                            cdcEvent.getTableName(),
+                            ConnectorConstant.OPERTION_INSERT,
+                            cdcEvent.getRow(),
+                            null,
+                            (isEnd ? stopLsn : null)
+                    ));
+                } else if (TableOperationEnum.isDelete(cdcEvent.getCode())) {
+                    trySendEvent(new RowChangedEvent(
+                            cdcEvent.getTableName(),
+                            ConnectorConstant.OPERTION_DELETE,
+                            cdcEvent.getRow(),
+                            null,
+                            (isEnd ? stopLsn : null)
+                    ));
+                }
+            }
+        }
+
+        // 统一更新 LSN（DDL 和 DML 共享同一个 LSN）
+        lastLsn = stopLsn;
+        snapshot.put(LSN_POSITION, lastLsn.toString());
+    }
+
+    /**
+     * 发送 DDL 事件
+     */
+    private void trySendDDLEvent(String tableName, String ddlCommand, Lsn position) {
+        String actualTableName = extractTableNameFromDDL(ddlCommand, tableName);
+
+        if (actualTableName != null && filterTable.contains(actualTableName)) {
+            DDLChangedEvent ddlEvent = new DDLChangedEvent(
+                    actualTableName,
+                    ConnectorConstant.OPERTION_ALTER,
+                    ddlCommand,
+                    null,
+                    position
+            );
+
+            while (connected) {
+                try {
+                    sendChangedEvent(ddlEvent);
+                    break;
+                } catch (QueueOverflowException ex) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(1);
+                    } catch (InterruptedException exe) {
+                        logger.error(exe.getMessage(), exe);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 从 DDL 语句中提取表名
+     */
+    private String extractTableNameFromDDL(String ddlCommand, String defaultTableName) {
+        try {
+            Statement statement = CCJSqlParserUtil.parse(ddlCommand);
+            if (statement instanceof Alter) {
+                Alter alter = (Alter) statement;
+                String tableName = alter.getTable().getName();
+                return StringUtil.replace(tableName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+            }
+        } catch (JSQLParserException e) {
+            logger.warn("无法解析 DDL 语句: {}", ddlCommand);
+        }
+        return defaultTableName;
     }
 
     private interface ResultSetMapper<T> {
@@ -381,8 +654,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
                     pull(stopLsn);
 
-                    lastLsn = stopLsn;
-                    snapshot.put(LSN_POSITION, lastLsn.toString());
+                    // LSN 已在 parseUnifiedEvents() 中统一更新，这里不需要重复更新
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
