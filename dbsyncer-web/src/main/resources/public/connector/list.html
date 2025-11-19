@@ -93,7 +93,7 @@ $(document).ready(function() {
     });
 
     // 搜索框输入事件
-    initSearch('searchConnector', function (searchKey) {
+    DBSyncerTheme.initSearch('searchConnector', function (searchKey) {
         pagination.doSearch({'searchKey': searchKey});
     });
 });
@@ -135,7 +135,7 @@ function testConnector(id) {
 
 // 删除连接
 function deleteConnector(id) {
-    showConfirm({
+    DBSyncerTheme.showConfirm({
         title: '确定要删除连接？',
         icon: 'warning',
         size: 'large',

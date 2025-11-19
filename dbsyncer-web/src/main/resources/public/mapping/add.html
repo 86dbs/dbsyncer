@@ -8,133 +8,296 @@
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+            <button id="mappingSubmitBtn" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
             </button>
-            <button id="mappingBackBtn" type="button" class="btn btn-outline">
+            <button class="btn btn-outline" onclick="backIndexPage()">
                 <i class="fa fa-reply"></i> 返回
             </button>
         </div>
 
-        <div class="dbsyncer-card-body">
-            <!-- 数据源和目标源 - 使用 form-grid-2 布局 -->
-            <div class="form-grid-2">
-                <!-- 数据源 -->
-                <div class="form-item">
-                    <label class="form-label">
-                        <i class="fa fa-database text-primary"></i> 数据源
-                    </label>
-                    <div class="form-control-area">
-                        <select name="sourceConnectorId" id="sourceConnectorId" class="form-control select-control">
-                            <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 目标源 -->
-                <div class="form-item">
-                    <label class="form-label">
-                        <i class="fa fa-database text-success"></i> 目标源
-                    </label>
-                    <div class="form-control-area">
-                        <select name="targetConnectorId" id="targetConnectorId" class="form-control select-control">
-                            <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 数据库配置 (MySQL) -->
-            <div class="form-grid-2 hidden" id="databaseGroup">
-                <div class="form-item">
-                    <label class="form-label">源数据库</label>
-                    <div class="form-control-area">
-                        <select name="sourceDatabase" id="sourceDatabase" class="form-control">
-                            <option value="">请选择数据库</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">目标数据库</label>
-                    <div class="form-control-area">
-                        <select name="targetDatabase" id="targetDatabase" class="form-control">
-                            <option value="">请选择数据库</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
-            <div class="form-grid-2 hidden" id="schemaGroup">
-                <div class="form-item">
-                    <label class="form-label">源Schema</label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">目标Schema</label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="targetSchema" id="targetSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- 驱动名称和匹配相似表 -->
-            <div class="form-grid-2">
-                <div class="form-item">
-                    <label class="form-label">
-                        <i class="fa fa-tag"></i> 名称<strong class="text-primary">*</strong>
-                    </label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入驱动名称" />
-                    </div>
-                </div>
-
-                <div class="form-item">
-                    <label class="form-label">
-                        <i class="fa fa-table text-info"></i> 匹配相似表
-                    </label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input class="dbsyncer_switch" id="autoMatchTable" name="autoMatchTable" type="checkbox" />
-                            <span class="switch-track">
-                                        <span class="switch-option switch-option-on">Yes</span>
-                                        <span class="switch-option switch-option-off">No</span>
-                                        <span class="switch-thumb"></span>
-                                    </span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 表映射关系 -->
-            <div class="form-grid-1">
-                <div class="form-item" id="tableGroups">
+        <!-- 数据源和目标源 -->
+        <div class="form-grid-2">
+            <!-- 数据源 -->
+            <div class="form-item">
                 <label class="form-label">
-                    <i class="fa fa-exchange"></i>
-                    表映射关系
-                    <i class="fa fa-question-circle" aria-hidden="true" title="适用于快速配置大量表映射关系场景"></i>
+                    <i class="fa fa-database text-primary"></i> 数据源
                 </label>
                 <div class="form-control-area">
-                    <p>
-                        <strong>示例：</strong>
-                        数据源表|目标源表=源表字段A1*|目标字段A2*,源表字段B1|目标字段B2
-                        <i class="fa fa-question-circle"
-                           aria-hidden="true" title="'|'表示映射关系，'='表示后面是表字段映射关系，有多个字段使用英文','拼接，'*'表示主键，如有多张表换行追加"></i>
-                        <a href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E6%89%B9%E9%87%8F%E9%85%8D%E7%BD%AE%E8%A1%A8%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"
-                           title="操作手册>批量配置表映射关系" target='_blank'>
-                            <i class="fa fa-external-link"></i>参考文档
-                        </a>
-                    </p>
-                    <textarea name="tableGroups" class="form-control" rows="10"
-                              placeholder="请输入表映射关系，每行一个映射..."></textarea>
+                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control">
+                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
+                    </select>
                 </div>
             </div>
+
+            <!-- 目标源 -->
+            <div class="form-item">
+                <label class="form-label">
+                    <i class="fa fa-database text-success"></i> 目标源
+                </label>
+                <div class="form-control-area">
+                    <select name="targetConnectorId" id="targetConnectorId" class="form-control">
+                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
+                    </select>
+                </div>
             </div>
+        </div>
+
+        <!-- 数据库配置 (MySQL) -->
+        <div class="form-grid-2 hidden" id="databaseGroup">
+            <div class="form-item">
+                <label class="form-label">源库</label>
+                <div class="form-control-area">
+                    <select name="sourceDatabase" id="sourceDatabase" class="form-control">
+                        <option value="">请选择数据源</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">目标库</label>
+                <div class="form-control-area">
+                    <select name="targetDatabase" id="targetDatabase" class="form-control">
+                        <option value="">请选择目标源</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
+        <div class="form-grid-2 hidden" id="schemaGroup">
+            <div class="form-item">
+                <label class="form-label">源Schema</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">目标Schema</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="targetSchema" id="targetSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 驱动名称和匹配相似表 -->
+        <div class="form-grid-2">
+            <div class="form-item">
+                <label class="form-label">
+                    <i class="fa fa-tag"></i> 名称<strong class="text-primary">*</strong>
+                </label>
+                <div class="form-control-area">
+                    <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入驱动名称" />
+                </div>
+            </div>
+
+            <div class="form-item">
+                <label class="form-label">
+                    <i class="fa fa-table text-info"></i> 匹配相似表
+                </label>
+                <div class="form-control-area">
+                    <label class="form-switch">
+                        <input name="autoMatchTable" type="checkbox" />
+                        <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表映射关系 -->
+        <div class="form-grid-1">
+            <div class="form-item" id="tableGroups">
+            <label class="form-label">
+                <i class="fa fa-exchange"></i>
+                表映射关系
+                <i class="fa fa-question-circle" aria-hidden="true" title="适用于快速配置大量表映射关系场景"></i>
+            </label>
+            <div class="form-control-area">
+                <p>
+                    <strong>示例：</strong>
+                    数据源表|目标源表=源表字段A1*|目标字段A2*,源表字段B1|目标字段B2
+                    <i class="fa fa-question-circle"
+                       aria-hidden="true" title="'|'表示映射关系，'='表示后面是表字段映射关系，有多个字段使用英文','拼接，'*'表示主键，如有多张表换行追加"></i>
+                    <a href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E6%89%B9%E9%87%8F%E9%85%8D%E7%BD%AE%E8%A1%A8%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"
+                       title="操作手册>批量配置表映射关系" target='_blank'>
+                        <i class="fa fa-external-link"></i>参考文档
+                    </a>
+                </p>
+                <textarea name="tableGroups" class="form-control" rows="10" placeholder="请输入表映射关系，每行一个映射..."></textarea>
+            </div>
+        </div>
         </div>
     </div>
 </div>
 
-<script th:src="@{/js/mapping/add.js}"></script>
+<script>
+// 存储连接器类型
+var connectorTypes = {
+    source: null,
+    target: null
+};
+
+function handleConnectorChange(connectorId, type) {
+    if (!connectorId) {
+        connectorTypes[type] = null;
+        // 清空数据库和Schema字段
+        $("#" + type + "Schema").val('');
+        updateFieldsVisibility();
+        return;
+    }
+
+    doGetter('/mapping/getConnectorInfo', { connectorId: connectorId }, function(response){
+        if (response.success && response.resultValue) {
+            const connector = response.resultValue;
+            // 保存连接器类型
+            connectorTypes[type] = connector.config.connectorType.toLowerCase();
+
+            // 无论什么类型的连接器，都尝试加载数据库列表
+            loadDatabaseList(connectorId, type);
+
+            // 更新字段显示状态
+            updateFieldsVisibility();
+        }
+    })
+}
+
+/**
+ * 根据源和目标连接器类型更新字段显示状态
+ */
+function updateFieldsVisibility() {
+    var databaseGroup = $("#databaseGroup");
+    var schemaGroup = $("#schemaGroup");
+    var sourceDb = $("#sourceDatabase");
+    var targetDb = $("#targetDatabase");
+    var sourceSchema = $("#sourceSchema");
+    var targetSchema = $("#targetSchema");
+
+    var sourceType = connectorTypes.source;
+    var targetType = connectorTypes.target;
+
+    console.log('[字段可见性] 源类型:', sourceType, '目标类型:', targetType);
+
+    // 判断是否需要显示数据库组和Schema组
+    var showDatabaseGroup = false;
+    var showSchemaGroup = false;
+
+    // 源连接器：只要选中了连接器就显示数据库配置
+    if (sourceType) {
+        showDatabaseGroup = true;
+        sourceDb.closest('.form-item').show();
+    } else {
+        sourceDb.closest('.form-item').hide();
+        sourceDb.val('');
+    }
+
+    // 目标连接器：只要选中了连接器就显示数据库配置
+    if (targetType) {
+        showDatabaseGroup = true;
+        targetDb.closest('.form-item').show();
+    } else {
+        targetDb.closest('.form-item').hide();
+        targetDb.val('');
+    }
+
+    // 源连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
+    if (sourceType && (sourceType.indexOf('oracle') !== -1 ||
+        sourceType.indexOf('sqlserver') !== -1 ||
+        sourceType.indexOf('postgresql') !== -1)) {
+        showSchemaGroup = true;
+        sourceSchema.closest('.form-item').show();
+    } else {
+        sourceSchema.closest('.form-item').hide();
+        sourceSchema.val('');
+    }
+
+    // 目标连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
+    if (targetType && (targetType.indexOf('oracle') !== -1 ||
+        targetType.indexOf('sqlserver') !== -1 ||
+        targetType.indexOf('postgresql') !== -1)) {
+        showSchemaGroup = true;
+        targetSchema.closest('.form-item').show();
+    } else {
+        targetSchema.closest('.form-item').hide();
+        targetSchema.val('');
+    }
+
+    // 显示或隐藏整个组
+    if (showDatabaseGroup) {
+        databaseGroup.show();
+        console.log('[字段可见性] 显示数据库配置组');
+    } else {
+        databaseGroup.hide();
+        console.log('[字段可见性] 隐藏数据库配置组');
+    }
+
+    if (showSchemaGroup) {
+        schemaGroup.show();
+        console.log('[字段可见性] 显示Schema配置组');
+    } else {
+        schemaGroup.hide();
+        console.log('[字段可见性] 隐藏Schema配置组');
+    }
+}
+
+/**
+ * 加载数据库列表
+ *
+ * @param {string} connectorId - 连接器ID
+ * @param {string} type - 'source' 或 'target'
+ */
+function loadDatabaseList(connectorId, type) {
+    const databaseSelect = $("#" + type + "Database");
+    // 显示加载状态
+    databaseSelect.html('');
+    doGetter('/connector/getDatabases', { connectorId: connectorId }, function(response){
+        if (response.success) {
+            const databases = response.resultValue;
+            if (databases && databases.length > 0) {
+                // 添加数据库选项
+                databases.forEach(function(dbName) {
+                    databaseSelect.append('<option value="' + dbName + '">' + dbName + '</option>');
+                });
+            }
+        } else {
+            bootGrowl("获取库列表失败: " + response.resultValue, "danger");
+        }
+    })
+
+}
+
+$(document).ready(function() {
+    // 监听数据源选择变化
+    $('#sourceConnectorId').dbSelect({
+        type: 'single',
+        onSelect: function (connectorId) {
+            handleConnectorChange(connectorId[0], 'source');
+        }
+    });
+    // 监听目标源选择变化
+    $('#targetConnectorId').dbSelect({
+        type: 'single',
+        onSelect: function (connectorId) {
+            handleConnectorChange(connectorId[0], 'target');
+        }
+    });
+
+    //保存
+    $("#mappingSubmitBtn").click(function () {
+        const $form = $("#mappingAddForm");
+        if (DBSyncerTheme.validateForm($form)) {
+            doPoster("/mapping/add", $form.serializeJson(), function (data) {
+                if (data.success === true) {
+                    bootGrowl("新增驱动成功!", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        }
+    });
+})
+</script>
 </html>

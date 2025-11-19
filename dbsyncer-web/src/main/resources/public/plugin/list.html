@@ -240,26 +240,24 @@ public class MyPlugin implements PluginService {
 <script type="text/javascript">
     $(function() {
         // 初始化文件上传组件
-        if (window.DBSyncerTheme && DBSyncerTheme.initFileUpload) {
-            DBSyncerTheme.initFileUpload('#pluginUploader', {
-                uploadUrl: $basePath + '/plugin/upload',
-                maxFiles: 5,
-                maxSize: 50 * 1024 * 1024, // 50MB
-                acceptedFiles: '.jar',
-                autoUpload: true,
-                onSuccess: function(file, response) {
-                    if (response.success) {
-                        bootGrowl("插件上传成功！", "success");
-                        doLoader("/plugin");
-                    } else {
-                        bootGrowl(response.resultValue || "上传失败", "danger");
-                    }
-                },
-                onError: function(file, error) {
-                    bootGrowl(error || "上传失败", "danger");
+        DBSyncerTheme.initFileUpload('#pluginUploader', {
+            uploadUrl: $basePath + '/plugin/upload',
+            maxFiles: 5,
+            maxSize: 50 * 1024 * 1024, // 50MB
+            acceptedFiles: '.jar',
+            autoUpload: true,
+            onSuccess: function(file, response) {
+                if (response.success) {
+                    bootGrowl("插件上传成功！", "success");
+                    doLoader("/plugin");
+                } else {
+                    bootGrowl(response.resultValue || "上传失败", "danger");
                 }
-            });
-        }
+            },
+            onError: function(file, error) {
+                bootGrowl(error || "上传失败", "danger");
+            }
+        });
     });
     
     function downLoad(fileName){

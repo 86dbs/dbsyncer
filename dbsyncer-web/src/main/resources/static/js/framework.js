@@ -240,7 +240,6 @@ function doLoader(url) {
             hideLoading();
             if (status !== 'success') {
                 bootGrowl('页面加载失败，请稍后重试', "danger");
-                return;
             }
         });
     }
@@ -262,7 +261,7 @@ function doRequest(action, data) {
 
 // 异常响应
 function doErrorResponse(xhr, status, info) {
-    hideLoading();
+    DBSyncerTheme.hideLoading();
     bootGrowl("访问异常，请刷新或重试.", "danger");
 }
 
@@ -1337,7 +1336,77 @@ function showConfirm(options) {
     };
 }
 
+// 注销
+function logout() {
+    // 基础用法
+    showConfirm({
+        title: '确定要注销？',
+        message: '确定后将跳转至登录页面',
+        icon: 'info',
+        size: 'large',
+        confirmType: 'info',
+        onConfirm: function () {
+            doPoster("/logout", null, function (data) {
+                location.href = $basePath;
+            });
+        }
+    });
+}
+
+// 刷新登录人信息
+function refreshLoginUser() {
+    // 刷新登录用户
+    doGetter("/user/getUserInfo.json", {}, function (data) {
+        if (data.success === true) {
+            $("#currentUser").text(data.resultValue.nickname);
+        }
+    });
+}
+
+// 刷新授权信息
+function refreshLicense() {
+    // 刷新授权信息
+    doGetter("/license/query.json", {}, function (data) {
+        if (data.success === true) {
+            // 社区版
+            if (isBlank(data.resultValue.key)) {
+                return;
+            }
+            $("#licenseInfo").show();
+            // 专业版
+            const licenseInfo = data.resultValue;
+            const $content = $("#effectiveContent");
+            const $effectiveTime = licenseInfo.effectiveTime;
+            if ($effectiveTime <= 0) {
+                $content.text('未激活');
+                $content.addClass('text-warning');
+                return;
+            }
+            const $currentTime = licenseInfo.currentTime;
+            const $10days = 864000000;
+            // 有效期内
+            if ($currentTime < $effectiveTime && $effectiveTime - $10days > $currentTime) {
+                $("#licenseCheck").removeClass("hidden");
+            }
+            // 即将过期
+            else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
+                $("#licenseRemind").removeClass("hidden");
+            }
+            // 已过期
+            else if ($currentTime > $effectiveTime) {
+                $("#licenseWarning").removeClass("hidden");
+            }
+            $content.text(licenseInfo.effectiveContent);
+        }
+    });
+}
+
 $(function () {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/index');
+    };
+
     // 导出到全局
     window.DBSyncerTheme = {
         showLoading: showLoading,
@@ -1352,15 +1421,9 @@ $(function () {
         initSearch: initSearch,
         showConfirm: showConfirm
     };
-    
-    // 向后兼容
-    window.initMultipleInputTags = initMultipleInputTags;
 
-    // // 刷新登录用户
-    // refreshLoginUser();
-    // // 刷新授权信息
-    // refreshLicenseInfo();
-
+    refreshLoginUser();
+    refreshLicense();
     // 初始化版权信息
     doGetter("/index/version.json", {}, function (data) {
         if (data.success === true) {
@@ -1369,28 +1432,6 @@ $(function () {
             settings.watermark_txt = data.resultValue.watermark;
             watermark();
         }
-    });
-
-    // 修改登录用户
-    $("#edit_personal").click(function () {
-        doLoader("/user/page/edit?username=" + $(this).attr("username"));
-    });
-
-    // 注销
-    $("#nav_logout").click(function () {
-        // 基础用法
-        showConfirm({
-            title: '确定要注销？',
-            message: '确定后将跳转至登录页面',
-            icon: 'info',
-            size: 'large',
-            confirmType: 'info',
-            onConfirm: function() {
-                doPoster("/logout", null, function (data) {
-                    location.href = $basePath;
-                });
-            }
-        });
     });
 
     // 新导航链接点击事件
@@ -2032,84 +2073,4 @@ function initMultiSelect(wrapperId, options) {
     
     // 初始化select值
     updateSelectValue();
-}
-
-/**
- * 增强 select 下拉框功能（替代 Bootstrap selectpicker）
- * @param {jQuery} $select - jQuery 选择的 select 元素
- * @returns {jQuery} 返回增强后的 select 元素
- */
-function enhanceSelect($select) {
-    if (!$select || !$select.length) {
-        return $select;
-    }
-    
-    // 标记已经增强过，避免重复处理
-    if ($select.data('enhanced')) {
-        return $select;
-    }
-    $select.data('enhanced', true);
-    
-    // 添加change事件的自定义触发器
-    // 当select的值改变时，触发自定义事件
-    $select.on('change', function() {
-        // 触发自定义事件，兼容之前的 Bootstrap Select 事件
-        $(this).trigger('select:changed');
-    });
-    
-    return $select;
-}
-
-/**
- * 批量增强页面中所有的 select 元素
- */
-function enhanceAllSelects() {
-    $('select').each(function() {
-        enhanceSelect($(this));
-    });
-}
-
-/**
- * 自动匹配相似表名
- * @param {string} sourceWrapperId - 源下拉框ID
- * @param {string} targetWrapperId - 目标下拉框ID
- */
-function autoMatchSimilarItems(sourceWrapperId, targetWrapperId) {
-    var $sourceWrapper = $('#' + sourceWrapperId);
-    var $targetWrapper = $('#' + targetWrapperId);
-    
-    if (!$sourceWrapper.length || !$targetWrapper.length) return;
-    
-    var $sourceCheckboxes = $sourceWrapper.find('.dbsyncer-multi-select-option input[type="checkbox"]:checked');
-    var $targetOptions = $targetWrapper.find('.dbsyncer-multi-select-option');
-    
-    // 取消目标所有选中
-    $targetWrapper.find('input[type="checkbox"]').prop('checked', false);
-    
-    // 遍历源选中项，匹配目标项
-    $sourceCheckboxes.each(function() {
-        var sourceValue = $(this).val();
-        // 优先精确匹配
-        var $exactMatch = $targetOptions.find('input[type="checkbox"][value="' + sourceValue + '"]');
-        if ($exactMatch.length) {
-            $exactMatch.prop('checked', true);
-        } else {
-            // 模糊匹配：找到包含相同单词的项
-            $targetOptions.each(function() {
-                var $targetCheckbox = $(this).find('input[type="checkbox"]');
-                var targetValue = $targetCheckbox.val();
-                if (targetValue && targetValue.toLowerCase().indexOf(sourceValue.toLowerCase()) > -1) {
-                    $targetCheckbox.prop('checked', true);
-                    return false; // 找到一个就退出
-                }
-            });
-        }
-    });
-    
-    // 更新目标select值
-    var selectedValues = [];
-    $targetWrapper.find('input[type="checkbox"]:checked').each(function() {
-        selectedValues.push($(this).val());
-    });
-    $targetWrapper.find('select').val(selectedValues);
 }

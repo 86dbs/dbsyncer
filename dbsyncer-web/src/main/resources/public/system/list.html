@@ -134,5 +134,34 @@
     </div>
 </div>
 
-<script th:src="@{/js/system/index.js}"></script>
+<script>
+    $(function () {
+        $('.dbsyncer_switch').each(function () {
+            var $input = $(this);
+            $input.attr('role', 'switch');
+            $input.attr('aria-checked', $input.is(':checked'));
+            $input.on('change', function () {
+                $input.attr('aria-checked', this.checked);
+            });
+        });
+        //保存
+        $("#updateSystemBtn").click(function () {
+            const $form = $("#config-form-edit");
+            if (DBSyncerTheme.validateForm($form)) {
+                const submitBtn = $(this);
+                const originalText = submitBtn.html();
+                submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+                doPoster('/system/edit', $form.serializeJson(), function (data) {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    if (data.success === true) {
+                        bootGrowl("修改成功!", "success");
+                        doLoader("/system");
+                    } else {
+                        bootGrowl(data.resultValue, "danger");
+                    }
+                });
+            }
+        });
+    })
+</script>
 </html>
