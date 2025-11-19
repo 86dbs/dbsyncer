@@ -139,6 +139,106 @@
     </div>
 </div>
 
+<script>
+/**
+ * 修改驱动名称
+ */
+function mappingModifyName() {
+    const $name = $("#mappingModifyName");
+    const tmp = $name.text();
+    $name.text("");
+    $name.append("<input type='text'/>");
+    var $input = $name.find("input");
+    $input.focus().val(tmp);
+    $input.blur(function() {
+        $name.text($(this).val());
+        $("#mappingModifyForm input[name='name']").val($(this).val());
+        $input.unbind();
+    });
+}
+
+/**
+ * 绑定表关系点击事件
+ */
+function bindMappingTableGroupListClick() {
+    const $tableGroupList = $("#tableGroupList");
+    $tableGroupList.unbind("click");
+    $tableGroupList.find("tr").bind('click', function () {
+        // 动态加载表组编辑页面
+        if (typeof doLoader === 'function') {
+            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        }
+    });
+
+    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
+    const rows = $tableGroupList.find("tr");
+    rows.each(function() {
+        const row = $(this)[0];
+        row.setAttribute('draggable', 'true');
+
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
+    });
+
+    let dragSrcEl = null;
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        const rows = $tableGroupList.find('tr');
+        rows.removeClass('drag-over');
+
+        // 更新排序
+        const newData = [];
+        rows.each(function () {
+            newData.push($(this).attr('id'));
+        });
+        $("#sortedTableGroupIds").val(newData.join('|'));
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (dragSrcEl !== this) {
+            const srcIndex = $(dragSrcEl).index();
+            const destIndex = $(this).index();
+
+            if (srcIndex < destIndex) {
+                $(this).after(dragSrcEl);
+            } else {
+                $(this).before(dragSrcEl);
+            }
+        }
+
+        this.classList.remove('drag-over');
+        return false;
+    }
+}
+
+</script>
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>

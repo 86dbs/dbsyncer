@@ -107,86 +107,17 @@
 </div>
 
 <script>
-// 同步任务管理页面脚本 - 全局函数定义
-
 // 同步任务列表自动刷新定时器
-var mappingListAutoRefreshTimer = null;
+let mappingListAutoRefreshTimer = null;
 
 // 自动刷新间隔（毫秒），默认5秒
-var MAPPING_LIST_REFRESH_INTERVAL = 5000;
-
-// 是否启用自动刷新（如果遇到问题可以设置为false临时禁用）
-var ENABLE_AUTO_REFRESH = true;
-
-// 调试模式（设置为true可以看到详细日志）
-var MAPPING_LIST_DEBUG = false;
-
-/**
- * 控制台命令：启用调试模式
- * 在浏览器控制台执行：enableMappingDebug()
- */
-window.enableMappingDebug = function() {
-    MAPPING_LIST_DEBUG = true;
-    console.log('[调试] 已启用映射列表调试模式');
-};
-
-/**
- * 控制台命令：禁用调试模式
- * 在浏览器控制台执行：disableMappingDebug()
- */
-window.disableMappingDebug = function() {
-    MAPPING_LIST_DEBUG = false;
-    console.log('[调试] 已禁用映射列表调试模式');
-};
-
-/**
- * 控制台命令：禁用自动刷新
- * 在浏览器控制台执行：disableAutoRefresh()
- */
-window.disableAutoRefresh = function() {
-    ENABLE_AUTO_REFRESH = false;
-    stopMappingListAutoRefresh();
-    console.log('[调试] 已禁用自动刷新');
-};
-
-/**
- * 控制台命令：启用自动刷新
- * 在浏览器控制台执行：enableAutoRefresh()
- */
-window.enableAutoRefresh = function() {
-    ENABLE_AUTO_REFRESH = true;
-    startMappingListAutoRefresh();
-    console.log('[调试] 已启用自动刷新');
-};
-
-/**
- * 控制台命令：查看当前状态
- * 在浏览器控制台执行：getMappingListStatus()
- */
-window.getMappingListStatus = function() {
-    // console.log('=== 映射列表状态 ===');
-    // console.log('自动刷新启用:', ENABLE_AUTO_REFRESH);
-    // console.log('调试模式:', MAPPING_LIST_DEBUG);
-    // console.log('刷新间隔(秒):', MAPPING_LIST_REFRESH_INTERVAL / 1000);
-    // console.log('定时器运行中:', mappingListAutoRefreshTimer !== null);
-    // console.log('表格存在:', $('#mappingTable').length > 0);
-    // console.log('表格Body存在:', $('#mappingTableBody').length > 0);
-    // console.log('当前行数:', $('#mappingTableBody tr').length);
-    // console.log('当前页码:', currentPage);
-    // console.log('总页数:', totalPages);
-    // console.log('====================');
-};
+const MAPPING_LIST_REFRESH_INTERVAL = 5000;
 
 /**
  * 启动同步任务列表自动刷新定时器
  */
 function startMappingListAutoRefresh() {
-    // 检查是否启用自动刷新
-    if (!ENABLE_AUTO_REFRESH) {
-        console.log('[自动刷新] 自动刷新功能已禁用');
-        return;
-    }
-    
+
     // 先清除已存在的定时器
     stopMappingListAutoRefresh();
     
@@ -194,24 +125,19 @@ function startMappingListAutoRefresh() {
     mappingListAutoRefreshTimer = setInterval(function() {
         try {
             // 检查表格是否存在（更准确的判断方法）
-            var $mappingTable = $('#mappingTable');
-            var $mappingTableBody = $('#mappingTableBody');
-            
-            if (MAPPING_LIST_DEBUG) {
-                console.log('[自动刷新] 检查表格元素:', {
-                    tableExists: $mappingTable.length > 0,
-                    tableBodyExists: $mappingTableBody.length > 0,
-                    currentTime: new Date().toLocaleTimeString()
-                });
-            }
+            const $mappingTable = $('#mappingTable');
+            const $mappingTableBody = $('#mappingTableBody');
+
+            console.log('[自动刷新] 检查表格元素:', {
+                tableExists: $mappingTable.length > 0,
+                tableBodyExists: $mappingTableBody.length > 0,
+                currentTime: new Date().toLocaleTimeString()
+            });
             
             // 只有当表格存在时才执行刷新
             if ($mappingTable.length && $mappingTableBody.length) {
-                if (MAPPING_LIST_DEBUG) {
-                    console.log('[自动刷新] 开始静默刷新数据');
-                }
+                console.log('[自动刷新] 开始静默刷新数据');
                 // 静默刷新（不显示加载提示和成功消息）
-                refreshMappingListData(true);
             } else {
                 // 如果表格不存在，说明已经离开列表页面，停止定时器
                 console.log('[自动刷新] 表格元素不存在，停止自动刷新');
@@ -223,10 +149,8 @@ function startMappingListAutoRefresh() {
             stopMappingListAutoRefresh();
         }
     }, MAPPING_LIST_REFRESH_INTERVAL);
-    
-    if (MAPPING_LIST_DEBUG) {
-        console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
-    }
+
+    console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
 }
 
 /**
@@ -236,9 +160,7 @@ function stopMappingListAutoRefresh() {
     if (mappingListAutoRefreshTimer !== null) {
         clearInterval(mappingListAutoRefreshTimer);
         mappingListAutoRefreshTimer = null;
-        if (MAPPING_LIST_DEBUG) {
-            console.log('[自动刷新] 已停止');
-        }
+        console.log('[自动刷新] 已停止');
     }
 }
 
@@ -295,113 +217,25 @@ function stopMapping(id) {
  * 删除同步任务
  */
 function deleteMapping(id) {
-    if (confirm('确定要删除这个同步任务吗？删除后无法恢复。')) {
-        doPoster('/mapping/remove', {id: id}, function (response) {
-            if (response.success) {
-                bootGrowl('删除成功', 'success');
-                backIndexPage();
-            } else {
-                bootGrowl('删除失败: ' + response.resultValue, 'danger');
-            }
-        })
-    }
-}
-
-/**
- * 绑定表关系点击事件
- */
-function bindMappingTableGroupListClick() {
-    const $tableGroupList = $("#tableGroupList");
-    $tableGroupList.unbind("click");
-    $tableGroupList.find("tr").bind('click', function () {
-        // 动态加载表组编辑页面
-        if (typeof doLoader === 'function') {
-            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+    DBSyncerTheme.showConfirm({
+        title: '确定要删除驱动？',
+        icon: 'warning',
+        size: 'large',
+        confirmType: 'danger',
+        onConfirm: function () {
+            // 禁用按钮，防止重复点击
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
+            doPoster('/mapping/remove', {id: id}, function (data) {
+                $btn.html(originalText).prop('disabled', false);
+                if (data.success === true) {
+                    bootGrowl("删除成功！", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.resultValue || "删除失败", "danger");
+                }
+            });
         }
-    });
-
-    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
-    const rows = $tableGroupList.find("tr");
-    rows.each(function() {
-        const row = $(this)[0];
-        row.setAttribute('draggable', 'true');
-        
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragend', handleDragEnd);
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('dragleave', handleDragLeave);
-        row.addEventListener('drop', handleDrop);
-    });
-
-    let dragSrcEl = null;
-
-    function handleDragStart(e) {
-        dragSrcEl = this;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
-        this.classList.add('dragging');
-    }
-    
-    function handleDragEnd(e) {
-        this.classList.remove('dragging');
-        const rows = $tableGroupList.find('tr');
-        rows.removeClass('drag-over');
-        
-        // 更新排序
-        const newData = [];
-        rows.each(function () {
-            newData.push($(this).attr('id'));
-        });
-        $("#sortedTableGroupIds").val(newData.join('|'));
-    }
-    
-    function handleDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
-        e.dataTransfer.dropEffect = 'move';
-        return false;
-    }
-    
-    function handleDragLeave(e) {
-        this.classList.remove('drag-over');
-    }
-    
-    function handleDrop(e) {
-        if (e.stopPropagation) {
-            e.stopPropagation();
-        }
-        
-        if (dragSrcEl !== this) {
-            const srcIndex = $(dragSrcEl).index();
-            const destIndex = $(this).index();
-
-            if (srcIndex < destIndex) {
-                $(this).after(dragSrcEl);
-            } else {
-                $(this).before(dragSrcEl);
-            }
-        }
-        
-        this.classList.remove('drag-over');
-        return false;
-    }
-}
-
-/**
- * 修改驱动名称
- */
-function mappingModifyName() {
-    const $name = $("#mappingModifyName");
-    const tmp = $name.text();
-    $name.text("");
-    $name.append("<input type='text'/>");
-    var $input = $name.find("input");
-    $input.focus().val(tmp);
-    $input.blur(function() {
-        $name.text($(this).val());
-        $("#mappingModifyForm input[name='name']").val($(this).val());
-        $input.unbind();
     });
 }
 
@@ -413,11 +247,6 @@ $(document).ready(function() {
     };
     // 启动自动刷新定时器
     startMappingListAutoRefresh();
-});
-
-// 页面卸载时清除定时器
-$(window).on('beforeunload', function() {
-    stopMappingListAutoRefresh();
 });
 </script>
 
