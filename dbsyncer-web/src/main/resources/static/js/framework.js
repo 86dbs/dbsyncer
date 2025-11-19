@@ -754,11 +754,11 @@ $.fn.dbSelect = function(options) {
     options = options || {};
     
     const $select = $(this);
-    if (!$select.length) return $select;
+    if (!$select.length) return null;
     
-    // 防止重复初始化
+    // 防止重复初始化，直接返回已有的 API 实例
     if ($select.data('dbSelectInitialized')) {
-        return $select;
+        return $select.data('dbSelect');
     }
     $select.data('dbSelectInitialized', true);
 
@@ -1124,28 +1124,67 @@ $.fn.dbSelect = function(options) {
         }
     }
 
-    // 保存配置
-    $component.data('dbSelect', {
+    // 创建 API 对象
+    const api = {
+        $element: $select,
+        $component: $component,
         getValues: function() { return selectedValues; },
         setValues: function(values) {
             selectedValues = Array.isArray(values) ? values : [values];
             updateDisplay();
             renderOptions($searchInput.val());
             triggerSelectEvent();
+            return this;
+        },
+        setData: function(newData) {
+            // 更新选项数据
+            config.data = newData || [];
+            // 清空搜索框
+            $searchInput.val('');
+            // 清空已选值（因为数据已经变了）
+            selectedValues = [];
+            // 重新初始化默认值
+            if (config.defaultValue) {
+                selectedValues = Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue];
+            } else {
+                // 如果没有默认值，自动选中第一个非空选项
+                if (config.data.length > 0) {
+                    const firstItem = config.data.find(d => d.value && d.value !== '');
+                    if (firstItem) {
+                        selectedValues = [firstItem.value];
+                    }
+                }
+            }
+            // 重新渲染
+            updateDisplay();
+            renderOptions('');
+            triggerSelectEvent();
+            return this;
+        },
+        getData: function() {
+            return config.data;
         },
         clear: function() {
             selectedValues = [];
             updateDisplay();
             renderOptions('');
             triggerSelectEvent();
+            return this;
         },
         destroy: function() {
             $(document).off('click.dbselect_' + selectId);
             $component.remove();
+            $select.removeData('dbSelectInitialized');
+            $select.removeData('dbSelect');
+            return this;
         }
-    });
+    };
 
-    return $select;
+    // 保存 API 到组件和原始元素
+    $component.data('dbSelect', api);
+    $select.data('dbSelect', api);
+
+    return api;
 };
 
 /**

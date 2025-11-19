@@ -47,9 +47,7 @@
             </div>
             <div class="form-item">
                 <label class="form-label">目标库</label>
-                <select name="targetDatabase" id="targetDatabase" class="form-control">
-                    <option value="">请选择目标源</option>
-                </select>
+                <select name="targetDatabase" id="targetDatabase" class="form-control"></select>
             </div>
         </div>
 
@@ -114,21 +112,34 @@
 </div>
 
 <script>
-// // 存储连接器类型
-// var connectorTypes = {
-//     source: null,
-//     target: null
-// };
+function loadDatabaseList(connectorId, databaseSelect) {
+    // 显示加载状态
+    doGetter('/connector/getDatabases', { connectorId: connectorId }, function(response){
+        if (response.success) {
+            const databases = response.resultValue;
+            if (databases && databases.length > 0) {
+                // 添加数据库选项
+                let data = [];
+                databases.forEach(function(dbName) {
+                    data.push({ label: dbName, value: dbName, disabled: false })
+                });
+                databaseSelect.setData(data);
+                console.log(data);
+            }
+        } else {
+            bootGrowl("获取库列表失败: " + response.resultValue, "danger");
+        }
+    })
 
-function handleConnectorChange(connectorId, type) {
+}
+function onConnectorChange(connectorId, databaseSelect) {
     doGetter('/mapping/getConnectorInfo', { connectorId: connectorId }, function(response){
         if (response.success && response.resultValue) {
             // const connector = response.resultValue;
             // 保存连接器类型
             // connectorTypes[type] = connector.config.connectorType.toLowerCase();
-
             // 无论什么类型的连接器，都尝试加载数据库列表
-            loadDatabaseList(connectorId, type);
+            loadDatabaseList(connectorId, databaseSelect);
 
             // 更新字段显示状态
             // updateFieldsVisibility();
@@ -214,46 +225,22 @@ function updateFieldsVisibility() {
     }
 }
 
-/**
- * 加载数据库列表
- *
- * @param {string} connectorId - 连接器ID
- * @param {string} type - 'source' 或 'target'
- */
-function loadDatabaseList(connectorId, type) {
-    const databaseSelect = $("#" + type + "Database");
-    // 显示加载状态
-    databaseSelect.html('');
-    doGetter('/connector/getDatabases', { connectorId: connectorId }, function(response){
-        if (response.success) {
-            const databases = response.resultValue;
-            if (databases && databases.length > 0) {
-                // 添加数据库选项
-                databases.forEach(function(dbName) {
-                    databaseSelect.append('<option value="' + dbName + '">' + dbName + '</option>');
-                });
-            }
-        } else {
-            bootGrowl("获取库列表失败: " + response.resultValue, "danger");
-        }
-    })
-
-}
-
 $(document).ready(function() {
-    // 监听数据源选择变化
-    const $sourceConnectorSelector = $('#sourceConnectorId').dbSelect({
+    // 监听数据源选择变化 - 直接返回 dbSelect 实例
+    const sourceDatabase = $('#sourceDatabase').dbSelect({});
+    $('#sourceConnectorId').dbSelect({
         type: 'single',
         onSelect: function (connectorId) {
-            handleConnectorChange(connectorId[0], 'source');
+            onConnectorChange(connectorId[0], sourceDatabase);
         }
     });
 
     // 监听目标源选择变化
-    const $targetConnectorSelector =$('#targetConnectorId').dbSelect({
+    const targetDatabase = $('#targetDatabase').dbSelect({});
+    $('#targetConnectorId').dbSelect({
         type: 'single',
         onSelect: function (connectorId) {
-            handleConnectorChange(connectorId[0], 'target');
+            onConnectorChange(connectorId[0], targetDatabase);
         }
     });
 
