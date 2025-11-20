@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2024 All Rights Reserved.
- */
 package org.dbsyncer.connector.sqlserver.schema.support;
 
 import org.dbsyncer.sdk.model.Field;
@@ -14,21 +11,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * SQL Server 精确数值类型
- * 包括整数类型和精确小数类型
- *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-12-24 23:45
+ * SQL Server BIGINT 和 TIMESTAMP 类型
+ * 映射到标准类型 LONG
+ * 
+ * 注意：TIMESTAMP 是 SQL Server 的行版本控制类型，是 8 字节二进制数据，可以转换为 long
+ * TIMESTAMP 本质上是一个递增的版本号，用 long 表示更符合语义
  */
-public final class SqlServerExactNumericType extends LongType {
+public final class SqlServerLongType extends LongType {
 
     @Override
     public Set<String> getSupportedTypeName() {
-        // 注意：TIMESTAMP是SQL Server的行版本控制类型，是8字节二进制数据，可以转换为long
-        // TIMESTAMP本质上是一个递增的版本号，用long表示更符合语义
-        // BIT类型由SqlServerBooleanType处理，不再由本类处理
-        return new HashSet<>(Arrays.asList("TINYINT", "SMALLINT", "INT", "BIGINT", "INT IDENTITY", "BIGINT IDENTITY", "SMALLINT IDENTITY", "TINYINT IDENTITY", "TIMESTAMP"));
+        return new HashSet<>(Arrays.asList("BIGINT", "BIGINT IDENTITY", "TIMESTAMP"));
     }
 
     @Override
@@ -40,15 +33,15 @@ public final class SqlServerExactNumericType extends LongType {
             return ((Boolean) val) ? 1L : 0L;
         }
         if (val instanceof byte[]) {
-            // SQL Server TIMESTAMP是8字节二进制数据，可以转换为long
-            // SQL Server使用小端序（little-endian）存储
+            // SQL Server TIMESTAMP 是 8 字节二进制数据，可以转换为 long
+            // SQL Server 使用小端序（little-endian）存储
             byte[] bytes = (byte[]) val;
             if (bytes.length == 8) {
-                // 使用ByteBuffer处理字节序，SQL Server使用小端序
+                // 使用 ByteBuffer 处理字节序，SQL Server 使用小端序
                 ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
                 return buffer.getLong();
             } else if (bytes.length > 0) {
-                // 如果不是8字节，补齐或截断为8字节
+                // 如果不是 8 字节，补齐或截断为 8 字节
                 byte[] paddedBytes = new byte[8];
                 int len = Math.min(bytes.length, 8);
                 System.arraycopy(bytes, 0, paddedBytes, 0, len);
@@ -82,8 +75,8 @@ public final class SqlServerExactNumericType extends LongType {
             return ((BigDecimal) val).longValue();
         }
         if (val instanceof byte[]) {
-            // SQL Server TIMESTAMP：将8字节二进制转换为long
-            // SQL Server使用小端序（little-endian）存储
+            // SQL Server TIMESTAMP：将 8 字节二进制转换为 long
+            // SQL Server 使用小端序（little-endian）存储
             byte[] bytes = (byte[]) val;
             if (bytes.length == 8) {
                 ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
@@ -100,3 +93,4 @@ public final class SqlServerExactNumericType extends LongType {
         return super.convert(val, field);
     }
 }
+

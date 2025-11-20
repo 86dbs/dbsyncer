@@ -39,7 +39,7 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
         // 时间
         mapping.put("DATE", "date");
         mapping.put("TIME", "time");
-        mapping.put("TIMESTAMP", "datetime2"); // 注意：这是标准TIMESTAMP（日期时间类型），SQL Server的TIMESTAMP类型由SqlServerExactNumericType处理，映射为LONG
+        mapping.put("TIMESTAMP", "datetime2"); // 注意：这是标准TIMESTAMP（日期时间类型），SQL Server的TIMESTAMP类型由SqlServerLongType处理，映射为LONG
         // 二进制
         mapping.put("BYTES", "varbinary");
         // 大容量二进制
@@ -62,7 +62,10 @@ public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-                new SqlServerExactNumericType(),        // 精确数值类型（整数类型，包括TIMESTAMP）
+                new SqlServerByteType(),                // TINYINT -> BYTE
+                new SqlServerShortType(),               // SMALLINT -> SHORT
+                new SqlServerIntType(),                 // INT -> INT
+                new SqlServerLongType(),                // BIGINT, TIMESTAMP -> LONG
                 new SqlServerDecimalType(),             // Decimal类型（精确小数类型）
                 new SqlServerApproximateNumericType(),  // 近似数值类型
                 new SqlServerDateTimeType(),            // 日期时间类型

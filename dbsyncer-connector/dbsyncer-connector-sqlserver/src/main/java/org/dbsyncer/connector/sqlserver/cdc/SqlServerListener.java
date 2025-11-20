@@ -328,27 +328,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }
     }
 
-    private void parseEvent(List<CDCEvent> list, Lsn stopLsn) {
-        int size = list.size();
-        for (int i = 0; i < size; i++) {
-            boolean isEnd = i == size - 1;
-            CDCEvent event = list.get(i);
-            if (TableOperationEnum.isUpdateAfter(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_UPDATE, event.getRow(), null, (isEnd ? stopLsn : null)));
-                continue;
-            }
-
-            if (TableOperationEnum.isInsert(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_INSERT, event.getRow(), null, (isEnd ? stopLsn : null)));
-                continue;
-            }
-
-            if (TableOperationEnum.isDelete(event.getCode())) {
-                trySendEvent(new RowChangedEvent(event.getTableName(), ConnectorConstant.OPERTION_DELETE, event.getRow(), null, (isEnd ? stopLsn : null)));
-            }
-        }
-    }
-
     /**
      * 查询 DDL 变更（使用统一的 LSN）
      */
@@ -363,52 +342,26 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 Lsn ddlLsn = new Lsn(rs.getBytes(4));
                 java.util.Date ddlTime = rs.getTimestamp(5);
 
-                String fullTableName = null;
-                String parsedTableName = extractTableNameFromDDL(ddlCommand, null);
-                if (parsedTableName != null) {
-                    // 如果解析到表名，尝试构建完整表名（使用默认 schema）
-                    fullTableName = (schema != null ? schema + "." : "") + parsedTableName;
-                    logger.info("从 DDL 命令中解析到表名: {}", fullTableName);
-                } else {
-                    logger.error("无法从 DDL 命令中解析表名: {}", ddlCommand);
-                    throw new RuntimeException("无法从 DDL 命令中解析表名: " + ddlCommand);
+                String tableName = extractTableNameFromDDL(ddlCommand);
+                if (tableName == null) {
+                    logger.warn("无法从 DDL 命令中解析表名或 schema: {}", ddlCommand);
+                    continue;
                 }
+
+                logger.info("接收到 DDL : {}", ddlCommand);
 
                 // 过滤 DDL 类型：只处理 ALTER TABLE
                 if (!isTableAlterDDL(ddlCommand)) {
                     continue;
                 }
 
-                // 解析 schema 和表名
-                String[] parts = parseSchemaAndTableName(fullTableName);
-                String tableSchema = parts[0];
-                String tableName = parts[1];
-
                 // 检查 schema 和表名是否匹配
-                if (isFilterTable(tableSchema, tableName)) {
+                if (filterTable.contains(tableName)) {
                     events.add(new DDLEvent(tableName, ddlCommand, ddlLsn, ddlTime));
                 }
             }
             return events;
         });
-    }
-
-
-    /**
-     * 解析完整表名为 schema 和表名
-     */
-    private String[] parseSchemaAndTableName(String fullTableName) {
-        if (fullTableName == null) {
-            return new String[]{null, null};
-        }
-        int dotIndex = fullTableName.indexOf('.');
-        if (dotIndex > 0) {
-            String schema = fullTableName.substring(0, dotIndex);
-            String tableName = fullTableName.substring(dotIndex + 1);
-            return new String[]{schema, tableName};
-        }
-        // 如果没有 schema，返回 null 和表名
-        return new String[]{null, fullTableName};
     }
 
     /**
@@ -419,16 +372,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
             return false;
         }
         return ddlCommand.toUpperCase().trim().startsWith("ALTER TABLE");
-    }
-
-    /**
-     * 检查表是否在过滤列表中
-     */
-    private boolean isFilterTable(String tableSchema, String tableName) {
-        if (schema != null && !schema.equalsIgnoreCase(tableSchema)) {
-            return false;
-        }
-        return filterTable.contains(tableName);
     }
 
     /**
@@ -527,47 +470,53 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * 发送 DDL 事件
      */
     private void trySendDDLEvent(String tableName, String ddlCommand, Lsn position) {
-        String actualTableName = extractTableNameFromDDL(ddlCommand, tableName);
 
-        if (actualTableName != null && filterTable.contains(actualTableName)) {
-            DDLChangedEvent ddlEvent = new DDLChangedEvent(
-                    actualTableName,
-                    ConnectorConstant.OPERTION_ALTER,
-                    ddlCommand,
-                    null,
-                    position
-            );
+        // 使用 isFilterTable 方法进行匹配（它会检查 schema 和表名）
+        DDLChangedEvent ddlEvent = new DDLChangedEvent(
+                tableName,
+                ConnectorConstant.OPERTION_ALTER,
+                ddlCommand,
+                null,
+                position
+        );
 
-            while (connected) {
+        while (connected) {
+            try {
+                sendChangedEvent(ddlEvent);
+                break;
+            } catch (QueueOverflowException ex) {
                 try {
-                    sendChangedEvent(ddlEvent);
-                    break;
-                } catch (QueueOverflowException ex) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    } catch (InterruptedException exe) {
-                        logger.error(exe.getMessage(), exe);
-                    }
+                    TimeUnit.MILLISECONDS.sleep(1);
+                } catch (InterruptedException exe) {
+                    logger.error(exe.getMessage(), exe);
                 }
             }
         }
     }
 
     /**
-     * 从 DDL 语句中提取表名
+     * 从 DDL 语句中提取表名（可能包含 schema）
+     *
+     * @return 完整表名，格式为 "schema.tableName" 或 "tableName"（如果没有 schema）
      */
-    private String extractTableNameFromDDL(String ddlCommand, String defaultTableName) {
+    private String extractTableNameFromDDL(String ddlCommand) {
         try {
             Statement statement = CCJSqlParserUtil.parse(ddlCommand);
             if (statement instanceof Alter) {
                 Alter alter = (Alter) statement;
                 String tableName = alter.getTable().getName();
-                return StringUtil.replace(tableName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+                String schemaName = alter.getTable().getSchemaName();
+
+                // 清理引号
+                tableName = StringUtil.replace(tableName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+                schemaName = StringUtil.replace(schemaName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
+
+                if (schema.equals(schemaName)) return tableName;
             }
         } catch (JSQLParserException e) {
             logger.warn("无法解析 DDL 语句: {}", ddlCommand);
         }
-        return defaultTableName;
+        return null;
     }
 
     private interface ResultSetMapper<T> {

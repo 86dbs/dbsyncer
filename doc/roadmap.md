@@ -13,7 +13,7 @@
 
 ## 问题池
 
-- XML, JSON 等标准类型的支持。
+- 存在 ddl 被 jsqlparser 解析多次的情况（一次表过滤的名称解析，一次内容解析）
 - 增量-定时 重构
   - 增量定时-移除 AbstractDatabaseConnector.reader, 与 Listener 中重复定义, 但 Reader 语义更好。
 - AbstractDatabaseConnector.filterColumn 这个应该在编辑时处理，而不是在运行时处理
