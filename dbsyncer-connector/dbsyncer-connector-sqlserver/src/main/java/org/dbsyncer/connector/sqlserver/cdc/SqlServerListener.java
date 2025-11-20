@@ -13,11 +13,11 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.enums.TableOperationEnum;
 import org.dbsyncer.connector.sqlserver.model.CDCEvent;
 import org.dbsyncer.connector.sqlserver.model.DDLEvent;
+import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.model.UnifiedChangeEvent;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
@@ -36,11 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -76,9 +72,13 @@ public class SqlServerListener extends AbstractDatabaseListener {
     // DDL 相关 SQL
     private static final String GET_DDL_CHANGES =
             "SELECT source_object_id, object_id, ddl_command, ddl_lsn, ddl_time " +
-            "FROM cdc.ddl_history " +
-            "WHERE ddl_lsn > ? AND ddl_lsn <= ? " +
-            "ORDER BY ddl_lsn ASC";
+                    "FROM cdc.ddl_history " +
+                    "WHERE ddl_lsn > ? AND ddl_lsn <= ? " +
+                    "ORDER BY ddl_lsn ASC";
+
+    // 获取 DDL 的最大 LSN
+    private static final String GET_MAX_DDL_LSN =
+            "SELECT MAX(ddl_lsn) FROM cdc.ddl_history";
 
     private static final String LSN_POSITION = "position";
     private static final int OFFSET_COLUMNS = 4;
@@ -266,10 +266,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private void pull(Lsn stopLsn) {
         Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
 
-        // 1. 查询 DDL 变更（使用统一的 LSN）
-        List<DDLEvent> ddlEvents = pullDDLChanges(startLsn, stopLsn);
-
-        // 2. 查询 DML 变更（提取 LSN 用于排序）
+        //  查询 DML 变更（提取 LSN 用于排序）
         List<CDCEvent> dmlEvents = new ArrayList<>();
         changeTables.forEach(changeTable -> {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
@@ -306,15 +303,18 @@ public class SqlServerListener extends AbstractDatabaseListener {
             }
         });
 
-        // 3. 合并并按 LSN 排序
+        // 查询 DDL 变更（使用统一的 LSN）
+        List<DDLEvent> ddlEvents = pullDDLChanges(startLsn, stopLsn);
+
+        // 合并并按 LSN 排序
         List<UnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
 
-        // 4. 按顺序解析和发送（统一更新 LSN）
+        // 按顺序解析和发送（统一更新 LSN）
         parseUnifiedEvents(unifiedEvents, stopLsn);
     }
 
-    private void trySendEvent(RowChangedEvent event){
-        while (connected){
+    private void trySendEvent(RowChangedEvent event) {
+        while (connected) {
             try {
                 sendChangedEvent(event);
                 break;
@@ -359,16 +359,19 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }, rs -> {
             List<DDLEvent> events = new ArrayList<>();
             while (rs.next()) {
-                int sourceObjectId = rs.getInt(1);
                 String ddlCommand = rs.getString(3);
                 Lsn ddlLsn = new Lsn(rs.getBytes(4));
                 java.util.Date ddlTime = rs.getTimestamp(5);
 
-                // 根据 object_id 查找完整表名（包含 schema）
-                String fullTableName = getTableNameByObjectId(sourceObjectId);
-                if (fullTableName == null) {
-                    logger.warn("无法找到 object_id={} 对应的表，可能已被删除，跳过该 DDL 事件", sourceObjectId);
-                    continue;
+                String fullTableName = null;
+                String parsedTableName = extractTableNameFromDDL(ddlCommand, null);
+                if (parsedTableName != null) {
+                    // 如果解析到表名，尝试构建完整表名（使用默认 schema）
+                    fullTableName = (schema != null ? schema + "." : "") + parsedTableName;
+                    logger.info("从 DDL 命令中解析到表名: {}", fullTableName);
+                } else {
+                    logger.error("无法从 DDL 命令中解析表名: {}", ddlCommand);
+                    throw new RuntimeException("无法从 DDL 命令中解析表名: " + ddlCommand);
                 }
 
                 // 过滤 DDL 类型：只处理 ALTER TABLE
@@ -390,20 +393,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
-    /**
-     * 根据 object_id 获取表名（包含 schema）
-     */
-    private String getTableNameByObjectId(int objectId) {
-        return objectIdToTableNameCache.get(objectId, id -> {
-            return queryAndMap(
-                    "SELECT s.name + '.' + t.name FROM sys.tables t " +
-                            "INNER JOIN sys.schemas s ON t.schema_id = s.schema_id " +
-                            "WHERE t.object_id = ?",
-                    statement -> statement.setInt(1, id),
-                    rs -> rs.next() ? rs.getString(1) : null
-            );
-        });
-    }
 
     /**
      * 解析完整表名为 schema 和表名
@@ -633,8 +622,43 @@ public class SqlServerListener extends AbstractDatabaseListener {
         return (T) execute;
     }
 
+    /**
+     * 获取最大 LSN（同时考虑 DML 和 DDL）
+     * <p>
+     * 问题说明：
+     * - sys.fn_cdc_get_max_lsn() 只返回变更表（change tables）中的最大 LSN，不包括 DDL 的 LSN
+     * - 当只有 DDL 发生而没有 DML 变更时，sys.fn_cdc_get_max_lsn() 不会变化
+     * - 这导致 LsnPuller 无法检测到 DDL 变更，从而无法触发 pull() 方法
+     * <p>
+     * 解决方案：
+     * - 同时查询 DML 和 DDL 的最大 LSN，取两者中的较大值
+     * - 确保 DDL 变更也能被及时检测和处理
+     */
     public Lsn getMaxLsn() {
-        return queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+        // 获取 DML 的最大 LSN
+        Lsn dmlMaxLsn = queryAndMap(GET_MAX_LSN, rs -> {
+            byte[] bytes = rs.getBytes(1);
+            return bytes != null ? new Lsn(bytes) : null;
+        });
+
+        // 获取 DDL 的最大 LSN（可能为 null，如果 cdc.ddl_history 表为空或不存在）
+        Lsn ddlMaxLsn = queryAndMap(GET_MAX_DDL_LSN, rs -> {
+            byte[] bytes = rs.getBytes(1);
+            return bytes != null ? new Lsn(bytes) : null;
+        });
+
+        // 返回两者中的较大值
+        if (dmlMaxLsn == null && ddlMaxLsn == null) {
+            return null;
+        }
+        if (dmlMaxLsn == null) {
+            return ddlMaxLsn;
+        }
+        if (ddlMaxLsn == null) {
+            return dmlMaxLsn;
+        }
+
+        return dmlMaxLsn.compareTo(ddlMaxLsn) > 0 ? dmlMaxLsn : ddlMaxLsn;
     }
 
     final class Worker extends Thread {
