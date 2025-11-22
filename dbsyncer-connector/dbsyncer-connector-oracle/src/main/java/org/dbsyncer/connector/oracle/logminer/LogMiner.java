@@ -218,7 +218,7 @@ public class LogMiner {
             if (operationCode == LogMinerHelper.LOG_MINER_OC_ROLLBACK) {
                 // 清空TransactionalBuffer中当前事务
                 if (transactionalBuffer.rollback(txId)) {
-                    logger.info("txId: {} rollback", txId);
+                    logger.debug("txId: {} rollback", txId);
                 }
                 continue;
             }
