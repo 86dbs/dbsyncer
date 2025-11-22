@@ -44,6 +44,8 @@ public class LogMiner {
     private Long committedScn = 0L;
     // 初始位点
     private long startScn = 0;
+    // 本轮查询处理的最大SCN，用于避免重复查询
+    private long processedScn = 0;
     private EventListener listener;
     private Worker worker;
 
@@ -180,11 +182,15 @@ public class LogMiner {
             int operationCode = rs.getInt("OPERATION_CODE");
             Timestamp changeTime = rs.getTimestamp("TIMESTAMP");
             String txId = rs.getString("XID");
+            if (scn.longValue() > processedScn) {
+                processedScn = scn.longValue();
+            }
             // Commit
+            logger.info("txId:{}, table:{}, operationCode:{}, changeTime:{}, scn:{}", txId, tableName, operationCode, changeTime, scn);
             if (operationCode == LogMinerHelper.LOG_MINER_OC_COMMIT) {
                 // 将TransactionalBuffer中当前事务的DML 转移到消费者处理
                 if (transactionalBuffer.commit(txId, scn, committedScn)) {
-                    logger.debug("txId: {} commit", txId);
+                    logger.info("txId: {} commit", txId);
                 }
                 continue;
             }
@@ -193,7 +199,7 @@ public class LogMiner {
             if (operationCode == LogMinerHelper.LOG_MINER_OC_ROLLBACK) {
                 // 清空TransactionalBuffer中当前事务
                 if (transactionalBuffer.rollback(txId)) {
-                    logger.debug("txId: {} rollback", txId);
+                    logger.info("txId: {} rollback", txId);
                 }
                 continue;
             }
@@ -206,6 +212,7 @@ public class LogMiner {
 
             // DDL
             String redoSql = getRedoSQL(rs);
+            logger.info("operationCode:{}, txId:{}, redoSql:{}", operationCode, txId, redoSql);
             if (operationCode == LogMinerHelper.LOG_MINER_OC_DDL) {
                 updateCommittedScn(scn.longValue());
                 listener.onEvent(new RedoEvent(scn.longValue(), operationCode, redoSql, segOwner, tableName, changeTime, txId));
@@ -232,7 +239,10 @@ public class LogMiner {
                         event.setScn(startScn < committedScn ? committedScn : startScn);
                         listener.onEvent(event);
                     };
-                    transactionalBuffer.registerCommitCallback(txId, scn, commitCallback);
+                    // 生成操作唯一标识：scn + 表名 + 操作类型 + SQL内容hash
+                    // 用于防止重复查询导致的重复处理（同一事务的不同DML可能有相同SCN，所以不能只用SCN判断）
+                    String operationId = scn + "_" + tableName + "_" + operationCode + "_" + redoSql.hashCode();
+                    transactionalBuffer.registerCommitCallback(txId, scn, operationId, commitCallback);
                 }
             }
         }
@@ -309,6 +319,43 @@ public class LogMiner {
         close(rs);
         close(stmt);
     }
+    private long getNewStartScn(Long smallestUncommittedScn, long endScn) {
+        long newStartScn;
+        if (smallestUncommittedScn != null && committedScn > smallestUncommittedScn) {
+            // 【关键保护】有未提交事务，且committedScn已经超过该事务的起始SCN
+            // 如果推进到committedScn，会跳过未提交事务的后续操作
+            // 只能推进到processedScn+1（已读取的最大SCN），不能跳跃
+            if (processedScn > startScn) {
+                newStartScn = processedScn + 1;
+            } else {
+                // 本轮没有新数据，保持不变，等待未提交事务的后续操作
+                newStartScn = startScn;
+            }
+        } else if (committedScn > startScn) {
+            // 有事务提交，且没有更早的未提交事务阻塞
+            // 安全推进到committedScn
+            newStartScn = committedScn;
+        } else if (processedScn > startScn) {
+            // 本轮读取了数据，但没有提交
+            // 推进到processedScn+1，避免重复查询
+            newStartScn = processedScn + 1;
+        } else {
+            // 没有读取到任何数据（processedScn == startScn）
+            // 【关键】不能直接跳到endScn！Oracle LogMiner的归档数据可能有延迟出现在V$LOGMNR_CONTENTS
+            // 平衡策略：
+            // - 如果距离很近（<10），可能是归档延迟，保守推进
+            // - 如果距离较远（>=10），可能是过滤条件导致的空窗口，适度推进
+            long distance = endScn - startScn;
+            if (distance < 10) {
+                // 距离太近，可能有归档延迟，只推进一小步
+                newStartScn = startScn + 1;
+            } else {
+                // 距离较远，适度推进到中间位置，平衡性能与安全性
+                newStartScn = startScn + Math.min(distance / 2, 100);
+            }
+        }
+        return newStartScn;
+    }
 
     final class Worker extends Thread {
 
@@ -333,6 +380,8 @@ public class LogMiner {
                     }
 
                     // 3.查询 logMiner view, 处理结果集
+                    // 重置本轮处理的SCN追踪
+                    processedScn = startScn;
                     statement = connection.prepareStatement(minerViewQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
                     statement.setFetchSize(fetchSize);
                     statement.setFetchDirection(ResultSet.FETCH_FORWARD);
@@ -352,7 +401,11 @@ public class LogMiner {
                         throw e;
                     }
                     // 4.确定新的SCN
-                    startScn = endScn;
+                    Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
+                    long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
+                    if (newStartScn != startScn) {
+                        startScn = newStartScn;
+                    }
                     sleepSeconds(1);
                 }
             } catch (Exception e) {
