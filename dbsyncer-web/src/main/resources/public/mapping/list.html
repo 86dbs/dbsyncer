@@ -164,6 +164,13 @@ function deleteMapping(id) {
     });
 }
 
+function showMappingError(metaId){
+    doLoader('/monitor?id='+metaId);
+    // 激活监控菜单
+    $('.sidebar-item').removeClass('active');
+    $('.sidebar-item[url="/monitor"]').addClass('active');
+}
+
 function getStateConfig(mappingId) {
     return {
         0: { // 未运行
@@ -171,7 +178,7 @@ function getStateConfig(mappingId) {
             title: '启动',
             onclick: `changeMappingState('${mappingId}', '/mapping/start', '启动')`,
             disabled: false,
-            class: 'label-default',
+            class: 'badge-info',
             text: '未运行'
         },
         1: { // 运行中
@@ -179,7 +186,7 @@ function getStateConfig(mappingId) {
             title: '停止',
             onclick: `changeMappingState('${mappingId}', '/mapping/stop', '停止')`,
             disabled: false,
-            class: 'label-success',
+            class: 'badge-success',
             text: '运行中'
         },
         2: { // 停止中
@@ -187,16 +194,53 @@ function getStateConfig(mappingId) {
             title: '停止中',
             text: ' 停止中',
             disabled: true,
-            class: 'label-default'
+            class: 'badge-warning'
         }
     };
 }
 
-// 根据状态生成操作按钮
+// 根据同步结果生成内容
+function renderSyncResult(mapping) {
+    const meta = mapping?.meta;
+    if (!meta) return '';
+    
+    const content = [];
+    // 全量模式显示总数
+    if (mapping?.model === 'full' && meta.total > 0) {
+        content.push(`总数:${meta.total}`);
+    }
+    // 成功数量
+    if (meta.success > 0) {
+        content.push(`成功:${meta.success}`);
+    }
+    // 失败数量
+    if (meta.fail > 0) {
+        content.push(`失败:<span class="btn btn-link text-error text-md" title='查看错误日志' onclick="showMappingError('${meta.id}')">${meta.fail}</span>`);
+    }
+    return content.join(' ');
+}
+
+// 根据任务类型生成内容
+function renderModelText(model) {
+    const modelState = {
+        'full': { // 全量
+            class: 'badge-primary',
+            text: '全量',
+        },
+        'increment': { // 增量
+            class: 'badge-info',
+            text: '增量',
+        }
+    };
+    const config = modelState[model];
+    return `<span class="badge ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成内容
 function renderStateText(state) {
     const stateConfig = getStateConfig();
     const config = stateConfig[state] || stateConfig[0];
-    return `<span class="label ${config.class}">${config.text}</span>`;
+    return `<span class="badge ${config.class}">${config.text}</span>`;
 }
 
 // 根据状态生成操作按钮
@@ -235,11 +279,9 @@ $(document).ready(function() {
                         <span>${escapeHtml(mapping.name)}</span>
                     </td>
                     <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}</td>
-                    <td>${mapping.meta != null ? mapping.meta.model : 'N/A'}</td>
+                    <td>${renderModelText(mapping?.model)}</td>
                     <td>
-                        <span class="label label-default">总数:${mapping?.meta.total}</span>
-                        <span class="label label-success">${mapping?.meta.success > 0 ? '已完成:' + mapping?.meta.success : ''}</span>
-                        <span class="label label-danger">${mapping?.meta.fail > 0 ? '失败:' + mapping?.meta.fail : ''}</span>
+                        ${renderSyncResult(mapping)}
                     </td>
                     <td>
                         ${renderStateText(mapping?.meta?.state || 0)}
