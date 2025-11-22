@@ -13,7 +13,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +34,28 @@ public class LogMiner {
     private final String schema;
     private final String driverClassName;
     private final int queryTimeout = 300;
-    private final int fetchSize = 1000;
+    
+    // 动态 FetchSize 配置
+    private final int minFetchSize = 100;
+    private final int maxFetchSize = 5000;
+    private volatile int currentFetchSize = 1000;
+    
+    // 动态休眠时间配置（毫秒）
+    private final int minSleepMillis = 100;
+    private final int maxSleepMillis = 3000;
+    private volatile int currentSleepMillis = 1000;
+    
+    // 查询范围控制
+    private final long MAX_SCN_RANGE = 10000;
+    
+    // 性能统计
+    private volatile long lastQueryRows = 0;
+    private volatile long consecutiveEmptyQueries = 0;
+    private volatile long totalQueriesCount = 0;
+    private volatile long totalRowsProcessed = 0;
+    private volatile long totalEmptyQueries = 0;
+    private volatile long lastStatsTime = System.currentTimeMillis();
+    
     private volatile boolean connected = false;
     private Connection connection;
     private List<BigInteger> currentRedoLogSequences;
@@ -175,7 +195,9 @@ public class LogMiner {
     }
 
     private void logMinerViewProcessor(ResultSet rs) throws SQLException {
+        long rowCount = 0;
         while (rs.next()) {
+            rowCount++;
             BigInteger scn = rs.getBigDecimal("SCN").toBigInteger();
             String tableName = rs.getString("TABLE_NAME");
             String segOwner = rs.getString("SEG_OWNER");
@@ -186,12 +208,9 @@ public class LogMiner {
                 processedScn = scn.longValue();
             }
             // Commit
-            logger.info("txId:{}, table:{}, operationCode:{}, changeTime:{}, scn:{}", txId, tableName, operationCode, changeTime, scn);
             if (operationCode == LogMinerHelper.LOG_MINER_OC_COMMIT) {
                 // 将TransactionalBuffer中当前事务的DML 转移到消费者处理
-                if (transactionalBuffer.commit(txId, scn, committedScn)) {
-                    logger.info("txId: {} commit", txId);
-                }
+                transactionalBuffer.commit(txId, scn, committedScn);
                 continue;
             }
 
@@ -212,7 +231,6 @@ public class LogMiner {
 
             // DDL
             String redoSql = getRedoSQL(rs);
-            logger.info("operationCode:{}, txId:{}, redoSql:{}", operationCode, txId, redoSql);
             if (operationCode == LogMinerHelper.LOG_MINER_OC_DDL) {
                 updateCommittedScn(scn.longValue());
                 listener.onEvent(new RedoEvent(scn.longValue(), operationCode, redoSql, segOwner, tableName, changeTime, txId));
@@ -246,10 +264,109 @@ public class LogMiner {
                 }
             }
         }
+        // 保存本轮查询行数，用于动态调整
+        lastQueryRows = rowCount;
     }
 
     private void updateCommittedScn(long newScn) {
         committedScn = newScn > committedScn ? newScn : committedScn;
+    }
+    
+    /**
+     * 动态调整 FetchSize
+     * 根据查询结果动态调整，提升性能和内存利用率
+     */
+    private void adjustFetchSize() {
+        if (lastQueryRows == 0) {
+            consecutiveEmptyQueries++;
+            // 连续空查询，降低 fetchSize 节省内存
+            if (consecutiveEmptyQueries > 10 && currentFetchSize > minFetchSize) {
+                currentFetchSize = Math.max(minFetchSize, currentFetchSize / 2);
+                logger.debug("Reduce fetchSize to {} after {} consecutive empty queries",
+                    currentFetchSize, consecutiveEmptyQueries);
+            }
+        } else {
+            consecutiveEmptyQueries = 0;
+            // 有数据，根据查询行数动态调整
+            if (lastQueryRows >= currentFetchSize * 0.9) {
+                // 接近满载，增加 fetchSize
+                int newSize = Math.min(maxFetchSize, currentFetchSize * 2);
+                if (newSize != currentFetchSize) {
+                    currentFetchSize = newSize;
+                    logger.debug("Increase fetchSize to {} (utilization: {}%)", 
+                        currentFetchSize, (lastQueryRows * 100 / currentFetchSize));
+                }
+            } else if (lastQueryRows < currentFetchSize * 0.3 && currentFetchSize > minFetchSize) {
+                // 利用率低，降低 fetchSize
+                int newSize = Math.max(minFetchSize, (int)(lastQueryRows * 1.5));
+                if (newSize != currentFetchSize) {
+                    currentFetchSize = newSize;
+                    logger.debug("Adjust fetchSize to {} based on actual rows {}", 
+                        currentFetchSize, lastQueryRows);
+                }
+            }
+        }
+    }
+    
+    /**
+     * 动态调整休眠时间
+     * 根据数据量灵活调整轮询间隔，平衡延迟和CPU占用
+     */
+    private void adjustSleepTime() {
+        if (lastQueryRows == 0) {
+            // 无数据，逐步增加休眠时间
+            int newSleep = Math.min(maxSleepMillis, currentSleepMillis + 200);
+            if (newSleep != currentSleepMillis) {
+                currentSleepMillis = newSleep;
+                logger.debug("Increase sleep time to {}ms (no data)", currentSleepMillis);
+            }
+        } else if (lastQueryRows >= currentFetchSize * 0.8) {
+            // 接近满载，缩短休眠时间，快速处理积压
+            if (currentSleepMillis > minSleepMillis) {
+                currentSleepMillis = minSleepMillis;
+                logger.debug("Reduce sleep time to {}ms (high load)", currentSleepMillis);
+            }
+        } else {
+            // 有数据但不多，适度休眠
+            int newSleep = Math.max(minSleepMillis, Math.min(maxSleepMillis, 500));
+            if (Math.abs(newSleep - currentSleepMillis) > 100) {
+                currentSleepMillis = newSleep;
+                logger.debug("Adjust sleep time to {}ms (moderate load)", currentSleepMillis);
+            }
+        }
+    }
+    
+    /**
+     * 收集性能统计信息
+     * 每分钟输出一次统计报告
+     */
+    private void collectStatistics() {
+        totalQueriesCount++;
+        totalRowsProcessed += lastQueryRows;
+        if (lastQueryRows == 0) {
+            totalEmptyQueries++;
+        }
+        
+        long now = System.currentTimeMillis();
+        if (now - lastStatsTime > 60000) {  // 每分钟输出一次
+            long avgRows = totalQueriesCount > 0 ? totalRowsProcessed / totalQueriesCount : 0;
+            long emptyRate = totalQueriesCount > 0 ? totalEmptyQueries * 100 / totalQueriesCount : 0;
+            
+            logger.info("=== LogMiner Performance Stats (1min) ===");
+            logger.info("Queries: {}, Rows: {}, Empty: {}", 
+                totalQueriesCount, totalRowsProcessed, totalEmptyQueries);
+            logger.info("Avg rows/query: {}, Empty rate: {}%", avgRows, emptyRate);
+            logger.info("Current fetchSize: {}, sleep: {}ms", currentFetchSize, currentSleepMillis);
+            logger.info("Current SCN: {}, Committed SCN: {}, Buffer size: {}", 
+                startScn, committedScn, transactionalBuffer.isEmpty() ? 0 : "non-zero");
+            logger.info("=========================================");
+            
+            // 重置统计（滚动窗口）
+            totalQueriesCount = 0;
+            totalRowsProcessed = 0;
+            totalEmptyQueries = 0;
+            lastStatsTime = now;
+        }
     }
 
     private String getRedoSQL(ResultSet rs) throws SQLException {
@@ -313,12 +430,6 @@ public class LogMiner {
             }
         }
     }
-
-    /** 关闭数据库连接资源 */
-    private void closeResources(ResultSet rs, Statement stmt) {
-        close(rs);
-        close(stmt);
-    }
     private long getNewStartScn(Long smallestUncommittedScn, long endScn) {
         long newStartScn;
         if (smallestUncommittedScn != null && committedScn > smallestUncommittedScn) {
@@ -357,39 +468,64 @@ public class LogMiner {
         return newStartScn;
     }
 
+    private PreparedStatement createStatement() throws SQLException {
+        String minerViewQuery = LogMinerHelper.logMinerViewQuery(schema, username);
+        PreparedStatement statement = connection.prepareStatement(
+                minerViewQuery,
+                ResultSet.TYPE_FORWARD_ONLY,
+                ResultSet.CONCUR_READ_ONLY,
+                ResultSet.HOLD_CURSORS_OVER_COMMIT
+        );
+        statement.setFetchDirection(ResultSet.FETCH_FORWARD);
+        statement.setQueryTimeout(queryTimeout);
+        return statement;
+    }
+
     final class Worker extends Thread {
 
         @Override
         public void run() {
-            String minerViewQuery = LogMinerHelper.logMinerViewQuery(schema, username);
-            PreparedStatement statement = null;
+            PreparedStatement cachedStatement = null;
             ResultSet rs = null;
             try {
+                cachedStatement = createStatement();
                 while (!isInterrupted() && connected) {
+                    // 1. 检查连接有效性
                     if (!isValid()) {
+                        close(cachedStatement);
                         connection = createConnection();
+                        cachedStatement = createStatement();
                     }
-                    closeResources(rs, statement);
-                    // 1.确定 endScn
-                    long endScn = LogMinerHelper.getCurrentScn(connection);
+                    
+                    // 关闭上一轮的 ResultSet（但复用 PreparedStatement）
+                    close(rs);
+                    
+                    // 2. 确定查询范围（控制单次查询的 SCN 跨度）
+                    long currentScn = LogMinerHelper.getCurrentScn(connection);
+                    long endScn = Math.min(currentScn, startScn + MAX_SCN_RANGE);
+                    
+                    // 检测积压情况
+                    long backlog = currentScn - startScn;
+                    if (backlog > MAX_SCN_RANGE * 2) {
+                        logger.warn("Large SCN backlog detected: {}, current processing may be slow", backlog);
+                    }
 
-                    // 2.是否发生redoLog切换
+                    // 3. 检查 Redo Log 切换
                     if (redoLogSwitchOccurred()) {
                         logger.info("Switch to new redo log");
                         restartLogMiner(endScn);
                     }
 
-                    // 3.查询 logMiner view, 处理结果集
-                    // 重置本轮处理的SCN追踪
+                    // 4. 查询 LogMiner 视图（复用 PreparedStatement）
                     processedScn = startScn;
-                    statement = connection.prepareStatement(minerViewQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
-                    statement.setFetchSize(fetchSize);
-                    statement.setFetchDirection(ResultSet.FETCH_FORWARD);
-                    statement.setQueryTimeout(queryTimeout);
-                    statement.setString(1, String.valueOf(startScn));
-                    statement.setString(2, String.valueOf(endScn));
+                    
+                    // 5. 动态设置 fetchSize
+                    cachedStatement.setFetchSize(currentFetchSize);
+                    cachedStatement.setString(1, String.valueOf(startScn));
+                    cachedStatement.setString(2, String.valueOf(endScn));
+                    
                     try {
-                        rs = statement.executeQuery();
+                        rs = cachedStatement.executeQuery();
                         logMinerViewProcessor(rs);
                     } catch (SQLException e) {
                         if (e.getMessage().contains("ORA-00310")) {
@@ -400,13 +536,28 @@ public class LogMiner {
                         }
                         throw e;
                     }
-                    // 4.确定新的SCN
+                    
+                    // 6. 推进 SCN
                     Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
                     long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
                     if (newStartScn != startScn) {
                         startScn = newStartScn;
                     }
-                    sleepSeconds(1);
+                    
+                    // 7. 性能统计和动态调整
+                    collectStatistics();
+                    adjustFetchSize();
+                    adjustSleepTime();
+                    
+                    // 8. 动态休眠
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(currentSleepMillis);
+                    } catch (InterruptedException e) {
+                        if (connected) {
+                            logger.error("Sleep interrupted: {}", e.getMessage());
+                        }
+                        break;
+                    }
                 }
             } catch (Exception e) {
                 if (connected) {
@@ -414,7 +565,8 @@ public class LogMiner {
                     recover();
                 }
             } finally {
-                closeResources(rs, statement);
+                close(rs);
+                close(cachedStatement);
             }
         }
     }
