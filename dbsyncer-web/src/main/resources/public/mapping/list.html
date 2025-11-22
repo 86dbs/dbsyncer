@@ -11,7 +11,7 @@
         <div class="grid grid-cols-6 items-center">
             <div id="searchMapping" class="lg:col-span-2 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
@@ -23,6 +23,7 @@
                 </button>
             </div>
         </div>
+
         <table class="table">
             <thead>
             <tr>
@@ -31,8 +32,8 @@
                 <th>数据源</th>
                 <th>目标源</th>
                 <th>类型</th>
-                <th>状态</th>
                 <th>结果</th>
+                <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -50,27 +51,31 @@
                     <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
                     <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
                     <td>
+                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
+                        <span th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
+                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
+                    </td>
+                    <td>
                         <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
                         <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
                         <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
                     </td>
                     <td>
-                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
-                        <span th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
-                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
-                    </td>
-
-                    <td>
                         <div class="flex items-center gap-1">
                             <button class="table-action-btn view" title="修改" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            <button class="table-action-btn play mapping-action-btn" th:data-id="${mapping.id}"
-                                    th:data-state="${mapping?.meta?.state}"
-                                    th:data-running="${mapping?.meta?.state eq 1}"
-                                    onclick="testConnector(this.dataset.id)">
-                                <i th:class="'fa ' + ${mapping?.meta?.state eq 1 ? 'fa-stop' : 'fa-play'}"
-                                   th:title="${mapping?.meta?.state eq 1 ? '停止' : '启动'}"></i>
+                            <!-- 未运行 -->
+                            <button class="table-action-btn play" th:data-id="${mapping.id}" th:if="${mapping?.meta?.state eq 0}" onclick="startMapping(this.dataset.id)">
+                                <i class="fa fa-play" th:title="启动"></i>
+                            </button>
+                            <!-- 运行中 -->
+                            <button class="table-action-btn play" th:data-id="${mapping.id}" th:if="${mapping?.meta?.state eq 1}" onclick="stopMapping(this.dataset.id)">
+                                <i class="fa fa-pause" th:title="停止"></i>
+                            </button>
+                            <!-- 停止中 -->
+                            <button class="table-action-btn play" th:if="${mapping?.meta?.state eq 2}">
+                                <i class="fa fa-spinner fa-spin" th:title="停止中"></i> 停止中
                             </button>
                             <button class="table-action-btn delete" title="删除" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
                                 <i class="fa fa-trash"></i>
@@ -90,19 +95,11 @@
         </table>
 
         <!-- 分页信息 -->
-        <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${mappings != null and !mappings.isEmpty()}">
-                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
-            </div>
+        <div id="mappingPagination" class="p-5 border-t border-gray-100 flex items-center justify-between">
+            <p class="text-sm text-gray-500">共 <span class="totalCount">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+            <div class="pagination-bar flex items-center gap-2"></div>
+        </div>
+
     </div>
 </div>
 
@@ -170,51 +167,43 @@ function stopMappingListAutoRefresh() {
 function editMapping(id) {
     // 停止自动刷新定时器
     stopMappingListAutoRefresh();
+
+    doLoader("/mapping/page/edit?id="+id);
+}
+
+function changeMappingState(id, url, title) {
+    const btn = event.target.closest('.table-action-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
+    btn.disabled = true;
+    doPoster(url, {id: id}, function (response) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if (response.success) {
+            bootGrowl(title +'成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl(title +'失败: ' + response.resultValue, 'danger');
+        }
+    })
 }
 
 /**
  * 启动任务
  */
 function startMapping(id) {
-    const btn = event.target.closest('.action-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
-    btn.disabled = true;
-    doPoster('/mapping/start', {id: id}, function (response) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        if (response.success) {
-            bootGrowl('启动成功', 'success');
-            backIndexPage();
-        } else {
-            bootGrowl('启动失败: ' + response.resultValue, 'danger');
-        }
-    })
+    changeMappingState(id, '/mapping/start', "启动");
 }
 
 /**
  * 停止任务
  */
 function stopMapping(id) {
-    // 显示加载状态
-    const btn = event.target.closest('.action-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 停止中...';
-    btn.disabled = true;
-    doPoster('/mapping/stop', {id: id}, function (response) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        if (response.success) {
-            bootGrowl('停止成功', 'success');
-            backIndexPage();
-        } else {
-            bootGrowl('停止失败: ' + response.resultValue, 'danger');
-        }
-    })
+    changeMappingState(id, '/mapping/stop', "停止");
 }
 
 /**
- * 删除同步任务
+ * 删除任务
  */
 function deleteMapping(id) {
     DBSyncerTheme.showConfirm({
@@ -224,10 +213,7 @@ function deleteMapping(id) {
         confirmType: 'danger',
         onConfirm: function () {
             // 禁用按钮，防止重复点击
-            const originalText = $btn.html();
-            $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
             doPoster('/mapping/remove', {id: id}, function (data) {
-                $btn.html(originalText).prop('disabled', false);
                 if (data.success === true) {
                     bootGrowl("删除成功！", "success");
                     backIndexPage();
@@ -239,6 +225,40 @@ function deleteMapping(id) {
     });
 }
 
+// 根据状态生成操作按钮
+function renderStateButton(state, mappingId) {
+    const stateConfig = {
+        0: { // 未运行
+            icon: 'fa-play',
+            title: '启动',
+            onclick: `startMapping('${mappingId}')`,
+            disabled: false
+        },
+        1: { // 运行中
+            icon: 'fa-pause',
+            title: '停止',
+            onclick: `stopMapping('${mappingId}')`,
+            disabled: false
+        },
+        2: { // 停止中
+            icon: 'fa-spinner fa-spin',
+            title: '停止中',
+            text: ' 停止中',
+            disabled: true
+        }
+    };
+    
+    const config = stateConfig[state] || stateConfig[0];
+    const disabledAttr = config.disabled ? ' disabled' : '';
+    const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
+    
+    return `
+        <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
+            <i class="fa ${config.icon}"></i>${config.text || ''}
+        </button>
+    `;
+}
+
 // 页面初始化
 $(document).ready(function() {
     // 定义返回函数，子页面返回
@@ -247,6 +267,56 @@ $(document).ready(function() {
     };
     // 启动自动刷新定时器
     startMappingListAutoRefresh();
+
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/mapping/search',
+        tableBodySelector: '#mappingTableBody',
+        paginationSelector: '#mappingPagination',
+        renderRow: function(mapping, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td>
+                        <div class="d-flex align-center">
+                            <i class="fa fa-database connector-icon text-info"></i>
+                            <span>${escapeHtml(mapping.name)}</span>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(mapping.sourceConnector.name || '')}</td>
+                    <td>${escapeHtml(mapping.targetConnector.name || '')}</td>
+                    <td>${mapping.meta != null ? mapping.meta.model : 'N/A'}</td>
+                    <td>
+                        <span class="label label-default">总数:${mapping?.meta.total}</span>
+                        <span class="label label-success">${mapping?.meta.success > 0 ? '已完成:' + mapping?.meta.success : ''}</span>
+                        <span class="label label-danger">${mapping?.meta.fail > 0 ? '失败:' + mapping?.meta.fail : ''}</span>
+                    </td>
+                    <td>
+                        <span class="label label-default">${mapping?.meta?.state === 0 ? '未运行' : ''}</span>
+                        <span class="label label-success">${mapping?.meta?.state === 1 ? '运行中' : ''}</span>
+                        <span class="label label-default">${mapping?.meta?.state === 2 ? '停止中' : ''}</span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <button class="table-action-btn view" title="修改" data-id="${mapping.id}" onclick="editMapping('${mapping.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
+                            <button class="table-action-btn delete" title="删除" data-id="${mapping.id}" onclick="deleteMapping('${mapping.id}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+    });
+
+    // 搜索框输入事件
+    DBSyncerTheme.initSearch('searchMapping', function (searchKey) {
+        pagination.doSearch({'searchKey': searchKey});
+    });
 });
 </script>
 

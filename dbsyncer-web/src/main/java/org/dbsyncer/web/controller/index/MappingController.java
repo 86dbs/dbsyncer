@@ -71,6 +71,18 @@ public class MappingController extends BaseController {
         return "mapping/" + page;
     }
 
+    @PostMapping("/search")
+    @ResponseBody
+    public RestResult search(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.search(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/copy")
     @ResponseBody
     public RestResult add(@RequestParam("id") String id) {

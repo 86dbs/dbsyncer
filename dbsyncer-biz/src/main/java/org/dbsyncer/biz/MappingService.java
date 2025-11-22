@@ -4,7 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingVo;
-import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.common.model.Paging;
 
 import java.util.List;
 import java.util.Map;
@@ -67,6 +67,14 @@ public interface MappingService {
      * @return
      */
     List<MappingVo> getMappingAll();
+
+    /**
+     * 分页搜索
+     *
+     * @param params
+     * @return
+     */
+    Paging<MappingVo> search(Map<String, String> params);
 
     /**
      * 启动驱动
