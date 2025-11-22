@@ -88,11 +88,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public String getConnectorInstanceCacheKey(DatabaseConfig config) {
-        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getHost(), config.getPort(), config.getUsername());
-    }
-
-    @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();

@@ -63,10 +63,8 @@ $(document).ready(function() {
                 <tr>
                     <td>${index}</td>
                     <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-database connector-icon text-info"></i>
-                            <span>${escapeHtml(connector.name)}</span>
-                        </div>
+                        <i class="fa fa-database connector-icon text-info"></i>
+                        <span>${escapeHtml(connector.name)}</span>
                     </td>
                     <td>${escapeHtml(connector.config?.connectorType || '')}</td>
                     <td>${escapeHtml(connector.config?.url || '')}</td>
@@ -146,7 +144,7 @@ function deleteConnector(id) {
                     bootGrowl('删除成功', 'success');
                     backIndexPage();
                 } else {
-                    bootGrowl('删除失败: ' + response.message, 'danger');
+                    bootGrowl('删除失败: ' + response.resultValue, 'danger');
                 }
             });
         }

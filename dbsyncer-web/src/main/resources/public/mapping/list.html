@@ -29,69 +29,14 @@
             <tr>
                 <th></th>
                 <th>名称</th>
-                <th>数据源</th>
-                <th>目标源</th>
+                <th>数据源 >> 目标源</th>
                 <th>类型</th>
                 <th>结果</th>
                 <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody id="mappingTableBody">
-                <!-- 动态数据 -->
-                <tr th:each="mapping, iterStat : ${mappings}" th:if="${mappings != null and !mappings.isEmpty()}">
-                    <td th:text="${iterStat.index + 1}">1</td>
-                    <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-exchange"></i>
-                            <span th:text="${mapping.name}">名称</span>
-                        </div>
-                    </td>
-                    <td th:text="${mapping.sourceConnector != null ? mapping.sourceConnector.name : 'N/A'}">数据源</td>
-                    <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
-                    <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
-                    <td>
-                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
-                        <span th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
-                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
-                    </td>
-                    <td>
-                        <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
-                        <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
-                        <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
-                    </td>
-                    <td>
-                        <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="修改" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
-                                <i class="fa fa-edit"></i>
-                            </button>
-                            <!-- 未运行 -->
-                            <button class="table-action-btn play" th:data-id="${mapping.id}" th:if="${mapping?.meta?.state eq 0}" onclick="startMapping(this.dataset.id)">
-                                <i class="fa fa-play" th:title="启动"></i>
-                            </button>
-                            <!-- 运行中 -->
-                            <button class="table-action-btn play" th:data-id="${mapping.id}" th:if="${mapping?.meta?.state eq 1}" onclick="stopMapping(this.dataset.id)">
-                                <i class="fa fa-pause" th:title="停止"></i>
-                            </button>
-                            <!-- 停止中 -->
-                            <button class="table-action-btn play" th:if="${mapping?.meta?.state eq 2}">
-                                <i class="fa fa-spinner fa-spin" th:title="停止中"></i> 停止中
-                            </button>
-                            <button class="table-action-btn delete" title="删除" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <!-- 空数据提示 -->
-                <tr th:if="${mappings == null or mappings.isEmpty()}">
-                    <td colspan="8" class="text-center">
-                        <i class="fa fa-exchange empty-icon"></i>
-                        <p class="empty-text">暂无驱动</p>
-                        <p class="empty-description">点击"添加"按钮创建第一个驱动</p>
-                    </td>
-                </tr>
-            </tbody>
+            <tbody id="mappingTableBody"></tbody>
         </table>
 
         <!-- 分页信息 -->
@@ -151,7 +96,7 @@ function startMappingListAutoRefresh() {
 }
 
 /**
- * 停止同步任务列表自动刷新定时器
+ * 停止自动刷新定时器
  */
 function stopMappingListAutoRefresh() {
     if (mappingListAutoRefreshTimer !== null) {
@@ -161,14 +106,22 @@ function stopMappingListAutoRefresh() {
     }
 }
 
-/**
- * 编辑同步任务 - 动态加载编辑页面
- */
 function editMapping(id) {
     // 停止自动刷新定时器
     stopMappingListAutoRefresh();
 
     doLoader("/mapping/page/edit?id="+id);
+}
+
+function copyMapping(id) {
+    doPoster("/mapping/copy", { id: id }, function (response) {
+        if (response.success) {
+            bootGrowl('复制成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl('复制失败: ' + response.message, 'danger');
+        }
+    });
 }
 
 function changeMappingState(id, url, title) {
@@ -186,20 +139,6 @@ function changeMappingState(id, url, title) {
             bootGrowl(title +'失败: ' + response.resultValue, 'danger');
         }
     })
-}
-
-/**
- * 启动任务
- */
-function startMapping(id) {
-    changeMappingState(id, '/mapping/start', "启动");
-}
-
-/**
- * 停止任务
- */
-function stopMapping(id) {
-    changeMappingState(id, '/mapping/stop', "停止");
 }
 
 /**
@@ -225,36 +164,50 @@ function deleteMapping(id) {
     });
 }
 
-// 根据状态生成操作按钮
-function renderStateButton(state, mappingId) {
-    const stateConfig = {
+function getStateConfig(mappingId) {
+    return {
         0: { // 未运行
             icon: 'fa-play',
             title: '启动',
-            onclick: `startMapping('${mappingId}')`,
-            disabled: false
+            onclick: `changeMappingState('${mappingId}', '/mapping/start', '启动')`,
+            disabled: false,
+            class: 'label-default',
+            text: '未运行'
         },
         1: { // 运行中
             icon: 'fa-pause',
             title: '停止',
-            onclick: `stopMapping('${mappingId}')`,
-            disabled: false
+            onclick: `changeMappingState('${mappingId}', '/mapping/stop', '停止')`,
+            disabled: false,
+            class: 'label-success',
+            text: '运行中'
         },
         2: { // 停止中
             icon: 'fa-spinner fa-spin',
             title: '停止中',
             text: ' 停止中',
-            disabled: true
+            disabled: true,
+            class: 'label-default'
         }
     };
-    
+}
+
+// 根据状态生成操作按钮
+function renderStateText(state) {
+    const stateConfig = getStateConfig();
+    const config = stateConfig[state] || stateConfig[0];
+    return `<span class="label ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成操作按钮
+function renderStateButton(state, mappingId) {
+    const stateConfig = getStateConfig(mappingId);
     const config = stateConfig[state] || stateConfig[0];
     const disabledAttr = config.disabled ? ' disabled' : '';
     const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
-    
     return `
         <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
-            <i class="fa ${config.icon}"></i>${config.text || ''}
+            <i class="fa ${config.icon}"></i>
         </button>
     `;
 }
@@ -278,13 +231,10 @@ $(document).ready(function() {
                 <tr>
                     <td>${index}</td>
                     <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-database connector-icon text-info"></i>
-                            <span>${escapeHtml(mapping.name)}</span>
-                        </div>
+                        <i class="fa fa-database connector-icon text-info"></i>
+                        <span>${escapeHtml(mapping.name)}</span>
                     </td>
-                    <td>${escapeHtml(mapping.sourceConnector.name || '')}</td>
-                    <td>${escapeHtml(mapping.targetConnector.name || '')}</td>
+                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}</td>
                     <td>${mapping.meta != null ? mapping.meta.model : 'N/A'}</td>
                     <td>
                         <span class="label label-default">总数:${mapping?.meta.total}</span>
@@ -292,14 +242,15 @@ $(document).ready(function() {
                         <span class="label label-danger">${mapping?.meta.fail > 0 ? '失败:' + mapping?.meta.fail : ''}</span>
                     </td>
                     <td>
-                        <span class="label label-default">${mapping?.meta?.state === 0 ? '未运行' : ''}</span>
-                        <span class="label label-success">${mapping?.meta?.state === 1 ? '运行中' : ''}</span>
-                        <span class="label label-default">${mapping?.meta?.state === 2 ? '停止中' : ''}</span>
+                        ${renderStateText(mapping?.meta?.state || 0)}
                     </td>
                     <td>
                         <div class="flex items-center gap-1">
                             <button class="table-action-btn view" title="修改" data-id="${mapping.id}" onclick="editMapping('${mapping.id}')">
                                 <i class="fa fa-edit"></i>
+                            </button>
+                            <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
+                                <i class="fa fa-copy"></i>
                             </button>
                             ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
                             <button class="table-action-btn delete" title="删除" data-id="${mapping.id}" onclick="deleteMapping('${mapping.id}')">
@@ -321,4 +272,3 @@ $(document).ready(function() {
 </script>
 
 </html>
-

@@ -220,7 +220,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (mapping.getSourceColumn() == null) {
             Connector connector = connectorService.getConnector(mapping.getSourceConnectorId());
             if (connector != null) {
-                connectorInstance = connectorFactory.connect(connector.getConfig());
+                connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
                 context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
                 mapping.setSourceTable(connectorFactory.getTable(connectorInstance, context));
             }
@@ -228,7 +228,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (mapping.getTargetTable() == null) {
             Connector targetConnect = connectorService.getConnector(mapping.getSourceConnectorId());
             if (targetConnect != null) {
-                connectorInstance = connectorFactory.connect(targetConnect.getConfig());
+                connectorInstance = connectorFactory.connect(targetConnect.getId(), targetConnect.getConfig());
                 context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
                 mapping.setTargetTable(connectorFactory.getTable(connectorInstance, context));
             }
@@ -328,7 +328,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Connector connector = profileComponent.getConnector(connectorId);
         Assert.notNull(connector, "The connector id is invalid.");
         // 刷新数据表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
         return connectorFactory.getTable(connectorInstance, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
     }
 

@@ -25,6 +25,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -72,7 +74,6 @@ public class FileListener extends AbstractListener {
 
             instance = (FileConnectorInstance) connectorInstance;
             final FileConfig config = instance.getConfig();
-            final String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
             connected = true;
 
             separator = config.getSeparator();
@@ -86,7 +87,7 @@ public class FileListener extends AbstractListener {
             }
 
             worker = new Worker();
-            worker.setName(new StringBuilder("file-parser-").append(cacheKey).append("_").append(worker.hashCode()).toString());
+            worker.setName("file-parser-" + getConnectorInstanceCacheKey(config) + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -96,6 +97,17 @@ public class FileListener extends AbstractListener {
         } finally {
             connectLock.unlock();
         }
+    }
+
+    public String getConnectorInstanceCacheKey(FileConfig config) {
+        String localIP;
+        try {
+            localIP = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            logger.error(e.getMessage());
+            localIP = "127.0.0.1";
+        }
+        return String.format("%s-%s", localIP, config.getFileDir());
     }
 
     private void initPipeline(String fileDir) throws IOException {

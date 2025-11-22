@@ -169,7 +169,7 @@ public class TaskController extends BaseController {
             if (connector == null) {
                 return RestResult.restFail("连接器不存在");
             }
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
             List<String> databases = getDatabaseList(connectorInstance);
 
             return RestResult.restSuccess(databases);
@@ -191,7 +191,7 @@ public class TaskController extends BaseController {
                 return RestResult.restFail("连接器不存在");
             }
 
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
             List<Table> tables = connectorFactory.getTable(connectorInstance, context);
             return RestResult.restSuccess(tables);
@@ -213,7 +213,7 @@ public class TaskController extends BaseController {
                 return RestResult.restFail("连接器不存在");
             }
 
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
             List<MetaInfo> metaInfos = connectorFactory.getMetaInfo(connectorInstance, context);
             MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);

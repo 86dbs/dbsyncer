@@ -104,7 +104,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
         Connector connector = profileComponent.getConnector(id);
         if (connector != null) {
-            connectorFactory.disconnect(connector.getConfig());
+            connectorFactory.disconnect(connector.getId());
             log(LogType.ConnectorLog.DELETE, connector);
             profileComponent.removeConfigModel(id);
         }
@@ -149,7 +149,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
         list.forEach(c -> {
-            health.put(c.getId(), isAlive(c.getConfig()));
+            health.put(c.getId(), isAlive(c.getId(), c.getConfig()));
             exist.add(c.getId());
         });
 
@@ -174,13 +174,13 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     @Override
     public Object getPosition(String id) {
         Connector connector = getConnector(id);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
         return connectorFactory.getPosition(connectorInstance);
     }
 
-    private boolean isAlive(ConnectorConfig config) {
+    private boolean isAlive(String connectorConfigId, ConnectorConfig config) {
         try {
-            return connectorFactory.isAlive(config);
+            return connectorFactory.isAlive(connectorConfigId, config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());

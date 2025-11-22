@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorService;
@@ -5,7 +8,6 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,16 +39,11 @@ public class MappingController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
-
-    @Resource
-    ConnectorFactory connectorFactory;
-
     /**
      * 同步任务列表页面
      */
     @GetMapping("/list")
     public String list(ModelMap model) {
-        model.put("mappings", mappingService.getMappingAll());
         return "mapping/list";
     }
 
@@ -55,14 +52,11 @@ public class MappingController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorAll());
-        model.put("mappings", mappingService.getMappingAll());
         return "mapping/add";
     }
 
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
-
         MappingVo mapping = mappingService.getMapping(id, exclude);
         model.put("mapping", mapping);
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
