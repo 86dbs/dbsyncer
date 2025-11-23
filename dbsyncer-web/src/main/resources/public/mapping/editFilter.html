@@ -4,12 +4,8 @@
 
 <div th:fragment="content">
     <!-- 过滤条件标题 -->
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
-        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-            <i class="fa fa-filter" style="color: var(--warning-color); margin-right: 6px;"></i>
-            过滤条件
-        </h4>
-    </div>
+    <p><i class="fa fa-filter text-warning"></i> 过滤条件</p>
+    <p class="text-xs text-tertiary">过滤条件用于在同步时筛选符合条件的数据。支持多种条件组合（AND、OR、SQL），可以使用系统参数实现增量同步。</p>
 
     <!-- 第一行：组合、数据源表字段、条件 -->
     <div class="form-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
@@ -165,14 +161,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <!-- 提示信息 -->
-    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--warning-color);">
-        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
-            <i class="fa fa-lightbulb-o" style="color: var(--warning-color); margin-right: 6px;"></i>
-            <strong>提示：</strong>过滤条件用于在同步时筛选符合条件的数据。支持多种条件组合（AND、OR、SQL），可以使用系统参数实现增量同步。
-        </p>
     </div>
 
     <!-- 隐藏表单值 -->

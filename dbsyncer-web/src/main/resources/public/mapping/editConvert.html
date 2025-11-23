@@ -4,12 +4,8 @@
 
 <div th:fragment="content">
     <!-- 转换配置标题 -->
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
-        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-            <i class="fa fa-magic" style="color: var(--primary-color); margin-right: 6px;"></i>
-            转换配置
-        </h4>
-    </div>
+    <p><i class="fa fa-magic text-primary"></i> 转换配置</p>
+    <p class="text-xs text-tertiary">转换配置用于对目标端数据字段进行转换处理，支持多种转换函数，如字符串转换、数值计算、日期格式化等。</p>
 
     <!-- 第一行：转换、目标源表字段 -->
     <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
@@ -126,14 +122,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-
-    <!-- 提示信息 -->
-    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--primary-color);">
-        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
-            <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 6px;"></i>
-            <strong>提示：</strong>转换配置用于对目标端数据字段进行转换处理。支持多种转换函数，如字符串转换、数值计算、日期格式化等。
-        </p>
     </div>
 
     <!-- 隐藏表单值 -->

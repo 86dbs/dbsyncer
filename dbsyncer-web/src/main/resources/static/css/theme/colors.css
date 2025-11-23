@@ -9,8 +9,6 @@
 .text-error { color: var(--error-color) !important; }
 .text-info { color: var(--info-color) !important; }
 .text-violet { color: var(--violet-color) !important; }
-
-.text-primary-light { color: var(--text-primary) !important; }
 .text-secondary { color: var(--text-secondary) !important; }
 .text-tertiary { color: var(--text-tertiary) !important; }
 .text-disabled { color: var(--text-disabled) !important; }
