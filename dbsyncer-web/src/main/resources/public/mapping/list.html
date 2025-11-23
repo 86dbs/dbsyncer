@@ -274,11 +274,12 @@ $(document).ready(function() {
             return `
                 <tr>
                     <td>${index}</td>
-                    <td>
-                        <i class="fa fa-database connector-icon text-info"></i>
+                    <td title="${escapeHtml(mapping.name)}">
                         <span>${escapeHtml(mapping.name)}</span>
                     </td>
-                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}</td>
+                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">
+                        ${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}
+                    </td>
                     <td>${renderModelText(mapping?.model)}</td>
                     <td>
                         ${renderSyncResult(mapping)}

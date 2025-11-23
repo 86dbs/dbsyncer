@@ -6,7 +6,7 @@
     <div class="form-grid-2">
         <div class="form-item">
             <label class="form-label">
-                URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i>
+                URL<i class="fa fa-question-circle" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i>
                 <strong class="text-primary">*</strong>
             </label>
             <div class="form-control-area">
@@ -24,7 +24,7 @@
     <div class="form-grid-1">
         <div class="form-item">
             <label class="form-label">
-                字段<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
+                字段<i class="fa fa-question-circle" title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
                 <strong class="text-primary">*</strong>
             </label>
             <div class="form-control-area">
@@ -54,7 +54,7 @@
 
         <div class="form-item">
             <label class="form-label">
-                session.timeout.ms<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i>
+                session.timeout.ms<i class="fa fa-question-circle" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i>
             </label>
             <div class="form-control-area">
                 <select class="form-control select-control" name="sessionTimeoutMs">
@@ -67,7 +67,7 @@
 
         <div class="form-item">
             <label class="form-label">
-                max.partition.fetch.bytes<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每次接收Kafka服务器订阅消息的最大大小，与max.request.size参数保持一致"></i>
+                max.partition.fetch.bytes<i class="fa fa-question-circle" title="每次接收Kafka服务器订阅消息的最大大小，与max.request.size参数保持一致"></i>
             </label>
             <div class="form-control-area">
                 <select id="maxPartitionFetchBytesSelect" class="form-control select-control" name="maxPartitionFetchBytes">
@@ -91,7 +91,7 @@
 
         <div class="form-item">
             <label class="form-label">
-                buffer.memory<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
+                buffer.memory<i class="fa fa-question-circle" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
 如果buffer.memory设置的太小，可能导致的问题是：消息快速的写入内存缓冲里，但Sender线程来不及把Request发送到Kafka服务器，会造成内存缓冲很快就被写满。而一旦被写满，就会阻塞用户线程，不让继续往Kafka写消息了。
 所以buffer.memory参数需要结合实际业务情况压测，需要测算在生产环境中用户线程会以每秒多少消息的频率来写入内存缓冲。经过压测，调试出来一个合理值。"></i>
             </label>
@@ -105,7 +105,7 @@
         </div>
         <div class="form-item">
             <label class="form-label">
-                batch.size<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每个Batch要存放batch.size大小的数据后，才可以发送出去.
+                batch.size<i class="fa fa-question-circle" title="每个Batch要存放batch.size大小的数据后，才可以发送出去.
 比如说batch.size默认值是16KB，那么里面凑够16KB的数据才会发送。理论上来说，提升batch.size的大小，可以允许更多的数据缓冲在里面，那么一次Request发送出去的数据量就更多了，这样吞吐量可能会有所提升。
 但是batch.size也不能过大，要是数据老是缓冲在Batch里迟迟不发送出去，那么发送消息的延迟就会很高。一般可以尝试把这个参数调节大些，利用生产环境发消息负载测试一下。"></i>
             </label>
@@ -120,7 +120,7 @@
 
         <div class="form-item">
             <label class="form-label">
-                linger.ms<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="一个Batch被创建之后，最多过多久，不管这个Batch有没有写满，都必须发送出去了。比如说batch.size是16KB，但是现在某个低峰时间段，发送消息量很小。
+                linger.ms<i class="fa fa-question-circle" title="一个Batch被创建之后，最多过多久，不管这个Batch有没有写满，都必须发送出去了。比如说batch.size是16KB，但是现在某个低峰时间段，发送消息量很小。
 这会导致可能Batch被创建之后，有消息进来，但是迟迟无法凑够16KB，难道此时就一直等着吗？
 当然不是，假设设置linger.ms是50ms，那么只要这个Batch从创建开始到现在已经过了50ms了，哪怕他还没满16KB，也会被发送出去。
 所以linger.ms决定了消息一旦写入一个Batch，最多等待这么多时间，他一定会跟着Batch一起发送出去。
@@ -136,7 +136,7 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
         </div>
         <div class="form-item">
             <label class="form-label">
-                acks<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="0:客户端发送出去为成功；1:写入磁盘为成功；all：Leader保持同步Follower结束为成功"></i>
+                acks<i class="fa fa-question-circle" title="0:客户端发送出去为成功；1:写入磁盘为成功；all：Leader保持同步Follower结束为成功"></i>
             </label>
             <div class="form-control-area">
                 <select class="form-control select-control" name="acks">
@@ -149,7 +149,7 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
 
         <div class="form-item">
             <label class="form-label">
-                retries<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="发送失败重试次数"></i>
+                retries<i class="fa fa-question-circle" title="发送失败重试次数"></i>
             </label>
             <div class="form-control-area">
                 <select class="form-control select-control" name="retries">
@@ -161,7 +161,7 @@ linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满�
         </div>
         <div class="form-item">
             <label class="form-label">
-                max.request.size<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每次发送给Kafka服务器请求消息的最大大小，与max.partition.fetch.bytes保持一致"></i>
+                max.request.size<i class="fa fa-question-circle" title="每次发送给Kafka服务器请求消息的最大大小，与max.partition.fetch.bytes保持一致"></i>
             </label>
             <div class="form-control-area">
                 <select id="maxRequestSizeSelect" class="form-control select-control" name="maxRequestSize">

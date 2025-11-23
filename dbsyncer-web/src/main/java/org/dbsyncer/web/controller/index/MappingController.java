@@ -52,6 +52,7 @@ public class MappingController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
+        model.put("connectors", connectorService.getConnectorAll());
         return "mapping/add";
     }
 

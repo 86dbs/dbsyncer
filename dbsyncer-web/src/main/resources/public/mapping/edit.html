@@ -4,12 +4,15 @@
 
 <div class="form-container">
     <div class="card-header">
-        <h3>
-            <i class="fa fa-edit text-info"></i>
-            <span id="mappingModifyName">[[${mapping?.name}]]</span>
-            <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-pencil"></i>
-        </h3>
-        <p>ID: [[${mapping?.id}]]</p>
+        <div class="grid grid-cols-6 items-center">
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 card-title text-center">
+                <span id="mappingModifyName">[[${mapping?.name}]]</span>
+                <i class="fa fa-edit text-info text-xl cursor-pointer" th:title="点击修改名称" th:onclick="mappingModifyName()"></i>
+                <p class="card-subtitle">[[${mapping?.id}]]</p>
+            </div>
+            <div class="lg:col-span-2"></div>
+        </div>
     </div>
     <div class="card-body">
         <div class="form-actions mb-4">

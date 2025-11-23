@@ -4,7 +4,7 @@
 
 <div th:fragment="content">
     <!-- 表选择区域 - 单行布局 -->
-    <div style="margin-bottom: 24px;">
+    <div>
         <div style="display: grid; grid-template-columns: 100px 1fr 32px 100px 1fr; align-items: start; gap: 16px;">
             <!-- 数据源表标签 -->
             <label class="form-label" style="padding-top: 8px;">
@@ -41,8 +41,8 @@
             </div>
             
             <!-- 箭头 -->
-            <div style="text-align: center; padding-top: 8px;">
-                <i class="fa fa-arrow-right" style="font-size: 20px; color: var(--primary-color);"></i>
+            <div>
+                <i class="fa fa-arrow-right text-primary text-lg"></i>
             </div>
             
             <!-- 目标源表标签 -->
@@ -52,7 +52,7 @@
             </label>
             
             <!-- 目标源表选择器 -->
-            <div class="form-control-area">
+            <div>
                 <div class="dbsyncer-multi-select" id="targetTableWrapper">
                     <div class="dbsyncer-multi-select-trigger">
                         <input type="text" class="dbsyncer-multi-select-search" placeholder="搜索表..." />
@@ -82,14 +82,13 @@
     </div>
     
     <!-- 标记主键区域 -->
-    <div class="form-grid-2" style="margin-bottom: 24px;">
+    <div class="form-grid-2">
         <!-- 数据源主键 -->
-        <div class="form-item" style="grid-template-columns: 100px 1fr;">
+        <div class="form-item">
             <label class="form-label">
-                <i class="fa fa-key" style="color: var(--warning-color); margin-right: 4px;"></i>
+                <i class="fa fa-key text-warning"></i>
                 标记主键
-                <i class="fa fa-question-circle" style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
-                   aria-hidden="true" title="数据源表/视图没有主键，自定义一个或多个主键"></i>
+                <i class="fa fa-question-circle" title="数据源表/视图没有主键，自定义一个或多个主键"></i>
             </label>
             <div class="form-control-area">
                 <input id="sourceTablePK" class="form-control" type="text" data-role="tagsinput" 
@@ -98,12 +97,11 @@
         </div>
         
         <!-- 目标源主键 -->
-        <div class="form-item" style="grid-template-columns: 100px 1fr;">
+        <div class="form-item">
             <label class="form-label">
-                <i class="fa fa-key" style="color: var(--warning-color); margin-right: 4px;"></i>
+                <i class="fa fa-key text-warning"></i>
                 标记主键
-                <i class="fa fa-question-circle" style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
-                   aria-hidden="true" title="目标源表/视图没有主键，自定义一个或多个主键"></i>
+                <i class="fa fa-question-circle" title="目标源表/视图没有主键，自定义一个或多个主键"></i>
             </label>
             <div class="form-control-area">
                 <input id="targetTablePK" class="form-control" type="text" data-role="tagsinput" 
