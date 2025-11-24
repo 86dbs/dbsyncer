@@ -60,6 +60,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private static final String IS_TABLE_CDC_ENABLED = "select count(*) from sys.tables tb where tb.is_tracked_by_cdc = 1 and tb.name='#'";
     private static final String ENABLE_DB_CDC = "IF EXISTS(select 1 from sys.databases where name = '#' and is_cdc_enabled=0) EXEC sys.sp_cdc_enable_db";
     private static final String ENABLE_TABLE_CDC = "IF EXISTS(select 1 from sys.tables where name = '#' and is_tracked_by_cdc=0) EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'#', @role_name = NULL, @supports_net_changes = 0";
+    private static final String DISABLE_TABLE_CDC = "EXEC sys.sp_cdc_disable_table @source_schema = N'%s', @source_name = N'#', @capture_instance = 'all'";
+    private static final String GET_TABLE_COLUMNS = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = N'%s' AND TABLE_NAME = N'#' ORDER BY ORDINAL_POSITION";
+    private static final String GET_TABLE_COLUMNS_WITH_TYPE = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = N'%s' AND TABLE_NAME = N'#' ORDER BY ORDINAL_POSITION";
+    private static final String GET_CHANGE_TABLE_COLUMNS_WITH_TYPE = "SELECT c.name AS COLUMN_NAME, t.name AS DATA_TYPE, c.max_length AS CHARACTER_MAXIMUM_LENGTH, c.precision AS NUMERIC_PRECISION, c.scale AS NUMERIC_SCALE, c.is_nullable AS IS_NULLABLE, dc.definition AS COLUMN_DEFAULT FROM sys.columns c INNER JOIN sys.types t ON c.user_type_id = t.user_type_id LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id WHERE c.object_id = %d AND c.name NOT LIKE '__$%%' ORDER BY c.column_id";
     private static final String GET_TABLES_CDC_ENABLED = "EXEC sys.sp_cdc_help_change_data_capture";
     private static final String GET_MAX_LSN = "select sys.fn_cdc_get_max_lsn()";
     private static final String GET_MIN_LSN = "select sys.fn_cdc_get_min_lsn('#')";
@@ -269,6 +273,9 @@ public class SqlServerListener extends AbstractDatabaseListener {
         //  查询 DML 变更（提取 LSN 用于排序）
         List<CDCEvent> dmlEvents = new ArrayList<>();
         changeTables.forEach(changeTable -> {
+            // 检查列名是否一致（用于检测 sp_rename 重命名列的情况）
+            checkAndReEnableCDCIfNeeded(changeTable);
+            
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
             List<CDCEvent> list = queryAndMapList(query, statement -> {
                 statement.setBytes(1, startLsn.getBinary());
@@ -483,6 +490,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
         while (connected) {
             try {
                 sendChangedEvent(ddlEvent);
+                
+                // 如果 DDL 操作会影响列结构（增删改列），需要重新启用表的 CDC
+                if (isColumnStructureChangedDDL(ddlCommand)) {
+                    reEnableTableCDC(tableName);
+                }
+                
                 break;
             } catch (QueueOverflowException ex) {
                 try {
@@ -491,6 +504,586 @@ public class SqlServerListener extends AbstractDatabaseListener {
                     logger.error(exe.getMessage(), exe);
                 }
             }
+        }
+    }
+
+    /**
+     * 判断 DDL 操作是否会改变列结构（需要重新启用 CDC）
+     * 
+     * SQL Server CDC 的限制：当表已启用 CDC 后，列结构的变更不会自动反映到 CDC 捕获列表中。
+     * 因此，任何会影响列结构的 DDL 操作都需要重新启用表的 CDC。
+     * 
+     * 支持的 DDL 操作类型：
+     * - ALTER TABLE ... ADD ... - 添加列（SQL Server 语法：ADD column_name，不需要 COLUMN 关键字）
+     * - ALTER TABLE ... DROP COLUMN ... - 删除列
+     * - ALTER TABLE ... ALTER COLUMN ... - 修改列（类型、约束等）
+     * 
+     * 注意：SQL Server 使用 sp_rename 重命名列，但该操作不会出现在 cdc.ddl_history 中，
+     * 因为 sp_rename 不是标准的 ALTER TABLE 语句。如果需要在重命名后更新 CDC，需要手动处理。
+     */
+    private boolean isColumnStructureChangedDDL(String ddlCommand) {
+        if (ddlCommand == null) {
+            return false;
+        }
+        String upperCommand = ddlCommand.toUpperCase().trim();
+        
+        // 必须是 ALTER TABLE 操作
+        if (!upperCommand.startsWith("ALTER TABLE")) {
+            return false;
+        }
+        
+        // 检查是否包含会影响列结构的操作
+        // SQL Server 语法：
+        // - ADD column_name (不需要 COLUMN 关键字)
+        // - DROP COLUMN column_name
+        // - ALTER COLUMN column_name
+        return upperCommand.contains(" ADD ") ||           // 添加列
+               upperCommand.contains("DROP COLUMN") ||     // 删除列
+               upperCommand.contains("ALTER COLUMN");     // 修改列
+    }
+
+    /**
+     * 检查表的列名是否与 CDC 捕获的列名一致，如果不一致则重新启用 CDC
+     * 
+     * 用于检测 sp_rename 重命名列的情况（sp_rename 不会出现在 cdc.ddl_history 中）
+     */
+    private void checkAndReEnableCDCIfNeeded(SqlServerChangeTable changeTable) {
+        try {
+            String tableName = changeTable.getTableName();
+            String capturedColumns = changeTable.getCapturedColumns();
+            
+            if (capturedColumns == null || capturedColumns.trim().isEmpty()) {
+                return;
+            }
+            
+            // 获取当前表的所有列名
+            List<String> currentColumns = queryAndMapList(
+                    String.format(GET_TABLE_COLUMNS, schema, tableName),
+                    rs -> {
+                        List<String> colList = new ArrayList<>();
+                        while (rs.next()) {
+                            colList.add(rs.getString(1));
+                        }
+                        return colList;
+                    }
+            );
+            
+            if (CollectionUtils.isEmpty(currentColumns)) {
+                return;
+            }
+            
+            // 解析 CDC 捕获的列名（逗号分隔）
+            List<String> capturedColumnList = Arrays.stream(capturedColumns.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // 比较列数和列名
+            if (currentColumns.size() != capturedColumnList.size()) {
+                // 列数不同，说明可能有列增删操作（但这种情况应该已经被 DDL 事件捕获）
+                // 为了安全起见，重新启用 CDC
+                logger.warn("表 [{}] 的列数与 CDC 捕获的列数不一致（当前: {}, CDC: {}），重新启用 CDC", 
+                        tableName, currentColumns.size(), capturedColumnList.size());
+                reEnableTableCDC(tableName);
+                return;
+            }
+            
+            // 检查列名是否完全一致（用于检测 sp_rename 重命名列）
+            Set<String> currentColumnSet = new HashSet<>(currentColumns);
+            Set<String> capturedColumnSet = new HashSet<>(capturedColumnList);
+            
+            if (!currentColumnSet.equals(capturedColumnSet)) {
+                // 列名不一致，说明可能有列重命名操作（sp_rename）
+                logger.warn("表 [{}] 的列名与 CDC 捕获的列名不一致，检测到可能的列重命名操作（sp_rename）", tableName);
+                logger.debug("当前列: {}, CDC 列: {}", currentColumns, capturedColumnList);
+                
+                // 使用基于 hash 的匹配算法检测并发送列重命名 DDL 事件
+                detectAndSendRenameDDLEventsWithHash(tableName, changeTable, currentColumns, capturedColumnList);
+                
+                // 重新启用 CDC
+                reEnableTableCDC(tableName);
+            }
+            
+        } catch (Exception e) {
+            logger.error("检查表 [{}] 的列名一致性时出错: {}", changeTable.getTableName(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 使用基于表级别 hash 的匹配算法检测列重命名并发送 DDL 事件
+     * 
+     * 优化思路：
+     * 1. 计算整个表的 hash（基于所有列的元数据，不包括列名）
+     * 2. 如果表的 hash 相同但列名不同，说明是重命名操作
+     * 3. 如果表的 hash 不同，说明是增删或类型变化
+     * 
+     * 优势：
+     * - 性能更好：只需要计算一次表级别的 hash
+     * - 逻辑更简单：不需要维护列级别的 hash 映射
+     * - 更准确：表级别的 hash 相同意味着列结构（除列名外）完全一致
+     */
+    private void detectAndSendRenameDDLEventsWithHash(String tableName, SqlServerChangeTable changeTable, 
+                                                       List<String> currentColumns, List<String> capturedColumns) {
+        try {
+            // 1. 获取当前表的列详细信息（包括类型）
+            // 注意：使用 sys.columns 查询以确保与 change table 的查询方式一致
+            List<ColumnInfo> currentColumnInfos = queryAndMapList(
+                    String.format("SELECT c.name AS COLUMN_NAME, t.name AS DATA_TYPE, c.max_length AS CHARACTER_MAXIMUM_LENGTH, c.precision AS NUMERIC_PRECISION, c.scale AS NUMERIC_SCALE, c.is_nullable AS IS_NULLABLE, dc.definition AS COLUMN_DEFAULT FROM sys.columns c INNER JOIN sys.tables tb ON c.object_id = tb.object_id INNER JOIN sys.schemas s ON tb.schema_id = s.schema_id INNER JOIN sys.types t ON c.user_type_id = t.user_type_id LEFT JOIN sys.default_constraints dc ON c.default_object_id = dc.object_id WHERE s.name = N'%s' AND tb.name = N'%s' ORDER BY c.column_id", 
+                            schema, tableName),
+                    rs -> {
+                        List<ColumnInfo> infos = new ArrayList<>();
+                        while (rs.next()) {
+                            ColumnInfo info = new ColumnInfo();
+                            info.name = rs.getString("COLUMN_NAME");
+                            info.dataType = rs.getString("DATA_TYPE");
+                            Object maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH");
+                            // SQL Server 的 max_length 对于 nvarchar 等类型需要除以 2
+                            if (maxLength != null && (info.dataType.equals("nvarchar") || info.dataType.equals("nchar"))) {
+                                info.maxLength = ((Number) maxLength).intValue() / 2;
+                            } else {
+                                info.maxLength = maxLength;
+                            }
+                            info.precision = rs.getObject("NUMERIC_PRECISION");
+                            info.scale = rs.getObject("NUMERIC_SCALE");
+                            info.nullable = rs.getBoolean("IS_NULLABLE");
+                            info.defaultValue = rs.getString("COLUMN_DEFAULT");
+                            infos.add(info);
+                        }
+                        return infos;
+                    }
+            );
+            
+            // 2. 获取 change table 的列详细信息（旧列的元数据）
+            // 注意：change table 的列名是旧列名，但元数据应该与源表一致
+            List<ColumnInfo> capturedColumnInfos = queryAndMapList(
+                    String.format(GET_CHANGE_TABLE_COLUMNS_WITH_TYPE, changeTable.getChangeTableObjectId()),
+                    rs -> {
+                        List<ColumnInfo> infos = new ArrayList<>();
+                        while (rs.next()) {
+                            ColumnInfo info = new ColumnInfo();
+                            info.name = rs.getString("COLUMN_NAME");
+                            info.dataType = rs.getString("DATA_TYPE");
+                            Object maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH");
+                            // SQL Server 的 max_length 对于 nvarchar 等类型需要除以 2
+                            if (maxLength != null && (info.dataType.equals("nvarchar") || info.dataType.equals("nchar"))) {
+                                info.maxLength = ((Number) maxLength).intValue() / 2;
+                            } else {
+                                info.maxLength = maxLength;
+                            }
+                            info.precision = rs.getObject("NUMERIC_PRECISION");
+                            info.scale = rs.getObject("NUMERIC_SCALE");
+                            info.nullable = rs.getBoolean("IS_NULLABLE");
+                            info.defaultValue = rs.getString("COLUMN_DEFAULT");
+                            infos.add(info);
+                        }
+                        return infos;
+                    }
+            );
+            
+            // 3. 计算表级别的 hash（包含列名）
+            // 优化思路：重命名是稀有事件，大部分情况下表结构没有变化
+            // 如果包含列名的 hash 相同，说明完全没有变化，可以快速放行，提高吞吐率
+            // 如果包含列名的 hash 不同，再进一步判断是重命名还是增删/类型变化
+            String currentTableHashWithName = calculateTableHash(currentColumnInfos, true);
+            String capturedTableHashWithName = calculateTableHash(capturedColumnInfos, true);
+            
+            logger.debug("表 [{}] 的 hash 比对（包含列名）: 当前表={}, 捕获表={}", 
+                    tableName, currentTableHashWithName, capturedTableHashWithName);
+            
+            // 4. 快速路径：如果包含列名的 hash 相同，说明完全没有变化，直接返回
+            if (currentTableHashWithName.equals(capturedTableHashWithName)) {
+                logger.debug("表 [{}] 的 hash（包含列名）相同，说明表结构完全没有变化，快速放行", tableName);
+                return;
+            }
+            
+            // 5. 慢速路径：hash 不同，需要进一步判断是重命名还是增删/类型变化
+            // 计算不包含列名的 hash 来判断
+            String currentTableHashWithoutName = calculateTableHash(currentColumnInfos, false);
+            String capturedTableHashWithoutName = calculateTableHash(capturedColumnInfos, false);
+            
+            logger.debug("表 [{}] 的 hash 比对（不包含列名）: 当前表={}, 捕获表={}", 
+                    tableName, currentTableHashWithoutName, capturedTableHashWithoutName);
+            
+            if (currentTableHashWithoutName.equals(capturedTableHashWithoutName)) {
+                // 包含列名的 hash 不同，但不包含列名的 hash 相同，说明是重命名
+                logger.info("表 [{}] 检测到重命名：包含列名的 hash 不同，但不包含列名的 hash 相同", tableName);
+                
+                // 通过列名差异找出重命名的列
+                List<RenamePair> renamePairs = findRenamePairsByTableHash(
+                        currentColumnInfos, capturedColumnInfos, currentColumns, capturedColumns);
+                
+                // 6. 发送重命名 DDL 事件
+                for (RenamePair pair : renamePairs) {
+                    String ddlCommand = buildRenameColumnDDL(tableName, pair.oldName, pair.newName, pair.columnInfo);
+                    
+                    logger.info("检测到列重命名（基于表 hash 匹配）: 表 [{}], 旧列名: [{}], 新列名: [{}], DDL: {}", 
+                            tableName, pair.oldName, pair.newName, ddlCommand);
+                    
+                    // 发送 DDL 事件（使用当前 LSN，因为 sp_rename 没有 LSN）
+                    trySendDDLEvent(tableName, ddlCommand, null);
+                }
+                
+                if (renamePairs.isEmpty()) {
+                    logger.info("表 [{}] 的 hash 匹配但未找到重命名列，可能是位置调整", tableName);
+                }
+            } else {
+                // 两个 hash 都不同，说明是增删或类型变化，不是纯重命名
+                logger.info("表 [{}] 的 hash（包含列名和不包含列名）都不同，判断为增删或类型变化，不发送重命名 DDL", tableName);
+            }
+            
+        } catch (Exception e) {
+            logger.error("使用表 hash 匹配检测列重命名时出错: {}", e.getMessage(), e);
+            // 如果 hash 匹配失败，回退到原来的位置匹配算法
+            logger.info("回退到位置匹配算法");
+            detectAndSendRenameDDLEvents(tableName, currentColumns, capturedColumns);
+        }
+    }
+    
+    /**
+     * 计算表级别的 hash（基于所有列的元数据）
+     * 
+     * @param columnInfos 列信息列表
+     * @param includeColumnName 是否包含列名
+     * 
+     * hash 包含的信息：
+     * - 列的数量
+     * - 每列的类型、长度、精度、是否可空、默认值（按列的顺序）
+     * - 如果 includeColumnName 为 true，还包含列名
+     */
+    private String calculateTableHash(List<ColumnInfo> columnInfos, boolean includeColumnName) {
+        // 按列的顺序构建 hash 字符串
+        StringBuilder sb = new StringBuilder();
+        sb.append(columnInfos.size()).append("|");
+        
+        for (ColumnInfo info : columnInfos) {
+            // 如果包含列名，先添加列名
+            if (includeColumnName) {
+                sb.append(info.name != null ? info.name.toUpperCase() : "");
+                sb.append("|");
+            }
+            
+            // 添加列的元数据
+            sb.append(info.dataType != null ? info.dataType.toUpperCase() : "");
+            sb.append("|");
+            sb.append(info.maxLength != null ? info.maxLength : "");
+            sb.append("|");
+            sb.append(info.precision != null ? info.precision : "");
+            sb.append("|");
+            sb.append(info.scale != null ? info.scale : "");
+            sb.append("|");
+            sb.append(info.nullable ? "NULL" : "NOTNULL");
+            sb.append("|");
+            sb.append(info.defaultValue != null ? info.defaultValue : "");
+            sb.append("|");
+        }
+        
+        // 使用简单的 hash（也可以使用 MD5 或 SHA-256）
+        return String.valueOf(sb.toString().hashCode());
+    }
+    
+    /**
+     * 通过表 hash 匹配找出重命名的列对
+     * 
+     * 由于表的 hash 相同，说明列结构（除列名外）完全一致
+     * 通过位置匹配找出列名不同的列对
+     */
+    private List<RenamePair> findRenamePairsByTableHash(List<ColumnInfo> currentColumnInfos, 
+                                                         List<ColumnInfo> capturedColumnInfos,
+                                                         List<String> currentColumns, 
+                                                         List<String> capturedColumns) {
+        List<RenamePair> renamePairs = new ArrayList<>();
+        
+        // 构建列名到列信息的映射
+        Map<String, ColumnInfo> currentColumnInfoMap = new HashMap<>();
+        for (ColumnInfo info : currentColumnInfos) {
+            currentColumnInfoMap.put(info.name, info);
+        }
+        
+        // 通过位置匹配找出重命名的列
+        for (int i = 0; i < Math.min(currentColumns.size(), capturedColumns.size()); i++) {
+            String currentCol = currentColumns.get(i);
+            String capturedCol = capturedColumns.get(i);
+            
+            if (!currentCol.equals(capturedCol)) {
+                // 检查是否为重命名（列名不同但位置相同）
+                // 由于表 hash 相同，如果列名不同，更可能是重命名
+                
+                // 检查 capturedCol 是否在其他位置出现（如果出现，可能是位置变化，不是重命名）
+                boolean capturedColExistsElsewhere = false;
+                for (int j = 0; j < currentColumns.size(); j++) {
+                    if (j != i && currentColumns.get(j).equals(capturedCol)) {
+                        capturedColExistsElsewhere = true;
+                        break;
+                    }
+                }
+                
+                // 检查 currentCol 是否在 capturedColumns 的其他位置出现
+                boolean currentColExistsElsewhere = false;
+                for (int j = 0; j < capturedColumns.size(); j++) {
+                    if (j != i && capturedColumns.get(j).equals(currentCol)) {
+                        currentColExistsElsewhere = true;
+                        break;
+                    }
+                }
+                
+                // 如果两个列名都不在对方列表的其他位置出现，且表 hash 相同，则认为是重命名
+                if (!capturedColExistsElsewhere && !currentColExistsElsewhere) {
+                    ColumnInfo columnInfo = currentColumnInfoMap.get(currentCol);
+                    if (columnInfo != null) {
+                        renamePairs.add(new RenamePair(capturedCol, currentCol, columnInfo));
+                    }
+                }
+            }
+        }
+        
+        return renamePairs;
+    }
+
+    /**
+     * 检测列重命名并发送 DDL 事件（用于触发目标端的列重命名）
+     * 
+     * 通过列的类型信息匹配来区分重命名和增删两种场景：
+     * 1. 如果列数相同，且能找到类型匹配的列，则认为是重命名
+     * 2. 如果列数不同，或找不到类型匹配的列，则认为是增删（不发送重命名 DDL）
+     * 
+     * 注意：这是回退算法，当 hash 匹配失败时使用
+     */
+    private void detectAndSendRenameDDLEvents(String tableName, List<String> currentColumns, List<String> capturedColumns) {
+        try {
+            // 获取当前表的列详细信息（包括类型）
+            List<ColumnInfo> currentColumnInfos = queryAndMapList(
+                    String.format(GET_TABLE_COLUMNS_WITH_TYPE, schema, tableName),
+                    rs -> {
+                        List<ColumnInfo> infos = new ArrayList<>();
+                        while (rs.next()) {
+                            ColumnInfo info = new ColumnInfo();
+                            info.name = rs.getString("COLUMN_NAME");
+                            info.dataType = rs.getString("DATA_TYPE");
+                            info.maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH");
+                            info.precision = rs.getObject("NUMERIC_PRECISION");
+                            info.scale = rs.getObject("NUMERIC_SCALE");
+                            info.nullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
+                            info.defaultValue = rs.getString("COLUMN_DEFAULT");
+                            infos.add(info);
+                        }
+                        return infos;
+                    }
+            );
+            
+            // 如果列数不同，更可能是增删操作，而不是重命名
+            if (currentColumns.size() != capturedColumns.size()) {
+                logger.info("表 [{}] 的列数发生变化（当前: {}, CDC: {}），判断为增删操作，不发送重命名 DDL", 
+                        tableName, currentColumns.size(), capturedColumns.size());
+                return;
+            }
+            
+            // 列数相同，尝试通过类型信息匹配找出重命名的列
+            // 构建当前列的映射（列名 -> 列信息）
+            Map<String, ColumnInfo> currentColumnInfoMap = new HashMap<>();
+            for (ColumnInfo info : currentColumnInfos) {
+                currentColumnInfoMap.put(info.name, info);
+            }
+            
+            // 获取 CDC 捕获时的列信息（需要查询 change table 的元数据）
+            // 注意：由于 CDC 已经重新启用，我们无法直接获取旧列的详细信息
+            // 但我们可以通过位置和类型匹配来推断
+            
+            // 通过位置和类型匹配找出重命名的列
+            List<RenamePair> renamePairs = new ArrayList<>();
+            Set<String> matchedCurrentCols = new HashSet<>();
+            Set<String> matchedCapturedCols = new HashSet<>();
+            
+            for (int i = 0; i < currentColumns.size(); i++) {
+                String currentCol = currentColumns.get(i);
+                String capturedCol = capturedColumns.get(i);
+                
+                if (currentCol.equals(capturedCol)) {
+                    // 列名相同，跳过
+                    matchedCurrentCols.add(currentCol);
+                    matchedCapturedCols.add(capturedCol);
+                    continue;
+                }
+                
+                // 列名不同，尝试通过类型匹配
+                ColumnInfo currentInfo = currentColumnInfoMap.get(currentCol);
+                if (currentInfo == null) {
+                    continue;
+                }
+                
+                // 检查是否能在其他位置找到类型匹配的列（可能是重命名）
+                // 由于我们无法获取旧列的详细信息，这里使用启发式方法：
+                // 如果列数相同，且位置 i 的列名不同，但列的总数没有变化，可能是重命名
+                // 更保守的策略：只处理列数相同且列名完全不同的情况
+                
+                // 检查 capturedCol 是否在其他位置出现（如果出现，可能是位置变化，不是重命名）
+                boolean capturedColExistsElsewhere = false;
+                for (int j = 0; j < currentColumns.size(); j++) {
+                    if (j != i && currentColumns.get(j).equals(capturedCol)) {
+                        capturedColExistsElsewhere = true;
+                        break;
+                    }
+                }
+                
+                // 检查 currentCol 是否在 capturedColumns 的其他位置出现
+                boolean currentColExistsElsewhere = false;
+                for (int j = 0; j < capturedColumns.size(); j++) {
+                    if (j != i && capturedColumns.get(j).equals(currentCol)) {
+                        currentColExistsElsewhere = true;
+                        break;
+                    }
+                }
+                
+                // 如果两个列名都在对方列表中出现，可能是位置变化，不是重命名
+                if (capturedColExistsElsewhere || currentColExistsElsewhere) {
+                    logger.debug("表 [{}] 位置 {} 的列名变化可能是位置调整，不是重命名: {} -> {}", 
+                            tableName, i, capturedCol, currentCol);
+                    continue;
+                }
+                
+                // 如果列名完全不同，且列数相同，更可能是重命名
+                if (!matchedCurrentCols.contains(currentCol) && !matchedCapturedCols.contains(capturedCol)) {
+                    renamePairs.add(new RenamePair(capturedCol, currentCol, currentInfo));
+                    matchedCurrentCols.add(currentCol);
+                    matchedCapturedCols.add(capturedCol);
+                }
+            }
+            
+            // 发送重命名 DDL 事件
+            for (RenamePair pair : renamePairs) {
+                String ddlCommand = buildRenameColumnDDL(tableName, pair.oldName, pair.newName, pair.columnInfo);
+                
+                logger.info("检测到列重命名: 表 [{}], 旧列名: [{}], 新列名: [{}], DDL: {}", 
+                        tableName, pair.oldName, pair.newName, ddlCommand);
+                
+                // 发送 DDL 事件（使用当前 LSN，因为 sp_rename 没有 LSN）
+                trySendDDLEvent(tableName, ddlCommand, null);
+            }
+            
+            if (renamePairs.isEmpty()) {
+                logger.info("表 [{}] 的列名变化无法确定为重命名操作，可能是增删或位置调整", tableName);
+            }
+            
+        } catch (Exception e) {
+            logger.error("检测列重命名时出错: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 重命名对（旧列名 -> 新列名）
+     */
+    private static class RenamePair {
+        String oldName;
+        String newName;
+        ColumnInfo columnInfo;
+        
+        RenamePair(String oldName, String newName, ColumnInfo columnInfo) {
+            this.oldName = oldName;
+            this.newName = newName;
+            this.columnInfo = columnInfo;
+        }
+    }
+    
+    /**
+     * 构造列重命名的 DDL 语句
+     * 
+     * 使用 MySQL 的 CHANGE COLUMN 语法，因为 DDL 解析器能理解这个语法
+     * DDL 解析器会自动转换为目标数据库的语法（如 SQL Server 的 sp_rename）
+     */
+    private String buildRenameColumnDDL(String tableName, String oldColumnName, String newColumnName, ColumnInfo columnInfo) {
+        StringBuilder ddl = new StringBuilder();
+        ddl.append("ALTER TABLE ").append(tableName)
+           .append(" CHANGE COLUMN ").append(oldColumnName)
+           .append(" ").append(newColumnName);
+        
+        // 添加类型信息
+        String typeStr = columnInfo.dataType;
+        if (columnInfo.maxLength != null) {
+            typeStr += "(" + columnInfo.maxLength + ")";
+        } else if (columnInfo.precision != null) {
+            typeStr += "(" + columnInfo.precision;
+            if (columnInfo.scale != null) {
+                typeStr += "," + columnInfo.scale;
+            }
+            typeStr += ")";
+        }
+        ddl.append(" ").append(typeStr);
+        
+        // 添加 NOT NULL 约束
+        if (!columnInfo.nullable) {
+            ddl.append(" NOT NULL");
+        }
+        
+        // 添加 DEFAULT 值
+        if (columnInfo.defaultValue != null && !columnInfo.defaultValue.trim().isEmpty()) {
+            ddl.append(" DEFAULT ").append(columnInfo.defaultValue);
+        }
+        
+        return ddl.toString();
+    }
+    
+    /**
+     * 列信息内部类
+     */
+    private static class ColumnInfo {
+        String name;
+        String dataType;
+        Object maxLength;
+        Object precision;
+        Object scale;
+        boolean nullable;
+        String defaultValue;
+    }
+
+    /**
+     * 重新启用表的 CDC（用于在列结构变更后更新捕获列列表）
+     * 
+     * 适用场景：
+     * - ADD COLUMN: 需要捕获新列
+     * - DROP COLUMN: 需要移除已删除的列
+     * - RENAME COLUMN: 需要更新列名（sp_rename）
+     * - ALTER COLUMN: 需要更新列类型/约束信息
+     */
+    private void reEnableTableCDC(String tableName) {
+        try {
+            // 1. 获取表的所有列名（包括新列）
+            List<String> columns = queryAndMapList(
+                    String.format(GET_TABLE_COLUMNS, schema, tableName),
+                    rs -> {
+                        List<String> colList = new ArrayList<>();
+                        while (rs.next()) {
+                            colList.add(rs.getString(1));
+                        }
+                        return colList;
+                    }
+            );
+
+            if (CollectionUtils.isEmpty(columns)) {
+                logger.warn("表 [{}] 没有列，跳过重新启用 CDC", tableName);
+                return;
+            }
+
+            // 2. 禁用表的 CDC（所有 capture_instance）
+            execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, tableName), schema));
+            logger.info("已禁用表 [{}] 的 CDC", tableName);
+
+            // 等待一下，确保禁用操作完成
+            TimeUnit.MILLISECONDS.sleep(500);
+
+            // 3. 重新启用表的 CDC，指定所有列（包括新列）
+            String columnList = String.join(", ", columns);
+            String enableSql = String.format(
+                    "EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'%s', @role_name = NULL, @supports_net_changes = 0, @captured_column_list = N'%s'",
+                    schema, tableName, columnList
+            );
+            execute(enableSql);
+            logger.info("已重新启用表 [{}] 的 CDC，捕获列: {}", tableName, columnList);
+
+            // 4. 刷新 changeTables 缓存
+            readChangeTables();
+            logger.info("已刷新 changeTables 缓存");
+
+        } catch (Exception e) {
+            logger.error("重新启用表 [{}] 的 CDC 失败: {}", tableName, e.getMessage(), e);
         }
     }
 

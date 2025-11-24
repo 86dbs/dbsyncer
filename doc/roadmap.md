@@ -13,6 +13,7 @@
 
 ## 问题池
 
+- mssql sp_rename 检查时通过每个 DML 的的字段信息与数据库真实字段信息比对得到的，比较消耗 ID。 
 - 存在 ddl 被 jsqlparser 解析多次的情况（一次表过滤的名称解析，一次内容解析）
 - 增量-定时 重构
   - 增量定时-移除 AbstractDatabaseConnector.reader, 与 Listener 中重复定义, 但 Reader 语义更好。
