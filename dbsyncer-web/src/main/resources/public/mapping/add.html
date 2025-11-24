@@ -18,7 +18,7 @@
 
         <form id="mappingAddForm">
             <!-- 数据源和目标源 -->
-            <div class="form-grid-2">
+            <div class="grid grid-cols-2">
                 <!-- 数据源 -->
                 <div class="form-item">
                     <label class="form-label">
@@ -41,7 +41,7 @@
             </div>
 
             <!-- 数据库配置 (MySQL) -->
-            <div class="form-grid-2" id="databaseGroup">
+            <div class="grid grid-cols-2" id="databaseGroup">
                 <div class="form-item">
                     <label class="form-label">源库<strong class="text-primary">*</strong></label>
                     <select name="sourceDatabase" id="sourceDatabase" class="form-control"></select>
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
-            <div class="form-grid-2" id="schemaGroup">
+            <div class="grid grid-cols-2" id="schemaGroup">
                 <div class="form-item">
                     <label class="form-label">源Schema</label>
                     <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
@@ -65,7 +65,7 @@
             </div>
 
             <!-- 驱动名称和匹配相似表 -->
-            <div class="form-grid-2">
+            <div class="grid grid-cols-2">
                 <div class="form-item">
                     <label class="form-label">名称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
@@ -89,7 +89,7 @@
             </div>
 
             <!-- 表映射关系 -->
-            <div class="form-grid-1">
+            <div class="grid">
                 <div class="form-item" id="tableGroups">
                     <label class="form-label">
                         表映射关系

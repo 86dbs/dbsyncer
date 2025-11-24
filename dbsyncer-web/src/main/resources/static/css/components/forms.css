@@ -73,22 +73,6 @@ select.form-control.is-invalid,
   }
 }
 
-/* 通用表单栅格（支持 1/2 列） */
-.form-grid-1 { 
-  display: grid; 
-  grid-template-columns: 1fr; 
-  row-gap: 20px;
-  margin-bottom: 24px;
-}
-
-.form-grid-2 { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  column-gap: 32px; 
-  row-gap: 20px;
-  margin-bottom: 24px;
-}
-
 /* 单项：标签+控件布局 */
 .form-item { 
   display: grid; 
@@ -111,10 +95,6 @@ select.form-control.is-invalid,
 }
 
 @media (max-width: 768px) {
-  .form-grid-2 { 
-    grid-template-columns: 1fr; 
-  }
-  
   .form-item { 
     grid-template-columns: 1fr; 
     row-gap: 6px; 

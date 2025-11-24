@@ -5,124 +5,94 @@
 <div th:fragment="content">
     <!-- 转换配置标题 -->
     <p><i class="fa fa-magic text-primary"></i> 转换配置</p>
-    <p class="text-xs text-tertiary">转换配置用于对目标端数据字段进行转换处理，支持多种转换函数，如字符串转换、数值计算、日期格式化等。</p>
 
     <!-- 第一行：转换、目标源表字段 -->
-    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div class="grid grid-cols-4">
         <!-- 转换 -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-magic" style="color: var(--primary-color); margin-right: 4px;"></i>
-                转换
-            </label>
-            <div class="form-control-area">
-                <select id="convertOperator" class="form-control">
-                    <option th:value="${c?.code}" th:text="${c?.name}" th:argNum="${c?.argNum}" th:each="c,state : ${convert}"/>
-                </select>
-            </div>
+            <label class="form-label">转换</label>
+            <select id="convertOperator" class="form-control">
+                <option th:value="${c?.code}" th:text="${c?.name}" th:argNum="${c?.argNum}" th:each="c,state : ${convert}"/>
+            </select>
         </div>
 
         <!-- 目标源表字段 -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-columns" style="color: var(--success-color); margin-right: 4px;"></i>
-                目标源表字段
-            </label>
-            <div class="form-control-area">
-                <select id="convertTargetField" class="form-control">
-                    <!-- 目标源表公共字段 -->
-                    <option th:if="${tableGroup} == null" 
-                            th:each="c,s:${mapping?.targetColumn}" 
-                            th:value="${c?.name}" 
-                            th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
-                    <!-- 目标源表字段 -->
-                    <option th:each="c,s:${tableGroup?.targetTable?.column}" 
-                            th:value="${c?.name}" 
-                            th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
-                </select>
-            </div>
+            <label class="form-label">目标源表字段</label>
+            <select id="convertTargetField" class="form-control">
+                <!-- 目标源表公共字段 -->
+                <option th:if="${tableGroup} == null"
+                        th:each="c,s:${mapping?.targetColumn}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                <!-- 目标源表字段 -->
+                <option th:each="c,s:${tableGroup?.targetTable?.column}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+            </select>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">参数</label>
+            <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">参数</label>
+            <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
         </div>
     </div>
 
     <!-- 第二行：参数输入框和添加按钮 -->
-    <div style="display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 24px;">
-        <!-- 参数 -->
-        <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-edit" style="color: var(--warning-color); margin-right: 4px;"></i>
-                参数
-                <span style="font-size: 11px; color: var(--text-tertiary); font-weight: normal; margin-left: 4px;">
-                    (可选，部分转换功能需要参数)
-                </span>
-            </label>
-            <div class="form-control-area">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <input class="form-control convertArg" 
-                           type="text" 
-                           maxlength="50" 
-                           placeholder="参数1" />
-                    <input class="form-control convertArg" 
-                           type="text" 
-                           maxlength="50" 
-                           placeholder="参数2" />
-                </div>
-            </div>
-        </div>
-
-        <!-- 添加按钮 -->
-        <div style="padding-bottom: 4px;">
-            <button id="convertAdd" type="button" class="dbsyncer-btn dbsyncer-btn-primary">
-                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                添加
-            </button>
-        </div>
+    <div class="form-actions mt-4">
+        <button id="convertAdd" class="btn btn-info">
+            <i class="fa fa-plus"></i> 添加
+        </button>
     </div>
 
     <!-- 转换列表表格 -->
-    <div style="margin-top: 24px;">
-        <table id="convertTable" class="dbsyncer-table hidden">
-            <thead>
-                <tr>
-                    <th style="width: 20%;">转换</th>
-                    <th style="width: 30%;">目标源表字段</th>
-                    <th style="width: 40%;">参数</th>
-                    <th style="width: 10%; text-align: center;">操作</th>
-                </tr>
-            </thead>
-            <tbody id="convertList">
-                <!-- Mapping convert -->
-                <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
-                    <td>
-                        <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
-                    </td>
-                    <td>[[${f?.name}]]</td>
-                    <td style="word-break: break-all;">[[${f?.args}]]</td>
-                    <td style="text-align: center;">
-                        <a class="convertDelete" 
-                           style="color: var(--danger-color); cursor: pointer; font-size: 16px;" 
-                           title="删除">
-                            <i class="fa fa-trash-o"></i>
-                        </a>
-                    </td>
-                </tr>
-                <!-- TableGroup convert -->
-                <tr th:each="f,s:${tableGroup?.convert}">
-                    <td>
-                        <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
-                    </td>
-                    <td>[[${f?.name}]]</td>
-                    <td style="word-break: break-all;">[[${f?.args}]]</td>
-                    <td style="text-align: center;">
-                        <a class="convertDelete" 
-                           style="color: var(--danger-color); cursor: pointer; font-size: 16px;" 
-                           title="删除">
-                            <i class="fa fa-trash-o"></i>
-                        </a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <table id="convertTable" class="table">
+        <thead>
+            <tr>
+                <th>转换</th>
+                <th>目标源表字段</th>
+                <th>参数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="convertList">
+            <!-- Mapping convert -->
+            <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
+                <td>
+                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
+                </td>
+                <td>[[${f?.name}]]</td>
+                <td style="word-break: break-all;">[[${f?.args}]]</td>
+                <td style="text-align: center;">
+                    <a class="convertDelete"
+                       style="color: var(--danger-color); cursor: pointer; font-size: 16px;"
+                       title="删除">
+                        <i class="fa fa-trash-o"></i>
+                    </a>
+                </td>
+            </tr>
+            <!-- TableGroup convert -->
+            <tr th:each="f,s:${tableGroup?.convert}">
+                <td>
+                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
+                </td>
+                <td>[[${f?.name}]]</td>
+                <td style="word-break: break-all;">[[${f?.args}]]</td>
+                <td style="text-align: center;">
+                    <a class="convertDelete"
+                       style="color: var(--danger-color); cursor: pointer; font-size: 16px;"
+                       title="删除">
+                        <i class="fa fa-trash-o"></i>
+                    </a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
     <!-- 隐藏表单值 -->
     <div class="hidden">
