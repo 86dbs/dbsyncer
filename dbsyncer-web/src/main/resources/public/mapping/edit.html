@@ -4,141 +4,185 @@
 
 <div class="form-container">
     <div class="card-header">
-        <h3>
-            <i class="fa fa-edit text-info"></i>
-            <span id="mappingModifyName">[[${mapping?.name}]]</span>
-            <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-pencil"></i>
-        </h3>
-        <p>ID: [[${mapping?.id}]]</p>
+        <div class="grid grid-cols-6 items-center">
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 card-title text-center">
+                <span id="mappingModifyName" class="text-xxl">[[${mapping?.name}]]</span>
+                <i class="fa fa-edit text-info text-xl cursor-pointer" th:title="点击修改名称" th:onclick="mappingModifyName()"></i>
+                <p class="card-subtitle">[[${mapping?.id}]]</p>
+            </div>
+            <div class="lg:col-span-2"></div>
+        </div>
     </div>
     <div class="card-body">
-        <div class="form-actions mb-4">
-            <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
-                <i class="fa fa-save"></i> 保存
-            </button>
-            <button id="mappingBackBtn" type="button" class="btn btn-outline">
-                <i class="fa fa-reply"></i> 返回
-            </button>
-        </div>
-
         <!-- 驱动同步关系 -->
-        <div>
-            <!-- 数据源 -->
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <div style="flex-shrink: 0;">
-                    <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}"
-                         style="width: 56px; height: 56px; object-fit: contain;">
-                </div>
+        <div class="grid grid-cols-3 border border-gray-300 rounded-md p-3">
+            <div class="flex items-center gap-3">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
                 <div>
-                    <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.sourceConnector?.name}]]</p>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
-                        数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]
-                    </p>
+                    <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
+                    <p class="text-sm">数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]</p>
                 </div>
             </div>
-
-            <!-- 箭头 -->
-            <div style="flex-shrink: 0;">
-                <i class="fa fa-arrow-right" style="font-size: 36px; color: #333;"></i>
+            <div class="text-info items-center text-center">
+                <p></p>
+                <i class="fa fa-arrow-right fa-3x"></i>
             </div>
-
-            <!-- 目标源 -->
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <div style="flex-shrink: 0;">
-                    <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}"
-                         style="width: 56px; height: 56px; object-fit: contain;">
-                </div>
+            <div class="flex items-center gap-3">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
                 <div>
-                    <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">[[${mapping?.targetConnector?.name}]]</p>
-                    <p style="margin: 0; font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">
-                        目标源：[[${mapping?.targetConnector?.config?.connectorType}]]
-                    </p>
+                    <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
+                    <p class="text-sm">目标源：[[${mapping?.targetConnector?.config?.connectorType}]]</p>
                 </div>
             </div>
         </div>
 
         <!-- 同步模式选择 -->
-        <div class="dbsyncer-card" id="mappingModelChange">
-            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);">
-                <h3 class="dbsyncer-card-title">
-                    <i class="fa fa-refresh" style="color: var(--primary-color); margin-right: 8px;"></i>
-                    同步模式
-                </h3>
+        <div class="flex items-center justify-between mt-4">
+            <div>
+                <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量
+                <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量
+                <input type="radio" name="model" value="fullToIncrement" disabled /> 全量+增量
             </div>
-            <div class="dbsyncer-card-body">
-                <div style="display: flex; align-items: center; gap: 32px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}"
-                               style="width: 18px; height: 18px; cursor: pointer;" />
-                        <span style="font-size: 15px; color: var(--text-primary);">
-                                <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
-                                全量同步
-                            </span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}"
-                               style="width: 18px; height: 18px; cursor: pointer;" />
-                        <span style="font-size: 15px; color: var(--text-primary);">
-                                <i class="fa fa-clock-o" style="color: var(--success-color); margin-right: 4px;"></i>
-                                增量同步
-                            </span>
-                    </label>
-                </div>
+
+            <div class="form-actions">
+                <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存
+                </button>
+                <button id="mappingBackBtn" type="button" class="btn btn-outline">
+                    <i class="fa fa-reply"></i> 返回
+                </button>
             </div>
         </div>
 
         <!-- 映射关系区域 -->
-        <div class="dbsyncer-card" style="margin-bottom: 24px;">
-            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
-                <h3 class="dbsyncer-card-title">
-                    <i class="fa fa-table" style="color: var(--success-color); margin-right: 8px;"></i>
-                    映射关系
-
-                </h3>
-            </div>
-            <div id="mappingBaseConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                <!-- 表映射 -->
-                <div th:replace="mapping/editTable :: content"></div>
-            </div>
-        </div>
+        <h3><i class="fa fa-table text-success"></i> 映射关系</h3>
+        <div th:replace="mapping/editTable :: content"></div>
 
         <!-- 高级配置区域 -->
-        <div class="dbsyncer-card" style="margin-bottom: 24px;">
-            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%);">
-                <h3 class="dbsyncer-card-title">
-                    <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 8px;"></i>
-                    高级配置
-                    <span style="font-size: 12px; color: var(--text-tertiary); font-weight: normal; margin-left: 8px;">该配置使所有映射关系都生效</span>
-                </h3>
-            </div>
-            <div id="mappingSuperConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                <!-- 全量配置 -->
-                <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
-                    <div th:replace="mapping/editFull :: content"></div>
-                </div>
+        <h3><i class="fa fa-table text-info"></i> 高级配置</h3>
+        <p class="text-xs text-tertiary">对所有表映射关系都生效</p>
+        <!-- 全量配置 -->
+        <div th:replace="mapping/editFull :: content"></div>
 
-                <!-- 增量配置 -->
-                <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
-                    <div th:replace="mapping/editIncrement :: content"></div>
-                </div>
+        <!-- 增量配置 -->
+        <div th:replace="mapping/editIncrement :: content"></div>
 
-                <!-- 过滤条件 -->
-                <div th:replace="mapping/editFilter :: content"></div>
+        <!-- 过滤条件 -->
+        <div th:replace="mapping/editFilter :: content"></div>
 
-                <!-- 转换配置 -->
-                <div th:replace="mapping/editConvert :: content"></div>
+        <!-- 转换配置 -->
+        <div th:replace="mapping/editConvert :: content"></div>
 
-                <!-- 策略配置 -->
-                <div th:replace="mapping/editParameter :: content"></div>
+        <!-- 策略配置 -->
+        <div th:replace="mapping/editParameter :: content"></div>
 
-                <!-- 插件配置 -->
-                <div th:replace="mapping/editPlugin :: content"></div>
-            </div>
-        </div>
+        <!-- 插件配置 -->
+        <div th:replace="mapping/editPlugin :: content"></div>
 
     </div>
 </div>
 
+<script>
+/**
+ * 修改驱动名称
+ */
+function mappingModifyName() {
+    const $name = $("#mappingModifyName");
+    const tmp = $name.text();
+    $name.text("");
+    $name.append("<input type='text'/>");
+    const $input = $name.find("input");
+    $input.focus().val(tmp);
+    $input.blur(function() {
+        $name.text($(this).val());
+        $("#mappingModifyForm input[name='name']").val($(this).val());
+        $input.unbind();
+    });
+}
+
+/**
+ * 绑定表关系点击事件
+ */
+function bindMappingTableGroupListClick() {
+    const $tableGroupList = $("#tableGroupList");
+    $tableGroupList.unbind("click");
+    $tableGroupList.find("tr").bind('click', function () {
+        // 动态加载表组编辑页面
+        if (typeof doLoader === 'function') {
+            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        }
+    });
+
+    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
+    const rows = $tableGroupList.find("tr");
+    rows.each(function() {
+        const row = $(this)[0];
+        row.setAttribute('draggable', 'true');
+
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
+    });
+
+    let dragSrcEl = null;
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        const rows = $tableGroupList.find('tr');
+        rows.removeClass('drag-over');
+
+        // 更新排序
+        const newData = [];
+        rows.each(function () {
+            newData.push($(this).attr('id'));
+        });
+        $("#sortedTableGroupIds").val(newData.join('|'));
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (dragSrcEl !== this) {
+            const srcIndex = $(dragSrcEl).index();
+            const destIndex = $(this).index();
+
+            if (srcIndex < destIndex) {
+                $(this).after(dragSrcEl);
+            } else {
+                $(this).before(dragSrcEl);
+            }
+        }
+
+        this.classList.remove('drag-over');
+        return false;
+    }
+}
+
+</script>
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>

@@ -355,14 +355,14 @@ function bindMappingTableGroupDelClick() {
 }
 
 // 修改驱动名称
-function mappingModifyName(){
-    var $name = $("#mappingModifyName");
-    var tmp = $name.text();
+function mappingModifyName() {
+    const $name = $("#mappingModifyName");
+    const tmp = $name.text();
     $name.text("");
-    $name.append("<input type='text'/>");
-    var $input = $name.find("input");
+    $name.append("<input type='text' class='form-control text-md'/>");
+    const $input = $name.find("input");
     $input.focus().val(tmp);
-    $input.blur(function(){
+    $input.blur(function () {
         $name.text($(this).val());
         $("#mappingModifyForm input[name='name']").val($(this).val());
         $input.unbind();

@@ -199,8 +199,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
+        context.setSourceConnectorInstance(connectorFactory.connect(mapping.getSourceConnectorId(), sourceConfig));
+        context.setTargetConnectorInstance(connectorFactory.connect(mapping.getTargetConnectorId(), getConnectorConfig(mapping.getTargetConnectorId())));
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
         context.setTraceId(response.getTraceId());
@@ -242,7 +242,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
             // 1.生成目标表执行SQL(暂支持同源)
             if (mapping.getListener().isEnableDDL() && StringUtil.equals(sConnType, tConnType)) {
-                ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
+                ConnectorInstance tConnectorInstance = connectorFactory.connect(mapping.getTargetConnectorId(), tConnConfig);
                 Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
                 // 2.持久化增量事件数据
                 result.setTableGroupId(tableGroup.getId());

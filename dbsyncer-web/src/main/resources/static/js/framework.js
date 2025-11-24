@@ -750,15 +750,18 @@ function PaginationManager(options) {
  *   - onSelect: 选择变化时的回调
  *   - onCustomButton: 自定义按钮点击时的回调
  */
+// 全局变量：跟踪当前打开的 dbSelect 实例
+window.dbSelectCurrentOpenInstance = null;
+
 $.fn.dbSelect = function(options) {
     options = options || {};
     
     const $select = $(this);
-    if (!$select.length) return $select;
+    if (!$select.length) return null;
     
-    // 防止重复初始化
+    // 防止重复初始化，直接返回已有的 API 实例
     if ($select.data('dbSelectInitialized')) {
-        return $select;
+        return $select.data('dbSelect');
     }
     $select.data('dbSelectInitialized', true);
 
@@ -846,14 +849,13 @@ $.fn.dbSelect = function(options) {
 
             const isSelected = selectedValues.indexOf(item.value) > -1;
             const inputType = config.type === 'single' ? 'radio' : 'checkbox';
-            const inputName = selectId + '-' + inputType;
 
             // 单选时隐藏复选框，多选时显示
             const checkboxClass = config.type === 'single' ? 'dbsyncer-select-option-checkbox hidden' : 'dbsyncer-select-option-checkbox';
 
             const $option = $(`
                 <label class="dbsyncer-select-option ${matches ? '' : 'hidden'} ${isSelected ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}">
-                    <input type="${inputType}" name="${inputName}" value="${escapeAttr(item.value)}" ${isSelected ? 'checked' : ''} ${item.disabled ? 'disabled' : ''}>
+                    <input type="${inputType}" value="${escapeAttr(item.value)}" ${isSelected ? 'checked' : ''} ${item.disabled ? 'disabled' : ''} data-dbselect-internal>
                     <div class="${checkboxClass}"></div>
                     <span class="dbsyncer-select-option-text">${escapeHtml(item.label)}</span>
                 </label>
@@ -897,10 +899,36 @@ $.fn.dbSelect = function(options) {
         triggerSelectEvent();
     }
 
+    // 同步原始 select 的 options
+    function syncSelectOptions() {
+        if (!$select.is('select')) return;
+        
+        // 获取当前 options（保留初始的 HTML options，避免重复添加）
+        const existingOptions = {};
+        $select.find('option').each(function() {
+            existingOptions[$(this).val()] = true;
+        });
+        
+        // 添加缺失的 options
+        config.data.forEach(function(item) {
+            if (!existingOptions[item.value]) {
+                const $option = $('<option></option>')
+                    .attr('value', item.value)
+                    .text(item.label);
+                if (item.disabled) {
+                    $option.prop('disabled', true);
+                }
+                $select.append($option);
+            }
+        });
+    }
+
     // 更新显示
     function updateDisplay() {
         // 更新原生 select
         if ($select.is('select')) {
+            // 确保原始 select 的 options 与 config.data 同步
+            syncSelectOptions();
             $select.val(config.type === 'single' ? (selectedValues[0] || '') : selectedValues);
         }
 
@@ -973,10 +1001,18 @@ $.fn.dbSelect = function(options) {
     // 打开下拉菜单
     function openDropdown() {
         if (!config.disabled) {
+            // 先关闭其他已打开的 dbSelect 实例
+            if (window.dbSelectCurrentOpenInstance && window.dbSelectCurrentOpenInstance !== api) {
+                window.dbSelectCurrentOpenInstance.close();
+            }
+            
             $component.addClass('open');
             $dropdown.removeClass('hidden');
             $searchInput.focus();
             renderOptions('');
+            
+            // 更新全局当前打开的实例
+            window.dbSelectCurrentOpenInstance = api;
         }
     }
 
@@ -987,6 +1023,11 @@ $.fn.dbSelect = function(options) {
         $searchInput.val('');
         $searchClear.removeClass('active');
         renderOptions('');
+        
+        // 如果当前实例就是打开的实例，清空全局变量
+        if (window.dbSelectCurrentOpenInstance === api) {
+            window.dbSelectCurrentOpenInstance = null;
+        }
     }
 
     // 全选
@@ -1124,28 +1165,90 @@ $.fn.dbSelect = function(options) {
         }
     }
 
-    // 保存配置
-    $component.data('dbSelect', {
+    // 创建 API 对象
+    const api = {
+        $element: $select,
+        $component: $component,
         getValues: function() { return selectedValues; },
         setValues: function(values) {
             selectedValues = Array.isArray(values) ? values : [values];
             updateDisplay();
             renderOptions($searchInput.val());
             triggerSelectEvent();
+            return this;
+        },
+        setData: function(newData) {
+            // 更新选项数据
+            config.data = newData || [];
+            
+            // 如果是原始 select 元素，清空并重新填充 options
+            if ($select.is('select')) {
+                $select.empty();
+                config.data.forEach(function(item) {
+                    const $option = $('<option></option>')
+                        .attr('value', item.value)
+                        .text(item.label);
+                    if (item.disabled) {
+                        $option.prop('disabled', true);
+                    }
+                    $select.append($option);
+                });
+            }
+            
+            // 清空搜索框
+            $searchInput.val('');
+            // 清空已选值（因为数据已经变了）
+            selectedValues = [];
+            // 重新初始化默认值
+            if (config.defaultValue) {
+                selectedValues = Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue];
+            } else {
+                // 如果没有默认值，自动选中第一个非空选项
+                if (config.data.length > 0) {
+                    const firstItem = config.data.find(d => d.value && d.value !== '');
+                    if (firstItem) {
+                        selectedValues = [firstItem.value];
+                    }
+                }
+            }
+            // 重新渲染
+            updateDisplay();
+            renderOptions('');
+            triggerSelectEvent();
+            return this;
+        },
+        getData: function() {
+            return config.data;
         },
         clear: function() {
             selectedValues = [];
             updateDisplay();
             renderOptions('');
             triggerSelectEvent();
+            return this;
+        },
+        close: function() {
+            closeDropdown();
+            return this;
         },
         destroy: function() {
             $(document).off('click.dbselect_' + selectId);
             $component.remove();
+            $select.removeData('dbSelectInitialized');
+            $select.removeData('dbSelect');
+            // 如果销毁的是当前打开的实例，清空全局变量
+            if (window.dbSelectCurrentOpenInstance === this) {
+                window.dbSelectCurrentOpenInstance = null;
+            }
+            return this;
         }
-    });
+    };
 
-    return $select;
+    // 保存 API 到组件和原始元素
+    $component.data('dbSelect', api);
+    $select.data('dbSelect', api);
+
+    return api;
 };
 
 /**

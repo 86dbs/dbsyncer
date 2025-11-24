@@ -78,14 +78,6 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     boolean isAlive(I connectorInstance);
 
     /**
-     * 获取连接缓存key
-     *
-     * @param connectorConfig
-     * @return
-     */
-    String getConnectorInstanceCacheKey(C connectorConfig);
-
-    /**
      * 获取所有表名
      *
      * @param connectorInstance

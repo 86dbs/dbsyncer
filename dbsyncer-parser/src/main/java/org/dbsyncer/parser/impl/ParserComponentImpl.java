@@ -75,7 +75,7 @@ public class ParserComponentImpl implements ParserComponent {
     @Override
     public List<MetaInfo> getMetaInfo(String connectorId, ConnectorServiceContext context) {
         Connector connector = profileComponent.getConnector(connectorId);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
         return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
@@ -98,15 +98,17 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, connectorFactory.connect(tConnConfig), null);
+        ConnectorInstance sourceInstance = connectorFactory.connect(mapping.getSourceConnectorId(), sConnConfig);
+        ConnectorInstance targetInstance = connectorFactory.connect(mapping.getTargetConnectorId(), tConnConfig);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, sourceInstance, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, targetInstance, null);
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }
 
     @Override
     public long getCount(String connectorId, Map<String, String> command) {
-        ConnectorInstance connectorInstance = connectorFactory.connect(getConnectorConfig(connectorId));
+        ConnectorInstance connectorInstance = connectorFactory.connect(connectorId, getConnectorConfig(connectorId));
         return connectorFactory.getCount(connectorInstance, command);
     }
 
@@ -132,8 +134,8 @@ public class ParserComponentImpl implements ParserComponent {
         Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         final FullPluginContext context = new FullPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceConnectorId, sConfig));
+        context.setTargetConnectorInstance(connectorFactory.connect(targetConnectorId, tConfig));
         context.setSourceTableName(sTableName);
         context.setTargetTableName(tTableName);
         context.setEvent(ConnectorConstant.OPERTION_INSERT);

@@ -195,18 +195,18 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void loadConnectorInstance() {
         List<Connector> list = profileComponent.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(connector -> {
+            list.forEach(connector ->
                 generalExecutor.execute(() -> {
                     try {
-                        connectorFactory.disconnect(connector.getConfig());
-                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+                        connectorFactory.disconnect(connector.getId());
+                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
                         logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
                     } catch (Exception e) {
                         logger.error("连接配置异常", e);
                         logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
                     }
-                });
-            });
+                })
+            );
         }
     }
 }

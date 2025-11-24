@@ -4,12 +4,8 @@
 
 <div th:fragment="content">
     <!-- 插件配置标题 -->
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
-        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-            <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 6px;"></i>
-            插件配置
-        </h4>
-    </div>
+    <p><i class="fa fa-plug text-primary"></i> 插件配置</p>
+    <p class="text-xs text-tertiary">插件配置允许您使用自定义插件扩展同步功能，选择合适的插件后，可在参数框中配置插件所需的参数，推荐使用JSON格式。</p>
 
     <!-- 插件配置表单 -->
     <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -51,13 +47,6 @@
         </div>
     </div>
 
-    <!-- 配置说明 -->
-    <div style="margin-top: 16px; padding: 12px 16px; background-color: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--primary-color);">
-        <p style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.6;">
-            <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 6px;"></i>
-            <strong>配置说明：</strong>插件配置允许您使用自定义插件扩展同步功能。选择合适的插件后，可在参数框中配置插件所需的参数，推荐使用JSON格式。
-        </p>
-    </div>
 </div>
 
 </html>

@@ -3,171 +3,95 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <!-- 增量配置标题 -->
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
-        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-            <i class="fa fa-refresh" style="color: var(--primary-color); margin-right: 6px;"></i>
-            增量配置
-        </h4>
-    </div>
+    <h4>增量配置</h4>
 
     <!-- 增量策略选择 -->
-    <div style="margin-bottom: 24px;">
-        <label class="form-label" style="margin-bottom: 12px;">
-            <i class="fa fa-cog" style="color: var(--warning-color); margin-right: 4px;"></i>
-            增量策略
+    <p><i class="fa fa-cog text-warning"></i> 增量策略</p>
+    <div id="mappingIncrementStrategyConfig">
+        <label>
+            <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
+            <span><i class="fa fa-file-text-o text-primary"></i> 日志</span>
         </label>
-        <div class="form-control-area">
-            <div id="mappingIncrementStrategyConfig" style="display: flex; gap: 32px;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                    <input type="radio" name="incrementStrategy" value="log" 
-                           th:checked="${'log' eq mapping?.listener?.listenerType}" 
-                           style="width: 18px; height: 18px; cursor: pointer;" />
-                    <span style="font-size: 15px; color: var(--text-primary);">
-                        <i class="fa fa-file-text-o" style="color: var(--primary-color); margin-right: 4px;"></i>
-                        日志
-                    </span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
-                    <input type="radio" name="incrementStrategy" value="timing" 
-                           th:checked="${'timing' eq mapping?.listener?.listenerType}" 
-                           style="width: 18px; height: 18px; cursor: pointer;" />
-                    <span style="font-size: 15px; color: var(--text-primary);">
-                        <i class="fa fa-clock-o" style="color: var(--success-color); margin-right: 4px;"></i>
-                        定时
-                    </span>
-                </label>
-            </div>
-        </div>
+        <label>
+            <input type="radio" name="incrementStrategy" value="timing"
+                   th:checked="${'timing' eq mapping?.listener?.listenerType}" />
+            <span><i class="fa fa-clock-o text-success"></i>定时</span>
+        </label>
     </div>
 
     <!-- 增量点配置 -->
-    <div style="margin-bottom: 24px;">
-        <div style="background-color: var(--bg-secondary); padding: 16px; border-radius: 8px;">
-            <table th:if="${mapping?.meta?.snapshot?.size() gt 0}" class="dbsyncer-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40%;">Key</th>
-                        <th style="width: 50%;">Value</th>
-                        <th style="width: 10%; text-align: center;">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="mappingMetaSnapshotConfig">
-                    <tr th:each="item,entry:${mapping?.meta?.snapshot}">
-                        <td>
-                            <strong style="color: var(--text-primary);">[[${entry.current.key}]]</strong>
-                        </td>
-                        <td>
-                            <code style="background-color: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
-                                [[${entry.current.value}]]
-                            </code>
-                        </td>
-                        <td style="text-align: center;">
-                            <i th:title="双击修改" 
-                               class="fa fa-edit dbsyncer_pointer metaSnapshotModify" 
-                               style="color: var(--primary-color); font-size: 16px;"></i>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-<!--            <div th:if="${mapping?.meta?.snapshot?.size() eq 0 or mapping?.meta?.snapshot == null}"-->
-<!--                 style="text-align: center; padding: 40px; color: var(&#45;&#45;text-tertiary);">-->
-<!--                <i class="fa fa-inbox" style="font-size: 48px; margin-bottom: 12px; opacity: 0.3;"></i>-->
-<!--            </div>-->
-        </div>
-        <input id="metaSnapshot" name="metaSnapshot" class="hidden" type="text"/>
-    </div>
+    <table class="table">
+        <thead>
+        <tr>
+            <th style="width: 40%;">Key</th>
+            <th style="width: 50%;">Value</th>
+            <th style="width: 10%; text-align: center;">操作</th>
+        </tr>
+        </thead>
+        <tbody id="mappingMetaSnapshotConfig">
+        <tr th:each="item,entry:${mapping?.meta?.snapshot}">
+            <td>
+                <strong>[[${entry.current.key}]]</strong>
+            </td>
+            <td>
+                <code>
+                    [[${entry.current.value}]]
+                </code>
+            </td>
+            <td>
+                <i th:title="双击修改" class="fa fa-edit text-primary metaSnapshotModify"></i>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <input id="metaSnapshot" name="metaSnapshot" class="hidden" type="text"/>
 
     <!-- 增量事件配置 -->
-    <div style="margin-bottom: 24px;">
-        <label class="form-label" style="margin-bottom: 12px;">
-            <i class="fa fa-bolt" style="color: var(--success-color); margin-right: 4px;"></i>
-            增量事件
-        </label>
-        <div class="form-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;">
-            <!-- 新增 -->
-            <div class="form-item">
-                <label class="form-label">
-                    <i class="fa fa-plus" style="color: var(--success-color); margin-right: 4px;"></i>
-                    新增
-                </label>
-                <div class="form-control-area">
-                    <label class="form-switch">
-                        <input name="enableInsert" 
-                               class="dbsyncer_switch" 
-                               th:checked="${mapping?.listener?.enableInsert}" 
-                               type="checkbox">
-                        <span class="switch-track">
-                            <span class="switch-option switch-option-on">开启</span>
-                            <span class="switch-option switch-option-off">关闭</span>
-                            <span class="switch-thumb"></span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 修改 -->
-            <div class="form-item">
-                <label class="form-label">
-                    <i class="fa fa-pencil" style="color: var(--warning-color); margin-right: 4px;"></i>
-                    修改
-                </label>
-                <div class="form-control-area">
-                    <label class="form-switch">
-                        <input name="enableUpdate" 
-                               class="dbsyncer_switch" 
-                               th:checked="${mapping?.listener?.enableUpdate}" 
-                               type="checkbox">
-                        <span class="switch-track">
-                            <span class="switch-option switch-option-on">开启</span>
-                            <span class="switch-option switch-option-off">关闭</span>
-                            <span class="switch-thumb"></span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 删除 -->
-            <div class="form-item">
-                <label class="form-label">
-                    <i class="fa fa-trash" style="color: var(--danger-color); margin-right: 4px;"></i>
-                    删除
-                </label>
-                <div class="form-control-area">
-                    <label class="form-switch">
-                        <input name="enableDelete" 
-                               class="dbsyncer_switch" 
-                               th:checked="${mapping?.listener?.enableDelete}" 
-                               type="checkbox">
-                        <span class="switch-track">
-                            <span class="switch-option switch-option-on">开启</span>
-                            <span class="switch-option switch-option-off">关闭</span>
-                            <span class="switch-thumb"></span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- DDL -->
-            <div class="form-item">
-                <label class="form-label">
-                    <i class="fa fa-code" style="color: var(--primary-color); margin-right: 4px;"></i>
-                    DDL
-                </label>
-                <div class="form-control-area">
-                    <label class="form-switch">
-                        <input name="enableDDL" 
-                               class="dbsyncer_switch" 
-                               th:checked="${mapping?.listener?.enableDDL}" 
-                               type="checkbox">
-                        <span class="switch-track">
-                            <span class="switch-option switch-option-on">开启</span>
-                            <span class="switch-option switch-option-off">关闭</span>
-                            <span class="switch-thumb"></span>
-                        </span>
-                    </label>
-                </div>
-            </div>
+    <p><i class="fa fa-bolt text-success"></i> 增量事件</p>
+    <div class="grid grid-cols-4">
+        <div class="form-item">
+            <label class="form-label">新增</label>
+            <label class="form-switch">
+                <input name="enableInsert" th:checked="${mapping?.listener?.enableInsert}" type="checkbox" />
+                <span class="switch-track">
+                <span class="switch-option switch-option-on">Yes</span>
+                <span class="switch-option switch-option-off">No</span>
+                <span class="switch-thumb"></span>
+            </span>
+            </label>
+        </div>
+        <div class="form-item">
+            <label class="form-label">修改</label>
+            <label class="form-switch">
+                <input name="enableUpdate" th:checked="${mapping?.listener?.enableUpdate}" type="checkbox" />
+                <span class="switch-track">
+                <span class="switch-option switch-option-on">Yes</span>
+                <span class="switch-option switch-option-off">No</span>
+                <span class="switch-thumb"></span>
+            </span>
+            </label>
+        </div>
+        <div class="form-item">
+            <label class="form-label">删除</label>
+            <label class="form-switch">
+                <input name="enableDelete" th:checked="${mapping?.listener?.enableDelete}" type="checkbox" />
+                <span class="switch-track">
+                <span class="switch-option switch-option-on">Yes</span>
+                <span class="switch-option switch-option-off">No</span>
+                <span class="switch-thumb"></span>
+            </span>
+            </label>
+        </div>
+        <div class="form-item">
+            <label class="form-label">DDL</label>
+            <label class="form-switch">
+                <input name="enableDDL" th:checked="${mapping?.listener?.enableDDL}" type="checkbox" />
+                <span class="switch-track">
+                <span class="switch-option switch-option-on">Yes</span>
+                <span class="switch-option switch-option-off">No</span>
+                <span class="switch-thumb"></span>
+            </span>
+            </label>
         </div>
     </div>
 

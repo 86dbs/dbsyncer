@@ -15,6 +15,7 @@ import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -219,7 +220,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (mapping.getSourceColumn() == null) {
             Connector connector = connectorService.getConnector(mapping.getSourceConnectorId());
             if (connector != null) {
-                connectorInstance = connectorFactory.connect(connector.getConfig());
+                connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
                 context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
                 mapping.setSourceTable(connectorFactory.getTable(connectorInstance, context));
             }
@@ -227,7 +228,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (mapping.getTargetTable() == null) {
             Connector targetConnect = connectorService.getConnector(mapping.getSourceConnectorId());
             if (targetConnect != null) {
-                connectorInstance = connectorFactory.connect(targetConnect.getConfig());
+                connectorInstance = connectorFactory.connect(targetConnect.getId(), targetConnect.getConfig());
                 context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
                 mapping.setTargetTable(connectorFactory.getTable(connectorInstance, context));
             }
@@ -257,6 +258,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 .map(this::convertMapping2Vo)
                 .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Paging<MappingVo> search(Map<String, String> params) {
+        return searchConfigModel(params, getMappingAll());
     }
 
     @Override
@@ -322,7 +328,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Connector connector = profileComponent.getConnector(connectorId);
         Assert.notNull(connector, "The connector id is invalid.");
         // 刷新数据表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
         return connectorFactory.getTable(connectorInstance, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
     }
 

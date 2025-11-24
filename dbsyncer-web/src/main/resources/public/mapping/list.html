@@ -11,7 +11,7 @@
         <div class="grid grid-cols-6 items-center">
             <div id="searchMapping" class="lg:col-span-2 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
@@ -23,170 +23,43 @@
                 </button>
             </div>
         </div>
+
         <table class="table">
             <thead>
             <tr>
                 <th></th>
                 <th>名称</th>
-                <th>数据源</th>
-                <th>目标源</th>
+                <th>数据源 >> 目标源</th>
                 <th>类型</th>
-                <th>状态</th>
                 <th>结果</th>
+                <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody id="mappingTableBody">
-                <!-- 动态数据 -->
-                <tr th:each="mapping, iterStat : ${mappings}" th:if="${mappings != null and !mappings.isEmpty()}">
-                    <td th:text="${iterStat.index + 1}">1</td>
-                    <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-exchange"></i>
-                            <span th:text="${mapping.name}">名称</span>
-                        </div>
-                    </td>
-                    <td th:text="${mapping.sourceConnector != null ? mapping.sourceConnector.name : 'N/A'}">数据源</td>
-                    <td th:text="${mapping.targetConnector != null ? mapping.targetConnector.name : 'N/A'}">目标源</td>
-                    <td th:text="${mapping.meta != null ? mapping.meta.model : 'N/A'}">类型</td>
-                    <td>
-                        <span th:if="${mapping?.meta?.state eq 0}" class="label label-default">未运行</span>
-                        <span th:if="${mapping?.meta?.state eq 1}" class="label label-success">运行中</span>
-                        <span th:if="${mapping?.meta?.state eq 2}" class="label label-default">停止中</span>
-                    </td>
-                    <td>
-                        <span th:if="${mapping?.meta?.total > 0}" th:text="'总数:'+${mapping?.meta.total}" class="label label-default">总数</span>
-                        <span th:text="'已完成:'+${mapping?.meta.success}" class="label label-success">已完成数量</span>
-                        <span th:if="${mapping?.meta?.fail > 0}" th:text="'失败数量:'+${mapping?.meta.fail}" class="label label-danger">失败数量</span>
-                    </td>
-
-                    <td>
-                        <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="修改" th:data-id="${mapping.id}" onclick="editMapping(this.dataset.id)">
-                                <i class="fa fa-edit"></i>
-                            </button>
-                            <button class="table-action-btn play mapping-action-btn" th:data-id="${mapping.id}"
-                                    th:data-state="${mapping?.meta?.state}"
-                                    th:data-running="${mapping?.meta?.state eq 1}"
-                                    onclick="testConnector(this.dataset.id)">
-                                <i th:class="'fa ' + ${mapping?.meta?.state eq 1 ? 'fa-stop' : 'fa-play'}"
-                                   th:title="${mapping?.meta?.state eq 1 ? '停止' : '启动'}"></i>
-                            </button>
-                            <button class="table-action-btn delete" title="删除" th:data-id="${mapping.id}" onclick="deleteMapping(this.dataset.id)">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                <!-- 空数据提示 -->
-                <tr th:if="${mappings == null or mappings.isEmpty()}">
-                    <td colspan="8" class="text-center">
-                        <i class="fa fa-exchange empty-icon"></i>
-                        <p class="empty-text">暂无驱动</p>
-                        <p class="empty-description">点击"添加"按钮创建第一个驱动</p>
-                    </td>
-                </tr>
-            </tbody>
+            <tbody id="mappingTableBody"></tbody>
         </table>
 
         <!-- 分页信息 -->
-        <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${mappings != null and !mappings.isEmpty()}">
-                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${mappings.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
-            </div>
+        <div id="mappingPagination" class="p-5 border-t border-gray-100 flex items-center justify-between">
+            <p class="text-sm text-gray-500">共 <span class="totalCount">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
+            <div class="pagination-bar flex items-center gap-2"></div>
+        </div>
+
     </div>
 </div>
 
 <script>
-// 同步任务管理页面脚本 - 全局函数定义
-
 // 同步任务列表自动刷新定时器
-var mappingListAutoRefreshTimer = null;
+let mappingListAutoRefreshTimer = null;
 
 // 自动刷新间隔（毫秒），默认5秒
-var MAPPING_LIST_REFRESH_INTERVAL = 5000;
-
-// 是否启用自动刷新（如果遇到问题可以设置为false临时禁用）
-var ENABLE_AUTO_REFRESH = true;
-
-// 调试模式（设置为true可以看到详细日志）
-var MAPPING_LIST_DEBUG = false;
-
-/**
- * 控制台命令：启用调试模式
- * 在浏览器控制台执行：enableMappingDebug()
- */
-window.enableMappingDebug = function() {
-    MAPPING_LIST_DEBUG = true;
-    console.log('[调试] 已启用映射列表调试模式');
-};
-
-/**
- * 控制台命令：禁用调试模式
- * 在浏览器控制台执行：disableMappingDebug()
- */
-window.disableMappingDebug = function() {
-    MAPPING_LIST_DEBUG = false;
-    console.log('[调试] 已禁用映射列表调试模式');
-};
-
-/**
- * 控制台命令：禁用自动刷新
- * 在浏览器控制台执行：disableAutoRefresh()
- */
-window.disableAutoRefresh = function() {
-    ENABLE_AUTO_REFRESH = false;
-    stopMappingListAutoRefresh();
-    console.log('[调试] 已禁用自动刷新');
-};
-
-/**
- * 控制台命令：启用自动刷新
- * 在浏览器控制台执行：enableAutoRefresh()
- */
-window.enableAutoRefresh = function() {
-    ENABLE_AUTO_REFRESH = true;
-    startMappingListAutoRefresh();
-    console.log('[调试] 已启用自动刷新');
-};
-
-/**
- * 控制台命令：查看当前状态
- * 在浏览器控制台执行：getMappingListStatus()
- */
-window.getMappingListStatus = function() {
-    // console.log('=== 映射列表状态 ===');
-    // console.log('自动刷新启用:', ENABLE_AUTO_REFRESH);
-    // console.log('调试模式:', MAPPING_LIST_DEBUG);
-    // console.log('刷新间隔(秒):', MAPPING_LIST_REFRESH_INTERVAL / 1000);
-    // console.log('定时器运行中:', mappingListAutoRefreshTimer !== null);
-    // console.log('表格存在:', $('#mappingTable').length > 0);
-    // console.log('表格Body存在:', $('#mappingTableBody').length > 0);
-    // console.log('当前行数:', $('#mappingTableBody tr').length);
-    // console.log('当前页码:', currentPage);
-    // console.log('总页数:', totalPages);
-    // console.log('====================');
-};
+const MAPPING_LIST_REFRESH_INTERVAL = 5000;
 
 /**
  * 启动同步任务列表自动刷新定时器
  */
 function startMappingListAutoRefresh() {
-    // 检查是否启用自动刷新
-    if (!ENABLE_AUTO_REFRESH) {
-        console.log('[自动刷新] 自动刷新功能已禁用');
-        return;
-    }
-    
+
     // 先清除已存在的定时器
     stopMappingListAutoRefresh();
     
@@ -194,24 +67,19 @@ function startMappingListAutoRefresh() {
     mappingListAutoRefreshTimer = setInterval(function() {
         try {
             // 检查表格是否存在（更准确的判断方法）
-            var $mappingTable = $('#mappingTable');
-            var $mappingTableBody = $('#mappingTableBody');
-            
-            if (MAPPING_LIST_DEBUG) {
-                console.log('[自动刷新] 检查表格元素:', {
-                    tableExists: $mappingTable.length > 0,
-                    tableBodyExists: $mappingTableBody.length > 0,
-                    currentTime: new Date().toLocaleTimeString()
-                });
-            }
+            const $mappingTable = $('#mappingTable');
+            const $mappingTableBody = $('#mappingTableBody');
+
+            console.log('[自动刷新] 检查表格元素:', {
+                tableExists: $mappingTable.length > 0,
+                tableBodyExists: $mappingTableBody.length > 0,
+                currentTime: new Date().toLocaleTimeString()
+            });
             
             // 只有当表格存在时才执行刷新
             if ($mappingTable.length && $mappingTableBody.length) {
-                if (MAPPING_LIST_DEBUG) {
-                    console.log('[自动刷新] 开始静默刷新数据');
-                }
+                console.log('[自动刷新] 开始静默刷新数据');
                 // 静默刷新（不显示加载提示和成功消息）
-                refreshMappingListData(true);
             } else {
                 // 如果表格不存在，说明已经离开列表页面，停止定时器
                 console.log('[自动刷新] 表格元素不存在，停止自动刷新');
@@ -223,186 +91,169 @@ function startMappingListAutoRefresh() {
             stopMappingListAutoRefresh();
         }
     }, MAPPING_LIST_REFRESH_INTERVAL);
-    
-    if (MAPPING_LIST_DEBUG) {
-        console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
-    }
+
+    console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
 }
 
 /**
- * 停止同步任务列表自动刷新定时器
+ * 停止自动刷新定时器
  */
 function stopMappingListAutoRefresh() {
     if (mappingListAutoRefreshTimer !== null) {
         clearInterval(mappingListAutoRefreshTimer);
         mappingListAutoRefreshTimer = null;
-        if (MAPPING_LIST_DEBUG) {
-            console.log('[自动刷新] 已停止');
-        }
+        console.log('[自动刷新] 已停止');
     }
 }
 
-/**
- * 编辑同步任务 - 动态加载编辑页面
- */
 function editMapping(id) {
     // 停止自动刷新定时器
     stopMappingListAutoRefresh();
+
+    doLoader("/mapping/page/edit?id="+id);
 }
 
-/**
- * 启动任务
- */
-function startMapping(id) {
-    const btn = event.target.closest('.action-btn');
+function copyMapping(id) {
+    doPoster("/mapping/copy", { id: id }, function (response) {
+        if (response.success) {
+            bootGrowl('复制成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl('复制失败: ' + response.message, 'danger');
+        }
+    });
+}
+
+function changeMappingState(id, url, title) {
+    const btn = event.target.closest('.table-action-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 启动中...';
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
     btn.disabled = true;
-    doPoster('/mapping/start', {id: id}, function (response) {
+    doPoster(url, {id: id}, function (response) {
         btn.innerHTML = originalText;
         btn.disabled = false;
         if (response.success) {
-            bootGrowl('启动成功', 'success');
+            bootGrowl(title +'成功', 'success');
             backIndexPage();
         } else {
-            bootGrowl('启动失败: ' + response.resultValue, 'danger');
+            bootGrowl(title +'失败: ' + response.resultValue, 'danger');
         }
     })
 }
 
 /**
- * 停止任务
- */
-function stopMapping(id) {
-    // 显示加载状态
-    const btn = event.target.closest('.action-btn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 停止中...';
-    btn.disabled = true;
-    doPoster('/mapping/stop', {id: id}, function (response) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        if (response.success) {
-            bootGrowl('停止成功', 'success');
-            backIndexPage();
-        } else {
-            bootGrowl('停止失败: ' + response.resultValue, 'danger');
-        }
-    })
-}
-
-/**
- * 删除同步任务
+ * 删除任务
  */
 function deleteMapping(id) {
-    if (confirm('确定要删除这个同步任务吗？删除后无法恢复。')) {
-        doPoster('/mapping/remove', {id: id}, function (response) {
-            if (response.success) {
-                bootGrowl('删除成功', 'success');
-                backIndexPage();
-            } else {
-                bootGrowl('删除失败: ' + response.resultValue, 'danger');
-            }
-        })
-    }
+    DBSyncerTheme.showConfirm({
+        title: '确定要删除驱动？',
+        icon: 'warning',
+        size: 'large',
+        confirmType: 'danger',
+        onConfirm: function () {
+            // 禁用按钮，防止重复点击
+            doPoster('/mapping/remove', {id: id}, function (data) {
+                if (data.success === true) {
+                    bootGrowl("删除成功！", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.resultValue || "删除失败", "danger");
+                }
+            });
+        }
+    });
 }
 
-/**
- * 绑定表关系点击事件
- */
-function bindMappingTableGroupListClick() {
-    const $tableGroupList = $("#tableGroupList");
-    $tableGroupList.unbind("click");
-    $tableGroupList.find("tr").bind('click', function () {
-        // 动态加载表组编辑页面
-        if (typeof doLoader === 'function') {
-            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
-        }
-    });
-
-    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
-    const rows = $tableGroupList.find("tr");
-    rows.each(function() {
-        const row = $(this)[0];
-        row.setAttribute('draggable', 'true');
-        
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragend', handleDragEnd);
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('dragleave', handleDragLeave);
-        row.addEventListener('drop', handleDrop);
-    });
-
-    let dragSrcEl = null;
-
-    function handleDragStart(e) {
-        dragSrcEl = this;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
-        this.classList.add('dragging');
-    }
-    
-    function handleDragEnd(e) {
-        this.classList.remove('dragging');
-        const rows = $tableGroupList.find('tr');
-        rows.removeClass('drag-over');
-        
-        // 更新排序
-        const newData = [];
-        rows.each(function () {
-            newData.push($(this).attr('id'));
-        });
-        $("#sortedTableGroupIds").val(newData.join('|'));
-    }
-    
-    function handleDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
-        e.dataTransfer.dropEffect = 'move';
-        return false;
-    }
-    
-    function handleDragLeave(e) {
-        this.classList.remove('drag-over');
-    }
-    
-    function handleDrop(e) {
-        if (e.stopPropagation) {
-            e.stopPropagation();
-        }
-        
-        if (dragSrcEl !== this) {
-            const srcIndex = $(dragSrcEl).index();
-            const destIndex = $(this).index();
-
-            if (srcIndex < destIndex) {
-                $(this).after(dragSrcEl);
-            } else {
-                $(this).before(dragSrcEl);
-            }
-        }
-        
-        this.classList.remove('drag-over');
-        return false;
-    }
+function showMappingError(metaId){
+    doLoader('/monitor?id='+metaId);
+    // 激活监控菜单
+    $('.sidebar-item').removeClass('active');
+    $('.sidebar-item[url="/monitor"]').addClass('active');
 }
 
-/**
- * 修改驱动名称
- */
-function mappingModifyName() {
-    const $name = $("#mappingModifyName");
-    const tmp = $name.text();
-    $name.text("");
-    $name.append("<input type='text'/>");
-    var $input = $name.find("input");
-    $input.focus().val(tmp);
-    $input.blur(function() {
-        $name.text($(this).val());
-        $("#mappingModifyForm input[name='name']").val($(this).val());
-        $input.unbind();
-    });
+function getStateConfig(mappingId) {
+    return {
+        0: { // 未运行
+            icon: 'fa-play',
+            title: '启动',
+            onclick: `changeMappingState('${mappingId}', '/mapping/start', '启动')`,
+            disabled: false,
+            class: 'badge-info',
+            text: '未运行'
+        },
+        1: { // 运行中
+            icon: 'fa-pause',
+            title: '停止',
+            onclick: `changeMappingState('${mappingId}', '/mapping/stop', '停止')`,
+            disabled: false,
+            class: 'badge-success',
+            text: '运行中'
+        },
+        2: { // 停止中
+            icon: 'fa-spinner fa-spin',
+            title: '停止中',
+            text: ' 停止中',
+            disabled: true,
+            class: 'badge-warning'
+        }
+    };
+}
+
+// 根据同步结果生成内容
+function renderSyncResult(mapping) {
+    const meta = mapping?.meta;
+    if (!meta) return '';
+    
+    const content = [];
+    // 全量模式显示总数
+    if (mapping?.model === 'full' && meta.total > 0) {
+        content.push(`总数:${meta.total}`);
+    }
+    // 成功数量
+    if (meta.success > 0) {
+        content.push(`成功:${meta.success}`);
+    }
+    // 失败数量
+    if (meta.fail > 0) {
+        content.push(`失败:<span class="btn btn-link text-error text-md" title='查看错误日志' onclick="showMappingError('${meta.id}')">${meta.fail}</span>`);
+    }
+    return content.join(' ');
+}
+
+// 根据任务类型生成内容
+function renderModelText(model) {
+    const modelState = {
+        'full': { // 全量
+            class: 'badge-primary',
+            text: '全量',
+        },
+        'increment': { // 增量
+            class: 'badge-info',
+            text: '增量',
+        }
+    };
+    const config = modelState[model];
+    return `<span class="badge ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成内容
+function renderStateText(state) {
+    const stateConfig = getStateConfig();
+    const config = stateConfig[state] || stateConfig[0];
+    return `<span class="badge ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成操作按钮
+function renderStateButton(state, mappingId) {
+    const stateConfig = getStateConfig(mappingId);
+    const config = stateConfig[state] || stateConfig[0];
+    const disabledAttr = config.disabled ? ' disabled' : '';
+    const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
+    return `
+        <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
+            <i class="fa ${config.icon}"></i>
+        </button>
+    `;
 }
 
 // 页面初始化
@@ -413,13 +264,54 @@ $(document).ready(function() {
     };
     // 启动自动刷新定时器
     startMappingListAutoRefresh();
-});
 
-// 页面卸载时清除定时器
-$(window).on('beforeunload', function() {
-    stopMappingListAutoRefresh();
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/mapping/search',
+        tableBodySelector: '#mappingTableBody',
+        paginationSelector: '#mappingPagination',
+        renderRow: function(mapping, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td title="${escapeHtml(mapping.name)}">
+                        <span>${escapeHtml(mapping.name)}</span>
+                    </td>
+                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">
+                        ${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}
+                    </td>
+                    <td>${renderModelText(mapping?.model)}</td>
+                    <td>
+                        ${renderSyncResult(mapping)}
+                    </td>
+                    <td>
+                        ${renderStateText(mapping?.meta?.state || 0)}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1">
+                            <button class="table-action-btn view" title="修改" data-id="${mapping.id}" onclick="editMapping('${mapping.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                            ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
+                            <button class="table-action-btn delete" title="删除" data-id="${mapping.id}" onclick="deleteMapping('${mapping.id}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+    });
+
+    // 搜索框输入事件
+    DBSyncerTheme.initSearch('searchMapping', function (searchKey) {
+        pagination.doSearch({'searchKey': searchKey});
+    });
 });
 </script>
 
 </html>
-

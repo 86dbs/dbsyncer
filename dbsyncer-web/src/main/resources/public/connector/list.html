@@ -11,7 +11,7 @@
         <div class="grid grid-cols-6 items-center">
             <div id="searchConnector" class="lg:col-span-2 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
@@ -63,10 +63,8 @@ $(document).ready(function() {
                 <tr>
                     <td>${index}</td>
                     <td>
-                        <div class="d-flex align-center">
-                            <i class="fa fa-database connector-icon text-info"></i>
-                            <span>${escapeHtml(connector.name)}</span>
-                        </div>
+                        <i class="fa fa-database connector-icon text-info"></i>
+                        <span>${escapeHtml(connector.name)}</span>
                     </td>
                     <td>${escapeHtml(connector.config?.connectorType || '')}</td>
                     <td>${escapeHtml(connector.config?.url || '')}</td>
@@ -146,7 +144,7 @@ function deleteConnector(id) {
                     bootGrowl('删除成功', 'success');
                     backIndexPage();
                 } else {
-                    bootGrowl('删除失败: ' + response.message, 'danger');
+                    bootGrowl('删除失败: ' + response.resultValue, 'danger');
                 }
             });
         }

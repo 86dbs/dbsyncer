@@ -169,7 +169,6 @@ a:focus {
 /* ========== 表单元素基础样式 ========== */
 input, textarea, select, button {
   font-family: inherit;
-  font-size: inherit;
   line-height: inherit;
 }
 

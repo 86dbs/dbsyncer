@@ -115,14 +115,6 @@ public class LogMinerHelper {
         query.append("SELECT * ");
         query.append("FROM V$LOGMNR_CONTENTS ");
         query.append("WHERE ");
-        // 这里由原来的 SCN > ? AND SCN <= ? 改为如下
-        // 原因：
-        // 在测试的时候发现一个情况会丢失部分数据
-        // 结论：
-        // START_SCN = X , END_SCN = Y, 此时查询条件 SCN >= X AND SCN <= Y
-        // 查询 V$LOGMNR_CONTENTS, 此时如果SQL的SCN恰好等于Y, 那么这次可能不会查出SCN=Y 的SQL(并不是百分之百)
-        // 但是当指定 SCN >= Y 时, 貌似一定能查到
-        // 这个问题很奇怪，有待研究
         query.append("SCN >= ? AND SCN < ? ");
         query.append("AND (");
         // MISSING_SCN/DDL only when not performed by excluded users

@@ -74,11 +74,6 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public String getConnectorInstanceCacheKey(KafkaConfig config) {
-        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getBootstrapServers(), config.getTopic(), config.getGroupId());
-    }
-
-    @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<Table> topics = new ArrayList<>();
         topics.add(new Table(connectorInstance.getConfig().getTopic()));

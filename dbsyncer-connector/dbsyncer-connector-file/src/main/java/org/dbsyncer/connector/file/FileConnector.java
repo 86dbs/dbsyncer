@@ -35,8 +35,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,18 +104,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             }
         }
         return alive;
-    }
-
-    @Override
-    public String getConnectorInstanceCacheKey(FileConfig config) {
-        String localIP;
-        try {
-            localIP = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            logger.error(e.getMessage());
-            localIP = "127.0.0.1";
-        }
-        return String.format("%s-%s", localIP, config.getFileDir());
     }
 
     @Override

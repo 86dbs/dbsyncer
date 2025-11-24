@@ -63,13 +63,13 @@ public class ConnectorChecker extends AbstractChecker {
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
         configValidator.modify(connectorService, config, params);
 
-        // 连接并获取数据库列表
-        ConnectorInstance connectorInstance = connectorFactory.connect(config);
-        List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
-        connector.setDataBaseName(databaseNames);
-
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+
+        // 连接并获取数据库列表
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config);
+        List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
+        connector.setDataBaseName(databaseNames);
 
         return connector;
     }
@@ -82,7 +82,7 @@ public class ConnectorChecker extends AbstractChecker {
         Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
         ConnectorConfig config = connector.getConfig();
-        connectorFactory.disconnect(config);
+        connectorFactory.disconnect(connector.getId());
 
         // 修改基本配置
         this.modifyConfigModel(connector, params);
@@ -94,7 +94,7 @@ public class ConnectorChecker extends AbstractChecker {
         configValidator.modify(connectorService, config, params);
 
         // 连接并获取数据库列表
-        ConnectorInstance connectorInstance = connectorFactory.connect(config);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config);
         String connectorType = config.getConnectorType();
         List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
         connector.setDataBaseName(databaseNames);

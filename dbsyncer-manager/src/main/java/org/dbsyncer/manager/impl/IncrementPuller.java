@@ -180,8 +180,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setDatabase(mapping.getSourceDatabase());
             abstractListener.setSchema(mapping.getSourceSchema());
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
-            abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
-            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
+            abstractListener.setConnectorInstance(connectorFactory.connect(connector.getId(), connectorConfig));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnector.getId(), targetConnectorConfig));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);
