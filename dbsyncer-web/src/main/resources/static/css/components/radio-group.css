@@ -1,0 +1,294 @@
+/**
+ * Radio Group Component - 美化的圆形单选组件（方案2）
+ * 保持传统圆形外观，但更精致优雅
+ * 使用方式：为包含 radio 的容器添加 .radio-group 类，然后调用 $('.radio-group').radioGroup()
+ */
+
+/* 单选组容器 */
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg, 24px);
+    align-items: center;
+}
+
+/* 单个选项容器 */
+.radio-group-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    padding-left: 0;
+}
+
+/* 隐藏原生 radio */
+.radio-group-item input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* 自定义圆形外框 */
+.radio-group-item::before {
+    content: '';
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-primary, #d9d9d9);
+    border-radius: 50%;
+    background-color: var(--bg-primary, #ffffff);
+    margin-right: var(--spacing-sm, 8px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+/* 自定义圆形内圈（选中状态） */
+.radio-group-item::after {
+    content: '';
+    position: absolute;
+    left: 10px; /* 20px / 2 = 10px，圆形外框的中心点 */
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    box-sizing: border-box;
+}
+
+/* 标签文本 */
+.radio-group-item-label {
+    font-size: var(--font-size-md, 16px);
+    font-weight: 500;
+    color: var(--text-primary, #262626);
+    transition: color 0.2s ease;
+    line-height: 1.5;
+}
+
+/* 悬停效果 */
+.radio-group-item:hover:not(.disabled)::before {
+    border-color: var(--primary-color, #165DFF);
+    box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.1);
+}
+
+.radio-group-item:hover:not(.disabled) .radio-group-item-label {
+    color: var(--primary-color, #165DFF);
+}
+
+/* 选中状态 */
+.radio-group-item.active::before {
+    border-color: var(--primary-color, #165DFF) !important;
+    background-color: var(--primary-color, #165DFF) !important;
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.15);
+}
+
+.radio-group-item.active::after {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.radio-group-item.active .radio-group-item-label {
+    color: var(--primary-color, #165DFF);
+    font-weight: 600;
+}
+
+/* 选中时的动画效果 */
+@keyframes radio-ripple {
+    0% {
+        box-shadow: 0 0 0 0 rgba(22, 93, 255, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 0 8px rgba(22, 93, 255, 0);
+    }
+}
+
+.radio-group-item.active::before {
+    animation: radio-ripple 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 禁用状态 */
+.radio-group-item.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.radio-group-item.disabled::before {
+    background-color: var(--bg-tertiary, #f5f5f5);
+    border-color: var(--border-primary, #d9d9d9);
+}
+
+.radio-group-item.disabled .radio-group-item-label {
+    color: var(--text-disabled, #bfbfbf);
+}
+
+/* 禁用且选中 */
+.radio-group-item.disabled.active::before {
+    background-color: var(--border-primary, #d9d9d9) !important;
+    border-color: var(--border-primary, #d9d9d9) !important;
+}
+
+.radio-group-item.disabled.active::after {
+    background-color: var(--text-disabled, #bfbfbf);
+}
+
+/* 聚焦状态（键盘导航） */
+.radio-group-item:focus-within:not(.disabled)::before {
+    border-color: var(--primary-color, #165DFF);
+    box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.2);
+    outline: none;
+}
+
+/* 不同主题色变体 */
+.radio-group.radio-group-success .radio-group-item.active::before {
+    border-color: var(--success-color, #52c41a) !important;
+    background-color: var(--success-color, #52c41a) !important;
+    box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.15);
+}
+
+.radio-group.radio-group-success .radio-group-item:hover:not(.disabled)::before {
+    border-color: var(--success-color, #52c41a);
+    box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.1);
+}
+
+.radio-group.radio-group-success .radio-group-item.active .radio-group-item-label,
+.radio-group.radio-group-success .radio-group-item:hover:not(.disabled) .radio-group-item-label {
+    color: var(--success-color, #52c41a);
+}
+
+.radio-group.radio-group-warning .radio-group-item.active::before {
+    border-color: var(--warning-color, #fa8c16) !important;
+    background-color: var(--warning-color, #fa8c16) !important;
+    box-shadow: 0 0 0 3px rgba(250, 140, 22, 0.15);
+}
+
+.radio-group.radio-group-warning .radio-group-item:hover:not(.disabled)::before {
+    border-color: var(--warning-color, #fa8c16);
+    box-shadow: 0 0 0 3px rgba(250, 140, 22, 0.1);
+}
+
+.radio-group.radio-group-warning .radio-group-item.active .radio-group-item-label,
+.radio-group.radio-group-warning .radio-group-item:hover:not(.disabled) .radio-group-item-label {
+    color: var(--warning-color, #fa8c16);
+}
+
+.radio-group.radio-group-danger .radio-group-item.active::before {
+    border-color: var(--error-color, #f5222d) !important;
+    background-color: var(--error-color, #f5222d) !important;
+    box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.15);
+}
+
+.radio-group.radio-group-danger .radio-group-item:hover:not(.disabled)::before {
+    border-color: var(--error-color, #f5222d);
+    box-shadow: 0 0 0 3px rgba(245, 34, 45, 0.1);
+}
+
+.radio-group.radio-group-danger .radio-group-item.active .radio-group-item-label,
+.radio-group.radio-group-danger .radio-group-item:hover:not(.disabled) .radio-group-item-label {
+    color: var(--error-color, #f5222d);
+}
+
+.radio-group.radio-group-info .radio-group-item.active::before {
+    border-color: var(--info-color, #1890ff) !important;
+    background-color: var(--info-color, #1890ff) !important;
+    box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15);
+}
+
+.radio-group.radio-group-info .radio-group-item:hover:not(.disabled)::before {
+    border-color: var(--info-color, #1890ff);
+    box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+.radio-group.radio-group-info .radio-group-item.active .radio-group-item-label,
+.radio-group.radio-group-info .radio-group-item:hover:not(.disabled) .radio-group-item-label {
+    color: var(--info-color, #1890ff);
+}
+
+/* 尺寸变体 - 小号 */
+.radio-group.radio-group-sm .radio-group-item::before {
+    width: 16px;
+    height: 16px;
+}
+
+.radio-group.radio-group-sm .radio-group-item::after {
+    left: 8px; /* 16px / 2 = 8px */
+    top: 50%;
+    width: 6px;
+    height: 6px;
+}
+
+.radio-group.radio-group-sm .radio-group-item-label {
+    font-size: var(--font-size-sm, 14px);
+}
+
+.radio-group.radio-group-sm {
+    gap: var(--spacing-md, 16px);
+}
+
+/* 尺寸变体 - 大号 */
+.radio-group.radio-group-lg .radio-group-item::before {
+    width: 24px;
+    height: 24px;
+    border-width: 2.5px;
+}
+
+.radio-group.radio-group-lg .radio-group-item::after {
+    left: 12px; /* 24px / 2 = 12px */
+    top: 50%;
+    width: 10px;
+    height: 10px;
+}
+
+.radio-group.radio-group-lg .radio-group-item-label {
+    font-size: var(--font-size-lg, 18px);
+}
+
+.radio-group.radio-group-lg {
+    gap: var(--spacing-xl, 32px);
+}
+
+/* 垂直布局 */
+.radio-group.radio-group-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* 内联布局（紧凑） */
+.radio-group.radio-group-inline {
+    gap: var(--spacing-md, 16px);
+}
+
+/* 响应式：小屏幕垂直布局 */
+@media (max-width: 640px) {
+    .radio-group:not(.radio-group-inline) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md, 16px);
+    }
+}
+
+/* 带边框的选项卡样式（可选） */
+.radio-group.radio-group-bordered .radio-group-item {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    border: 1px solid var(--border-primary, #d9d9d9);
+    border-radius: var(--radius-md, 4px);
+    transition: all 0.2s ease;
+}
+
+.radio-group.radio-group-bordered .radio-group-item:hover:not(.disabled) {
+    border-color: var(--primary-color, #165DFF);
+    background-color: rgba(22, 93, 255, 0.05);
+}
+
+.radio-group.radio-group-bordered .radio-group-item.active {
+    border-color: var(--primary-color, #165DFF);
+    background-color: rgba(22, 93, 255, 0.1);
+}

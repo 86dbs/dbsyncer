@@ -39,25 +39,13 @@
 
         <!-- 同步模式选择 -->
         <div class="flex items-center justify-between mt-4">
-            <div class="grid grid-cols-4" id="mappingIncrementStrategyConfig">
-                <div class="form-item">
-                    <label class="form-label">全量</label>
-                    <div class="form-control-area">
-                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" />
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">增量</label>
-                    <div class="form-control-area">
-                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
-                    </div>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">全量+增量</label>
-                    <div class="form-control-area">
-                        <input type="radio" name="model" value="fullToIncrement" disabled />
-                    </div>
-                </div>
+            <div class="radio-group">
+                <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" />
+                <label>全量</label>
+                <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
+                <label>增量</label>
+                <input type="radio" name="model" value="fullToIncrement" disabled />
+                <label>全量+增量</label>
             </div>
 
             <div class="form-actions">
@@ -196,6 +184,19 @@ function bindMappingTableGroupListClick() {
         return false;
     }
 }
+
+/**
+ * 初始化同步模式单选按钮组
+ */
+$(document).ready(function() {
+    $('.radio-group').radioGroup({
+        theme: 'info',
+        size: 'md',
+        onChange: function(value, label) {
+            console.log('同步模式已切换:', label, '(值:', value, ')');
+        }
+    });
+});
 
 </script>
 <script th:src="@{/js/mapping/edit.js}"></script>

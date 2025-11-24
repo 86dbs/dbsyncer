@@ -23,6 +23,7 @@
 @import url('./components/file-upload.css');
 @import url('./components/confirm.css');
 @import url('./components/select.css');
+@import url('./components/radio-group.css');
 
 /* 解决 Chrome "Slow network detected" */
 @font-face {
