@@ -6,14 +6,18 @@
     <!-- 增量策略选择 -->
     <p><i class="fa fa-cog text-warning"></i> 增量策略</p>
     <div class="grid grid-cols-4" id="mappingIncrementStrategyConfig">
-        <label>
-            <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
-            <span>日志</span>
-        </label>
-        <label>
-            <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
-            <span>定时</span>
-        </label>
+        <div class="form-item">
+            <label class="form-label">日志</label>
+            <div class="form-control-area">
+                <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">定时</label>
+            <div class="form-control-area">
+                <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
+            </div>
+        </div>
     </div>
 
     <!-- 增量点配置 -->
