@@ -23,7 +23,6 @@ public class IRToMySQLConverter extends AbstractIRToTargetConverter {
     @Override
     protected String convertOperation(String tableName, String schema, AlterOperation operation, List<Field> columns, 
                                       Map<String, String> oldToNewColumnNames) {
-        // MySQL 的 CHANGE 操作不需要 oldToNewColumnNames，忽略该参数
         // MySQL 不需要 schema 参数（忽略）
         switch (operation) {
             case ADD:
@@ -31,7 +30,7 @@ public class IRToMySQLConverter extends AbstractIRToTargetConverter {
             case MODIFY:
                 return convertColumnsToModify(tableName, columns);
             case CHANGE:
-                return convertColumnsToChange(tableName, columns);
+                return convertColumnsToChange(tableName, columns, oldToNewColumnNames);
             case DROP:
                 return convertColumnsToDrop(tableName, columns);
             default:
@@ -80,15 +79,34 @@ public class IRToMySQLConverter extends AbstractIRToTargetConverter {
         return result.toString();
     }
 
-    private String convertColumnsToChange(String tableName, List<Field> columns) {
+    private String convertColumnsToChange(String tableName, List<Field> columns, Map<String, String> oldToNewColumnNames) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < columns.size(); i++) {
             if (i > 0) {
                 result.append(", ");
             }
             Field column = columns.get(i);
-            // 对于CHANGE操作，我们假设字段名不变，仅类型改变
-            result.append(mysqlTemplate.buildRenameColumnSql(tableName, column.getName(), column));
+            String newColumnName = column.getName();
+            
+            // 从映射中获取旧字段名
+            String oldColumnName = null;
+            if (oldToNewColumnNames != null) {
+                for (Map.Entry<String, String> entry : oldToNewColumnNames.entrySet()) {
+                    if (entry.getValue().equals(newColumnName)) {
+                        oldColumnName = entry.getKey();
+                        break;
+                    }
+                }
+            }
+            
+            // 如果找不到旧字段名，说明字段名没有改变，只改变了类型，使用MODIFY操作
+            if (oldColumnName == null || oldColumnName.equals(newColumnName)) {
+                // 字段名没有改变，只改变类型，使用MODIFY操作
+                result.append(mysqlTemplate.buildModifyColumnSql(tableName, column));
+            } else {
+                // 字段名改变了，使用CHANGE COLUMN操作
+                result.append(mysqlTemplate.buildRenameColumnSql(tableName, oldColumnName, column));
+            }
         }
         return result.toString();
     }

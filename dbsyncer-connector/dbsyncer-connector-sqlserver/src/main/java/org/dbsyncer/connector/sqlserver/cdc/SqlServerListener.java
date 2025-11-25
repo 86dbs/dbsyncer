@@ -320,7 +320,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         parseUnifiedEvents(unifiedEvents, stopLsn);
     }
 
-    private void trySendEvent(RowChangedEvent event) {
+    public void trySendEvent(RowChangedEvent event) {
         while (connected) {
             try {
                 sendChangedEvent(event);
@@ -546,8 +546,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * 检查表的列名是否与 CDC 捕获的列名一致，如果不一致则重新启用 CDC
      * 
      * 用于检测 sp_rename 重命名列的情况（sp_rename 不会出现在 cdc.ddl_history 中）
+     * 
+     * 注意：此方法已改为 public，以便在测试中直接调用以触发 sp_rename 检测
      */
-    private void checkAndReEnableCDCIfNeeded(SqlServerChangeTable changeTable) {
+    public void checkAndReEnableCDCIfNeeded(SqlServerChangeTable changeTable) {
         try {
             String tableName = changeTable.getTableName();
             String capturedColumns = changeTable.getCapturedColumns();
