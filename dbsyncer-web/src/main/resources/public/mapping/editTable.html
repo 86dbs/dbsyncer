@@ -154,9 +154,8 @@
         // 绑定下拉选择事件自动匹配相似表事件
         $(document).ready(function() {
             let targetTableSelect = bindTableSelect($('#target_table_select'));
-            let sourceTableSelect = bindTableSelect($('#source_table_select'), function(data) {
-                console.log(data);
-                targetTableSelect.setValues([data]);
+            bindTableSelect($('#source_table_select'), function(data) {
+                targetTableSelect.setValues(data);
             });
 
             let isUpdatingSelectAll = false;

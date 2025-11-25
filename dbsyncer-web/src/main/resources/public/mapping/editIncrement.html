@@ -40,6 +40,11 @@
     </table>
     <input id="metaSnapshot" name="metaSnapshot" class="hidden" type="text"/>
 
+    <!-- 定时配置 -->
+    <div th:id="increment_quartz" class="hidden">
+        <div th:replace="mapping/editIncrementQuartz :: content"></div>
+    </div>
+
     <!-- 增量事件配置 -->
     <p><i class="fa fa-bolt text-success"></i> 增量事件</p>
     <div class="grid grid-cols-4">
@@ -95,11 +100,6 @@
                 </label>
             </div>
         </div>
-    </div>
-
-    <!-- 定时配置 -->
-    <div th:id="increment_quartz" class="hidden">
-        <div th:replace="mapping/editIncrementQuartz :: content"></div>
     </div>
 
 </div>
