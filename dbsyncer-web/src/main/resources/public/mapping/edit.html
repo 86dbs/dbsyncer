@@ -16,7 +16,7 @@
     </div>
     <div class="card-body">
         <!-- 驱动同步关系 -->
-        <div class="grid grid-cols-3 border border-gray-300 rounded-md p-3">
+        <div class="grid grid-cols-3">
             <div class="flex items-center gap-3">
                 <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
                 <div>
@@ -39,10 +39,13 @@
 
         <!-- 同步模式选择 -->
         <div class="flex items-center justify-between mt-4">
-            <div>
-                <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量
-                <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量
-                <input type="radio" name="model" value="fullToIncrement" disabled /> 全量+增量
+            <div class="radio-group">
+                <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" />
+                <label>全量</label>
+                <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
+                <label>增量</label>
+                <input type="radio" name="model" value="fullToIncrement" disabled />
+                <label>全量+增量</label>
             </div>
 
             <div class="form-actions">
@@ -181,6 +184,19 @@ function bindMappingTableGroupListClick() {
         return false;
     }
 }
+
+/**
+ * 初始化同步模式单选按钮组
+ */
+$(document).ready(function() {
+    $('.radio-group').radioGroup({
+        theme: 'info',
+        size: 'md',
+        onChange: function(value, label) {
+            console.log('同步模式已切换:', label, '(值:', value, ')');
+        }
+    });
+});
 
 </script>
 <script th:src="@{/js/mapping/edit.js}"></script>
