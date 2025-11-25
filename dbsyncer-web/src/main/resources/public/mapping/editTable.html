@@ -121,7 +121,7 @@
                 拖动
             </th>
             <th onclick="event.stopPropagation();">
-                <input type="checkbox" class="tableGroupCheckboxAll" onclick="event.stopPropagation();" />
+                <input type="checkbox" class="tableGroupCheckboxAll" value="all" onclick="event.stopPropagation();" />
             </th>
         </tr>
         </thead>
@@ -137,9 +137,92 @@
                 <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
             </td>
         </tr>
+        <tr title='拖动排序 | 点击编辑'>
+            <td th:text="1"/>
+            <td th:text="my_user"/>
+            <td th:text="my_user"/>
+            <td>
+                <i class="fa fa-arrows text-tertiary" style="cursor: move;"></i>
+            </td>
+            <td onclick="event.stopPropagation();">
+                <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
+            </td>
+        </tr>
         </tbody>
     </table>
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
+
+    <script>
+        $(document).ready(function() {
+            let isUpdatingSelectAll = false;
+            
+            // 初始化全选复选框
+            $('.tableGroupCheckboxAll').checkboxGroup({
+                theme: 'danger',
+                size: 'md',
+                onChange: function(values) {
+                    if (isUpdatingSelectAll) return;
+                    
+                    // 全选/取消全选时，同步所有单个复选框
+                    const isChecked = values.length > 0;
+                    $('.tableGroupCheckbox').each(function() {
+                        const api = $(this).data('checkboxGroup');
+                        if (api) {
+                            api.setValue(isChecked);
+                        }
+                    });
+                    
+                    // 更新删除按钮状态
+                    updateDeleteButtonState();
+                }
+            });
+            
+            // 初始化所有单个复选框
+            $('.tableGroupCheckbox').checkboxGroup({
+                theme: 'info',
+                size: 'md',
+                onChange: function(values) {
+                    // 单个复选框变化时，更新全选复选框状态
+                    updateSelectAllState();
+                    // 更新删除按钮状态
+                    updateDeleteButtonState();
+                }
+            });
+            
+            // 更新全选复选框状态
+            function updateSelectAllState() {
+                if (isUpdatingSelectAll) return;
+                
+                isUpdatingSelectAll = true;
+                
+                const $allCheckboxes = $('.tableGroupCheckbox');
+                const $checkedCheckboxes = $('.tableGroupCheckbox:checked');
+                const allChecked = $allCheckboxes.length > 0 && $allCheckboxes.length === $checkedCheckboxes.length;
+                
+                const $checkboxAll = $('.tableGroupCheckboxAll');
+                const checkboxAllApi = $checkboxAll.data('checkboxGroup');
+                
+                if (checkboxAllApi) {
+                    checkboxAllApi.setValue(allChecked);
+                } else {
+                    $checkboxAll.prop('checked', allChecked);
+                }
+                
+                setTimeout(function() {
+                    isUpdatingSelectAll = false;
+                }, 0);
+            }
+            
+            // 更新删除按钮状态
+            function updateDeleteButtonState() {
+                const $checkedCheckboxes = $('.tableGroupCheckbox:checked');
+                $('#tableGroupDelBtn').prop('disabled', $checkedCheckboxes.length === 0);
+            }
+            
+            // 初始化删除按钮状态
+            updateDeleteButtonState();
+        });
+    </script>
 </div>
 
 </html>
