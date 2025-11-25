@@ -4,101 +4,62 @@
 
 <div th:fragment="content">
     <!-- 定时同步配置标题 -->
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-secondary);">
-        <h4 style="margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary);">
-            <i class="fa fa-clock-o" style="color: var(--success-color); margin-right: 6px;"></i>
-            定时同步配置
-        </h4>
-    </div>
+    <p><i class="fa fa-clock-o text-success"></i> 定时配置</p>
 
     <!-- 第一行：Insert、Update、Delete -->
-    <div class="form-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+    <div class="grid grid-cols-3">
         <!-- Insert -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-plus" style="color: var(--success-color); margin-right: 4px;"></i>
-                Insert
-            </label>
-            <div class="form-control-area">
-                <input name="timingInsert" 
-                       type="text" 
-                       class="form-control" 
-                       data-role="tagsinput" 
-                       placeholder="I"
-                       th:value="${mapping?.listener?.insert}?:'I'" />
-            </div>
+            <label class="form-label">Insert</label>
+            <input name="timingInsert"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="I"
+                   th:value="${mapping?.listener?.insert}?:'I'" />
         </div>
 
         <!-- Update -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-pencil" style="color: var(--warning-color); margin-right: 4px;"></i>
-                Update
-            </label>
-            <div class="form-control-area">
-                <input name="timingUpdate" 
-                       type="text" 
-                       class="form-control" 
-                       data-role="tagsinput" 
-                       placeholder="U"
-                       th:value="${mapping?.listener?.update}?:'U'"/>
-            </div>
+            <label class="form-label">Update</label>
+            <input name="timingUpdate"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="U"
+                   th:value="${mapping?.listener?.update}?:'U'"/>
         </div>
 
         <!-- Delete -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-trash" style="color: var(--danger-color); margin-right: 4px;"></i>
-                Delete
-            </label>
-            <div class="form-control-area">
-                <input name="timingDelete" 
-                       type="text" 
-                       class="form-control" 
-                       data-role="tagsinput" 
-                       placeholder="D"
-                       th:value="${mapping?.listener?.delete?:'D'}"/>
-            </div>
+            <label class="form-label">Delete</label>
+            <input name="timingDelete"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="D"
+                   th:value="${mapping?.listener?.delete?:'D'}"/>
         </div>
     </div>
 
     <!-- 第二行：Cron、事件 -->
-    <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <div class="grid grid-cols-3 mt-4">
         <!-- Cron -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-clock-o" style="color: var(--primary-color); margin-right: 4px;"></i>
-                Cron
-                <strong class="text-primary" style="margin-left: 4px;">*</strong>
-            </label>
-            <div class="form-control-area">
-                <input class="form-control" 
-                       dbsyncer-valid="require" 
-                       name="timingCronExpression"
-                       th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" 
-                       type="text"
-                       placeholder="*/30 * * * * ?" />
-            </div>
+            <label class="form-label">Cron<strong class="text-primary">*</strong></label>
+            <input class="form-control" required name="timingCronExpression" th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" type="text" placeholder="*/30 * * * * ?" />
         </div>
 
         <!-- 事件 -->
         <div class="form-item">
-            <label class="form-label">
-                <i class="fa fa-tag" style="color: var(--success-color); margin-right: 4px;"></i>
-                事件
-                <i class="fa fa-question-circle" 
-                   style="color: var(--text-tertiary); margin-left: 4px; cursor: help;" 
-                   title="区分增删改事件"></i>
-            </label>
-            <div class="form-control-area">
-                <select name="timingEventFieldName" class="form-control">
-                    <option value="" selected="selected">无</option>
-                    <option th:each="c,s:${mapping?.sourceColumn}" 
-                            th:value="${c?.name}" 
-                            th:text="${c?.name} +' (' + ${c?.typeName} +')'" 
-                            th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
-                </select>
-            </div>
+            <label class="form-label">事件<i class="fa fa-question-circle text-tertiary" title="区分增删改事件"></i></label>
+            <select name="timingEventFieldName" class="form-control">
+                <option value="" selected="selected">无</option>
+                <option th:each="c,s:${mapping?.sourceColumn}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'"
+                        th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
+            </select>
         </div>
     </div>
 

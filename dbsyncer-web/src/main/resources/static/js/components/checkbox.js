@@ -87,18 +87,10 @@
     function bindCheckboxEvents($container, $item, $checkbox, config, isSingle) {
         // 点击项目时切换 checkbox 状态
         $item.on('click', function(e) {
-            // 如果点击的是复选框本身，不处理，让浏览器原生事件处理
-            if ($(e.target).is('input[type="checkbox"]')) {
-                return;
-            }
-            
             if ($item.hasClass('disabled')) {
                 e.preventDefault();
                 return;
             }
-            
-            e.preventDefault();
-            e.stopPropagation();
             
             // 切换选中状态
             const isChecked = $checkbox.prop('checked');
@@ -110,18 +102,7 @@
                 $checkbox.prop('checked', true);
             }
             
-            // 手动触发 change 事件
             $checkbox.trigger('change');
-        });
-        
-        // 监听 checkbox 原生变化事件
-        $checkbox.on('change', function(e) {
-            // 更新视觉状态
-            if ($checkbox.prop('checked')) {
-                $item.addClass('active');
-            } else {
-                $item.removeClass('active');
-            }
             
             // 触发回调
             if (config.onChange && typeof config.onChange === 'function') {
@@ -133,6 +114,19 @@
                     // 多个 checkbox，需要收集所有值
                     triggerChangeEvent($container, config);
                 }
+            }
+        });
+        
+        // 监听 checkbox 变化事件
+        $checkbox.on('change', function() {
+            if ($checkbox.prop('checked')) {
+                $item.addClass('active');
+            } else {
+                $item.removeClass('active');
+            }
+            
+            if (!isSingle && config.onChange && typeof config.onChange === 'function') {
+                triggerChangeEvent($container, config);
             }
         });
     }

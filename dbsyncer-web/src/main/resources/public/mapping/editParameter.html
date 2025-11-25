@@ -5,7 +5,6 @@
 <div th:fragment="content" th:if="${tableGroup} == null">
     <!-- 策略配置标题 -->
     <p><i class="fa fa-cogs text-warning"></i> 策略配置</p>
-    <p class="text-xs text-tertiary">策略配置用于控制数据同步的行为模式。覆盖策略会在数据存在时执行更新，不存在时执行插入。校验和订正功能正在开发中。</p>
 
     <!-- 策略配置选项 -->
     <div class="form-item">
@@ -14,15 +13,12 @@
         </label>
         <div class="form-control-area">
             <label class="form-switch">
-                <input name="forceUpdate"
-                       class="dbsyncer_switch"
-                       th:checked="${mapping?.forceUpdate}"
-                       type="checkbox">
+                <input name="forceUpdate" th:checked="${mapping?.forceUpdate}" type="checkbox" />
                 <span class="switch-track">
-                        <span class="switch-option switch-option-on">Yes</span>
-                        <span class="switch-option switch-option-off">No</span>
-                        <span class="switch-thumb"></span>
-                    </span>
+                    <span class="switch-option switch-option-on">Yes</span>
+                    <span class="switch-option switch-option-off">No</span>
+                    <span class="switch-thumb"></span>
+                </span>
             </label>
         </div>
     </div>

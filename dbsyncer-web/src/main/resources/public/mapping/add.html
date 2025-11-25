@@ -18,7 +18,7 @@
 
         <form id="mappingAddForm">
             <!-- 数据源和目标源 -->
-            <div class="form-grid-2">
+            <div class="grid grid-cols-2">
                 <!-- 数据源 -->
                 <div class="form-item">
                     <label class="form-label">
@@ -41,7 +41,7 @@
             </div>
 
             <!-- 数据库配置 (MySQL) -->
-            <div class="form-grid-2" id="databaseGroup">
+            <div class="grid grid-cols-2 mt-5" id="databaseGroup">
                 <div class="form-item">
                     <label class="form-label">源库<strong class="text-primary">*</strong></label>
                     <select name="sourceDatabase" id="sourceDatabase" class="form-control"></select>
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
-            <div class="form-grid-2" id="schemaGroup">
+            <div class="grid grid-cols-2 mt-5" id="schemaGroup">
                 <div class="form-item">
                     <label class="form-label">源Schema</label>
                     <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
@@ -65,7 +65,7 @@
             </div>
 
             <!-- 驱动名称和匹配相似表 -->
-            <div class="form-grid-2">
+            <div class="grid grid-cols-2 mt-5">
                 <div class="form-item">
                     <label class="form-label">名称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
@@ -89,24 +89,25 @@
             </div>
 
             <!-- 表映射关系 -->
-            <div class="form-grid-1">
+            <div class="grid mt-5">
                 <div class="form-item" id="tableGroups">
                     <label class="form-label">
                         表映射关系
                         <i class="fa fa-question-circle" title="适用于快速配置大量表映射关系场景"></i>
                     </label>
                     <div>
-                        <p class="text-gray-500">
+                        <textarea name="tableGroups" class="form-control" rows="10" placeholder="请输入表映射关系，每行一个映射..."></textarea>
+                        <label class="text-gray-500">
                             <span class="text-sm">数据源表|目标源表=源表字段A1*|目标字段A2*,源表字段B1|目标字段B2</span>
                             <i class="fa fa-question-circle" title="'|'表示映射关系，'='表示后面是表字段映射关系，有多个字段使用英文','拼接，'*'表示主键，如有多张表换行追加"></i>
-                            <a href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E6%89%B9%E9%87%8F%E9%85%8D%E7%BD%AE%E8%A1%A8%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"
+                            <a class="text-sm" href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E6%89%B9%E9%87%8F%E9%85%8D%E7%BD%AE%E8%A1%A8%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"
                                title="操作手册>批量配置表映射关系" target='_blank'>
                                 <i class="fa fa-external-link"></i>参考文档
                             </a>
-                        </p>
-                        <textarea name="tableGroups" class="form-control" rows="10" placeholder="请输入表映射关系，每行一个映射..."></textarea>
+                        </label>
                     </div>
                 </div>
+
             </div>
         </form>
     </div>
