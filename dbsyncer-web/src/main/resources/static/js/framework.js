@@ -2176,4 +2176,50 @@ function initMultiSelect(wrapperId, options) {
     
     // 初始化select值
     updateSelectValue();
+
+
+/**
+ * 自动匹配相似表名
+ * @param {string} sourceWrapperId - 源下拉框ID
+ * @param {string} targetWrapperId - 目标下拉框ID
+ */
+function autoMatchSimilarItems(sourceWrapperId, targetWrapperId) {
+    var $sourceWrapper = $('#' + sourceWrapperId);
+    var $targetWrapper = $('#' + targetWrapperId);
+
+    if (!$sourceWrapper.length || !$targetWrapper.length) return;
+
+    var $sourceCheckboxes = $sourceWrapper.find('.dbsyncer-multi-select-option input[type="checkbox"]:checked');
+    var $targetOptions = $targetWrapper.find('.dbsyncer-multi-select-option');
+
+    // 取消目标所有选中
+    $targetWrapper.find('input[type="checkbox"]').prop('checked', false);
+
+    // 遍历源选中项，匹配目标项
+    $sourceCheckboxes.each(function() {
+        var sourceValue = $(this).val();
+        // 优先精确匹配
+        var $exactMatch = $targetOptions.find('input[type="checkbox"][value="' + sourceValue + '"]');
+        if ($exactMatch.length) {
+            $exactMatch.prop('checked', true);
+        } else {
+            // 模糊匹配：找到包含相同单词的项
+            $targetOptions.each(function() {
+                var $targetCheckbox = $(this).find('input[type="checkbox"]');
+                var targetValue = $targetCheckbox.val();
+                if (targetValue && targetValue.toLowerCase().indexOf(sourceValue.toLowerCase()) > -1) {
+                    $targetCheckbox.prop('checked', true);
+                    return false; // 找到一个就退出
+                }
+            });
+        }
+    });
+
+    // 更新目标select值
+    var selectedValues = [];
+    $targetWrapper.find('input[type="checkbox"]:checked').each(function() {
+        selectedValues.push($(this).val());
+    });
+    $targetWrapper.find('select').val(selectedValues);
+}
 }
