@@ -8,30 +8,9 @@
         <!-- 数据源表选择器 -->
         <div class="lg:col-span-4 flex items-center gap-3 form-item">
             <label class="form-label">数据源表</label>
-            <div class="dbsyncer-multi-select" id="sourceTableWrapper">
-                <div class="dbsyncer-multi-select-trigger">
-                    <input type="text" class="dbsyncer-multi-select-search" placeholder="搜索表..." />
-                    <span class="dbsyncer-multi-select-arrow"><i class="fa fa-chevron-down"></i></span>
-                </div>
-                <div class="dbsyncer-multi-select-dropdown">
-                    <div class="dbsyncer-multi-select-actions">
-                        <button type="button" class="dbsyncer-multi-select-action-btn select-all">全选</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">取消全选</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">取消过滤</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">过滤</button>
-                    </div>
-                    <div class="dbsyncer-multi-select-options">
-                        <label th:each="t,s:${mapping?.sourceTable}" class="dbsyncer-multi-select-option">
-                            <input type="checkbox" th:value="${t?.name}" />
-                            <span th:text="${t?.name} + ' (' + ${t?.type} + ')'"></span>
-                        </label>
-                    </div>
-                </div>
-                <select id="sourceTable" style="display: none;" multiple="multiple">
-                    <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}"
-                            th:text="${t?.name} + ' ('+${t?.type}+')'"/>
-                </select>
-            </div>
+            <select id="source_table_select" class="form-control">
+                <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+            </select>
         </div>
 
         <div class="text-info items-center text-center">
@@ -41,30 +20,9 @@
         <!-- 目标源表选择器 -->
         <div class="lg:col-span-4 flex items-center gap-3 form-item">
             <label class="form-label">目标源表</label>
-            <div class="dbsyncer-multi-select" id="targetTableWrapper">
-                <div class="dbsyncer-multi-select-trigger">
-                    <input type="text" class="dbsyncer-multi-select-search" placeholder="搜索表..." />
-                    <span class="dbsyncer-multi-select-arrow"><i class="fa fa-chevron-down"></i></span>
-                </div>
-                <div class="dbsyncer-multi-select-dropdown">
-                    <div class="dbsyncer-multi-select-actions">
-                        <button type="button" class="dbsyncer-multi-select-action-btn select-all">全选</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">取消全选</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">取消过滤</button>
-                        <button type="button" class="dbsyncer-multi-select-action-btn">过滤</button>
-                    </div>
-                    <div class="dbsyncer-multi-select-options">
-                        <label th:each="t,s:${mapping?.targetTable}" class="dbsyncer-multi-select-option">
-                            <input type="checkbox" th:value="${t?.name}" />
-                            <span th:text="${t?.name} + ' (' + ${t?.type} + ')'"></span>
-                        </label>
-                    </div>
-                </div>
-                <select id="targetTable" style="display: none;" multiple="multiple">
-                    <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}"
-                            th:text="${t?.name} + ' ('+${t?.type}+')'"/>
-                </select>
-            </div>
+            <select id="target_table_select" class="form-control">
+                <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+            </select>
         </div>
     </div>
 
@@ -164,7 +122,43 @@
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
 
     <script>
+        function bindTableSelect(selector, onChange){
+            return selector.dbSelect({
+                type: 'multiple',
+                onSelect: function (data) {
+                    if (onChange) {
+                        onChange(data);
+                    }
+                },
+                defaultValue: [],// 默认选中
+                customButtons: [ // 最多2个自定义按钮
+                    {
+                        text: '取消过滤',
+                        callback: function(values) {
+                            console.log('取消过滤:', values);
+                        }
+                    },
+                    {
+                        text: '过滤',
+                        callback: function(values) {
+                            console.log('过滤:', values);
+                        }
+                    }
+                ],
+                onCustomButton: function(index, values, text) {  // 自定义按钮点击
+                    console.log('按钮索引:', index, '选中值:', values, '按钮文本:', text);
+                }
+            });
+        }
+
+        // 绑定下拉选择事件自动匹配相似表事件
         $(document).ready(function() {
+            let targetTableSelect = bindTableSelect($('#target_table_select'));
+            let sourceTableSelect = bindTableSelect($('#source_table_select'), function(data) {
+                console.log(data);
+                targetTableSelect.setValues([data]);
+            });
+
             let isUpdatingSelectAll = false;
             
             // 初始化全选复选框

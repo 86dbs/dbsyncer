@@ -2,10 +2,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content">
+<div th:fragment="content" id="mapping_increment" class="hidden">
     <!-- 增量策略选择 -->
-    <div class="grid grid-cols-4" id="mappingIncrementStrategyConfig">
-        <div class="radio-group">
+    <div class="grid grid-cols-4">
+        <div id="increment_strategy" class="radio-group">
             <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
             <label>日志</label>
             <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
@@ -98,7 +98,7 @@
     </div>
 
     <!-- 定时配置 -->
-    <div th:id="mappingIncrementStrategyQuartzConfig" class="hidden">
+    <div th:id="increment_quartz" class="hidden">
         <div th:replace="mapping/editIncrementQuartz :: content"></div>
     </div>
 

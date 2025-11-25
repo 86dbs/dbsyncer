@@ -24,6 +24,18 @@
  *         console.log('选中:', value, label);
  *     }
  * });
+ * // 获取 API 实例
+ * const radioGroup = $('#myRadioGroup').data('radioGroup');
+ * // 获取当前值
+ * const value = radioGroup.getValue();
+ * // 设置值
+ * radioGroup.setValue('full');
+ * // 禁用指定选项
+ * radioGroup.disable('fullToIncrement');
+ * // 启用所有选项
+ * radioGroup.enable();
+ * // 销毁组件
+ * radioGroup.destroy();
  * 
  * @example
  * // HTML 结构
@@ -64,7 +76,6 @@
             
             // 防止重复初始化
             if ($container.data('radioGroupInitialized')) {
-                console.log('[radioGroup] 已经初始化，跳过');
                 return;
             }
             $container.data('radioGroupInitialized', true);
@@ -91,9 +102,7 @@
             
             // 获取所有 radio 和对应的 label
             const $radios = $container.find('input[type="radio"]');
-            
             if ($radios.length === 0) {
-                console.warn('[radioGroup] 未找到 radio 元素');
                 return;
             }
             
@@ -114,7 +123,6 @@
                 const isChecked = $radio.prop('checked');
                 if (isChecked) {
                     $item.addClass('active');
-                    console.log('[radioGroup] 初始选中项:', $radio.val());
                 }
                 
                 // 创建标签内容
@@ -140,7 +148,6 @@
                 if ($checked.length) {
                     $container.find('.radio-group-item').removeClass('active');
                     $checked.closest('.radio-group-item').addClass('active');
-                    console.log('[radioGroup] 确认选中状态已应用');
                 }
             }, 0);
             
@@ -148,17 +155,11 @@
             $container.on('click', '.radio-group-item:not(.disabled)', function() {
                 const $item = $(this);
                 const $radio = $item.find('input[type="radio"]');
-                
-                console.log('[radioGroup] 点击选项:', $radio.val());
-                
                 // 取消所有选中状态
                 $container.find('.radio-group-item').removeClass('active');
-                
                 // 设置当前项为选中
                 $item.addClass('active');
                 $radio.prop('checked', true).trigger('change');
-                
-                console.log('[radioGroup] active类已添加，当前active数量:', $container.find('.radio-group-item.active').length);
             });
             
             // 监听 radio 变化事件（支持外部程序直接操作 radio）
