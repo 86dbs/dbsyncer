@@ -74,6 +74,7 @@ public class MySQLStorageService extends AbstractStorageService {
         config.setUsername(StringUtil.replace(username.trim(), "\t", StringUtil.EMPTY));
         config.setPassword(StringUtil.replace(password.trim(), "\t", StringUtil.EMPTY));
         config.setDriverClassName(properties.getProperty("dbsyncer.storage.mysql.driver-class-name"));
+        config.setUrl(url);
         logger.info("url:{}", url);
         database = DatabaseUtil.getDatabaseName(url);
         connectorInstance = new DatabaseConnectorInstance(config);
