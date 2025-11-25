@@ -19,7 +19,7 @@ SQL Server 增量同步基于 **CDC (Change Data Capture)** 机制实现，采�
 | `LsnPuller`         | 全局 LSN 轮询器，单例模式   | `org.dbsyncer.connector.sqlserver.cdc.LsnPuller`         |
 | `Worker`            | 工作线程，处理变更数据       | `SqlServerListener.Worker`                               |
 | `Lsn`               | LSN 值对象，表示日志序列号   | `org.dbsyncer.connector.sqlserver.cdc.Lsn`               |
-| `CDCEvent`          | CDC 事件封装          | `org.dbsyncer.connector.sqlserver.model.CDCEvent`        |
+| `CDCEvent`          | CDC 事件封装          | `org.dbsyncer.connector.sqlserver.model.DMLEvent`        |
 
 ## 二、初始化流程
 

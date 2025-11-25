@@ -2,6 +2,7 @@ package org.dbsyncer.web.integration;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.TableGroup;
@@ -56,6 +57,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
     @Autowired
     private MappingService mappingService;
+
+    @Autowired
+    private TableGroupService tableGroupService;
 
     @Autowired
     private ProfileComponent profileComponent;
@@ -165,27 +169,43 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
     @After
     public void tearDown() {
-        // 停止并清理Mapping
+        // 停止并清理Mapping（必须先停止并删除Mapping，才能删除Connector）
         try {
             if (mappingId != null) {
+                // 先停止Mapping
                 try {
                     mappingService.stop(mappingId);
+                    // 等待停止完成
+                    Thread.sleep(1000);
                 } catch (Exception e) {
-                    // 可能已经停止，忽略
+                    logger.debug("停止Mapping失败（可能未启动）", e);
                 }
-                mappingService.remove(mappingId);
+                // 删除Mapping
+                try {
+                    mappingService.remove(mappingId);
+                } catch (Exception e) {
+                    logger.warn("删除Mapping失败: {}", e.getMessage());
+                }
             }
         } catch (Exception e) {
             logger.warn("清理Mapping失败", e);
         }
 
-        // 清理Connector
+        // 清理Connector（必须在Mapping删除后）
         try {
             if (sourceConnectorId != null) {
-                connectorService.remove(sourceConnectorId);
+                try {
+                    connectorService.remove(sourceConnectorId);
+                } catch (Exception e) {
+                    logger.warn("删除源Connector失败: {}", e.getMessage());
+                }
             }
             if (targetConnectorId != null) {
-                connectorService.remove(targetConnectorId);
+                try {
+                    connectorService.remove(targetConnectorId);
+                } catch (Exception e) {
+                    logger.warn("删除目标Connector失败: {}", e.getMessage());
+                }
             }
         } catch (Exception e) {
             logger.warn("清理Connector失败", e);
@@ -262,14 +282,24 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         }
         Map<String, String> params = new HashMap<>();
         params.put("name", name);
-        params.put("connectorType", determineConnectorType(config));
+        String connectorType = determineConnectorType(config);
+        params.put("connectorType", connectorType);
         params.put("url", config.getUrl());
         params.put("username", config.getUsername());
         params.put("password", config.getPassword());
         params.put("driverClassName", config.getDriverClassName());
-        if (config.getSchema() != null) {
-            params.put("schema", config.getSchema());
+        
+        // 设置 schema：SQL Server 需要 schema（默认为 dbo），MySQL 可以为空
+        String schema = config.getSchema();
+        if (schema == null || schema.trim().isEmpty()) {
+            if ("SqlServer".equals(connectorType)) {
+                schema = "dbo";  // SQL Server 默认 schema
+            }
         }
+        if (schema != null && !schema.trim().isEmpty()) {
+            params.put("schema", schema);
+        }
+        
         try {
             return connectorService.add(params);
         } catch (Exception e) {
@@ -286,36 +316,37 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         params.put("name", "SQL Server到MySQL测试Mapping");
         params.put("sourceConnectorId", sourceConnectorId);
         params.put("targetConnectorId", targetConnectorId);
-        params.put("model", "1"); // 增量同步
+        params.put("model", "increment"); // 增量同步（使用 "increment" 而不是 "1"）
+        params.put("incrementStrategy", "Log"); // 增量策略：日志监听（SQL Server 使用日志监听）
         params.put("enableDDL", "true");
         params.put("enableInsert", "true");
         params.put("enableUpdate", "true");
         params.put("enableDelete", "true");
 
-        // 创建TableGroup JSON
-        Map<String, Object> tableGroup = new HashMap<>();
-        tableGroup.put("sourceTable", "ddlTestEmployee");
-        tableGroup.put("targetTable", "ddlTestEmployee");
-
-        List<Map<String, String>> fieldMappings = new ArrayList<>();
-        Map<String, String> idMapping = new HashMap<>();
-        idMapping.put("source", "id");
-        idMapping.put("target", "id");
-        fieldMappings.add(idMapping);
-
-        Map<String, String> nameMapping = new HashMap<>();
-        nameMapping.put("source", "first_name");
-        nameMapping.put("target", "first_name");
-        fieldMappings.add(nameMapping);
-
-        tableGroup.put("fieldMapping", fieldMappings);
-
-        List<Map<String, Object>> tableGroups = new ArrayList<>();
-        tableGroups.add(tableGroup);
-
-        params.put("tableGroups", org.dbsyncer.common.util.JsonUtil.objToJson(tableGroups));
-
-        return mappingService.add(params);
+        // 创建Mapping（不传入 tableGroups，稍后单独创建 TableGroup）
+        String mappingId = mappingService.add(params);
+        
+        // 创建后需要编辑一次以正确设置增量同步配置（因为 checkAddConfigModel 默认是全量同步）
+        Map<String, String> editParams = new HashMap<>();
+        editParams.put("id", mappingId);
+        editParams.put("model", "increment"); // 使用 "increment" 而不是 "1"
+        editParams.put("incrementStrategy", "Log");
+        editParams.put("enableDDL", "true");
+        editParams.put("enableInsert", "true");
+        editParams.put("enableUpdate", "true");
+        editParams.put("enableDelete", "true");
+        mappingService.edit(editParams);
+        
+        // 直接使用 tableGroupService.add() 创建 TableGroup
+        // 格式：id|id,first_name|first_name
+        Map<String, String> tableGroupParams = new HashMap<>();
+        tableGroupParams.put("mappingId", mappingId);
+        tableGroupParams.put("sourceTable", "ddlTestEmployee");
+        tableGroupParams.put("targetTable", "ddlTestEmployee");
+        tableGroupParams.put("fieldMappings", "id|id,first_name|first_name");
+        tableGroupService.add(tableGroupParams);
+        
+        return mappingId;
     }
 
     /**

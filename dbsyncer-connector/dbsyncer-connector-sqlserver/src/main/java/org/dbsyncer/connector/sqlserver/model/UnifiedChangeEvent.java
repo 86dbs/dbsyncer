@@ -2,6 +2,8 @@ package org.dbsyncer.connector.sqlserver.model;
 
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 
+import java.util.List;
+
 /**
  * 统一变更事件模型，用于合并 DDL 和 DML 事件
  */
@@ -14,7 +16,13 @@ public class UnifiedChangeEvent {
     private String ddlCommand;
 
     // DML 相关
-    private CDCEvent cdcEvent;
+    private DMLEvent DMLEvent;
+    
+    // DML 事件的列名信息（用于字段映射）
+    // 注意：DML 事件中的 row 数据顺序对应 CDC 捕获的列名（旧列名）
+    // 如果 sp_rename 之后立即重新启用 CDC，TableGroup 的列信息会更新为新列名
+    // 但 row 数据仍然对应旧列名顺序，需要保存旧列名信息以确保字段映射正确
+    private List<String> columnNames;
 
     public Lsn getLsn() {
         return lsn;
@@ -48,12 +56,20 @@ public class UnifiedChangeEvent {
         this.ddlCommand = ddlCommand;
     }
 
-    public CDCEvent getCdcEvent() {
-        return cdcEvent;
+    public DMLEvent getCdcEvent() {
+        return DMLEvent;
     }
 
-    public void setCdcEvent(CDCEvent cdcEvent) {
-        this.cdcEvent = cdcEvent;
+    public void setCdcEvent(DMLEvent DMLEvent) {
+        this.DMLEvent = DMLEvent;
+    }
+
+    public List<String> getColumnNames() {
+        return columnNames;
+    }
+
+    public void setColumnNames(List<String> columnNames) {
+        this.columnNames = columnNames;
     }
 }
 
