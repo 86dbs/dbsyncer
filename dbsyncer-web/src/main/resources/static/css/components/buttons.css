@@ -36,7 +36,6 @@
 .btn-sm {
   padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-xs);
-  min-height: 24px;
 }
 .btn-lg {
   padding: var(--spacing-md) var(--spacing-lg);
