@@ -34,5 +34,4 @@ public class IndexController {
         return RestResult.restSuccess(appConfigService.getVersionInfo(authentication.getName()));
     }
 
-
 }

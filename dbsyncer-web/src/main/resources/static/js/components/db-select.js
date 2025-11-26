@@ -161,17 +161,22 @@
             if (config.type === 'single') {
                 selectedValues = [value];
                 $options.find('label').removeClass('selected');
+                $options.find('input[type="radio"]').prop('checked', false);
                 $option.addClass('selected');
+                $option.find('input[type="radio"]').prop('checked', true);
                 // 单选时自动关闭下拉菜单
                 closeDropdown();
             } else {
                 const index = selectedValues.indexOf(value);
+                const $checkbox = $option.find('input[type="checkbox"]');
                 if (index > -1) {
                     selectedValues.splice(index, 1);
                     $option.removeClass('selected');
+                    $checkbox.prop('checked', false);
                 } else {
                     selectedValues.push(value);
                     $option.addClass('selected');
+                    $checkbox.prop('checked', true);
                 }
             }
 
@@ -411,16 +416,24 @@
         // 如果没有设置默认值，检查是否有 selected 属性或默认选中第一个
         if (selectedValues.length === 0 && $select.is('select')) {
             // 检查是否有 selected 属性的选项
-            const $selectedOption = $select.find('option:selected');
-            if ($selectedOption.length && $selectedOption.val()) {
-                selectedValues = [$selectedOption.val()];
+            const $selectedOptions = $select.find('option:selected');
+            if ($selectedOptions.length > 0) {
+                selectedValues = [];
+                $selectedOptions.each(function() {
+                    const val = $(this).val();
+                    if (val && val !== '') {
+                        selectedValues.push(val);
+                    }
+                });
             } else {
-                // 没有 selected 属性，默认选中第一个非空选项
-                const $firstOption = $select.find('option').filter(function() {
-                    return $(this).val() && $(this).val() !== '';
-                }).first();
-                if ($firstOption.length) {
-                    selectedValues = [$firstOption.val()];
+                // 没有 selected 属性，单选模式下默认选中第一个非空选项
+                if (config.type === 'single') {
+                    const $firstOption = $select.find('option').filter(function() {
+                        return $(this).val() && $(this).val() !== '';
+                    }).first();
+                    if ($firstOption.length) {
+                        selectedValues = [$firstOption.val()];
+                    }
                 }
             }
             // 重新更新显示
@@ -437,8 +450,15 @@
             $component: $component,
             getValues: function() { return selectedValues; },
             setValues: function(values) {
-                selectedValues = Array.isArray(values) ? values : [values];
+                const inputValues = Array.isArray(values) ? values : [values];
+                // 过滤掉无效值（只保留在 config.data 中存在的值）
+                selectedValues = inputValues.filter(function(value) {
+                    return config.data.some(function(item) {
+                        return item.value === value;
+                    });
+                });
                 updateDisplay();
+                // 无论下拉菜单是否打开，都更新选项状态
                 renderOptions($searchInput.val());
                 triggerSelectEvent();
                 return this;
