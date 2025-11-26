@@ -1,18 +1,3 @@
-/**
- * Framework.js - 核心框架文件
- * 
- * 组件已拆分到 js/components/ 目录，请在 HTML 中按以下顺序引入：
- * 1. /js/components/notify.js          - 通知/Toast 组件（bootGrowl）
- * 2. /js/components/confirm.js         - 确认对话框组件（showConfirm）
- * 3. /js/components/pagination-manager.js - 分页管理器（PaginationManager）
- * 4. /js/components/db-select.js       - 下拉选择组件（$.fn.dbSelect）
- * 5. /js/components/multi-select.js     - 多选下拉框（initMultiSelect）
- * 6. /js/components/qrcode-popover.js   - 二维码悬浮提示（initQRCodePopover）
- * 7. /js/components/tags-input.js      - 标签输入框（initMultipleInputTags）
- * 8. /js/components/file-upload.js      - 文件上传组件（initFileUpload）
- * 9. /js/framework.js                   - 核心框架（本文件）
- */
-
 // ******************* 初始化 *****************************
 const $location = (window.location + '').split('/');
 const $path = document.location.pathname;

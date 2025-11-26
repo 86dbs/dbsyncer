@@ -12,11 +12,7 @@
  * 
  * @example
  * // 基本用法
- * $('.radio-group').radioGroup();
- * 
- * @example
- * // 带配置的用法
- * $('.radio-group').radioGroup({
+ * const radioGroup = $('#myRadioGroup').radioGroup({
  *     theme: 'success',
  *     size: 'lg',
  *     bordered: true,
@@ -24,22 +20,14 @@
  *         console.log('选中:', value, label);
  *     }
  * });
- * // 获取 API 实例
- * const radioGroup = $('#myRadioGroup').data('radioGroup');
  * // 获取当前值
  * const value = radioGroup.getValue();
  * // 设置值
  * radioGroup.setValue('full');
- * // 禁用指定选项
- * radioGroup.disable('fullToIncrement');
- * // 启用所有选项
- * radioGroup.enable();
- * // 销毁组件
- * radioGroup.destroy();
  * 
  * @example
  * // HTML 结构
- * <div class="radio-group">
+ * <div class="radio-group" id="myRadioGroup">
  *     <input type="radio" name="mode" value="full" checked />
  *     <label>全量</label>
  *     <input type="radio" name="mode" value="increment" />
@@ -62,6 +50,8 @@
     }
     
     $.fn.radioGroup = function(options) {
+        options = options || {};
+        
         // 默认配置
         const config = $.extend({
             theme: 'primary',
@@ -71,6 +61,20 @@
             onChange: null
         }, options);
         
+        // 如果只有一个元素，直接返回 API 实例
+        if (this.length === 1) {
+            const $container = $(this[0]);
+            
+            // 防止重复初始化，直接返回已有的 API 实例
+            if ($container.data('radioGroupInitialized')) {
+                return $container.data('radioGroup');
+            }
+            $container.data('radioGroupInitialized', true);
+            
+            return initRadioGroup($container, config);
+        }
+        
+        // 多个元素，返回 jQuery 对象（向后兼容）
         return this.each(function() {
             const $container = $(this);
             
@@ -80,190 +84,197 @@
             }
             $container.data('radioGroupInitialized', true);
             
-            // 添加主题和尺寸类
-            if (config.theme && config.theme !== 'primary') {
-                $container.addClass('radio-group-' + config.theme);
-            }
-            if (config.size && config.size !== 'md') {
-                $container.addClass('radio-group-' + config.size);
-            }
-            
-            // 添加布局类
-            if (config.layout === 'vertical') {
-                $container.addClass('radio-group-vertical');
-            } else if (config.layout === 'inline') {
-                $container.addClass('radio-group-inline');
-            }
-            
-            // 添加边框样式
-            if (config.bordered) {
-                $container.addClass('radio-group-bordered');
-            }
-            
-            // 获取所有 radio 和对应的 label
-            const $radios = $container.find('input[type="radio"]');
-            if ($radios.length === 0) {
-                return;
-            }
-            
-            // 包装每个 radio 和 label
-            $radios.each(function() {
-                const $radio = $(this);
-                const $label = $radio.next('label');
-                
-                // 创建包装元素
-                const $item = $('<div class="radio-group-item"></div>');
-                
-                // 添加禁用状态
-                if ($radio.prop('disabled')) {
-                    $item.addClass('disabled');
-                }
-                
-                // 添加选中状态
-                const isChecked = $radio.prop('checked');
-                if (isChecked) {
-                    $item.addClass('active');
-                }
-                
-                // 创建标签内容
-                const labelText = $label.length ? $label.text() : $radio.val();
-                const $itemLabel = $('<span class="radio-group-item-label">' + escapeHtml(labelText) + '</span>');
-                
-                // 将 radio 和标签移入包装元素
-                $item.append($radio);
-                $item.append($itemLabel);
-                
-                // 移除原始 label（已经提取文本）
-                if ($label.length) {
-                    $label.remove();
-                }
-                
-                // 将包装元素插入容器
-                $container.append($item);
-            });
-            
-            // 确保初始选中状态正确应用
-            setTimeout(function() {
-                const $checked = $container.find('input[type="radio"]:checked');
-                if ($checked.length) {
-                    $container.find('.radio-group-item').removeClass('active');
-                    $checked.closest('.radio-group-item').addClass('active');
-                }
-            }, 0);
-            
-            // 事件委托：点击项目时选中对应的 radio
-            $container.on('click', '.radio-group-item:not(.disabled)', function() {
-                const $item = $(this);
-                const $radio = $item.find('input[type="radio"]');
-                // 取消所有选中状态
-                $container.find('.radio-group-item').removeClass('active');
-                // 设置当前项为选中
-                $item.addClass('active');
-                $radio.prop('checked', true).trigger('change');
-            });
-            
-            // 监听 radio 变化事件（支持外部程序直接操作 radio）
-            $container.on('change', 'input[type="radio"]', function() {
-                const $radio = $(this);
-                const $item = $radio.closest('.radio-group-item');
-                
-                // 更新所有项的选中状态
-                $container.find('.radio-group-item').removeClass('active');
-                $item.addClass('active');
-                
-                // 触发回调
-                if (config.onChange && typeof config.onChange === 'function') {
-                    const value = $radio.val();
-                    const label = $item.find('.radio-group-item-label').text();
-                    config.onChange(value, label);
-                }
-            });
-            
-            // 键盘导航支持
-            $container.on('keydown', 'input[type="radio"]', function(e) {
-                const $current = $(this).closest('.radio-group-item');
-                let $target = null;
-                
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    // 下一项
-                    $target = $current.nextAll('.radio-group-item:not(.disabled)').first();
-                    if (!$target.length) {
-                        $target = $container.find('.radio-group-item:not(.disabled)').first();
-                    }
-                    e.preventDefault();
-                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    // 上一项
-                    $target = $current.prevAll('.radio-group-item:not(.disabled)').first();
-                    if (!$target.length) {
-                        $target = $container.find('.radio-group-item:not(.disabled)').last();
-                    }
-                    e.preventDefault();
-                }
-                
-                if ($target && $target.length) {
-                    $target.find('input[type="radio"]').focus().click();
-                }
-            });
-            
-            // API 方法
-            const api = {
-                getValue: function() {
-                    return $container.find('input[type="radio"]:checked').val();
-                },
-                setValue: function(value) {
-                    const $radio = $container.find('input[type="radio"][value="' + value + '"]');
-                    if ($radio.length && !$radio.prop('disabled')) {
-                        $radio.trigger('click');
-                    }
-                    return this;
-                },
-                disable: function(value) {
-                    if (value === undefined) {
-                        // 禁用所有
-                        $container.find('.radio-group-item').addClass('disabled');
-                        $container.find('input[type="radio"]').prop('disabled', true);
-                    } else {
-                        // 禁用指定值
-                        const $radio = $container.find('input[type="radio"][value="' + value + '"]');
-                        $radio.prop('disabled', true);
-                        $radio.closest('.radio-group-item').addClass('disabled');
-                    }
-                    return this;
-                },
-                enable: function(value) {
-                    if (value === undefined) {
-                        // 启用所有
-                        $container.find('.radio-group-item').removeClass('disabled');
-                        $container.find('input[type="radio"]').prop('disabled', false);
-                    } else {
-                        // 启用指定值
-                        const $radio = $container.find('input[type="radio"][value="' + value + '"]');
-                        $radio.prop('disabled', false);
-                        $radio.closest('.radio-group-item').removeClass('disabled');
-                    }
-                    return this;
-                },
-                destroy: function() {
-                    $container.off('click change keydown');
-                    $container.find('.radio-group-item').each(function() {
-                        const $item = $(this);
-                        const $radio = $item.find('input[type="radio"]');
-                        const $label = $('<label>' + $item.find('.radio-group-item-label').text() + '</label>');
-                        $radio.insertBefore($item);
-                        $label.insertAfter($radio);
-                        $item.remove();
-                    });
-                    $container.removeData('radioGroupInitialized');
-                    $container.removeClass(function(index, className) {
-                        return (className.match(/\bradio-group-\S+/g) || []).join(' ');
-                    });
-                    return this;
-                }
-            };
-            
-            // 保存 API 到 data
-            $container.data('radioGroup', api);
+            initRadioGroup($container, config);
         });
     };
+    
+    // 初始化 radioGroup 的内部函数
+    function initRadioGroup($container, config) {
+        // 添加主题和尺寸类
+        if (config.theme && config.theme !== 'primary') {
+            $container.addClass('radio-group-' + config.theme);
+        }
+        if (config.size && config.size !== 'md') {
+            $container.addClass('radio-group-' + config.size);
+        }
+        
+        // 添加布局类
+        if (config.layout === 'vertical') {
+            $container.addClass('radio-group-vertical');
+        } else if (config.layout === 'inline') {
+            $container.addClass('radio-group-inline');
+        }
+        
+        // 添加边框样式
+        if (config.bordered) {
+            $container.addClass('radio-group-bordered');
+        }
+        
+        // 获取所有 radio 和对应的 label
+        const $radios = $container.find('input[type="radio"]');
+        if ($radios.length === 0) {
+            return null;
+        }
+        
+        // 包装每个 radio 和 label
+        $radios.each(function() {
+            const $radio = $(this);
+            const $label = $radio.next('label');
+            
+            // 创建包装元素
+            const $item = $('<div class="radio-group-item"></div>');
+            
+            // 添加禁用状态
+            if ($radio.prop('disabled')) {
+                $item.addClass('disabled');
+            }
+            
+            // 添加选中状态
+            const isChecked = $radio.prop('checked');
+            if (isChecked) {
+                $item.addClass('active');
+            }
+            
+            // 创建标签内容
+            const labelText = $label.length ? $label.text() : $radio.val();
+            const $itemLabel = $('<span class="radio-group-item-label">' + escapeHtml(labelText) + '</span>');
+            
+            // 将 radio 和标签移入包装元素
+            $item.append($radio);
+            $item.append($itemLabel);
+            
+            // 移除原始 label（已经提取文本）
+            if ($label.length) {
+                $label.remove();
+            }
+            
+            // 将包装元素插入容器
+            $container.append($item);
+        });
+        
+        // 确保初始选中状态正确应用
+        setTimeout(function() {
+            const $checked = $container.find('input[type="radio"]:checked');
+            if ($checked.length) {
+                $container.find('.radio-group-item').removeClass('active');
+                $checked.closest('.radio-group-item').addClass('active');
+            }
+        }, 0);
+        
+        // 事件委托：点击项目时选中对应的 radio
+        $container.on('click', '.radio-group-item:not(.disabled)', function() {
+            const $item = $(this);
+            const $radio = $item.find('input[type="radio"]');
+            // 取消所有选中状态
+            $container.find('.radio-group-item').removeClass('active');
+            // 设置当前项为选中
+            $item.addClass('active');
+            $radio.prop('checked', true).trigger('change');
+        });
+        
+        // 监听 radio 变化事件（支持外部程序直接操作 radio）
+        $container.on('change', 'input[type="radio"]', function() {
+            const $radio = $(this);
+            const $item = $radio.closest('.radio-group-item');
+            
+            // 更新所有项的选中状态
+            $container.find('.radio-group-item').removeClass('active');
+            $item.addClass('active');
+            
+            // 触发回调
+            if (config.onChange && typeof config.onChange === 'function') {
+                const value = $radio.val();
+                const label = $item.find('.radio-group-item-label').text();
+                config.onChange(value, label);
+            }
+        });
+        
+        // 键盘导航支持
+        $container.on('keydown', 'input[type="radio"]', function(e) {
+            const $current = $(this).closest('.radio-group-item');
+            let $target = null;
+            
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                // 下一项
+                $target = $current.nextAll('.radio-group-item:not(.disabled)').first();
+                if (!$target.length) {
+                    $target = $container.find('.radio-group-item:not(.disabled)').first();
+                }
+                e.preventDefault();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                // 上一项
+                $target = $current.prevAll('.radio-group-item:not(.disabled)').first();
+                if (!$target.length) {
+                    $target = $container.find('.radio-group-item:not(.disabled)').last();
+                }
+                e.preventDefault();
+            }
+            
+            if ($target && $target.length) {
+                $target.find('input[type="radio"]').focus().click();
+            }
+        });
+        
+        // API 方法
+        const api = {
+            getValue: function() {
+                return $container.find('input[type="radio"]:checked').val();
+            },
+            setValue: function(value) {
+                const $radio = $container.find('input[type="radio"][value="' + value + '"]');
+                if ($radio.length && !$radio.prop('disabled')) {
+                    $radio.trigger('click');
+                }
+                return this;
+            },
+            disable: function(value) {
+                if (value === undefined) {
+                    // 禁用所有
+                    $container.find('.radio-group-item').addClass('disabled');
+                    $container.find('input[type="radio"]').prop('disabled', true);
+                } else {
+                    // 禁用指定值
+                    const $radio = $container.find('input[type="radio"][value="' + value + '"]');
+                    $radio.prop('disabled', true);
+                    $radio.closest('.radio-group-item').addClass('disabled');
+                }
+                return this;
+            },
+            enable: function(value) {
+                if (value === undefined) {
+                    // 启用所有
+                    $container.find('.radio-group-item').removeClass('disabled');
+                    $container.find('input[type="radio"]').prop('disabled', false);
+                } else {
+                    // 启用指定值
+                    const $radio = $container.find('input[type="radio"][value="' + value + '"]');
+                    $radio.prop('disabled', false);
+                    $radio.closest('.radio-group-item').removeClass('disabled');
+                }
+                return this;
+            },
+            destroy: function() {
+                $container.off('click change keydown');
+                $container.find('.radio-group-item').each(function() {
+                    const $item = $(this);
+                    const $radio = $item.find('input[type="radio"]');
+                    const $label = $('<label>' + $item.find('.radio-group-item-label').text() + '</label>');
+                    $radio.insertBefore($item);
+                    $label.insertAfter($radio);
+                    $item.remove();
+                });
+                $container.removeData('radioGroupInitialized');
+                $container.removeClass(function(index, className) {
+                    return (className.match(/\bradio-group-\S+/g) || []).join(' ');
+                });
+                return this;
+            }
+        };
+        
+        // 保存 API 到 data
+        $container.data('radioGroup', api);
+        
+        return api;
+    }
     
 })(jQuery);

@@ -3,13 +3,19 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
+    <form id="mappingModifyForm" method="post">
     <div class="card-header">
         <div class="grid grid-cols-6 items-center">
             <div class="lg:col-span-2"></div>
             <div class="lg:col-span-2 card-title text-center">
-                <span id="mappingModifyName" class="text-xxl">[[${mapping?.name}]]</span>
+                <span id="mapping_name_modify" class="text-xxl">[[${mapping?.name}]]</span>
                 <i class="fa fa-edit text-info text-xl cursor-pointer" th:title="点击修改名称" th:onclick="mappingModifyName()"></i>
                 <p class="card-subtitle">[[${mapping?.id}]]</p>
+                <!-- 隐藏表单值 -->
+                <div class="hidden">
+                    <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                    <input name="name" type="text" th:value="${mapping?.name}"/>
+                </div>
             </div>
             <div class="lg:col-span-2"></div>
         </div>
@@ -39,7 +45,7 @@
 
         <!-- 同步模式选择 -->
         <div class="flex items-center justify-between mt-4">
-            <div class="radio-group">
+            <div id="mapping_model" class="radio-group">
                 <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" />
                 <label>全量</label>
                 <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
@@ -52,7 +58,7 @@
                 <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
                     <i class="fa fa-save"></i> 保存
                 </button>
-                <button id="mappingBackBtn" type="button" class="btn btn-outline">
+                <button id="mappingBackBtn" type="button" class="btn btn-outline" onclick="backIndexPage()">
                     <i class="fa fa-reply"></i> 返回
                 </button>
             </div>
@@ -84,123 +90,10 @@
         <div th:replace="mapping/editPlugin :: content"></div>
 
     </div>
+    </form>
 </div>
 
-<script>
-/**
- * 修改驱动名称
- */
-function mappingModifyName() {
-    const $name = $("#mappingModifyName");
-    const tmp = $name.text();
-    $name.text("");
-    $name.append("<input type='text'/>");
-    const $input = $name.find("input");
-    $input.focus().val(tmp);
-    $input.blur(function() {
-        $name.text($(this).val());
-        $("#mappingModifyForm input[name='name']").val($(this).val());
-        $input.unbind();
-    });
-}
-
-/**
- * 绑定表关系点击事件
- */
-function bindMappingTableGroupListClick() {
-    const $tableGroupList = $("#tableGroupList");
-    $tableGroupList.unbind("click");
-    $tableGroupList.find("tr").bind('click', function () {
-        // 动态加载表组编辑页面
-        if (typeof doLoader === 'function') {
-            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
-        }
-    });
-
-    // 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
-    const rows = $tableGroupList.find("tr");
-    rows.each(function() {
-        const row = $(this)[0];
-        row.setAttribute('draggable', 'true');
-
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragend', handleDragEnd);
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('dragleave', handleDragLeave);
-        row.addEventListener('drop', handleDrop);
-    });
-
-    let dragSrcEl = null;
-
-    function handleDragStart(e) {
-        dragSrcEl = this;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', this.innerHTML);
-        this.classList.add('dragging');
-    }
-
-    function handleDragEnd(e) {
-        this.classList.remove('dragging');
-        const rows = $tableGroupList.find('tr');
-        rows.removeClass('drag-over');
-
-        // 更新排序
-        const newData = [];
-        rows.each(function () {
-            newData.push($(this).attr('id'));
-        });
-        $("#sortedTableGroupIds").val(newData.join('|'));
-    }
-
-    function handleDragOver(e) {
-        if (e.preventDefault) {
-            e.preventDefault();
-        }
-        e.dataTransfer.dropEffect = 'move';
-        return false;
-    }
-
-    function handleDragLeave(e) {
-        this.classList.remove('drag-over');
-    }
-
-    function handleDrop(e) {
-        if (e.stopPropagation) {
-            e.stopPropagation();
-        }
-
-        if (dragSrcEl !== this) {
-            const srcIndex = $(dragSrcEl).index();
-            const destIndex = $(this).index();
-
-            if (srcIndex < destIndex) {
-                $(this).after(dragSrcEl);
-            } else {
-                $(this).before(dragSrcEl);
-            }
-        }
-
-        this.classList.remove('drag-over');
-        return false;
-    }
-}
-
-/**
- * 初始化同步模式单选按钮组
- */
-$(document).ready(function() {
-    $('.radio-group').radioGroup({
-        theme: 'info',
-        size: 'md',
-        onChange: function(value, label) {
-            console.log('同步模式已切换:', label, '(值:', value, ')');
-        }
-    });
-});
-
-</script>
 <script th:src="@{/js/mapping/edit.js}"></script>
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
-<script th:src="@{/js/mapping/editIncrement.js}"></script>
 <script th:src="@{/js/mapping/editPlugin.js}"></script>
 </html>

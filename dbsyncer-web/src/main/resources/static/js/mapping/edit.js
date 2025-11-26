@@ -45,7 +45,7 @@ function bindIncrementConfigChange(){
         onChange: function(value, label) {
             showIncrementConfig(value);
         }
-    }).data('radioGroup');
+    });
     // 渲染选择radio配置
     showIncrementConfig(incrementStrategy.getValue());
 }
