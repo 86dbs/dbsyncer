@@ -72,12 +72,12 @@
 
 <script type="text/javascript">
     // 绑定多值输入框事件
-    DBSyncerTheme.initMultipleInputTags();
+    initMultipleInputTags();
 
     //保存
     $("#userSubmitBtn").on('click', function () {
         const $form = $("#user-form-add");
-        if (!DBSyncerTheme.validateForm($form)) {
+        if (!validateForm($form)) {
             return;
         }
 

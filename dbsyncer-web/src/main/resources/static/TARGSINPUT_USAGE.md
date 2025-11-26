@@ -54,13 +54,8 @@
 
 ```javascript
 $(function () {
-    // 方式 1: 直接调用全局函数
+    // 直接调用全局函数
     initMultipleInputTags();
-    
-    // 方式 2: 通过 DBSyncerTheme 命名空间调用
-    if (window.DBSyncerTheme && DBSyncerTheme.initMultipleInputTags) {
-        DBSyncerTheme.initMultipleInputTags();
-    }
 });
 ```
 

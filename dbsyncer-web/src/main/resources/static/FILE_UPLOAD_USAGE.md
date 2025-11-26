@@ -44,32 +44,30 @@
 
 ```javascript
 $(function() {
-    if (window.DBSyncerTheme && DBSyncerTheme.initFileUpload) {
-        var uploader = DBSyncerTheme.initFileUpload('#myUploader', {
-            uploadUrl: '/api/upload',
-            accept: ['.json', '.xlsx', '.csv'],
-            maxFiles: 10,
-            maxSize: 50 * 1024 * 1024, // 50MB
-            autoUpload: true, // 选择后自动上传
-            onSuccess: function(file, response) {
-                console.log('上传成功：', file.name);
-                DBSyncerTheme.notify({ 
-                    message: '文件上传成功！', 
-                    type: 'success' 
-                });
-            },
-            onError: function(file, error) {
-                console.error('上传失败：', file.name, error);
-                DBSyncerTheme.notify({ 
-                    message: '上传失败：' + error, 
-                    type: 'danger' 
-                });
-            },
-            onProgress: function(file, event) {
-                console.log('上传进度：', file.name, file.progress + '%');
-            }
-        });
-    }
+    var uploader = initFileUpload('#myUploader', {
+        uploadUrl: '/api/upload',
+        accept: ['.json', '.xlsx', '.csv'],
+        maxFiles: 10,
+        maxSize: 50 * 1024 * 1024, // 50MB
+        autoUpload: true, // 选择后自动上传
+        onSuccess: function(file, response) {
+            console.log('上传成功：', file.name);
+            notify({ 
+                message: '文件上传成功！', 
+                type: 'success' 
+            });
+        },
+        onError: function(file, error) {
+            console.error('上传失败：', file.name, error);
+            notify({ 
+                message: '上传失败：' + error, 
+                type: 'danger' 
+            });
+        },
+        onProgress: function(file, event) {
+            console.log('上传进度：', file.name, file.progress + '%');
+        }
+    });
 });
 ```
 
@@ -91,7 +89,7 @@ $(function() {
 初始化后返回的 uploader 实例提供以下方法：
 
 ```javascript
-var uploader = DBSyncerTheme.initFileUpload('#myUploader', options);
+var uploader = initFileUpload('#myUploader', options);
 
 // 获取所有文件列表
 var files = uploader.getFiles();
@@ -141,7 +139,7 @@ files: [File, File, ...]
 ### 示例 1：图片上传
 
 ```javascript
-DBSyncerTheme.initFileUpload('#imageUploader', {
+initFileUpload('#imageUploader', {
     uploadUrl: '/api/upload/image',
     accept: ['.jpg', '.jpeg', '.png', '.gif'],
     maxFiles: 5,
@@ -158,21 +156,21 @@ DBSyncerTheme.initFileUpload('#imageUploader', {
 ### 示例 2：JSON 配置文件上传
 
 ```javascript
-DBSyncerTheme.initFileUpload('#configUploader', {
+initFileUpload('#configUploader', {
     uploadUrl: $basePath + '/config/upload',
     accept: ['.json'],
     maxFiles: 5,
     maxSize: 10 * 1024 * 1024, // 10MB
     onSuccess: function(file, response) {
         if (response.success) {
-            DBSyncerTheme.notify({ message: '配置上传成功！', type: 'success' });
+            notify({ message: '配置上传成功！', type: 'success' });
             setTimeout(function() {
                 location.reload();
             }, 1000);
         }
     },
     onError: function(file, error) {
-        DBSyncerTheme.notify({ message: error, type: 'danger' });
+        notify({ message: error, type: 'danger' });
     }
 });
 ```
@@ -180,13 +178,13 @@ DBSyncerTheme.initFileUpload('#configUploader', {
 ### 示例 3：Excel 导入
 
 ```javascript
-DBSyncerTheme.initFileUpload('#excelUploader', {
+initFileUpload('#excelUploader', {
     uploadUrl: '/api/import/excel',
     accept: ['.xlsx', '.xls'],
     maxFiles: 1, // 只允许上传一个文件
     maxSize: 20 * 1024 * 1024, // 20MB
     onSuccess: function(file, response) {
-        DBSyncerTheme.notify({ 
+        notify({ 
             message: '导入成功，共 ' + response.data.totalRows + ' 行数据', 
             type: 'success' 
         });
@@ -206,7 +204,7 @@ DBSyncerTheme.initFileUpload('#excelUploader', {
 ```
 
 ```javascript
-var uploader = DBSyncerTheme.initFileUpload('#manualUploader', {
+var uploader = initFileUpload('#manualUploader', {
     uploadUrl: '/api/upload',
     autoUpload: false, // 关闭自动上传
     onSuccess: function(file, response) {

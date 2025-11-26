@@ -91,12 +91,12 @@
     const currentUserName = [[${currentUserName}]];
 
     // 绑定多值输入框事件
-    DBSyncerTheme.initMultipleInputTags();
+    initMultipleInputTags();
 
     //保存
     $("#user-btn-submit").on('click', function () {
         const $form = $("#user-form-edit");
-        if (!DBSyncerTheme.validateForm($form)) {
+        if (!validateForm($form)) {
             return;
         }
 

@@ -89,7 +89,7 @@
         $(".removeUserBtn").on('click', function () {
             const username = $(this).data('username');
             const $btn = $(this);
-            DBSyncerTheme.showConfirm({
+            showConfirm({
                 title: '确定要删除用户？',
                 icon: 'warning',
                 size: 'large',

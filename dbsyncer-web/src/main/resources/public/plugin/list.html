@@ -240,7 +240,7 @@ public class MyPlugin implements PluginService {
 <script type="text/javascript">
     $(function() {
         // 初始化文件上传组件
-        DBSyncerTheme.initFileUpload('#pluginUploader', {
+        initFileUpload('#pluginUploader', {
             uploadUrl: $basePath + '/plugin/upload',
             maxFiles: 5,
             maxSize: 50 * 1024 * 1024, // 50MB

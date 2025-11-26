@@ -27,7 +27,7 @@ function showLog($logList, arr, append) {
             html += '<tr>';
             html += '<td>' + (start + i + 1) + '</td>';
             html += '<td>' + arr[i].json + '</td>';
-            html += '<td>' + DBSyncerTheme.formatDate(arr[i].createTime) + '</td>';
+            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
             html += '</tr>';
         }
     }
@@ -59,7 +59,7 @@ function showData($dataList, arr, append) {
             html += '<td>' + arr[i].event + '</td>';
             html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
             html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
-            html += '<td>' + DBSyncerTheme.formatDate(arr[i].createTime) + '</td>';
+            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
             html += '<td><div class="hidden">' + arr[i].json + '</div><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;';
             html += (arr[i].success ? '' : '<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a>');
             html += '</td>';
@@ -97,13 +97,13 @@ function bindQueryLogEvent() {
                 <tr>
                     <td>${index}</td>
                     <td>${escapeHtml(row.json || '')}</td>
-                    <td>${DBSyncerTheme.formatDate(row.createTime || '')}</td>
+                    <td>${formatDate(row.createTime || '')}</td>
                 </tr>
             `;
         }
     });
     // 搜索框输入事件
-    DBSyncerTheme.initSearch('searchLog', function (searchKey) {
+    initSearch('searchLog', function (searchKey) {
         pagination.doSearch({'json': searchKey, 'pageNum': 1, 'pageSize': 10});
     });
 }
@@ -119,7 +119,7 @@ function bindQueryLogMoreEvent() {
 
 // 查看数据
 function bindQueryDataEvent() {
-    DBSyncerTheme.initSearch("searchData", function(value){
+    initSearch("searchData", function(value){
         const id = $("#searchMetaData").val();
         const success = $("#searchDataSuccess").val();
         doGetter('/monitor/queryData', {

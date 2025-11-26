@@ -3,10 +3,10 @@ function mappingModifyName() {
     const $name = $("#mapping_name_modify");
     const tmp = $name.text();
     $name.text("");
-    $name.append("<input type='text'/>");
+    $name.append("<input type='text' class='form-control text-md'/>");
     const $input = $name.find("input");
     $input.focus().val(tmp);
-    $input.blur(function() {
+    $input.blur(function () {
         $name.text($(this).val());
         $("#mappingModifyForm input[name='name']").val($(this).val());
         $input.unbind();
@@ -21,7 +21,7 @@ function bindMappingModelChange() {
         onChange: function(value, label) {
             showSuperConfig(value);
         }
-    }).data('radioGroup');
+    });
     // 渲染选择radio配置
     showSuperConfig(mappingModel.getValue());
 }
@@ -368,7 +368,7 @@ $(function () {
     // 保存
     $("#mappingSubmitBtn").click(function () {
         let $form = $("#mappingModifyForm");
-        if (DBSyncerTheme.validateForm($form)) {
+        if (validateForm($form)) {
             doPoster("/mapping/edit", $form.serializeJson(), function (response) {
                 if (response.success === true) {
                     bootGrowl("修改驱动成功!", "success");

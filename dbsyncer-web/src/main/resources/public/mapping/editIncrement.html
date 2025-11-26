@@ -17,6 +17,7 @@
     <table class="table">
         <thead>
         <tr>
+            <th></th>
             <th>Key</th>
             <th>Value</th>
             <th>操作</th>
@@ -24,6 +25,7 @@
         </thead>
         <tbody id="mappingMetaSnapshotConfig">
         <tr th:each="item,entry:${mapping?.meta?.snapshot}">
+            <td>1</td>
             <td>
                 <strong>[[${entry.current.key}]]</strong>
             </td>

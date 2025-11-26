@@ -1044,7 +1044,7 @@
         console.log('[第二步] 完整配置:', completeConfig);
         
         // 一次性提交所有配置创建任务
-        DBSyncerTheme.showLoading();
+        showLoading();
         $.ajax({
             url: $basePath + "/task/add",
             type: "POST",
@@ -1056,7 +1056,7 @@
                 json: JSON.stringify(completeConfig)
             }),
             success: function (result) {
-                DBSyncerTheme.hideLoading();
+                hideLoading();
                 console.log('[第二步] Ajax 响应结果:', result);
                 
                 if (result.success == true) {
@@ -1073,13 +1073,12 @@
                 }
             },
             error: function (xhr, status, info) {
-                DBSyncerTheme.hideLoading();
+                hideLoading();
                 console.error('[第二步] Ajax 请求失败:', status, info);
                 bootGrowl("访问异常，请刷新或重试.", "danger");
             }
         });
     }
-
     
     /**
      * 添加字段映射

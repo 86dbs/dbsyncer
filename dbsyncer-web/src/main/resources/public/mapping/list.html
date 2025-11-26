@@ -145,7 +145,7 @@ function changeMappingState(id, url, title) {
  * 删除任务
  */
 function deleteMapping(id) {
-    DBSyncerTheme.showConfirm({
+    showConfirm({
         title: '确定要删除驱动？',
         icon: 'warning',
         size: 'large',
@@ -308,7 +308,7 @@ $(document).ready(function() {
     });
 
     // 搜索框输入事件
-    DBSyncerTheme.initSearch('searchMapping', function (searchKey) {
+    initSearch('searchMapping', function (searchKey) {
         pagination.doSearch({'searchKey': searchKey});
     });
 });

@@ -66,25 +66,23 @@
 
 <script type="text/javascript">
 $(function() {
-    if (window.DBSyncerTheme && DBSyncerTheme.initFileUpload) {
-        DBSyncerTheme.initFileUpload('#configUploader', {
-            uploadUrl: $basePath + '/config/upload',
-            accept: ['.json'],
-            maxFiles: 5,
-            maxSize: 10 * 1024 * 1024, // 10MB
-            onSuccess: function(file, response) {
-                if (response.success) {
-                    DBSyncerTheme.notify({ message: '上传成功！', type: 'success' });
-                    doLoader("/config");
-                } else {
-                    DBSyncerTheme.notify({ message: response.resultValue || '上传失败', type: 'danger' });
-                }
-            },
-            onError: function(file, error) {
-                DBSyncerTheme.notify({ message: error || '上传失败', type: 'danger' });
+    initFileUpload('#configUploader', {
+        uploadUrl: $basePath + '/config/upload',
+        accept: ['.json'],
+        maxFiles: 5,
+        maxSize: 10 * 1024 * 1024, // 10MB
+        onSuccess: function(file, response) {
+            if (response.success) {
+                notify({ message: '上传成功！', type: 'success' });
+                doLoader("/config");
+            } else {
+                notify({ message: response.resultValue || '上传失败', type: 'danger' });
             }
-        });
-    }
+        },
+        onError: function(file, error) {
+            notify({ message: error || '上传失败', type: 'danger' });
+        }
+    });
 });
 
 function downLoad() {

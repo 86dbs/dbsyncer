@@ -51,14 +51,12 @@
 ```javascript
 $(function () {
     // 初始化二维码悬浮提示
-    if (window.DBSyncerTheme && DBSyncerTheme.initQRCodePopover) {
-        DBSyncerTheme.initQRCodePopover({
-            url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
-            selector: '.qrcode-trigger',
-            size: 150,
-            position: 'bottom'
-        });
-    }
+   initQRCodePopover({
+      url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
+      selector: '.qrcode-trigger',
+      size: 150,
+      position: 'bottom'
+   });
 });
 ```
 
@@ -78,7 +76,7 @@ $(function () {
 ### 示例 1: 基本用法
 
 ```javascript
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.wechat-contact',
     size: 150,
@@ -90,7 +88,7 @@ DBSyncerTheme.initQRCodePopover({
 
 ```javascript
 // 多个元素使用同一个二维码
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.contact-btn, .contact-link, .contact-icon',
     size: 180,
@@ -102,14 +100,14 @@ DBSyncerTheme.initQRCodePopover({
 
 ```javascript
 // 顶部显示
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.bottom-contact',
     position: 'top'
 });
 
 // 左侧显示
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.right-contact',
     position: 'left'
@@ -120,7 +118,7 @@ DBSyncerTheme.initQRCodePopover({
 
 ```javascript
 // 大尺寸二维码
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.large-qrcode',
     size: 200,
@@ -128,7 +126,7 @@ DBSyncerTheme.initQRCodePopover({
 });
 
 // 小尺寸二维码
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.small-qrcode',
     size: 120,
@@ -269,7 +267,7 @@ DBSyncerTheme.initQRCodePopover({
 **A**: 按照以下步骤：
 1. 在 HTML 中添加触发元素，添加 class
 2. 引入 QRCode.js 和 framework.js
-3. 在页面 JS 中调用 `DBSyncerTheme.initQRCodePopover()`
+3. 在页面 JS 中调用 `initQRCodePopover()`
 4. 根据需要调整配置参数
 
 ### Q5: 如何禁止点击跳转，只显示二维码？
@@ -296,7 +294,7 @@ $('.qrcode-trigger').on('click', function(e) {
 $('.dynamic-qrcode').each(function() {
     const url = $(this).data('qrcode-url'); // 从 data 属性获取 URL
     
-    DBSyncerTheme.initQRCodePopover({
+    initQRCodePopover({
         url: url,
         selector: '#' + this.id,
         size: 150,
@@ -316,7 +314,7 @@ $('.dynamic-qrcode').each(function() {
 // 根据屏幕宽度决定位置
 const isMobile = window.innerWidth < 768;
 
-DBSyncerTheme.initQRCodePopover({
+initQRCodePopover({
     url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776',
     selector: '.qrcode-trigger',
     size: isMobile ? 120 : 150,

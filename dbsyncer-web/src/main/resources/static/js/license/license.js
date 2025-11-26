@@ -1,9 +1,9 @@
 $(function () {
     // 初始化标签输入框
-    DBSyncerTheme.initMultipleInputTags();
+    initMultipleInputTags();
     
     // 初始化二维码悬浮提示
-    DBSyncerTheme.initQRCodePopover({
+    initQRCodePopover({
         url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
         selector: '.qrcode-trigger',
         size: 150,
@@ -41,7 +41,7 @@ $(function () {
         if ($btn.prop('disabled')) {
             return;
         }
-        if (!DBSyncerTheme.validateForm($form)) {
+        if (!validateForm($form)) {
             return;
         }
 
@@ -114,7 +114,7 @@ $(function () {
     }
 
     // 初始化文件上传组件
-    DBSyncerTheme.initFileUpload('#licenseUploader', {
+    initFileUpload('#licenseUploader', {
         uploadUrl: $basePath + '/license/upload',
         maxFiles: 1,
         maxSize: 10 * 1024 * 1024, // 10MB
