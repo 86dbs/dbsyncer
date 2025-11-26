@@ -110,6 +110,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setEvent(request.getEvent());
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
+            // 传递列名信息（从第一个请求中获取）
+            response.setColumnNames(request.getColumnNames());
             response.setMerged(true);
         } else if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
             logger.info("traceId:{} merge into traceId:{}", request.getTraceId(), response.getTraceId());
@@ -139,11 +141,24 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 if (!mapping.getListener().isEnableDDL()) {
                     return;
                 }
-                tableGroupContext.update(mapping, pickers.stream().map(picker -> {
+                // DDL 处理：更新 fieldMapping 并强制刷新缓存
+                // 1. 先处理 DDL，更新 TableGroup 的 fieldMapping
+                List<TableGroup> updatedTableGroups = pickers.stream().map(picker -> {
                     TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
-                }).collect(Collectors.toList()));
+                }).collect(Collectors.toList());
+                
+                // 2. 强制刷新缓存，确保后续的 DML 事件使用最新的 fieldMapping
+                // 注意：这里使用更新后的 TableGroup，确保 fieldMapping 已同步
+                tableGroupContext.update(mapping, updatedTableGroups);
+                
+                // 3. 验证缓存已更新（可选，用于调试）
+                if (logger.isDebugEnabled()) {
+                    List<TableGroupPicker> refreshedPickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
+                    logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}", 
+                        response.getTableName(), refreshedPickers.size());
+                }
                 break;
             case SCAN:
                 pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
@@ -176,13 +191,29 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         // 1、映射字段
+        // 优先使用事件携带的列名信息，确保字段映射与数据一致
+        List<Field> actualSourceFields = sourceFields;
+        if (response.getColumnNames() != null && !response.getColumnNames().isEmpty()) {
+            // 根据列名从 TableGroup 中查找对应的 Field 信息
+            actualSourceFields = buildFieldsFromColumnNames(
+                response.getColumnNames(),
+                tableGroupPicker.getTableGroup().getSourceTable().getColumn()
+            );
+            // 如果无法构建完整的字段列表，回退到使用传入的 sourceFields
+            if (CollectionUtils.isEmpty(actualSourceFields) || actualSourceFields.size() != response.getColumnNames().size()) {
+                logger.warn("无法根据列名构建完整的字段列表，回退到使用 TableGroup 的字段信息。表名: {}, 列名: {}",
+                    response.getTableName(), response.getColumnNames());
+                actualSourceFields = sourceFields;
+            }
+        }
+
         boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
         ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
         List<Map> sourceDataList = new ArrayList<>();
         List<Map> targetDataList = tableGroupPicker.getPicker()
                 .setSourceResolver(enableSchemaResolver ? sourceConnector.getSchemaResolver() : null)
-                .pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
+                .pickTargetData(actualSourceFields, enableFilter, response.getDataList(), sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
         }
@@ -276,6 +307,38 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    /**
+     * 根据列名列表构建字段列表
+     * 优先使用事件自带的列名顺序，确保与 CDC 数据顺序一致
+     *
+     * @param columnNames CDC 事件中的列名列表（按数据顺序）
+     * @param tableColumns TableGroup 中的源表字段列表
+     * @return 按 columnNames 顺序排列的字段列表
+     */
+    private List<Field> buildFieldsFromColumnNames(List<String> columnNames, List<Field> tableColumns) {
+        if (CollectionUtils.isEmpty(columnNames) || CollectionUtils.isEmpty(tableColumns)) {
+            return new ArrayList<>();
+        }
+
+        // 构建字段名到字段对象的映射
+        Map<String, Field> fieldMap = tableColumns.stream()
+                .collect(Collectors.toMap(Field::getName, field -> field, (k1, k2) -> k1));
+
+        // 按照 columnNames 的顺序构建字段列表
+        List<Field> fields = new ArrayList<>();
+        for (String columnName : columnNames) {
+            Field field = fieldMap.get(columnName);
+            if (field != null) {
+                fields.add(field);
+            } else {
+                // 如果找不到对应的字段，记录警告但继续处理
+                logger.warn("CDC 事件中的列名 '{}' 在 TableGroup 中未找到对应的字段信息", columnName);
+            }
+        }
+
+        return fields;
     }
 
     /**

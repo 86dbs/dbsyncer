@@ -43,10 +43,13 @@ public final class TableGroupContextImpl implements TableGroupContext {
     @Override
     public void update(Mapping mapping, List<TableGroup> tableGroups) {
         tableGroupMap.computeIfPresent(mapping.getMetaId(), (k, innerMap) -> {
-            // 先清空表映射关系，再更新表映射关系
-            tableGroups.stream().findFirst().ifPresent(tableGroup -> innerMap.remove(tableGroup.getSourceTable().getName()));
+            // 强制刷新缓存：先清空表映射关系，再更新表映射关系
+            // 这确保了 DDL 事件处理完成后，后续的 DML 事件使用最新的 fieldMapping
             tableGroups.forEach(tableGroup -> {
                 String sourceTableName = tableGroup.getSourceTable().getName();
+                // 先移除旧的 TableGroupPicker（如果存在）
+                innerMap.remove(sourceTableName);
+                // 再添加新的 TableGroupPicker（使用更新后的 fieldMapping）
                 innerMap.add(sourceTableName, PickerUtil.mergeTableGroupConfig(mapping, tableGroup));
             });
             return innerMap;

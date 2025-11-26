@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @Author AE86
@@ -113,7 +114,11 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(update.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 UpdateSql parser = new UpdateSql(update, tableFiledMap.get(tableName));
-                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, parser.parseColumns(), null, event.getScn()));
+                // 从 tableFiledMap 中获取完整的列名列表
+                List<String> columnNames = tableFiledMap.get(tableName).stream()
+                        .map(org.dbsyncer.sdk.model.Field::getName)
+                        .collect(java.util.stream.Collectors.toList());
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_UPDATE, parser.parseColumns(), null, event.getScn(), columnNames));
             }
             return;
         }
@@ -123,7 +128,11 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(insert.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 InsertSql parser = new InsertSql(insert, tableFiledMap.get(tableName));
-                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, parser.parseColumns(), null, event.getScn()));
+                // 从 tableFiledMap 中获取完整的列名列表
+                List<String> columnNames = tableFiledMap.get(tableName).stream()
+                        .map(org.dbsyncer.sdk.model.Field::getName)
+                        .collect(java.util.stream.Collectors.toList());
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, parser.parseColumns(), null, event.getScn(), columnNames));
             }
             return;
         }
@@ -133,7 +142,11 @@ public class OracleListener extends AbstractDatabaseListener {
             String tableName = getTableName(delete.getTable());
             if (tableFiledMap.containsKey(tableName)) {
                 DeleteSql parser = new DeleteSql(delete, tableFiledMap.get(tableName));
-                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, parser.parseColumns(), null, event.getScn()));
+                // 从 tableFiledMap 中获取完整的列名列表
+                List<String> columnNames = tableFiledMap.get(tableName).stream()
+                        .map(org.dbsyncer.sdk.model.Field::getName)
+                        .collect(java.util.stream.Collectors.toList());
+                trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_DELETE, parser.parseColumns(), null, event.getScn(), columnNames));
             }
         }
 

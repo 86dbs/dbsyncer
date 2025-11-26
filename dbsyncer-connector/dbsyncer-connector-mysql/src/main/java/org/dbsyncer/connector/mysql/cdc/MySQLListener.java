@@ -51,6 +51,8 @@ public class MySQLListener extends AbstractDatabaseListener {
     private final String BINLOG_FILENAME = "fileName";
     private final String BINLOG_POSITION = "position";
     private final Map<Long, TableMapEventData> tables = new HashMap<>();
+    // 缓存表的列名信息：tableId -> 列名列表（按数据顺序）
+    private final Map<Long, List<String>> tableColumnNames = new HashMap<>();
     private BinaryLogClient client;
     private String database;
     private final Lock connectLock = new ReentrantLock();
@@ -250,6 +252,16 @@ public class MySQLListener extends AbstractDatabaseListener {
                 return;
             }
 
+            // 处理 TABLE_MAP 事件：主动更新列名缓存
+            if (header.getEventType() == EventType.TABLE_MAP) {
+                TableMapEventData data = (TableMapEventData) event.getData();
+                if (data != null && isFilterTable(data.getDatabase(), data.getTable())) {
+                    // 如果是我们监控的表，主动更新列名缓存
+                    updateColumnNamesCache(data.getTableId(), data.getTable());
+                }
+                return;
+            }
+
             if (header.getEventType() == EventType.ROWS_QUERY) {
                 RowsQueryEventData data = event.getData();
                 notUniqueCodeEvent = isNotUniqueCodeEvent(data.getQuery());
@@ -260,9 +272,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    long tableId = data.getTableId();
+                    List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }
                 return;
@@ -271,9 +285,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    long tableId = data.getTableId();
+                    List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }
                 return;
@@ -282,9 +298,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    long tableId = data.getTableId();
+                    List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }
                 return;
@@ -339,6 +357,8 @@ public class MySQLListener extends AbstractDatabaseListener {
             }
             databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             if (isFilterTable(databaseName, tableName)) {
+                // DDL 事件会改变表结构，清除对应表的列名缓存
+                clearColumnNamesCache(tableName);
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
                         data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
             }
@@ -346,6 +366,97 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         private String getTableName(long tableId) {
             return tables.get(tableId).getTable();
+        }
+
+        /**
+         * 获取表的列名列表（按数据顺序）
+         * 从缓存中获取，如果不存在则从数据库元数据中获取并缓存
+         */
+        private List<String> getColumnNames(long tableId) {
+            // 先从缓存中获取
+            List<String> columnNames = tableColumnNames.get(tableId);
+            if (columnNames != null) {
+                return columnNames;
+            }
+            
+            // 如果缓存中没有，从数据库元数据中获取并缓存
+            TableMapEventData tableMap = tables.get(tableId);
+            if (tableMap != null) {
+                String tableName = tableMap.getTable();
+                columnNames = updateColumnNamesCache(tableId, tableName);
+            }
+            
+            return columnNames;
+        }
+
+        /**
+         * 更新表的列名缓存
+         * 
+         * @param tableId 表ID
+         * @param tableName 表名
+         * @return 列名列表
+         */
+        private List<String> updateColumnNamesCache(long tableId, String tableName) {
+            try {
+                // 从数据库元数据中获取列名
+                List<String> columnNames = getTableColumnNames(tableName);
+                if (columnNames != null && !columnNames.isEmpty()) {
+                    // 缓存列名信息
+                    tableColumnNames.put(tableId, columnNames);
+                    logger.debug("更新表列名缓存，tableId: {}, tableName: {}, columns: {}", tableId, tableName, columnNames);
+                }
+                return columnNames;
+            } catch (Exception e) {
+                logger.warn("更新表列名缓存失败，tableId: {}, tableName: {}, error: {}", tableId, tableName, e.getMessage());
+                return null;
+            }
+        }
+
+        /**
+         * 清除表的列名缓存（DDL 事件后调用）
+         * 
+         * @param tableName 表名
+         */
+        private void clearColumnNamesCache(String tableName) {
+            // 根据表名找到对应的 tableId，清除缓存
+            // 注意：同一个表名可能对应多个 tableId（如果表被删除后重建），所以需要遍历所有 tableId
+            List<Long> tableIdsToRemove = new ArrayList<>();
+            for (Map.Entry<Long, TableMapEventData> entry : tables.entrySet()) {
+                if (entry.getValue() != null && tableName.equals(entry.getValue().getTable())) {
+                    tableIdsToRemove.add(entry.getKey());
+                }
+            }
+            
+            // 清除缓存
+            for (Long tableId : tableIdsToRemove) {
+                tableColumnNames.remove(tableId);
+                logger.debug("清除表列名缓存，tableId: {}, tableName: {}", tableId, tableName);
+            }
+            
+            if (!tableIdsToRemove.isEmpty()) {
+                logger.info("已清除表 [{}] 的列名缓存，涉及 {} 个 tableId", tableName, tableIdsToRemove.size());
+            }
+        }
+
+        /**
+         * 从数据库元数据中获取表的列名列表
+         */
+        private List<String> getTableColumnNames(String tableName) {
+            try {
+                return getConnectorInstance().execute(databaseTemplate -> {
+                    List<String> columns = new ArrayList<>();
+                    try (java.sql.ResultSet rs = databaseTemplate.getSimpleConnection().getConnection()
+                            .getMetaData().getColumns(null, database, tableName, null)) {
+                        while (rs.next()) {
+                            columns.add(rs.getString("COLUMN_NAME"));
+                        }
+                    }
+                    return columns;
+                });
+            } catch (Exception e) {
+                logger.error("从数据库元数据获取列名失败，tableName: {}, error: {}", tableName, e.getMessage());
+                return null;
+            }
         }
 
         private boolean isFilterTable(long tableId) {

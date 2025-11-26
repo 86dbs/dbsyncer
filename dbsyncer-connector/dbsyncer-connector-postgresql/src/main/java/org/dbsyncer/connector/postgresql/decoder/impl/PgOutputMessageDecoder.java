@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @Author AE86
@@ -144,7 +145,11 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 case "O":
                     List<Object> data = new ArrayList<>();
                     readTupleData(tableId, buffer, data);
-                    return new RowChangedEvent(tableId.tableName, type.name(), data);
+                    // 从 TableId.fields 中提取列名列表
+                    List<String> columnNames = tableId.fields.stream()
+                            .map(Field::getName)
+                            .collect(java.util.stream.Collectors.toList());
+                    return new RowChangedEvent(tableId.tableName, type.name(), data, null, null, columnNames);
 
                 default:
                     logger.info("N, K, O not set, got instead {}", newTuple);

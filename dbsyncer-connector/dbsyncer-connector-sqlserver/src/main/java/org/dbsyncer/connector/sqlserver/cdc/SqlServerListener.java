@@ -459,13 +459,16 @@ public class SqlServerListener extends AbstractDatabaseListener {
             } else {
                 // 发送 DML 事件
                 DMLEvent DMLEvent = unifiedEvent.getCdcEvent();
+                // 获取列名信息（从 DMLEvent 中获取）
+                List<String> columnNames = DMLEvent != null ? DMLEvent.getColumnNames() : null;
                 if (TableOperationEnum.isUpdateAfter(DMLEvent.getCode())) {
                     trySendEvent(new RowChangedEvent(
                             DMLEvent.getTableName(),
                             ConnectorConstant.OPERTION_UPDATE,
                             DMLEvent.getRow(),
                             null,
-                            (isEnd ? stopLsn : null)
+                            (isEnd ? stopLsn : null),
+                            columnNames
                     ));
                 } else if (TableOperationEnum.isInsert(DMLEvent.getCode())) {
                     trySendEvent(new RowChangedEvent(
@@ -473,7 +476,8 @@ public class SqlServerListener extends AbstractDatabaseListener {
                             ConnectorConstant.OPERTION_INSERT,
                             DMLEvent.getRow(),
                             null,
-                            (isEnd ? stopLsn : null)
+                            (isEnd ? stopLsn : null),
+                            columnNames
                     ));
                 } else if (TableOperationEnum.isDelete(DMLEvent.getCode())) {
                     trySendEvent(new RowChangedEvent(
@@ -481,7 +485,8 @@ public class SqlServerListener extends AbstractDatabaseListener {
                             ConnectorConstant.OPERTION_DELETE,
                             DMLEvent.getRow(),
                             null,
-                            (isEnd ? stopLsn : null)
+                            (isEnd ? stopLsn : null),
+                            columnNames
                     ));
                 }
             }

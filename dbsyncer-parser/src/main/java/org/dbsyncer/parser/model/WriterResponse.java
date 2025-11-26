@@ -14,6 +14,7 @@ import java.util.List;
 public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     private final List<List<Object>> dataList = new LinkedList<>();
+    private List<String> columnNames;  // CDC 捕获的列名列表（按数据顺序）
 
     private transient boolean isMerged;
 
@@ -41,5 +42,21 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
 
     public void setMerged(boolean merged) {
         isMerged = merged;
+    }
+
+    /**
+     * 获取 CDC 捕获的列名列表（按数据顺序）
+     * 
+     * @return 列名列表，如果为 null 表示使用 TableGroup 的字段信息
+     */
+    public List<String> getColumnNames() {
+        return columnNames;
+    }
+
+    /**
+     * 设置 CDC 捕获的列名列表
+     */
+    public void setColumnNames(List<String> columnNames) {
+        this.columnNames = columnNames;
     }
 }
