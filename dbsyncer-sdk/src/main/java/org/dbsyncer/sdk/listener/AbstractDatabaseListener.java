@@ -84,7 +84,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     /**
      * 初始化Dql连接配置
      */
-    protected void postProcessDqlBeforeInitialization() {
+    protected void postProcessDqlBeforeInitialization() throws Exception {
         DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
         AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
 
@@ -153,7 +153,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
         return list;
     }
 
-    private void queryDqlData(DqlMapper dqlMapper, List<Object> data) {
+    private void queryDqlData(DqlMapper dqlMapper, List<Object> data) throws Exception {
         if (!CollectionUtils.isEmpty(data)) {
             Map<String, Object> row = dqlMapper.instance.execute(databaseTemplate -> {
                 int size = dqlMapper.tablePKIndex.size();

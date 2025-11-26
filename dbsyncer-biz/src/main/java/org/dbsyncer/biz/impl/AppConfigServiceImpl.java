@@ -30,7 +30,7 @@ public class AppConfigServiceImpl implements AppConfigService {
     public static final String WATERMARK_USERNAME = "${username}";
 
     @Override
-    public VersionVo getVersionInfo(String username) {
+    public VersionVo getVersionInfo(String username) throws Exception {
         VersionVo versionVo = new VersionVo(appConfig.getName(), appConfig.getCopyright());
         // 是否启用水印
         SystemConfig systemConfig = systemConfigService.getSystemConfig();

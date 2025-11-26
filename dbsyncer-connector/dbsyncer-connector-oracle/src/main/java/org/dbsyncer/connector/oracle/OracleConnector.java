@@ -49,7 +49,7 @@ public class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) throws Exception {
         // 查询当前SCN号
         String currentSCN = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject("SELECT CURRENT_SCN FROM V$DATABASE", String.class));

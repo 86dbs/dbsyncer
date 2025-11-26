@@ -38,7 +38,7 @@ public class PluginController {
     private AppConfig appConfig;
 
     @RequestMapping("")
-    public String index(ModelMap model) {
+    public String index(ModelMap model) throws Exception {
         model.put("plugins", pluginService.getPluginAll());
         model.put("version", appConfig.getVersion());
         return "plugin/plugin";

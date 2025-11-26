@@ -58,14 +58,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private AppConfig appConfig;
 
     @Override
-    public String edit(Map<String, String> params) {
+    public String edit(Map<String, String> params) throws Exception {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
         profileComponent.editConfigModel(model);
         return "修改成功.";
     }
 
     @Override
-    public SystemConfigVo getSystemConfigVo() {
+    public SystemConfigVo getSystemConfigVo() throws Exception {
         SystemConfigVo systemConfigVo = new SystemConfigVo();
         BeanUtils.copyProperties(getSystemConfig(), systemConfigVo);
         systemConfigVo.setWatermark(getWatermark(systemConfigVo));
@@ -73,7 +73,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public SystemConfig getSystemConfig() {
+    public SystemConfig getSystemConfig() throws Exception {
         SystemConfig config = profileComponent.getSystemConfig();
         if (null != config) {
             return config;
@@ -89,7 +89,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public List<ConfigModel> getConfigModelAll() {
+    public List<ConfigModel> getConfigModelAll() throws Exception {
         List<ConfigModel> list = new ArrayList<>();
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());

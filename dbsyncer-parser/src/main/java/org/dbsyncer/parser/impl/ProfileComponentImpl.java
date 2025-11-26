@@ -67,17 +67,17 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
-    public String addConfigModel(ConfigModel model) {
+    public String addConfigModel(ConfigModel model) throws Exception {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
-    public String editConfigModel(ConfigModel model) {
+    public String editConfigModel(ConfigModel model) throws Exception {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
     @Override
-    public void removeConfigModel(String id) {
+    public void removeConfigModel(String id) throws Exception {
         operationTemplate.remove(new OperationConfig(id));
     }
 
@@ -124,29 +124,29 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
-    public String addTableGroup(TableGroup model) {
+    public String addTableGroup(TableGroup model) throws Exception {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
     }
 
     @Override
-    public String editTableGroup(TableGroup model) {
+    public String editTableGroup(TableGroup model) throws Exception {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
     }
 
     @Override
-    public void removeTableGroup(String id) {
+    public void removeTableGroup(String id) throws Exception {
         operationTemplate.remove(new OperationConfig(id, GroupStrategyEnum.TABLE));
     }
 
     @Override
-    public TableGroup getTableGroup(String tableGroupId) {
+    public TableGroup getTableGroup(String tableGroupId) throws Exception {
         TableGroup tableGroup = operationTemplate.queryObject(TableGroup.class, tableGroupId);
         tableGroup.initTableGroup(parserComponent, this, connectorFactory);
         return tableGroup;
     }
 
     @Override
-    public List<TableGroup> getTableGroupAll(String mappingId) {
+    public List<TableGroup> getTableGroupAll(String mappingId) throws Exception {
         TableGroup temp = new TableGroup().setMappingId(mappingId);
         List<TableGroup> tableGroups = operationTemplate.queryAll(new QueryConfig<>(temp, GroupStrategyEnum.TABLE));
         for (TableGroup tableGroup : tableGroups) {
@@ -156,7 +156,7 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
-    public List<TableGroup> getSortedTableGroupAll(String mappingId) {
+    public List<TableGroup> getSortedTableGroupAll(String mappingId) throws Exception {
         return getTableGroupAll(mappingId)
                 .stream()
                 .sorted(Comparator.comparing(TableGroup::getIndex).reversed())

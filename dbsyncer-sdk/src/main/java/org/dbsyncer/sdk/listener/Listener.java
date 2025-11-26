@@ -22,7 +22,7 @@ public interface Listener {
     /**
      * 启动定时/日志抽取任务
      */
-    void start();
+    void start() throws Exception;
 
     /**
      * 关闭任务
@@ -60,12 +60,12 @@ public interface Listener {
     /**
      * 刷新增量点事件
      */
-    void flushEvent();
+    void flushEvent() throws Exception;
 
     /**
      * 强制刷新增量点事件
      */
-    void forceFlushEvent();
+    void forceFlushEvent() throws Exception;
 
     /**
      * 异常事件

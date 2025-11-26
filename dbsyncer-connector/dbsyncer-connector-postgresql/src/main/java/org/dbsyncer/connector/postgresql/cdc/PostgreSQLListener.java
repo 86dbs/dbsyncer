@@ -67,7 +67,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private String database;
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         try {
             connectLock.lock();
             if (connected) {
@@ -141,7 +141,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
         snapshot.put(LSN_POSITION, String.valueOf(offset.getPosition()));
     }
 
-    private void connect() throws SQLException {
+    private void connect() throws Exception {
         Properties props = new Properties();
         PGProperty.USER.set(props, config.getUsername());
         PGProperty.PASSWORD.set(props, config.getPassword());
@@ -172,7 +172,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
         this.stream = streamBuilder.start();
     }
 
-    private void createReplicationSlot(PGConnection pgConnection) throws SQLException {
+    private void createReplicationSlot(PGConnection pgConnection) throws Exception {
         String slotName = messageDecoder.getSlotName();
         String plugin = messageDecoder.getOutputPlugin();
         boolean existSlot = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);

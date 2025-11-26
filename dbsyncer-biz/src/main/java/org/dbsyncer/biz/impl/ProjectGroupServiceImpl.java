@@ -47,7 +47,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
     private Checker projectGroupChecker;
 
     @Override
-    public String add(Map<String, String> params) {
+    public String add(Map<String, String> params) throws Exception {
         ConfigModel model = projectGroupChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
@@ -55,7 +55,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
     }
 
     @Override
-    public String edit(Map<String, String> params) {
+    public String edit(Map<String, String> params) throws Exception {
         ConfigModel model = projectGroupChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
@@ -63,7 +63,7 @@ public class ProjectGroupServiceImpl extends BaseServiceImpl implements ProjectG
     }
 
     @Override
-    public String remove(String id) {
+    public String remove(String id) throws Exception {
         ProjectGroup projectGroup = profileComponent.getProjectGroup(id);
         log(LogType.ConnectorLog.DELETE, projectGroup);
         Assert.notNull(projectGroup, "该分组已被删除");

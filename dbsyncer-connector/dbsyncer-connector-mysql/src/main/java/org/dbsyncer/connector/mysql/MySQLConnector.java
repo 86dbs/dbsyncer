@@ -68,7 +68,7 @@ public class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public Map<String, String> getPosition(
-            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) throws Exception {
         // 执行SHOW MASTER STATUS命令获取当前binlog位置
         Map<String, Object> result = connectorInstance
                 .execute(databaseTemplate -> databaseTemplate.queryForMap("SHOW MASTER STATUS"));

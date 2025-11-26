@@ -28,13 +28,13 @@ public final class PersistenceCommand implements Command {
     }
 
     @Override
-    public boolean addConfig() {
+    public boolean addConfig() throws Exception {
         storageService.add(StorageEnum.CONFIG, params);
         return true;
     }
 
     @Override
-    public boolean editConfig() {
+    public boolean editConfig() throws Exception {
         storageService.edit(StorageEnum.CONFIG, params);
         return true;
     }

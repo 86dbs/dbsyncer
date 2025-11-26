@@ -144,27 +144,44 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 // DDL 处理：更新 fieldMapping 并强制刷新缓存
                 // 1. 先处理 DDL，更新 TableGroup 的 fieldMapping
                 List<TableGroup> updatedTableGroups = pickers.stream().map(picker -> {
-                    TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    TableGroup tableGroup = null;
+                    try {
+                        tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList());
-                
+
                 // 2. 强制刷新缓存，确保后续的 DML 事件使用最新的 fieldMapping
                 // 注意：这里使用更新后的 TableGroup，确保 fieldMapping 已同步
                 tableGroupContext.update(mapping, updatedTableGroups);
-                
+
                 // 3. 验证缓存已更新（可选，用于调试）
                 if (logger.isDebugEnabled()) {
                     List<TableGroupPicker> refreshedPickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
-                    logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}", 
+                    logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}",
                         response.getTableName(), refreshedPickers.size());
                 }
                 break;
             case SCAN:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
+                pickers.forEach(picker -> {
+                    try {
+                        distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
                 break;
             case ROW:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
+                pickers.forEach(picker -> {
+                    try {
+                        distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
                 // 直接调用 router 刷新偏移量，替代事件发布
                 bufferActuatorRouter.refreshOffset(response.getChangedOffset());
                 break;
@@ -189,7 +206,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return generalExecutor;
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) throws Exception {
         // 1、映射字段
         // 优先使用事件携带的列名信息，确保字段映射与数据一致
         List<Field> actualSourceFields = sourceFields;
@@ -263,7 +280,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     /**
      * 解析DDL
      * 完整的DDL处理流程：解析DDL → 执行DDL（如果启用）→ 刷新表结构 → 更新字段映射
-     * 
+     *
      * @param response WriterResponse，包含DDL SQL和事件信息
      * @param mapping Mapping配置，包含源和目标连接器ID
      * @param tableGroup TableGroup配置，包含表结构和字段映射

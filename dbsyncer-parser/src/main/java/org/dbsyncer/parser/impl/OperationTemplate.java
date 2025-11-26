@@ -90,7 +90,7 @@ public final class OperationTemplate {
         return (T) cacheService.get(id, clazz);
     }
 
-    public String execute(OperationConfig config) {
+    public String execute(OperationConfig config) throws Exception {
         // 1、解析配置
         ConfigModel model = config.getModel();
         Assert.notNull(model, "ConfigModel can not be null.");
@@ -127,7 +127,7 @@ public final class OperationTemplate {
         });
     }
 
-    public void remove(OperationConfig config) {
+    public void remove(OperationConfig config) throws Exception {
         String id = config.getId();
         Assert.hasText(id, "ID can not be empty.");
         // 删除分组

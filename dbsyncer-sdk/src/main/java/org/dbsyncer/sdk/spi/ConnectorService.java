@@ -78,7 +78,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param connectorInstance
      * @return
      */
-    boolean isAlive(I connectorInstance);
+    boolean isAlive(I connectorInstance) throws Exception;
 
     /**
      * 获取连接缓存key
@@ -94,7 +94,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param connectorInstance
      * @return
      */
-    List<Table> getTable(I connectorInstance);
+    List<Table> getTable(I connectorInstance) throws Exception;
 
     /**
      * 获取表元信息
@@ -103,7 +103,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param tableNamePattern
      * @return
      */
-    MetaInfo getMetaInfo(I connectorInstance, String tableNamePattern);
+    MetaInfo getMetaInfo(I connectorInstance, String tableNamePattern) throws Exception;
 
     /**
      * 获取表元信息
@@ -123,7 +123,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param command
      * @return
      */
-    long getCount(I connectorInstance, Map<String, String> command);
+    long getCount(I connectorInstance, Map<String, String> command) throws Exception;
 
     /**
      * 分页获取数据源数据
@@ -212,7 +212,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param commandConfig
      * @return
      */
-    Map<String, String> getTargetCommand(CommandConfig commandConfig);
+    Map<String, String> getTargetCommand(CommandConfig commandConfig) throws Exception;
 
     /**
      * 获取监听器
@@ -246,7 +246,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param connectorInstance
      * @return
      */
-    default Map<String, String> getPosition(I connectorInstance) {
+    default Map<String, String> getPosition(I connectorInstance) throws Exception {
         throw new NotImplementedException();
     }
 

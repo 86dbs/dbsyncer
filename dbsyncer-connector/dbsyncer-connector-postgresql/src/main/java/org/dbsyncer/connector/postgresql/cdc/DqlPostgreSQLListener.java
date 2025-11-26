@@ -13,7 +13,7 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 public class DqlPostgreSQLListener extends PostgreSQLListener {
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         super.postProcessDqlBeforeInitialization();
         super.start();
     }

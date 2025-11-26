@@ -20,7 +20,7 @@ public interface ConnectorService {
      *
      * @param params
      */
-    String add(Map<String, String> params);
+    String add(Map<String, String> params) throws Exception;
 
     /**
      * 复制连接器
@@ -28,21 +28,21 @@ public interface ConnectorService {
      * @param id
      * @return
      */
-    String copy(String id);
+    String copy(String id) throws Exception;
 
     /**
      * 修改连接器
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 删除连接器
      *
      * @param id
      */
-    String remove(String id);
+    String remove(String id) throws Exception;
 
     /**
      * 获取连接器
@@ -85,5 +85,5 @@ public interface ConnectorService {
      * @param params
      * @return
      */
-    Object getPosition(String params);
+    Object getPosition(String params) throws Exception;
 }

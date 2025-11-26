@@ -44,7 +44,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private DispatchTaskService dispatchTaskService;
 
     @Override
-    public String add(Map<String, String> params) {
+    public String add(Map<String, String> params) throws Exception {
         String mappingId = params.get("mappingId");
         Mapping mapping = profileComponent.getMapping(mappingId);
         assertRunning(mapping);
@@ -77,7 +77,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public String edit(Map<String, String> params) {
+    public String edit(Map<String, String> params) throws Exception {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
@@ -94,7 +94,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public String refreshFields(String id) {
+    public String refreshFields(String id) throws Exception {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
@@ -103,7 +103,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public boolean remove(String mappingId, String ids) {
+    public boolean remove(String mappingId, String ids) throws Exception {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
         Mapping mapping = profileComponent.getMapping(mappingId);
@@ -111,9 +111,14 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = profileComponent.getTableGroup(id);
-            log(LogType.TableGroupLog.DELETE, model);
-            profileComponent.removeTableGroup(id);
+            TableGroup model = null;
+            try {
+                model = profileComponent.getTableGroup(id);
+                log(LogType.TableGroupLog.DELETE, model);
+                profileComponent.removeTableGroup(id);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
 
         // 合并驱动公共字段
@@ -126,18 +131,18 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public TableGroup getTableGroup(String id) {
+    public TableGroup getTableGroup(String id) throws Exception {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "TableGroup can not be null");
         return tableGroup;
     }
 
     @Override
-    public List<TableGroup> getTableGroupAll(String mappingId) {
+    public List<TableGroup> getTableGroupAll(String mappingId) throws Exception {
         return profileComponent.getSortedTableGroupAll(mappingId);
     }
 
-    private void resetTableGroupAllIndex(String mappingId) {
+    private void resetTableGroupAllIndex(String mappingId) throws Exception {
         synchronized (LOCK) {
             List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
             int size = list.size();
@@ -151,7 +156,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
     }
 
-    private void mergeMappingColumn(Mapping mapping) {
+    private void mergeMappingColumn(Mapping mapping) throws Exception {
         List<TableGroup> groups = profileComponent.getTableGroupAll(mapping.getId());
 
         List<Field> sourceColumn = null;

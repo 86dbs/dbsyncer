@@ -96,7 +96,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     }
 
     @Override
-    public Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
+    public Map getBinlogData(Map row, boolean prettyBytes) throws Exception {
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         // 1、获取配置信息
         final TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
@@ -161,7 +161,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     }
 
     @Override
-    public String sync(Map<String, String> params) throws InvalidProtocolBufferException {
+    public String sync(Map<String, String> params) throws Exception {
         String metaId = params.get("metaId");
         String messageId = params.get("messageId");
         Assert.hasText(metaId, "The metaId is null.");

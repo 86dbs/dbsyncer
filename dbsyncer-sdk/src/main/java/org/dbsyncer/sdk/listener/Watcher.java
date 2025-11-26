@@ -30,7 +30,7 @@ public interface Watcher {
      *
      * @param snapshot
      */
-    void flushEvent(Map<String, String> snapshot);
+    void flushEvent(Map<String, String> snapshot) throws Exception;
 
     /**
      * 异常事件

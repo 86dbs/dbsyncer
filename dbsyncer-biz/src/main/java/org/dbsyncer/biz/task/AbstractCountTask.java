@@ -52,7 +52,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         this.tableGroupService = tableGroupService;
     }
 
-    protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
+    protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) throws Exception {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
         long count = parserComponent.getCount(mapping.getSourceConnectorId(), group.getCommand());

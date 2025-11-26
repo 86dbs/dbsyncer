@@ -77,7 +77,7 @@ public interface MonitorService {
     /**
      * 删除过期的数据和日志
      */
-    void deleteExpiredDataAndLog();
+    void deleteExpiredDataAndLog() throws Exception;
 
     /**
      * 获取所有同步数据状态类型

@@ -5,7 +5,7 @@ import org.dbsyncer.parser.model.Meta;
 
 public interface Puller {
 
-    void start(Mapping mapping);
+    void start(Mapping mapping) throws Exception;
 
-    void close(Mapping mapping);
+    void close(Mapping mapping) throws Exception;
 }

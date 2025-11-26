@@ -85,7 +85,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected Paging select(String sharding, Query query) {
+    protected Paging select(String sharding, Query query) throws Exception {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         Executor executor = getExecutor(query.getType(), sharding);
         if (executor == null) {
@@ -109,7 +109,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected void delete(String sharding, Query query) {
+    protected void delete(String sharding, Query query) throws Exception {
         Executor executor = getExecutor(query.getType(), sharding);
         if (executor == null) {
             return;
@@ -126,7 +126,11 @@ public class MySQLStorageService extends AbstractStorageService {
     protected void deleteAll(String sharding) {
         tables.computeIfPresent(sharding, (k, executor) -> {
             String sql = getExecutorSql(executor, k);
-            executeSql(sql);
+            try {
+                executeSql(sql);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             // 非系统表
             if (!executor.systemTable) {
                 return null;
@@ -136,7 +140,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
+    protected void batchInsert(StorageEnum type, String sharding, List<Map> list) throws Exception {
         batchExecute(type, sharding, list, new ExecuteMapper() {
             @Override
             public String getSql(Executor executor) {
@@ -151,7 +155,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
+    protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) throws Exception {
         batchExecute(type, sharding, list, new ExecuteMapper() {
             @Override
             public String getSql(Executor executor) {
@@ -166,7 +170,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected void batchDelete(StorageEnum type, String sharding, List<String> ids) {
+    protected void batchDelete(StorageEnum type, String sharding, List<String> ids) throws Exception {
         final Executor executor = getExecutor(type, sharding);
         if (executor == null) {
             return;
@@ -181,7 +185,7 @@ public class MySQLStorageService extends AbstractStorageService {
         connectorInstance.close();
     }
 
-    private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) {
+    private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) throws Exception {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
@@ -203,7 +207,11 @@ public class MySQLStorageService extends AbstractStorageService {
             }
 
             Executor newExecutor = new Executor(executor.getType(), executor.getFields(), executor.isSystemTable(), executor.isOrderByUpdateTime());
-            return createTableIfNotExist(table, newExecutor);
+            try {
+                return createTableIfNotExist(table, newExecutor);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 
@@ -361,7 +369,11 @@ public class MySQLStorageService extends AbstractStorageService {
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
-                createTableIfNotExist(tableName, e);
+                try {
+                    createTableIfNotExist(tableName, e);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
 
@@ -373,7 +385,7 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
-    private Executor createTableIfNotExist(String table, Executor executor) {
+    private Executor createTableIfNotExist(String table, Executor executor) throws Exception {
         table = PREFIX_TABLE.concat(table);
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
@@ -383,6 +395,8 @@ public class MySQLStorageService extends AbstractStorageService {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
             executeSql(ddl);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         List<Field> fields = executor.getFields();
@@ -445,7 +459,7 @@ public class MySQLStorageService extends AbstractStorageService {
         return new StringBuilder(StringUtil.FORWARD_SLASH).append(PREFIX_TABLE).append(connector.getConnectorType().toLowerCase()).append(StringUtil.UNDERLINE).append(type).append(".sql").toString();
     }
 
-    private void executeSql(String ddl) {
+    private void executeSql(String ddl) throws Exception {
         connectorInstance.execute(databaseTemplate -> {
             databaseTemplate.execute(ddl);
             logger.info(ddl);

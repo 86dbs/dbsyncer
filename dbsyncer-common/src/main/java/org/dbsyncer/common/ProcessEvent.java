@@ -13,6 +13,6 @@ public interface ProcessEvent {
      *
      * @param metaId 元信息ID
      */
-    void taskFinished(String metaId);
+    void taskFinished(String metaId) throws Exception;
 
 }

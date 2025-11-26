@@ -58,7 +58,7 @@ public class MySQLListener extends AbstractDatabaseListener {
     private final Lock connectLock = new ReentrantLock();
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         try {
             connectLock.lock();
             if (client != null && client.isConnected()) {

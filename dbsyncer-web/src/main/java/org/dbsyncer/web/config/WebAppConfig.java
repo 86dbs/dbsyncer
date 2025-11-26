@@ -147,7 +147,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         String password = (String) authentication.getCredentials();
         password = SHA1Util.b64_sha1(password);
 
-        UserInfo userInfo = userConfigService.getUserInfo(username);
+        UserInfo userInfo = null;
+        try {
+            userInfo = userConfigService.getUserInfo(username);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         // 重置密码
         if (resetPwd && userInfo != null) {
             UserInfo defUser = userConfigService.getDefaultUser();

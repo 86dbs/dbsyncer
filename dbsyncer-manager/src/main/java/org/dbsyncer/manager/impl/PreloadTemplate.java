@@ -108,7 +108,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // Load configModels
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
-                CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> reload(map, commandEnum));
+                CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> {
+            try {
+                reload(map, commandEnum);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         // Load connectorInstances
         loadConnectorInstance();
@@ -124,7 +130,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 // 恢复驱动状态
                 if (MetaEnum.RUNNING.getCode() == m.getState()) {
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
-                    managerFactory.start(mapping);
+                    try {
+                        managerFactory.start(mapping);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             });
         }
@@ -149,7 +159,12 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
             data.forEach(map -> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
-                ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
+                ConfigModel model = null;
+                try {
+                    model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 if (null != model) {
                     operationTemplate.cache(model, commandEnum.getGroupStrategyEnum());
                     // 如果 model 是 Meta 或 Mapping 则需要设置其 profileComponent 属性
@@ -166,11 +181,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         logger.info("{}:{}", modelType, total);
     }
 
-    private void reload(Map<String, Map> map, CommandEnum commandEnum) {
+    private void reload(Map<String, Map> map, CommandEnum commandEnum) throws Exception {
         reload(map, commandEnum, commandEnum.getModelType());
     }
 
-    private void reload(Map<String, Map> map, CommandEnum commandEnum, String groupId) {
+    private void reload(Map<String, Map> map, CommandEnum commandEnum, String groupId) throws Exception {
         Map config = map.get(groupId);
         if (null == config) {
             return;

@@ -49,7 +49,7 @@ public class MappingChecker extends AbstractChecker {
     ConnectorFactory connectorFactory;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
@@ -77,7 +77,7 @@ public class MappingChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public ConfigModel checkEditConfigModel(Map<String, String> params) throws Exception {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "MappingChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -132,7 +132,7 @@ public class MappingChecker extends AbstractChecker {
         listener.setEnableDDL(StringUtil.isNotBlank(params.get("enableDDL")));
     }
 
-    private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
+    private void batchMergeConfig(Mapping mapping, Map<String, String> params) throws Exception {
         List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             // 手动排序

@@ -113,7 +113,7 @@ public class MonitorController extends BaseController {
     }
 
     @Scheduled(fixedRate = 30000)
-    public void deleteExpiredDataAndLog() {
+    public void deleteExpiredDataAndLog() throws Exception {
         if (preloadTemplate.isPreloadCompleted()) {
             monitorService.deleteExpiredDataAndLog();
         }

@@ -49,7 +49,7 @@ public class ConfigController {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @RequestMapping("")
-    public String index(ModelMap model) {
+    public String index(ModelMap model) throws Exception {
         model.put("config", systemConfigService.getConfigModelAll());
         model.put("fileSize", JsonUtil.objToJson(cacheService.getAll()).getBytes(Charset.defaultCharset()).length);
         return "config/config";

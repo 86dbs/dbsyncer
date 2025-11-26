@@ -50,7 +50,7 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
 
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) throws Exception {
         DatabaseConfig config = connectorInstance.getConfig();
         List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
         tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
@@ -83,7 +83,7 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
         return primaryKeys.stream().map(pk -> convertKey(pk)).collect(Collectors.toList());
     }
 
-    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
+    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) throws Exception {
         List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());

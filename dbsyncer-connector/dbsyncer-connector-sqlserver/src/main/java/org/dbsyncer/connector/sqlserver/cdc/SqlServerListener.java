@@ -108,7 +108,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
             .build();
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         try {
             connectLock.lock();
             if (connected) {
@@ -168,7 +168,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }
     }
 
-    private void connect() {
+    private void connect() throws Exception {
         instance = (DatabaseConnectorInstance) connectorInstance;
         AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
         if (service.isAlive(instance)) {
@@ -178,7 +178,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }
     }
 
-    private void readLastLsn() {
+    private void readLastLsn() throws Exception {
         if (!snapshot.containsKey(LSN_POSITION)) {
             lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
             if (null != lastLsn && lastLsn.isAvailable()) {
@@ -192,7 +192,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         lastLsn = Lsn.valueOf(snapshot.get(LSN_POSITION));
     }
 
-    private void readTables() {
+    private void readTables() throws Exception {
         tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs -> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
@@ -204,7 +204,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
-    private void readChangeTables() {
+    private void readChangeTables() throws Exception {
         changeTables = queryAndMapList(GET_TABLES_CDC_ENABLED, rs -> {
             final Set<SqlServerChangeTable> tables = new HashSet<>();
             while (rs.next()) {
@@ -240,17 +240,31 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private void enableTableCDC() {
         if (!CollectionUtils.isEmpty(tables)) {
             tables.forEach(table -> {
-                boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                boolean enabledTableCDC = false;
+                try {
+                    enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 if (!enabledTableCDC) {
-                    execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                    Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    try {
+                        execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    Lsn minLsn = null;
+                    try {
+                        minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                     logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
                 }
             });
         }
     }
 
-    private void enableDBCDC() throws InterruptedException {
+    private void enableDBCDC() throws Exception {
         String realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
         boolean enabledCDC = queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
         if (!enabledCDC) {
@@ -263,7 +277,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         }
     }
 
-    private void execute(String... sqlStatements) {
+    private void execute(String... sqlStatements) throws Exception {
         instance.execute(databaseTemplate -> {
             for (String sqlStatement : sqlStatements) {
                 if (sqlStatement != null) {
@@ -275,7 +289,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
-    private void pull(Lsn stopLsn) {
+    private void pull(Lsn stopLsn) throws Exception {
         Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
 
         // 查询 DML 变更（提取 LSN 用于排序）
@@ -288,41 +302,46 @@ public class SqlServerListener extends AbstractDatabaseListener {
             // 使用数组来保存 changeTable 引用，以便在 lambda 中更新
             final SqlServerChangeTable[] currentChangeTableRef = new SqlServerChangeTable[]{changeTable};
 
-            List<DMLEvent> list = queryAndMapList(query, statement -> {
-                statement.setBytes(1, startLsn.getBinary());
-                statement.setBytes(2, stopLsn.getBinary());
-            }, rs -> {
-                int columnCount = rs.getMetaData().getColumnCount();
-                List<Object> row = null;
-                List<DMLEvent> data = new ArrayList<>();
+            List<DMLEvent> list = null;
+            try {
+                list = queryAndMapList(query, statement -> {
+                    statement.setBytes(1, startLsn.getBinary());
+                    statement.setBytes(2, stopLsn.getBinary());
+                }, rs -> {
+                    int columnCount = rs.getMetaData().getColumnCount();
+                    List<Object> row = null;
+                    List<DMLEvent> data = new ArrayList<>();
 
-                while (rs.next()) {
-                    // 在每次 rs.next() 之前，检查列名是否变化
-                    // 如果检测到 sp_rename，先发送 DDL 事件并重新启用 CDC，然后更新 changeTable 信息
-                    // 注意：checkAndReEnableCDCIfNeeded 会直接更新传入的 changeTable 对象，无需重新查找
-                    checkAndReEnableCDCIfNeeded(currentChangeTableRef[0]);
+                    while (rs.next()) {
+                        // 在每次 rs.next() 之前，检查列名是否变化
+                        // 如果检测到 sp_rename，先发送 DDL 事件并重新启用 CDC，然后更新 changeTable 信息
+                        // 注意：checkAndReEnableCDCIfNeeded 会直接更新传入的 changeTable 对象，无需重新查找
+                        checkAndReEnableCDCIfNeeded(currentChangeTableRef[0]);
 
-                    final int operation = rs.getInt(3);  // __$operation 是第 3 列
-                    if (TableOperationEnum.isUpdateBefore(operation)) {
-                        continue;
+                        final int operation = rs.getInt(3);  // __$operation 是第 3 列
+                        if (TableOperationEnum.isUpdateBefore(operation)) {
+                            continue;
+                        }
+
+                        // 提取 LSN（第 1 列是 __$start_lsn）
+                        Lsn eventLsn = new Lsn(rs.getBytes(1));
+
+                        row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
+                        for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
+                            row.add(rs.getObject(i));
+                        }
+
+                        // 创建 CDCEvent，包含 LSN 信息和列名信息
+                        // 注意：直接使用 changeTable 的列列表（如果检测到 sp_rename 并重新启用了 CDC，这里会自动使用新列名）
+                        DMLEvent DMLEvent = new DMLEvent(currentChangeTableRef[0].getTableName(), operation, row, eventLsn,
+                                new ArrayList<>(currentChangeTableRef[0].getCapturedColumnList()));
+                        data.add(DMLEvent);
                     }
-
-                    // 提取 LSN（第 1 列是 __$start_lsn）
-                    Lsn eventLsn = new Lsn(rs.getBytes(1));
-
-                    row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
-                    for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
-                        row.add(rs.getObject(i));
-                    }
-
-                    // 创建 CDCEvent，包含 LSN 信息和列名信息
-                    // 注意：直接使用 changeTable 的列列表（如果检测到 sp_rename 并重新启用了 CDC，这里会自动使用新列名）
-                    DMLEvent DMLEvent = new DMLEvent(currentChangeTableRef[0].getTableName(), operation, row, eventLsn, 
-                            new ArrayList<>(currentChangeTableRef[0].getCapturedColumnList()));
-                    data.add(DMLEvent);
-                }
-                return data;
-            });
+                    return data;
+                });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
             if (!CollectionUtils.isEmpty(list)) {
                 dmlEvents.addAll(list);
@@ -357,7 +376,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     /**
      * 查询 DDL 变更（使用统一的 LSN）
      */
-    private List<DDLEvent> pullDDLChanges(Lsn startLsn, Lsn stopLsn) {
+    private List<DDLEvent> pullDDLChanges(Lsn startLsn, Lsn stopLsn) throws Exception {
         return queryAndMapList(GET_DDL_CHANGES, statement -> {
             statement.setBytes(1, startLsn.getBinary());
             statement.setBytes(2, stopLsn.getBinary());
@@ -1152,26 +1171,26 @@ public class SqlServerListener extends AbstractDatabaseListener {
         void accept(PreparedStatement statement) throws SQLException;
     }
 
-    private <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) {
+    private <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws Exception {
         return queryAndMap(sql, null, mapper);
     }
 
-    private <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
+    private <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
         return query(sql, statementPreparer, (rs) -> {
             rs.next();
             return mapper.apply(rs);
         });
     }
 
-    private <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) {
+    private <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) throws Exception {
         return queryAndMapList(sql, null, mapper);
     }
 
-    private <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
+    private <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
         return query(sql, statementPreparer, mapper);
     }
 
-    private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
+    private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
         Object execute = instance.execute(databaseTemplate -> {
             PreparedStatement ps = null;
             ResultSet rs = null;
@@ -1208,7 +1227,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
      * - 同时查询 DML 和 DDL 的最大 LSN，取两者中的较大值
      * - 确保 DDL 变更也能被及时检测和处理
      */
-    public Lsn getMaxLsn() {
+    public Lsn getMaxLsn() throws Exception {
         // 获取 DML 的最大 LSN
         Lsn dmlMaxLsn = queryAndMap(GET_MAX_LSN, rs -> {
             byte[] bytes = rs.getBytes(1);

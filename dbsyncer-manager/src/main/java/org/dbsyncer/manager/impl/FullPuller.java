@@ -48,7 +48,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     private LogService logService;
 
     @Override
-    public void start(Mapping mapping) {
+    public void start(Mapping mapping) throws Exception {
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
         Assert.notEmpty(list, "映射关系不能为空");
         Thread worker = new Thread(() -> {
@@ -61,7 +61,11 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
                 doTask(metaId, mapping, list, executor);
             } catch (Exception e) {
                 // 记录运行时异常状态和异常信息
-                meta.saveState(MetaEnum.ERROR, e.getMessage());
+                try {
+                    meta.saveState(MetaEnum.ERROR, e.getMessage());
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 logger.error(e.getMessage(), e);
                 logService.log(LogType.SystemLog.ERROR, e.getMessage());
             } finally {
@@ -73,7 +77,11 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
 
                 // 清除task引用
                 if (meta.getPhaseHandler() == null && !meta.isError()) {
-                    meta.resetState();
+                    try {
+                        meta.resetState();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
             }
@@ -84,11 +92,11 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     }
 
     @Override
-    public void close(Mapping mapping) {
+    public void close(Mapping mapping) throws Exception {
         mapping.resetMetaState();
     }
 
-    private void doTask(String metaId, Mapping mapping, List<TableGroup> list, Executor executor) {
+    private void doTask(String metaId, Mapping mapping, List<TableGroup> list, Executor executor) throws Exception {
         // 获取Meta对象
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta对象不存在");
@@ -108,10 +116,12 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
 
                     // 记录TableGroup的错误状态
                     tableGroup.setErrorMessage(e.getMessage());
-                    profileComponent.editConfigModel(tableGroup);
-
-                    // 记录系统级错误
-                    meta.saveState(MetaEnum.ERROR, e.getMessage());
+                    try {
+                        profileComponent.editConfigModel(tableGroup);
+                        meta.saveState(MetaEnum.ERROR, e.getMessage());
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
                     logService.log(LogType.SystemLog.ERROR, e.getMessage());
                 }
             }, executor);
@@ -154,7 +164,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
         }
     }
 
-    private void flush(Meta meta) {
+    private void flush(Meta meta) throws Exception {
         // 全量的过程中，有新数据则更新总数
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if (meta.getTotal().get() < finished) {
@@ -168,7 +178,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     }
 
     @Override
-    public void taskFinished(String metaId) {
+    public void taskFinished(String metaId) throws Exception {
         Meta meta = profileComponent.getMeta(metaId);
         if (meta != null) {
             flush(meta);

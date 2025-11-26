@@ -149,7 +149,7 @@ public class TableGroup extends AbstractConfigModel {
     }
 
     @JsonIgnore
-    public void initTableGroup(ParserComponent parserComponent, ProfileComponent profileComponent, ConnectorFactory connectorFactory) {
+    public void initTableGroup(ParserComponent parserComponent, ProfileComponent profileComponent, ConnectorFactory connectorFactory) throws Exception {
         if (isInit) return;
         this.parserComponent = parserComponent;
         this.profileComponent = profileComponent;
@@ -163,7 +163,7 @@ public class TableGroup extends AbstractConfigModel {
     }
 
     @JsonIgnore
-    public void initCommand(Mapping mapping, ConnectorFactory connectorFactory) {
+    public void initCommand(Mapping mapping, ConnectorFactory connectorFactory) throws Exception {
         ConnectorConfig sConnConfig = profileComponent.getConnector(mapping.getSourceConnectorId()).getConfig();
         ConnectorConfig tConnConfig = profileComponent.getConnector(mapping.getTargetConnectorId()).getConfig();
         Table sourceTable = this.getSourceTable();
@@ -269,7 +269,7 @@ public class TableGroup extends AbstractConfigModel {
     }
 
     @JsonIgnore
-    public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) {
+    public TableGroup copy(String mappingId, SnowflakeIdWorker snowflakeIdWorker) throws Exception {
         String tableGroupJson = JsonUtil.objToJson(this);
         TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
         newTableGroup.clear();

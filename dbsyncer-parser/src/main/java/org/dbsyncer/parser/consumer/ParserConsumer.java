@@ -51,7 +51,7 @@ public final class ParserConsumer implements Watcher {
     }
 
     @Override
-    public void flushEvent(Map<String, String> snapshot) {
+    public void flushEvent(Map<String, String> snapshot) throws Exception {
         Meta meta = profileComponent.getMeta(metaId);
         if (meta != null) {
             meta.setSnapshot(snapshot);

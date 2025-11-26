@@ -55,7 +55,7 @@ public interface ProfileComponent {
      * @param model
      * @return id
      */
-    String addConfigModel(ConfigModel model);
+    String addConfigModel(ConfigModel model) throws Exception;
 
     /**
      * 编辑ConfigModel
@@ -63,7 +63,7 @@ public interface ProfileComponent {
      * @param model
      * @return id
      */
-    String editConfigModel(ConfigModel model);
+    String editConfigModel(ConfigModel model) throws Exception;
 
     /**
      * 刪除ConfigModel
@@ -71,7 +71,7 @@ public interface ProfileComponent {
      * @param id
      * @return
      */
-    void removeConfigModel(String id);
+    void removeConfigModel(String id) throws Exception;
 
     /**
      * 获取系统配置
@@ -123,17 +123,17 @@ public interface ProfileComponent {
     List<Mapping> getMappingAll();
 
     // TableGroup
-    String addTableGroup(TableGroup model);
+    String addTableGroup(TableGroup model) throws Exception;
 
-    String editTableGroup(TableGroup model);
+    String editTableGroup(TableGroup model) throws Exception;
 
-    void removeTableGroup(String id);
+    void removeTableGroup(String id) throws Exception;
 
-    TableGroup getTableGroup(String tableGroupId);
+    TableGroup getTableGroup(String tableGroupId) throws Exception;
 
-    List<TableGroup> getTableGroupAll(String mappingId);
+    List<TableGroup> getTableGroupAll(String mappingId) throws Exception;
 
-    List<TableGroup> getSortedTableGroupAll(String mappingId);
+    List<TableGroup> getSortedTableGroupAll(String mappingId) throws Exception;
 
     int getTableGroupCount(String mappingId);
 

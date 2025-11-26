@@ -78,7 +78,7 @@ public class LicenseController extends BaseController {
     public static final String MSG = "msg";
 
     @RequestMapping("")
-    public String index(ModelMap model) {
+    public String index(ModelMap model) throws Exception {
         model.put("key", licenseService.getKey());
         model.put("userInfo", getUserInfo());
         model.put("productInfo", licenseService.getProductInfo());
@@ -183,7 +183,7 @@ public class LicenseController extends BaseController {
         infoVo.setEffectiveContent(String.format("还剩%d天%d小时", days, hours));
     }
 
-    private String getLicenseContent(Map<String, String> params) throws IOException {
+    private String getLicenseContent(Map<String, String> params) throws Exception {
         ProductInfo info = JsonUtil.jsonToObj(JsonUtil.objToJson(params), ProductInfo.class);
         UserInfo userInfo = getUserInfo();
         Assert.notNull(userInfo, "会话过期，请重新登录");
@@ -221,7 +221,7 @@ public class LicenseController extends BaseController {
         throw new IllegalArgumentException("授权服务地址异常，无法激活");
     }
 
-    private UserInfo getUserInfo() {
+    private UserInfo getUserInfo() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return userConfigService.getUserInfo(authentication.getName());
     }

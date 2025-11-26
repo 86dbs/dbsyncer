@@ -61,7 +61,11 @@ public class LogServiceImpl implements LogService {
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
             params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, profileComponent.getSystemConfig().getMaxStorageErrorLength()));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
-            storageService.add(StorageEnum.LOG, params);
+            try {
+                storageService.add(StorageEnum.LOG, params);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 

@@ -46,7 +46,7 @@ public class PluginServiceImpl implements PluginService {
     private LogService logService;
 
     @Override
-    public List<PluginVo> getPluginAll() {
+    public List<PluginVo> getPluginAll() throws Exception {
         List<Plugin> pluginAll = pluginFactory.getPluginAll();
         List<PluginVo> vos = new ArrayList<>();
         if (!CollectionUtils.isEmpty(pluginAll)) {
@@ -90,7 +90,7 @@ public class PluginServiceImpl implements PluginService {
         }
     }
 
-    private Map<String, List<String>> getPluginClassNameMap() {
+    private Map<String, List<String>> getPluginClassNameMap() throws Exception {
         Map<String, List<String>> map = new ConcurrentHashMap<>();
         List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (CollectionUtils.isEmpty(mappingAll)) {

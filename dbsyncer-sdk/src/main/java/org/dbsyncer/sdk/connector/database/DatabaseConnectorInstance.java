@@ -24,16 +24,11 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
         this.dataSource = new SimpleDataSource(config.getDriverClassName(), config.getUrl(), config.getUsername(), config.getPassword(), config.getMaxActive(), config.getKeepAlive());
     }
 
-    public <T> T execute(HandleCallback callback) {
+    public <T> T execute(HandleCallback callback) throws Exception {
         Connection connection = null;
         try {
             connection = getConnection();
             return (T) callback.apply(new DatabaseTemplate((SimpleConnection) connection));
-        } catch (EmptyResultDataAccessException e) {
-            // EmptyResultDataAccessException 是预期的异常，直接抛出，不包装
-            throw e;
-        } catch (Exception e) {
-            throw new SdkException(e.getMessage(), e.getCause());
         } finally {
             dataSource.close(connection);
         }

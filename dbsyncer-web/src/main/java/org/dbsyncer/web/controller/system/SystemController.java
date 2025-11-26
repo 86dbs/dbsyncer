@@ -28,7 +28,7 @@ public class SystemController extends BaseController {
     private SystemConfigService systemConfigService;
 
     @RequestMapping("")
-    public String index(ModelMap model) {
+    public String index(ModelMap model) throws Exception {
         model.put("config", systemConfigService.getSystemConfigVo());
         return "system/system";
     }

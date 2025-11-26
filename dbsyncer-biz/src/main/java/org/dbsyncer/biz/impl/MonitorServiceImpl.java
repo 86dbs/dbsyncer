@@ -206,7 +206,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public void deleteExpiredDataAndLog() {
+    public void deleteExpiredDataAndLog() throws Exception {
         deleteExpiredData();
         deleteExpiredLog();
     }
@@ -282,7 +282,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         return storageService.query(query);
     }
 
-    private void deleteExpiredData() {
+    private void deleteExpiredData() throws Exception {
         List<MetaVo> metaAll = getMetaAll();
         if (!CollectionUtils.isEmpty(metaAll)) {
             Query query = new Query();
@@ -298,7 +298,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private void deleteExpiredLog() {
+    private void deleteExpiredLog() throws Exception {
         Query query = new Query();
         query.setType(StorageEnum.LOG);
         int expireLogDays = systemConfigService.getSystemConfig().getExpireLogDays();

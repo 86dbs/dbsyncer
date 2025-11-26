@@ -50,7 +50,7 @@ public class PostgreSQLConnector extends AbstractDatabaseConnector {
 
 
     @Override
-    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) {
+    public Map<String, String> getPosition(org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance connectorInstance) throws Exception {
         // 查询当前WAL位置
         String currentLSN = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject("SELECT pg_current_wal_lsn()", String.class));

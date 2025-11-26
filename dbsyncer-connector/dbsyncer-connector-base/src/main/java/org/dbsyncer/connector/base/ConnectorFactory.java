@@ -65,7 +65,7 @@ public class ConnectorFactory implements DisposableBean {
      *
      * @param config
      */
-    public ConnectorInstance connect(ConnectorConfig config) {
+    public ConnectorInstance connect(ConnectorConfig config) throws Exception {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorService connectorService = getConnectorService(config);
         String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
@@ -105,7 +105,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param config
      * @return
      */
-    public boolean isAlive(ConnectorConfig config) {
+    public boolean isAlive(ConnectorConfig config) throws Exception {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorService connectorService = getConnectorService(config);
         String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
@@ -121,7 +121,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param connectorInstance
      * @return
      */
-    public List<Table> getTable(ConnectorInstance connectorInstance) {
+    public List<Table> getTable(ConnectorInstance connectorInstance) throws Exception {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         List tableList = getConnectorService(connectorInstance.getConfig()).getTable(connectorInstance);
         // 按升序展示表
@@ -136,7 +136,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param tableName
      * @return
      */
-    public MetaInfo getMetaInfo(ConnectorInstance connectorInstance, String tableName) {
+    public MetaInfo getMetaInfo(ConnectorInstance connectorInstance, String tableName) throws Exception {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         Assert.hasText(tableName, "tableName can not be empty.");
         List<Table> table = getTable(connectorInstance);
@@ -154,7 +154,7 @@ public class ConnectorFactory implements DisposableBean {
 
     }
 
-    public Object getPosition(ConnectorInstance connectorInstance) {
+    public Object getPosition(ConnectorInstance connectorInstance) throws Exception {
         Assert.notNull(connectorInstance, "ConnectorInstance can not be null.");
         return getConnectorService(connectorInstance.getConfig()).getPosition(connectorInstance);
     }
@@ -166,7 +166,7 @@ public class ConnectorFactory implements DisposableBean {
      * @param targetCommandConfig
      * @return
      */
-    public Map<String, String> getCommand(CommandConfig sourceCommandConfig, CommandConfig targetCommandConfig) {
+    public Map<String, String> getCommand(CommandConfig sourceCommandConfig, CommandConfig targetCommandConfig) throws Exception {
         Assert.notNull(sourceCommandConfig, "SourceCommandConfig can not be null.");
         Assert.notNull(targetCommandConfig, "TargetCommandConfig can not be null.");
         Map<String, String> map = new HashMap<>();
@@ -182,7 +182,7 @@ public class ConnectorFactory implements DisposableBean {
         return map;
     }
 
-    public long getCount(ConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(ConnectorInstance connectorInstance, Map<String, String> command) throws Exception {
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
         Assert.notNull(command, "command can not null");
         return getConnectorService(connectorInstance.getConfig()).getCount(connectorInstance, command);

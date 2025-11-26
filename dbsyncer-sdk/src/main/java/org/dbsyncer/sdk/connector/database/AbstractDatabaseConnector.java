@@ -87,7 +87,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public boolean isAlive(DatabaseConnectorInstance connectorInstance) {
+    public boolean isAlive(DatabaseConnectorInstance connectorInstance) throws Exception {
         Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
     }
@@ -104,7 +104,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) throws Exception {
         // DQL模式：从配置中获取用户定义的SQL表
         if (isDql) {
             DatabaseConfig cfg = connectorInstance.getConfig();
@@ -122,7 +122,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) {
+    public MetaInfo getMetaInfo(DatabaseConnectorInstance connectorInstance, String tableNamePattern) throws Exception {
         // DQL模式：通过执行SQL获取元数据
         if (isDql) {
             DatabaseConfig cfg = connectorInstance.getConfig();
@@ -134,7 +134,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     sql = sql.replace("\r", " ");
                     sql = sql.replace("\n", " ");
                     String queryMetaSql = StringUtil.contains(sql, " WHERE ") ? s.getSql() + " AND 1!=1 " : s.getSql() + " WHERE 1!=1 ";
-                    return connectorInstance.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+                    try {
+                        return connectorInstance.execute(databaseTemplate -> getMetaInfo(databaseTemplate, queryMetaSql, getSchema(cfg), s.getTable()));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
             return null;
@@ -156,9 +160,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     String typeName = columnMetadata.getString("TYPE_NAME");
                     long columnSize = Math.max(0L, columnMetadata.getLong("COLUMN_SIZE"));
                     int ratio = Math.max(0, columnMetadata.getInt("DECIMAL_DIGITS"));
-                    
+
                     Field field = new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio);
-                    
+
                     // 填充 nullable 属性
                     int nullable = columnMetadata.getInt("NULLABLE");
                     if (nullable == ResultSetMetaData.columnNoNulls) {
@@ -167,19 +171,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         field.setNullable(true); // NULL
                     }
                     // columnNullableUnknown 时保持 null，表示未知
-                    
+
                     // 填充 defaultValue 属性
                     String columnDef = columnMetadata.getString("COLUMN_DEF");
                     if (columnDef != null && !columnDef.trim().isEmpty()) {
                         field.setDefaultValue(columnDef);
                     }
-                    
+
                     // 填充 comment 属性
                     String remarks = columnMetadata.getString("REMARKS");
                     if (remarks != null && !remarks.trim().isEmpty()) {
                         field.setComment(remarks);
                     }
-                    
+
                     fields.add(field);
                 }
             }
@@ -189,7 +193,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) throws Exception {
         if (CollectionUtils.isEmpty(command)) {
             return 0L;
         }
@@ -290,7 +294,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Result result = new Result();
         int[] execute = null;
         // 2、设置参数并执行SQL
-        execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
+        try {
+            execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
@@ -389,7 +397,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
 
     @Override
-    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) throws Exception {
         Table table = commandConfig.getTable();
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
         if (CollectionUtils.isEmpty(primaryKeys)) {
@@ -554,7 +562,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param tableNamePattern
      * @return
      */
-    private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) {
+    private List<Table> getTable(DatabaseConnectorInstance connectorInstance, String catalog, String schema, String tableNamePattern) throws Exception {
         return connectorInstance.execute(databaseTemplate -> {
             List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();

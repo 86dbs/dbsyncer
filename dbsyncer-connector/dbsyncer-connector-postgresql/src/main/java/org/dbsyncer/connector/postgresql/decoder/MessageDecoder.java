@@ -19,12 +19,12 @@ import java.nio.ByteBuffer;
  */
 public interface MessageDecoder {
 
-    default void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
+    default void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) throws Exception {
     }
 
     boolean skipMessage(ByteBuffer buffer, LogSequenceNumber startLsn, LogSequenceNumber lastReceiveLsn);
 
-    RowChangedEvent processMessage(ByteBuffer buffer);
+    RowChangedEvent processMessage(ByteBuffer buffer) throws Exception;
 
     String getSlotName();
 

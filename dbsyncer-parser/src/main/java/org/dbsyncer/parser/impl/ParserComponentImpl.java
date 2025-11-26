@@ -67,7 +67,7 @@ public class ParserComponentImpl implements ParserComponent {
     private ProcessEvent fullProcessEvent;
 
     @Override
-    public MetaInfo getMetaInfo(String connectorId, String tableName) {
+    public MetaInfo getMetaInfo(String connectorId, String tableName) throws Exception {
         Connector connector = profileComponent.getConnector(connectorId);
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
         MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
@@ -84,7 +84,7 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     @Override
-    public long getCount(String connectorId, Map<String, String> command) {
+    public long getCount(String connectorId, Map<String, String> command) throws Exception {
         ConnectorInstance connectorInstance = connectorFactory.connect(getConnectorConfig(connectorId));
         return connectorFactory.getCount(connectorInstance, command);
     }
@@ -94,7 +94,7 @@ public class ParserComponentImpl implements ParserComponent {
      * 新的TableGroup流式处理方法
      */
     @Override
-    public void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping) {
+    public void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping) throws Exception {
         // 状态清理， 无须保存，因为第一个批次处理完后会保存。
         tableGroup.setErrorMessage("");
 
@@ -193,6 +193,8 @@ public class ParserComponentImpl implements ParserComponent {
             // 标记流式处理完成
             tableGroup.setFullCompleted(true);
             profileComponent.editConfigModel(tableGroup);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
@@ -201,7 +203,7 @@ public class ParserComponentImpl implements ParserComponent {
      * TableGroup专用的数据处理逻辑
      */
     private void processTableGroupDataBatch(String metaId, List<Map> source, TableGroup tableGroup,
-                                            AbstractPluginContext context, Picker picker, List<String> primaryKeys) {
+                                            AbstractPluginContext context, Picker picker, List<String> primaryKeys) throws Exception {
         // 1、映射字段
         List<Map> target = picker.pickTargetData(source);
 

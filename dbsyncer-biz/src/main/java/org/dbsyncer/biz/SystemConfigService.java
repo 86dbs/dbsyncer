@@ -25,28 +25,28 @@ public interface SystemConfigService {
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 获取系统配置
      *
      * @return
      */
-    SystemConfigVo getSystemConfigVo();
+    SystemConfigVo getSystemConfigVo() throws Exception;
 
     /**
      * 获取系统配置
      *
      * @return
      */
-    SystemConfig getSystemConfig();
+    SystemConfig getSystemConfig() throws Exception;
 
     /**
      * 获取所有配置（system、user、connector、mapping、tableGroup、meta、projectGroup）
      *
      * @return
      */
-    List<ConfigModel> getConfigModelAll();
+    List<ConfigModel> getConfigModelAll() throws Exception;
 
     /**
      * 校验文件格式

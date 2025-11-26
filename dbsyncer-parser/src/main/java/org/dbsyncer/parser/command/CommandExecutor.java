@@ -10,5 +10,5 @@ package org.dbsyncer.parser.command;
  */
 public interface CommandExecutor {
 
-    Object execute(Command cmd);
+    Object execute(Command cmd) throws Exception;
 }

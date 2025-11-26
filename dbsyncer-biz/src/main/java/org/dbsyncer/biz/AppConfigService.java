@@ -17,5 +17,5 @@ public interface AppConfigService {
      *
      * @return
      */
-    VersionVo getVersionInfo(String username);
+    VersionVo getVersionInfo(String username) throws Exception;
 }

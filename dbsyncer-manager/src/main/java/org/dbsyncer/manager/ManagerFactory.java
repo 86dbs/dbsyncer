@@ -30,7 +30,7 @@ public class ManagerFactory {
     @Resource
     private LogService logService;
 
-    public void start(Mapping mapping) {
+    public void start(Mapping mapping) throws Exception {
         Puller puller = getPuller(mapping);
 
         // 标记运行中，使用Meta类的统一方法
@@ -48,7 +48,7 @@ public class ManagerFactory {
         }
     }
 
-    public void close(Mapping mapping) {
+    public void close(Mapping mapping) throws Exception {
         Puller puller = getPuller(mapping);
         puller.close(mapping);
     }

@@ -20,28 +20,28 @@ public interface MappingService {
      *
      * @param params
      */
-    String add(Map<String, String> params);
+    String add(Map<String, String> params) throws Exception;
 
     /**
      * 复制驱动
      *
      * @param id
      */
-    String copy(String id);
+    String copy(String id) throws Exception;
 
     /**
      * 修改驱动
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 删除驱动
      *
      * @param id
      */
-    String remove(String id);
+    String remove(String id) throws Exception;
 
     /**
      * 获取驱动
@@ -58,7 +58,7 @@ public interface MappingService {
      * @param exclude 0-过滤已添加的表；1-显示所有表，包含已添加的表
      * @return
      */
-    MappingVo getMapping(String id, Integer exclude);
+    MappingVo getMapping(String id, Integer exclude) throws Exception;
 
     /**
      * 获取所有驱动
@@ -72,27 +72,27 @@ public interface MappingService {
      *
      * @param id
      */
-    String start(String id);
+    String start(String id) throws Exception;
 
     /**
      * 停止驱动
      *
      * @param id
      */
-    String stop(String id);
+    String stop(String id) throws Exception;
 
     /**
      * 重置混合同步任务
      *
      * @param id
      */
-    String reset(String id);
+    String reset(String id) throws Exception;
 
     /**
      * 刷新驱动数据源和目标源表
      *
      * @param id
      */
-    String refreshMappingTables(String id);
+    String refreshMappingTables(String id) throws Exception;
 
 }

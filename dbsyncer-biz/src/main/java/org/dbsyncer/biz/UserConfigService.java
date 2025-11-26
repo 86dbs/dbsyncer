@@ -29,21 +29,21 @@ public interface UserConfigService {
      *
      * @param params
      */
-    String add(Map<String, String> params);
+    String add(Map<String, String> params) throws Exception;
 
     /**
      * 修改用戶(管理员可以修改所有用户，普通用户只能修改自己)
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 删除用戶(仅管理员可以删除普通用户)
      *
      * @param params
      */
-    String remove(Map<String, String> params);
+    String remove(Map<String, String> params) throws Exception;
 
     /**
      * 获取登录用户密码
@@ -51,7 +51,7 @@ public interface UserConfigService {
      * @param currentUserName 登录用户
      * @return
      */
-    UserInfo getUserInfo(String currentUserName);
+    UserInfo getUserInfo(String currentUserName) throws Exception;
 
     /**
      * 获取登录用户信息VO(管理员可以查看所有用户，普通用户只能查看自己)
@@ -60,7 +60,7 @@ public interface UserConfigService {
      * @param username        查询的用户
      * @return
      */
-    UserInfoVo getUserInfoVo(String currentUserName, String username);
+    UserInfoVo getUserInfoVo(String currentUserName, String username) throws Exception;
 
     /**
      * 获取所有用户信息VO(系统管理员可以查看所有用户，其他用户只能查看自己)
@@ -68,14 +68,14 @@ public interface UserConfigService {
      * @param currentUserName 登录用户
      * @return
      */
-    List<UserInfoVo> getUserInfoAll(String currentUserName);
+    List<UserInfoVo> getUserInfoAll(String currentUserName) throws Exception;
 
     /**
      * 获取用户配置
      *
      * @return
      */
-    UserConfig getUserConfig();
+    UserConfig getUserConfig() throws Exception;
 
     /**
      * 获取默认用户(admin)

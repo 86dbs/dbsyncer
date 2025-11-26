@@ -81,7 +81,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     }
 
     @Override
-    public void start(Mapping mapping) {
+    public void start(Mapping mapping) throws Exception {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
@@ -110,8 +110,12 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
                 listener.start();
             } catch (Exception e) {
                 // 记录运行时异常状态和异常信息
-                meta.saveState(MetaEnum.ERROR, e.getMessage());
-                close(mapping);
+                try {
+                    meta.saveState(MetaEnum.ERROR, e.getMessage());
+                    close(mapping);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
@@ -122,7 +126,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     }
 
     @Override
-    public void close(Mapping mapping) {
+    public void close(Mapping mapping) throws Exception {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         if (meta != null) {
             Listener listener = meta.getListener();
@@ -144,12 +148,16 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         profileComponent.getMetaAll().forEach(meta -> {
             Listener listener = meta.getListener();
             if (listener != null) {
-                listener.flushEvent();
+                try {
+                    listener.flushEvent();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
     }
 
-    private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) {
+    private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) throws Exception {
         ConnectorConfig connectorConfig = connector.getConfig();
         ConnectorConfig targetConnectorConfig = targetConnector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();

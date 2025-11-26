@@ -54,7 +54,7 @@ public interface StorageService {
      * @param type
      * @param params
      */
-    void add(StorageEnum type, Map params);
+    void add(StorageEnum type, Map params) throws Exception;
 
     /**
      * 添加
@@ -63,7 +63,7 @@ public interface StorageService {
      * @param metaId
      * @param params
      */
-    void add(StorageEnum type, String metaId, Map params);
+    void add(StorageEnum type, String metaId, Map params) throws Exception;
 
     /**
      * 批量添加
@@ -72,7 +72,7 @@ public interface StorageService {
      * @param metaId
      * @param list
      */
-    void addBatch(StorageEnum type, String metaId, List<Map> list);
+    void addBatch(StorageEnum type, String metaId, List<Map> list) throws Exception;
 
     /**
      * 修改
@@ -80,7 +80,7 @@ public interface StorageService {
      * @param type
      * @param params
      */
-    void edit(StorageEnum type, Map params);
+    void edit(StorageEnum type, Map params) throws Exception;
 
     /**
      * 修改
@@ -89,7 +89,7 @@ public interface StorageService {
      * @param metaId
      * @param params
      */
-    void edit(StorageEnum type, String metaId, Map params);
+    void edit(StorageEnum type, String metaId, Map params) throws Exception;
 
     /**
      * 批量修改
@@ -98,7 +98,7 @@ public interface StorageService {
      * @param metaId
      * @param list
      */
-    void editBatch(StorageEnum type, String metaId, List<Map> list);
+    void editBatch(StorageEnum type, String metaId, List<Map> list) throws Exception;
 
     /**
      * 删除
@@ -106,7 +106,7 @@ public interface StorageService {
      * @param type
      * @param id
      */
-    void remove(StorageEnum type, String id);
+    void remove(StorageEnum type, String id) throws Exception;
 
     /**
      * 删除
@@ -115,7 +115,7 @@ public interface StorageService {
      * @param metaId
      * @param id
      */
-    void remove(StorageEnum type, String metaId, String id);
+    void remove(StorageEnum type, String metaId, String id) throws Exception;
 
     /**
      * 批量删除
@@ -124,5 +124,5 @@ public interface StorageService {
      * @param metaId
      * @param ids
      */
-    void removeBatch(StorageEnum type, String metaId, List<String> ids);
+    void removeBatch(StorageEnum type, String metaId, List<String> ids) throws Exception;
 }

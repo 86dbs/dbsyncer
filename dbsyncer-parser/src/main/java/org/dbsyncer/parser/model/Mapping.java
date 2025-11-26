@@ -186,13 +186,13 @@ public class Mapping extends AbstractConfigModel {
     }
 
     @JsonIgnore
-    public void resetMetaState() {
+    public void resetMetaState() throws Exception {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.resetState();
     }
 
     @JsonIgnore
-    public void updateMata(String metaSnapshot) {
+    public void updateMata(String metaSnapshot) throws Exception {
         Meta meta = profileComponent.getMeta(getMetaId());
         meta.updateSnapshot(metaSnapshot);
         profileComponent.editConfigModel(this);
@@ -200,7 +200,7 @@ public class Mapping extends AbstractConfigModel {
     }
 
     @JsonIgnore
-    public Mapping copy(SnowflakeIdWorker snowflakeIdWorker) {
+    public Mapping copy(SnowflakeIdWorker snowflakeIdWorker) throws Exception {
         String json = JsonUtil.objToJson(this);
         Mapping newMapping = JsonUtil.jsonToObj(json, Mapping.class);
         newMapping.profileComponent = profileComponent;
@@ -218,7 +218,11 @@ public class Mapping extends AbstractConfigModel {
             return newMapping;
         }
         groupList.forEach(tableGroup -> {
-            tableGroup.copy(newId, snowflakeIdWorker);
+            try {
+                tableGroup.copy(newId, snowflakeIdWorker);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
 
         return newMapping;

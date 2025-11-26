@@ -65,7 +65,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
 
     @Override
-    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) {
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance) throws Exception {
         DatabaseConfig config = connectorInstance.getConfig();
         List<Table> tables = getTables(connectorInstance, String.format(QUERY_TABLE, config.getSchema()), TableTypeEnum.TABLE);
         tables.addAll(getTables(connectorInstance, QUERY_VIEW, TableTypeEnum.VIEW));
@@ -84,7 +84,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         return null;
     }
 
-    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
+    private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) throws Exception {
         List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
             return tableNames.stream().map(name -> new Table(name, type.getCode())).collect(Collectors.toList());
@@ -93,7 +93,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) throws Exception {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
         String tableName = commandConfig.getTable().getName();
         // 判断表是否包含标识自增列
@@ -106,7 +106,7 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public Map<String, String> getPosition(DatabaseConnectorInstance connectorInstance) {
+    public Map<String, String> getPosition(DatabaseConnectorInstance connectorInstance) throws Exception {
         // 查询当前LSN位置
         byte[] currentLsnBytes = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject("SELECT sys.fn_cdc_get_max_lsn()", byte[].class));

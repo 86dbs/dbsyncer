@@ -43,7 +43,7 @@ public abstract class BaseController {
      * 初始化: 条件/转换/插件
      * @param model
      */
-    protected void initConfig(ModelMap model){
+    protected void initConfig(ModelMap model) throws Exception {
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
         model.put("plugin", pluginService.getPluginAll());

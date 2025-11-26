@@ -13,7 +13,7 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 public class DqlMySQLListener extends MySQLListener {
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         super.postProcessDqlBeforeInitialization();
         super.start();
     }

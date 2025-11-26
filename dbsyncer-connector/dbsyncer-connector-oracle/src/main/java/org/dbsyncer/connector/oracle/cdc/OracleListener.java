@@ -54,7 +54,7 @@ public class OracleListener extends AbstractDatabaseListener {
     }
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         try {
             final DatabaseConfig config = getConnectorInstance().getConfig();
             String driverClassName = config.getDriverClassName();

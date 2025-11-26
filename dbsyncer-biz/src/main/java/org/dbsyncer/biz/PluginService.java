@@ -19,7 +19,7 @@ public interface PluginService {
      *
      * @return
      */
-    List<PluginVo> getPluginAll();
+    List<PluginVo> getPluginAll() throws Exception;
 
     /**
      * 获取插件上传路径

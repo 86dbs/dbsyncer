@@ -59,7 +59,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     private Checker connectorChecker;
 
     @Override
-    public String add(Map<String, String> params) {
+    public String add(Map<String, String> params) throws Exception {
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.INSERT, model);
 
@@ -67,7 +67,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id) throws Exception {
         Connector connector = getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
@@ -81,7 +81,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public String edit(Map<String, String> params) {
+    public String edit(Map<String, String> params) throws Exception {
         ConfigModel model = connectorChecker.checkEditConfigModel(params);
         log(LogType.ConnectorLog.UPDATE, model);
 
@@ -89,7 +89,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public String remove(String id) {
+    public String remove(String id) throws Exception {
         List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (!CollectionUtils.isEmpty(mappingAll)) {
             mappingAll.forEach(mapping -> {
@@ -166,7 +166,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public Object getPosition(String id) {
+    public Object getPosition(String id) throws Exception {
         Connector connector = getConnector(id);
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
         return connectorFactory.getPosition(connectorInstance);

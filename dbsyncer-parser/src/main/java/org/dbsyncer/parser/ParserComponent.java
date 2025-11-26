@@ -24,7 +24,7 @@ public interface ParserComponent {
      * @param tableName
      * @return
      */
-    MetaInfo getMetaInfo(String connectorId, String tableName);
+    MetaInfo getMetaInfo(String connectorId, String tableName) throws Exception;
 
     /**
      * 获取总数
@@ -33,7 +33,7 @@ public interface ParserComponent {
      * @param command
      * @return
      */
-    long getCount(String connectorId, Map<String, String> command);
+    long getCount(String connectorId, Map<String, String> command) throws Exception;
 
     /**
      * TableGroup流式处理
@@ -42,6 +42,6 @@ public interface ParserComponent {
      * @param tableGroup
      * @param mapping
      */
-    void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping);
+    void executeTableGroup(String metaId, TableGroup tableGroup, Mapping mapping) throws Exception;
 
 }

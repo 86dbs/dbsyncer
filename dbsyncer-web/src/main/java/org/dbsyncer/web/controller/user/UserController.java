@@ -37,7 +37,7 @@ public class UserController extends BaseController {
     private UserConfigService userConfigService;
 
     @RequestMapping("")
-    public String index(ModelMap model) {
+    public String index(ModelMap model) throws Exception {
         model.put("currentUser", getUserInfoVo());
         model.put("users", userConfigService.getUserInfoAll(getUserName()));
         return "user/user";
@@ -49,7 +49,7 @@ public class UserController extends BaseController {
     }
 
     @GetMapping("/page/edit")
-    public String pageEdit(ModelMap model, String username) {
+    public String pageEdit(ModelMap model, String username) throws Exception {
         String currentUserName = getUserName();
         model.put(UserConfigService.CURRENT_USER_NAME, currentUserName);
         model.put("currentUser", userConfigService.getUserInfoVo(currentUserName, username));
@@ -58,7 +58,7 @@ public class UserController extends BaseController {
 
     @GetMapping("/getUserInfo.json")
     @ResponseBody
-    public RestResult getUserInfo() {
+    public RestResult getUserInfo() throws Exception {
         return RestResult.restSuccess(getUserInfoVo());
     }
 
@@ -109,7 +109,7 @@ public class UserController extends BaseController {
      *
      * @return
      */
-    private UserInfoVo getUserInfoVo() {
+    private UserInfoVo getUserInfoVo() throws Exception {
         String currentUserName = getUserName();
         return userConfigService.getUserInfoVo(currentUserName, currentUserName);
     }

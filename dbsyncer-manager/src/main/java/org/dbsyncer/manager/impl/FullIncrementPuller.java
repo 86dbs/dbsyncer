@@ -83,7 +83,11 @@ public final class FullIncrementPuller implements Puller {
 
             } catch (Exception e) {
                 // 异常驱动：直接更新Meta状态为ERROR并记录错误信息
-                meta.saveState(MetaEnum.ERROR, e.getMessage());
+                try {
+                    meta.saveState(MetaEnum.ERROR, e.getMessage());
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
                 logger.error("混合同步异常，已更新Meta状态为ERROR: {}", metaId, e);
                 // 在logService中记录异常信息
                 logService.log(LogType.TableGroupLog.FULL_FAILED, "混合同步异常: %s，错误信息: %s", metaId, e.getMessage());
@@ -95,18 +99,22 @@ public final class FullIncrementPuller implements Puller {
     }
 
     @Override
-    public void close(Mapping mapping) {
+    public void close(Mapping mapping) throws Exception {
         // 关闭全量和增量同步
         fullPuller.close(mapping);
         incrementPuller.close(mapping);
     }
 
     // 核心：运行全量同步并在完成后执行回调
-    private void startFullThenIncrement(Mapping mapping, Meta meta) {
+    private void startFullThenIncrement(Mapping mapping, Meta meta) throws Exception {
         // 设置阶段回调：全量完成后启动增量同步
         meta.setPhaseHandler(() -> {
             // 启动增量同步
-            startIncrementSync(mapping, meta);
+            try {
+                startIncrementSync(mapping, meta);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
 
         // 启动全量同步
@@ -118,7 +126,7 @@ public final class FullIncrementPuller implements Puller {
      *
      * @param mapping
      */
-    private void recordIncrementStartPoint(Mapping mapping, Meta meta) {
+    private void recordIncrementStartPoint(Mapping mapping, Meta meta) throws Exception {
         // 检查是否已经记录了增量起始点
         if (meta.isIncrementStartPointRecorded()) {
             logger.info("增量起始点已记录，跳过: {}", mapping.getMetaId());
@@ -144,7 +152,7 @@ public final class FullIncrementPuller implements Puller {
         logger.info("已记录增量同步起始位置: metaId={}", mapping.getMetaId());
     }
 
-    private void startIncrementSync(Mapping mapping, Meta meta) {
+    private void startIncrementSync(Mapping mapping, Meta meta) throws Exception {
         // 关键：恢复受保护的增量起始点到正常字段
         meta.restoreProtectedIncrementStartPoint();
 

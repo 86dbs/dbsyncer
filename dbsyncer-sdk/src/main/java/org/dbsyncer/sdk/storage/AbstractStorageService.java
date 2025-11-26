@@ -35,17 +35,17 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     private final Lock lock = new ReentrantLock();
 
-    protected abstract Paging select(String sharding, Query query);
+    protected abstract Paging select(String sharding, Query query) throws Exception;
 
-    protected abstract void delete(String sharding, Query query);
+    protected abstract void delete(String sharding, Query query) throws Exception;
 
     protected abstract void deleteAll(String sharding);
 
-    protected abstract void batchInsert(StorageEnum type, String sharding, List<Map> list);
+    protected abstract void batchInsert(StorageEnum type, String sharding, List<Map> list) throws Exception;
 
-    protected abstract void batchUpdate(StorageEnum type, String sharding, List<Map> list);
+    protected abstract void batchUpdate(StorageEnum type, String sharding, List<Map> list) throws Exception;
 
-    protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids);
+    protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids) throws Exception;
 
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
@@ -69,6 +69,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             logger.warn("tryLock error:{}", e.getLocalizedMessage());
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             if (locked) {
                 lock.unlock();
@@ -93,6 +95,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             }
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             if (locked) {
                 lock.unlock();
@@ -114,51 +118,51 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     }
 
     @Override
-    public void add(StorageEnum type, Map params) {
+    public void add(StorageEnum type, Map params) throws Exception {
         add(type, null, params);
     }
 
     @Override
-    public void add(StorageEnum type, String metaId, Map params) {
+    public void add(StorageEnum type, String metaId, Map params) throws Exception {
         addBatch(type, metaId, newArrayList(params));
     }
 
     @Override
-    public void addBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void addBatch(StorageEnum type, String metaId, List<Map> list) throws Exception {
         if (!CollectionUtils.isEmpty(list)) {
             batchInsert(type, getSharding(type, metaId), list);
         }
     }
 
     @Override
-    public void edit(StorageEnum type, Map params) {
+    public void edit(StorageEnum type, Map params) throws Exception {
         edit(type, null, params);
     }
 
     @Override
-    public void edit(StorageEnum type, String metaId, Map params) {
+    public void edit(StorageEnum type, String metaId, Map params) throws Exception {
         editBatch(type, metaId, newArrayList(params));
     }
 
     @Override
-    public void editBatch(StorageEnum type, String metaId, List<Map> list) {
+    public void editBatch(StorageEnum type, String metaId, List<Map> list) throws Exception {
         if (!CollectionUtils.isEmpty(list)) {
             batchUpdate(type, getSharding(type, metaId), list);
         }
     }
 
     @Override
-    public void remove(StorageEnum type, String id) {
+    public void remove(StorageEnum type, String id) throws Exception {
         remove(type, null, id);
     }
 
     @Override
-    public void remove(StorageEnum type, String metaId, String id) {
+    public void remove(StorageEnum type, String metaId, String id) throws Exception {
         removeBatch(type, metaId, newArrayList(id));
     }
 
     @Override
-    public void removeBatch(StorageEnum type, String metaId, List<String> ids) {
+    public void removeBatch(StorageEnum type, String metaId, List<String> ids) throws Exception {
         if (!CollectionUtils.isEmpty(ids)) {
             batchDelete(type, getSharding(type, metaId), ids);
         }

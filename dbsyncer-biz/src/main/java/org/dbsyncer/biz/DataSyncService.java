@@ -27,7 +27,7 @@ public interface DataSyncService {
      * @return
      * @throws InvalidProtocolBufferException
      */
-    Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException;
+    Map getBinlogData(Map row, boolean prettyBytes) throws Exception;
 
     /**
      * 手动同步数据
@@ -35,6 +35,6 @@ public interface DataSyncService {
      * @param params
      * @return
      */
-    String sync(Map<String, String> params) throws InvalidProtocolBufferException;
+    String sync(Map<String, String> params) throws Exception;
 
 }

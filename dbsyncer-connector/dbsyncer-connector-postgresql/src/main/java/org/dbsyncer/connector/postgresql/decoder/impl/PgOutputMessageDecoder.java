@@ -42,7 +42,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private DatabaseConnectorInstance connectorInstance;
 
     @Override
-    public void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) {
+    public void postProcessBeforeInitialization(ConnectorService connectorService, DatabaseConnectorInstance connectorInstance) throws Exception {
         this.connectorService = connectorService;
         this.connectorInstance = connectorInstance;
         initPublication();
@@ -50,7 +50,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     @Override
-    public RowChangedEvent processMessage(ByteBuffer buffer) {
+    public RowChangedEvent processMessage(ByteBuffer buffer) throws Exception {
         if (!buffer.hasArray()) {
             throw new IllegalStateException("Invalid buffer received from PG server during streaming replication");
         }
@@ -99,7 +99,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         return String.format("dbs_pub_%s_%s", config.getSchema(), config.getUsername()).toLowerCase();
     }
 
-    private void initPublication() {
+    private void initPublication() throws Exception {
         String pubName = getPubName();
         String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
         Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
@@ -120,21 +120,26 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         }
     }
 
-    private void readSchema() {
+    private void readSchema() throws Exception {
         final String querySchema = String.format(GET_TABLE_SCHEMA, config.getSchema());
         List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
         if (!CollectionUtils.isEmpty(schemas)) {
             schemas.forEach(map -> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
-                MetaInfo metaInfo = connectorService.getMetaInfo(connectorInstance, tableName);
+                MetaInfo metaInfo = null;
+                try {
+                    metaInfo = connectorService.getMetaInfo(connectorInstance, tableName);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
                 tables.put(oid.intValue(), new TableId(oid.intValue(), tableName, metaInfo.getColumn()));
             });
         }
     }
 
-    private RowChangedEvent parseData(MessageTypeEnum type, ByteBuffer buffer) {
+    private RowChangedEvent parseData(MessageTypeEnum type, ByteBuffer buffer) throws Exception {
         final int relationId = buffer.getInt();
         final TableId tableId = tables.get(relationId);
         if (null != tableId) {
@@ -158,7 +163,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         return null;
     }
 
-    private void readTupleData(TableId tableId, ByteBuffer msg, List<Object> data) {
+    private void readTupleData(TableId tableId, ByteBuffer msg, List<Object> data) throws Exception {
         short nColumn = msg.getShort();
         if (nColumn != tableId.fields.size()) {
             logger.warn("The column size of table '{}' is {}, but we has been received column size is {}.", tableId.tableName, tableId.fields.size(), nColumn);

@@ -79,7 +79,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ParserComponent parserComponent;
 
     @Override
-    public String add(Map<String, String> params) {
+    public String add(Map<String, String> params) throws Exception {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, model);
 
@@ -102,7 +102,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String copy(String id) {
+    public String copy(String id) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         Mapping newMapping = mapping.copy(snowflakeIdWorker);
@@ -114,7 +114,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String edit(Map<String, String> params) {
+    public String edit(Map<String, String> params) throws Exception {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
@@ -130,7 +130,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return id;
     }
 
-    private void resetCount(Mapping mapping) {
+    private void resetCount(Mapping mapping) throws Exception {
         // 统计总数
         if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())) {
             mapping.getMeta().clear(mapping.getModel());
@@ -140,7 +140,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String remove(String id) {
+    public String remove(String id) throws Exception {
         Mapping mapping = assertMappingExist(id);
         String metaId = mapping.getMetaId();
         Meta meta = profileComponent.getMeta(metaId);
@@ -158,7 +158,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除tableGroup
             List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
+                groupList.forEach(t -> {
+                    try {
+                        profileComponent.removeTableGroup(t.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
 
             // 删除驱动表映射关系
@@ -178,7 +184,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public MappingVo getMapping(String id, Integer exclude) {
+    public MappingVo getMapping(String id, Integer exclude) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         // 显示所有表
         if (exclude != null && exclude == 1) {
@@ -215,7 +221,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String start(String id) {
+    public String start(String id) throws Exception {
         Mapping mapping = assertMappingExist(id);
         final String metaId = mapping.getMetaId();
 
@@ -231,7 +237,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String stop(String id) {
+    public String stop(String id) throws Exception {
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
             if (!isRunning(mapping.getMetaId())) {
@@ -249,7 +255,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String refreshMappingTables(String id) {
+    public String refreshMappingTables(String id) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
         updateConnectorTables(mapping.getSourceConnectorId());
@@ -269,7 +275,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         dispatchTaskService.execute(task);
     }
 
-    private void updateConnectorTables(String connectorId) {
+    private void updateConnectorTables(String connectorId) throws Exception {
         Connector connector = profileComponent.getConnector(connectorId);
         Assert.notNull(connector, "The connector id is invalid.");
         // 刷新数据表
@@ -409,7 +415,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 }
             }
             tableGroupService.add(params);
-        } catch (RepeatedTableGroupException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -423,7 +429,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public String reset(String id) {
+    public String reset(String id) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "驱动不存在");
 

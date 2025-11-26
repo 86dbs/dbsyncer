@@ -13,7 +13,7 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 public class DqlOracleListener extends OracleListener {
 
     @Override
-    public void start() {
+    public void start() throws Exception {
         super.postProcessDqlBeforeInitialization();
         super.start();
     }

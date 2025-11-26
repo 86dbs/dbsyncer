@@ -55,7 +55,7 @@ public class TableGroupChecker extends AbstractChecker {
     private ConnectorFactory connectorFactory;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception {
         logger.info("params:{}", params);
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
@@ -94,7 +94,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public ConfigModel checkEditConfigModel(Map<String, String> params) throws Exception {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
@@ -123,7 +123,7 @@ public class TableGroupChecker extends AbstractChecker {
     /**
      * 刷新表字段
      */
-    public void refreshTableFields(TableGroup tableGroup) {
+    public void refreshTableFields(TableGroup tableGroup) throws Exception {
         Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
 
@@ -145,7 +145,7 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
     }
 
-    private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
+    private Table getTable(String connectorId, String tableName, String primaryKeyStr) throws Exception {
         MetaInfo metaInfo = parserComponent.getMetaInfo(connectorId, tableName);
         Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
         // 自定义主键
@@ -163,7 +163,7 @@ public class TableGroupChecker extends AbstractChecker {
         return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn(), metaInfo.getSql(), metaInfo.getIndexType());
     }
 
-    private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
+    private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) throws Exception {
         List<TableGroup> list = profileComponent.getTableGroupAll(mappingId);
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {

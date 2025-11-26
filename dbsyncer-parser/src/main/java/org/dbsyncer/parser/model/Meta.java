@@ -80,12 +80,12 @@ public class Meta extends ConfigModel {
     /**
      * 还原状态
      */
-    public void clear() {
+    public void clear() throws Exception {
         init();
         profileComponent.editConfigModel(this);
     }
 
-    public void clear(String model) {
+    public void clear(String model) throws Exception {
         init();
         // 为计数设置阶段
         if (model.equals(ModelEnum.INCREMENT.getCode())) {
@@ -145,7 +145,7 @@ public class Meta extends ConfigModel {
     /**
      * 更新全量同步总条数
      */
-    public void updateFullTotal() {
+    public void updateFullTotal() throws Exception {
         // 全量同步
         if (SyncPhaseEnum.FULL != getSyncPhase()) {
             return;
@@ -188,7 +188,7 @@ public class Meta extends ConfigModel {
         this.snapshot = snapshot;
     }
 
-    public void updateSnapshot(String metaSnapshot) {
+    public void updateSnapshot(String metaSnapshot) throws Exception {
         if (StringUtil.isNotBlank(metaSnapshot)) {
             @SuppressWarnings("unchecked")
         Map<String, String> snapshot = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(metaSnapshot);
@@ -242,7 +242,7 @@ public class Meta extends ConfigModel {
         this.syncPhase = syncPhase;
     }
 
-    public void updateSyncPhase(SyncPhaseEnum phase) {
+    public void updateSyncPhase(SyncPhaseEnum phase) throws Exception {
         this.syncPhase = phase;
         // 假设 Meta 类提供了 save 或类似方法来持久化自身
         if (this.profileComponent != null) {
@@ -266,7 +266,7 @@ public class Meta extends ConfigModel {
     }
 
     // 记录增量起始点到受保护字段
-    public void recordIncrementStartPoint(Map<String, String> position) {
+    public void recordIncrementStartPoint(Map<String, String> position) throws Exception {
         // 使用JsonUtil序列化position
         String incrementInfoJson = JsonUtil.objToJson(position);
         this.snapshot.put(PROTECTED_INCREMENT_INFO, incrementInfoJson);
@@ -276,7 +276,7 @@ public class Meta extends ConfigModel {
     }
 
     // 恢复受保护的增量起始点到正常字段
-    public void restoreProtectedIncrementStartPoint() {
+    public void restoreProtectedIncrementStartPoint() throws Exception {
         String incrementInfoJson = this.snapshot.get(PROTECTED_INCREMENT_INFO);
         if (StringUtil.isBlank(incrementInfoJson)) {
             // 已经开始了增量同步
@@ -298,7 +298,7 @@ public class Meta extends ConfigModel {
      * @param state        新的状态
      * @param errorMessage 异常信息（可选）
      */
-    public void saveState(MetaEnum state, String errorMessage) {
+    public void saveState(MetaEnum state, String errorMessage) throws Exception {
         this.state = state.getCode();
         this.errorMessage = errorMessage;
         this.setUpdateTime(Instant.now().toEpochMilli());
@@ -310,14 +310,14 @@ public class Meta extends ConfigModel {
      *
      * @param state 新的状态
      */
-    public void saveState(MetaEnum state) {
+    public void saveState(MetaEnum state) throws Exception {
         saveState(state, "");
     }
 
     /**
      * 重置状态到初始状态（不重置计数数据）
      */
-    public void resetState() {
+    public void resetState() throws Exception {
         saveState(MetaEnum.READY, "");
     }
 
@@ -342,7 +342,7 @@ public class Meta extends ConfigModel {
     }
 
     @JsonIgnore
-    public static Meta create(Mapping mapping, SnowflakeIdWorker snowflakeIdWorker, ProfileComponent profileComponent) {
+    public static Meta create(Mapping mapping, SnowflakeIdWorker snowflakeIdWorker, ProfileComponent profileComponent) throws Exception {
         Meta meta = new Meta(profileComponent);
         String newId = String.valueOf(snowflakeIdWorker.nextId());
         meta.setId(newId);

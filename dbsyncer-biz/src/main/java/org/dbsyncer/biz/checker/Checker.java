@@ -17,7 +17,7 @@ public interface Checker {
      * @param params
      * @return
      */
-    ConfigModel checkAddConfigModel(Map<String, String> params);
+    ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception;
 
     /**
      * 修改配置
@@ -25,5 +25,5 @@ public interface Checker {
      * @param params
      * @return
      */
-    ConfigModel checkEditConfigModel(Map<String, String> params);
+    ConfigModel checkEditConfigModel(Map<String, String> params) throws Exception;
 }

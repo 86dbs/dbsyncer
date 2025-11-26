@@ -98,7 +98,7 @@ public class FileListener extends AbstractListener {
         }
     }
 
-    private void initPipeline(String fileDir) throws IOException {
+    private void initPipeline(String fileDir) throws Exception {
         for (FileSchema fileSchema : instance.getFileSchemaList()) {
             String fileName = fileSchema.getFileName();
             String file = fileDir.concat(fileName);

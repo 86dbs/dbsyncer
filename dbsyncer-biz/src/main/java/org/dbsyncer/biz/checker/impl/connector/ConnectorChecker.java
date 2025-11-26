@@ -39,7 +39,7 @@ public class ConnectorChecker extends AbstractChecker {
     private ConnectorFactory connectorFactory;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception {
         printParams(params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String connectorType = params.get("connectorType");
@@ -67,7 +67,7 @@ public class ConnectorChecker extends AbstractChecker {
     }
 
     @Override
-    public ConfigModel checkEditConfigModel(Map<String, String> params) {
+    public ConfigModel checkEditConfigModel(Map<String, String> params) throws Exception {
         printParams(params);
         Assert.notEmpty(params, "ConnectorChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);

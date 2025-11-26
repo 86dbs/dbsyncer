@@ -35,7 +35,7 @@ public class MappingCountTask extends AbstractCountTask {
     }
 
     @Override
-    public void execute() {
+    public void execute() throws Exception {
         Mapping mapping = profileComponent.getMapping(mappingId);
         if (shouldStop(mapping)) {
             return;

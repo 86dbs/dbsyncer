@@ -48,7 +48,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     private LogService logService;
 
     @Override
-    public synchronized String add(Map<String, String> params) {
+    public synchronized String add(Map<String, String> params) throws Exception {
         String username = params.get("username");
         Assert.hasText(username, "The username is null.");
         String nickname = params.get("nickname");
@@ -72,7 +72,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public synchronized String edit(Map<String, String> params) {
+    public synchronized String edit(Map<String, String> params) throws Exception {
         String username = params.get("username");
         Assert.hasText(username, "The username is null.");
         String nickname = params.get("nickname");
@@ -117,7 +117,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public synchronized String remove(Map<String, String> params) {
+    public synchronized String remove(Map<String, String> params) throws Exception {
         String username = params.get("username");
         Assert.hasText(username, "The username is null.");
 
@@ -139,12 +139,12 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public UserInfo getUserInfo(String currentUserName) {
+    public UserInfo getUserInfo(String currentUserName) throws Exception {
         return getUserConfig().getUserInfo(currentUserName);
     }
 
     @Override
-    public UserInfoVo getUserInfoVo(String currentUserName, String username) {
+    public UserInfoVo getUserInfoVo(String currentUserName, String username) throws Exception {
         // 管理员可以查看所有用户，普通用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
@@ -157,7 +157,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public List<UserInfoVo> getUserInfoAll(String currentUserName) {
+    public List<UserInfoVo> getUserInfoAll(String currentUserName) throws Exception {
         // 系统管理员可以查看所有用户，其他用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
@@ -173,7 +173,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public UserConfig getUserConfig() {
+    public UserConfig getUserConfig() throws Exception {
         UserConfig config = profileComponent.getUserConfig();
         if (null != config) {
             return config;

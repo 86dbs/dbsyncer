@@ -38,7 +38,7 @@ public class SystemConfigChecker extends AbstractChecker {
     private LogService logService;
 
     @Override
-    public ConfigModel checkAddConfigModel(Map<String, String> params) {
+    public ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception {
         SystemConfig systemConfig = new SystemConfig();
         systemConfig.setName("系统配置");
 

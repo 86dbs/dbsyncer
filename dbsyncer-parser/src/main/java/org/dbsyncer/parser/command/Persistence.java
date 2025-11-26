@@ -14,11 +14,11 @@ import org.dbsyncer.parser.ParserException;
  */
 public interface Persistence {
 
-    default boolean addConfig() {
+    default boolean addConfig() throws Exception {
         throw new ParserException("Unsupported method addConfig");
     }
 
-    default boolean editConfig() {
+    default boolean editConfig() throws Exception {
         throw new ParserException("Unsupported method editConfig");
     }
 }

@@ -93,7 +93,7 @@ public class IndexController {
 
     @GetMapping("/version.json")
     @ResponseBody
-    public RestResult version() {
+    public RestResult version() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return RestResult.restSuccess(appConfigService.getVersionInfo(authentication.getName()));
     }

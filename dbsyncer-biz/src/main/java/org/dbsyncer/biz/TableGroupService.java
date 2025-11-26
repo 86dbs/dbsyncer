@@ -20,21 +20,21 @@ public interface TableGroupService {
      *
      * @param params
      */
-    String add(Map<String, String> params);
+    String add(Map<String, String> params) throws Exception;
 
     /**
      * 修改表关系
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 刷新表字段
      *
      * @param id
      */
-    String refreshFields(String id);
+    String refreshFields(String id) throws Exception;
 
     /**
      * 删除表关系
@@ -42,7 +42,7 @@ public interface TableGroupService {
      * @param mappingId
      * @param ids
      */
-    boolean remove(String mappingId, String ids);
+    boolean remove(String mappingId, String ids) throws Exception;
 
     /**
      * 获取表关系
@@ -50,7 +50,7 @@ public interface TableGroupService {
      * @param id
      * @return
      */
-    TableGroup getTableGroup(String id);
+    TableGroup getTableGroup(String id) throws Exception;
 
     /**
      * 获取所有表关系
@@ -58,5 +58,5 @@ public interface TableGroupService {
      * @param mappingId
      * @return
      */
-    List<TableGroup> getTableGroupAll(String mappingId);
+    List<TableGroup> getTableGroupAll(String mappingId) throws Exception;
 }

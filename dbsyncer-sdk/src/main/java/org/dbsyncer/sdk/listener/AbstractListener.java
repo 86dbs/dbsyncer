@@ -85,7 +85,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     }
 
     @Override
-    public void flushEvent() {
+    public void flushEvent() throws Exception {
         // 20s内更新，执行写入
         if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
             if (!CollectionUtils.isEmpty(snapshot)) {
@@ -96,7 +96,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     }
 
     @Override
-    public void forceFlushEvent() {
+    public void forceFlushEvent() throws Exception {
         if (!CollectionUtils.isEmpty(snapshot)) {
             logger.info("snapshot：{}", snapshot);
             watcher.flushEvent(snapshot);

@@ -23,21 +23,21 @@ public interface ProjectGroupService {
      *
      * @param params
      */
-    String add(Map<String, String> params);
+    String add(Map<String, String> params) throws Exception;
 
     /**
      * 修改分组
      *
      * @param params
      */
-    String edit(Map<String, String> params);
+    String edit(Map<String, String> params) throws Exception;
 
     /**
      * 删除分组
      *
      * @param id
      */
-    String remove(String id);
+    String remove(String id) throws Exception;
 
     /**
      * 获取分组
