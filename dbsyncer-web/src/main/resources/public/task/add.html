@@ -70,19 +70,8 @@
                             </div>
                         </div>
 
-                        <!-- 任务类型 -->
-                        <div class="form-group">
-                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px;">
-                                <label class="form-label">
-                                    <i class="fa fa-cube" style="color: var(--primary-color); margin-right: 4px;"></i>
-                                    任务类型<strong class="text-primary">*</strong>
-                                </label>
-                                <div class="form-control-area">
-                                    <input class="form-control" name="type" type="text" maxlength="50"
-                                           required placeholder="请输入任务类型" />
-                                </div>
-                            </div>
-                        </div>
+                        <!-- 任务类型（隐藏字段，使用默认值） -->
+                        <input type="hidden" name="type" value="SYNC" />
                     </div>
                 </div>
 
@@ -721,12 +710,12 @@
         
         // 验证必填字段
         if (!config.name) {
-                bootGrowl("请输入任务名称！", "danger");
+            bootGrowl("请输入任务名称！", "danger");
             return;
-            }
+        }
+        // 如果没有填写任务类型，使用默认值
         if (!config.type) {
-            bootGrowl("请输入任务类型！", "danger");
-            return;
+            config.type = 'SYNC';
         }
         if (!config.sourceConnectorId) {
                 bootGrowl("请选择源连接器！", "danger");
@@ -841,7 +830,96 @@
                 goToStep(2);
                 
                 console.log('[第二步] 已切换到第二步，表列表已填充');
+                
+                // 如果勾选了自动匹配表，则自动创建表映射
+                if (config.autoMatchTable === true) {
+                    console.log('[自动匹配表] 检测到勾选了自动匹配表，开始自动匹配');
+                    setTimeout(function() {
+                        autoMatchTables(sourceTables, targetTables);
+                    }, 500);
+                }
             }
+        }
+    }
+    
+    /**
+     * 自动匹配表（找出源表和目标表中同名的表，自动创建表映射）
+     */
+    function autoMatchTables(sourceTables, targetTables) {
+        console.log('[自动匹配表] 开始自动匹配同名表');
+        
+        // 构建目标表名称映射
+        const targetTableMap = {};
+        targetTables.forEach(function(table) {
+            const tableName = table.name || table;
+            targetTableMap[tableName] = table;
+        });
+        
+        console.log('[自动匹配表] 目标表映射:', Object.keys(targetTableMap));
+        
+        let matchedCount = 0;
+        
+        // 遍历源表，查找目标表中是否有同名表
+        sourceTables.forEach(function(sourceTable) {
+            const sourceTableName = sourceTable.name || sourceTable;
+            
+            // 如果目标表中有同名表
+            if (targetTableMap[sourceTableName]) {
+                const targetTableName = sourceTableName;
+                
+                // 检查是否已存在相同的映射
+                let exists = false;
+                $('#tableMappingsContainer tr').each(function() {
+                    const existingSource = $(this).find('td:eq(1)').text().trim();
+                    const existingTarget = $(this).find('td:eq(2)').text().trim();
+                    if (existingSource === sourceTableName && existingTarget === targetTableName) {
+                        exists = true;
+                        return false; // break
+                    }
+                });
+                
+                if (!exists) {
+                    console.log('[自动匹配表] 找到同名表:', sourceTableName);
+                    
+                    const index = tableMappingIndex++;
+                    const rowHtml = `
+                        <tr data-mapping-index="${index}" 
+                            title="点击配置字段映射" 
+                            class="table-mapping-row"
+                            data-source-table="${sourceTableName}" 
+                            data-target-table="${targetTableName}"
+                            data-source-pk=""
+                            data-target-pk="">
+                            <td>${index + 1}</td>
+                            <td>${sourceTableName}</td>
+                            <td>${targetTableName}</td>
+                            <td onclick="event.stopPropagation();">
+                                <input type="checkbox" class="table-mapping-checkbox" 
+                                       onclick="event.stopPropagation();" />
+                            </td>
+                        </tr>
+                    `;
+                    
+                    const $row = $(rowHtml);
+                    $('#tableMappingsContainer').append($row);
+                    
+                    // 自动加载字段映射
+                    loadFieldMappingForRow($row, sourceTableName, targetTableName);
+                    
+                    matchedCount++;
+                }
+            }
+        });
+        
+        if (matchedCount > 0) {
+            updateTableMappingIndexes();
+            updateEmptyState();
+            updateDeleteButtonState();
+            bootGrowl(`自动匹配成功！已创建 ${matchedCount} 个表映射`, "success");
+            console.log('[自动匹配表] 自动匹配完成，创建了', matchedCount, '个表映射');
+        } else {
+            bootGrowl("未找到同名表，请手动添加表映射", "info");
+            console.log('[自动匹配表] 未找到同名表');
         }
     }
 
