@@ -119,8 +119,7 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
                     try {
                         profileComponent.editConfigModel(tableGroup);
                         meta.saveState(MetaEnum.ERROR, e.getMessage());
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
+                    } catch (Exception ignored) {
                     }
                     logService.log(LogType.SystemLog.ERROR, e.getMessage());
                 }
@@ -157,10 +156,16 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
             if (allTableGroupCompleted) {
                 phaseHandler.run();
             } else {
-                meta.resetState();
+                // 如果有错误状态，不应该重置状态
+                if (!meta.isError()) {
+                    meta.resetState();
+                }
             }
         } else {
-            meta.resetState();
+            // 如果有错误状态，不应该重置状态
+            if (!meta.isError()) {
+                meta.resetState();
+            }
         }
     }
 
