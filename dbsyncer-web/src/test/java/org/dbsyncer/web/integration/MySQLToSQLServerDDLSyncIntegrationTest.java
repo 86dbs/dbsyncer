@@ -24,6 +24,7 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -194,6 +195,13 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     }
 
     @Test
+    public void testAddColumn_SETType() throws Exception {
+        logger.info("开始测试SET类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN tags SET('tag1','tag2','tag3')";
+        testDDLConversion(mysqlDDL, "tags");
+    }
+
+    @Test
     public void testAddColumn_JSONType() throws Exception {
         logger.info("开始测试JSON类型转换");
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN metadata JSON";
@@ -208,10 +216,73 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     }
 
     @Test
+    public void testAddColumn_GEOMETRYType() throws Exception {
+        logger.info("开始测试GEOMETRY类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN location GEOMETRY";
+        testDDLConversion(mysqlDDL, "location");
+    }
+
+    @Test
+    public void testAddColumn_POINTType() throws Exception {
+        logger.info("开始测试POINT类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN coordinates POINT";
+        testDDLConversion(mysqlDDL, "coordinates");
+    }
+
+    @Test
+    public void testAddColumn_LINESTRINGType() throws Exception {
+        logger.info("开始测试LINESTRING类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN route LINESTRING";
+        testDDLConversion(mysqlDDL, "route");
+    }
+
+    @Test
+    public void testAddColumn_POLYGONType() throws Exception {
+        logger.info("开始测试POLYGON类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN area POLYGON";
+        testDDLConversion(mysqlDDL, "area");
+    }
+
+    @Test
+    public void testAddColumn_MULTIPOINTType() throws Exception {
+        logger.info("开始测试MULTIPOINT类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN points MULTIPOINT";
+        testDDLConversion(mysqlDDL, "points");
+    }
+
+    @Test
+    public void testAddColumn_MULTILINESTRINGType() throws Exception {
+        logger.info("开始测试MULTILINESTRING类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN routes MULTILINESTRING";
+        testDDLConversion(mysqlDDL, "routes");
+    }
+
+    @Test
+    public void testAddColumn_MULTIPOLYGONType() throws Exception {
+        logger.info("开始测试MULTIPOLYGON类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN regions MULTIPOLYGON";
+        testDDLConversion(mysqlDDL, "regions");
+    }
+
+    @Test
+    public void testAddColumn_GEOMETRYCOLLECTIONType() throws Exception {
+        logger.info("开始测试GEOMETRYCOLLECTION类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN collection GEOMETRYCOLLECTION";
+        testDDLConversion(mysqlDDL, "collection");
+    }
+
+    @Test
     public void testAddColumn_TINYTEXTType() throws Exception {
         logger.info("开始测试TINYTEXT类型转换");
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN short_text TINYTEXT";
         testDDLConversion(mysqlDDL, "short_text");
+    }
+
+    @Test
+    public void testAddColumn_MEDIUMTEXTType() throws Exception {
+        logger.info("开始测试MEDIUMTEXT类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN medium_text MEDIUMTEXT";
+        testDDLConversion(mysqlDDL, "medium_text");
     }
 
     @Test
@@ -252,6 +323,34 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     }
 
     @Test
+    public void testAddColumn_BIGINTType() throws Exception {
+        logger.info("开始测试BIGINT类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN count_num BIGINT";
+        testDDLConversion(mysqlDDL, "count_num");
+    }
+
+    @Test
+    public void testAddColumn_DECIMALType() throws Exception {
+        logger.info("开始测试DECIMAL类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN price DECIMAL(10,2)";
+        testDDLConversion(mysqlDDL, "price");
+    }
+
+    @Test
+    public void testAddColumn_DATEType() throws Exception {
+        logger.info("开始测试DATE类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN birth_date DATE";
+        testDDLConversion(mysqlDDL, "birth_date");
+    }
+
+    @Test
+    public void testAddColumn_TIMEType() throws Exception {
+        logger.info("开始测试TIME类型转换");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN work_time TIME";
+        testDDLConversion(mysqlDDL, "work_time");
+    }
+
+    @Test
     public void testAddColumn_DATETIMEType() throws Exception {
         logger.info("开始测试DATETIME类型转换");
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN updated_at DATETIME";
@@ -282,9 +381,58 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     }
 
     @Test
+    public void testModifyColumn_ChangeType() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 修改类型");
+        // 先添加一个INT字段用于测试类型修改
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN count_num INT";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        executeDDLToSourceDatabase(addColumnDDL, mysqlConfig);
+        Thread.sleep(3000);
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN count_num BIGINT";
+        testDDLConversion(mysqlDDL, "count_num");
+    }
+
+    @Test
+    public void testModifyColumn_RemoveNotNull() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 移除NOT NULL约束");
+        // 先确保字段是NOT NULL的
+        String setNotNullDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(50) NOT NULL";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        executeDDLToSourceDatabase(setNotNullDDL, mysqlConfig);
+        Thread.sleep(3000);
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(50) NULL";
+        testDDLConversion(mysqlDDL, "first_name");
+    }
+
+    @Test
     public void testChangeColumn_RenameOnly() throws Exception {
         logger.info("开始测试CHANGE COLUMN操作 - 仅重命名");
         String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN first_name given_name VARCHAR(50)";
+        testDDLConversion(mysqlDDL, "given_name");
+    }
+
+    @Test
+    public void testChangeColumn_RenameAndModifyType() throws Exception {
+        logger.info("开始测试CHANGE COLUMN操作 - 重命名并修改类型");
+        // 先添加一个字段用于测试
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN description VARCHAR(100)";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        executeDDLToSourceDatabase(addColumnDDL, mysqlConfig);
+        Thread.sleep(3000);
+
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN description desc_text TEXT";
+        testDDLConversion(mysqlDDL, "desc_text");
+    }
+
+    @Test
+    public void testChangeColumn_RenameAndModifyLengthAndConstraint() throws Exception {
+        logger.info("开始测试CHANGE COLUMN操作 - 重命名并修改长度和约束");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN first_name given_name VARCHAR(100) NOT NULL";
         testDDLConversion(mysqlDDL, "given_name");
     }
 
@@ -311,10 +459,59 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     }
 
     @Test
+    public void testAddColumn_WithDefaultAndNotNull() throws Exception {
+        logger.info("开始测试带默认值和NOT NULL约束的字段添加");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN email VARCHAR(100) NOT NULL DEFAULT 'unknown@example.com'";
+        testDDLConversion(mysqlDDL, "email");
+    }
+
+    @Test
     public void testAddColumn_WithAfter() throws Exception {
         logger.info("开始测试带AFTER子句的字段添加");
         String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN last_name VARCHAR(50) AFTER first_name";
         testDDLConversion(mysqlDDL, "last_name");
+    }
+
+    @Test
+    public void testAddColumn_WithFirst() throws Exception {
+        logger.info("开始测试带FIRST子句的字段添加");
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN priority INT FIRST";
+        testDDLConversion(mysqlDDL, "priority");
+    }
+
+    @Test
+    public void testAddMultipleColumns() throws Exception {
+        logger.info("开始测试多字段同时添加");
+        // MySQL语法：每个字段都需要ADD COLUMN关键字
+        String mysqlDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN salary DECIMAL(10,2), ADD COLUMN bonus DECIMAL(8,2)";
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+
+        executeDDLToSourceDatabase(mysqlDDL, mysqlConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射是否更新
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        assertNotNull("应找到TableGroup列表", tableGroups);
+        assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundSalaryMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "salary".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "salary".equals(fm.getTarget().getName()));
+        assertTrue("应找到salary字段的映射", foundSalaryMapping);
+
+        boolean foundBonusMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "bonus".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "bonus".equals(fm.getTarget().getName()));
+        assertTrue("应找到bonus字段的映射", foundBonusMapping);
+
+        // 验证目标数据库中两个字段都存在
+        verifyFieldExistsInTargetDatabase("salary", tableGroup.getTargetTable().getName(), sqlServerConfig);
+        verifyFieldExistsInTargetDatabase("bonus", tableGroup.getTargetTable().getName(), sqlServerConfig);
+
+        logger.info("多字段添加测试通过 - salary和bonus字段都已正确转换");
     }
 
     // ==================== 通用测试方法 ====================
@@ -388,7 +585,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     /**
      * 创建Connector
      */
-    private String createConnector(String name, DatabaseConfig config) {
+    private String createConnector(String name, DatabaseConfig config) throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("name", name);
         params.put("connectorType", determineConnectorType(config));
@@ -405,7 +602,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     /**
      * 创建Mapping和TableGroup
      */
-    private String createMapping() {
+    private String createMapping() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("name", "MySQL到SQL Server测试Mapping");
         params.put("sourceConnectorId", sourceConnectorId);
@@ -445,7 +642,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     /**
      * 执行DDL到源数据库
      */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) {
+    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
         instance.execute(databaseTemplate -> {
             databaseTemplate.execute(sql);
@@ -456,7 +653,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     /**
      * 验证目标数据库中字段是否存在
      */
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
@@ -467,7 +664,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
     /**
      * 验证目标数据库中字段是否不存在
      */
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()

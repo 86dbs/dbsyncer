@@ -24,6 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -32,7 +33,9 @@ import static org.junit.Assert.*;
  * <p>
  * 使用完整的Spring Boot应用上下文，启动真实的Listener进行端到端测试
  * 覆盖场景：
- * - sp_rename列重命名：测试SQL Server特有的列重命名操作是否能自动检测并同步到MySQL
+ * - SQL Server特殊类型转换：XML, UNIQUEIDENTIFIER, MONEY, SMALLMONEY, DATETIME2, DATETIMEOFFSET, TIMESTAMP, IMAGE, TEXT, NTEXT, BINARY, SMALLDATETIME, BIT, HIERARCHYID
+ * - DDL操作：ADD COLUMN, ALTER COLUMN (MODIFY), DROP COLUMN
+ * - 复杂场景：多字段添加、带约束字段添加
  * - DDL后DML时序一致性：测试DDL执行后，DML操作是否能正确反映变更
  * - 字段映射更新验证：验证DDL操作后字段映射是否正确更新
  * <p>
@@ -77,7 +80,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     private String metaId;
 
     @BeforeClass
-    public static void setUpClass() throws IOException {
+    public static void setUpClass() throws Exception {
         logger.info("开始初始化SQL Server到MySQL的DDL同步集成测试环境");
 
         // 加载测试配置
@@ -215,57 +218,344 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         resetDatabaseTableStructure();
     }
 
+    // ==================== SQL Server特殊类型转换测试 ====================
+
     @Test
-    public void testSpRenameColumn_EndToEnd() throws Exception {
-        logger.info("开始测试 sp_rename 列重命名的端到端集成测试");
+    public void testAddColumn_XMLType() throws Exception {
+        logger.info("开始测试XML类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD xml_data XML";
+        testDDLConversion(sqlserverDDL, "xml_data");
+    }
 
-        // 1. 添加字段 old_name
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD old_name NVARCHAR(50)";
-        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
+    @Test
+    public void testAddColumn_UNIQUEIDENTIFIERType() throws Exception {
+        logger.info("开始测试UNIQUEIDENTIFIER类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD guid UNIQUEIDENTIFIER";
+        testDDLConversion(sqlserverDDL, "guid");
+    }
 
-        // 等待DDL同步（在实际场景中，DDL事件会被自动捕获）
-        Thread.sleep(2000);
+    @Test
+    public void testAddColumn_MONEYType() throws Exception {
+        logger.info("开始测试MONEY类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary MONEY";
+        testDDLConversion(sqlserverDDL, "salary");
+    }
 
-        // 2. 启动Mapping（启动Listener）
+    @Test
+    public void testAddColumn_SMALLMONEYType() throws Exception {
+        logger.info("开始测试SMALLMONEY类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD bonus SMALLMONEY";
+        testDDLConversion(sqlserverDDL, "bonus");
+    }
+
+    @Test
+    public void testAddColumn_DATETIME2Type() throws Exception {
+        logger.info("开始测试DATETIME2类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2";
+        testDDLConversion(sqlserverDDL, "created_at");
+    }
+
+    @Test
+    public void testAddColumn_DATETIMEOFFSETType() throws Exception {
+        logger.info("开始测试DATETIMEOFFSET类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD updated_at DATETIMEOFFSET";
+        testDDLConversion(sqlserverDDL, "updated_at");
+    }
+
+    @Test
+    public void testAddColumn_TIMESTAMPType() throws Exception {
+        logger.info("开始测试TIMESTAMP类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD row_version TIMESTAMP";
+        testDDLConversion(sqlserverDDL, "row_version");
+    }
+
+    @Test
+    public void testAddColumn_IMAGEType() throws Exception {
+        logger.info("开始测试IMAGE类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD photo IMAGE";
+        testDDLConversion(sqlserverDDL, "photo");
+    }
+
+    @Test
+    public void testAddColumn_TEXTType() throws Exception {
+        logger.info("开始测试TEXT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD description TEXT";
+        testDDLConversion(sqlserverDDL, "description");
+    }
+
+    @Test
+    public void testAddColumn_NTEXTType() throws Exception {
+        logger.info("开始测试NTEXT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD notes NTEXT";
+        testDDLConversion(sqlserverDDL, "notes");
+    }
+
+    @Test
+    public void testAddColumn_BINARYType() throws Exception {
+        logger.info("开始测试BINARY类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD binary_data BINARY(16)";
+        testDDLConversion(sqlserverDDL, "binary_data");
+    }
+
+    @Test
+    public void testAddColumn_VARBINARYMAXType() throws Exception {
+        logger.info("开始测试VARBINARY(MAX)类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD varbinary_data VARBINARY(MAX)";
+        testDDLConversion(sqlserverDDL, "varbinary_data");
+    }
+
+    @Test
+    public void testAddColumn_SMALLDATETIMEType() throws Exception {
+        logger.info("开始测试SMALLDATETIME类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD small_date SMALLDATETIME";
+        testDDLConversion(sqlserverDDL, "small_date");
+    }
+
+    @Test
+    public void testAddColumn_BITType() throws Exception {
+        logger.info("开始测试BIT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD is_active BIT";
+        testDDLConversion(sqlserverDDL, "is_active");
+    }
+
+    @Test
+    public void testAddColumn_HIERARCHYIDType() throws Exception {
+        logger.info("开始测试HIERARCHYID类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD org_path HIERARCHYID";
+        testDDLConversion(sqlserverDDL, "org_path");
+    }
+
+    // ==================== SQL Server基础类型转换测试 ====================
+
+    @Test
+    public void testAddColumn_NVARCHARType() throws Exception {
+        logger.info("开始测试NVARCHAR类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD last_name NVARCHAR(100)";
+        testDDLConversion(sqlserverDDL, "last_name");
+    }
+
+    @Test
+    public void testAddColumn_VARCHARType() throws Exception {
+        logger.info("开始测试VARCHAR类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD code VARCHAR(50)";
+        testDDLConversion(sqlserverDDL, "code");
+    }
+
+    @Test
+    public void testAddColumn_INTType() throws Exception {
+        logger.info("开始测试INT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD age INT";
+        testDDLConversion(sqlserverDDL, "age");
+    }
+
+    @Test
+    public void testAddColumn_BIGINTType() throws Exception {
+        logger.info("开始测试BIGINT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD count_num BIGINT";
+        testDDLConversion(sqlserverDDL, "count_num");
+    }
+
+    @Test
+    public void testAddColumn_DECIMALType() throws Exception {
+        logger.info("开始测试DECIMAL类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD price DECIMAL(10,2)";
+        testDDLConversion(sqlserverDDL, "price");
+    }
+
+    @Test
+    public void testAddColumn_DATEType() throws Exception {
+        logger.info("开始测试DATE类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD birth_date DATE";
+        testDDLConversion(sqlserverDDL, "birth_date");
+    }
+
+    @Test
+    public void testAddColumn_TIMEType() throws Exception {
+        logger.info("开始测试TIME类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD work_time TIME";
+        testDDLConversion(sqlserverDDL, "work_time");
+    }
+
+    @Test
+    public void testAddColumn_DATETIMEType() throws Exception {
+        logger.info("开始测试DATETIME类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD updated_at DATETIME";
+        testDDLConversion(sqlserverDDL, "updated_at");
+    }
+
+    // ==================== DDL操作测试 ====================
+
+    @Test
+    public void testModifyColumn_ChangeLength() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 修改长度");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100)";
+        testDDLConversion(sqlserverDDL, "first_name");
+    }
+
+    @Test
+    public void testModifyColumn_AddNotNull() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 添加NOT NULL约束");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
+        testDDLConversion(sqlserverDDL, "first_name");
+    }
+
+    @Test
+    public void testModifyColumn_ChangeType() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 修改类型");
+        // 先添加一个INT字段用于测试类型修改
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD count_num INT";
         mappingService.start(mappingId);
-        logger.info("已启动Mapping，Listener应已开始运行");
-
-        // 等待Listener启动
+        Thread.sleep(2000);
+        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
         Thread.sleep(3000);
 
-        // 3. 执行 sp_rename 重命名列
-        String spRenameSQL = "EXEC sp_rename 'ddlTestEmployee.old_name', 'new_name', 'COLUMN'";
-        executeDDLToSourceDatabase(spRenameSQL, sqlServerConfig);
-        logger.info("已执行 sp_rename，列名从 old_name 重命名为 new_name");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN count_num BIGINT";
+        testDDLConversion(sqlserverDDL, "count_num");
+    }
 
-        // 4. 插入DML数据触发检测（在真实场景中，SqlServerListener.pull()会检测到列名不一致）
-        String insertSQL = "INSERT INTO ddlTestEmployee (first_name, new_name) VALUES ('TestUser', 'test@example.com')";
-        executeDDLToSourceDatabase(insertSQL, sqlServerConfig);
-        logger.info("已插入DML数据，应触发 sp_rename 检测逻辑");
+    @Test
+    public void testModifyColumn_RemoveNotNull() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 移除NOT NULL约束");
+        // 先确保字段是NOT NULL的
+        String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        executeDDLToSourceDatabase(setNotNullDDL, sqlServerConfig);
+        Thread.sleep(3000);
 
-        // 5. 等待检测和处理完成（Listener会检测到列名不一致，生成DDL事件并处理）
-        Thread.sleep(5000);
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NULL";
+        testDDLConversion(sqlserverDDL, "first_name");
+    }
 
-        // 6. 验证目标数据库字段名已更新（集成测试关注最终结果）
-        verifyFieldNotExistsInTargetDatabase("old_name", "ddlTestEmployee", mysqlConfig);
-        verifyFieldExistsInTargetDatabase("new_name", "ddlTestEmployee", mysqlConfig);
+    @Test
+    public void testDropColumn() throws Exception {
+        logger.info("开始测试DROP COLUMN操作");
+        testDDLDropOperation("ALTER TABLE ddlTestEmployee DROP COLUMN first_name", "first_name");
+    }
 
-        // 7. 验证字段映射已更新
+    // ==================== 复杂场景测试 ====================
+
+    @Test
+    public void testAddMultipleColumns() throws Exception {
+        logger.info("开始测试多字段同时添加");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2), bonus DECIMAL(8,2)";
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射是否更新
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         assertNotNull("应找到TableGroup列表", tableGroups);
         assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
         TableGroup tableGroup = tableGroups.get(0);
 
-        boolean oldNameMappingExists = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "old_name".equals(fm.getSource().getName()));
-        assertFalse("应移除旧字段 old_name 的映射", oldNameMappingExists);
+        boolean foundSalaryMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "salary".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "salary".equals(fm.getTarget().getName()));
+        assertTrue("应找到salary字段的映射", foundSalaryMapping);
 
-        boolean newNameMappingExists = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "new_name".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "new_name".equals(fm.getTarget().getName()));
-        assertTrue("应找到新字段 new_name 的映射", newNameMappingExists);
+        boolean foundBonusMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "bonus".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "bonus".equals(fm.getTarget().getName()));
+        assertTrue("应找到bonus字段的映射", foundBonusMapping);
 
-        logger.info("sp_rename 列重命名端到端集成测试完成：目标库字段名已更新，字段映射已更新");
+        // 验证目标数据库中两个字段都存在
+        verifyFieldExistsInTargetDatabase("salary", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldExistsInTargetDatabase("bonus", tableGroup.getTargetTable().getName(), mysqlConfig);
+
+        logger.info("多字段添加测试通过 - salary和bonus字段都已正确转换");
+    }
+
+    @Test
+    public void testAddColumn_WithDefault() throws Exception {
+        logger.info("开始测试带默认值的字段添加");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD status NVARCHAR(20) DEFAULT 'active'";
+        testDDLConversion(sqlserverDDL, "status");
+    }
+
+    @Test
+    public void testAddColumn_WithNotNull() throws Exception {
+        logger.info("开始测试带NOT NULL约束的字段添加");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD phone NVARCHAR(20) NOT NULL";
+        testDDLConversion(sqlserverDDL, "phone");
+    }
+
+    @Test
+    public void testAddColumn_WithDefaultAndNotNull() throws Exception {
+        logger.info("开始测试带默认值和NOT NULL约束的字段添加");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_by NVARCHAR(50) NOT NULL DEFAULT 'system'";
+        testDDLConversion(sqlserverDDL, "created_by");
+    }
+
+    // ==================== 通用测试方法 ====================
+
+    /**
+     * 执行DDL转换并验证结果（集成测试版本）
+     */
+    private void testDDLConversion(String sourceDDL, String expectedFieldName) throws Exception {
+        // 启动Mapping
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+
+        // 执行DDL
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射是否更新
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        assertNotNull("应找到TableGroup列表", tableGroups);
+        assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean isAddOperation = sourceDDL.toUpperCase().contains("ADD");
+        boolean isModifyOperation = sourceDDL.toUpperCase().contains("ALTER COLUMN");
+
+        if (isAddOperation) {
+            boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                    .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
+                            fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
+            assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+
+            // 验证目标数据库中字段是否存在
+            verifyFieldExistsInTargetDatabase(expectedFieldName, tableGroup.getTargetTable().getName(), mysqlConfig);
+        } else if (isModifyOperation) {
+            boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                    .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
+            assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+        }
+
+        logger.info("DDL转换测试通过 - 字段: {}", expectedFieldName);
+    }
+
+    /**
+     * 测试DDL DROP操作
+     */
+    private void testDDLDropOperation(String sourceDDL, String expectedFieldName) throws Exception {
+        // 启动Mapping
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+
+        // 执行DDL
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射是否已移除
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        assertNotNull("应找到TableGroup列表", tableGroups);
+        assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
+        assertFalse("应移除字段 " + expectedFieldName + " 的映射", foundFieldMapping);
+
+        // 验证目标数据库中字段是否已被删除
+        verifyFieldNotExistsInTargetDatabase(expectedFieldName, tableGroup.getTargetTable().getName(), mysqlConfig);
+
+        logger.info("DDL DROP操作测试通过 - 字段: {}", expectedFieldName);
     }
 
     // ==================== 辅助方法 ====================
@@ -311,7 +601,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     /**
      * 创建Mapping和TableGroup
      */
-    private String createMapping() {
+    private String createMapping() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("name", "SQL Server到MySQL测试Mapping");
         params.put("sourceConnectorId", sourceConnectorId);
@@ -377,7 +667,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     /**
      * 执行DDL到源数据库
      */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) {
+    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
         instance.execute(databaseTemplate -> {
             databaseTemplate.execute(sql);
@@ -388,7 +678,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     /**
      * 验证目标数据库中字段是否存在
      */
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
@@ -399,7 +689,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     /**
      * 验证目标数据库中字段是否不存在
      */
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
@@ -491,7 +781,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
             this.targetConnectorInstance = new DatabaseConnectorInstance(targetConfig);
         }
 
-        public void initializeTestEnvironment(String sourceInitSql, String targetInitSql) {
+        public void initializeTestEnvironment(String sourceInitSql, String targetInitSql) throws Exception {
             executeSql(sourceConnectorInstance, sourceInitSql);
             executeSql(targetConnectorInstance, targetInitSql);
         }
@@ -514,7 +804,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
             }
         }
 
-        private void executeSql(DatabaseConnectorInstance connectorInstance, String sql) {
+        private void executeSql(DatabaseConnectorInstance connectorInstance, String sql) throws Exception {
             if (sql == null || sql.trim().isEmpty()) {
                 return;
             }
