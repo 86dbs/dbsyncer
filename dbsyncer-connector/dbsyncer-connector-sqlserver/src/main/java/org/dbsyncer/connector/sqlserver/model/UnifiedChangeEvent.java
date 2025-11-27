@@ -19,9 +19,7 @@ public class UnifiedChangeEvent {
     private DMLEvent DMLEvent;
     
     // DML 事件的列名信息（用于字段映射）
-    // 注意：DML 事件中的 row 数据顺序对应 CDC 捕获的列名（旧列名）
-    // 如果 sp_rename 之后立即重新启用 CDC，TableGroup 的列信息会更新为新列名
-    // 但 row 数据仍然对应旧列名顺序，需要保存旧列名信息以确保字段映射正确
+    // 注意：DML 事件中的 row 数据顺序对应 CDC 捕获的列名
     private List<String> columnNames;
 
     public Lsn getLsn() {
