@@ -5,6 +5,7 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -406,6 +407,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD count_num INT";
         mappingService.start(mappingId);
         Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
         executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
         Thread.sleep(3000);
 
@@ -420,6 +422,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
         mappingService.start(mappingId);
         Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
         executeDDLToSourceDatabase(setNotNullDDL, sqlServerConfig);
         Thread.sleep(3000);
 
@@ -442,6 +445,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
 
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
         Thread.sleep(3000);
@@ -499,6 +503,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         // 启动Mapping
         mappingService.start(mappingId);
         Thread.sleep(2000);
+        
+        // 验证meta状态为running后再执行DDL
+        waitForMetaRunning(metaId, 5000);
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
@@ -537,6 +544,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         // 启动Mapping
         mappingService.start(mappingId);
         Thread.sleep(2000);
+        
+        // 验证meta状态为running后再执行DDL
+        waitForMetaRunning(metaId, 5000);
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
@@ -559,6 +569,34 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     }
 
     // ==================== 辅助方法 ====================
+
+    /**
+     * 等待并验证meta状态为running
+     * 
+     * @param metaId meta的ID
+     * @param timeoutMs 超时时间（毫秒）
+     * @throws InterruptedException 如果等待过程中被中断
+     * @throws AssertionError 如果超时后meta仍未运行
+     */
+    private void waitForMetaRunning(String metaId, long timeoutMs) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 200; // 每200ms检查一次
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            Meta meta = profileComponent.getMeta(metaId);
+            if (meta != null && meta.isRunning()) {
+                logger.info("Meta {} 已处于运行状态", metaId);
+                return;
+            }
+            Thread.sleep(checkInterval);
+        }
+        
+        // 超时后再次检查一次，如果仍未运行则抛出异常
+        Meta meta = profileComponent.getMeta(metaId);
+        assertNotNull("Meta不应为null", meta);
+        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState(), 
+                   meta.isRunning());
+    }
 
     /**
      * 创建Connector
