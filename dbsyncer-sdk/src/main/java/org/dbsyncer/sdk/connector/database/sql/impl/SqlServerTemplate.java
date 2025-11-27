@@ -136,6 +136,13 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                 .filter(field -> !primaryKeys.contains(field.getName()))
                 .map(field -> "target." + buildColumn(field.getName()) + " = source." + buildColumn(field.getName()))
                 .collect(java.util.stream.Collectors.joining(", "));
+        
+        // 如果所有字段都是主键，updateClause 为空，需要至少添加一个更新表达式以满足 SQL Server 语法要求
+        // 使用第一个主键字段的虚拟更新（不会实际改变值）
+        if (updateClause.isEmpty() && !fields.isEmpty()) {
+            Field firstField = fields.get(0);
+            updateClause = "target." + buildColumn(firstField.getName()) + " = source." + buildColumn(firstField.getName());
+        }
 
         // 构建 INSERT VALUES 子句
         String insertValues = fields.stream()

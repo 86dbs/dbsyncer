@@ -68,6 +68,14 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
                 .filter(field -> !field.isPk())
                 .map(field -> buildColumn(field.getName()) + " = EXCLUDED." + buildColumn(field.getName()))
                 .collect(Collectors.joining(", "));
+        
+        // 如果所有字段都是主键，updateClause 为空，需要至少添加一个更新表达式以满足 PostgreSQL 语法要求
+        // 使用第一个主键字段的虚拟更新（不会实际改变值）
+        if (updateClause.isEmpty() && !fields.isEmpty()) {
+            Field firstField = fields.get(0);
+            updateClause = buildColumn(firstField.getName()) + " = EXCLUDED." + buildColumn(firstField.getName());
+        }
+        
         String conflictClause = primaryKeys.stream()
                 .map(this::buildColumn)
                 .collect(Collectors.joining(", "));

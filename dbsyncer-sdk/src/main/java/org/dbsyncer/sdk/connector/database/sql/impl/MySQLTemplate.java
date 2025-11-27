@@ -36,6 +36,14 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                 .filter(field -> !field.isPk())
                 .map(field -> buildColumn(field.getName()) + " = VALUES(" + buildColumn(field.getName()) + ")")
                 .collect(java.util.stream.Collectors.joining(", "));
+        
+        // 如果所有字段都是主键，updateClause 为空，需要至少添加一个更新表达式以满足 MySQL 语法要求
+        // 使用第一个主键字段的虚拟更新（不会实际改变值）
+        if (updateClause.isEmpty() && !fields.isEmpty()) {
+            Field firstField = fields.get(0);
+            updateClause = buildColumn(firstField.getName()) + " = " + buildColumn(firstField.getName());
+        }
+        
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
                 schemaTable, fieldNames, placeholders, updateClause);
     }
