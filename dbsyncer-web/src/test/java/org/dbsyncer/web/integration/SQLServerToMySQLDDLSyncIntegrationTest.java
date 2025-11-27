@@ -448,7 +448,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         waitForMetaRunning(metaId, 5000);
 
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        Thread.sleep(3000);
+        
+        // 等待DDL处理完成（多个字段）
+        waitForDDLProcessingComplete(Arrays.asList("salary", "bonus"), 10000);
 
         // 验证字段映射是否更新
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -509,7 +511,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
-        Thread.sleep(3000);
+        
+        // 等待DDL处理完成（使用轮询方式，最多等待10秒）
+        waitForDDLProcessingComplete(expectedFieldName, 10000);
 
         // 验证字段映射是否更新
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -550,7 +554,9 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
-        Thread.sleep(3000);
+        
+        // 等待DDL处理完成（字段被移除）
+        waitForDDLDropProcessingComplete(expectedFieldName, 10000);
 
         // 验证字段映射是否已移除
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -596,6 +602,115 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         assertNotNull("Meta不应为null", meta);
         assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState(), 
                    meta.isRunning());
+    }
+
+    /**
+     * 等待DDL处理完成（通过轮询检查字段映射是否已更新）
+     * 
+     * @param expectedFieldName 期望的字段名
+     * @param timeoutMs 超时时间（毫秒）
+     * @throws InterruptedException 如果等待过程中被中断
+     * @throws Exception 如果查询TableGroup时发生异常
+     */
+    private void waitForDDLProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 300; // 每300ms检查一次
+        
+        logger.info("等待DDL处理完成，期望字段: {}", expectedFieldName);
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+            if (tableGroups != null && !tableGroups.isEmpty()) {
+                TableGroup tableGroup = tableGroups.get(0);
+                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
+                                fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
+                
+                if (foundFieldMapping) {
+                    logger.info("DDL处理完成，字段 {} 的映射已更新", expectedFieldName);
+                    // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
+                    Thread.sleep(500);
+                    return;
+                }
+            }
+            Thread.sleep(checkInterval);
+        }
+        
+        // 超时后记录警告，但不抛出异常（让后续的断言来处理）
+        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    }
+
+    /**
+     * 等待DDL DROP处理完成（通过轮询检查字段映射是否已移除）
+     * 
+     * @param expectedFieldName 期望被移除的字段名
+     * @param timeoutMs 超时时间（毫秒）
+     * @throws InterruptedException 如果等待过程中被中断
+     * @throws Exception 如果查询TableGroup时发生异常
+     */
+    private void waitForDDLDropProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 300; // 每300ms检查一次
+        
+        logger.info("等待DDL DROP处理完成，期望移除字段: {}", expectedFieldName);
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+            if (tableGroups != null && !tableGroups.isEmpty()) {
+                TableGroup tableGroup = tableGroups.get(0);
+                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
+                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
+                
+                if (!foundFieldMapping) {
+                    logger.info("DDL DROP处理完成，字段 {} 的映射已移除", expectedFieldName);
+                    // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
+                    Thread.sleep(500);
+                    return;
+                }
+            }
+            Thread.sleep(checkInterval);
+        }
+        
+        // 超时后记录警告，但不抛出异常（让后续的断言来处理）
+        logger.warn("等待DDL DROP处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    }
+
+    /**
+     * 等待DDL处理完成（多个字段，通过轮询检查字段映射是否已更新）
+     * 
+     * @param expectedFieldNames 期望的字段名列表
+     * @param timeoutMs 超时时间（毫秒）
+     * @throws InterruptedException 如果等待过程中被中断
+     * @throws Exception 如果查询TableGroup时发生异常
+     */
+    private void waitForDDLProcessingComplete(List<String> expectedFieldNames, long timeoutMs) throws InterruptedException, Exception {
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 300; // 每300ms检查一次
+        
+        logger.info("等待DDL处理完成，期望字段: {}", expectedFieldNames);
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+            if (tableGroups != null && !tableGroups.isEmpty()) {
+                TableGroup tableGroup = tableGroups.get(0);
+                boolean allFieldsFound = expectedFieldNames.stream().allMatch(expectedFieldName -> {
+                    return tableGroup.getFieldMapping().stream()
+                            .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
+                                    fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
+                });
+                
+                if (allFieldsFound) {
+                    logger.info("DDL处理完成，所有字段 {} 的映射已更新", expectedFieldNames);
+                    // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
+                    Thread.sleep(500);
+                    return;
+                }
+            }
+            Thread.sleep(checkInterval);
+        }
+        
+        // 超时后记录警告，但不抛出异常（让后续的断言来处理）
+        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldNames);
     }
 
     /**

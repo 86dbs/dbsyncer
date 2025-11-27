@@ -246,9 +246,46 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 }
                 if (!enabledTableCDC) {
                     try {
+                        // 在启用 CDC 之前，先尝试禁用可能存在的捕获实例（处理测试场景中的残留实例）
+                        // 如果捕获实例不存在，禁用操作会失败，但我们可以忽略这个错误
+                        try {
+                            execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
+                            logger.debug("已清理表 [{}] 的旧 CDC 捕获实例", table);
+                            // 等待一下，确保禁用操作完成
+                            try {
+                                Thread.sleep(200);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                logger.warn("等待 CDC 禁用完成时被中断");
+                            }
+                        } catch (Exception e) {
+                            // 忽略禁用失败的错误（可能因为捕获实例不存在）
+                            logger.debug("清理表 [{}] 的 CDC 捕获实例时出错（可忽略）: {}", table, e.getMessage());
+                        }
+                        
+                        // 启用表的 CDC
                         execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        // 如果启用失败，检查是否是捕获实例已存在的错误
+                        String errorMessage = e.getMessage();
+                        if (errorMessage != null && errorMessage.contains("已存在捕获实例名称")) {
+                            // 捕获实例已存在，先禁用再启用
+                            logger.warn("表 [{}] 的 CDC 捕获实例已存在，先禁用再重新启用", table);
+                            try {
+                                execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    logger.warn("等待 CDC 禁用完成时被中断");
+                                }
+                                execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
+                            } catch (Exception retryException) {
+                                throw new RuntimeException("重新启用表 [" + table + "] 的 CDC 失败", retryException);
+                            }
+                        } else {
+                            throw new RuntimeException("启用表 [" + table + "] 的 CDC 失败", e);
+                        }
                     }
                     Lsn minLsn = null;
                     try {
