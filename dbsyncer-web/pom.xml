@@ -86,19 +86,19 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Connector 连接器服务（测试用） -->
+        <!-- Connector 连接器服务 -->
+        <!-- MySQL连接器：运行时需要，因为application.properties中配置了dbsyncer.storage.type=mysql -->
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-mysql</artifactId>
             <version>${project.parent.version}</version>
-            <scope>test</scope>
         </dependency>
 
+        <!-- SQL Server连接器（测试用） -->
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-sqlserver</artifactId>
             <version>${project.parent.version}</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
