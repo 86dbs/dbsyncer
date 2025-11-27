@@ -582,8 +582,11 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private void reEnableTableCDC(String tableName) {
         try {
             // 1. 获取表的所有列名（包括新列）
+            // GET_TABLE_COLUMNS 包含 %s (schema) 和 # (tableName) 两个占位符
+            // 需要先使用 String.format 替换 %s，然后使用 replace 替换 #
+            String sql = String.format(GET_TABLE_COLUMNS, schema).replace(STATEMENTS_PLACEHOLDER, tableName);
             List<String> columns = queryAndMapList(
-                    String.format(GET_TABLE_COLUMNS, schema, tableName),
+                    sql,
                     rs -> {
                         List<String> colList = new ArrayList<>();
                         while (rs.next()) {
@@ -603,7 +606,13 @@ public class SqlServerListener extends AbstractDatabaseListener {
             logger.info("已禁用表 [{}] 的 CDC", tableName);
 
             // 等待一下，确保禁用操作完成
-            TimeUnit.MILLISECONDS.sleep(500);
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                // 恢复中断状态
+                Thread.currentThread().interrupt();
+                logger.warn("等待 CDC 禁用完成时被中断，继续执行重新启用操作");
+            }
 
             // 3. 重新启用表的 CDC，指定所有列（包括新列）
             String columnList = String.join(", ", columns);
@@ -640,7 +649,15 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 tableName = StringUtil.replace(tableName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
                 schemaName = StringUtil.replace(schemaName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
 
-                if (schema.equals(schemaName)) return tableName;
+                // 如果 DDL 中没有指定 schema，或者 schema 匹配，都返回表名
+                // SQL Server 中，如果 DDL 没有显式指定 schema，则使用当前连接的 schema
+                if (schemaName == null || schemaName.isEmpty()) {
+                    return tableName;
+                }
+                // 如果 DDL 中指定了 schema，只有当它匹配当前 schema 时才返回表名
+                if (schema != null && schema.equals(schemaName)) {
+                    return tableName;
+                }
             }
         } catch (JSQLParserException e) {
             logger.warn("无法解析 DDL 语句: {}", ddlCommand);

@@ -718,6 +718,10 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
      * 验证目标数据库中字段是否存在
      */
     private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        // 确保 connectorType 已设置，否则 ConnectorFactory 无法找到对应的 ConnectorService
+        if (config.getConnectorType() == null) {
+            config.setConnectorType(determineConnectorType(config));
+        }
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
@@ -729,6 +733,10 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
      * 验证目标数据库中字段是否不存在
      */
     private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        // 确保 connectorType 已设置，否则 ConnectorFactory 无法找到对应的 ConnectorService
+        if (config.getConnectorType() == null) {
+            config.setConnectorType(determineConnectorType(config));
+        }
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
