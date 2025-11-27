@@ -447,7 +447,7 @@ public class DDLSqlServerIntegrationTest {
     /**
      * 创建Connector
      */
-    private String createConnector(String name, DatabaseConfig config) {
+    private String createConnector(String name, DatabaseConfig config) throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("name", name);
         params.put("connectorType", determineConnectorType(config));
@@ -464,7 +464,7 @@ public class DDLSqlServerIntegrationTest {
     /**
      * 创建Mapping和TableGroup
      */
-    private String createMapping() {
+    private String createMapping() throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("name", "SQL Server到SQL Server测试Mapping");
         params.put("sourceConnectorId", sourceConnectorId);
@@ -514,7 +514,7 @@ public class DDLSqlServerIntegrationTest {
     /**
      * 执行DDL到源数据库
      */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) {
+    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
         instance.execute(databaseTemplate -> {
             databaseTemplate.execute(sql);
@@ -525,7 +525,7 @@ public class DDLSqlServerIntegrationTest {
     /**
      * 验证目标数据库中字段是否存在
      */
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()
@@ -536,7 +536,7 @@ public class DDLSqlServerIntegrationTest {
     /**
      * 验证目标数据库中字段是否不存在
      */
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) {
+    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
         ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
         MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
         boolean exists = metaInfo.getColumn().stream()

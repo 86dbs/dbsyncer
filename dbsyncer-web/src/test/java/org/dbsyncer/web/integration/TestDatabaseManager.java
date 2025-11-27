@@ -101,7 +101,7 @@ public class TestDatabaseManager {
      * @param connectorInstance 数据库连接实例
      * @param sql               要执行的SQL脚本
      */
-    private void executeSql(DatabaseConnectorInstance connectorInstance, String sql) {
+    private void executeSql(DatabaseConnectorInstance connectorInstance, String sql) throws Exception {
         if (sql == null || sql.trim().isEmpty()) {
             return;
         }

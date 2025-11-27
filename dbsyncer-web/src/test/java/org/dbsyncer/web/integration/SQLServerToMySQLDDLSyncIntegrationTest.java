@@ -673,6 +673,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
             databaseTemplate.execute(sql);
             return null;
         });
+        logger.info("-----------execute sql--------- {}", sql);
     }
 
     /**
