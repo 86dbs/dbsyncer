@@ -46,7 +46,7 @@
         </div>
         <div></div>
         <div class="flex items-center justify-end">
-            <button id="convertAdd" class="btn btn-info">
+            <button id="convertAdd" type="button" class="btn btn-info">
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
@@ -65,33 +65,17 @@
         <tbody id="convertList">
             <!-- Mapping convert -->
             <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
-                <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
-                </td>
+                <td>[[${f?.convertName}]]</td>
                 <td>[[${f?.name}]]</td>
-                <td style="word-break: break-all;">[[${f?.args}]]</td>
-                <td style="text-align: center;">
-                    <a class="convertDelete"
-                       style="color: var(--danger-color); cursor: pointer; font-size: 16px;"
-                       title="删除">
-                        <i class="fa fa-trash-o"></i>
-                    </a>
-                </td>
+                <td>[[${f?.args}]]</td>
+                <td><i class='fa fa-trash-o text-danger convertDelete' title='删除'></i></td>
             </tr>
             <!-- TableGroup convert -->
             <tr th:each="f,s:${tableGroup?.convert}">
-                <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.convertName}]]</span>
-                </td>
+                <td>[[${f?.convertName}]]</td>
                 <td>[[${f?.name}]]</td>
-                <td style="word-break: break-all;">[[${f?.args}]]</td>
-                <td style="text-align: center;">
-                    <a class="convertDelete"
-                       style="color: var(--danger-color); cursor: pointer; font-size: 16px;"
-                       title="删除">
-                        <i class="fa fa-trash-o"></i>
-                    </a>
-                </td>
+                <td>[[${f?.args}]]</td>
+                <td><i class='fa fa-trash-o text-danger convertDelete' title='删除'></i></td>
             </tr>
         </tbody>
     </table>
@@ -101,5 +85,100 @@
         <input id="convert" name="convert" class="form-control" type="text"/>
     </div>
 
+<script>
+    // 初始化映射关系参数
+    function initConvertParams(){
+        // 生成JSON参数
+        var row = [];
+        var $convertList = $("#convertList");
+        $convertList.find("tr").each(function(k,v){
+            var convert = $(this).find("td:eq(0)");
+            var convertCode = convert.attr("value");
+            var convertName = convert.text().replace(/\n/g,'').trim();
+            var tf = $(this).find("td:eq(1)").text();
+            var args = $(this).find("td:eq(2)").text();
+            row.push({
+               "name": tf,
+               "convertName": convertName,
+               "convertCode": convertCode,
+               "args": args
+             });
+        });
+        var $convertTable = $("#convertTable");
+        if (0 >= row.length) {
+            $convertTable.addClass("hidden");
+        } else {
+            $convertTable.removeClass("hidden");
+        }
+        $("#convert").val(JSON.stringify(row));
+    }
+
+    // 绑定表格点击删除事件
+    function bindConvertListDelete(){
+        $(".convertDelete").unbind("click").bind('click', function(){
+            // 阻止tr触发click事件
+            event.cancelBubble=true;
+            $(this).parent().parent().remove();
+            initConvertParams();
+        });
+        initConvertParams();
+    }
+
+    // 绑定新增转换点击事件
+    function bindConvertAddClick() {
+        var $convertAdd = $("#convertAdd");
+        $convertAdd.unbind("click");
+        $convertAdd.bind('click', function () {
+            var $convertOperator = $("#convertOperator");
+            // 使用原生 val() 方法替代 selectpicker
+            var convertOperatorVal = $convertOperator.val();
+            var convertOperatorText = $convertOperator.find("option:selected")[0].text;
+            var convertTargetField = $("#convertTargetField").val();
+            var convertArg = $(".convertArg:eq(0)").val();
+            var convertArg1 = $(".convertArg:eq(1)").val();
+            // 多个参数时，英文符号“,”拼接
+            convertArg = convertArg1 !== '' ? convertArg + ','+ convertArg1 : convertArg;
+            // 非空检查
+            if(convertTargetField == null || convertTargetField == undefined || convertTargetField == ''){
+                bootGrowl("目标源表字段不能空.", "danger");
+                return;
+            }
+
+            // 检查重复字段
+            var repeated = false;
+            var $convertList = $("#convertList");
+            $convertList.find("tr").each(function(k,v){
+                 var opr = $(this).find("td:eq(0)").text();
+                 var tf = $(this).find("td:eq(1)").text();
+                 var arg = $(this).find("td:eq(2)").text();
+                 if(repeated = (opr==convertOperatorText && tf==convertTargetField && arg==convertArg)){
+                    bootGrowl("转换配置已存在.", "danger");
+                    // break;
+                    return false;
+                 }
+            });
+            if(repeated){ return; }
+
+            var trHtml = "<tr>";
+            trHtml += "<td value='" + convertOperatorVal + "'>" + convertOperatorText + "</td>";
+            trHtml += "<td>" + convertTargetField + "</td>";
+            trHtml += "<td>" + convertArg + "</td>";
+            trHtml += "<td><i class='fa fa-trash-o text-danger convertDelete' title='删除'></i></td>";
+            trHtml += "</tr>";
+            $convertList.append(trHtml);
+            // 清空参数
+            $(".convertArg").val("");
+            initConvertParams();
+        });
+    }
+
+    $(document).ready(function() {
+        initSelect($('#convertOperator'));
+        initSelect($('#convertTargetField'));
+
+        bindConvertAddClick();
+        bindConvertListDelete();
+    });
+</script>
 </div>
 </html>

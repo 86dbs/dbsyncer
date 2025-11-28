@@ -62,7 +62,7 @@
         <!-- 系统参数 -->
         <div class="form-item">
             <label class="form-label">系统参数</label>
-            <select id="conditionSourceField" class="form-control">
+            <select id="systemArg" class="form-control">
                 <!-- 数据源表字段 -->
                 <option th:each="f,s:${condition?.quartzFilter}" th:value="${f?.type}" th:text="${f?.type}" />
             </select>
@@ -70,7 +70,7 @@
 
         <!-- 添加按钮 -->
         <div class="flex items-center justify-end">
-            <button id="conditionAdd" class="btn btn-info">
+            <button id="conditionAdd" type="button" class="btn btn-info">
                 <i class="fa fa-plus"></i> 添加
             </button>
         </div>
@@ -91,33 +91,29 @@
             <!-- Mapping filter -->
             <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
                 <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.operation}]]</span>
+                    [[${f?.operation}]]
                 </td>
                 <td>[[${f?.name}]]</td>
                 <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-warning">[[${f?.filter}]]</span>
+                    [[${f?.filter}]]
                 </td>
                 <td>[[${f?.value}]]</td>
                 <td>
-                    <a class="conditionDelete text-danger" title="删除">
-                        <i class="fa fa-trash-o"></i>
-                    </a>
+                    <i class="fa fa-trash-o text-danger conditionDelete" title="删除"></i>
                 </td>
             </tr>
             <!-- TableGroup filter -->
             <tr th:each="f,s:${tableGroup?.filter}">
                 <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-primary">[[${f?.operation}]]</span>
+                    [[${f?.operation}]]
                 </td>
                 <td>[[${f?.name}]]</td>
                 <td>
-                    <span class="dbsyncer-tag dbsyncer-tag-warning">[[${f?.filter}]]</span>
+                    [[${f?.filter}]]
                 </td>
-                <td style="word-break: break-all;">[[${f?.value}]]</td>
-                <td style="text-align: center;">
-                    <a class="conditionDelete text-danger" title="删除">
-                        <i class="fa fa-trash-o"></i>
-                    </a>
+                <td>[[${f?.value}]]</td>
+                <td>
+                    <i class="fa fa-trash-o text-danger conditionDelete" title="删除"></i>
                 </td>
             </tr>
         </tbody>
@@ -128,6 +124,116 @@
         <input id="filter" name="filter" class="form-control" type="text"/>
     </div>
 
+<script>
+    // 初始化映射关系参数
+    function initFilterParams(){
+        // 生成JSON参数
+        var row = [];
+        var $conditionList = $("#conditionList");
+        $conditionList.find("tr").each(function(k,v){
+            var opt = $(this).find("td:eq(0)").text();
+            var sf = $(this).find("td:eq(1)").text();
+            var filter = $(this).find("td:eq(2)").text();
+            var arg = $(this).find("td:eq(3)").text();
+            row.push({
+               "name": sf,
+               "operation": opt,
+               "filter": filter,
+               "value": arg
+             });
+        });
+        var $conditionTable = $("#conditionTable");
+        if (0 >= row.length) {
+            $conditionTable.addClass("hidden");
+        } else {
+            $conditionTable.removeClass("hidden");
+        }
+        $("#filter").val(JSON.stringify(row));
+    }
+
+    // 绑定新增条件点击事件
+    function bindFilterAdd() {
+        $("#conditionAdd").unbind("click").bind('click', function () {
+            var conditionOperation = $("#conditionOperation").val();
+            var conditionSourceField = $("#conditionSourceField").val();
+            var conditionFilter = $("#conditionFilter").val();
+            var conditionArg = $("#conditionArg").val();
+            var $conditionList = $("#conditionList");
+            // 自定义SQL
+            if (conditionOperation == 'sql') {
+                if (isBlank(conditionArg)) {
+                    bootGrowl("参数不能空.", "danger");
+                    return;
+                }
+                $conditionList.html('');
+                conditionSourceField = '';
+                conditionFilter = '';
+            }
+            // 非空检查
+            else if(isBlank(conditionSourceField)){
+                bootGrowl("数据源表字段不能空.", "danger");
+                return;
+            }
+
+            // 检查重复字段
+            var repeated = false;
+            $conditionList.find("tr").each(function(k,v){
+                 var opr = $(this).find("td:eq(0)").text();
+                 var sf = $(this).find("td:eq(1)").text();
+                 var filter = $(this).find("td:eq(2)").text();
+                 var arg = $(this).find("td:eq(3)").text();
+                 if(repeated = (opr==conditionOperation && sf==conditionSourceField && filter==conditionFilter && arg==conditionArg)){
+                    bootGrowl("过滤条件已存在.", "danger");
+                    // break;
+                    return false;
+                 }
+            });
+            if(repeated){ return; }
+
+            var trHtml = "<tr>";
+            trHtml += "<td>" + conditionOperation + "</td>";
+            trHtml += "<td>" + conditionSourceField + "</td>";
+            trHtml += "<td>" + conditionFilter + "</td>";
+            trHtml += "<td>" + conditionArg + "</td>";
+            trHtml += "<td><i class='fa fa-trash-o text-danger conditionDelete' title='删除'></i></td>";
+            trHtml += "</tr>";
+            $conditionList.append(trHtml);
+            // 清空参数
+            $("#conditionArg").val("");
+            initFilterParams();
+        });
+    }
+
+    // 绑定表格点击删除事件
+    function bindFilterListDelete(){
+        $(".conditionDelete").unbind("click").bind('click', function(){
+            // 阻止tr触发click事件
+            event.cancelBubble=true;
+            $(this).parent().parent().remove();
+            initFilterParams();
+        });
+        initFilterParams();
+    }
+
+    // 绑定添加定时系统参数
+    function bindFilterQuartzFilterAdd(){
+        $(".conditionQuartzFilter").unbind("click").bind('click', function () {
+            const $tmpVal = $("#conditionArg");
+            $tmpVal.val($tmpVal.val() + $(this).text());
+        });
+    }
+
+    $(document).ready(function() {
+        initSelect($('#conditionOperation'));
+        initSelect($('#conditionSourceField'));
+        initSelect($('#conditionFilter'));
+        initSelect($('#systemArg'));
+
+        bindFilterAdd();
+        bindFilterListDelete();
+        bindFilterQuartzFilterAdd();
+    });
+</script>
 </div>
 
 </html>

@@ -302,6 +302,15 @@ function initSearch(searchWrapperId, callback) {
     updateSearchState(searchInput.value || '');
 }
 
+function initSelect(selector){
+    selector.dbSelect({
+        type: 'single',
+        onSelect: function (data) {
+            console.log(data);
+        }
+    });
+}
+
 // 注销
 function logout() {
     // 基础用法
