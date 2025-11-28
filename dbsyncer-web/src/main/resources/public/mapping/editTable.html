@@ -14,7 +14,7 @@
         </div>
 
         <div class="text-info items-center text-center">
-            <i class="fa fa-arrow-right"></i>
+            <i class="fa fa-angle-double-right fa-2x"></i>
         </div>
 
         <!-- 目标源表选择器 -->
@@ -36,9 +36,7 @@
             </div>
         </div>
 
-        <div class="text-info items-center text-center">
-            <i class="fa fa-arrow-right"></i>
-        </div>
+        <div class="text-info items-center text-center"></div>
 
         <!-- 目标源主键 -->
         <div class="lg:col-span-4 flex items-center gap-3 form-item">
@@ -50,15 +48,12 @@
     </div>
 
     <!-- 操作按钮区域 -->
-    <div class="flex items-center justify-between mt-4">
-        <button id="refreshTableBtn" class="btn btn-outline" th:title="刷新数据源和目标源表" th:tableGroupId="${mapping?.id}">
-            <i class="fa fa-refresh"></i> 刷新表
-        </button>
+    <div class="flex items-center justify-end mt-4">
         <div class="form-actions">
-            <button id="tableGroupAddBtn" th:mappingId="${mapping?.id}" class="btn btn-info">
+            <button id="tableGroupAddBtn" type="button" class="btn btn-info">
                 <i class="fa fa-plus"></i> 添加
             </button>
-            <button id="tableGroupDelBtn" th:mappingId="${mapping?.id}" class="btn btn-outline" disabled="disabled">
+            <button id="tableGroupDelBtn" type="button" class="btn btn-outline" disabled="disabled">
                 <i class="fa fa-trash"></i> 删除
             </button>
         </div>
@@ -95,138 +90,281 @@
                 <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
             </td>
         </tr>
-        <tr title='拖动排序 | 点击编辑'>
-            <td th:text="1"/>
-            <td th:text="my_user"/>
-            <td th:text="my_user"/>
-            <td>
-                <i class="fa fa-arrows text-tertiary" style="cursor: move;"></i>
-            </td>
-            <td onclick="event.stopPropagation();">
-                <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
-            </td>
-        </tr>
-        <tr title='拖动排序 | 点击编辑'>
-            <td th:text="2"/>
-            <td th:text="my_user2"/>
-            <td th:text="my_user2"/>
-            <td>
-                <i class="fa fa-arrows text-tertiary" style="cursor: move;"></i>
-            </td>
-            <td onclick="event.stopPropagation();">
-                <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
-            </td>
-        </tr>
         </tbody>
     </table>
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
 
-    <script>
-        function bindTableSelect(selector, onChange){
-            return selector.dbSelect({
-                type: 'multiple',
-                onSelect: function (data) {
-                    if (onChange) {
-                        onChange(data);
+<script>
+    // 刷新驱动编辑页面
+    function refreshMappingEditPage(params) {
+        let url = '/mapping/page/edit?id=' + $("#mappingId").val();
+        if (params) {
+            url += params;
+        }
+        doLoader(url);
+    }
+
+    function bindTableSelect(selector, onChange){
+        return selector.dbSelect({
+            type: 'multiple',
+            onSelect: function (data) {
+                if (onChange) {
+                    onChange(data);
+                }
+            },
+            defaultValue: [],// 默认选中
+            customButtons: [ // 最多2个自定义按钮
+                {
+                    text: '取消过滤',
+                    callback: function(values) {
+                        refreshMappingEditPage('&exclude=1');
+                        bootGrowl("取消过滤成功!", "success");
                     }
                 },
-                defaultValue: [],// 默认选中
-                customButtons: [ // 最多2个自定义按钮
-                    {
-                        text: '取消过滤',
-                        callback: function(values) {
-                            console.log('取消过滤:', values);
-                        }
-                    },
-                    {
-                        text: '过滤',
-                        callback: function(values) {
-                            console.log('过滤:', values);
-                        }
+                {
+                    text: '刷新表',
+                    callback: function(values) {
+                        bindTableRefresh();
                     }
-                ],
-                onCustomButton: function(index, values, text) {  // 自定义按钮点击
-                    console.log('按钮索引:', index, '选中值:', values, '按钮文本:', text);
+                }
+            ],
+            onCustomButton: function(index, values, text) {  // 自定义按钮点击
+                console.log('按钮索引:', index, '选中值:', values, '按钮文本:', text);
+            }
+        });
+    }
+
+    // 绑定刷新下拉表事件
+    function bindTableRefresh() {
+        let id = $("#mappingId").val();
+        doPoster("/mapping/refreshTables", {'id': id}, function (data) {
+            if (data.success === true) {
+                bootGrowl("刷新表成功!", "success");
+                refreshMappingEditPage();
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    }
+
+    // 绑定添加表映射关系事件
+    function bindTableGroupAdd(sourceSelector, targetSelector){
+        $("#tableGroupAddBtn").unbind("click").bind('click', function (e) {
+            let sTables = sourceSelector.getValues();
+            let sLen = sTables.length;
+            if (sLen < 1) {
+                bootGrowl("请选择数据源表", "danger");
+                return;
+            }
+            let tTables = targetSelector.getValues();
+            let tLen = tTables.length;
+            if (tLen < 1) {
+                bootGrowl("请选择目标源表", "danger");
+                return;
+            }
+            if (sLen !== tLen) {
+                bootGrowl("表映射关系数量不一致，请检查源表和目标表关系", "danger");
+                return;
+            }
+            let m = {};
+            m.mappingId = $("#mappingId").val();
+            m.sourceTable = sTables.join('|');
+            m.targetTable = tTables.join('|');
+            m.sourceTablePK = $("#sourceTablePK").val();
+            m.targetTablePK = $("#targetTablePK").val();
+            console.log(m);
+            doPoster("/tableGroup/add", m, function (data) {
+                if (data.success === true) {
+                    bootGrowl("新增映射关系成功!", "success");
+                    refreshMappingEditPage();
+                } else {
+                    bootGrowl(data.resultValue, "danger");
                 }
             });
+        });
+    }
+
+    // 绑定删除表关系点击事件
+    function bindTableGroupRemove() {
+        $("#tableGroupDelBtn").unbind("click").click(function () {
+            const ids = [];
+            $(".tableGroupCheckbox").each(function(){
+                if($(this).prop('checked')){
+                    ids.push($(this).val());
+                }
+            });
+            if (ids.length > 0) {
+                let id = $("#mappingId").val();
+                doPoster("/tableGroup/remove", {"mappingId": id, "ids" : ids.join()}, function (data) {
+                    if (data.success === true) {
+                        bootGrowl("删除映射关系成功!", "success");
+                        refreshMappingEditPage();
+                    } else {
+                        bootGrowl(data.resultValue, "danger");
+                    }
+                });
+            }
+        });
+    }
+
+    // 绑定复选框多选或单选事件
+    function bindTableGroupCheckbox() {
+        const $checkboxAll = $('.tableGroupCheckboxAll');
+        const $checkboxes = $('.tableGroupCheckbox');
+        const $delBtn = $('#tableGroupDelBtn');
+        let isUpdatingSelectAll = false;
+
+        // 更新全选复选框状态
+        function updateSelectAllState() {
+            if (isUpdatingSelectAll) return;
+            isUpdatingSelectAll = true;
+            const $checkedCheckboxes = $checkboxes.filter(':checked');
+            const allChecked = $checkboxes.length > 0 && $checkboxes.length === $checkedCheckboxes.length;
+            const checkboxAllApi = $checkboxAll.data('checkboxGroup');
+            if (checkboxAllApi) {
+                checkboxAllApi.setValue(allChecked);
+            } else {
+                $checkboxAll.prop('checked', allChecked);
+            }
+            setTimeout(function() {
+                isUpdatingSelectAll = false;
+            }, 0);
         }
 
-        // 绑定下拉选择事件自动匹配相似表事件
-        $(document).ready(function() {
-            let targetTableSelect = bindTableSelect($('#target_table_select'));
-            bindTableSelect($('#source_table_select'), function(data) {
-                targetTableSelect.setValues(data);
+        // 更新删除按钮状态
+        function updateDeleteButtonState() {
+            $delBtn.prop('disabled', $checkboxes.filter(':checked').length === 0);
+        }
+
+        // 初始化全选复选框
+        $checkboxAll.checkboxGroup({
+            theme: 'danger',
+            size: 'md',
+            onChange: function(values) {
+                // 全选/取消全选时，同步所有单个复选框
+                const isChecked = values.length > 0;
+                $checkboxes.each(function() {
+                    const api = $(this).data('checkboxGroup');
+                    if (api) {
+                        api.setValue(isChecked);
+                    }
+                });
+                updateDeleteButtonState();
+            }
+        });
+
+        // 初始化所有单个复选框
+        $checkboxes.checkboxGroup({
+            theme: 'danger',
+            size: 'md',
+            onChange: function(values) {
+                updateSelectAllState();
+                updateDeleteButtonState();
+            }
+        });
+    }
+
+    // 绑定表关系点击事件
+    function bindMappingTableGroupListClick() {
+        const $tableGroupList = $("#tableGroupList");
+
+        // 检查元素是否存在
+        if (!$tableGroupList.length) {
+            return;
+        }
+
+        $tableGroupList.unbind("click");
+        $tableGroupList.find("tr").bind('click', function (e) {
+            // 如果点击的是复选框或其父元素的td，不执行跳转
+            if ($(e.target).is('input[type="checkbox"]') || $(e.target).closest('td').find('input[type="checkbox"]').length > 0) {
+                return;
+            }
+            doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        });
+
+        // 使用原生 HTML5 拖拽 API 替代 tableDnD
+        const $rows = $tableGroupList.find("tr");
+        $rows.each(function() {
+            const $row = $(this);
+            $row.attr('draggable', 'true');
+
+            // 拖拽开始
+            $row.on('dragstart', function(e) {
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+                e.originalEvent.dataTransfer.setData('text/html', this.innerHTML);
+                $(this).addClass('dragging');
             });
 
-            let isUpdatingSelectAll = false;
-            
-            // 初始化全选复选框
-            $('.tableGroupCheckboxAll').checkboxGroup({
-                theme: 'danger',
-                size: 'md',
-                onChange: function(values) {
-                    if (isUpdatingSelectAll) return;
-                    
-                    // 全选/取消全选时，同步所有单个复选框
-                    const isChecked = values.length > 0;
-                    $('.tableGroupCheckbox').each(function() {
-                        const api = $(this).data('checkboxGroup');
-                        if (api) {
-                            api.setValue(isChecked);
-                        }
-                    });
-                    
-                    // 更新删除按钮状态
-                    updateDeleteButtonState();
-                }
+            // 拖拽结束
+            $row.on('dragend', function(e) {
+                $(this).removeClass('dragging');
+                $rows.removeClass('drag-over');
+
+                // 更新排序数据
+                var newData = [];
+                $tableGroupList.find("tr").each(function () {
+                    newData.push($(this).attr('id'));
+                });
+                $("#sortedTableGroupIds").val(newData.join('|'));
             });
-            
-            // 初始化所有单个复选框
-            $('.tableGroupCheckbox').checkboxGroup({
-                theme: 'info',
-                size: 'md',
-                onChange: function(values) {
-                    // 单个复选框变化时，更新全选复选框状态
-                    updateSelectAllState();
-                    // 更新删除按钮状态
-                    updateDeleteButtonState();
+
+            // 拖拽经过
+            $row.on('dragover', function(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
                 }
+                e.originalEvent.dataTransfer.dropEffect = 'move';
+                $(this).addClass('drag-over');
+                return false;
             });
-            
-            // 更新全选复选框状态
-            function updateSelectAllState() {
-                if (isUpdatingSelectAll) return;
-                
-                isUpdatingSelectAll = true;
-                
-                const $allCheckboxes = $('.tableGroupCheckbox');
-                const $checkedCheckboxes = $('.tableGroupCheckbox:checked');
-                const allChecked = $allCheckboxes.length > 0 && $allCheckboxes.length === $checkedCheckboxes.length;
-                
-                const $checkboxAll = $('.tableGroupCheckboxAll');
-                const checkboxAllApi = $checkboxAll.data('checkboxGroup');
-                
-                if (checkboxAllApi) {
-                    checkboxAllApi.setValue(allChecked);
-                } else {
-                    $checkboxAll.prop('checked', allChecked);
+
+            // 拖拽离开
+            $row.on('dragleave', function(e) {
+                $(this).removeClass('drag-over');
+            });
+
+            // 放置
+            $row.on('drop', function(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
                 }
-                
-                setTimeout(function() {
-                    isUpdatingSelectAll = false;
-                }, 0);
-            }
-            
-            // 更新删除按钮状态
-            function updateDeleteButtonState() {
-                const $checkedCheckboxes = $('.tableGroupCheckbox:checked');
-                $('#tableGroupDelBtn').prop('disabled', $checkedCheckboxes.length === 0);
-            }
-            
-            // 初始化删除按钮状态
-            updateDeleteButtonState();
+
+                var $dragging = $tableGroupList.find('.dragging');
+                if ($dragging.length && $dragging[0] !== this) {
+                    // 判断插入位置
+                    var draggingIndex = $dragging.index();
+                    var targetIndex = $(this).index();
+
+                    if (draggingIndex < targetIndex) {
+                        $(this).after($dragging);
+                    } else {
+                        $(this).before($dragging);
+                    }
+                }
+
+                return false;
+            });
         });
-    </script>
+    }
+
+    $(document).ready(function() {
+        // 绑定下拉选择事件自动匹配相似表事件
+        let targetTableSelect = bindTableSelect($('#target_table_select'));
+        let sourceTableSelect = bindTableSelect($('#source_table_select'), function(data) {
+            targetTableSelect.setValues(data);
+        });
+        // 绑定多值输入框事件
+        initMultipleInputTags();
+        // 绑定添加表映射关系事件
+        bindTableGroupAdd(sourceTableSelect, targetTableSelect);
+        // 绑定删除表映射关系事件
+        bindTableGroupRemove();
+        // 绑定复选框多选或单选事件
+        bindTableGroupCheckbox();
+        // 绑定表关系点击事件
+        bindMappingTableGroupListClick();
+    });
+</script>
 </div>
 
 </html>
