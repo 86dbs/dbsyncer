@@ -90,7 +90,7 @@
 以下内容仍保留在 `framework.js` 中：
 
 - 初始化代码（`$basePath`, `$mainContent` 等）
-- 工具函数（`showLoading`, `hideLoading`, `showEmpty`, `escapeHtml`, `formatDate`, `isBlank`, `splitStrByDelimiter`）
+- 工具函数（`showLoading`, `hideLoading`, `showEmpty`, `escapeHtml`, `formatDate`, `isBlank`）
 - 水印功能（`watermark()`）
 - 表单扩展方法（`$.fn.serializeJson`, `$.fn.formValidate`）
 - 全局页面加载（`doLoader`）

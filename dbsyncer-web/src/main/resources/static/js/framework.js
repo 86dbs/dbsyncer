@@ -46,17 +46,6 @@ function isBlank(str) {
     return str === undefined || str === null || str === false || str.length === 0;
 }
 
-/**
- * 按照指定分隔符切分字符串
- *
- * @param str 带切分字符
- * @param delimiter 分隔符
- * @return Array
- */
-function splitStrByDelimiter(str, delimiter) {
-    return isBlank(str) ? [] : str.split(delimiter);
-}
-
 // ******************* 水印 ***************************
 window.onresize = function () {
     watermark();

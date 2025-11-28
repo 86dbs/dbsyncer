@@ -1,14 +1,3 @@
-function submit(data) {
-    //保存驱动配置
-    doPoster("/tableGroup/edit", data, function (data) {
-        if (data.success == true) {
-            bootGrowl("保存表映射关系成功!", "success");
-            backMappingPage($("#tableGroupSubmitBtn"));
-        } else {
-            bootGrowl(data.resultValue, "danger");
-        }
-    });
-}
 
 // 初始化映射关系参数
 function initFieldMappingParams(){
@@ -20,7 +9,7 @@ function initFieldMappingParams(){
         row.push({
             "source":$(this).find("td:eq(0)").text(),
             "target":$(this).find("td:eq(1)").text(),
-            "pk":($pk != "" || $.trim($pk).length > 0)
+            "pk":($pk !== "" || $.trim($pk).length > 0)
         });
     });
     
@@ -161,11 +150,11 @@ function bindFieldMappingListClick(){
     let $tr = $("#fieldMappingList tr");
     $tr.unbind("dblclick");
     $tr.bind('dblclick', function () {
-        let $pk = $(this).find("td:eq(2)");
+        let $pk = $(this).find("td:eq(3)");
         let $text = $pk.html();
-        let isPk = $text == "" || $.trim($text).length == 0;
+        let isPk = $text === "" || $.trim($text).length === 0;
         // 更新为新的图标样式
-        $pk.html(isPk ? '<i title="主键" class="fa fa-key" style="color: var(--warning-color); font-size: 16px;"></i>' : '');
+        $pk.html(isPk ? '<i title="主键" class="fa fa-key text-warning"></i>' : '');
         initFieldMappingParams();
     });
 }
@@ -195,7 +184,7 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         sField = sField == null ? "" : sField;
         tField = tField == null ? "" : tField;
         // 非空检查
-        if(sField == "" && tField == ""){
+        if(sField === "" && tField === ""){
             bootGrowl("至少有一个表字段.", "danger");
             return;
         }
@@ -207,7 +196,7 @@ function bindFieldMappingAddClick($sourceSelect, $targetSelect){
         $tr.each(function(k,v){
             let sf = $(this).find("td:eq(0)").text();
             let tf = $(this).find("td:eq(1)").text();
-            if (repeated = (sField == sf && tField == tf)) {
+            if (repeated === (sField === sf && tField === tf)) {
                 bootGrowl("映射关系已存在.", "danger");
                 return false;
             }
@@ -256,12 +245,13 @@ function bindFieldMappingDelClick(){
         }
     });
 }
-// 返回驱动配置页面
-function backMappingPage($this){
-    doLoader('/mapping/page/edit?id=' + $this.attr("mappingId"));
-}
 
 $(function() {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader("/mapping/page/edit?id=" + $("#mappingId").val());
+    };
+
     // 绑定表字段关系点击事件
     initFieldMappingParams();
     // 绑定表格拖拽事件
@@ -277,14 +267,17 @@ $(function() {
 
     //保存
     $("#tableGroupSubmitBtn").click(function () {
-        let $form = $("#tableGroupModifyForm");
-        if ($form.formValidate() == true) {
-            submit($form.serializeJson());
+        let $form = $("#table_group_modify_form");
+        if (validateForm($form)) {
+            //保存驱动配置
+            doPoster("/tableGroup/edit", $form.serializeJson(), function (data) {
+                if (data.success === true) {
+                    bootGrowl("保存表映射关系成功!", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
         }
-    });
-
-    // 返回按钮，跳转至上个页面
-    $("#tableGroupBackBtn").bind('click', function(){
-        backMappingPage($(this));
     });
 });

@@ -2,243 +2,145 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<!-- 表映射关系编辑页面 -->
-<div class="dbsyncer-form-container">
-    
-    <!-- 页面头部工具栏 -->
-    <div class="dbsyncer-table-toolbar">
-        <div class="dbsyncer-table-toolbar-left">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 500; color: var(--text-primary);">
-                <i class="fa fa-table" style="color: var(--primary-color); margin-right: 8px;"></i>
-                <span>[[${mapping?.name}]]</span>
-            </h3>
-            <p style="margin: 4px 0 0 32px; font-size: 12px; color: var(--text-tertiary);">
-                表映射 ID: [[${tableGroup?.id}]]
-            </p>
+<div class="form-container">
+    <form id="table_group_modify_form" method="post">
+        <div class="card-header">
+            <div class="grid grid-cols-6 items-center">
+                <div class="lg:col-span-2"></div>
+                <div class="lg:col-span-2 card-title text-center">
+                    <span class="text-xxl">[[${mapping?.name}]]</span>
+                    <p class="card-subtitle">[[${tableGroup?.id}]]</p>
+                </div>
+                <div class="lg:col-span-2"></div>
+            </div>
         </div>
-        <div class="dbsyncer-table-toolbar-right">
-            <button id="tableGroupSubmitBtn" th:mappingId="${mapping?.id}" type="button" 
-                    class="dbsyncer-btn dbsyncer-btn-primary">
-                <i class="fa fa-save dbsyncer-btn-icon-left"></i>
-                保存
-            </button>
-            <button id="tableGroupBackBtn" th:mappingId="${mapping?.id}" type="button" 
-                    class="dbsyncer-btn dbsyncer-btn-secondary">
-                <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
-                返回
-            </button>
-        </div>
-    </div>
 
-    <!-- 表单主体 -->
-    <div class="dbsyncer-table-wrapper" style="padding: 24px;">
-        <form id="tableGroupModifyForm" class="form-horizontal" role="form" method="post">
-            
-            <!-- 驱动信息卡片 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-body" style="padding: 32px 48px;">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 80px;">
-                        <!-- 数据源 -->
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="flex-shrink: 0;">
-                                <img draggable="false" class="dbsyncer_img" 
-                                     th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" 
-                                     style="width: 56px; height: 56px; object-fit: contain;">
-                            </div>
-                            <div>
-                                <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">
-                                    [[${mapping?.sourceConnector?.name}]]
-                                </p>
-                                <p style="margin: 0 0 4px 0; font-size: 13px; color: var(--text-tertiary);" 
-                                   th:title="${tableGroup?.sourceTable?.name}">
-                                    数据源表：[[${tableGroup?.sourceTable?.name}]]
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- 箭头 -->
-                        <div style="flex-shrink: 0;">
-                            <i class="fa fa-arrow-right" style="font-size: 36px; color: #333;"></i>
-                        </div>
-
-                        <!-- 目标源 -->
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <div style="flex-shrink: 0;">
-                                <img draggable="false" class="dbsyncer_img" 
-                                     th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" 
-                                     style="width: 56px; height: 56px; object-fit: contain;">
-                            </div>
-                            <div>
-                                <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 16px; color: var(--text-primary);">
-                                    [[${mapping?.targetConnector?.name}]]
-                                </p>
-                                <p style="margin: 0; font-size: 13px; color: var(--text-tertiary);">
-                                    目标源表：[[${tableGroup?.targetTable?.name}]]
-                                </p>
-                            </div>
-                        </div>
+        <div class="card-body">
+            <!-- 驱动同步关系 -->
+            <div class="grid grid-cols-3">
+                <div class="flex items-center gap-3">
+                    <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
+                    <div>
+                        <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
+                        <p class="text-sm">数据源表：[[${tableGroup?.sourceTable?.name}]]</p>
                     </div>
+                </div>
+                <div class="text-info items-center text-center">
+                    <p></p>
+                    <i class="fa fa-arrow-right fa-3x"></i>
+                </div>
+                <div class="flex items-center gap-3">
+                    <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
+                    <div>
+                        <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
+                        <p class="text-sm">目标源表：[[${tableGroup?.targetTable?.name}]]</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end mt-4">
+                <div class="form-actions">
+                    <button id="tableGroupSubmitBtn" type="button" class="btn btn-primary">
+                        <i class="fa fa-save"></i> 保存
+                    </button>
+                    <button id="tableGroupBackBtn" type="button" class="btn btn-outline" onclick="backIndexPage()">
+                        <i class="fa fa-reply"></i> 返回
+                    </button>
                 </div>
             </div>
 
             <!-- 映射关系区域 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
-                    <h3 class="dbsyncer-card-title">
-                        <i class="fa fa-exchange" style="color: var(--success-color); margin-right: 8px;"></i>
-                        字段映射关系
-                    </h3>
+            <h3><i class="fa fa-list-alt text-info"></i> 字段映射关系</h3>
+            <div class="grid grid-cols-9 items-center mt-4">
+                <!-- 数据源表选择器 -->
+                <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                    <label class="form-label">数据源字段</label>
+                    <select id="sourceTableField" class="form-control">
+                        <option value="" selected="selected">请选择字段</option>
+                        <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
+                    </select>
                 </div>
-                <div id="tableGroupBaseConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                    
-                    <!-- 字段选择区域 - 单行布局 -->
-                    <div style="margin-bottom: 24px;">
-                        <div style="display: grid; grid-template-columns: 120px 1fr 48px 120px 1fr; align-items: center; gap: 16px;">
-                            <!-- 数据源表字段标签 -->
-                            <label class="form-label">
-                                <i class="fa fa-list-alt" style="color: var(--primary-color); margin-right: 4px;"></i>
-                                数据源字段
-                            </label>
-                            
-                            <!-- 数据源表字段选择器 -->
-                            <div class="form-control-area">
-                                <select id="sourceTableField" class="form-control select-control">
-                                    <option value="" selected="selected">请选择字段</option>
-                                    <option th:each="c,s:${tableGroup?.sourceTable?.column}" 
-                                            th:value="${c?.name}" 
-                                            th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
-                                </select>
-                            </div>
-                            
-                            <!-- 箭头 -->
-                            <div style="text-align: center;">
-                                <i class="fa fa-angle-double-right" style="font-size: 24px; color: var(--primary-color);"></i>
-                            </div>
-                            
-                            <!-- 目标源表字段标签 -->
-                            <label class="form-label">
-                                <i class="fa fa-list-alt" style="color: var(--success-color); margin-right: 4px;"></i>
-                                目标源字段
-                            </label>
-                            
-                            <!-- 目标源表字段选择器 -->
-                            <div class="form-control-area">
-                                <select id="targetTableField" class="form-control select-control">
-                                    <option value="" selected="selected">请选择字段</option>
-                                    <option th:each="c,s:${tableGroup?.targetTable?.column}" 
-                                            th:value="${c?.name}" 
-                                            th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- 操作按钮区域 -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <button id="refreshTableFieldBtn" type="button" class="dbsyncer-btn dbsyncer-btn-secondary" 
-                                th:title="刷新数据源和目标源表字段" th:tableGroupId="${tableGroup?.id}">
-                            <i class="fa fa-refresh dbsyncer-btn-icon-left"></i>
-                            刷新字段
-                        </button>
-                        <div style="display: flex; gap: 8px;">
-                            <button id="fieldMappingDelBtn" type="button" 
-                                    class="dbsyncer-btn dbsyncer-btn-secondary" disabled="disabled">
-                                <i class="fa fa-trash dbsyncer-btn-icon-left"></i>
-                                删除
-                            </button>
-                            <button id="fieldMappingAddBtn" type="button" 
-                                    class="dbsyncer-btn dbsyncer-btn-primary">
-                                <i class="fa fa-plus dbsyncer-btn-icon-left"></i>
-                                添加
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 字段映射列表 -->
-                    <div class="dbsyncer-table-wrapper" style="margin-top: 16px;">
-                        <table id="fieldMappingTable" class="dbsyncer-table hidden">
-                            <thead>
-                            <tr>
-                                <th style="width: 40%;">
-                                    <i class="fa fa-list-alt" style="color: var(--primary-color); margin-right: 4px;"></i>
-                                    数据源表字段
-                                </th>
-                                <th style="width: 40%;">
-                                    <i class="fa fa-list-alt" style="color: var(--success-color); margin-right: 4px;"></i>
-                                    目标源表字段
-                                </th>
-                                <th style="width: 10%; text-align: center;">
-                                    <i class="fa fa-key" style="color: var(--warning-color); margin-right: 4px;"></i>
-                                    主键
-                                </th>
-                                <th style="width: 10%; text-align: center;">
-                                    <input type="checkbox" class="fieldMappingDeleteCheckboxAll" 
-                                           style="width: 16px; height: 16px; cursor: pointer;" />
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody id="fieldMappingList">
-                                <tr th:id="'fieldMapping_'+${s.index + 1}" 
-                                    title='双击设置/取消主键 | 拖动排序' 
-                                    class='dbsyncer_pointer' 
-                                    th:each="f,s:${tableGroup?.fieldMapping}"
-                                    style="transition: background-color 0.2s ease;">
-                                    <td th:text="${f?.source?.name}"></td>
-                                    <td th:text="${f?.target?.name}"></td>
-                                    <td style="text-align: center;">
-                                        <i th:if="${f?.target?.pk}" title="主键" 
-                                           class="fa fa-key" 
-                                           style="color: var(--warning-color); font-size: 16px;"></i>
-                                    </td>
-                                    <td style="text-align: center;">
-                                        <input type="checkbox" class="fieldMappingDeleteCheckbox" 
-                                               style="width: 16px; height: 16px; cursor: pointer;" />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 隐藏表单值 -->
-                    <div class="form-group hidden">
-                        <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
-                        <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
-                    </div>
+                <div class="text-info items-center text-center">
+                    <i class="fa fa-angle-double-right fa-2x"></i>
                 </div>
+
+                <!-- 目标源表选择器 -->
+                <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                    <label class="form-label">目标源字段</label>
+                    <select id="targetTableField" class="form-control">
+                        <option value="" selected="selected">请选择字段</option>
+                        <option th:each="c,s:${tableGroup?.targetTable?.column}"
+                                th:value="${c?.name}"
+                                th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
+                    </select>
+                </div>
+            </div>
+            <!-- 操作按钮区域 -->
+            <div class="flex items-center justify-end mt-4">
+                <div class="form-actions">
+                    <button id="fieldAddBtn" type="button" class="btn btn-info">
+                        <i class="fa fa-plus"></i> 添加
+                    </button>
+                    <button id="fieldDelBtn" type="button" class="btn btn-outline" disabled="disabled">
+                        <i class="fa fa-trash"></i> 删除
+                    </button>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>数据源表字段</th>
+                    <th>目标源表字段</th>
+                    <th>主键</th>
+                    <th onclick="event.stopPropagation();">
+                        <input type="checkbox" class="fieldMappingCheckboxAll" value="all" onclick="event.stopPropagation();" />
+                    </th>
+                </tr>
+                </thead>
+                <tbody id="fieldMappingList">
+                <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键 | 拖动排序' th:each="f,s:${tableGroup?.fieldMapping}">
+                    <td th:text="${s.index + 1}"/>
+                    <td th:text="${f?.source?.name}"></td>
+                    <td th:text="${f?.target?.name}"></td>
+                    <td>
+                        <i th:if="${f?.target?.pk}" title="主键" class="fa fa-key text-warning"></i>
+                    </td>
+                    <td onclick="event.stopPropagation();">
+                        <input th:value="${t?.id}" type="checkbox" class="fieldMappingCheckbox" onclick="event.stopPropagation();" />
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- 隐藏表单值 -->
+            <div class="hidden">
+                <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
+                <input id="mappingId" class="form-control" type="text" th:value="${mapping?.id}"/>
+                <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
             </div>
 
             <!-- 高级配置区域 -->
-            <div class="dbsyncer-card" style="margin-bottom: 24px;">
-                <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%);">
-                    <h3 class="dbsyncer-card-title">
-                        <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 8px;"></i>
-                        高级配置
-                        <span style="font-size: 12px; color: var(--text-tertiary); font-weight: normal; margin-left: 8px;">
-                            该配置只对当前映射关系生效，上一级的高级配置将失效
-                        </span>
+            <h3><i class="fa fa-table text-info"></i> 高级配置</h3>
+            <p class="text-xs text-tertiary">只对当前表映射关系生效，优先级高于上一级的高级配置</p>
 
-                    </h3>
-                </div>
-                <div id="tableGroupSuperConfig" class="dbsyncer-card-body panel-collapse collapse in">
-                    <!-- 策略配置 -->
-                    <div th:replace="mapping/editParameter :: content"></div>
+            <!-- 过滤条件 -->
+            <div th:replace="mapping/editFilter :: content"></div>
 
-                    <!-- 过滤条件 -->
-                    <div th:replace="mapping/editFilter :: content"></div>
+            <!-- 转换配置 -->
+            <div th:replace="mapping/editConvert :: content"></div>
 
-                    <!-- 转换配置 -->
-                    <div th:replace="mapping/editConvert :: content"></div>
+            <!-- 策略配置 -->
+            <div th:replace="mapping/editParameter :: content"></div>
 
-                    <!-- 插件配置 -->
-                    <div th:replace="mapping/editPlugin :: content"></div>
-                </div>
-            </div>
+            <!-- 插件配置 -->
+            <div th:replace="mapping/editPlugin :: content"></div>
 
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 <script th:src="@{/js/mapping/editTableGroup.js}"></script>
 <script th:src="@{/js/mapping/editPlugin.js}"></script>
-<script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 </html>

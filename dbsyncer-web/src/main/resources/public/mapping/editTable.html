@@ -79,15 +79,15 @@
         </tr>
         </thead>
         <tbody id="tableGroupList">
-        <tr th:id="${t?.id}" title='拖动排序 | 点击编辑' th:each="t,state : ${tableGroups}">
-            <td th:text="1"/>
+        <tr th:id="${t?.id}" title='拖动排序 | 点击编辑' th:each="t,s : ${tableGroups}">
+            <td th:text="${s.index + 1}"/>
             <td th:text="${t?.sourceTable.name}"/>
             <td th:text="${t?.targetTable.name}"/>
             <td>
                 <i class="fa fa-arrows text-tertiary" style="cursor: move;"></i>
             </td>
             <td onclick="event.stopPropagation();">
-                <input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
+                <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
             </td>
         </tr>
         </tbody>
@@ -172,7 +172,6 @@
             m.targetTable = tTables.join('|');
             m.sourceTablePK = $("#sourceTablePK").val();
             m.targetTablePK = $("#targetTablePK").val();
-            console.log(m);
             doPoster("/tableGroup/add", m, function (data) {
                 if (data.success === true) {
                     bootGrowl("新增映射关系成功!", "success");

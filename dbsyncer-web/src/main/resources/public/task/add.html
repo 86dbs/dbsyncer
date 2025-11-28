@@ -702,7 +702,7 @@
         
         // 表单验证
         const $form = $("#taskAddForm");
-        if (typeof $form.formValidate === 'function' && $form.formValidate() !== true) {
+        if (validateForm($form)) {
             return;
         }
         
@@ -2221,7 +2221,7 @@
     /*
     $("#taskSubmitBtn").click(function () {
         const $form = $("#taskAddForm");
-        if ($form.formValidate() == true) {
+        if (validateForm($form)) {
             const config = buildTaskConfig();
             // ... 原来的提交逻辑
         }
