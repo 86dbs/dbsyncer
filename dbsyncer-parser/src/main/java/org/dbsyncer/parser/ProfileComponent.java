@@ -3,19 +3,18 @@
  */
 package org.dbsyncer.parser;
 
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import java.util.List;
@@ -86,21 +85,6 @@ public interface ProfileComponent {
      * @return
      */
     UserConfig getUserConfig();
-
-    /**
-     * 根据ID获取分组配置
-     *
-     * @param id
-     * @return
-     */
-    ProjectGroup getProjectGroup(String id);
-
-    /**
-     * 获取所有的分组配置
-     *
-     * @return
-     */
-    List<ProjectGroup> getProjectGroupAll();
 
     /**
      * 根据ID获取连接器

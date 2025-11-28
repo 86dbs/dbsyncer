@@ -7,7 +7,6 @@ import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
@@ -45,7 +44,4 @@ public interface Preload {
         throw new ParserException("Unsupported method parseMeta");
     }
 
-    default ProjectGroup parseProjectGroup(){
-        throw new ParserException("Unsupported method parseProjectGroup");
-    }
 }

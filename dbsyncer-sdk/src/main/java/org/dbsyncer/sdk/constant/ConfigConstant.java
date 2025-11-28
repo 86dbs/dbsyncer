@@ -29,7 +29,6 @@ public class ConfigConstant {
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
-    public static final String PROJECT_GROUP = "projectGroup";
 
     /**
      * 数据

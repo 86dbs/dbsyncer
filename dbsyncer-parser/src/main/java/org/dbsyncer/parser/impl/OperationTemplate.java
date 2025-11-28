@@ -97,7 +97,6 @@ public final class OperationTemplate {
 
         // 2、持久化
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
-        logger.debug("params:{}", params);
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
         cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, params));

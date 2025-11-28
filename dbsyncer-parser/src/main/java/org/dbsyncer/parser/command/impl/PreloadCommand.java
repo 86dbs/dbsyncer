@@ -8,7 +8,6 @@ import org.dbsyncer.parser.command.Command;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
@@ -59,11 +58,6 @@ public final class PreloadCommand implements Command {
     @Override
     public Meta parseMeta() {
         return profileComponent.parseObject(json, Meta.class);
-    }
-
-    @Override
-    public ProjectGroup parseProjectGroup() {
-        return profileComponent.parseObject(json, ProjectGroup.class);
     }
 
 }

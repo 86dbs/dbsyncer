@@ -82,7 +82,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         // Load configModels
-        Arrays.stream(CommandEnum.values()).filter(commandEnum -> commandEnum.isPreload()).forEach(commandEnum -> execute(commandEnum));
+        Arrays.stream(CommandEnum.values()).filter(CommandEnum::isPreload).forEach(this::execute);
 
         // Load plugins
         pluginFactory.loadPlugins();
@@ -113,7 +113,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         // Load configModels
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
-                CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> reload(map, commandEnum));
+                CommandEnum.PRELOAD_META).forEach(commandEnum -> reload(map, commandEnum));
 
         // Load connectorInstances
         loadConnectorInstance();
