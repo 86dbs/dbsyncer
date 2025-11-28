@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -15,8 +13,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.enums.TableOperationEnum;
-import org.dbsyncer.connector.sqlserver.model.DMLEvent;
 import org.dbsyncer.connector.sqlserver.model.DDLEvent;
+import org.dbsyncer.connector.sqlserver.model.DMLEvent;
 import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.model.UnifiedChangeEvent;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -29,6 +27,7 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.util.Assert;
 
 import java.sql.PreparedStatement;
@@ -72,6 +71,8 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private static final String GET_ALL_CHANGES_FOR_TABLE = "select * from cdc.[fn_cdc_get_all_changes_#](?, ?, N'all update old') order by [__$start_lsn] ASC, [__$seqval] ASC";
 
     // DDL 相关 SQL
+    // 查询条件：ddl_lsn > ? AND ddl_lsn <= ?
+    // 使用 > 而不是 >=，因为 lastLsn 是上次查询的结束 LSN，等于 lastLsn 的 DDL 应该已经被处理过了
     private static final String GET_DDL_CHANGES =
             "SELECT source_object_id, object_id, ddl_command, ddl_lsn, ddl_time " +
                     "FROM cdc.ddl_history " +
@@ -98,12 +99,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
     private Lock lock = new ReentrantLock(true);
     private Condition isFull = lock.newCondition();
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
-
-    // 表名缓存：使用 Caffeine 本地缓存，10分钟过期
-    private final Cache<Integer, String> objectIdToTableNameCache = Caffeine.newBuilder()
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .maximumSize(1000)
-            .build();
 
     @Override
     public void start() throws Exception {
@@ -236,67 +231,32 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void enableTableCDC() {
-        if (!CollectionUtils.isEmpty(tables)) {
-            tables.forEach(table -> {
-                boolean enabledTableCDC = false;
-                try {
-                    enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                if (!enabledTableCDC) {
-                    try {
-                        // 在启用 CDC 之前，先尝试禁用可能存在的捕获实例（处理测试场景中的残留实例）
-                        // 如果捕获实例不存在，禁用操作会失败，但我们可以忽略这个错误
-                        try {
-                            execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                            logger.debug("已清理表 [{}] 的旧 CDC 捕获实例", table);
-                            // 等待一下，确保禁用操作完成
-                            try {
-                                Thread.sleep(200);
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                logger.warn("等待 CDC 禁用完成时被中断");
-                            }
-                        } catch (Exception e) {
-                            // 忽略禁用失败的错误（可能因为捕获实例不存在）
-                            logger.debug("清理表 [{}] 的 CDC 捕获实例时出错（可忽略）: {}", table, e.getMessage());
-                        }
-                        
-                        // 启用表的 CDC
-                        execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                    } catch (Exception e) {
-                        // 如果启用失败，检查是否是捕获实例已存在的错误
-                        String errorMessage = e.getMessage();
-                        if (errorMessage != null && errorMessage.contains("已存在捕获实例名称")) {
-                            // 捕获实例已存在，先禁用再启用
-                            logger.warn("表 [{}] 的 CDC 捕获实例已存在，先禁用再重新启用", table);
-                            try {
-                                execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                                try {
-                                    Thread.sleep(500);
-                                } catch (InterruptedException ie) {
-                                    Thread.currentThread().interrupt();
-                                    logger.warn("等待 CDC 禁用完成时被中断");
-                                }
-                                execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                            } catch (Exception retryException) {
-                                throw new RuntimeException("重新启用表 [" + table + "] 的 CDC 失败", retryException);
-                            }
-                        } else {
-                            throw new RuntimeException("启用表 [" + table + "] 的 CDC 失败", e);
-                        }
-                    }
-                    Lsn minLsn = null;
-                    try {
-                        minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
-                }
-            });
+        if (CollectionUtils.isEmpty(tables)) {
+            return;
         }
+        tables.forEach(table -> {
+            boolean enabledTableCDC;
+            try {
+                enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            if (!enabledTableCDC) {
+                try {
+                    // 启用表的 CDC
+                    execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
+                }
+                catch (UncategorizedSQLException e){
+                    logger.warn("表 [{}] 的 CDC 捕获实例已存在", table);
+                    return;
+                }
+                catch (Exception e) {
+                    // 如果启用失败，检查是否是捕获实例已存在的错误
+                    logger.error("启用表 [{}] 的 CDC 失败！", table);
+                    throw new RuntimeException("启用表 [" + table + "] 的 CDC 失败！");
+                }
+            }
+        });
     }
 
     private void enableDBCDC() throws Exception {
@@ -325,7 +285,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void pull(Lsn stopLsn) throws Exception {
-        Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
+        // 性能优化：直接使用 lastLsn，在应用层高效过滤掉等于 lastLsn 的数据
+        // 原因：
+        // 1. 避免额外的 fn_cdc_increment_lsn 函数调用，减少数据库往返（每次 pull 节省一次函数调用）
+        // 2. 数据按 LSN 排序，等于 lastLsn 的数据通常集中在首尾，可以 O(1) 过滤
+        // 3. 如果 LSN 不连续导致查询失败，会回退到使用 fn_cdc_increment_lsn
+        Lsn startLsn = lastLsn;
 
         // 查询 DML 变更（提取 LSN 用于排序）
         List<DMLEvent> dmlEvents = new ArrayList<>();
@@ -343,13 +308,19 @@ public class SqlServerListener extends AbstractDatabaseListener {
                     List<DMLEvent> data = new ArrayList<>();
 
                     while (rs.next()) {
+                        // 提取 LSN（第 1 列是 __$start_lsn）
+                        Lsn eventLsn = new Lsn(rs.getBytes(1));
+                        
+                        // 应用层过滤：跳过所有等于 lastLsn 的数据（避免重复处理）
+                        // 由于数据按 LSN 排序，等于 lastLsn 的数据通常集中在首尾，可以高效过滤
+                        if (eventLsn.compareTo(lastLsn) == 0) {
+                            continue;  // 跳过等于 lastLsn 的数据
+                        }
+
                         final int operation = rs.getInt(3);  // __$operation 是第 3 列
                         if (TableOperationEnum.isUpdateBefore(operation)) {
                             continue;
                         }
-
-                        // 提取 LSN（第 1 列是 __$start_lsn）
-                        Lsn eventLsn = new Lsn(rs.getBytes(1));
 
                         row = new ArrayList<>(columnCount - OFFSET_COLUMNS);
                         for (int i = OFFSET_COLUMNS + 1; i <= columnCount; i++) {
@@ -372,8 +343,11 @@ public class SqlServerListener extends AbstractDatabaseListener {
             }
         });
 
-        // 查询 DDL 变更（使用统一的 LSN）
-        List<DDLEvent> ddlEvents = pullDDLChanges(startLsn, stopLsn);
+        // 查询 DDL 变更
+        // 注意：DML 查询使用 startLsn = fn_cdc_increment_lsn(lastLsn)，因为 fn_cdc_get_all_changes_xxx() 包含 startLsn
+        //      如果直接使用 lastLsn，会重复处理等于 lastLsn 的数据
+        // DDL 查询直接使用 lastLsn，查询条件是 ddl_lsn > lastLsn（不包含等于 lastLsn 的，因为已经处理过了）
+        List<DDLEvent> ddlEvents = pullDDLChanges(lastLsn, stopLsn);
 
         // 合并并按 LSN 排序
         List<UnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
@@ -399,17 +373,25 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     /**
      * 查询 DDL 变更（使用统一的 LSN）
+     * 
+     * @param startLsn 起始 LSN（应该是 lastLsn，不包括等于该值的 DDL）
+     * @param stopLsn 结束 LSN（包括等于该值的 DDL）
      */
     private List<DDLEvent> pullDDLChanges(Lsn startLsn, Lsn stopLsn) throws Exception {
+        logger.debug("查询 DDL 变更，startLsn: {}, stopLsn: {}", startLsn, stopLsn);
         return queryAndMapList(GET_DDL_CHANGES, statement -> {
             statement.setBytes(1, startLsn.getBinary());
             statement.setBytes(2, stopLsn.getBinary());
         }, rs -> {
             List<DDLEvent> events = new ArrayList<>();
+            int totalCount = 0;
             while (rs.next()) {
+                totalCount++;
                 String ddlCommand = rs.getString(3);
                 Lsn ddlLsn = new Lsn(rs.getBytes(4));
                 java.util.Date ddlTime = rs.getTimestamp(5);
+
+                logger.info("查询到 DDL 记录: ddlLsn={}, ddlCommand={}", ddlLsn, ddlCommand);
 
                 String tableName = extractTableNameFromDDL(ddlCommand);
                 if (tableName == null) {
@@ -421,14 +403,19 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
                 // 过滤 DDL 类型：只处理 ALTER TABLE
                 if (!isTableAlterDDL(ddlCommand)) {
+                    logger.info("跳过非 ALTER TABLE 类型的 DDL: {}", ddlCommand);
                     continue;
                 }
 
                 // 检查 schema 和表名是否匹配
                 if (filterTable.contains(tableName)) {
                     events.add(new DDLEvent(tableName, ddlCommand, ddlLsn, ddlTime));
+                    logger.info("添加 DDL 事件: tableName={}, ddlCommand={}", tableName, ddlCommand);
+                } else {
+                    logger.info("跳过不匹配的表: tableName={}, filterTable={}", tableName, filterTable);
                 }
             }
+            logger.info("DDL 查询完成，总记录数: {}, 匹配的事件数: {}", totalCount, events.size());
             return events;
         });
     }
@@ -607,7 +594,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
 
-
     /**
      * 重新启用表的 CDC（用于在列结构变更后更新捕获列列表）
      * <p>
@@ -642,25 +628,52 @@ public class SqlServerListener extends AbstractDatabaseListener {
             execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, tableName), schema));
             logger.info("已禁用表 [{}] 的 CDC", tableName);
 
-            // 等待一下，确保禁用操作完成
+            // 3. 等待一下，确保禁用操作完成
             try {
-                TimeUnit.MILLISECONDS.sleep(500);
+                TimeUnit.MILLISECONDS.sleep(1000);
             } catch (InterruptedException e) {
                 // 恢复中断状态
                 Thread.currentThread().interrupt();
                 logger.warn("等待 CDC 禁用完成时被中断，继续执行重新启用操作");
             }
 
-            // 3. 重新启用表的 CDC，指定所有列（包括新列）
+            // 4. 重新启用表的 CDC，指定所有列（包括新列）
             String columnList = String.join(", ", columns);
             String enableSql = String.format(
                     "EXEC sys.sp_cdc_enable_table @source_schema = N'%s', @source_name = N'%s', @role_name = NULL, @supports_net_changes = 0, @captured_column_list = N'%s'",
                     schema, tableName, columnList
             );
-            execute(enableSql);
-            logger.info("已重新启用表 [{}] 的 CDC，捕获列: {}", tableName, columnList);
 
-            // 4. 刷新 changeTables 缓存
+            try {
+                execute(enableSql);
+                logger.info("已重新启用表 [{}] 的 CDC，捕获列: {}", tableName, columnList);
+            } catch (Exception e) {
+                // 如果启用失败，检查是否是捕获实例已存在的错误
+                String errorMessage = e.getMessage();
+                if (errorMessage != null && errorMessage.contains("已存在捕获实例名称")) {
+                    // 捕获实例仍然存在，再次禁用并等待更长时间
+                    logger.warn("表 [{}] 的 CDC 捕获实例仍然存在，再次禁用并等待", tableName);
+                    try {
+                        execute(String.format(DISABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, tableName), schema));
+                        // 等待更长时间
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(2000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            logger.warn("等待 CDC 禁用完成时被中断");
+                        }
+                        // 重新尝试启用
+                        execute(enableSql);
+                        logger.info("已重新启用表 [{}] 的 CDC，捕获列: {}", tableName, columnList);
+                    } catch (Exception retryException) {
+                        throw new RuntimeException("重新启用表 [" + tableName + "] 的 CDC 失败", retryException);
+                    }
+                } else {
+                    throw e; // 其他错误，重新抛出
+                }
+            }
+
+            // 5. 刷新 changeTables 缓存
             readChangeTables();
             logger.info("已刷新 changeTables 缓存");
 

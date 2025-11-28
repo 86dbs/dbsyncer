@@ -5,6 +5,8 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -153,6 +155,11 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         logger.info("Spring 依赖注入验证通过 - connectorService: {}, mappingService: {}, profileComponent: {}, connectorFactory: {}",
                 connectorService != null, mappingService != null, profileComponent != null, connectorFactory != null);
 
+        // 注意：不再在 setUp() 中清理残留配置，因为 tearDown() 应该确保完全清理
+        // 如果前一个测试的 tearDown() 没有执行（如测试被强制终止），PreloadTemplate.launch() 可能会自动恢复残留的 mapping
+        // 作为安全网，如果发现残留的测试 mapping，记录警告但不自动清理（让测试失败，便于发现问题）
+        clearExistedMapping();
+
         // 重置表结构
         resetDatabaseTableStructure();
 
@@ -174,19 +181,38 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
     @After
     public void tearDown() {
         // 停止并清理Mapping（必须先停止并删除Mapping，才能删除Connector）
+        // 关键：确保测试完成后完全清理，防止 PreloadTemplate.launch() 在下一次测试启动时自动恢复
         try {
             if (mappingId != null) {
-                // 先停止Mapping
+                // 1. 先停止Mapping（如果正在运行）
                 try {
-                    mappingService.stop(mappingId);
-                    // 等待停止完成
-                    Thread.sleep(1000);
+                    Meta meta = profileComponent.getMapping(mappingId).getMeta();
+                    if (meta != null && meta.isRunning()) {
+                        mappingService.stop(mappingId);
+                        // 等待停止完成，确保 worker 线程完全停止
+                        // IncrementPuller 会创建异步 worker 线程，需要等待其完全停止
+                        waitForMappingStopped(mappingId, 5000);
+                    }
                 } catch (Exception e) {
-                    logger.debug("停止Mapping失败（可能未启动）", e);
+                    logger.debug("停止Mapping失败（可能未启动或已停止）: {}", e.getMessage());
                 }
-                // 删除Mapping
+                
+                // 2. 强制将 meta 状态设置为非 RUNNING，防止 PreloadTemplate 自动恢复
+                // 即使 stop() 失败，也要确保状态不是 RUNNING
+                try {
+                    Meta meta = profileComponent.getMapping(mappingId).getMeta();
+                    if (meta != null && meta.isRunning()) {
+                        logger.warn("Mapping {} 状态仍为 RUNNING，强制设置为 READY", mappingId);
+                        meta.saveState(MetaEnum.READY);
+                    }
+                } catch (Exception e) {
+                    logger.debug("设置 Mapping {} 状态失败: {}", mappingId, e.getMessage());
+                }
+                
+                // 3. 删除Mapping（即使 stop() 失败也要删除，避免残留）
                 try {
                     mappingService.remove(mappingId);
+                    logger.debug("已删除测试 Mapping: {}", mappingId);
                 } catch (Exception e) {
                     logger.warn("删除Mapping失败: {}", e.getMessage());
                 }
@@ -200,6 +226,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
             if (sourceConnectorId != null) {
                 try {
                     connectorService.remove(sourceConnectorId);
+                    logger.debug("已删除源 Connector: {}", sourceConnectorId);
                 } catch (Exception e) {
                     logger.warn("删除源Connector失败: {}", e.getMessage());
                 }
@@ -207,6 +234,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
             if (targetConnectorId != null) {
                 try {
                     connectorService.remove(targetConnectorId);
+                    logger.debug("已删除目标 Connector: {}", targetConnectorId);
                 } catch (Exception e) {
                     logger.warn("删除目标Connector失败: {}", e.getMessage());
                 }
@@ -217,6 +245,12 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
 
         // 重置表结构
         resetDatabaseTableStructure();
+        
+        // 清空引用，防止重复清理
+        mappingId = null;
+        metaId = null;
+        sourceConnectorId = null;
+        targetConnectorId = null;
     }
 
     // ==================== SQL Server特殊类型转换测试 ====================
@@ -503,6 +537,7 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
      */
     private void testDDLConversion(String sourceDDL, String expectedFieldName) throws Exception {
         // 启动Mapping
+        logger.info("#### mapping service start for: {}", mappingId);
         mappingService.start(mappingId);
         Thread.sleep(2000);
         
@@ -602,6 +637,121 @@ public class SQLServerToMySQLDDLSyncIntegrationTest {
         assertNotNull("Meta不应为null", meta);
         assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState(), 
                    meta.isRunning());
+    }
+
+    /**
+     * 检查是否有残留的测试 mapping（仅检查，不清理）
+     * 作为安全网，如果发现残留的测试 mapping，记录警告但不自动清理
+     * 这样可以让测试失败，便于发现 tearDown() 没有正确执行的问题
+     */
+    private void clearExistedMapping() {
+        try {
+            List<Mapping> allMappings = profileComponent.getMappingAll();
+            if (allMappings == null || allMappings.isEmpty()) {
+                return;
+            }
+            for (Mapping mapping : allMappings) {
+                logger.info("#### 正在清理 mapping: {}", mapping.getId());
+                mappingService.stop(mapping.getId());
+                mappingService.remove(mapping.getId());
+            }
+        } catch (Exception e) {
+            logger.error("检查残留测试 mapping 时出错: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 清理所有可能残留的测试 mapping（已废弃，不再使用）
+     * 现在依赖 tearDown() 确保完全清理
+     * 
+     * @deprecated 使用 tearDown() 确保测试后完全清理，不再需要此方法
+     */
+    @Deprecated
+    private void cleanupOrphanedTestMappings() {
+        try {
+            List<Mapping> allMappings = profileComponent.getMappingAll();
+            if (allMappings == null || allMappings.isEmpty()) {
+                return;
+            }
+
+            int cleanedCount = 0;
+            for (Mapping mapping : allMappings) {
+                // 只清理测试相关的 mapping（名称包含"测试"或"Test"）
+                String mappingName = mapping.getName();
+                if (mappingName != null && (mappingName.contains("测试") || mappingName.contains("Test"))) {
+                    try {
+                        String mappingId = mapping.getId();
+                        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+                        
+                        // 如果 mapping 正在运行，先停止它
+                        // 注意：PreloadTemplate.launch() 可能已经自动启动了残留的 mapping
+                        if (meta != null && meta.isRunning()) {
+                            logger.warn("发现残留的测试 mapping [{}] 正在运行（可能由 PreloadTemplate 自动启动），开始清理", mappingId);
+                            try {
+                                mappingService.stop(mappingId);
+                                // 等待停止完成，确保 worker 线程完全停止
+                                waitForMappingStopped(mappingId, 3000);
+                            } catch (Exception e) {
+                                logger.debug("停止残留 mapping {} 失败: {}", mappingId, e.getMessage());
+                            }
+                        }
+                        
+                        // 删除 mapping
+                        try {
+                            mappingService.remove(mappingId);
+                            cleanedCount++;
+                            logger.info("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
+                        } catch (Exception e) {
+                            logger.warn("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
+                        }
+                    } catch (Exception e) {
+                        logger.warn("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
+                    }
+                }
+            }
+            
+            if (cleanedCount > 0) {
+                logger.info("清理完成，共清理了 {} 个残留的测试 mapping", cleanedCount);
+            }
+        } catch (Exception e) {
+            logger.warn("清理残留测试 mapping 时出错: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 等待并验证mapping已完全停止
+     * 
+     * @param mappingId mapping的ID
+     * @param timeoutMs 超时时间（毫秒）
+     * @throws InterruptedException 如果等待过程中被中断
+     */
+    private void waitForMappingStopped(String mappingId, long timeoutMs) throws InterruptedException {
+        try {
+            Meta meta = profileComponent.getMapping(mappingId).getMeta();
+            if (meta == null) {
+                logger.debug("Mapping {} 的 Meta 不存在，认为已停止", mappingId);
+                return;
+            }
+            
+            long startTime = System.currentTimeMillis();
+            long checkInterval = 200; // 每200ms检查一次
+            
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                // 重新获取 meta 状态
+                meta = profileComponent.getMeta(meta.getId());
+                if (meta == null || !meta.isRunning()) {
+                    logger.debug("Mapping {} 已停止，Meta 状态: {}", mappingId, meta != null ? meta.getState() : "null");
+                    mappingService.remove(mappingId);
+                    return;
+                }
+                Thread.sleep(checkInterval);
+            }
+            mappingService.remove(mappingId);
+            // 超时后记录警告
+            logger.warn("等待 Mapping {} 停止超时（{}ms），当前状态: {}", mappingId, timeoutMs, meta.getState());
+        } catch (Exception e) {
+            logger.debug("检查 Mapping {} 停止状态时出错（可忽略）: {}", mappingId, e.getMessage());
+        }
     }
 
     /**

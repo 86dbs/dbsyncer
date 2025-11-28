@@ -107,6 +107,7 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
                     listener = getListener(mapping, connector, targetConnector, list, meta);
                     meta.setListener(listener);
                 }
+                logger.info("starting increment puller for mappingId: {}", mappingId);
                 listener.start();
             } catch (Exception e) {
                 // 记录运行时异常状态和异常信息
