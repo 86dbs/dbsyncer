@@ -58,8 +58,7 @@ const MAPPING_LIST_REFRESH_INTERVAL = 5000;
 /**
  * 启动同步任务列表自动刷新定时器
  */
-function startMappingListAutoRefresh() {
-
+function startMappingListAutoRefresh(searchInput, pagination) {
     // 先清除已存在的定时器
     stopMappingListAutoRefresh();
     
@@ -67,19 +66,19 @@ function startMappingListAutoRefresh() {
     mappingListAutoRefreshTimer = setInterval(function() {
         try {
             // 检查表格是否存在（更准确的判断方法）
-            const $mappingTable = $('#mappingTable');
             const $mappingTableBody = $('#mappingTableBody');
 
             console.log('[自动刷新] 检查表格元素:', {
-                tableExists: $mappingTable.length > 0,
                 tableBodyExists: $mappingTableBody.length > 0,
                 currentTime: new Date().toLocaleTimeString()
             });
             
             // 只有当表格存在时才执行刷新
-            if ($mappingTable.length && $mappingTableBody.length) {
+            if ($mappingTableBody.length) {
                 console.log('[自动刷新] 开始静默刷新数据');
-                // 静默刷新（不显示加载提示和成功消息）
+                // 静默刷新（不显示加载提示和成功消息），使用当前页数
+                const currentPage = pagination.currentPage || 1;
+                pagination.doSearch({'searchKey': searchInput.getValue()}, currentPage);
             } else {
                 // 如果表格不存在，说明已经离开列表页面，停止定时器
                 console.log('[自动刷新] 表格元素不存在，停止自动刷新');
@@ -141,9 +140,6 @@ function changeMappingState(id, url, title) {
     })
 }
 
-/**
- * 删除任务
- */
 function deleteMapping(id) {
     showConfirm({
         title: '确定要删除驱动？',
@@ -262,8 +258,6 @@ $(document).ready(function() {
     window.backIndexPage = function () {
         doLoader('/mapping/list');
     };
-    // 启动自动刷新定时器
-    startMappingListAutoRefresh();
 
     // 初始化分页管理器
     const pagination = new PaginationManager({
@@ -308,9 +302,12 @@ $(document).ready(function() {
     });
 
     // 搜索框输入事件
-    initSearch('searchMapping', function (searchKey) {
+    let searchInput = initSearch('searchMapping', function (searchKey) {
         pagination.doSearch({'searchKey': searchKey});
     });
+
+    // 启动自动刷新定时器
+    startMappingListAutoRefresh(searchInput, pagination);
 });
 </script>
 

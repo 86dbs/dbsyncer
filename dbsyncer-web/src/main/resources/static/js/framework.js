@@ -259,7 +259,7 @@ function initSearch(searchWrapperId, callback) {
     const searchClear = wrapper.querySelector('.search-clear');
 
     if (!searchInput || !searchClear || searchInput.dataset.selectBound === 'true') {
-        return;
+        return null;
     }
 
     // 更新搜索状态（显示/隐藏清除按钮）
@@ -271,6 +271,16 @@ function initSearch(searchWrapperId, callback) {
         }
     }
 
+    // 清除搜索的内部实现
+    function clearSearch() {
+        searchInput.value = '';
+        searchInput.focus();
+        updateSearchState('');
+        if (callback) {
+            callback(searchInput.value);
+        }
+    }
+
     // 绑定事件
     searchInput.addEventListener('input', function(e) {
         const value = e.target.value;
@@ -279,19 +289,16 @@ function initSearch(searchWrapperId, callback) {
     });
 
     // 清除搜索
-    searchClear.addEventListener('click', function () {
-        searchInput.value = '';
-        searchInput.focus();
-        updateSearchState('');
-        callback(searchInput.value);
-    });
+    searchClear.addEventListener('click', clearSearch);
 
     // 回车键搜索
     searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             updateSearchState(e.target.value);
-            callback(e.target.value);
+            if (callback) {
+                callback(e.target.value);
+            }
         }
     });
 
@@ -300,6 +307,35 @@ function initSearch(searchWrapperId, callback) {
 
     // 初始化状态
     updateSearchState(searchInput.value || '');
+
+    // 返回包含 input 实例和方法的对象
+    return {
+        // input 元素实例
+        input: searchInput,
+        // 模拟点击清除按钮
+        clear: function() {
+            clearSearch();
+        },
+        // 设置搜索值
+        setValue: function(value) {
+            searchInput.value = value || '';
+            updateSearchState(searchInput.value);
+            if (callback) {
+                callback(searchInput.value);
+            }
+        },
+        // 获取搜索值
+        getValue: function() {
+            return searchInput.value;
+        },
+        // 触发搜索（模拟回车）
+        search: function() {
+            updateSearchState(searchInput.value);
+            if (callback) {
+                callback(searchInput.value);
+            }
+        }
+    };
 }
 
 function initSelect(selector){
