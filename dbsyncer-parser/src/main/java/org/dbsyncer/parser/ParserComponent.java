@@ -45,10 +45,11 @@ public interface ParserComponent {
      * 获取总数
      *
      * @param connectorId
+     * @param context
      * @param command
      * @return
      */
-    long getCount(String connectorId, Map<String, String> command);
+    long getCount(String connectorId, ConnectorServiceContext context, Map<String, String> command);
 
     /**
      * 全量同步

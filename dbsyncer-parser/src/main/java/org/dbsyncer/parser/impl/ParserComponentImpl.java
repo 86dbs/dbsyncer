@@ -107,7 +107,7 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     @Override
-    public long getCount(String connectorId, Map<String, String> command) {
+    public long getCount(String connectorId, ConnectorServiceContext context, Map<String, String> command) {
         ConnectorInstance connectorInstance = connectorFactory.connect(connectorId, getConnectorConfig(connectorId));
         return connectorFactory.getCount(connectorInstance, command);
     }

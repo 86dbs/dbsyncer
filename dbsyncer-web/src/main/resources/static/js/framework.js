@@ -412,6 +412,12 @@ function refreshLicense() {
     });
 }
 
+// 同步任务列表自动刷新定时器
+let mappingListAutoRefreshTimer = null;
+
+// 自动刷新间隔（毫秒），默认5秒
+const MAPPING_LIST_REFRESH_INTERVAL = 5000;
+
 $(function () {
     // 定义返回函数，子页面返回
     window.backIndexPage = function () {

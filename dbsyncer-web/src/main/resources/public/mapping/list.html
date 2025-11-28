@@ -49,12 +49,6 @@
 </div>
 
 <script>
-// 同步任务列表自动刷新定时器
-let mappingListAutoRefreshTimer = null;
-
-// 自动刷新间隔（毫秒），默认5秒
-const MAPPING_LIST_REFRESH_INTERVAL = 5000;
-
 /**
  * 启动同步任务列表自动刷新定时器
  */
@@ -195,20 +189,47 @@ function getStateConfig(mappingId) {
     };
 }
 
+// 格式化百分比（保留2位小数）
+function formatPercent(value, maxFractionDigits) {
+    if (value == null || isNaN(value)) return '0%';
+    const percent = value * 100;
+    return percent.toFixed(maxFractionDigits || 2) + '%';
+}
+
 // 根据同步结果生成内容
 function renderSyncResult(mapping) {
     const meta = mapping?.meta;
     if (!meta) return '';
-    
     const content = [];
     // 全量模式显示总数
-    if (mapping?.model === 'full' && meta.total > 0) {
-        content.push(`总数:${meta.total}`);
+    if (mapping?.model === 'full') {
+        const total = meta?.total || 0;
+        content.push(`总数:${total}`);
+        if (meta?.counting) {
+            content.push(`(正在统计中)`);
+        }
+        const success = meta?.success || 0;
+        const fail = meta?.fail || 0;
+        // 执行中，显示进度
+        if (total > 0 && (success + fail) > 0) {
+            const progress = (success + fail) / total;
+            content.push(`进度:${formatPercent(progress, 2)}`);
+            const beginTime = meta?.beginTime;
+            const endTime = meta?.endTime;
+            if (beginTime && endTime) {
+                const seconds = Math.floor((endTime - beginTime) / 1000);
+                if (seconds < 60) {
+                    content.push(`耗时:${seconds}秒`);
+                } else {
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    content.push(`耗时:${minutes}分${remainingSeconds}秒`);
+                }
+            }
+        }
     }
     // 成功数量
-    if (meta.success > 0) {
-        content.push(`成功:${meta.success}`);
-    }
+    content.push(`成功:${meta.success}`);
     // 失败数量
     if (meta.fail > 0) {
         content.push(`失败:<span class="btn btn-link text-error text-md" title='查看错误日志' onclick="showMappingError('${meta.id}')">${meta.fail}</span>`);

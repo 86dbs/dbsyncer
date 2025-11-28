@@ -5,11 +5,13 @@ package org.dbsyncer.biz.task;
 
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +58,8 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
         Map<String, String> command = parserComponent.getCommand(mapping, group);
-        long count = parserComponent.getCount(mapping.getSourceConnectorId(), command);
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
+        long count = parserComponent.getCount(mapping.getSourceConnectorId(), context, command);
         tableGroup.getSourceTable().setCount(count);
         profileComponent.editConfigModel(tableGroup);
         logger.info("{}表{}, 总数:{}, {}ms", mapping.getName(), tableGroup.getSourceTable().getName(), count, (Instant.now().toEpochMilli() - now));
