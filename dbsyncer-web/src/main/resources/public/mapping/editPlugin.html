@@ -3,6 +3,9 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
+    <!-- 插件配置标题 -->
+    <p><i class="fa fa-plug text-success"></i> 插件配置</p>
+
     <!-- 插件配置表单 -->
     <div class="grid grid-cols-3 mt-4">
         <!-- 插件选择 -->
@@ -19,10 +22,10 @@
         </div>
 
         <!-- 插件参数 -->
-        <div id="pluginExtInfo" class="form-item hidden">
-            <label class="form-label">参数<i class="fa fa-question-circle text-tertiary" title="用于插件内部使用，推荐填写JSON格式"></i></label>
+        <div class="form-item">
+            <label class="form-label pluginExtInfo">参数<i class="fa fa-question-circle text-tertiary" title="用于插件内部使用，推荐填写JSON格式"></i></label>
             <input name="pluginExtInfo"
-                   class="form-control"
+                   class="form-control pluginExtInfo"
                    type="text"
                    maxlength="512"
                    placeholder="请输入插件参数（推荐JSON格式）"
@@ -32,7 +35,28 @@
 
 <script>
     $(document).ready(function() {
-        initSelect($('#pluginId'));
+        const pluginExtInfo = $('.pluginExtInfo');
+        
+        // 显示/隐藏插件参数区域的函数
+        function togglePluginExtInfo(values) {
+            const selectedValue = values && values.length > 0 ? values[0] : '';
+            if (selectedValue && selectedValue !== '') {
+                pluginExtInfo.removeClass('hidden');
+            } else {
+                pluginExtInfo.addClass('hidden');
+            }
+        }
+        
+        // 初始化 select 组件并获取 API 对象
+        const pluginSelect = $('#pluginId').dbSelect({
+            type: 'single',
+            onSelect: function(values) {
+                togglePluginExtInfo(values);
+            }
+        });
+        
+        // 初始化时检查当前选中值
+        togglePluginExtInfo(pluginSelect.getValues());
     });
 </script>
 </div>
