@@ -329,10 +329,7 @@ function initSearch(searchWrapperId, callback) {
 
 function initSelect(selector){
     selector.dbSelect({
-        type: 'single',
-        onSelect: function (data) {
-            console.log(data);
-        }
+        type: 'single'
     });
 }
 

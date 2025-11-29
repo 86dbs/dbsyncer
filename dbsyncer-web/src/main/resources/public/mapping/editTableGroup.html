@@ -49,14 +49,14 @@
                 </div>
             </div>
 
-            <!-- 映射关系区域 -->
-            <h3><i class="fa fa-list-alt text-info"></i> 字段映射关系</h3>
+            <!-- 字段映射区域 -->
+            <h3><i class="fa fa-list-alt text-info"></i> 字段映射</h3>
             <div class="grid grid-cols-9 items-center mt-4">
                 <!-- 数据源表选择器 -->
                 <div class="lg:col-span-4 flex items-center gap-3 form-item">
                     <label class="form-label">数据源字段</label>
-                    <select id="sourceTableField" class="form-control">
-                        <option value="" selected="selected">请选择字段</option>
+                    <select id="source_table_field" class="form-control">
+                        <option value="" selected="selected">无</option>
                         <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
                     </select>
                 </div>
@@ -68,8 +68,8 @@
                 <!-- 目标源表选择器 -->
                 <div class="lg:col-span-4 flex items-center gap-3 form-item">
                     <label class="form-label">目标源字段</label>
-                    <select id="targetTableField" class="form-control">
-                        <option value="" selected="selected">请选择字段</option>
+                    <select id="target_table_field" class="form-control">
+                        <option value="" selected="selected">无</option>
                         <option th:each="c,s:${tableGroup?.targetTable?.column}"
                                 th:value="${c?.name}"
                                 th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
@@ -96,27 +96,25 @@
                     <th>目标源表字段</th>
                     <th>主键</th>
                     <th onclick="event.stopPropagation();">
-                        <input type="checkbox" class="fieldMappingCheckboxAll" value="all" onclick="event.stopPropagation();" />
+                        <input type="checkbox" class="fieldCheckboxAll" value="all" onclick="event.stopPropagation();" />
                     </th>
                 </tr>
                 </thead>
                 <tbody id="fieldMappingList">
-                <tr th:id="'fieldMapping_'+${s.index + 1}" title='双击设置/取消主键 | 拖动排序' th:each="f,s:${tableGroup?.fieldMapping}">
+                <tr title='双击设置/取消主键 | 拖动排序' th:each="f,s:${tableGroup?.fieldMapping}">
                     <td th:text="${s.index + 1}"/>
                     <td th:text="${f?.source?.name}"></td>
                     <td th:text="${f?.target?.name}"></td>
-                    <td>
-                        <i th:if="${f?.target?.pk}" title="主键" class="fa fa-key text-warning"></i>
-                    </td>
+                    <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key text-warning"></i></td>
                     <td onclick="event.stopPropagation();">
-                        <input th:value="${t?.id}" type="checkbox" class="fieldMappingCheckbox" onclick="event.stopPropagation();" />
+                        <input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />
                     </td>
                 </tr>
                 </tbody>
             </table>
             <!-- 隐藏表单值 -->
             <div class="hidden">
-                <input name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
+                <input id="tableGroupId" name="id" class="form-control" type="text" th:value="${tableGroup?.id}"/>
                 <input id="mappingId" class="form-control" type="text" th:value="${mapping?.id}"/>
                 <input id="fieldMapping" name="fieldMapping" class="form-control" type="text"/>
             </div>
