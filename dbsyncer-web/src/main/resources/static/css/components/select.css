@@ -137,6 +137,13 @@
   animation: dropdown-show 0.2s ease;
 }
 
+/* 向上展开的下拉菜单 */
+.dbsyncer-select-dropdown-up {
+  top: auto;
+  bottom: calc(100% + 4px);
+  animation: dropdown-show-up 0.2s ease;
+}
+
 .dbsyncer-select-dropdown.hidden {
   display: none !important;
 }
@@ -342,6 +349,17 @@
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dropdown-show-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;

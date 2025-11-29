@@ -293,11 +293,33 @@
                 
                 $component.addClass('open');
                 $dropdown.removeClass('hidden');
+                
+                // 智能定位：检测是否需要向上展开
+                adjustDropdownPosition();
+                
                 $searchInput.focus();
                 renderOptions('');
                 
                 // 更新全局当前打开的实例
                 window.dbSelectCurrentOpenInstance = api;
+            }
+        }
+
+        // 调整下拉菜单位置（智能向上/向下展开）
+        function adjustDropdownPosition() {
+            const $trigger = $component.find('.dbsyncer-select-trigger');
+            const triggerRect = $trigger[0].getBoundingClientRect();
+            const dropdownHeight = $dropdown.outerHeight() || 300; // 默认最大高度
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+            
+            // 移除之前的定位类
+            $dropdown.removeClass('dbsyncer-select-dropdown-up');
+            
+            // 如果下方空间不足，且上方空间足够，则向上展开
+            if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                $dropdown.addClass('dbsyncer-select-dropdown-up');
             }
         }
 
@@ -314,6 +336,23 @@
                 window.dbSelectCurrentOpenInstance = null;
             }
         }
+
+        // 监听窗口滚动和大小改变，重新调整下拉菜单位置
+        function handleWindowEvents() {
+            if (!$dropdown.hasClass('hidden')) {
+                adjustDropdownPosition();
+            }
+        }
+
+        // 绑定窗口事件（使用命名空间以便后续移除）
+        $(window).on('scroll.dbSelect-' + selectId, handleWindowEvents);
+        $(window).on('resize.dbSelect-' + selectId, handleWindowEvents);
+        
+        // 组件销毁时移除事件监听
+        $select.on('remove', function() {
+            $(window).off('scroll.dbSelect-' + selectId);
+            $(window).off('resize.dbSelect-' + selectId);
+        });
 
         // 全选
         function selectAll() {
@@ -388,26 +427,26 @@
             });
 
             $actions.append($selectAllBtn).append($deselectAllBtn);
-
-            // 添加自定义按钮
-            config.customButtons.forEach(function(btn, index) {
-                const $btn = $(`<button class="dbsyncer-select-action-btn">${escapeHtml(btn.text)}</button>`);
-                $btn.on('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (typeof btn.callback === 'function') {
-                        btn.callback(selectedValues);
-                    }
-                    // 触发自定义事件
-                    $component.trigger('dbselect:button', [index, selectedValues]);
-                    // 调用全局回调
-                    if (typeof config.onCustomButton === 'function') {
-                        config.onCustomButton(index, selectedValues, btn.text);
-                    }
-                });
-                $actions.append($btn);
-            });
         }
+
+        // 添加自定义按钮
+        config.customButtons.forEach(function(btn, index) {
+            const $btn = $(`<button class="dbsyncer-select-action-btn">${escapeHtml(btn.text)}</button>`);
+            $btn.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof btn.callback === 'function') {
+                    btn.callback(selectedValues);
+                }
+                // 触发自定义事件
+                $component.trigger('dbselect:button', [index, selectedValues]);
+                // 调用全局回调
+                if (typeof config.onCustomButton === 'function') {
+                    config.onCustomButton(index, selectedValues, btn.text);
+                }
+            });
+            $actions.append($btn);
+        });
 
         // 初始化显示
         renderOptions('');
