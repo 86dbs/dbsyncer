@@ -28,9 +28,9 @@
             requestUrl: options.requestUrl,
             tableBodySelector: options.tableBodySelector,
             paginationSelector: options.paginationSelector,
-            countSelector: options.countSelector || '.totalCount',
-            currentPageSelector: options.currentPageSelector || '.currentPage',
-            totalPagesSelector: options.totalPagesSelector || '.totalPages',
+            countSelector: options.countSelector,
+            currentPageSelector: options.currentPageSelector,
+            totalPagesSelector: options.totalPagesSelector,
             renderRow: options.renderRow,
             emptyHtml: options.emptyHtml || '',
             pageIndex: options.pageIndex || 1,
@@ -40,6 +40,7 @@
         // 自动创建分页容器和结构
         this.initPaginationStructure = function() {
             let $pagination = config.paginationSelector ? $(config.paginationSelector) : $();
+            let paginationId = '';
             
             // 如果分页容器不存在，自动在 table 后面创建
             if ($pagination.length === 0) {
@@ -50,15 +51,31 @@
                 }
                 
                 // 创建分页容器并插入到 table 后面
-                const paginationId = config.paginationSelector 
+                paginationId = config.paginationSelector 
                     ? config.paginationSelector.replace('#', '') 
-                    : 'pagination_' + Date.now();
+                    : 'pagination_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 $pagination = $('<div id="' + paginationId + '"></div>');
                 $table.after($pagination);
                 
                 // 更新配置中的选择器
                 config.paginationSelector = '#' + paginationId;
+            } else {
+                // 如果容器已存在，获取其 ID，如果没有则生成一个
+                paginationId = $pagination.attr('id');
+                if (!paginationId) {
+                    paginationId = 'pagination_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    $pagination.attr('id', paginationId);
+                    config.paginationSelector = '#' + paginationId;
+                }
             }
+
+            // 生成唯一的选择器前缀（基于分页容器 ID）
+            const selectorPrefix = '#' + paginationId + ' ';
+            
+            // 如果没有指定自定义选择器，使用基于分页容器的唯一选择器
+            config.countSelector = config.countSelector || selectorPrefix + '.totalCount';
+            config.currentPageSelector = config.currentPageSelector || selectorPrefix + '.currentPage';
+            config.totalPagesSelector = config.totalPagesSelector || selectorPrefix + '.totalPages';
 
             // 检查是否已有分页按钮容器，如果没有则自动创建完整结构
             const $paginationBar = $pagination.find('.pagination-bar');
