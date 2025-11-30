@@ -417,6 +417,126 @@ let mappingListAutoRefreshTimer = null;
 // 自动刷新间隔（毫秒），默认5秒
 const MAPPING_LIST_REFRESH_INTERVAL = 5000;
 
+// ******************* 驱动表格展示内容 ***************************
+function showMappingError(metaId){
+    doLoader('/monitor?id='+metaId);
+    // 激活监控菜单
+    $('.sidebar-item').removeClass('active');
+    $('.sidebar-item[url="/monitor"]').addClass('active');
+}
+
+function getStateConfig(mappingId) {
+    return {
+        0: { // 未运行
+            icon: 'fa-play',
+            title: '启动',
+            onclick: `changeMappingState('${mappingId}', '/mapping/start', '启动')`,
+            disabled: false,
+            class: 'badge-info',
+            text: '未运行'
+        },
+        1: { // 运行中
+            icon: 'fa-pause',
+            title: '停止',
+            onclick: `changeMappingState('${mappingId}', '/mapping/stop', '停止')`,
+            disabled: false,
+            class: 'badge-success',
+            text: '运行中'
+        },
+        2: { // 停止中
+            icon: 'fa-spinner fa-spin',
+            title: '停止中',
+            text: ' 停止中',
+            disabled: true,
+            class: 'badge-warning'
+        }
+    };
+}
+
+// 格式化百分比（保留2位小数）
+function formatPercent(value, maxFractionDigits) {
+    if (value == null || isNaN(value)) return '0%';
+    const percent = value * 100;
+    return percent.toFixed(maxFractionDigits || 2) + '%';
+}
+
+// 根据同步结果生成内容
+function renderSyncResult(mapping) {
+    const meta = mapping?.meta;
+    if (!meta) return '';
+    const content = [];
+    // 全量模式显示总数
+    if (mapping?.model === 'full') {
+        const total = meta?.total || 0;
+        content.push(`总数:${total}`);
+        if (meta?.counting) {
+            content.push(`(正在统计中)`);
+        }
+        const success = meta?.success || 0;
+        const fail = meta?.fail || 0;
+        // 执行中，显示进度
+        if (total > 0 && (success + fail) > 0) {
+            const progress = (success + fail) / total;
+            content.push(`进度:${formatPercent(progress, 2)}`);
+            const beginTime = meta?.beginTime;
+            const endTime = meta?.endTime;
+            if (beginTime && endTime) {
+                const seconds = Math.floor((endTime - beginTime) / 1000);
+                if (seconds < 60) {
+                    content.push(`耗时:${seconds}秒`);
+                } else {
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    content.push(`耗时:${minutes}分${remainingSeconds}秒`);
+                }
+            }
+        }
+    }
+    // 成功数量
+    content.push(`成功:${meta.success}`);
+    // 失败数量
+    if (meta.fail > 0) {
+        content.push(`失败:<span class="btn btn-link text-error text-md" title='查看错误日志' onclick="showMappingError('${meta.id}')">${meta.fail}</span>`);
+    }
+    return content.join(' ');
+}
+
+// 根据任务类型生成内容
+function renderModelText(model) {
+    const modelState = {
+        'full': { // 全量
+            class: 'badge-primary',
+            text: '全量同步',
+        },
+        'increment': { // 增量
+            class: 'badge-info',
+            text: '增量同步',
+        }
+    };
+    const config = modelState[model];
+    return `<span class="badge ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成内容
+function renderStateText(state) {
+    const stateConfig = getStateConfig();
+    const config = stateConfig[state] || stateConfig[0];
+    return `<span class="badge ${config.class}">${config.text}</span>`;
+}
+
+// 根据状态生成操作按钮
+function renderStateButton(state, mappingId) {
+    const stateConfig = getStateConfig(mappingId);
+    const config = stateConfig[state] || stateConfig[0];
+    const disabledAttr = config.disabled ? ' disabled' : '';
+    const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
+    return `
+        <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
+            <i class="fa ${config.icon}"></i>
+        </button>
+    `;
+}
+
 $(function () {
     // 定义返回函数，子页面返回
     window.backIndexPage = function () {

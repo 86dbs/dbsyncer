@@ -91,7 +91,6 @@ function bindQueryLogEvent() {
     const pagination = new PaginationManager({
         requestUrl: '/monitor/queryLog',
         tableBodySelector: '#logList',
-        paginationSelector: '#logPagination',
         renderRow: function(row, index) {
             return `
                 <tr>

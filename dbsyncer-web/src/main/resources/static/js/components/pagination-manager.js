@@ -3,12 +3,12 @@
  * @param {Object} options 配置选项
  *   - requestUrl: 请求地址（必需）
  *   - tableBodySelector: 表格体的选择器（必需）
- *   - paginationSelector: 分页区域的选择器（必需）
- *   - countSelector: 总数显示元素的选择器
- *   - currentPageSelector: 当前页显示元素的选择器
- *   - totalPagesSelector: 总页数显示元素的选择器
- *   - renderRow: 自定义行渲染函数(item, index, pageNo, pageSize)
- *   - emptyHtml: 无数据时的HTML
+ *   - paginationSelector: 分页区域的选择器（可选，不提供时会自动在 table 后面创建）
+ *   - countSelector: 总数显示元素的选择器（可选，默认：.totalCount）
+ *   - currentPageSelector: 当前页显示元素的选择器（可选，默认：.currentPage）
+ *   - totalPagesSelector: 总页数显示元素的选择器（可选，默认：.totalPages）
+ *   - renderRow: 自定义行渲染函数(item, index)（必需）
+ *   - emptyHtml: 无数据时的HTML（可选）
  */
 (function(window, $) {
     'use strict';
@@ -32,11 +32,61 @@
             currentPageSelector: options.currentPageSelector || '.currentPage',
             totalPagesSelector: options.totalPagesSelector || '.totalPages',
             renderRow: options.renderRow,
-            emptyHtml: options.emptyHtml || ''
+            emptyHtml: options.emptyHtml || '',
+            pageIndex: options.pageIndex || 1,
+            pageSize: options.pageSize || 10
+        };
+
+        // 自动创建分页容器和结构
+        this.initPaginationStructure = function() {
+            let $pagination = config.paginationSelector ? $(config.paginationSelector) : $();
+            
+            // 如果分页容器不存在，自动在 table 后面创建
+            if ($pagination.length === 0) {
+                const $table = $(config.tableBodySelector).closest('table');
+                if ($table.length === 0) {
+                    console.error('[PaginationManager] 无法找到表格元素:', config.tableBodySelector);
+                    return;
+                }
+                
+                // 创建分页容器并插入到 table 后面
+                const paginationId = config.paginationSelector 
+                    ? config.paginationSelector.replace('#', '') 
+                    : 'pagination_' + Date.now();
+                $pagination = $('<div id="' + paginationId + '"></div>');
+                $table.after($pagination);
+                
+                // 更新配置中的选择器
+                config.paginationSelector = '#' + paginationId;
+            }
+
+            // 检查是否已有分页按钮容器，如果没有则自动创建完整结构
+            const $paginationBar = $pagination.find('.pagination-bar');
+            if ($paginationBar.length === 0) {
+                // 如果没有样式类，添加默认样式
+                if (!$pagination.hasClass('p-5')) {
+                    $pagination.addClass('p-5 border-t border-gray-100 flex items-center justify-between');
+                }
+                
+                // 检查是否已有分页信息文本
+                const $paginationInfo = $pagination.find('.pagination-info');
+                if ($paginationInfo.length === 0) {
+                    // 创建分页信息文本
+                    $pagination.prepend(`
+                        <p class="text-sm text-gray-500 pagination-info">
+                            共 <span class="totalCount">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页
+                        </p>
+                    `);
+                }
+                
+                // 创建分页按钮容器
+                $pagination.append('<div class="pagination-bar flex items-center gap-2"></div>');
+            }
         };
 
         this.doSearch = function(params, pageNum) {
-            params.pageNum = pageNum || 1;
+            params.pageNum = pageNum || config.pageIndex;
+            params.pageSize = config.pageSize;
             const pagination = this;
             window.doPoster(config.requestUrl, params, function(data) {
                 if (data.success === true) {
@@ -51,15 +101,13 @@
             const resultValue = data.resultValue || {};
             const items = resultValue.data || [];
             const total = resultValue.total || 0;
-            const pageNum = resultValue.pageNum || 1;
-            const pageSize = resultValue.pageSize || 10;
+            const pageNum = resultValue.pageNum || config.pageIndex;
             // 更新分页管理器状态
             this.currentPage = pageNum;
-            this.pageSize = pageSize;
             // 渲染表格
             this.renderTable(items);
             // 更新分页信息
-            const totalPages = this.updateInfo(total, pageNum, pageSize);
+            const totalPages = this.updateInfo(total, pageNum);
 
             // 渲染分页按钮
             this.renderPagination(pageNum, totalPages, (nextPage) => {
@@ -79,7 +127,7 @@
                 return;
             }
             data.forEach((item, index) => {
-                const i = (this.currentPage - 1) * this.pageSize + index + 1;
+                const i = (this.currentPage - 1) * config.pageSize + index + 1;
                 const html = config.renderRow(item, i);
                 tbody.append(html);
             });
@@ -126,8 +174,8 @@
         };
 
         // 更新分页信息
-        this.updateInfo = function(total, pageNo, pageSize) {
-            const totalPages = Math.ceil(total / pageSize) || 1;
+        this.updateInfo = function(total, pageNo) {
+            const totalPages = Math.ceil(total / config.pageSize) || 1;
             $(config.countSelector).text(total);
             $(config.currentPageSelector).text(pageNo);
             $(config.totalPagesSelector).text(totalPages);
@@ -140,9 +188,13 @@
         };
 
         // 初始化状态
-        this.currentPage = 1;
-        this.pageSize = 10;
-        this.doSearch({}, 1);
+        this.currentPage = config.pageIndex;
+        
+        // 初始化分页结构
+        this.initPaginationStructure();
+        
+        // 开始加载数据
+        this.doSearch({}, this.currentPage);
     }
     
     // 导出到全局

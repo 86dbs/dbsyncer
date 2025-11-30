@@ -150,51 +150,8 @@
                     <span>添加连接</span>
                 </button>
             </div>
-
-            <div class="card flex justify-between border rounded-md mb-3">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center ml-3">
-                        <img draggable="false" src="/img/MySQL.png" alt="MySQL">
-                    </div>
-                    <div>
-                        <p class="font-medium">MySQL - 用户库</p>
-                        <p class="text-xs text-gray-500">jdbc:mysql://localhost:3306</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 mr-2">
-                    <span class="badge badge-success">在线</span>
-                </div>
-            </div>
-
-            <div class="card flex items-center justify-between border rounded-md mb-3">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center ml-3">
-                        <img draggable="false" src="/img/Oracle.png" alt="Oracle">
-                    </div>
-                    <div>
-                        <p class="font-medium">Oracle - 订单库</p>
-                        <p class="text-xs text-gray-500">jdbc:oracle://localhost:1521</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 mr-2">
-                    <span class="badge badge-error">离线</span>
-                </div>
-            </div>
-
-            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                <p class="text-sm text-gray-500">共 9 条</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">3</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
-            </div>
+            <div id="connectorTable"></div>
+            <div id="connectorPagination"></div>
         </div>
 
         <!-- 右侧：驱动列表 -->
@@ -206,117 +163,17 @@
                 </button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                    <tr class="bg-gray-50 text-left">
-                        <th class="px-6 py-4 text-xs font-medium text-gray-500">名称</th>
-                        <th class="px-6 py-4 text-xs font-medium text-gray-500">类型</th>
-                        <th class="px-6 py-4 text-xs font-medium text-gray-500">状态</th>
-                        <th class="px-6 py-4 text-xs font-medium text-gray-500">最后同步</th>
-                        <th class="px-6 py-4 text-xs font-medium text-gray-500">操作</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr class="transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium">用户数据同步</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-primary">增量同步</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-success">运行中</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            10分钟前
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-1">
-                                <button class="table-action-btn view" title="编辑">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                <button class="table-action-btn pause" title="暂停">
-                                    <i class="fa fa-pause"></i>
-                                </button>
-                                <button class="table-action-btn delete" title="删除">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium">订单数据同步</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-info">全量同步</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-error">已失败</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            2小时前
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-1">
-                                <button class="table-action-btn view" title="编辑">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                <button class="table-action-btn play" title="启动">
-                                    <i class="fa fa-play"></i>
-                                </button>
-                                <button class="table-action-btn delete" title="删除">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium">商品信息同步</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-primary">增量同步</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge badge-success">未运行</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            昨天 18:30
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-1">
-                                <button class="table-action-btn view" title="编辑">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                <button class="table-action-btn play" title="启动">
-                                    <i class="fa fa-play"></i>
-                                </button>
-                                <button class="table-action-btn delete" title="删除">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                <p class="text-sm text-gray-500">共 24 条</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">3</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
-            </div>
+            <table class="table">
+                <thead>
+                <tr class="text-left">
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>状态</th>
+                    <th>最后同步</th>
+                </tr>
+                </thead>
+                <tbody id="mappingTable"></tbody>
+            </table>
         </div>
     </div>
 
@@ -382,6 +239,47 @@
         window.backIndexPage = function () {
             doLoader('/index');
         };
+
+        // 初始化分页管理器
+        new PaginationManager({
+            requestUrl: '/connector/search',
+            tableBodySelector: '#connectorTable',
+            paginationSelector: '#connectorPagination',
+            pageSize: 3,
+            renderRow: function(connector, index) {
+                return `<div class="card flex justify-between border rounded-md mb-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center ml-3">
+                        <img draggable="false" src="/img/${escapeHtml(connector.config?.connectorType || '')}.png" alt="${escapeHtml(connector.config?.connectorType || '')}">
+                    </div>
+                    <div>
+                        <p class="font-medium">${escapeHtml(connector.name)}</p>
+                        <p class="text-xs text-gray-500">${escapeHtml(connector.config?.url || '')}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mr-2">
+                    ${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
+                </div>
+            </div>`;
+            },
+            emptyHtml:'<div class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></div>'
+        });
+
+        // 初始化分页管理器
+        new PaginationManager({
+            requestUrl: '/mapping/search',
+            tableBodySelector: '#mappingTable',
+            pageSize: 5,
+            renderRow: function(mapping, index) {
+                return `<tr>
+                    <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>
+                    <td>${renderModelText(mapping?.model)}</td>
+                    <td>${renderStateText(mapping?.meta?.state || 0)}</td>
+                    <td>${formatDate(mapping?.meta.updateTime || '')}</td>
+                </tr>`;
+            },
+            emptyHtml:'<td colspan="4" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+        });
     });
 </script>
 </div>
