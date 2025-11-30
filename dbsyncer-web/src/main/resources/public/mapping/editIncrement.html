@@ -24,19 +24,11 @@
         </tr>
         </thead>
         <tbody id="mappingMetaSnapshotConfig">
-        <tr th:each="item,entry:${mapping?.meta?.snapshot}">
-            <td>1</td>
-            <td>
-                <strong>[[${entry.current.key}]]</strong>
-            </td>
-            <td>
-                <code>
-                    [[${entry.current.value}]]
-                </code>
-            </td>
-            <td>
-                <i th:title="双击修改" class="fa fa-edit text-primary metaSnapshotModify"></i>
-            </td>
+        <tr th:each="item,s:${mapping?.meta?.snapshot}">
+            <td th:text="${s.count}"/>
+            <td>[[${item.key}]]</td>
+            <td>[[${item.value}]]</td>
+            <td><i th:title="点击修改" class="fa fa-edit text-primary cursor-pointer metaSnapshotModify"></i></td>
         </tr>
         </tbody>
     </table>

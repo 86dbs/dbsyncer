@@ -105,8 +105,8 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label watermark">水印内容</label>
-                    <div class="form-control-area watermark">
+                    <label class="form-label">水印内容</label>
+                    <div class="form-control-area">
                         <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
                 </div>
@@ -130,13 +130,9 @@
 
 <script>
     $(function () {
-        const watermark = $('.watermark');
+        const watermark = $('input[name="watermark"]');
         function toggleWatermark(checked) {
-            if (checked) {
-                watermark.removeClass('hidden');
-            } else {
-                watermark.addClass('hidden');
-            }
+            watermark.prop('readonly', !checked);
         }
         let switchApi = initSwitch($('#enableWatermark'), toggleWatermark);
         toggleWatermark(switchApi.isChecked());

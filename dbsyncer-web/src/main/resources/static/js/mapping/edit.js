@@ -59,30 +59,29 @@ function showIncrementConfig(model){
 }
 
 // 修改增量点配置
-function bindMappingMetaSnapshotModifyClick(){
+function bindSnapshotModifyClick() {
     $(".metaSnapshotModify").click(function(){
-        var $value = $(this).parent().parent().find("td:eq(1)");
-        var tmp = $value.text();
-        $value.text("");
-        $value.append("<input type='text'/>");
-        var $input = $value.find("input");
-        $input.focus().val(tmp);
-        $input.blur(function(){
-            $value.text($(this).val());
-            if(tmp !== $(this).val()){
+        const $cell = $(this).closest('tr').find("td:eq(2)");
+        const oldValue = $cell.text();
+        const $input = $('<input type="text" class="form-control"/>').val(oldValue);
+
+        $cell.html($input);
+        $input.focus().select();
+
+        $input.one('blur', function () {
+            const newValue = $(this).val();
+            $cell.text(newValue);
+            if (oldValue !== newValue) {
                 createMetaSnapshotParams();
             }
-            $input.unbind();
         });
     })
 }
 // 生成增量点配置参数
-function createMetaSnapshotParams(){
-    var snapshot = {};
-    $("#mappingMetaSnapshotConfig").find("tr").each(function(k,v){
-        var key = $(this).find("td:eq(0)").text();
-        var value = $(this).find("td:eq(1)").text();
-        snapshot[key] = value;
+function createMetaSnapshotParams() {
+    const snapshot = {};
+    $("#mappingMetaSnapshotConfig tr").each(function () {
+        snapshot[$(this).find("td:eq(1)").text()] = $(this).find("td:eq(2)").text();
     });
     $("#metaSnapshot").val(JSON.stringify(snapshot));
 }
@@ -97,6 +96,8 @@ $(function () {
     bindMappingModelChange();
     // 绑定日志+定时切换事件
     bindIncrementConfigChange();
+    // 绑定增量点配置编辑事件
+    bindSnapshotModifyClick();
 
     // 保存
     $("#mappingSubmitBtn").click(function () {
