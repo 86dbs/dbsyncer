@@ -29,7 +29,7 @@
             <tr>
                 <th></th>
                 <th>名称</th>
-                <th>数据源 >> 目标源</th>
+                <th>同步方案</th>
                 <th>类型</th>
                 <th>结果</th>
                 <th>状态</th>
@@ -293,7 +293,9 @@ $(document).ready(function() {
                         <span>${escapeHtml(mapping.name)}</span>
                     </td>
                     <td title="${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}">
-                        ${escapeHtml(mapping.sourceConnector.name || '')} >> ${escapeHtml(mapping.targetConnector.name || '')}
+                        ${escapeHtml(mapping.sourceConnector.name || '')} <br />
+                        <i class="fa fa-angle-double-right"></i> <br />
+                        ${escapeHtml(mapping.targetConnector.name || '')}
                     </td>
                     <td>${renderModelText(mapping?.model)}</td>
                     <td>
@@ -307,10 +309,10 @@ $(document).ready(function() {
                             <button class="table-action-btn view" title="修改" data-id="${mapping.id}" onclick="editMapping('${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
+                            ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
                             <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
                                 <i class="fa fa-copy"></i>
                             </button>
-                            ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
                             <button class="table-action-btn delete" title="删除" data-id="${mapping.id}" onclick="deleteMapping('${mapping.id}')">
                                 <i class="fa fa-trash"></i>
                             </button>

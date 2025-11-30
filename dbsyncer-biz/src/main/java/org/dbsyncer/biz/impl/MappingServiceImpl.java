@@ -11,7 +11,6 @@ import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
-import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
@@ -335,12 +334,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
-        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
-        ConnectorVo sConn = new ConnectorVo(connectorService.isAlive(s.getId()));
-        BeanUtils.copyProperties(s, sConn);
-        ConnectorVo tConn = new ConnectorVo(connectorService.isAlive(t.getId()));
-        BeanUtils.copyProperties(t, tConn);
 
         // 元信息
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
@@ -349,7 +342,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
-        MappingVo vo = new MappingVo(sConn, tConn, metaVo);
+        Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        MappingVo vo = new MappingVo(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
     }
@@ -441,7 +436,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     // |C2,C3|
                     if (m.length == 1) {
                         String name = replaceStar(m[0], tPk);
-                        ;
                         if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                             fms.add(StringUtil.VERTICAL_LINE + name);
                             continue;

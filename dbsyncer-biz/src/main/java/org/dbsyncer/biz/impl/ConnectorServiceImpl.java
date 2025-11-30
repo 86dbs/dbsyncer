@@ -6,6 +6,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.vo.ConnectorVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -22,6 +23,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -117,15 +119,16 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public List<Connector> getConnectorAll() {
+    public List<ConnectorVo> getConnectorAll() {
         return profileComponent.getConnectorAll()
                 .stream()
+                .map(this::convertConnector2Vo)
                 .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Paging<Connector> search(Map<String, String> params) {
+    public Paging<ConnectorVo> search(Map<String, String> params) {
         return searchConfigModel(params, getConnectorAll());
     }
 
@@ -168,7 +171,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public boolean isAlive(String id) {
-        return health.containsKey(id) && health.get(id);
+        return health.getOrDefault(id, false);
     }
 
     @Override
@@ -188,4 +191,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         }
     }
 
+    private ConnectorVo convertConnector2Vo(Connector connector) {
+        ConnectorVo vo = new ConnectorVo(isAlive(connector.getId()));
+        BeanUtils.copyProperties(connector, vo);
+        return vo;
+    }
 }

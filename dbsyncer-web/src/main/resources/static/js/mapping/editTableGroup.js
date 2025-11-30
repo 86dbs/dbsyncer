@@ -243,9 +243,8 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
         const escapedSField = escapeHtml(sField);
         const escapedTField = escapeHtml(tField);
         const rowIndex = $tr.length + 1;
-        
-        $list.append(`
-                <tr title='双击设置/取消主键 | 拖动排序'>
+
+        $list.append(`<tr title='双击设置/取消主键 | 拖动排序'>
                     <td>${rowIndex}</td>
                     <td>${escapedSField}</td>
                     <td>${escapedTField}</td>
@@ -254,7 +253,6 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
                         <input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />
                     </td>
                 </tr>`);
-        bootGrowl("添加字段映射成功", "success");
 
         initFieldMappingParams();
         bindFieldMappingDrop();
@@ -281,7 +279,6 @@ function bindFieldMappingDelClick(){
             initFieldMappingParams();
             // 更新删除按钮状态
             $fieldDelBtn().prop('disabled', $fieldCheckboxes().filter(':checked').length === 0);
-            bootGrowl("删除字段映射成功", "success");
         }
     });
 }

@@ -31,6 +31,7 @@
                 <th>名称</th>
                 <th>类型</th>
                 <th>连接地址</th>
+                <th>状态</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -68,16 +69,17 @@ $(document).ready(function() {
                     </td>
                     <td>${escapeHtml(connector.config?.connectorType || '')}</td>
                     <td>${escapeHtml(connector.config?.url || '')}</td>
+                    <td>${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}</td>
                     <td>
                         <div class="flex items-center gap-1">
                             <button class="table-action-btn view" title="修改" onclick="editConnector('${connector.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
+                            <button class="table-action-btn play" title="测试" onclick="testConnector('${connector.id}')">
+                                <i class="fa fa-flash"></i>
+                            </button>
                             <button class="table-action-btn copy" title="复制" onclick="copyConnector('${connector.id}')">
                                 <i class="fa fa-copy"></i>
-                            </button>
-                            <button class="table-action-btn play" title="测试" onclick="testConnector('${connector.id}')">
-                                <i class="fa fa-plug"></i>
                             </button>
                             <button class="table-action-btn delete" title="删除" onclick="deleteConnector('${connector.id}')">
                                 <i class="fa fa-trash"></i>
