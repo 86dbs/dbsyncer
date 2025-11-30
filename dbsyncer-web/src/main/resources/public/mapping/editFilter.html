@@ -99,7 +99,9 @@
                 </td>
                 <td>[[${f?.value}]]</td>
                 <td>
-                    <i class="fa fa-trash-o text-danger cursor-pointer conditionDelete" title="删除"></i>
+                    <button class='table-action-btn delete conditionDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
                 </td>
             </tr>
             <!-- TableGroup filter -->
@@ -113,7 +115,9 @@
                 </td>
                 <td>[[${f?.value}]]</td>
                 <td>
-                    <i class="fa fa-trash-o text-danger cursor-pointer conditionDelete" title="删除"></i>
+                    <button class='table-action-btn delete conditionDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         </tbody>
@@ -198,7 +202,11 @@
                 <td>${conditionSourceField}</td>
                 <td>${conditionFilter}</td>
                 <td>${conditionArg}</td>
-                <td><i class="fa fa-trash-o text-danger cursor-pointer conditionDelete" title="删除"></i></td>
+                <td>
+                    <button class="table-action-btn delete conditionDelete" title="删除"">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
             </tr>`);
             // 清空参数
             $conditionArg.val("");
@@ -211,7 +219,7 @@
         $(".conditionDelete").unbind("click").bind('click', function(){
             // 阻止tr触发click事件
             event.cancelBubble=true;
-            $(this).parent().parent().remove();
+            $(this).closest('tr').remove();
             initFilterParams();
         });
         initFilterParams();

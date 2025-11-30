@@ -68,14 +68,22 @@
                 <td>[[${f?.convertName}]]</td>
                 <td>[[${f?.name}]]</td>
                 <td>[[${f?.args}]]</td>
-                <td><i class='fa fa-trash-o text-danger cursor-pointer convertDelete' title='删除'></i></td>
+                <td>
+                    <button class='table-action-btn delete convertDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
             </tr>
             <!-- TableGroup convert -->
             <tr th:each="f,s:${tableGroup?.convert}">
                 <td>[[${f?.convertName}]]</td>
                 <td>[[${f?.name}]]</td>
                 <td>[[${f?.args}]]</td>
-                <td><i class='fa fa-trash-o text-danger cursor-pointer convertDelete' title='删除'></i></td>
+                <td>
+                    <button class='table-action-btn delete convertDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         </tbody>
     </table>
@@ -118,7 +126,7 @@
         $(".convertDelete").unbind("click").bind('click', function(){
             // 阻止tr触发click事件
             event.cancelBubble=true;
-            $(this).parent().parent().remove();
+            $(this).closest('tr').remove();
             initConvertParams();
         });
         initConvertParams();
@@ -170,7 +178,11 @@
                 <td value='${convertOperatorVal}'>${convertOperatorText}</td>
                 <td>${convertTargetField}</td>
                 <td>${argText}</td>
-                <td><i class='fa fa-trash-o text-danger cursor-pointer convertDelete' title='删除'></i></td>
+                <td>
+                    <button class="table-action-btn delete convertDelete" title="删除"">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
             </tr>`);
             // 清空参数
             $(".convertArg").val("");

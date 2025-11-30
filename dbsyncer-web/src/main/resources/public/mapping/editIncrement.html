@@ -28,7 +28,11 @@
             <td th:text="${s.count}"/>
             <td>[[${item.key}]]</td>
             <td>[[${item.value}]]</td>
-            <td><i th:title="点击修改" class="fa fa-edit text-primary cursor-pointer metaSnapshotModify"></i></td>
+            <td>
+                <button type="button" class="table-action-btn view metaSnapshotModify" title="修改">
+                    <i class="fa fa-edit"></i>
+                </button>
+            </td>
         </tr>
         </tbody>
     </table>
