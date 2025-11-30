@@ -11,9 +11,6 @@ function showLoading() {
 function hideLoading() {
     $mainContent.find('.loading').remove();
 }
-function showEmpty(element, message) {
-    $(element).html('<div class="empty"><div class="empty-icon"><i class="fa fa-inbox"></i></div><div class="empty-text">' + (message || '暂无数据') + '</div></div>');
-}
 
 // HTML转义
 function escapeHtml(text) {

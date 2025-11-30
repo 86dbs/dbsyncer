@@ -15,8 +15,8 @@
             <div class="flex items-end gap-2 success">
                 <span class="text-3xl font-bold">24</span>
                 <span class="text-success text-sm mb-1 flex items-center">
-    <i class="fa fa-arrow-up mr-1"></i> 3 个
-</span>
+                    <i class="fa fa-arrow-up mr-1"></i> 3 个
+                </span>
             </div>
             <p class="text-xs text-gray-500 mt-1">较上周增长 14%</p>
         </div>
@@ -138,17 +138,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 搜索入口 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 mb-5">
-        <div id="searchInput"  class="search-wrapper">
-            <i class="fa fa-search search-icon"></i>
-            <input type="text" placeholder="搜索连接、驱动名称" class="search-input" />
-            <span class="search-clear" title="清除">
-                <i class="fa fa-times"></i>
-            </span>
         </div>
     </div>
 
@@ -331,6 +320,69 @@
         </div>
     </div>
 
-    <script th:src="@{/js/index/index.js}"></script>
+<script>
+    // 初始化图表
+    // 同步趋势图表
+    const trendCtx = document.getElementById('syncTrendChart').getContext('2d');
+    const trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+            datasets: [
+                {
+                    label: '同步数据量 (MB)',
+                    data: [1250, 1900, 1750, 2400, 2100, 1800, 2300],
+                    borderColor: '#165DFF',
+                    backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: '同步次数',
+                    data: [32, 45, 38, 52, 48, 36, 42],
+                    borderColor: '#36CFC9',
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '数据量 (MB)'
+                    }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: '同步次数'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+
+    $(function () {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/index');
+        };
+    });
+</script>
 </div>
 </html>
