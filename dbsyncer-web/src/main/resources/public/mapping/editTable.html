@@ -60,7 +60,7 @@
     </div>
 
     <!-- 表映射列表 -->
-    <table class="table">
+    <table class="table" th:if="${tableGroups.size() gt 0}">
         <thead>
         <tr>
             <th></th>
@@ -70,22 +70,16 @@
             <th>
                 目标源表
             </th>
-            <th>
-                拖动
-            </th>
             <th onclick="event.stopPropagation();">
                 <input type="checkbox" class="tableGroupCheckboxAll" value="all" onclick="event.stopPropagation();" />
             </th>
         </tr>
         </thead>
         <tbody id="tableGroupList">
-        <tr th:id="${t?.id}" title='拖动排序 | 点击编辑' th:each="t,s : ${tableGroups}">
+        <tr th:id="${t?.id}" title='点击编辑 | 拖动排序' th:each="t,s : ${tableGroups}">
             <td th:text="${s.index + 1}"/>
             <td th:text="${t?.sourceTable.name}"/>
             <td th:text="${t?.targetTable.name}"/>
-            <td>
-                <i class="fa fa-arrows text-tertiary" style="cursor: move;"></i>
-            </td>
             <td onclick="event.stopPropagation();">
                 <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
             </td>
@@ -175,10 +169,10 @@
             doPoster("/tableGroup/add", m, function (data) {
                 if (data.success === true) {
                     bootGrowl("新增映射关系成功!", "success");
-                    refreshMappingEditPage();
                 } else {
                     bootGrowl(data.resultValue, "danger");
                 }
+                refreshMappingEditPage();
             });
         });
     }

@@ -54,16 +54,23 @@
                         </label>
                     </div>
                 </div>
-                <div id="maxStorageErrorLength" class="form-item hidden">
+                <div class="form-item">
                     <label class="form-label">记录失败日志长度<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input type="number" class="form-control" min="1024" max="8192" required name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">刷新监控频率(秒)<strong class="text-primary">*</strong></label>
+                    <label class="form-label">标准数据解析器<i class="fa fa-question-circle" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
                     <div class="form-control-area">
-                        <input type="number" class="form-control" min="1" max="60" required name="refreshIntervalSeconds" th:value="${config?.refreshIntervalSeconds}"/>
+                        <label class="form-switch">
+                            <input name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
                     </div>
                 </div>
                 <div class="form-item">
@@ -97,23 +104,10 @@
                         </label>
                     </div>
                 </div>
-                <div id="watermark" class="form-item">
-                    <label class="form-label">水印内容</label>
-                    <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
-                    </div>
-                </div>
                 <div class="form-item">
-                    <label class="form-label">标准数据解析器<i class="fa fa-question-circle" title="开启可以支持更多异构字段类型转换，主要用于兼容异构数据库同步"></i></label>
-                    <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enableSchemaResolver" th:checked="${config?.enableSchemaResolver}" type="checkbox" />
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
+                    <label class="form-label watermark">水印内容</label>
+                    <div class="form-control-area watermark">
+                        <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
                 </div>
                 <div class="form-item">
@@ -136,14 +130,17 @@
 
 <script>
     $(function () {
-        $('.dbsyncer_switch').each(function () {
-            const $input = $(this);
-            $input.attr('role', 'switch');
-            $input.attr('aria-checked', $input.is(':checked'));
-            $input.on('change', function () {
-                $input.attr('aria-checked', this.checked);
-            });
-        });
+        const watermark = $('.watermark');
+        function toggleWatermark(checked) {
+            if (checked) {
+                watermark.removeClass('hidden');
+            } else {
+                watermark.addClass('hidden');
+            }
+        }
+        let switchApi = initSwitch($('#enableWatermark'), toggleWatermark);
+        toggleWatermark(switchApi.isChecked());
+
         //保存
         $("#updateSystemBtn").click(function () {
             const $form = $("#config-form-edit");

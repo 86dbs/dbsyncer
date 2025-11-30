@@ -75,7 +75,7 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background-color: var(--primary-active);
+  background-color: var(--info-color);
   color: var(--bg-primary);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
@@ -133,7 +133,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 999;
   max-height: 300px;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: dropdown-show 0.2s ease;
 }
 
@@ -247,8 +249,9 @@
 
 /* 选项 */
 .dbsyncer-select-options {
-  max-height: 230px;
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .dbsyncer-select-option {

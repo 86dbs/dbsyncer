@@ -333,6 +333,22 @@ function initSelect(selector){
     });
 }
 
+function initSwitch(dbSwitch, callback) {
+    const $input = dbSwitch;
+    $input.attr('role', 'switch');
+    $input.attr('aria-checked', $input.is(':checked'));
+    $input.on('change', function () {
+        $input.attr('aria-checked', this.checked);
+        callback(this.checked);
+    });
+
+    return {
+        isChecked: function () {
+            return $input.is(':checked');
+        }
+    }
+}
+
 // 注销
 function logout() {
     // 基础用法

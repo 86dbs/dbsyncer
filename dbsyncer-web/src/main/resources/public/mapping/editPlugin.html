@@ -40,7 +40,7 @@
         // 显示/隐藏插件参数区域的函数
         function togglePluginExtInfo(values) {
             const selectedValue = values && values.length > 0 ? values[0] : '';
-            if (selectedValue && selectedValue !== '') {
+            if (!isBlank(selectedValue)) {
                 pluginExtInfo.removeClass('hidden');
             } else {
                 pluginExtInfo.addClass('hidden');

@@ -110,16 +110,62 @@
                 input.value = tags.join(',');
             }
             
+            // 标记是否正在输入法输入中
+            let isComposing = false;
+            // 标记是否需要在输入法结束后处理 Enter 键
+            let pendingEnter = false;
+            
+            // 监听输入法开始事件
+            newTagInput.addEventListener('compositionstart', function() {
+                isComposing = true;
+                pendingEnter = false;
+            });
+            
+            // 监听输入法结束事件
+            newTagInput.addEventListener('compositionend', function() {
+                isComposing = false;
+                // 如果之前按了 Enter 键，现在处理添加标签
+                if (pendingEnter) {
+                    pendingEnter = false;
+                    setTimeout(function() {
+                        const value = newTagInput.value.trim();
+                        if (value) {
+                            addTag(value);
+                            newTagInput.value = '';
+                        }
+                    }, 0);
+                }
+            });
+            
+            // 处理添加标签的逻辑
+            function handleAddTag() {
+                const value = newTagInput.value.trim();
+                if (value) {
+                    addTag(value);
+                }
+                // 无论是否成功添加，都清空输入框
+                newTagInput.value = '';
+            }
+            
             // 监听新标签输入框的键盘事件
             newTagInput.addEventListener('keydown', function(e) {
+                // 如果正在输入法输入中，且按的是 Enter 键
+                if (isComposing && e.key === 'Enter') {
+                    // 标记需要在输入法结束后处理
+                    pendingEnter = true;
+                    e.preventDefault();
+                    return;
+                }
+                
+                // 检查浏览器是否支持 isComposing 属性（额外保护）
+                if (e.isComposing && e.key === 'Enter') {
+                    e.preventDefault();
+                    return;
+                }
+                
                 if (e.key === 'Enter' || e.key === ',') {
                     e.preventDefault();
-                    const value = newTagInput.value.trim();
-                    if (value) {
-                        addTag(value);
-                    }
-                    // 无论是否成功添加，都清空输入框
-                    newTagInput.value = '';
+                    handleAddTag();
                 } else if (e.key === 'Backspace' && !newTagInput.value && tags.length > 0) {
                     // 如果输入框为空且按下退格键，删除最后一个标签
                     const lastTag = tags[tags.length - 1];

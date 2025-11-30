@@ -196,17 +196,6 @@ public class MonitorController extends BaseController {
         }
     }
 
-    @ResponseBody
-    @GetMapping("/getRefreshIntervalSeconds")
-    public RestResult getRefreshInterval() {
-        try {
-            return RestResult.restSuccess(systemConfigService.getSystemConfig().getRefreshIntervalSeconds());
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
     /**
      * 硬盘状态
      *
