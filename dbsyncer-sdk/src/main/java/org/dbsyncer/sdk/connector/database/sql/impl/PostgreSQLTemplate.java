@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,6 +136,66 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
         return String.format("ALTER TABLE %s DROP COLUMN %s",
                 buildQuotedTableName(tableName),
                 buildColumn(fieldName));
+    }
+
+    @Override
+    public String buildCreateTableSql(String schema, String tableName, List<Field> fields, List<String> primaryKeys) {
+        List<String> columnDefs = new ArrayList<>();
+        for (Field field : fields) {
+            String ddlType = convertToDatabaseType(field);
+            String columnName = buildColumn(field.getName());
+            
+            // PostgreSQL 的自增字段处理：对于自增主键，使用 SERIAL 或 BIGSERIAL
+            String typeDef;
+            if (field.isAutoincrement() && field.isPk()) {
+                if (ddlType.equalsIgnoreCase("INT") || ddlType.equalsIgnoreCase("INTEGER")) {
+                    typeDef = "SERIAL";
+                } else if (ddlType.equalsIgnoreCase("BIGINT")) {
+                    typeDef = "BIGSERIAL";
+                } else {
+                    typeDef = ddlType;
+                }
+            } else {
+                typeDef = ddlType;
+            }
+            
+            // 构建列定义：列名 类型 [NOT NULL] [DEFAULT value]
+            StringBuilder columnDef = new StringBuilder();
+            columnDef.append(String.format("  %s %s", columnName, typeDef));
+            
+            // 添加 NOT NULL 约束（自增字段通常已经隐含 NOT NULL）
+            if (!field.isAutoincrement() && field.getNullable() != null && !field.getNullable()) {
+                columnDef.append(" NOT NULL");
+            }
+            
+            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
+            }
+            
+            columnDefs.add(columnDef.toString());
+        }
+        
+        // 构建主键定义（如果主键不是自增的，或者自增字段已经隐含了主键约束）
+        String pkClause = "";
+        if (primaryKeys != null && !primaryKeys.isEmpty()) {
+            // 检查是否所有主键都是自增的
+            boolean allPkAutoIncrement = primaryKeys.stream()
+                    .allMatch(pk -> fields.stream()
+                            .anyMatch(f -> f.getName().equals(pk) && f.isAutoincrement()));
+            
+            // 如果主键不是自增的，需要显式定义 PRIMARY KEY
+            if (!allPkAutoIncrement) {
+                String pkColumns = primaryKeys.stream()
+                        .map(this::buildColumn)
+                        .collect(java.util.stream.Collectors.joining(", "));
+                pkClause = String.format(",\n  PRIMARY KEY (%s)", pkColumns);
+            }
+        }
+        
+        // 组装完整的 CREATE TABLE 语句
+        String columns = String.join(",\n", columnDefs);
+        return String.format("CREATE TABLE %s (\n%s%s\n)",
+                buildTable(schema, tableName), columns, pkClause);
     }
 
     @Override

@@ -5,6 +5,7 @@ import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -226,6 +227,47 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         return String.format("ALTER TABLE %s DROP COLUMN %s",
                 buildQuotedTableName(tableName),
                 buildColumn(fieldName));
+    }
+
+    @Override
+    public String buildCreateTableSql(String schema, String tableName, List<Field> fields, List<String> primaryKeys) {
+        List<String> columnDefs = new ArrayList<>();
+        for (Field field : fields) {
+            String ddlType = convertToDatabaseType(field);
+            String columnName = buildColumn(field.getName());
+            
+            // 构建列定义：列名 类型 [NOT NULL] [IDENTITY(1,1)] [DEFAULT value]
+            StringBuilder columnDef = new StringBuilder();
+            columnDef.append(String.format("  %s %s", columnName, ddlType));
+            
+            if (field.getNullable() != null && !field.getNullable()) {
+                columnDef.append(" NOT NULL");
+            }
+            
+            if (field.isAutoincrement()) {
+                columnDef.append(" IDENTITY(1,1)");
+            }
+            
+            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
+                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
+            }
+            
+            columnDefs.add(columnDef.toString());
+        }
+        
+        // 构建主键定义
+        String pkClause = "";
+        if (primaryKeys != null && !primaryKeys.isEmpty()) {
+            String pkColumns = primaryKeys.stream()
+                    .map(this::buildColumn)
+                    .collect(java.util.stream.Collectors.joining(", "));
+            pkClause = String.format(",\n  PRIMARY KEY (%s)", pkColumns);
+        }
+        
+        // 组装完整的 CREATE TABLE 语句
+        String columns = String.join(",\n", columnDefs);
+        return String.format("CREATE TABLE %s (\n%s%s\n)",
+                buildTable(schema, tableName), columns, pkClause);
     }
 
     @Override

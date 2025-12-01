@@ -184,6 +184,22 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         field.setComment(remarks);
                     }
 
+                    // 填充 autoincrement 属性
+                    // JDBC 的 DatabaseMetaData.getColumns() 返回的 ResultSet 中包含 IS_AUTOINCREMENT 列
+                    // 值为 "YES" 表示自增，值为 "NO" 表示非自增
+                    try {
+                        String isAutoIncrement = columnMetadata.getString("IS_AUTOINCREMENT");
+                        if ("YES".equalsIgnoreCase(isAutoIncrement)) {
+                            field.setAutoincrement(true);
+                        } else {
+                            field.setAutoincrement(false);
+                        }
+                    } catch (SQLException e) {
+                        // 如果数据库驱动不支持 IS_AUTOINCREMENT 列，则默认为 false
+                        // 某些旧版本的数据库驱动可能不支持此列
+                        field.setAutoincrement(false);
+                    }
+
                     fields.add(field);
                 }
             }
@@ -483,7 +499,29 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 typeName = metaData.getColumnTypeName(i);
                 columnType = metaData.getColumnType(i);
                 pk = isPk(tables, table, name);
-                fields.add(new Field(label, typeName, columnType, pk));
+                
+                Field field = new Field(label, typeName, columnType, pk);
+                
+                // 尝试从 DatabaseMetaData 获取自增信息
+                // 注意：DQL 模式下，表名可能不准确，所以这里使用 try-catch 处理可能的异常
+                try (ResultSet columnMetadata = md.getColumns(catalog, schema, table, name)) {
+                    if (columnMetadata.next()) {
+                        String isAutoIncrement = columnMetadata.getString("IS_AUTOINCREMENT");
+                        if ("YES".equalsIgnoreCase(isAutoIncrement)) {
+                            field.setAutoincrement(true);
+                        } else {
+                            field.setAutoincrement(false);
+                        }
+                    } else {
+                        // 如果查询不到，默认为 false
+                        field.setAutoincrement(false);
+                    }
+                } catch (SQLException e) {
+                    // 如果获取失败（例如表名不准确），默认为 false
+                    field.setAutoincrement(false);
+                }
+                
+                fields.add(field);
             }
         } finally {
             tables.clear();

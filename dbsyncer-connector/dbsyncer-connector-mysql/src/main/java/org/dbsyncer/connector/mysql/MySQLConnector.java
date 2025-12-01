@@ -104,34 +104,17 @@ public class MySQLConnector extends AbstractDatabaseConnector {
             throw new UnsupportedOperationException("MySQL连接器不支持自动生成 CREATE TABLE DDL");
         }
 
-        StringBuilder ddl = new StringBuilder();
-        ddl.append("CREATE TABLE ").append(sqlTemplate.buildTable(null, targetTableName)).append(" (\n");
-
-        List<String> columnDefs = new ArrayList<>();
+        // 从 MetaInfo 中提取字段列表和主键列表
+        List<Field> fields = sourceMetaInfo.getColumn();
         List<String> primaryKeys = new ArrayList<>();
-
-        for (Field sourceField : sourceMetaInfo.getColumn()) {
-            // 1. 直接使用 SqlTemplate.convertToDatabaseType() 方法
-            //    该方法内部已经处理了类型转换和格式化（包括长度、精度等）
-            String ddlType = sqlTemplate.convertToDatabaseType(sourceField);
-
-            // 2. 构建列定义
-            String columnDef = "  " + sqlTemplate.buildColumn(sourceField.getName()) + " " + ddlType;
-            columnDefs.add(columnDef);
-
-            // 3. 收集主键
-            if (sourceField.isPk()) {
-                primaryKeys.add(sqlTemplate.buildColumn(sourceField.getName()));
+        for (Field field : fields) {
+            if (field.isPk()) {
+                primaryKeys.add(field.getName());
             }
         }
 
-        ddl.append(String.join(",\n", columnDefs));
-
-        if (!primaryKeys.isEmpty()) {
-            ddl.append(",\n  PRIMARY KEY (").append(String.join(", ", primaryKeys)).append(")");
-        }
-
-        ddl.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        return ddl.toString();
+        // 调用 SqlTemplate 的 buildCreateTableSql 方法进行 SQL 模板组装
+        // SqlTemplate 负责 SQL 语法和模板组装，Connector 只负责参数加工
+        return sqlTemplate.buildCreateTableSql(null, targetTableName, fields, primaryKeys);
     }
 }

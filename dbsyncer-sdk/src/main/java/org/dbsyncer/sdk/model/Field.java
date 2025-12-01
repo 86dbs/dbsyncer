@@ -80,6 +80,13 @@ public class Field {
      */
     private String comment;
 
+    /**
+     * 字段是否自增
+     * true: 自增字段（如 MySQL 的 AUTO_INCREMENT，SQL Server 的 IDENTITY）
+     * false: 非自增字段
+     */
+    private boolean autoincrement;
+
     public Field() {
     }
 
@@ -249,6 +256,22 @@ public class Field {
      */
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    /**
+     * 获取字段是否自增
+     * @return true表示自增字段，false表示非自增字段
+     */
+    public boolean isAutoincrement() {
+        return autoincrement;
+    }
+
+    /**
+     * 设置字段是否自增
+     * @param autoincrement true表示自增字段（如 MySQL 的 AUTO_INCREMENT，SQL Server 的 IDENTITY），false表示非自增字段
+     */
+    public void setAutoincrement(boolean autoincrement) {
+        this.autoincrement = autoincrement;
     }
 
     @Override

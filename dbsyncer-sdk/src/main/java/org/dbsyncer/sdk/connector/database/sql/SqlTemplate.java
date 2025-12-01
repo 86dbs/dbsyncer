@@ -298,6 +298,20 @@ public interface SqlTemplate {
     }
 
     /**
+     * 构建创建表的SQL语句
+     * 负责SQL模板的组装，包括列定义、主键定义等
+     *
+     * @param schema 模式名（可为null）
+     * @param tableName 表名
+     * @param fields 字段列表
+     * @param primaryKeys 主键字段名列表
+     * @return 创建表的SQL语句
+     */
+    default String buildCreateTableSql(String schema, String tableName, List<Field> fields, List<String> primaryKeys) {
+        throw new UnsupportedOperationException("Need to overwrite this function");
+    }
+
+    /**
      * 将标准类型字段转换为数据库特定的DDL类型字符串
      * 包括类型名称、长度、精度等信息的格式化
      *
