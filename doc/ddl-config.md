@@ -169,7 +169,7 @@ private void createTargetTable(Mapping mapping, TableGroup tableGroup,
     
     // 注意：这里需要 ConnectorService 提供生成 CREATE TABLE DDL 的方法
     // 如果 ConnectorService 中已有 generateCreateTableDDL 方法，直接调用
-    // 否则需要扩展 ConnectorService 接口（参考 doc/create-missing-table.md）
+    // 否则需要扩展 ConnectorService 接口（参考本文档第 3.3.4 节）
     String createTableDDL = generateCreateTableDDL(
         targetConnectorService, sourceMetaInfo, tableGroup.getTargetTable().getName());
     
@@ -275,7 +275,19 @@ public ConfigModel checkAddConfigModel(Map<String, String> params) throws Except
 **新增异常类**：
 
 ```java
+package org.dbsyncer.biz;
+
+/**
+ * 目标表不存在异常
+ * 用于标识目标表不存在，需要用户确认是否创建
+ */
 public class TargetTableNotExistsException extends BizException {
+    
+    /**
+     * 错误码：用于前端识别异常类型
+     */
+    public static final String ERROR_CODE = "TARGET_TABLE_NOT_EXISTS";
+    
     private String sourceConnectorId;
     private String targetConnectorId;
     private String sourceTable;
@@ -290,7 +302,57 @@ public class TargetTableNotExistsException extends BizException {
         this.targetTable = targetTable;
     }
     
-    // getters...
+    public String getErrorCode() {
+        return ERROR_CODE;
+    }
+    
+    public String getSourceConnectorId() {
+        return sourceConnectorId;
+    }
+    
+    public String getTargetConnectorId() {
+        return targetConnectorId;
+    }
+    
+    public String getSourceTable() {
+        return sourceTable;
+    }
+    
+    public String getTargetTable() {
+        return targetTable;
+    }
+}
+```
+
+**Controller 层异常处理改造**：
+
+在 `TableGroupController.add()` 中识别 `TargetTableNotExistsException`：
+
+```java
+@PostMapping(value = "/add")
+@ResponseBody
+public RestResult add(HttpServletRequest request) {
+    try {
+        Map<String, String> params = getParams(request);
+        return RestResult.restSuccess(tableGroupService.add(params));
+    } catch (TargetTableNotExistsException e) {
+        // 目标表不存在异常，返回特殊错误码和详细信息
+        logger.info("目标表不存在，等待用户确认: {}", e.getTargetTable());
+        Map<String, Object> errorInfo = new HashMap<>();
+        errorInfo.put("errorCode", TargetTableNotExistsException.ERROR_CODE);
+        errorInfo.put("message", e.getMessage());
+        errorInfo.put("sourceConnectorId", e.getSourceConnectorId());
+        errorInfo.put("targetConnectorId", e.getTargetConnectorId());
+        errorInfo.put("sourceTable", e.getSourceTable());
+        errorInfo.put("targetTable", e.getTargetTable());
+        return RestResult.restFail(errorInfo, 400);
+    } catch (SdkException e) {
+        logger.error(e.getLocalizedMessage(), e);
+        return RestResult.restFail(e.getMessage(), 400);
+    } catch (Exception e) {
+        logger.error(e.getLocalizedMessage(), e);
+        return RestResult.restFail(e.getMessage());
+    }
 }
 ```
 
@@ -308,33 +370,68 @@ public RestResult createTargetTable(HttpServletRequest request) {
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");
         
+        Assert.hasText(mappingId, "mappingId 不能为空");
+        Assert.hasText(sourceTable, "sourceTable 不能为空");
+        Assert.hasText(targetTable, "targetTable 不能为空");
+        
         Mapping mapping = profileComponent.getMapping(mappingId);
-        ConnectorInstance sourceConnectorInstance = connectorFactory.connect(
-            getConnectorConfig(mapping.getSourceConnectorId()));
-        ConnectorInstance targetConnectorInstance = connectorFactory.connect(
-            getConnectorConfig(mapping.getTargetConnectorId()));
+        Assert.notNull(mapping, "Mapping 不存在: " + mappingId);
+        
+        // 获取连接器配置
+        ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        ConnectorConfig targetConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        
+        // 连接源和目标数据库
+        ConnectorInstance sourceConnectorInstance = connectorFactory.connect(sourceConfig);
+        ConnectorInstance targetConnectorInstance = connectorFactory.connect(targetConfig);
+        
+        // 检查目标表是否已存在（避免重复创建）
+        try {
+            MetaInfo existingTable = connectorFactory.getMetaInfo(targetConnectorInstance, targetTable);
+            if (existingTable != null && existingTable.getColumn() != null && !existingTable.getColumn().isEmpty()) {
+                return RestResult.restSuccess("目标表已存在，无需创建");
+            }
+        } catch (Exception e) {
+            // 表不存在，继续创建流程
+            logger.debug("目标表不存在，开始创建: {}", targetTable);
+        }
         
         // 获取源表结构
         MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(sourceConnectorInstance, sourceTable);
+        Assert.notNull(sourceMetaInfo, "无法获取源表结构: " + sourceTable);
+        Assert.notEmpty(sourceMetaInfo.getColumn(), "源表没有字段: " + sourceTable);
         
-        // 生成 CREATE TABLE DDL
-        ConnectorService targetConnectorService = connectorFactory.getConnectorService(
-            getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType());
-        String createTableDDL = targetConnectorService.generateCreateTableDDL(sourceMetaInfo, targetTable);
-        
-        // 执行 CREATE TABLE DDL
-        DDLConfig ddlConfig = new DDLConfig();
-        ddlConfig.setSql(createTableDDL);
-        Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
-        
-        if (result.hasError()) {
-            return RestResult.restFail("创建表失败: " + result.getError());
+        // 检查连接器是否支持生成 CREATE TABLE DDL
+        ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetConfig.getConnectorType());
+        try {
+            // 尝试生成 CREATE TABLE DDL
+            String createTableDDL = targetConnectorService.generateCreateTableDDL(sourceMetaInfo, targetTable);
+            Assert.hasText(createTableDDL, "无法生成 CREATE TABLE DDL");
+            
+            // 执行 CREATE TABLE DDL
+            DDLConfig ddlConfig = new DDLConfig();
+            ddlConfig.setSql(createTableDDL);
+            Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+            
+            if (result.hasError()) {
+                logger.error("创建表失败: {}", result.getError());
+                return RestResult.restFail("创建表失败: " + result.getError(), 500);
+            }
+            
+            logger.info("成功创建目标表: {}", targetTable);
+            return RestResult.restSuccess("创建表成功");
+            
+        } catch (UnsupportedOperationException e) {
+            logger.error("连接器不支持自动生成 CREATE TABLE DDL: {}", targetConfig.getConnectorType());
+            return RestResult.restFail("该数据库类型不支持自动创建表: " + targetConfig.getConnectorType(), 400);
         }
         
-        return RestResult.restSuccess("创建表成功");
+    } catch (IllegalArgumentException e) {
+        logger.error("参数错误: {}", e.getMessage());
+        return RestResult.restFail("参数错误: " + e.getMessage(), 400);
     } catch (Exception e) {
-        logger.error(e.getLocalizedMessage(), e);
-        return RestResult.restFail(e.getMessage());
+        logger.error("创建表异常: {}", e.getMessage(), e);
+        return RestResult.restFail("创建表失败: " + e.getMessage(), 500);
     }
 }
 ```
@@ -355,13 +452,18 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
                 bootGrowl("新增映射关系成功!", "success");
                 refresh(m.mappingId, 1);
             } else {
-                // 检查是否是目标表不存在的异常
+                // 检查是否是目标表不存在的异常（通过错误码识别）
                 if (data.status == 400 && data.resultValue && 
-                    data.resultValue.indexOf("目标表不存在") >= 0) {
+                    typeof data.resultValue === 'object' &&
+                    data.resultValue.errorCode === 'TARGET_TABLE_NOT_EXISTS') {
                     // 显示确认对话框
                     showCreateTableConfirmDialog(m, data.resultValue);
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    // 其他错误，直接显示错误信息
+                    let errorMsg = typeof data.resultValue === 'string' 
+                        ? data.resultValue 
+                        : (data.resultValue.message || '操作失败');
+                    bootGrowl(errorMsg, "danger");
                     if (data.status == 400) {
                         refresh(m.mappingId, 1);
                     }
@@ -371,87 +473,366 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
     });
 }
 
-function showCreateTableConfirmDialog(params, message) {
-    // 使用 Bootstrap Modal 或自定义对话框
-    bootbox.confirm({
+/**
+ * 显示创建表确认对话框
+ * @param params 保存表映射的参数
+ * @param errorInfo 错误信息对象，包含 errorCode, message, sourceTable, targetTable 等
+ */
+function showCreateTableConfirmDialog(params, errorInfo) {
+    // 使用 BootstrapDialog（项目中实际使用的对话框组件）
+    BootstrapDialog.show({
         title: "目标表不存在",
-        message: message + "<br><br>是否基于源表结构自动创建目标表？",
-        buttons: {
-            cancel: {
-                label: "取消",
-                className: "btn-default"
-            },
-            confirm: {
-                label: "创建",
-                className: "btn-primary"
-            }
-        },
-        callback: function (result) {
-            if (result) {
+        type: BootstrapDialog.TYPE_WARNING,
+        message: '<div style="padding: 10px;">' +
+                 '<p><strong>目标表不存在：</strong>' + errorInfo.targetTable + '</p>' +
+                 '<p>是否基于源表结构自动创建目标表？</p>' +
+                 '<p style="color: #999; font-size: 12px;">源表：' + errorInfo.sourceTable + '</p>' +
+                 '</div>',
+        size: BootstrapDialog.SIZE_NORMAL,
+        buttons: [{
+            label: "创建",
+            cssClass: "btn-primary",
+            action: function (dialog) {
+                dialog.close();
                 // 用户确认创建表
-                createTargetTableAndRetry(params);
-            } else {
+                createTargetTableAndRetry(params, errorInfo);
+            }
+        }, {
+            label: "取消",
+            cssClass: "btn-default",
+            action: function (dialog) {
+                dialog.close();
                 bootGrowl("已取消创建表", "info");
             }
-        }
+        }]
     });
 }
 
-function createTargetTableAndRetry(params) {
+/**
+ * 创建表并重试保存映射关系
+ * @param params 保存表映射的参数
+ * @param errorInfo 错误信息对象
+ */
+function createTargetTableAndRetry(params, errorInfo) {
+    // 显示加载提示
+    bootGrowl("正在创建目标表...", "info");
+    
     // 1. 先创建表
     let createParams = {
         mappingId: params.mappingId,
-        sourceTable: params.sourceTable.split('|')[0], // 取第一个表
-        targetTable: params.targetTable.split('|')[0]
+        sourceTable: errorInfo.sourceTable,
+        targetTable: errorInfo.targetTable
     };
     
     doPoster("/tableGroup/createTargetTable", createParams, function (data) {
         if (data.success == true) {
             bootGrowl("创建表成功，正在保存映射关系...", "success");
+            
             // 2. 创建成功后，重新尝试保存表映射
             doPoster("/tableGroup/add", params, function (data) {
                 if (data.success == true) {
                     bootGrowl("新增映射关系成功!", "success");
                     refresh(params.mappingId, 1);
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    // 保存映射关系失败
+                    let errorMsg = typeof data.resultValue === 'string' 
+                        ? data.resultValue 
+                        : (data.resultValue.message || '保存映射关系失败');
+                    bootGrowl(errorMsg, "danger");
                 }
             });
         } else {
-            bootGrowl("创建表失败: " + data.resultValue, "danger");
+            // 创建表失败
+            let errorMsg = typeof data.resultValue === 'string' 
+                ? data.resultValue 
+                : (data.resultValue.message || '创建表失败');
+            bootGrowl("创建表失败: " + errorMsg, "danger");
         }
+    });
+}
+```
+
+**多表场景处理**：
+
+如果同时保存多个表映射（`sourceTable` 和 `targetTable` 包含多个表，用 `|` 分隔），需要逐个处理：
+
+```javascript
+function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
+    // ... 现有逻辑 ...
+    
+    doPoster("/tableGroup/add", m, function (data) {
+        if (data.success == true) {
+            bootGrowl("新增映射关系成功!", "success");
+            refresh(m.mappingId, 1);
+        } else {
+            // 检查是否是目标表不存在的异常
+            if (data.status == 400 && data.resultValue && 
+                typeof data.resultValue === 'object' &&
+                data.resultValue.errorCode === 'TARGET_TABLE_NOT_EXISTS') {
+                
+                // 多表场景：检查是否有多个表需要创建
+                let sourceTables = m.sourceTable.split('|');
+                let targetTables = m.targetTable.split('|');
+                
+                if (sourceTables.length > 1 || targetTables.length > 1) {
+                    // 多个表，需要批量处理
+                    showBatchCreateTableConfirmDialog(m, data.resultValue, sourceTables, targetTables);
+                } else {
+                    // 单个表，直接显示确认对话框
+                    showCreateTableConfirmDialog(m, data.resultValue);
+                }
+            } else {
+                // 其他错误...
+            }
+        }
+    });
+}
+
+/**
+ * 批量创建表确认对话框（多表场景）
+ */
+function showBatchCreateTableConfirmDialog(params, errorInfo, sourceTables, targetTables) {
+    let tableListHtml = '<ul style="margin: 10px 0; padding-left: 20px;">';
+    for (let i = 0; i < targetTables.length; i++) {
+        tableListHtml += '<li>源表: ' + sourceTables[i] + ' → 目标表: ' + targetTables[i] + '</li>';
+    }
+    tableListHtml += '</ul>';
+    
+    BootstrapDialog.show({
+        title: "目标表不存在",
+        type: BootstrapDialog.TYPE_WARNING,
+        message: '<div style="padding: 10px;">' +
+                 '<p><strong>以下目标表不存在：</strong></p>' +
+                 tableListHtml +
+                 '<p>是否基于源表结构自动创建这些目标表？</p>' +
+                 '</div>',
+        size: BootstrapDialog.SIZE_NORMAL,
+        buttons: [{
+            label: "全部创建",
+            cssClass: "btn-primary",
+            action: function (dialog) {
+                dialog.close();
+                batchCreateTargetTablesAndRetry(params, sourceTables, targetTables);
+            }
+        }, {
+            label: "取消",
+            cssClass: "btn-default",
+            action: function (dialog) {
+                dialog.close();
+                bootGrowl("已取消创建表", "info");
+            }
+        }]
+    });
+}
+
+/**
+ * 批量创建表并重试保存映射关系
+ */
+function batchCreateTargetTablesAndRetry(params, sourceTables, targetTables) {
+    bootGrowl("正在批量创建目标表...", "info");
+    
+    let createPromises = [];
+    for (let i = 0; i < targetTables.length; i++) {
+        let createParams = {
+            mappingId: params.mappingId,
+            sourceTable: sourceTables[i],
+            targetTable: targetTables[i]
+        };
+        
+        // 创建 Promise 来顺序执行创建表操作
+        createPromises.push(function() {
+            return new Promise(function(resolve, reject) {
+                doPoster("/tableGroup/createTargetTable", createParams, function (data) {
+                    if (data.success == true) {
+                        resolve({table: targetTables[i], success: true});
+                    } else {
+                        reject({table: targetTables[i], error: data.resultValue});
+                    }
+                });
+            });
+        });
+    }
+    
+    // 顺序执行所有创建表操作
+    let promiseChain = createPromises.reduce(function(chain, promiseFn) {
+        return chain.then(function() {
+            return promiseFn();
+        });
+    }, Promise.resolve());
+    
+    promiseChain.then(function() {
+        bootGrowl("所有表创建成功，正在保存映射关系...", "success");
+        // 重新尝试保存表映射
+        doPoster("/tableGroup/add", params, function (data) {
+            if (data.success == true) {
+                bootGrowl("新增映射关系成功!", "success");
+                refresh(params.mappingId, 1);
+            } else {
+                bootGrowl("保存映射关系失败: " + data.resultValue, "danger");
+            }
+        });
+    }).catch(function(error) {
+        bootGrowl("创建表失败: " + error.table + " - " + error.error, "danger");
     });
 }
 ```
 
 #### 3.3.4 CREATE TABLE DDL 生成
 
-需要各数据库连接器实现 `generateCreateTableDDL()` 方法：
+**实现状态**：`generateCreateTableDDL()` 方法目前**尚未在 `ConnectorService` 接口中定义**，需要：
+
+1. **扩展 `ConnectorService` 接口**：添加 `generateCreateTableDDL()` 方法定义
+2. **各连接器实现**：每个数据库连接器都需要实现该方法
+
+**接口扩展**：
+
+在 `ConnectorService` 接口中添加方法定义：
 
 ```java
-// 在 ConnectorService 接口中扩展（如果尚未实现）
+// 在 dbsyncer-sdk/src/main/java/org/dbsyncer/sdk/spi/ConnectorService.java 中添加
 public interface ConnectorService<I extends ConnectorInstance, C extends ConnectorConfig> {
+    
+    // ... 现有方法 ...
     
     /**
      * 基于源表结构生成目标表的 CREATE TABLE DDL
      * 
-     * @param sourceMetaInfo 源表元信息
+     * @param sourceMetaInfo 源表元信息（字段为标准类型）
      * @param targetTableName 目标表名
      * @return CREATE TABLE DDL 语句
+     * @throws UnsupportedOperationException 如果连接器不支持此功能
      */
     default String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
         // 默认实现：抛出未实现异常
-        throw new UnsupportedOperationException("该连接器不支持自动生成 CREATE TABLE DDL");
+        throw new UnsupportedOperationException("该连接器不支持自动生成 CREATE TABLE DDL: " + getConnectorType());
     }
 }
 ```
 
-各数据库连接器实现示例（参考 `doc/create-missing-table.md`）：
+**核心实现思路：复用现有 SchemaResolver**
 
-- **MySQL**：生成 `CREATE TABLE \`table_name\` (...)`
-- **SQL Server**：生成 `CREATE TABLE [table_name] (...)`
-- **PostgreSQL**：生成 `CREATE TABLE "table_name" (...)`
-- **Oracle**：生成 `CREATE TABLE "table_name" (...)`
+**重要**：**不需要重新实现类型转换逻辑**，应该复用现有的 `SchemaResolver.fromStandardType()` 方法：
+
+1. **类型转换**：使用 `SchemaResolver.fromStandardType()` 将标准类型转换为目标数据库类型
+2. **DDL 格式化**：根据目标类型名称和 Field 的 `columnSize`、`ratio` 等信息，格式化 DDL 类型字符串
+3. **语法差异**：处理不同数据库的语法差异（表名引号、主键定义等）
+
+**实现模式示例**：
+
+```java
+public final class MySQLConnector extends AbstractDatabaseConnector {
+    
+    @Override
+    public String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
+        SchemaResolver schemaResolver = getSchemaResolver();
+        if (schemaResolver == null) {
+            throw new UnsupportedOperationException("MySQL连接器不支持自动生成 CREATE TABLE DDL");
+        }
+        
+        StringBuilder ddl = new StringBuilder();
+        ddl.append("CREATE TABLE `").append(targetTableName).append("` (\n");
+        
+        List<String> columnDefs = new ArrayList<>();
+        List<String> primaryKeys = new ArrayList<>();
+        
+        for (Field sourceField : sourceMetaInfo.getColumn()) {
+            // 1. 使用 SchemaResolver 将标准类型转换为目标数据库类型
+            Field targetField = schemaResolver.fromStandardType(sourceField);
+            
+            // 2. 格式化 DDL 类型字符串（根据类型名称、长度、精度等）
+            String ddlType = formatDDLType(targetField);
+            
+            // 3. 构建列定义
+            String columnDef = String.format("  `%s` %s", targetField.getName(), ddlType);
+            columnDefs.add(columnDef);
+            
+            // 4. 收集主键
+            if (targetField.isPk()) {
+                primaryKeys.add("`" + targetField.getName() + "`");
+            }
+        }
+        
+        ddl.append(String.join(",\n", columnDefs));
+        
+        if (!primaryKeys.isEmpty()) {
+            ddl.append(",\n  PRIMARY KEY (").append(String.join(", ", primaryKeys)).append(")");
+        }
+        
+        ddl.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        return ddl.toString();
+    }
+    
+    /**
+     * 格式化 DDL 类型字符串
+     * 根据目标数据库类型名称和 Field 的 columnSize、ratio 等信息格式化
+     */
+    private String formatDDLType(Field field) {
+        String typeName = field.getTypeName().toUpperCase();
+        int columnSize = field.getColumnSize();
+        int ratio = field.getRatio();
+        
+        // 根据类型名称格式化（需要处理精度、长度等）
+        switch (typeName) {
+            case "VARCHAR":
+            case "CHAR":
+                return String.format("VARCHAR(%d)", Math.max(columnSize > 0 ? columnSize : 255, 255));
+            case "DECIMAL":
+            case "NUMERIC":
+                return String.format("DECIMAL(%d,%d)", 
+                    Math.max(columnSize > 0 ? columnSize : 10, 10), 
+                    Math.max(ratio, 0));
+            case "TEXT":
+            case "LONGTEXT":
+            case "MEDIUMTEXT":
+            case "TINYTEXT":
+                return "TEXT";
+            case "INT":
+            case "INTEGER":
+            case "BIGINT":
+            case "SMALLINT":
+            case "TINYINT":
+            case "FLOAT":
+            case "DOUBLE":
+            case "DATE":
+            case "DATETIME":
+            case "TIMESTAMP":
+            case "TIME":
+            case "JSON":
+            case "GEOMETRY":
+            case "BLOB":
+            case "LONGBLOB":
+            case "BIT":
+                return typeName; // 不需要长度/精度的类型
+            default:
+                return "TEXT"; // 默认类型
+        }
+    }
+}
+```
+
+**各数据库连接器的语法差异**：
+
+| 数据库 | 表名引号 | 列名引号 | 主键定义 | 特殊语法 |
+|--------|---------|---------|---------|---------|
+| **MySQL** | 反引号 `` ` `` | 反引号 `` ` `` | `PRIMARY KEY (...)` | `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4` |
+| **SQL Server** | 方括号 `[]` | 方括号 `[]` | `PRIMARY KEY (...)` | 无 |
+| **PostgreSQL** | 双引号 `"` | 双引号 `"` | `PRIMARY KEY (...)` | 无 |
+| **Oracle** | 双引号 `"` | 双引号 `"` | `PRIMARY KEY (...)` | 无 |
+
+**实施建议**：
+
+1. **优先实现常用连接器**：MySQL、SQL Server、PostgreSQL
+2. **复用现有类型转换**：**必须使用 `SchemaResolver.fromStandardType()`**，不要重新实现类型映射
+3. **统一实现模式**：所有连接器遵循相同的实现模式（字段定义、主键处理、DDL 格式化）
+4. **错误处理**：如果连接器不支持，返回明确的错误提示
+5. **类型格式化**：`formatDDLType()` 方法只需要处理精度、长度的格式化，类型名称由 `SchemaResolver` 提供
+
+**注意事项**：
+
+- **必须复用 `SchemaResolver.fromStandardType()`**：这是现有的类型转换基础设施，不要重新实现类型映射
+- **DDL 格式化**：只需要根据类型名称和 Field 的 `columnSize`、`ratio` 等信息格式化 DDL 字符串
+- **语法差异**：不同数据库的表名引号、列名引号、主键定义语法不同，需要在实现中处理
+- **类型完整性**：`SchemaResolver` 已经处理了所有标准类型的转换，包括特殊类型（如 Geometry、JSON 等）
 
 ### 3.4 配置管理改造
 
@@ -567,11 +948,22 @@ $('input[name="enableDDL"]').on('change', function() {
    - 新增 `TargetTableNotExistsException` 异常类
    - 当目标表不存在时，抛出特殊异常，前端提示用户是否创建
 
-2. **创建表接口实现**
+2. **ConnectorService 接口扩展**
+   - 在 `ConnectorService` 接口中添加 `generateCreateTableDDL()` 方法定义
+   - 提供默认实现（抛出 `UnsupportedOperationException`）
+
+3. **创建表接口实现**
    - 在 `TableGroupController` 中新增 `createTargetTable()` 接口
    - 实现基于源表结构生成目标表 DDL 的逻辑
-   - 扩展 ConnectorService 接口（如需要）
-   - 实现各数据库连接器的 `generateCreateTableDDL()` 方法
+   - 处理连接器不支持的情况
+
+4. **各连接器实现 `generateCreateTableDDL()` 方法**
+   - **MySQL 连接器**：实现 MySQL 语法（反引号、ENGINE、CHARSET）
+   - **SQL Server 连接器**：实现 SQL Server 语法（方括号）
+   - **PostgreSQL 连接器**：实现 PostgreSQL 语法（双引号）
+   - **Oracle 连接器**：实现 Oracle 语法（双引号、特殊类型）
+   - 参考本文档第 3.3.4 节中的实现模式
+   - 其他连接器（Kafka、Elasticsearch 等）保持默认实现（不支持）
 
 3. **前端交互实现**
    - 修改 `edit.js` 中的 `bindMappingTableGroupAddClick()` 函数
@@ -675,7 +1067,16 @@ $('input[name="enableDDL"]').on('change', function() {
 - **多表场景**：如果同时保存多个表映射，需要逐个确认创建（或提供批量确认选项）
 - **运行时兜底**：如果配置时未创建表，运行时不会自动创建（避免意外操作）
 
-### 6.4 向后兼容性
+### 6.4 错误处理机制
+
+- **异常类型识别**：使用错误码 `TARGET_TABLE_NOT_EXISTS` 而非错误消息文本识别异常类型，提高可靠性
+- **错误信息传递**：通过 `RestResult` 的 `resultValue` 传递结构化错误信息（包含错误码、消息、上下文）
+- **前端错误处理**：前端根据错误码进行不同处理，而非依赖字符串匹配
+- **创建表失败处理**：创建表失败时，显示具体错误信息，不自动重试
+- **保存映射失败处理**：创建表成功但保存映射失败时，提示用户手动重试
+- **连接器不支持处理**：如果连接器不支持 `generateCreateTableDDL()`，返回明确的错误提示
+
+### 6.5 向后兼容性
 
 - 现有配置（仅包含 `enableDDL`）完全兼容
 - 新增配置项使用缺省值，不影响现有功能
@@ -703,10 +1104,71 @@ public class DDLConfig {
 }
 ```
 
-## 八、相关文档
+## 八、实施细节总结
+
+### 8.1 前端如何感知目标表不存在异常
+
+**识别机制**：
+1. 后端抛出 `TargetTableNotExistsException` 异常
+2. Controller 层捕获异常，返回包含错误码的 `RestResult`
+3. 前端通过 `data.resultValue.errorCode === 'TARGET_TABLE_NOT_EXISTS'` 识别异常
+
+**优势**：
+- 不依赖错误消息文本，提高可靠性
+- 错误码可扩展，便于未来增加新的异常类型
+- 结构化错误信息，包含完整的上下文
+
+### 8.2 用户交互界面
+
+**对话框组件**：使用项目现有的 `BootstrapDialog` 组件
+
+**交互流程**：
+1. 用户点击"新增映射关系"
+2. 后端检测到目标表不存在，返回错误码
+3. 前端显示确认对话框，包含：
+   - 标题："目标表不存在"
+   - 消息：显示源表和目标表信息
+   - 按钮："创建"（主按钮）和"取消"（默认按钮）
+4. 用户确认后，显示加载提示，调用创建表接口
+5. 创建成功后，自动重试保存映射关系
+
+**多表场景**：
+- 显示所有需要创建的表列表
+- 提供"全部创建"按钮，顺序创建所有表
+- 如果某个表创建失败，显示具体错误信息
+
+### 8.3 服务端自动创建目标表处理
+
+**处理流程**：
+1. **参数校验**：检查 mappingId、sourceTable、targetTable 是否为空
+2. **连接器验证**：验证 Mapping 和连接器是否存在
+3. **表存在性检查**：检查目标表是否已存在（避免重复创建）
+4. **源表结构获取**：从源数据库获取表结构（MetaInfo）
+5. **DDL 生成**：调用连接器的 `generateCreateTableDDL()` 生成 CREATE TABLE 语句
+6. **连接器支持检查**：如果连接器不支持，返回明确错误
+7. **执行 DDL**：调用 `connectorFactory.writerDDL()` 执行创建表操作
+8. **错误处理**：捕获并返回详细的错误信息
+
+**错误处理**：
+- 参数错误：返回 400 状态码
+- 连接器不支持：返回 400 状态码，明确提示
+- 创建表失败：返回 500 状态码，包含具体错误信息
+- 权限不足：通过 DDL 执行结果返回具体错误
+
+### 8.4 关键实施点
+
+1. **异常类定义**：`TargetTableNotExistsException` 必须包含错误码常量
+2. **Controller 改造**：`TableGroupController.add()` 必须识别并特殊处理该异常
+3. **前端识别**：必须通过错误码而非字符串匹配识别异常
+4. **对话框组件**：使用 `BootstrapDialog` 而非 `bootbox`
+5. **多表处理**：支持批量创建和顺序执行
+6. **错误提示**：所有错误都要有明确的用户提示
+
+## 九、相关文档
 
 - [DDL 同步文档](./ddl.md)
 - [SQL Server Change Tracking 同步方案](./mssql-ct.md)
-- [目标表不存在时自动创建功能设计方案](./create-missing-table.md)
 - [异构数据库 DDL 同步实施方案](./ddl-heterogeneous.md)
+
+**注意**：`doc/create-missing-table.md` 文档已废弃，相关内容已整合到本文档第 3.3.4 节。
 
