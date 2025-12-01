@@ -709,23 +709,32 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
 }
 ```
 
-**核心实现思路：复用现有 SchemaResolver**
+**核心实现思路：复用现有 SqlTemplate.convertToDatabaseType() 方法**
 
-**重要**：**不需要重新实现类型转换逻辑**，应该复用现有的 `SchemaResolver.fromStandardType()` 方法：
+**重要**：**不需要重新实现类型格式化逻辑**，应该直接复用现有的 `SqlTemplate.convertToDatabaseType()` 方法：
 
-1. **类型转换**：使用 `SchemaResolver.fromStandardType()` 将标准类型转换为目标数据库类型
-2. **DDL 格式化**：根据目标类型名称和 Field 的 `columnSize`、`ratio` 等信息，格式化 DDL 类型字符串
+1. **类型转换**：使用 `SchemaResolver.fromStandardType()` 将标准类型转换为目标数据库类型（已有）
+2. **DDL 格式化**：使用 `SqlTemplate.convertToDatabaseType()` 格式化 DDL 类型字符串（**已存在，直接复用**）
 3. **语法差异**：处理不同数据库的语法差异（表名引号、主键定义等）
 
-**实现模式示例**：
+**现有实现说明**：
+
+`SqlTemplate.convertToDatabaseType(Field column)` 方法已经在 DDL 同步过程中使用，用于将标准类型字段转换为数据库特定的类型字符串（包含长度、精度等）。各数据库的 Template 类都已实现：
+
+- `MySQLTemplate.convertToDatabaseType()` - MySQL 类型格式化
+- `SqlServerTemplate.convertToDatabaseType()` - SQL Server 类型格式化
+- `PostgreSQLTemplate.convertToDatabaseType()` - PostgreSQL 类型格式化
+- `OracleTemplate.convertToDatabaseType()` - Oracle 类型格式化
+
+**连接器实现模式（复用现有方法）**：
 
 ```java
 public final class MySQLConnector extends AbstractDatabaseConnector {
     
     @Override
     public String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
-        SchemaResolver schemaResolver = getSchemaResolver();
-        if (schemaResolver == null) {
+        SqlTemplate sqlTemplate = getSqlTemplate();
+        if (sqlTemplate == null) {
             throw new UnsupportedOperationException("MySQL连接器不支持自动生成 CREATE TABLE DDL");
         }
         
@@ -736,19 +745,17 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> primaryKeys = new ArrayList<>();
         
         for (Field sourceField : sourceMetaInfo.getColumn()) {
-            // 1. 使用 SchemaResolver 将标准类型转换为目标数据库类型
-            Field targetField = schemaResolver.fromStandardType(sourceField);
+            // 1. 直接使用 SqlTemplate.convertToDatabaseType() 方法
+            //    该方法内部已经处理了类型转换和格式化（包括长度、精度等）
+            String ddlType = sqlTemplate.convertToDatabaseType(sourceField);
             
-            // 2. 格式化 DDL 类型字符串（根据类型名称、长度、精度等）
-            String ddlType = formatDDLType(targetField);
-            
-            // 3. 构建列定义
-            String columnDef = String.format("  `%s` %s", targetField.getName(), ddlType);
+            // 2. 构建列定义
+            String columnDef = String.format("  `%s` %s", sourceField.getName(), ddlType);
             columnDefs.add(columnDef);
             
-            // 4. 收集主键
-            if (targetField.isPk()) {
-                primaryKeys.add("`" + targetField.getName() + "`");
+            // 3. 收集主键
+            if (sourceField.isPk()) {
+                primaryKeys.add("`" + sourceField.getName() + "`");
             }
         }
         
@@ -761,54 +768,15 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         ddl.append("\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         return ddl.toString();
     }
-    
-    /**
-     * 格式化 DDL 类型字符串
-     * 根据目标数据库类型名称和 Field 的 columnSize、ratio 等信息格式化
-     */
-    private String formatDDLType(Field field) {
-        String typeName = field.getTypeName().toUpperCase();
-        int columnSize = field.getColumnSize();
-        int ratio = field.getRatio();
-        
-        // 根据类型名称格式化（需要处理精度、长度等）
-        switch (typeName) {
-            case "VARCHAR":
-            case "CHAR":
-                return String.format("VARCHAR(%d)", Math.max(columnSize > 0 ? columnSize : 255, 255));
-            case "DECIMAL":
-            case "NUMERIC":
-                return String.format("DECIMAL(%d,%d)", 
-                    Math.max(columnSize > 0 ? columnSize : 10, 10), 
-                    Math.max(ratio, 0));
-            case "TEXT":
-            case "LONGTEXT":
-            case "MEDIUMTEXT":
-            case "TINYTEXT":
-                return "TEXT";
-            case "INT":
-            case "INTEGER":
-            case "BIGINT":
-            case "SMALLINT":
-            case "TINYINT":
-            case "FLOAT":
-            case "DOUBLE":
-            case "DATE":
-            case "DATETIME":
-            case "TIMESTAMP":
-            case "TIME":
-            case "JSON":
-            case "GEOMETRY":
-            case "BLOB":
-            case "LONGBLOB":
-            case "BIT":
-                return typeName; // 不需要长度/精度的类型
-            default:
-                return "TEXT"; // 默认类型
-        }
-    }
 }
 ```
+
+**关键优势**：
+
+1. **零重复代码**：直接复用现有的 `SqlTemplate.convertToDatabaseType()` 方法
+2. **已充分测试**：该方法已在 DDL 同步过程中使用，经过充分验证
+3. **逻辑一致**：CREATE TABLE DDL 生成与 ALTER TABLE DDL 生成使用相同的类型格式化逻辑
+4. **无需扩展接口**：不需要在 `SchemaResolver` 中添加新方法
 
 **各数据库连接器的语法差异**：
 
@@ -821,18 +789,24 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
 **实施建议**：
 
-1. **优先实现常用连接器**：MySQL、SQL Server、PostgreSQL
-2. **复用现有类型转换**：**必须使用 `SchemaResolver.fromStandardType()`**，不要重新实现类型映射
-3. **统一实现模式**：所有连接器遵循相同的实现模式（字段定义、主键处理、DDL 格式化）
-4. **错误处理**：如果连接器不支持，返回明确的错误提示
-5. **类型格式化**：`formatDDLType()` 方法只需要处理精度、长度的格式化，类型名称由 `SchemaResolver` 提供
+1. **直接复用现有方法**：使用 `SqlTemplate.convertToDatabaseType()` 方法，该方法已在 DDL 同步中使用
+2. **优先实现常用连接器**：MySQL、SQL Server、PostgreSQL 连接器实现 `generateCreateTableDDL()` 方法
+3. **复用现有基础设施**：
+   - `SqlTemplate.convertToDatabaseType()`：类型转换和格式化（**已存在，直接使用**）
+   - `SqlTemplate.buildColumn()`：列名引号处理（**已存在，直接使用**）
+4. **统一实现模式**：所有连接器遵循相同的实现模式（字段定义、主键处理），类型格式化逻辑统一在 SqlTemplate 中
+5. **错误处理**：如果连接器不支持，返回明确的错误提示
 
 **注意事项**：
 
-- **必须复用 `SchemaResolver.fromStandardType()`**：这是现有的类型转换基础设施，不要重新实现类型映射
-- **DDL 格式化**：只需要根据类型名称和 Field 的 `columnSize`、`ratio` 等信息格式化 DDL 字符串
-- **语法差异**：不同数据库的表名引号、列名引号、主键定义语法不同，需要在实现中处理
-- **类型完整性**：`SchemaResolver` 已经处理了所有标准类型的转换，包括特殊类型（如 Geometry、JSON 等）
+- **必须复用 `SqlTemplate.convertToDatabaseType()` 方法**：
+  - 该方法内部已经调用了 `SchemaResolver.fromStandardType()` 进行类型转换
+  - 该方法已经处理了长度、精度等格式化逻辑
+  - 该方法已经在 DDL 同步过程中使用，经过充分验证
+- **避免重复实现**：不要重新实现类型格式化逻辑，直接使用现有方法
+- **语法差异**：不同数据库的表名引号、列名引号、主键定义语法不同，需要在连接器实现中处理
+- **类型完整性**：`SqlTemplate.convertToDatabaseType()` 已经处理了所有标准类型的转换和格式化，包括特殊类型（如 Geometry、JSON 等）
+- **扩展性**：新增类型时，只需在对应的 SqlTemplate 中更新 `convertToDatabaseType()` 方法，无需修改连接器代码
 
 ### 3.4 配置管理改造
 
