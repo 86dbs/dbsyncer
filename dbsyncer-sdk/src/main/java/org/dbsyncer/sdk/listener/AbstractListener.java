@@ -70,8 +70,8 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                     processEvent(listenerConfig.isEnableDelete(), event);
                     break;
                 case ConnectorConstant.OPERTION_ALTER:
-                    // 表结构变更事件
-                    watcher.changeEvent(event);
+                    // 表结构变更事件：检查 DDL 开关
+                    processEvent(listenerConfig.isEnableDDL(), event);
                     break;
                 default:
                     break;

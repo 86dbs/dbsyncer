@@ -291,13 +291,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         try {
             ListenerConfig listenerConfig = mapping.getListener();
 
-            // 1. 全局 DDL 开关检查
-            if (!listenerConfig.isEnableDDL()) {
-                logger.debug("DDL 同步已禁用，跳过 DDL 处理");
-                return;
-            }
+            // 注意：全局 DDL 开关检查已在 Listener 和 pull() 方法中完成，此处无需重复检查
 
-            // 2. 解析 DDL 获取操作类型
+            // 1. 解析 DDL 获取操作类型
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String tConnType = tConnConfig.getConnectorType();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
