@@ -10,18 +10,13 @@
 
 当前 DDL 同步仅通过 `ListenerConfig.enableDDL` 进行全局开关控制，无法细粒度控制：
 - 无法区分不同类型的 DDL 操作（ADD、DROP、MODIFY、CHANGE）
-- 无法控制表自动创建行为
 - 字段映射机制在 DDL 同步时缺乏灵活的控制策略
 
 ### 2.2 新增配置需求
 
 根据业务场景，需要支持以下配置项：
 
-1. **自动创建缺失的数据表**（`autoCreateTable`）
-   - 缺省值：`true`
-   - 用途：当目标表不存在时，是否自动基于源表结构创建目标表
-
-2. **允许加字段DDL**（`allowAddColumn`）
+1. **允许加字段DDL**（`allowAddColumn`）
    - 缺省值：`true`
    - 用途：是否允许执行 `ALTER TABLE ... ADD COLUMN` 操作
 
@@ -56,12 +51,6 @@ public class ListenerConfig {
     private boolean enableDDL;
     
     // ========== DDL 细粒度控制配置 ==========
-    
-    /**
-     * 自动创建缺失的数据表
-     * 缺省值：true
-     */
-    private boolean autoCreateTable = true;
     
     /**
      * 允许加字段DDL（ALTER_ADD）
@@ -122,23 +111,8 @@ public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableG
             return;
         }
         
-        // 4. 检查目标表是否存在（用于自动创建表）
-        ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
-        boolean tableExists = checkTableExists(tConnectorInstance, tableGroup.getTargetTable().getName());
-        
-        if (!tableExists) {
-            if (listenerConfig.isAutoCreateTable()) {
-                // 自动创建表
-                logger.info("目标表不存在，自动创建表: {}", tableGroup.getTargetTable().getName());
-                createTargetTable(mapping, tableGroup, tConnectorInstance);
-            } else {
-                logger.error("目标表不存在且自动创建已禁用，跳过 DDL 执行。表: {}", 
-                    tableGroup.getTargetTable().getName());
-                return;
-            }
-        }
-        
-        // 5. 执行 DDL（原有逻辑）
+        // 4. 执行 DDL（原有逻辑）
+        // 注意：表存在性检查已在保存表映射时完成，此处无需再次检查
         Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
         // ... 后续处理 ...
     } catch (Exception e) {
@@ -247,9 +221,10 @@ DDL 操作类型与配置项的映射关系：
 **方案一：配置时检查 + 用户确认（推荐）**
 
 在 `TableGroupChecker.checkAddConfigModel()` 中检查目标表是否存在：
-- 如果目标表不存在且 `autoCreateTable = true`，返回特殊结果，前端提示用户
+- 如果目标表不存在，返回特殊结果，前端提示用户是否创建
 - 用户确认后，调用创建表接口，创建成功后再继续保存表映射
-- 优点：提前发现问题，用户体验好，运行时逻辑简单
+- 用户取消时，直接抛出异常，保存映射关系失败
+- 优点：提前发现问题，用户体验好，运行时逻辑简单，无需额外配置
 - 缺点：需要前端交互支持
 
 **方案二：运行时自动创建（兜底方案）**
@@ -279,27 +254,18 @@ public ConfigModel checkAddConfigModel(Map<String, String> params) throws Except
     tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
     
     // 检查目标表是否存在
-    boolean targetTableExists = false;
     try {
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
-        targetTableExists = true;
     } catch (Exception e) {
-        // 目标表不存在，检查是否允许自动创建
-        ListenerConfig listenerConfig = mapping.getListener();
-        if (listenerConfig != null && listenerConfig.isAutoCreateTable()) {
-            // 抛出特殊异常，让前端提示用户
-            throw new TargetTableNotExistsException(
-                "目标表不存在: " + targetTable + 
-                "，是否基于源表结构自动创建？", 
-                mapping.getSourceConnectorId(),
-                mapping.getTargetConnectorId(),
-                sourceTable,
-                targetTable
-            );
-        } else {
-            // 不允许自动创建，直接抛出异常
-            throw new BizException("目标表不存在: " + targetTable + "，且自动创建已禁用");
-        }
+        // 目标表不存在，抛出特殊异常，让前端提示用户是否创建
+        throw new TargetTableNotExistsException(
+            "目标表不存在: " + targetTable + 
+            "，是否基于源表结构自动创建？", 
+            mapping.getSourceConnectorId(),
+            mapping.getTargetConnectorId(),
+            sourceTable,
+            targetTable
+        );
     }
     
     // ... 后续逻辑 ...
@@ -506,9 +472,6 @@ private void updateListenerConfig(ListenerConfig listener, Map<String, String> p
     // 新增 DDL 细粒度配置
     // 注意：使用 StringUtil.isNotBlank 判断，空字符串视为 false
     // 如果参数不存在，使用缺省值（已在 ListenerConfig 中设置）
-    if (params.containsKey("autoCreateTable")) {
-        listener.setAutoCreateTable(StringUtil.isNotBlank(params.get("autoCreateTable")));
-    }
     if (params.containsKey("allowAddColumn")) {
         listener.setAllowAddColumn(StringUtil.isNotBlank(params.get("allowAddColumn")));
     }
@@ -543,14 +506,6 @@ private void updateListenerConfig(ListenerConfig listener, Map<String, String> p
 <!-- DDL 细粒度配置（仅在 enableDDL 为 true 时显示） -->
 <div class="form-group" id="ddlDetailConfig" th:style="${mapping?.listener?.enableDDL} ? '' : 'display:none;'">
     <div class="row">
-        <div class="col-md-3">
-            <label class="col-sm-4 control-label text-right">自动建表</label>
-            <div class="col-sm-8">
-                <input name="autoCreateTable" class="dbsyncer_switch" 
-                       th:checked="${mapping?.listener?.autoCreateTable != null ? mapping?.listener?.autoCreateTable : true}" 
-                       type="checkbox">
-            </div>
-        </div>
         <div class="col-md-3">
             <label class="col-sm-4 control-label text-right">允许加字段</label>
             <div class="col-sm-8">
@@ -610,7 +565,7 @@ $('input[name="enableDDL"]').on('change', function() {
 1. **TableGroupChecker 改造**
    - 在 `checkAddConfigModel()` 中增加目标表存在性检查
    - 新增 `TargetTableNotExistsException` 异常类
-   - 当目标表不存在且 `autoCreateTable = true` 时，抛出特殊异常
+   - 当目标表不存在时，抛出特殊异常，前端提示用户是否创建
 
 2. **创建表接口实现**
    - 在 `TableGroupController` 中新增 `createTargetTable()` 接口
@@ -655,7 +610,6 @@ $('input[name="enableDDL"]').on('change', function() {
   "listener": {
     "listenerType": "log",
     "enableDDL": true,
-    "autoCreateTable": true,
     "allowAddColumn": true,
     "allowDropColumn": false,
     "allowModifyColumn": true,
@@ -678,16 +632,17 @@ $('input[name="enableDDL"]').on('change', function() {
 }
 ```
 
-**场景二：允许所有 DDL 操作，但不自动创建表**
+**场景二：允许所有 DDL 操作**
 ```json
 {
   "enableDDL": true,
-  "autoCreateTable": false,
   "allowAddColumn": true,
   "allowDropColumn": true,
   "allowModifyColumn": true
 }
 ```
+
+**注意**：表自动创建功能在保存表映射时自动触发，无需配置项控制。如果目标表不存在，系统会提示用户是否创建。
 
 **场景三：完全禁用 DDL 同步**
 ```json
@@ -711,9 +666,10 @@ $('input[name="enableDDL"]').on('change', function() {
 - 这意味着字段映射可能与实际表结构不一致
 - **建议**：在配置变更时，触发一次表结构同步，确保字段映射一致性
 
-### 6.3 表自动创建限制
+### 6.3 表自动创建机制
 
-- **配置时检查**：表自动创建在保存表映射时触发，需要用户确认
+- **自动触发**：在保存表映射时自动检查目标表是否存在，无需配置项控制
+- **用户确认**：如果目标表不存在，系统会提示用户是否创建，用户可以选择创建或取消
 - **连接器支持**：表自动创建功能需要目标数据库连接器支持 `generateCreateTableDDL()` 方法
 - **权限限制**：表自动创建可能受到数据库权限限制，创建失败时会提示用户
 - **多表场景**：如果同时保存多个表映射，需要逐个确认创建（或提供批量确认选项）
