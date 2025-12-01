@@ -2,34 +2,20 @@
 
 ## 一、概述
 
-基于 SQL Server Change Tracking (CT) 实现 DML 和 DDL 同步，解决 CDC 方案的局限性。
+基于 SQL Server Change Tracking (CT) 实现 DML 和 DDL 同步。
 
-### 1.1 Change Tracking vs CDC 对比
+**核心特性**：
+- 不需要 SQL Server Agent
+- 列结构变更后自动跟踪，无需禁用/重新启用
+- 无数据丢失风险
+- 支持所有 SQL Server 版本（包括标准版）
+- DDL 检测通过程序端实现，不需要创建触发器
 
-| 特性 | CDC (Change Data Capture) | Change Tracking (CT) |
-|------|---------------------------|---------------------|
-| **依赖** | 需要 SQL Server Agent | 不需要 Agent，内置于数据库引擎 |
-| **列结构变更** | 需要禁用/重新启用 CDC | 自动跟踪，无需禁用 |
-| **数据丢失风险** | 禁用期间丢失 DML 变更 | 无禁用操作，无数据丢失 |
-| **性能影响** | 中等（需要额外存储） | 低（轻量级跟踪） |
-| **DDL 支持** | 通过 `cdc.ddl_history` | 程序端字段比对检测 |
-| **版本管理** | 基于 LSN (Log Sequence Number) | 基于版本号 (Version Number) |
-| **数据格式** | 完整的变更数据 | 仅变更标识和变更类型 |
-| **SQL Server 版本** | 2008+ (需要企业版或开发版) | 2008+ (所有版本) |
-
-### 1.2 Change Tracking 的优势
-
-1. **无需禁用操作**：列结构变更后自动跟踪，无需禁用/重新启用
-2. **无数据丢失**：不存在禁用期间的数据丢失问题
-3. **轻量级**：性能开销小于 CDC
-4. **版本兼容**：支持所有 SQL Server 版本（包括标准版）
-5. **无需数据库权限**：DDL 检测通过程序端实现，不需要创建触发器
-
-### 1.3 Change Tracking 的局限性
-
-1. **不包含变更数据**：只返回变更标识和变更类型，需要 JOIN 原表获取数据
-2. **DDL 检测有延迟**：通过程序端轮询检测，存在 3-5 秒延迟
-3. **版本号单调递增**：无法像 LSN 那样精确反映事务时间点
+**关键限制**：
+- 表必须有主键
+- 只返回变更标识和变更类型，需要 JOIN 原表获取数据
+- DELETE 操作无法 JOIN 原表获取完整数据
+- DDL 检测有延迟（3-30 秒）
 
 ## 二、核心实现架构
 
@@ -102,14 +88,9 @@
 
 ### 2.2 关键组件
 
-| 组件                  | 职责                | 位置                                                       |
-| ------------------- | ----------------- | -------------------------------------------------------- |
-| `SqlServerCTListener` | 监听器主类，管理 CT 生命周期 | `org.dbsyncer.connector.sqlserver.ct.SqlServerCTListener` |
-| `VersionPuller`     | 全局版本号轮询器，单例模式   | `org.dbsyncer.connector.sqlserver.ct.VersionPuller`       |
-| `Worker`            | 工作线程，处理变更数据       | `SqlServerCTListener.Worker`                             |
-| `CTEvent`           | CT 事件封装          | `org.dbsyncer.connector.sqlserver.model.CTEvent`          |
-| `UnifiedChangeEvent`| 统一事件模型，合并 DDL 和 DML | `org.dbsyncer.connector.sqlserver.model.UnifiedChangeEvent` |
-| `DDLDetector`       | DDL 检测器，定期轮询表结构     | `SqlServerCTListener.DDLDetector`                           |
+- `SqlServerCTListener`：监听器主类，管理 CT 生命周期
+- `VersionPuller`：全局版本号轮询器（单例）
+- `DDLDetector`：DDL 检测器（哈希值检测 + 兜底轮询）
 
 ## 三、Change Tracking 启用和配置
 
@@ -199,13 +180,7 @@ ORDER BY CT.SYS_CHANGE_VERSION ASC;
 
 ### 4.3 处理 DELETE 操作
 
-DELETE 操作无法通过 JOIN 原表获取数据，需要：
-
-1. **方案 A：使用快照表**：在删除前将数据保存到快照表
-2. **方案 B：使用主键查询历史**：通过主键查询变更前的数据（需要额外的历史表）
-3. **方案 C：只发送主键**：DELETE 事件只包含主键信息，由上层处理
-
-**推荐方案 C**：DELETE 事件只包含主键，由上层应用根据业务需求处理。
+DELETE 操作无法通过 JOIN 原表获取数据，DELETE 事件只包含主键信息，由上层应用处理。
 
 ### 4.4 主键处理
 
@@ -273,22 +248,23 @@ private static final String SCHEMA_SNAPSHOT_PREFIX = "schema_snapshot_";
 // 表结构模型
 public class TableSchema {
     private String tableName;
-    private List<ColumnInfo> columns;
+    private List<Field> columns;  // 使用现有的 Field 类
     private List<String> primaryKeys;
     private Long snapshotVersion;  // 快照时的 Change Tracking 版本号
     private Date snapshotTime;     // 快照时间
+    private Map<String, Integer> columnOrdinalPositions;  // 列位置映射（Field 类中没有此字段）
 }
 
-public class ColumnInfo {
-    private String columnName;
-    private String dataType;
-    private Integer maxLength;
-    private Integer precision;
-    private Integer scale;
-    private Boolean nullable;
-    private String defaultValue;
-    private Integer ordinalPosition;
-}
+// 注意：使用现有的 Field 类（org.dbsyncer.sdk.model.Field）
+// 字段映射关系：
+// - Field.name -> 列名
+// - Field.typeName -> 数据类型
+// - Field.columnSize -> 最大长度（对应 CHARACTER_MAXIMUM_LENGTH）
+// - Field.ratio -> 小数位数（对应 NUMERIC_SCALE）
+// - Field.nullable -> 可空性
+// - Field.defaultValue -> 默认值
+// - 精度（NUMERIC_PRECISION）需要从 INFORMATION_SCHEMA 查询时单独处理
+// - 列位置（ORDINAL_POSITION）需要单独存储到 columnOrdinalPositions Map 中
 ```
 
 #### 5.1.3 表结构比对逻辑
@@ -301,35 +277,35 @@ public List<DDLChange> compareTableSchema(TableSchema oldSchema, TableSchema new
     List<DDLChange> changes = new ArrayList<>();
     
     // 1. 检测新增列
-    Map<String, ColumnInfo> oldColumns = oldSchema.getColumns().stream()
-        .collect(Collectors.toMap(ColumnInfo::getColumnName, c -> c));
-    Map<String, ColumnInfo> newColumns = newSchema.getColumns().stream()
-        .collect(Collectors.toMap(ColumnInfo::getColumnName, c -> c));
+    Map<String, Field> oldColumns = oldSchema.getColumns().stream()
+        .collect(Collectors.toMap(Field::getName, c -> c));
+    Map<String, Field> newColumns = newSchema.getColumns().stream()
+        .collect(Collectors.toMap(Field::getName, c -> c));
     
-    for (ColumnInfo newCol : newSchema.getColumns()) {
-        if (!oldColumns.containsKey(newCol.getColumnName())) {
+    for (Field newCol : newSchema.getColumns()) {
+        if (!oldColumns.containsKey(newCol.getName())) {
             // 新增列
             String ddl = generateAddColumnDDL(newSchema.getTableName(), newCol);
-            changes.add(new DDLChange("ADD_COLUMN", ddl, newCol.getColumnName()));
+            changes.add(new DDLChange("ADD_COLUMN", ddl, newCol.getName()));
         }
     }
     
     // 2. 检测删除列
-    for (ColumnInfo oldCol : oldSchema.getColumns()) {
-        if (!newColumns.containsKey(oldCol.getColumnName())) {
+    for (Field oldCol : oldSchema.getColumns()) {
+        if (!newColumns.containsKey(oldCol.getName())) {
             // 删除列
             String ddl = generateDropColumnDDL(newSchema.getTableName(), oldCol);
-            changes.add(new DDLChange("DROP_COLUMN", ddl, oldCol.getColumnName()));
+            changes.add(new DDLChange("DROP_COLUMN", ddl, oldCol.getName()));
         }
     }
     
     // 3. 检测修改列（类型、长度、精度、可空性、默认值）
-    for (ColumnInfo newCol : newSchema.getColumns()) {
-        ColumnInfo oldCol = oldColumns.get(newCol.getColumnName());
+    for (Field newCol : newSchema.getColumns()) {
+        Field oldCol = oldColumns.get(newCol.getName());
         if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
             // 列属性变更
             String ddl = generateAlterColumnDDL(newSchema.getTableName(), oldCol, newCol);
-            changes.add(new DDLChange("ALTER_COLUMN", ddl, newCol.getColumnName()));
+            changes.add(new DDLChange("ALTER_COLUMN", ddl, newCol.getName()));
         }
     }
     
@@ -346,11 +322,10 @@ public List<DDLChange> compareTableSchema(TableSchema oldSchema, TableSchema new
 /**
  * 判断两个列是否相等
  */
-private boolean isColumnEqual(ColumnInfo oldCol, ColumnInfo newCol) {
-    return Objects.equals(oldCol.getDataType(), newCol.getDataType())
-        && Objects.equals(oldCol.getMaxLength(), newCol.getMaxLength())
-        && Objects.equals(oldCol.getPrecision(), newCol.getPrecision())
-        && Objects.equals(oldCol.getScale(), newCol.getScale())
+private boolean isColumnEqual(Field oldCol, Field newCol) {
+    return Objects.equals(oldCol.getTypeName(), newCol.getTypeName())
+        && Objects.equals(oldCol.getColumnSize(), newCol.getColumnSize())
+        && Objects.equals(oldCol.getRatio(), newCol.getRatio())
         && Objects.equals(oldCol.getNullable(), newCol.getNullable())
         && Objects.equals(normalizeDefaultValue(oldCol.getDefaultValue()), 
                          normalizeDefaultValue(newCol.getDefaultValue()));
@@ -363,23 +338,27 @@ private boolean isColumnEqual(ColumnInfo oldCol, ColumnInfo newCol) {
 /**
  * 生成 ADD COLUMN 的 DDL
  */
-private String generateAddColumnDDL(String tableName, ColumnInfo column) {
+private String generateAddColumnDDL(String tableName, Field column) {
     StringBuilder ddl = new StringBuilder();
     ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
-    ddl.append("ADD [").append(column.getColumnName()).append("] ");
-    ddl.append(column.getDataType());
+    ddl.append("ADD [").append(column.getName()).append("] ");
+    ddl.append(column.getTypeName());
     
     // 处理长度/精度
-    if (column.getMaxLength() != null && column.getMaxLength() > 0) {
-        if ("nvarchar".equalsIgnoreCase(column.getDataType()) 
-            || "varchar".equalsIgnoreCase(column.getDataType())
-            || "nchar".equalsIgnoreCase(column.getDataType())
-            || "char".equalsIgnoreCase(column.getDataType())) {
-            ddl.append("(").append(column.getMaxLength()).append(")");
+    if (column.getColumnSize() > 0) {
+        String typeName = column.getTypeName().toLowerCase();
+        if (typeName.contains("varchar") || typeName.contains("char")) {
+            ddl.append("(").append(column.getColumnSize()).append(")");
         }
-    } else if (column.getPrecision() != null && column.getScale() != null) {
-        ddl.append("(").append(column.getPrecision()).append(",")
-           .append(column.getScale()).append(")");
+    }
+    
+    // 处理数值类型的精度和小数位数
+    if (column.getRatio() >= 0 && column.getColumnSize() > 0) {
+        String typeName = column.getTypeName().toLowerCase();
+        if (typeName.contains("decimal") || typeName.contains("numeric")) {
+            ddl.append("(").append(column.getColumnSize()).append(",")
+               .append(column.getRatio()).append(")");
+        }
     }
     
     // 处理可空性
@@ -398,31 +377,35 @@ private String generateAddColumnDDL(String tableName, ColumnInfo column) {
 /**
  * 生成 DROP COLUMN 的 DDL
  */
-private String generateDropColumnDDL(String tableName, ColumnInfo column) {
+private String generateDropColumnDDL(String tableName, Field column) {
     return String.format("ALTER TABLE [%s].[%s] DROP COLUMN [%s]", 
-        schema, tableName, column.getColumnName());
+        schema, tableName, column.getName());
 }
 
 /**
  * 生成 ALTER COLUMN 的 DDL
  */
-private String generateAlterColumnDDL(String tableName, ColumnInfo oldCol, ColumnInfo newCol) {
+private String generateAlterColumnDDL(String tableName, Field oldCol, Field newCol) {
     StringBuilder ddl = new StringBuilder();
     ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
-    ddl.append("ALTER COLUMN [").append(newCol.getColumnName()).append("] ");
-    ddl.append(newCol.getDataType());
+    ddl.append("ALTER COLUMN [").append(newCol.getName()).append("] ");
+    ddl.append(newCol.getTypeName());
     
     // 处理长度/精度
-    if (newCol.getMaxLength() != null && newCol.getMaxLength() > 0) {
-        if ("nvarchar".equalsIgnoreCase(newCol.getDataType()) 
-            || "varchar".equalsIgnoreCase(newCol.getDataType())
-            || "nchar".equalsIgnoreCase(newCol.getDataType())
-            || "char".equalsIgnoreCase(newCol.getDataType())) {
-            ddl.append("(").append(newCol.getMaxLength()).append(")");
+    if (newCol.getColumnSize() > 0) {
+        String typeName = newCol.getTypeName().toLowerCase();
+        if (typeName.contains("varchar") || typeName.contains("char")) {
+            ddl.append("(").append(newCol.getColumnSize()).append(")");
         }
-    } else if (newCol.getPrecision() != null && newCol.getScale() != null) {
-        ddl.append("(").append(newCol.getPrecision()).append(",")
-           .append(newCol.getScale()).append(")");
+    }
+    
+    // 处理数值类型的精度和小数位数
+    if (newCol.getRatio() >= 0 && newCol.getColumnSize() > 0) {
+        String typeName = newCol.getTypeName().toLowerCase();
+        if (typeName.contains("decimal") || typeName.contains("numeric")) {
+            ddl.append("(").append(newCol.getColumnSize()).append(",")
+               .append(newCol.getRatio()).append(")");
+        }
     }
     
     // 处理可空性
@@ -546,26 +529,41 @@ private TableSchema queryTableSchema(String tableName) throws Exception {
                  "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
                  "ORDER BY ORDINAL_POSITION";
     
-    List<ColumnInfo> columns = queryAndMapList(sql, statement -> {
+    List<Field> columns = queryAndMapList(sql, statement -> {
         statement.setString(1, schema);
         statement.setString(2, tableName);
     }, rs -> {
-        List<ColumnInfo> cols = new ArrayList<>();
+        List<Field> cols = new ArrayList<>();
+        Map<String, Integer> ordinalPositions = new HashMap<>();
         while (rs.next()) {
-            ColumnInfo col = new ColumnInfo();
-            col.setColumnName(rs.getString("COLUMN_NAME"));
-            col.setDataType(rs.getString("DATA_TYPE"));
-            col.setMaxLength(rs.getObject("CHARACTER_MAXIMUM_LENGTH") != null 
-                ? rs.getInt("CHARACTER_MAXIMUM_LENGTH") : null);
-            col.setPrecision(rs.getObject("NUMERIC_PRECISION") != null 
-                ? rs.getInt("NUMERIC_PRECISION") : null);
-            col.setScale(rs.getObject("NUMERIC_SCALE") != null 
-                ? rs.getInt("NUMERIC_SCALE") : null);
-            col.setNullable("YES".equalsIgnoreCase(rs.getString("IS_NULLABLE")));
-            col.setDefaultValue(rs.getString("COLUMN_DEFAULT"));
-            col.setOrdinalPosition(rs.getInt("ORDINAL_POSITION"));
+            String columnName = rs.getString("COLUMN_NAME");
+            String dataType = rs.getString("DATA_TYPE");
+            Integer maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH") != null 
+                ? rs.getInt("CHARACTER_MAXIMUM_LENGTH") : null;
+            Integer precision = rs.getObject("NUMERIC_PRECISION") != null 
+                ? rs.getInt("NUMERIC_PRECISION") : null;
+            Integer scale = rs.getObject("NUMERIC_SCALE") != null 
+                ? rs.getInt("NUMERIC_SCALE") : null;
+            Boolean nullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
+            String defaultValue = rs.getString("COLUMN_DEFAULT");
+            Integer ordinalPosition = rs.getInt("ORDINAL_POSITION");
+            
+            // 创建 Field 对象
+            Field col = new Field();
+            col.setName(columnName);
+            col.setTypeName(dataType);
+            col.setColumnSize(maxLength != null ? maxLength : (precision != null ? precision : 0));
+            col.setRatio(scale != null ? scale : 0);
+            col.setNullable(nullable);
+            col.setDefaultValue(defaultValue);
+            
+            // 保存列位置（Field 类中没有此字段，需要单独存储）
+            ordinalPositions.put(columnName, ordinalPosition);
+            
             cols.add(col);
         }
+        // 将列位置信息保存到 TableSchema 中
+        schema.setColumnOrdinalPositions(ordinalPositions);
         return cols;
     });
     
@@ -662,6 +660,36 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
 - 确保 DDL 和 DML 变更可以按版本号合并排序
 - 表结构快照保存到 `snapshot`，支持断点续传
 - 首次检测时只保存快照，不生成 DDL 事件
+
+### 5.3 推荐方案：混合 DDL 检测（哈希值检测 + 兜底轮询）
+
+**实现策略**：
+1. **主要检测**：在 DML 同步过程中，从 `ResultSetMetaData` 获取表结构信息，计算哈希值并比对
+2. **兜底机制**：定期轮询（30 秒间隔），确保长时间没有 DML 变更的表也能检测到 DDL
+
+**关键实现**：
+
+```java
+// 在 pullDMLChanges 中检测哈希值
+ResultSetMetaData metaData = rs.getMetaData();
+String currentHash = calculateSchemaHashFromMetaData(metaData);
+if (!lastHash.equals(currentHash)) {
+    // 触发完整比对
+    TableSchema currentSchema = queryTableSchema(tableName);
+    List<DDLChange> changes = compareTableSchema(lastSchema, currentSchema);
+    // 生成 DDL 事件...
+}
+
+// 兜底轮询（30 秒间隔）
+scheduler.scheduleAtFixedRate(() -> {
+    // 只检测长时间没有 DML 变更的表
+    fallbackDetectByPolling();
+}, 30000, 30000, TimeUnit.MILLISECONDS);
+```
+
+**sp_rename 支持**：
+- 通过完整比对可以检测到列名变化
+- 通过比对列属性（除列名外）是否相同来判断是 RENAME 还是 DROP+ADD
 
 ## 六、版本号管理
 
@@ -993,18 +1021,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
 ## 九、迁移方案
 
-### 9.1 从 CDC 迁移到 Change Tracking
-
 1. **创建新的监听器类**：`SqlServerCTListener`（与 `SqlServerListener` 并行）
 2. **配置选择**：通过配置选择使用 CDC 或 CT
-3. **数据迁移**：将 CDC 的 `lastLsn` 转换为 CT 的版本号（需要映射表）
-4. **逐步切换**：支持同时运行，逐步迁移
-
-### 9.2 兼容性处理
-
-- 保持相同的接口：`AbstractDatabaseListener`
-- 统一事件模型：`UnifiedChangeEvent`
-- 版本号映射：提供 LSN 到版本号的映射工具（可选）
+3. **保持接口一致**：使用 `AbstractDatabaseListener` 和 `UnifiedChangeEvent`
 
 ## 十、关键注意事项
 
@@ -1038,21 +1057,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
 ## 十一、性能优化
 
-### 11.1 批量查询
-
-- 批量查询多个表的变更，减少数据库连接
-- 使用 `IN` 子句合并表名查询
-
-### 11.2 索引优化
-
-- Change Tracking 内部已优化，无需额外索引
-- 表结构查询使用 `INFORMATION_SCHEMA`，性能良好
-
-### 11.3 查询优化
-
-- 使用 `TRACK_COLUMNS_UPDATED = ON` 可以优化 UPDATE 查询
-- 对于 DELETE 操作，避免 JOIN 原表
+- 使用 `TRACK_COLUMNS_UPDATED = ON` 优化 UPDATE 查询
 - DDL 检测只查询配置的表，避免全库扫描
+- 哈希值检测利用 DML 查询时的元数据，零额外开销
 
 ## 十二、错误处理
 
@@ -1076,48 +1083,4 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 - 如果同步延迟超过 `CHANGE_RETENTION`，变更会被清理
 - 建议：触发全量同步，或增加保留时间
 
-## 十三、测试建议
-
-### 13.1 功能测试
-
-- DML 变更捕获（INSERT/UPDATE/DELETE）
-- DDL 变更捕获（ALTER TABLE）
-- 版本号排序和合并
-- 断点续传
-
-### 13.2 性能测试
-
-- 高并发场景下的变更捕获
-- 大量表的变更查询性能
-- DDL 检测轮询性能影响
-
-### 13.3 异常测试
-
-- 版本号丢失恢复
-- DDL 检测失败处理
-- 变更保留时间过期处理
-- 表结构快照损坏恢复
-
-## 十四、CDC vs CT 选择建议
-
-### 14.1 选择 CDC 的场景
-
-- 需要完整的变更数据（包括 DELETE 的完整数据）
-- 需要精确的事务时间点（LSN）
-- 已有 CDC 基础设施
-- 企业版或开发版 SQL Server
-
-### 14.2 选择 Change Tracking 的场景
-
-- 需要避免禁用操作导致的数据丢失
-- 列结构频繁变更
-- 标准版 SQL Server
-- 轻量级变更跟踪需求
-- 可以接受 DELETE 操作只包含主键
-
-### 14.3 混合方案
-
-- 可以同时支持 CDC 和 CT，通过配置选择
-- 不同表可以使用不同的跟踪机制
-- 提供统一的接口和事件模型
 
