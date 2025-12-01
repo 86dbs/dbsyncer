@@ -5,7 +5,6 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.RepeatedTableGroupException;
-import org.dbsyncer.biz.TargetTableNotExistsException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -76,20 +75,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 获取连接器信息
         TableGroup tableGroup = TableGroup.create(mappingId, sourceTable, parserComponent, profileComponent);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
-        
-        // 检查目标表是否存在
-        try {
-            tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
-        } catch (Exception e) {
-            // 目标表不存在，抛出特殊异常，让前端提示用户是否创建
-            throw new TargetTableNotExistsException(
-                "目标表不存在: " + targetTable + "，是否基于源表结构自动创建？",
-                mapping.getSourceConnectorId(),
-                mapping.getTargetConnectorId(),
-                sourceTable,
-                targetTable
-            );
-        }
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
