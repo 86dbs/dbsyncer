@@ -23,6 +23,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -151,11 +152,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         List<Map<String, String>> missingTables = new ArrayList<>();
         for (TableGroup tableGroup : tableGroups) {
             String targetTableName = tableGroup.getTargetTable().getName();
-            try {
-                // 尝试获取目标表信息，如果表不存在会抛出异常
-                parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
-            } catch (Exception e) {
-                // 目标表不存在，添加到缺失列表
+            // 获取目标表信息，如果表不存在，getMetaInfo 会返回空的 MetaInfo（字段列表为空）
+            MetaInfo metaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+            // 判断表是否存在：MetaInfo 为空或字段列表为空表示表不存在
+            if (metaInfo == null || CollectionUtils.isEmpty(metaInfo.getColumn())) {
                 Map<String, String> tableMapping = new HashMap<>();
                 tableMapping.put("sourceTable", tableGroup.getSourceTable().getName());
                 tableMapping.put("targetTable", targetTableName);
