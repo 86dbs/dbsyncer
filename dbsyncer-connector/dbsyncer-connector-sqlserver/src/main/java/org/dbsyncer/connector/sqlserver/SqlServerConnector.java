@@ -18,12 +18,14 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -267,5 +269,42 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         logger.info("SQL Server 批量 UPSERT 完成，表: {}, 处理记录数: {}", tableName, processedCount);
 
         return result;
+    }
+
+    @Override
+    public String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
+        SqlTemplate sqlTemplate = this.sqlTemplate;
+        if (sqlTemplate == null) {
+            throw new UnsupportedOperationException("SQL Server连接器不支持自动生成 CREATE TABLE DDL");
+        }
+
+        StringBuilder ddl = new StringBuilder();
+        ddl.append("CREATE TABLE ").append(sqlTemplate.buildTable(null, targetTableName)).append(" (\n");
+
+        List<String> columnDefs = new ArrayList<>();
+        List<String> primaryKeys = new ArrayList<>();
+
+        for (Field sourceField : sourceMetaInfo.getColumn()) {
+            // 1. 直接使用 SqlTemplate.convertToDatabaseType() 方法
+            String ddlType = sqlTemplate.convertToDatabaseType(sourceField);
+
+            // 2. 构建列定义
+            String columnDef = "  " + sqlTemplate.buildColumn(sourceField.getName()) + " " + ddlType;
+            columnDefs.add(columnDef);
+
+            // 3. 收集主键
+            if (sourceField.isPk()) {
+                primaryKeys.add(sqlTemplate.buildColumn(sourceField.getName()));
+            }
+        }
+
+        ddl.append(String.join(",\n", columnDefs));
+
+        if (!primaryKeys.isEmpty()) {
+            ddl.append(",\n  PRIMARY KEY (").append(String.join(", ", primaryKeys)).append(")");
+        }
+
+        ddl.append("\n)");
+        return ddl.toString();
     }
 }

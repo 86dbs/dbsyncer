@@ -181,12 +181,206 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
                 bootGrowl("新增映射关系成功!", "success");
                 refresh(m.mappingId,1);
             } else {
-                bootGrowl(data.resultValue, "danger");
-                if (data.status == 400) {
-                    refresh(m.mappingId,1);
+                // 检查是否是目标表不存在的异常（通过错误码识别）
+                if (data.status == 400 && data.resultValue &&
+                    typeof data.resultValue === 'object' &&
+                    data.resultValue.errorCode === 'TARGET_TABLE_NOT_EXISTS') {
+                    // 显示确认对话框
+                    let sourceTables = m.sourceTable.split('|');
+                    let targetTables = m.targetTable.split('|');
+                    
+                    if (sourceTables.length > 1 || targetTables.length > 1) {
+                        // 多个表，需要批量处理
+                        showBatchCreateTableConfirmDialog(m, data.resultValue, sourceTables, targetTables);
+                    } else {
+                        // 单个表，直接显示确认对话框
+                        showCreateTableConfirmDialog(m, data.resultValue);
+                    }
+                } else {
+                    // 其他错误，直接显示错误信息
+                    let errorMsg = typeof data.resultValue === 'string'
+                        ? data.resultValue
+                        : (data.resultValue && data.resultValue.message ? data.resultValue.message : '操作失败');
+                    bootGrowl(errorMsg, "danger");
+                    if (data.status == 400) {
+                        refresh(m.mappingId,1);
+                    }
                 }
             }
         });
+    });
+}
+
+/**
+ * 显示创建表确认对话框
+ * @param params 保存表映射的参数
+ * @param errorInfo 错误信息对象，包含 errorCode, message, sourceTable, targetTable 等
+ */
+function showCreateTableConfirmDialog(params, errorInfo) {
+    // 使用 BootstrapDialog（项目中实际使用的对话框组件）
+    BootstrapDialog.show({
+        title: "目标表不存在",
+        type: BootstrapDialog.TYPE_WARNING,
+        message: '<div style="padding: 10px;">' +
+                 '<p><strong>目标表不存在：</strong>' + errorInfo.targetTable + '</p>' +
+                 '<p>是否基于源表结构自动创建目标表？</p>' +
+                 '<p style="color: #999; font-size: 12px;">源表：' + errorInfo.sourceTable + '</p>' +
+                 '</div>',
+        size: BootstrapDialog.SIZE_NORMAL,
+        buttons: [{
+            label: "创建",
+            cssClass: "btn-primary",
+            action: function (dialog) {
+                dialog.close();
+                // 用户确认创建表
+                createTargetTableAndRetry(params, errorInfo);
+            }
+        }, {
+            label: "取消",
+            cssClass: "btn-default",
+            action: function (dialog) {
+                dialog.close();
+                bootGrowl("已取消创建表", "info");
+            }
+        }]
+    });
+}
+
+/**
+ * 创建表并重试保存映射关系
+ * @param params 保存表映射的参数
+ * @param errorInfo 错误信息对象
+ */
+function createTargetTableAndRetry(params, errorInfo) {
+    // 显示加载提示
+    bootGrowl("正在创建目标表...", "info");
+    
+    // 1. 先创建表
+    let createParams = {
+        mappingId: params.mappingId,
+        sourceTable: errorInfo.sourceTable,
+        targetTable: errorInfo.targetTable
+    };
+    
+    doPoster("/tableGroup/createTargetTable", createParams, function (data) {
+        if (data.success == true) {
+            bootGrowl("创建表成功，正在保存映射关系...", "success");
+            
+            // 2. 创建成功后，重新尝试保存表映射
+            doPoster("/tableGroup/add", params, function (data) {
+                if (data.success == true) {
+                    bootGrowl("新增映射关系成功!", "success");
+                    refresh(params.mappingId, 1);
+                } else {
+                    // 保存映射关系失败
+                    let errorMsg = typeof data.resultValue === 'string'
+                        ? data.resultValue
+                        : (data.resultValue && data.resultValue.message ? data.resultValue.message : '保存映射关系失败');
+                    bootGrowl(errorMsg, "danger");
+                }
+            });
+        } else {
+            // 创建表失败
+            let errorMsg = typeof data.resultValue === 'string'
+                ? data.resultValue
+                : (data.resultValue && data.resultValue.message ? data.resultValue.message : '创建表失败');
+            bootGrowl("创建表失败: " + errorMsg, "danger");
+        }
+    });
+}
+
+/**
+ * 批量创建表确认对话框（多表场景）
+ */
+function showBatchCreateTableConfirmDialog(params, errorInfo, sourceTables, targetTables) {
+    let tableListHtml = '<ul style="margin: 10px 0; padding-left: 20px;">';
+    for (let i = 0; i < targetTables.length; i++) {
+        tableListHtml += '<li>源表: ' + sourceTables[i] + ' → 目标表: ' + targetTables[i] + '</li>';
+    }
+    tableListHtml += '</ul>';
+    
+    BootstrapDialog.show({
+        title: "目标表不存在",
+        type: BootstrapDialog.TYPE_WARNING,
+        message: '<div style="padding: 10px;">' +
+                 '<p><strong>以下目标表不存在：</strong></p>' +
+                 tableListHtml +
+                 '<p>是否基于源表结构自动创建这些目标表？</p>' +
+                 '</div>',
+        size: BootstrapDialog.SIZE_NORMAL,
+        buttons: [{
+            label: "全部创建",
+            cssClass: "btn-primary",
+            action: function (dialog) {
+                dialog.close();
+                batchCreateTargetTablesAndRetry(params, sourceTables, targetTables);
+            }
+        }, {
+            label: "取消",
+            cssClass: "btn-default",
+            action: function (dialog) {
+                dialog.close();
+                bootGrowl("已取消创建表", "info");
+            }
+        }]
+    });
+}
+
+/**
+ * 批量创建表并重试保存映射关系
+ */
+function batchCreateTargetTablesAndRetry(params, sourceTables, targetTables) {
+    bootGrowl("正在批量创建目标表...", "info");
+    
+    // 顺序创建所有表
+    let createPromises = [];
+    for (let i = 0; i < targetTables.length; i++) {
+        let createParams = {
+            mappingId: params.mappingId,
+            sourceTable: sourceTables[i],
+            targetTable: targetTables[i]
+        };
+        
+        // 创建 Promise 来顺序执行创建表操作
+        createPromises.push(function() {
+            return new Promise(function(resolve, reject) {
+                doPoster("/tableGroup/createTargetTable", createParams, function (data) {
+                    if (data.success == true) {
+                        resolve({table: targetTables[i], success: true});
+                    } else {
+                        let errorMsg = typeof data.resultValue === 'string'
+                            ? data.resultValue
+                            : (data.resultValue && data.resultValue.message ? data.resultValue.message : '创建表失败');
+                        reject({table: targetTables[i], error: errorMsg});
+                    }
+                });
+            });
+        });
+    }
+    
+    // 顺序执行所有创建表操作
+    let promiseChain = createPromises.reduce(function(chain, promiseFn) {
+        return chain.then(function() {
+            return promiseFn();
+        });
+    }, Promise.resolve());
+    
+    promiseChain.then(function() {
+        bootGrowl("所有表创建成功，正在保存映射关系...", "success");
+        // 重新尝试保存表映射
+        doPoster("/tableGroup/add", params, function (data) {
+            if (data.success == true) {
+                bootGrowl("新增映射关系成功!", "success");
+                refresh(params.mappingId, 1);
+            } else {
+                let errorMsg = typeof data.resultValue === 'string'
+                    ? data.resultValue
+                    : (data.resultValue && data.resultValue.message ? data.resultValue.message : '保存映射关系失败');
+                bootGrowl("保存映射关系失败: " + errorMsg, "danger");
+            }
+        });
+    }).catch(function(error) {
+        bootGrowl("创建表失败: " + error.table + " - " + error.error, "danger");
     });
 }
 

@@ -297,6 +297,17 @@ public interface SqlTemplate {
         throw new UnsupportedOperationException("Need to overwrite this function");
     }
 
+    /**
+     * 将标准类型字段转换为数据库特定的DDL类型字符串
+     * 包括类型名称、长度、精度等信息的格式化
+     *
+     * @param column 标准类型字段
+     * @return 数据库特定的DDL类型字符串（如 "VARCHAR(255)", "DECIMAL(10,2)" 等）
+     */
+    default String convertToDatabaseType(Field column) {
+        throw new UnsupportedOperationException("Need to overwrite this function");
+    }
+
     // Helper methods for building SQL parts (from DefaultSqlTemplate)
     default String buildQueryStreamSql(String schemaTable, String fieldList, String queryFilter, List<String> primaryKeys) {
         String orderByClause = buildOrderByClause(primaryKeys);
