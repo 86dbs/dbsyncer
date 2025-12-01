@@ -228,29 +228,237 @@ DDL 操作类型与配置项的映射关系：
 
 ### 3.3 表自动创建实现
 
-#### 3.3.1 触发时机
+#### 3.3.1 触发时机（推荐方案：配置时检查）
 
-表自动创建在以下场景触发：
-1. **DDL 执行前检查**：在执行任何 DDL 操作前，检查目标表是否存在
-2. **数据同步异常**：当数据写入失败且错误为"表不存在"时（可选，参考 `doc/create-missing-table.md`）
+**核心思路**：在保存表映射（TableGroup）时检查目标表是否存在，如果不存在且允许创建，则提示用户是否创建。这样可以在配置阶段就发现问题，避免运行时异常。
+
+**触发场景**：
+1. **保存表映射时检查**（主要场景）：在 `TableGroupService.add()` 或 `TableGroupService.edit()` 时，检查目标表是否存在
+2. **运行时兜底检查**（可选）：在 DDL 执行前或数据写入失败时检查（作为兜底机制）
+
+**优势**：
+- ✅ **提前发现问题**：在配置阶段就发现表不存在，而不是运行时
+- ✅ **用户体验更好**：用户可以在配置时主动选择是否创建表，明确知道会发生什么
+- ✅ **简化运行时逻辑**：同步过程中不需要检查表是否存在，减少性能开销
+- ✅ **更符合预期**：用户明确知道表会被创建，而不是在运行时"偷偷"创建
 
 #### 3.3.2 实现策略
 
-**方案一：在 DDL 处理流程中集成（推荐）**
+**方案一：配置时检查 + 用户确认（推荐）**
 
-在 `parseDDl()` 方法中，执行 DDL 前检查表是否存在：
-- 优点：逻辑集中，易于维护
-- 缺点：仅适用于 DDL 同步场景
+在 `TableGroupChecker.checkAddConfigModel()` 中检查目标表是否存在：
+- 如果目标表不存在且 `autoCreateTable = true`，返回特殊结果，前端提示用户
+- 用户确认后，调用创建表接口，创建成功后再继续保存表映射
+- 优点：提前发现问题，用户体验好，运行时逻辑简单
+- 缺点：需要前端交互支持
 
-**方案二：在数据写入流程中集成（扩展方案）**
+**方案二：运行时自动创建（兜底方案）**
 
-在 `AbstractDatabaseConnector.writer()` 方法中，捕获"表不存在"异常后自动创建：
-- 优点：覆盖所有场景（DDL 同步、数据同步）
-- 缺点：需要扩展 ConnectorService 接口，改动较大
+在 DDL 处理流程或数据写入流程中，捕获"表不存在"异常后自动创建：
+- 优点：覆盖所有场景，无需用户交互
+- 缺点：运行时才发现问题，可能影响同步性能
 
-**建议**：优先实现方案一，方案二作为后续扩展。
+**建议**：优先实现方案一，方案二作为兜底机制。
 
-#### 3.3.3 CREATE TABLE DDL 生成
+#### 3.3.3 配置时检查实现
+
+**后端实现**：
+
+在 `TableGroupChecker.checkAddConfigModel()` 中增加表存在性检查：
+
+```java
+@Override
+public ConfigModel checkAddConfigModel(Map<String, String> params) throws Exception {
+    // ... 现有逻辑 ...
+    
+    Mapping mapping = profileComponent.getMapping(mappingId);
+    Assert.notNull(mapping, "mapping can not be null.");
+    
+    // 获取连接器信息
+    TableGroup tableGroup = TableGroup.create(mappingId, sourceTable, parserComponent, profileComponent);
+    tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
+    
+    // 检查目标表是否存在
+    boolean targetTableExists = false;
+    try {
+        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
+        targetTableExists = true;
+    } catch (Exception e) {
+        // 目标表不存在，检查是否允许自动创建
+        ListenerConfig listenerConfig = mapping.getListener();
+        if (listenerConfig != null && listenerConfig.isAutoCreateTable()) {
+            // 抛出特殊异常，让前端提示用户
+            throw new TargetTableNotExistsException(
+                "目标表不存在: " + targetTable + 
+                "，是否基于源表结构自动创建？", 
+                mapping.getSourceConnectorId(),
+                mapping.getTargetConnectorId(),
+                sourceTable,
+                targetTable
+            );
+        } else {
+            // 不允许自动创建，直接抛出异常
+            throw new BizException("目标表不存在: " + targetTable + "，且自动创建已禁用");
+        }
+    }
+    
+    // ... 后续逻辑 ...
+}
+```
+
+**新增异常类**：
+
+```java
+public class TargetTableNotExistsException extends BizException {
+    private String sourceConnectorId;
+    private String targetConnectorId;
+    private String sourceTable;
+    private String targetTable;
+    
+    public TargetTableNotExistsException(String message, String sourceConnectorId, 
+                                         String targetConnectorId, String sourceTable, String targetTable) {
+        super(message);
+        this.sourceConnectorId = sourceConnectorId;
+        this.targetConnectorId = targetConnectorId;
+        this.sourceTable = sourceTable;
+        this.targetTable = targetTable;
+    }
+    
+    // getters...
+}
+```
+
+**新增创建表接口**：
+
+在 `TableGroupController` 中新增创建表接口：
+
+```java
+@PostMapping(value = "/createTargetTable")
+@ResponseBody
+public RestResult createTargetTable(HttpServletRequest request) {
+    try {
+        Map<String, String> params = getParams(request);
+        String mappingId = params.get("mappingId");
+        String sourceTable = params.get("sourceTable");
+        String targetTable = params.get("targetTable");
+        
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        ConnectorInstance sourceConnectorInstance = connectorFactory.connect(
+            getConnectorConfig(mapping.getSourceConnectorId()));
+        ConnectorInstance targetConnectorInstance = connectorFactory.connect(
+            getConnectorConfig(mapping.getTargetConnectorId()));
+        
+        // 获取源表结构
+        MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(sourceConnectorInstance, sourceTable);
+        
+        // 生成 CREATE TABLE DDL
+        ConnectorService targetConnectorService = connectorFactory.getConnectorService(
+            getConnectorConfig(mapping.getTargetConnectorId()).getConnectorType());
+        String createTableDDL = targetConnectorService.generateCreateTableDDL(sourceMetaInfo, targetTable);
+        
+        // 执行 CREATE TABLE DDL
+        DDLConfig ddlConfig = new DDLConfig();
+        ddlConfig.setSql(createTableDDL);
+        Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+        
+        if (result.hasError()) {
+            return RestResult.restFail("创建表失败: " + result.getError());
+        }
+        
+        return RestResult.restSuccess("创建表成功");
+    } catch (Exception e) {
+        logger.error(e.getLocalizedMessage(), e);
+        return RestResult.restFail(e.getMessage());
+    }
+}
+```
+
+**前端实现**：
+
+在 `edit.js` 中修改 `bindMappingTableGroupAddClick()` 函数：
+
+```javascript
+function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
+    let $addBtn = $("#tableGroupAddBtn");
+    $addBtn.unbind("click");
+    $addBtn.bind('click', function () {
+        // ... 现有参数收集逻辑 ...
+        
+        doPoster("/tableGroup/add", m, function (data) {
+            if (data.success == true) {
+                bootGrowl("新增映射关系成功!", "success");
+                refresh(m.mappingId, 1);
+            } else {
+                // 检查是否是目标表不存在的异常
+                if (data.status == 400 && data.resultValue && 
+                    data.resultValue.indexOf("目标表不存在") >= 0) {
+                    // 显示确认对话框
+                    showCreateTableConfirmDialog(m, data.resultValue);
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                    if (data.status == 400) {
+                        refresh(m.mappingId, 1);
+                    }
+                }
+            }
+        });
+    });
+}
+
+function showCreateTableConfirmDialog(params, message) {
+    // 使用 Bootstrap Modal 或自定义对话框
+    bootbox.confirm({
+        title: "目标表不存在",
+        message: message + "<br><br>是否基于源表结构自动创建目标表？",
+        buttons: {
+            cancel: {
+                label: "取消",
+                className: "btn-default"
+            },
+            confirm: {
+                label: "创建",
+                className: "btn-primary"
+            }
+        },
+        callback: function (result) {
+            if (result) {
+                // 用户确认创建表
+                createTargetTableAndRetry(params);
+            } else {
+                bootGrowl("已取消创建表", "info");
+            }
+        }
+    });
+}
+
+function createTargetTableAndRetry(params) {
+    // 1. 先创建表
+    let createParams = {
+        mappingId: params.mappingId,
+        sourceTable: params.sourceTable.split('|')[0], // 取第一个表
+        targetTable: params.targetTable.split('|')[0]
+    };
+    
+    doPoster("/tableGroup/createTargetTable", createParams, function (data) {
+        if (data.success == true) {
+            bootGrowl("创建表成功，正在保存映射关系...", "success");
+            // 2. 创建成功后，重新尝试保存表映射
+            doPoster("/tableGroup/add", params, function (data) {
+                if (data.success == true) {
+                    bootGrowl("新增映射关系成功!", "success");
+                    refresh(params.mappingId, 1);
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        } else {
+            bootGrowl("创建表失败: " + data.resultValue, "danger");
+        }
+    });
+}
+```
+
+#### 3.3.4 CREATE TABLE DDL 生成
 
 需要各数据库连接器实现 `generateCreateTableDDL()` 方法：
 
@@ -397,19 +605,36 @@ $('input[name="enableDDL"]').on('change', function() {
    - 在 `editIncrement.html` 中增加配置选项
    - 实现配置项的显示/隐藏逻辑
 
-### 4.2 第二阶段：DDL 处理逻辑改造
+### 4.2 第二阶段：表自动创建实现（配置时检查）
+
+1. **TableGroupChecker 改造**
+   - 在 `checkAddConfigModel()` 中增加目标表存在性检查
+   - 新增 `TargetTableNotExistsException` 异常类
+   - 当目标表不存在且 `autoCreateTable = true` 时，抛出特殊异常
+
+2. **创建表接口实现**
+   - 在 `TableGroupController` 中新增 `createTargetTable()` 接口
+   - 实现基于源表结构生成目标表 DDL 的逻辑
+   - 扩展 ConnectorService 接口（如需要）
+   - 实现各数据库连接器的 `generateCreateTableDDL()` 方法
+
+3. **前端交互实现**
+   - 修改 `edit.js` 中的 `bindMappingTableGroupAddClick()` 函数
+   - 实现表不存在时的确认对话框
+   - 实现创建表后重试保存映射关系的流程
+
+### 4.3 第三阶段：DDL 处理逻辑改造
 
 1. **GeneralBufferActuator 改造**
    - 在 `parseDDl()` 中增加配置检查逻辑
    - 实现 `isDDLOperationAllowed()` 方法
-   - 实现 `checkTableExists()` 方法
+   - 移除运行时表存在性检查（已在配置时完成）
 
-2. **表自动创建实现**
-   - 实现 `createTargetTable()` 方法
-   - 扩展 ConnectorService 接口（如需要）
-   - 实现各数据库连接器的 `generateCreateTableDDL()` 方法
+2. **运行时兜底机制（可选）**
+   - 在数据写入失败时检查是否为"表不存在"异常
+   - 如果允许自动创建，记录警告日志（建议用户检查配置）
 
-### 4.3 第三阶段：测试与验证
+### 4.4 第四阶段：测试与验证
 
 1. **单元测试**
    - 测试配置项缺省值
@@ -488,9 +713,11 @@ $('input[name="enableDDL"]').on('change', function() {
 
 ### 6.3 表自动创建限制
 
-- 表自动创建功能需要目标数据库连接器支持 `generateCreateTableDDL()` 方法
-- 如果连接器不支持，`autoCreateTable` 配置不生效，会记录警告日志
-- 表自动创建可能受到数据库权限限制
+- **配置时检查**：表自动创建在保存表映射时触发，需要用户确认
+- **连接器支持**：表自动创建功能需要目标数据库连接器支持 `generateCreateTableDDL()` 方法
+- **权限限制**：表自动创建可能受到数据库权限限制，创建失败时会提示用户
+- **多表场景**：如果同时保存多个表映射，需要逐个确认创建（或提供批量确认选项）
+- **运行时兜底**：如果配置时未创建表，运行时不会自动创建（避免意外操作）
 
 ### 6.4 向后兼容性
 
