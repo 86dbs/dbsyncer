@@ -33,6 +33,7 @@
                 <th>类型</th>
                 <th>结果</th>
                 <th>状态</th>
+                <th>最后同步</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -179,12 +180,9 @@ $(document).ready(function() {
                         </div>
                     </td>
                     <td>${renderModelText(mapping?.model)}</td>
-                    <td>
-                        ${renderSyncResult(mapping)}
-                    </td>
-                    <td>
-                        ${renderStateText(mapping?.meta?.state || 0)}
-                    </td>
+                    <td>${renderSyncResult(mapping)}</td>
+                    <td>${renderStateText(mapping?.meta?.state || 0)}</td>
+                    <td>${formatDate(mapping?.meta.updateTime || '')}</td>
                     <td>
                         <div class="flex items-center gap-1">
                             <button class="table-action-btn view" title="修改" data-id="${mapping.id}" onclick="editMapping('${mapping.id}')">

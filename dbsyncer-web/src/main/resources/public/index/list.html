@@ -168,6 +168,7 @@
                 <tr class="text-left">
                     <th>名称</th>
                     <th>类型</th>
+                    <th>结果</th>
                     <th>状态</th>
                     <th>最后同步</th>
                 </tr>
@@ -274,8 +275,9 @@
                 return `<tr>
                     <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>
                     <td>${renderModelText(mapping?.model)}</td>
+                    <td>${renderSyncResult(mapping)}</td>
                     <td>${renderStateText(mapping?.meta?.state || 0)}</td>
-                    <td>${formatDate(mapping?.meta.updateTime || '')}</td>
+                    <td>${formatRelativeTime(mapping?.meta.updateTime || '')}</td>
                 </tr>`;
             },
             emptyHtml:'<td colspan="4" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'

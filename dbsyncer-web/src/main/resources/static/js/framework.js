@@ -31,6 +31,73 @@ function formatDate(time) {
 }
 
 /**
+ * 计算相对时间文本
+ * @param {string|number} time - 时间字符串或时间戳
+ * @returns {string} 相对时间文本，如：30秒前、1分钟前、2小时前、昨天、2天前、3个月前、N个月前
+ */
+function formatRelativeTime(time) {
+    if (!time) {
+        return '';
+    }
+    
+    const now = new Date();
+    const targetTime = new Date(time);
+    
+    // 如果时间无效，返回空字符串
+    if (isNaN(targetTime.getTime())) {
+        return '';
+    }
+    
+    const diffMs = now.getTime() - targetTime.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    // 小于1分钟：显示秒数
+    if (diffSeconds < 60) {
+        return diffSeconds <= 0 ? '刚刚' : diffSeconds + '秒前';
+    }
+    
+    // 小于1小时：显示分钟数
+    if (diffMinutes < 60) {
+        return diffMinutes + '分钟前';
+    }
+    
+    // 小于24小时：显示小时数
+    if (diffHours < 24) {
+        return diffHours + '小时前';
+    }
+    
+    // 判断是否是昨天（同一天）
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDate = new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate());
+    const daysDiff = Math.floor((nowDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // 昨天
+    if (daysDiff === 1) {
+        return '昨天';
+    }
+    
+    // 小于30天：显示天数
+    if (diffDays < 30) {
+        return diffDays + '天前';
+    }
+    
+    // 计算月份差
+    const monthsDiff = (now.getFullYear() - targetTime.getFullYear()) * 12 + (now.getMonth() - targetTime.getMonth());
+    
+    // 小于12个月：显示月数
+    if (monthsDiff < 12) {
+        return monthsDiff + '个月前';
+    }
+    
+    // 大于等于12个月：显示年数
+    const yearsDiff = Math.floor(monthsDiff / 12);
+    return yearsDiff + '年前';
+}
+
+/**
  * 判断字符串是否为空串
  * @eg undefined true
  * @eg null true
