@@ -22,8 +22,10 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
 import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -287,42 +289,85 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      */
     public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
         try {
+            ListenerConfig listenerConfig = mapping.getListener();
+
+            // 1. 全局 DDL 开关检查
+            if (!listenerConfig.isEnableDDL()) {
+                logger.debug("DDL 同步已禁用，跳过 DDL 处理");
+                return;
+            }
+
+            // 2. 解析 DDL 获取操作类型
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String tConnType = tConnConfig.getConnectorType();
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
             // 传递源和目标连接器类型信息给DDL解析器
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
 
-            // 1.生成目标表执行SQL(支持异构数据库)
+            // 3. 根据操作类型检查细粒度配置
+            DDLOperationEnum operation = targetDDLConfig.getDdlOperationEnum();
+            if (!isDDLOperationAllowed(listenerConfig, operation)) {
+                logger.warn("DDL 操作被配置禁用，跳过执行。操作类型: {}, 表: {}",
+                    operation, tableGroup.getTargetTable().getName());
+                // 注意：如果 DDL 被禁用，应该提前返回，不执行后续的字段映射更新
+                // 这样可以避免字段映射与实际表结构不一致的问题
+                return;
+            }
+
+            // 4. 生成目标表执行SQL(支持异构数据库)
             ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
             Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
-            // 2.持久化增量事件数据(含错误信息)
+            // 5.持久化增量事件数据(含错误信息)
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
             flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
-            if (!StringUtil.isBlank(result.error)     ) {
+            // 6. 如果 DDL 执行失败，提前返回，不更新字段映射
+            if (!StringUtil.isBlank(result.error)) {
                 return;
             }
-            // 3.更新表属性字段
+
+            // 7.更新表属性字段（DDL 执行成功后）
             MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId())), tableGroup.getSourceTable().getName());
             MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())), tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
             tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
 
-            // 4.更新表字段映射关系
+            // 8.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
 
-            // 5.更新执行命令
+            // 9.更新执行命令
             tableGroup.initCommand(mapping, connectorFactory);
 
-            // 6.持久化存储 & 更新缓存配置
+            // 10.持久化存储 & 更新缓存配置
             profileComponent.editTableGroup(tableGroup);
 
-            // 7.发布更新事件 -> 直接调用 router 刷新偏移量，替代事件发布
+            // 11.发布更新事件 -> 直接调用 router 刷新偏移量
             bufferActuatorRouter.refreshOffset(response.getChangedOffset());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 检查 DDL 操作是否被允许
+     *
+     * @param config    监听器配置
+     * @param operation DDL 操作类型
+     * @return 是否允许执行
+     */
+    private boolean isDDLOperationAllowed(ListenerConfig config, DDLOperationEnum operation) {
+        switch (operation) {
+            case ALTER_ADD:
+                return config.isAllowAddColumn();
+            case ALTER_DROP:
+                return config.isAllowDropColumn();
+            case ALTER_MODIFY:
+            case ALTER_CHANGE:
+                return config.isAllowModifyColumn();
+            default:
+                logger.warn("未知的 DDL 操作类型: {}", operation);
+                return false;
         }
     }
 

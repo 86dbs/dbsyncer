@@ -267,4 +267,16 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     default IRToTargetConverter getIRToTargetConverter() {
         return null;
     }
+
+    /**
+     * 基于源表结构生成目标表的 CREATE TABLE DDL
+     *
+     * @param sourceMetaInfo 源表元信息（字段为标准类型）
+     * @param targetTableName 目标表名
+     * @return CREATE TABLE DDL 语句
+     * @throws UnsupportedOperationException 如果连接器不支持此功能
+     */
+    default String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
+        throw new UnsupportedOperationException("该连接器不支持自动生成 CREATE TABLE DDL: " + getConnectorType());
+    }
 }

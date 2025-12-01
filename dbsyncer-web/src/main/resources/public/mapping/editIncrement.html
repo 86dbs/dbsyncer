@@ -72,7 +72,7 @@
     <div class="form-group">
         <div class="row">
             <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">ddl</label>
+                <label class="col-sm-3 control-label text-right">DDL</label>
                 <div class="col-sm-9">
                     <input name="enableDDL" class="dbsyncer_switch" th:checked="${mapping?.listener?.enableDDL}" type="checkbox">
                 </div>
@@ -80,6 +80,50 @@
             <div class="col-md-8"></div>
         </div>
     </div>
+
+    <!-- DDL 细粒度配置（仅在 enableDDL 为 true 时显示） -->
+    <div class="form-group" id="ddlDetailConfig" th:style="${mapping?.listener?.enableDDL} ? '' : 'display:none;'">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="col-sm-4 control-label text-right">允许加字段</label>
+                <div class="col-sm-8">
+                    <input name="allowAddColumn" class="dbsyncer_switch"
+                           th:checked="${mapping?.listener?.allowAddColumn != null ? mapping?.listener?.allowAddColumn : true}"
+                           type="checkbox">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="col-sm-4 control-label text-right">允许删字段</label>
+                <div class="col-sm-8">
+                    <input name="allowDropColumn" class="dbsyncer_switch"
+                           th:checked="${mapping?.listener?.allowDropColumn != null ? mapping?.listener?.allowDropColumn : true}"
+                           type="checkbox">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="col-sm-4 control-label text-right">允许改字段</label>
+                <div class="col-sm-8">
+                    <input name="allowModifyColumn" class="dbsyncer_switch"
+                           th:checked="${mapping?.listener?.allowModifyColumn != null ? mapping?.listener?.allowModifyColumn : true}"
+                           type="checkbox">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 当 enableDDL 开关变化时，显示/隐藏细粒度配置
+    $(document).ready(function() {
+        $('input[name="enableDDL"]').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#ddlDetailConfig').show();
+            } else {
+                $('#ddlDetailConfig').hide();
+            }
+        });
+    });
+    </script>
+
     <!-- 定时配置 -->
     <div th:id="mappingIncrementStrategyQuartzConfig" class="hidden">
         <div th:replace="mapping/editIncrementQuartz :: content"></div>

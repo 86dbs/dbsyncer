@@ -126,10 +126,24 @@ public class MappingChecker extends AbstractChecker {
     private void updateListenerConfig(ListenerConfig listener, Map<String, String> params) {
         Assert.notNull(listener, "ListenerConfig can not be null.");
 
+        // 现有配置
         listener.setEnableUpdate(StringUtil.isNotBlank(params.get("enableUpdate")));
         listener.setEnableInsert(StringUtil.isNotBlank(params.get("enableInsert")));
         listener.setEnableDelete(StringUtil.isNotBlank(params.get("enableDelete")));
         listener.setEnableDDL(StringUtil.isNotBlank(params.get("enableDDL")));
+
+        // 新增 DDL 细粒度配置
+        // 注意：使用 StringUtil.isNotBlank 判断，空字符串视为 false
+        // 如果参数不存在，使用缺省值（已在 ListenerConfig 中设置）
+        if (params.containsKey("allowAddColumn")) {
+            listener.setAllowAddColumn(StringUtil.isNotBlank(params.get("allowAddColumn")));
+        }
+        if (params.containsKey("allowDropColumn")) {
+            listener.setAllowDropColumn(StringUtil.isNotBlank(params.get("allowDropColumn")));
+        }
+        if (params.containsKey("allowModifyColumn")) {
+            listener.setAllowModifyColumn(StringUtil.isNotBlank(params.get("allowModifyColumn")));
+        }
     }
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) throws Exception {

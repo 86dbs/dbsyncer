@@ -60,6 +60,26 @@ public class ListenerConfig {
      */
     private boolean enableDDL;
 
+    // ========== DDL 细粒度控制配置 ==========
+
+    /**
+     * 允许加字段DDL（ALTER_ADD）
+     * 缺省值：true
+     */
+    private boolean allowAddColumn = true;
+
+    /**
+     * 允许删字段DDL（ALTER_DROP）
+     * 缺省值：true
+     */
+    private boolean allowDropColumn = true;
+
+    /**
+     * 允许变更字段DDL（ALTER_MODIFY、ALTER_CHANGE）
+     * 缺省值：true
+     */
+    private boolean allowModifyColumn = true;
+
     public ListenerConfig() {
     }
 
@@ -145,5 +165,29 @@ public class ListenerConfig {
 
     public void setEnableDDL(boolean enableDDL) {
         this.enableDDL = enableDDL;
+    }
+
+    public boolean isAllowAddColumn() {
+        return allowAddColumn;
+    }
+
+    public void setAllowAddColumn(boolean allowAddColumn) {
+        this.allowAddColumn = allowAddColumn;
+    }
+
+    public boolean isAllowDropColumn() {
+        return allowDropColumn;
+    }
+
+    public void setAllowDropColumn(boolean allowDropColumn) {
+        this.allowDropColumn = allowDropColumn;
+    }
+
+    public boolean isAllowModifyColumn() {
+        return allowModifyColumn;
+    }
+
+    public void setAllowModifyColumn(boolean allowModifyColumn) {
+        this.allowModifyColumn = allowModifyColumn;
     }
 }

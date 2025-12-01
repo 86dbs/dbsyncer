@@ -20,7 +20,7 @@
    - 缺省值：`true`
    - 用途：是否允许执行 `ALTER TABLE ... ADD COLUMN` 操作
 
-3. **允许删字段DDL**（`allowDropColumn`）
+2. **允许删字段DDL**（`allowDropColumn`）
    - 缺省值：`true`
    - 用途：是否允许执行 `ALTER TABLE ... DROP COLUMN` 操作
 
@@ -108,13 +108,46 @@ public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableG
         if (!isDDLOperationAllowed(listenerConfig, operation)) {
             logger.warn("DDL 操作被配置禁用，跳过执行。操作类型: {}, 表: {}", 
                 operation, tableGroup.getTargetTable().getName());
+            // 注意：如果 DDL 被禁用，应该提前返回，不执行后续的字段映射更新
+            // 这样可以避免字段映射与实际表结构不一致的问题
             return;
         }
         
         // 4. 执行 DDL（原有逻辑）
         // 注意：表存在性检查已在保存表映射时完成，此处无需再次检查
         Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
-        // ... 后续处理 ...
+        
+        // 5. 持久化增量事件数据(含错误信息)
+        result.setTableGroupId(tableGroup.getId());
+        result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+        flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+        
+        // 6. 如果 DDL 执行失败，提前返回，不更新字段映射
+        if (!StringUtil.isBlank(result.error)) {
+            return;
+        }
+        
+        // 7. 更新表属性字段（DDL 执行成功后）
+        MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(
+            connectorFactory.connect(getConnectorConfig(mapping.getSourceConnectorId())), 
+            tableGroup.getSourceTable().getName());
+        MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(
+            connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())), 
+            tableGroup.getTargetTable().getName());
+        tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
+        tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+        
+        // 8. 更新表字段映射关系
+        ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
+        
+        // 9. 更新执行命令
+        tableGroup.initCommand(mapping, connectorFactory);
+        
+        // 10. 持久化存储 & 更新缓存配置
+        profileComponent.editTableGroup(tableGroup);
+        
+        // 11. 发布更新事件 -> 直接调用 router 刷新偏移量
+        bufferActuatorRouter.refreshOffset(response.getChangedOffset());
     } catch (Exception e) {
         logger.error(e.getMessage(), e);
     }
@@ -239,7 +272,9 @@ DDL 操作类型与配置项的映射关系：
 
 **后端实现**：
 
-在 `TableGroupChecker.checkAddConfigModel()` 中增加表存在性检查：
+在 `TableGroupChecker.checkAddConfigModel()` 和 `checkEditConfigModel()` 中增加表存在性检查：
+
+**checkAddConfigModel() 改造**：
 
 ```java
 @Override
@@ -919,6 +954,7 @@ $('input[name="enableDDL"]').on('change', function() {
 
 1. **TableGroupChecker 改造**
    - 在 `checkAddConfigModel()` 中增加目标表存在性检查
+   - 在 `checkEditConfigModel()` 中增加目标表存在性检查（当目标表名发生变化时）
    - 新增 `TargetTableNotExistsException` 异常类
    - 当目标表不存在时，抛出特殊异常，前端提示用户是否创建
 
@@ -1028,9 +1064,13 @@ $('input[name="enableDDL"]').on('change', function() {
 
 ### 6.2 字段映射更新
 
-- 当 DDL 操作被配置禁用时，**不执行 DDL**，但**不更新字段映射**
-- 这意味着字段映射可能与实际表结构不一致
-- **建议**：在配置变更时，触发一次表结构同步，确保字段映射一致性
+- 当 DDL 操作被配置禁用时，**不执行 DDL**，同时**不更新字段映射**
+- **设计考虑**：如果 DDL 被禁用，说明用户不希望目标表结构发生变化，因此也不应该更新字段映射
+- **潜在问题**：如果源表结构发生变化，但 DDL 被禁用，字段映射可能与实际表结构不一致
+- **解决方案**：
+  1. **手动刷新**：用户可以通过"刷新字段"功能手动同步表结构
+  2. **配置变更时同步**：在配置变更时，触发一次表结构同步，确保字段映射一致性
+  3. **运行时检测**：在数据同步过程中，如果检测到字段映射不一致，记录警告日志
 
 ### 6.3 表自动创建机制
 
