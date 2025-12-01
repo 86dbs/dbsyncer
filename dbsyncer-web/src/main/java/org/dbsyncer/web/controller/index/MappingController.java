@@ -2,6 +2,7 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.TargetTableNotExistsException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.MappingJsonVo;
 import org.dbsyncer.biz.vo.MappingVo;
@@ -98,6 +99,10 @@ public class MappingController extends BaseController {
         try {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.edit(params));
+        } catch (TargetTableNotExistsException e) {
+            // 目标表不存在异常，返回特殊错误码和详细信息
+            logger.info("目标表不存在，等待用户确认: {}", e.getMissingTables());
+            return e.toRestResult();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

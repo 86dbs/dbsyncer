@@ -120,6 +120,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
+            
+            // 在保存之前，检查所有已存在的表映射关系的目标表是否存在
+            checkAllTargetTablesExist(mapping);
+            
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
@@ -128,6 +132,47 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
         resetCount(mapping);
         return id;
+    }
+
+    /**
+     * 检查所有已存在的表映射关系的目标表是否存在
+     * 如果目标表不存在，抛出 TargetTableNotExistsException（包含所有缺失的表）
+     *
+     * @param mapping Mapping配置
+     * @throws TargetTableNotExistsException 如果目标表不存在
+     */
+    private void checkAllTargetTablesExist(Mapping mapping) throws Exception {
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mapping.getId());
+        if (CollectionUtils.isEmpty(tableGroups)) {
+            return;
+        }
+
+        // 收集所有缺失的表
+        List<Map<String, String>> missingTables = new ArrayList<>();
+        for (TableGroup tableGroup : tableGroups) {
+            String targetTableName = tableGroup.getTargetTable().getName();
+            try {
+                // 尝试获取目标表信息，如果表不存在会抛出异常
+                parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetTableName);
+            } catch (Exception e) {
+                // 目标表不存在，添加到缺失列表
+                Map<String, String> tableMapping = new HashMap<>();
+                tableMapping.put("sourceTable", tableGroup.getSourceTable().getName());
+                tableMapping.put("targetTable", targetTableName);
+                missingTables.add(tableMapping);
+            }
+        }
+
+        // 如果有缺失的表，抛出异常（包含所有缺失的表信息）
+        if (!missingTables.isEmpty()) {
+            String message;
+            if (missingTables.size() == 1) {
+                message = "目标表不存在: " + missingTables.get(0).get("targetTable") + "，是否基于源表结构自动创建？";
+            } else {
+                message = "以下 " + missingTables.size() + " 个目标表不存在，是否基于源表结构自动创建？";
+            }
+            throw new TargetTableNotExistsException(message, missingTables);
+        }
     }
 
     private void resetCount(Mapping mapping) throws Exception {
