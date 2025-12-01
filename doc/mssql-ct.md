@@ -239,80 +239,90 @@ ORDER BY ORDINAL_POSITION;
 
 #### 5.1.2 表结构快照存储
 
-将表结构序列化为 JSON 并保存到 `snapshot`：
+将表结构序列化为 JSON 并保存到 `snapshot` Map 中（`Map<String, String>`）：
 
 ```java
 // 表结构快照的键名格式
 private static final String SCHEMA_SNAPSHOT_PREFIX = "schema_snapshot_";
+private static final String SCHEMA_HASH_PREFIX = "schema_hash_";           // 表结构哈希值
+private static final String SCHEMA_VERSION_PREFIX = "schema_version_";      // 快照版本号
+private static final String SCHEMA_TIME_PREFIX = "schema_time_";           // 快照时间
+private static final String SCHEMA_ORDINAL_PREFIX = "schema_ordinal_";     // 列位置映射
 
-// 表结构模型
-public class TableSchema {
-    private String tableName;
-    private List<Field> columns;  // 使用现有的 Field 类
-    private List<String> primaryKeys;
-    private Long snapshotVersion;  // 快照时的 Change Tracking 版本号
-    private Date snapshotTime;     // 快照时间
-    private Map<String, Integer> columnOrdinalPositions;  // 列位置映射（Field 类中没有此字段）
-}
+// 使用现有的 MetaInfo 类存储表结构（org.dbsyncer.sdk.model.MetaInfo）
+// MetaInfo 包含：
+// - tableType: 表类型
+// - column: List<Field> 列信息（主键信息通过 Field.isPk() 获取）
+// - sql: SQL 语句（可选）
+// - indexType: 索引类型（可选）
 
-// 注意：使用现有的 Field 类（org.dbsyncer.sdk.model.Field）
-// 字段映射关系：
-// - Field.name -> 列名
-// - Field.typeName -> 数据类型
-// - Field.columnSize -> 最大长度（对应 CHARACTER_MAXIMUM_LENGTH）
-// - Field.ratio -> 小数位数（对应 NUMERIC_SCALE）
-// - Field.nullable -> 可空性
-// - Field.defaultValue -> 默认值
-// - 精度（NUMERIC_PRECISION）需要从 INFORMATION_SCHEMA 查询时单独处理
-// - 列位置（ORDINAL_POSITION）需要单独存储到 columnOrdinalPositions Map 中
+// 注意：
+// 1. 表结构使用 MetaInfo 存储，序列化为 JSON 保存到 snapshot
+// 2. 哈希值、版本号、时间、列位置映射分别用不同的 key 存储在 snapshot 中
+// 3. 主键信息不需要单独存储，可以从 MetaInfo.getColumn() 中通过 Field.isPk() 获取
+// 4. 这样设计避免了新建类，符合"如无必要勿增实体"的原则
 ```
 
 #### 5.1.3 表结构比对逻辑
 
 ```java
 /**
+ * 从 MetaInfo 中提取主键列表
+ */
+private List<String> getPrimaryKeysFromMetaInfo(MetaInfo metaInfo) {
+    if (metaInfo == null || metaInfo.getColumn() == null) {
+        return new ArrayList<>();
+    }
+    return metaInfo.getColumn().stream()
+        .filter(Field::isPk)
+        .map(Field::getName)
+        .collect(Collectors.toList());
+}
+
+/**
  * 比对两个表结构的差异
  */
-public List<DDLChange> compareTableSchema(TableSchema oldSchema, TableSchema newSchema) {
+public List<DDLChange> compareTableSchema(String tableName, MetaInfo oldMetaInfo, MetaInfo newMetaInfo,
+                                          List<String> oldPrimaryKeys, List<String> newPrimaryKeys,
+                                          Map<String, Integer> oldOrdinalPositions, Map<String, Integer> newOrdinalPositions) {
     List<DDLChange> changes = new ArrayList<>();
     
     // 1. 检测新增列
-    Map<String, Field> oldColumns = oldSchema.getColumns().stream()
+    Map<String, Field> oldColumns = oldMetaInfo.getColumn().stream()
         .collect(Collectors.toMap(Field::getName, c -> c));
-    Map<String, Field> newColumns = newSchema.getColumns().stream()
+    Map<String, Field> newColumns = newMetaInfo.getColumn().stream()
         .collect(Collectors.toMap(Field::getName, c -> c));
     
-    for (Field newCol : newSchema.getColumns()) {
+    for (Field newCol : newMetaInfo.getColumn()) {
         if (!oldColumns.containsKey(newCol.getName())) {
             // 新增列
-            String ddl = generateAddColumnDDL(newSchema.getTableName(), newCol);
+            String ddl = generateAddColumnDDL(tableName, newCol);
             changes.add(new DDLChange("ADD_COLUMN", ddl, newCol.getName()));
         }
     }
     
     // 2. 检测删除列
-    for (Field oldCol : oldSchema.getColumns()) {
+    for (Field oldCol : oldMetaInfo.getColumn()) {
         if (!newColumns.containsKey(oldCol.getName())) {
             // 删除列
-            String ddl = generateDropColumnDDL(newSchema.getTableName(), oldCol);
+            String ddl = generateDropColumnDDL(tableName, oldCol);
             changes.add(new DDLChange("DROP_COLUMN", ddl, oldCol.getName()));
         }
     }
     
     // 3. 检测修改列（类型、长度、精度、可空性、默认值）
-    for (Field newCol : newSchema.getColumns()) {
+    for (Field newCol : newMetaInfo.getColumn()) {
         Field oldCol = oldColumns.get(newCol.getName());
         if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
             // 列属性变更
-            String ddl = generateAlterColumnDDL(newSchema.getTableName(), oldCol, newCol);
+            String ddl = generateAlterColumnDDL(tableName, oldCol, newCol);
             changes.add(new DDLChange("ALTER_COLUMN", ddl, newCol.getName()));
         }
     }
     
     // 4. 检测主键变更（可选，通常不常见）
-    if (!oldSchema.getPrimaryKeys().equals(newSchema.getPrimaryKeys())) {
-        String ddl = generateAlterPrimaryKeyDDL(newSchema.getTableName(), 
-            oldSchema.getPrimaryKeys(), newSchema.getPrimaryKeys());
+    if (!oldPrimaryKeys.equals(newPrimaryKeys)) {
+        String ddl = generateAlterPrimaryKeyDDL(tableName, oldPrimaryKeys, newPrimaryKeys);
         changes.add(new DDLChange("ALTER_PRIMARY_KEY", ddl, null));
     }
     
@@ -447,22 +457,29 @@ private class DDLDetector {
         Long currentVersion = getCurrentVersion();  // 获取当前 Change Tracking 版本号
         
         for (String tableName : tables) {
-            // 1. 查询当前表结构
-            TableSchema currentSchema = queryTableSchema(tableName);
-            currentSchema.setSnapshotVersion(currentVersion);
-            currentSchema.setSnapshotTime(new Date());
+            // 1. 查询当前表结构（使用 MetaInfo）
+            Map<String, Integer> ordinalPositions = new HashMap<>();
+            MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
             
             // 2. 读取上次保存的表结构快照
-            TableSchema lastSchema = loadTableSchemaSnapshot(tableName);
+            MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
             
             // 3. 如果是首次检测，保存快照并跳过
-            if (lastSchema == null) {
-                saveTableSchemaSnapshot(tableName, currentSchema);
+            if (lastMetaInfo == null) {
+                // 计算初始哈希值
+                String currentHash = calculateSchemaHashFromMetaInfo(currentMetaInfo);
+                saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
                 continue;
             }
             
             // 4. 比对差异
-            List<DDLChange> changes = compareTableSchema(lastSchema, currentSchema);
+            List<String> lastPrimaryKeys = getPrimaryKeysFromMetaInfo(lastMetaInfo);
+            List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
+            Map<String, Integer> lastOrdinalPositions = getColumnOrdinalPositions(tableName);
+            
+            List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo, 
+                                                        lastPrimaryKeys, currentPrimaryKeys, 
+                                                        lastOrdinalPositions, ordinalPositions);
             
             // 5. 如果有变更，生成 DDL 事件并发送
             if (!changes.isEmpty()) {
@@ -480,7 +497,8 @@ private class DDLDetector {
                 }
                 
                 // 6. 更新表结构快照
-                saveTableSchemaSnapshot(tableName, currentSchema);
+                String currentHash = calculateSchemaHashFromMetaInfo(currentMetaInfo);
+                saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
                 
                 logger.info("检测到表 {} 的 DDL 变更，共 {} 个变更", tableName, changes.size());
             }
@@ -499,29 +517,80 @@ private class DDLDetector {
 /**
  * 保存表结构快照到 snapshot
  */
-private void saveTableSchemaSnapshot(String tableName, TableSchema schema) throws Exception {
-    String key = SCHEMA_SNAPSHOT_PREFIX + tableName;
-    String json = JsonUtil.objToJson(schema);
-    snapshot.put(key, json);
+private void saveTableSchemaSnapshot(String tableName, MetaInfo metaInfo, Long version, 
+                                     String hash, Map<String, Integer> ordinalPositions) throws Exception {
+    // 保存 MetaInfo（表结构）
+    String schemaKey = SCHEMA_SNAPSHOT_PREFIX + tableName;
+    String schemaJson = JsonUtil.objToJson(metaInfo);
+    snapshot.put(schemaKey, schemaJson);
+    
+    // 保存哈希值
+    String hashKey = SCHEMA_HASH_PREFIX + tableName;
+    snapshot.put(hashKey, hash);
+    
+    // 保存版本号
+    String versionKey = SCHEMA_VERSION_PREFIX + tableName;
+    snapshot.put(versionKey, String.valueOf(version));
+    
+    // 保存时间戳
+    String timeKey = SCHEMA_TIME_PREFIX + tableName;
+    snapshot.put(timeKey, String.valueOf(System.currentTimeMillis()));
+    
+    // 保存列位置映射（序列化为 JSON）
+    if (ordinalPositions != null && !ordinalPositions.isEmpty()) {
+        String ordinalKey = SCHEMA_ORDINAL_PREFIX + tableName;
+        String ordinalJson = JsonUtil.objToJson(ordinalPositions);
+        snapshot.put(ordinalKey, ordinalJson);
+    }
+    
     super.forceFlushEvent();
 }
 
 /**
  * 从 snapshot 加载表结构快照
  */
-private TableSchema loadTableSchemaSnapshot(String tableName) throws Exception {
+private MetaInfo loadTableSchemaSnapshot(String tableName) throws Exception {
     String key = SCHEMA_SNAPSHOT_PREFIX + tableName;
     String json = snapshot.get(key);
     if (json == null || json.isEmpty()) {
         return null;
     }
-    return JsonUtil.jsonToObj(json, TableSchema.class);
+    return JsonUtil.jsonToObj(json, MetaInfo.class);
 }
 
 /**
- * 查询表的当前结构
+ * 从 snapshot 获取哈希值
  */
-private TableSchema queryTableSchema(String tableName) throws Exception {
+private String getSchemaHash(String tableName) {
+    String key = SCHEMA_HASH_PREFIX + tableName;
+    return snapshot.get(key);
+}
+
+/**
+ * 从 snapshot 获取快照版本号
+ */
+private Long getSchemaSnapshotVersion(String tableName) {
+    String key = SCHEMA_VERSION_PREFIX + tableName;
+    String value = snapshot.get(key);
+    return value != null ? Long.parseLong(value) : null;
+}
+
+/**
+ * 从 snapshot 获取列位置映射
+ */
+private Map<String, Integer> getColumnOrdinalPositions(String tableName) throws Exception {
+    String key = SCHEMA_ORDINAL_PREFIX + tableName;
+    String json = snapshot.get(key);
+    if (json == null || json.isEmpty()) {
+        return new HashMap<>();
+    }
+    return JsonUtil.jsonToObj(json, Map.class);
+}
+
+/**
+ * 查询表的当前结构（返回 MetaInfo 和列位置映射）
+ */
+private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordinalPositions) throws Exception {
     // 查询列信息
     String sql = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, " +
                  "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION " +
@@ -534,7 +603,6 @@ private TableSchema queryTableSchema(String tableName) throws Exception {
         statement.setString(2, tableName);
     }, rs -> {
         List<Field> cols = new ArrayList<>();
-        Map<String, Integer> ordinalPositions = new HashMap<>();
         while (rs.next()) {
             String columnName = rs.getString("COLUMN_NAME");
             String dataType = rs.getString("DATA_TYPE");
@@ -557,17 +625,15 @@ private TableSchema queryTableSchema(String tableName) throws Exception {
             col.setNullable(nullable);
             col.setDefaultValue(defaultValue);
             
-            // 保存列位置（Field 类中没有此字段，需要单独存储）
+            // 保存列位置（Field 类中没有此字段，需要单独存储到 snapshot）
             ordinalPositions.put(columnName, ordinalPosition);
             
             cols.add(col);
         }
-        // 将列位置信息保存到 TableSchema 中
-        schema.setColumnOrdinalPositions(ordinalPositions);
         return cols;
     });
     
-    // 查询主键
+    // 查询主键（用于设置 Field.isPk()）
     String pkSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME LIKE 'PK%' " +
                    "ORDER BY ORDINAL_POSITION";
@@ -583,12 +649,56 @@ private TableSchema queryTableSchema(String tableName) throws Exception {
         return pks;
     });
     
-    TableSchema schema = new TableSchema();
-    schema.setTableName(tableName);
-    schema.setColumns(columns);
-    schema.setPrimaryKeys(primaryKeys);
+    // 设置主键标识
+    for (Field col : columns) {
+        col.setPk(primaryKeys.contains(col.getName()));
+    }
     
-    return schema;
+    // 创建 MetaInfo 对象
+    MetaInfo metaInfo = new MetaInfo();
+    metaInfo.setTableType("TABLE");
+    metaInfo.setColumn(columns);
+    
+    return metaInfo;
+}
+
+/**
+ * 从 ResultSetMetaData 计算表结构哈希值（用于 DML 同步过程中的快速检测）
+ */
+private String calculateSchemaHashFromMetaData(ResultSetMetaData metaData) throws SQLException {
+    StringBuilder hashInput = new StringBuilder();
+    int columnCount = metaData.getColumnCount();
+    for (int i = 1; i <= columnCount; i++) {
+        // 跳过 Change Tracking 系统列（SYS_CHANGE_VERSION, SYS_CHANGE_OPERATION, SYS_CHANGE_COLUMNS）
+        if (i <= 3) continue;
+        hashInput.append(metaData.getColumnName(i))
+                .append("|").append(metaData.getColumnTypeName(i))
+                .append("|").append(metaData.getColumnDisplaySize(i))
+                .append("|").append(metaData.getPrecision(i))
+                .append("|").append(metaData.getScale(i))
+                .append("|").append(metaData.isNullable(i))
+                .append("|");
+    }
+    return DigestUtils.md5Hex(hashInput.toString());
+}
+
+/**
+ * 从 MetaInfo 计算表结构哈希值（用于完整比对前的快速检测）
+ */
+private String calculateSchemaHashFromMetaInfo(MetaInfo metaInfo) {
+    if (metaInfo == null || metaInfo.getColumn() == null) {
+        return "";
+    }
+    StringBuilder hashInput = new StringBuilder();
+    for (Field field : metaInfo.getColumn()) {
+        hashInput.append(field.getName())
+                .append("|").append(field.getTypeName())
+                .append("|").append(field.getColumnSize())
+                .append("|").append(field.getRatio())
+                .append("|").append(field.getNullable())
+                .append("|");
+    }
+    return DigestUtils.md5Hex(hashInput.toString());
 }
 ```
 
@@ -673,11 +783,35 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
 // 在 pullDMLChanges 中检测哈希值
 ResultSetMetaData metaData = rs.getMetaData();
 String currentHash = calculateSchemaHashFromMetaData(metaData);
-if (!lastHash.equals(currentHash)) {
-    // 触发完整比对
-    TableSchema currentSchema = queryTableSchema(tableName);
-    List<DDLChange> changes = compareTableSchema(lastSchema, currentSchema);
-    // 生成 DDL 事件...
+String lastHash = getSchemaHash(tableName);
+
+if (lastHash == null) {
+    // 首次检测，保存哈希值
+    snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
+} else if (!lastHash.equals(currentHash)) {
+    // 哈希值变化，触发完整比对
+    Map<String, Integer> ordinalPositions = new HashMap<>();
+    MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
+    Long currentVersion = getCurrentVersion();
+    MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
+    
+    if (lastMetaInfo != null) {
+        List<String> lastPrimaryKeys = getPrimaryKeysFromMetaInfo(lastMetaInfo);
+        List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
+        Map<String, Integer> lastOrdinalPositions = getColumnOrdinalPositions(tableName);
+        
+        List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo,
+                                                     lastPrimaryKeys, currentPrimaryKeys,
+                                                     lastOrdinalPositions, ordinalPositions);
+        // 生成 DDL 事件并更新快照...
+        if (!changes.isEmpty()) {
+            // 生成 DDL 事件...
+            saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
+        } else {
+            // 即使没有检测到变更，也更新哈希值（可能是精度/尺寸变化导致哈希变化但无法检测）
+            snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
+        }
+    }
 }
 
 // 兜底轮询（30 秒间隔）
