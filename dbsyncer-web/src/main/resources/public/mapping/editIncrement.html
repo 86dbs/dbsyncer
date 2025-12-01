@@ -14,7 +14,7 @@
     </div>
 
     <!-- 增量点配置 -->
-    <table class="table">
+    <table class="table" th:if="${mapping?.meta?.snapshot.size() gt 0}">
         <thead>
         <tr>
             <th></th>
