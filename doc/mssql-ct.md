@@ -2,7 +2,12 @@
 
 ## 一、概述
 
-基于 SQL Server Change Tracking (CT) 实现 DML 和 DDL 同步。
+基于 SQL Server Change Tracking (CT) 实现 DML 和 DDL 同步，**完全替代原有的 CDC 方案**。
+
+**重要说明**：
+- 本方案完全替代 SQL Server CDC，不再使用 CDC 相关代码
+- 原有的 `SqlServerListener`（CDC 实现）将被 `SqlServerCTListener`（CT 实现）替代
+- 如需使用新方案，按新方式重新同步即可，无需迁移
 
 **核心特性**：
 - 不需要 SQL Server Agent
@@ -138,7 +143,7 @@ FROM sys.tables t
 WHERE t.name = 'table_name';
 ```
 
-**注意**：`sys.tables.is_tracked_by_cdc` 字段名称有误导性，实际上也用于 Change Tracking。
+**注意**：`sys.tables.is_tracked_by_cdc` 字段名称有误导性，实际上用于 Change Tracking（不是 CDC）。
 
 ## 四、DML 变更捕获
 
@@ -920,7 +925,7 @@ private static final String IS_DB_CHANGE_TRACKING_ENABLED =
     "SELECT is_change_tracking_on FROM sys.databases WHERE name = '%s'";
 
 private static final String IS_TABLE_CHANGE_TRACKING_ENABLED = 
-    "SELECT is_tracked_by_cdc FROM sys.tables WHERE name = '%s'";
+    "SELECT is_tracked_by_cdc FROM sys.tables WHERE name = '%s'";  // 注意：字段名 is_tracked_by_cdc 实际用于 Change Tracking（不是 CDC）
 ```
 
 ### 7.2 DML 变更查询（pullDMLChanges）
@@ -1153,66 +1158,60 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 }
 ```
 
-## 九、迁移方案
+## 九、关键注意事项
 
-1. **创建新的监听器类**：`SqlServerCTListener`（与 `SqlServerListener` 并行）
-2. **配置选择**：通过配置选择使用 CDC 或 CT
-3. **保持接口一致**：使用 `AbstractDatabaseListener` 和 `UnifiedChangeEvent`
-
-## 十、关键注意事项
-
-### 10.1 主键要求
+### 9.1 主键要求
 
 - Change Tracking 要求表必须有主键
 - 复合主键需要特殊处理 JOIN 条件
 
-### 10.2 DELETE 操作处理
+### 9.2 DELETE 操作处理
 
 - DELETE 操作无法 JOIN 原表获取数据
 - 方案：只发送主键信息，由上层应用处理
 
-### 10.3 版本号精度
+### 9.3 版本号精度
 
 - Change Tracking 版本号是单调递增的整数
 - 无法像 LSN 那样精确反映事务时间点
 - 对于同一事务内的多个变更，版本号可能相同
 
-### 10.4 DDL 检测轮询
+### 9.4 DDL 检测轮询
 
 - 轮询间隔建议 3-5 秒，过短会增加数据库负载，过长会延迟 DDL 检测
 - 表结构快照保存到 `snapshot`，占用一定存储空间
 - 首次检测时只保存快照，不生成 DDL 事件
 - 某些复杂 DDL（如索引变更、约束变更）可能无法检测
 
-### 10.5 变更保留时间
+### 9.5 变更保留时间
 
 - `CHANGE_RETENTION` 设置建议 2-7 天
 - 如果同步延迟超过保留时间，需要全量同步
 
-## 十一、性能优化
+## 十、性能优化
 
 - 使用 `TRACK_COLUMNS_UPDATED = ON` 优化 UPDATE 查询
 - DDL 检测只查询配置的表，避免全库扫描
 - 哈希值检测利用 DML 查询时的元数据，零额外开销
 
-## 十二、错误处理
+## 十一、错误处理
 
-### 12.1 版本号丢失
+### 11.1 版本号丢失
 
 - 如果 `lastVersion` 丢失，从当前版本号开始（可能导致数据重复）
 - 建议：记录版本号到快照，支持手动恢复
 
-### 12.2 DDL 检测失败
+### 11.2 DDL 检测失败
 
 - DDL 检测失败不影响 DML 同步，但会导致 DDL 变更丢失
 - 建议：监控检测器状态，记录失败日志，支持手动触发检测
 
-### 12.4 表结构快照损坏
+### 11.3 表结构快照损坏
 
 - 如果表结构快照损坏或丢失，首次检测时会重新生成
 - 建议：定期备份 `snapshot`，支持手动恢复
 
-### 12.3 变更保留时间过期
+### 11.4 变更保留时间过期
 
 - 如果同步延迟超过 `CHANGE_RETENTION`，变更会被清理
 - 建议：触发全量同步，或增加保留时间
