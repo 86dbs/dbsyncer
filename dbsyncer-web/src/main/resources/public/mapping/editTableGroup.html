@@ -50,7 +50,17 @@
                                     </div>
                                     <div class="col-md-8">
                                         <p class="driver_break_word">[[${mapping?.targetConnector?.name}]]</p>
-                                        <p>目标源表：[[${tableGroup?.targetTable?.name}]]</p>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="control-label" style="display: inline-block; margin-right: 10px; vertical-align: middle; margin-bottom: 0;">目标源表 <span class="text-danger">*</span></label>
+                                            <input id="targetTableName" 
+                                                   name="targetTable" 
+                                                   class="form-control" 
+                                                   type="text" 
+                                                   style="display: inline-block; width: calc(100% - 120px); vertical-align: middle;"
+                                                   th:value="${tableGroup?.targetTable?.name}"
+                                                   placeholder="请输入目标表名称"
+                                                   required/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

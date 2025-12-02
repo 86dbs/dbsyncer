@@ -85,7 +85,14 @@
             <tbody id="tableGroupList">
                 <tr th:id="${t?.id}" title='点击编辑' class='dbsyncer_pointer' th:each="t,state : ${tableGroups}">
                     <td th:text="${t?.sourceTable.name}"/>
-                    <td th:text="${t?.targetTable.name}"/>
+                    <td>
+                        <span class="target-table-name" th:text="${t?.targetTable.name}"></span>
+                        <i class="fa fa-edit well-sign-green dbsyncer_pointer target-table-rename" 
+                           th:data-id="${t?.id}" 
+                           th:data-current-name="${t?.targetTable.name}"
+                           title="重命名目标表"
+                           style="margin-left: 8px;"></i>
+                    </td>
                     <td><input th:value="${t?.id}" th:mappingId="${mapping?.id}" type="checkbox" class="tableGroupCheckbox" /></td>
                 </tr>
             </tbody>
