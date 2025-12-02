@@ -175,7 +175,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     // 填充 defaultValue 属性
                     String columnDef = columnMetadata.getString("COLUMN_DEF");
                     if (columnDef != null && !columnDef.trim().isEmpty()) {
-                        field.setDefaultValue(columnDef);
+                        // 格式化默认值（子类可以重写 formatDefaultValue 方法来自定义格式化逻辑）
+                        String formattedDefaultValue = formatDefaultValue(columnDef);
+                        field.setDefaultValue(formattedDefaultValue);
                     }
 
                     // 填充 comment 属性
@@ -455,6 +457,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      */
     protected String getSchema(DatabaseConfig config) {
         return config.getSchema();
+    }
+
+    /**
+     * 格式化默认值
+     * 子类可以重写此方法来处理特定数据库的默认值格式
+     * 例如：SQL Server 的默认值可能包含多余的括号，需要清理
+     *
+     * @param defaultValue 原始默认值
+     * @return 格式化后的默认值
+     */
+    protected String formatDefaultValue(String defaultValue) {
+        // 默认实现：直接返回原值
+        return defaultValue;
     }
 
     /**

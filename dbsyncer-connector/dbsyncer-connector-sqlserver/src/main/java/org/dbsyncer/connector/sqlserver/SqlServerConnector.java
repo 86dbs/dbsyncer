@@ -272,6 +272,46 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected String formatDefaultValue(String defaultValue) {
+        if (defaultValue == null || defaultValue.isEmpty()) {
+            return defaultValue;
+        }
+        
+        String trimmed = defaultValue.trim();
+        
+        // 处理 SQL Server 风格的括号：((0)) -> 0, (('string')) -> 'string'
+        // 递归去除外层括号，直到没有匹配的括号对
+        while (trimmed.startsWith("(") && trimmed.endsWith(")")) {
+            // 检查括号是否匹配（简单检查：首尾都是括号）
+            // 需要确保整个字符串被一对括号包裹，而不是部分括号
+            int openCount = 0;
+            boolean isWrapped = true;
+            for (int i = 0; i < trimmed.length(); i++) {
+                char c = trimmed.charAt(i);
+                if (c == '(') {
+                    openCount++;
+                } else if (c == ')') {
+                    openCount--;
+                    // 如果在最后一个字符之前括号就闭合了，说明不是完全包裹
+                    if (openCount == 0 && i < trimmed.length() - 1) {
+                        isWrapped = false;
+                        break;
+                    }
+                }
+            }
+            
+            // 如果整个字符串被一对括号完全包裹，去除这对外层括号
+            if (isWrapped && openCount == 0) {
+                trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+            } else {
+                break;
+            }
+        }
+        
+        return trimmed;
+    }
+
+    @Override
     public String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
         SqlTemplate sqlTemplate = this.sqlTemplate;
         if (sqlTemplate == null) {

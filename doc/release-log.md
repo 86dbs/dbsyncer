@@ -4,7 +4,7 @@
 
 - 新功能：目标表缺失感知与创建。
 - 功能增强：增加对 DDL 的细化配置
-- 新功能：DDL 支持异构同步，支持 geometry 数据。
+- 新功能：DDL 支持异构同步，支持 geometry 数据。增加了相应的开关：加列、删列、改列。
 - 功能变更：对于 mssql 用 CT(change tracing) 替代 cdc，以降低对 sql server 端的压力，同时消除表结构变化这种自身缺陷影响同步数据正确性问题.
 - 优化：对标准类型进行扩展(XML,JSON,ENUM,SET,TEXT,UNSIGNED,unicode,UUID,BLOB),移除 ARRAY 类型，增强异构 DDL 的容错能力。
 - 结构优化：重构中间标准化类型，提高可维护性与性能。

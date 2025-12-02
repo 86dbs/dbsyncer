@@ -3,6 +3,7 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
@@ -12,7 +13,9 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -24,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -146,17 +151,37 @@ public class TableGroupController extends BaseController {
             Assert.notNull(sourceMetaInfo, "无法获取源表结构: " + sourceTable);
             Assert.notEmpty(sourceMetaInfo.getColumn(), "源表没有字段: " + sourceTable);
 
-            // 检查连接器是否支持生成 CREATE TABLE DDL
+            // 将源表的字段类型转换为标准类型（重要：避免类型污染）
+            // 因为 sourceMetaInfo 中的字段类型是源数据库特定类型（如 SQL Server 的 NVARCHAR），
+            // 需要先转换为标准类型，然后目标数据库的 SqlTemplate 才能正确转换为目标数据库类型
+            ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnector.getConfig().getConnectorType());
             ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetConnector.getConfig().getConnectorType());
+            SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+
+            // 创建标准化的 MetaInfo
+            MetaInfo standardizedMetaInfo = new MetaInfo();
+            standardizedMetaInfo.setTableType(sourceMetaInfo.getTableType());
+            standardizedMetaInfo.setSql(sourceMetaInfo.getSql());
+            standardizedMetaInfo.setIndexType(sourceMetaInfo.getIndexType());
+
+            // 将源字段转换为标准类型（toStandardType 会自动保留所有元数据属性）
+            List<Field> standardizedFields = new ArrayList<>();
+            for (Field sourceField : sourceMetaInfo.getColumn()) {
+                Field standardField = sourceSchemaResolver.toStandardType(sourceField);
+                standardizedFields.add(standardField);
+            }
+            standardizedMetaInfo.setColumn(standardizedFields);
+
+            // 检查连接器是否支持生成 CREATE TABLE DDL
             try {
-                // 尝试生成 CREATE TABLE DDL
-                String createTableDDL = targetConnectorService.generateCreateTableDDL(sourceMetaInfo, targetTable);
+                // 尝试生成 CREATE TABLE DDL（使用标准化后的 MetaInfo）
+                String createTableDDL = targetConnectorService.generateCreateTableDDL(standardizedMetaInfo, targetTable);
                 Assert.hasText(createTableDDL, "无法生成 CREATE TABLE DDL");
 
                 // 执行 CREATE TABLE DDL
                 DDLConfig ddlConfig = new DDLConfig();
                 ddlConfig.setSql(createTableDDL);
-                org.dbsyncer.common.model.Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+                Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
 
                 if (StringUtil.isNotBlank(result.error)) {
                     logger.error("创建表失败: {}", result.error);
