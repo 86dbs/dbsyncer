@@ -61,10 +61,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // 添加 COMMENT
         if (field.getComment() != null && !field.getComment().isEmpty()) {
@@ -86,10 +83,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // 添加 COMMENT
         if (field.getComment() != null && !field.getComment().isEmpty()) {
@@ -112,10 +106,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (newField.getDefaultValue() != null && !newField.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(newField.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // 添加 COMMENT
         if (newField.getComment() != null && !newField.getComment().isEmpty()) {
@@ -139,7 +130,8 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             String ddlType = convertToDatabaseType(field);
             String columnName = buildColumn(field.getName());
             
-            // 构建列定义：列名 类型 [NOT NULL] [AUTO_INCREMENT] [DEFAULT value] [COMMENT 'comment']
+            // 构建列定义：列名 类型 [NOT NULL] [AUTO_INCREMENT] [COMMENT 'comment']
+            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             StringBuilder columnDef = new StringBuilder();
             columnDef.append(String.format("  %s %s", columnName, ddlType));
             
@@ -149,10 +141,6 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             
             if (field.isAutoincrement()) {
                 columnDef.append(" AUTO_INCREMENT");
-            }
-            
-            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
             }
             
             if (field.getComment() != null && !field.getComment().isEmpty()) {

@@ -112,10 +112,7 @@ public class OracleTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         sql.append(")");
         
@@ -138,10 +135,7 @@ public class OracleTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         sql.append(")");
         
@@ -170,7 +164,8 @@ public class OracleTemplate extends AbstractSqlTemplate {
             String ddlType = convertToDatabaseType(field);
             String columnName = buildColumn(field.getName());
             
-            // 构建列定义：列名 类型 [NOT NULL] [DEFAULT value]
+            // 构建列定义：列名 类型 [NOT NULL]
+            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             // 注意：Oracle 的自增字段需要使用序列和触发器，这里暂时不处理
             // 如果需要自增，可以使用：GENERATED ALWAYS AS IDENTITY 或序列+触发器
             StringBuilder columnDef = new StringBuilder();
@@ -178,10 +173,6 @@ public class OracleTemplate extends AbstractSqlTemplate {
             
             if (field.getNullable() != null && !field.getNullable()) {
                 columnDef.append(" NOT NULL");
-            }
-            
-            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
             }
             
             columnDefs.add(columnDef.toString());

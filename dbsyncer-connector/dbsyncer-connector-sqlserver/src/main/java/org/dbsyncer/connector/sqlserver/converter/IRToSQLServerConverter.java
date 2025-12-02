@@ -70,10 +70,7 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
                 columnDef.append(" NOT NULL");
             }
             
-            // 添加 DEFAULT 值
-            if (column.getDefaultValue() != null && !column.getDefaultValue().isEmpty()) {
-                columnDef.append(" DEFAULT ").append(column.getDefaultValue());
-            }
+            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             
             columnDefinitions.add(columnDef.toString());
             
@@ -129,17 +126,7 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             // 1. 生成 ALTER COLUMN 语句
             result.append(sqlServerTemplate.buildModifyColumnSql(tableName, column));
             
-            // 2. 如果有 DEFAULT 值，处理 DEFAULT 约束
-            if (column.getDefaultValue() != null && !column.getDefaultValue().isEmpty()) {
-                result.append("; ");
-                // 删除旧的 DEFAULT 约束
-                result.append(((org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate)
-                    .buildDropDefaultConstraintSql(tableName, column.getName()));
-                // 添加新的 DEFAULT 约束
-                result.append("; ");
-                result.append(((org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlServerTemplate)
-                    .buildAddDefaultConstraintSql(tableName, column.getName(), column.getDefaultValue()));
-            }
+            // 2. 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             
             // 3. 如果有 COMMENT，添加 COMMENT 语句
             if (column.getComment() != null && !column.getComment().isEmpty()) {

@@ -97,10 +97,7 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // PostgreSQL 的注释需要使用 COMMENT ON COLUMN，这里暂时不处理
         // 如果需要添加注释，可以使用：
@@ -159,17 +156,14 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
                 typeDef = ddlType;
             }
             
-            // 构建列定义：列名 类型 [NOT NULL] [DEFAULT value]
+            // 构建列定义：列名 类型 [NOT NULL]
+            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             StringBuilder columnDef = new StringBuilder();
             columnDef.append(String.format("  %s %s", columnName, typeDef));
             
             // 添加 NOT NULL 约束（自增字段通常已经隐含 NOT NULL）
             if (!field.isAutoincrement() && field.getNullable() != null && !field.getNullable()) {
                 columnDef.append(" NOT NULL");
-            }
-            
-            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
             }
             
             columnDefs.add(columnDef.toString());

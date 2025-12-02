@@ -131,8 +131,8 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
                 result.setSrid(field.getSrid());
             }
             // 保留字段的其他元数据属性（这些属性在类型转换时应该保持不变）
+            // 注意：不再保留 defaultValue，因为数据同步不需要默认值支持
             result.setNullable(field.getNullable());
-            result.setDefaultValue(field.getDefaultValue());
             result.setComment(field.getComment());
             result.setAutoincrement(field.isAutoincrement());
             result.setIsSizeFixed(field.getIsSizeFixed());

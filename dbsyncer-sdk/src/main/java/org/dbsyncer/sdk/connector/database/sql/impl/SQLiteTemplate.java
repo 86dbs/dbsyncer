@@ -82,10 +82,7 @@ public class SQLiteTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // SQLite 不支持列注释
         

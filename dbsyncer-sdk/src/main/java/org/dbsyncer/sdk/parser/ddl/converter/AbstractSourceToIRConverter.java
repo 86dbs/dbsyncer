@@ -270,14 +270,10 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                 // 单独的 NULL（不是 NOT NULL）
                 column.setNullable(true);
             }
-            // 处理 DEFAULT 值（DEFAULT 后面跟着值）
+            // 注意：不再处理 DEFAULT 值，因为数据同步不需要默认值支持
+            // 跳过 DEFAULT 关键字及其值
             else if (upperSpec.equals("DEFAULT") && i + 1 < columnSpecs.size()) {
-                String defaultValue = columnSpecs.get(i + 1);
-                if (defaultValue != null && !defaultValue.trim().isEmpty()) {
-                    column.setDefaultValue(defaultValue.trim());
-                    i++; // 跳过下一个值
-                    continue;
-                }
+                i++; // 跳过 DEFAULT 后面的值
             }
             // 处理 COMMENT（COMMENT 后面跟着注释内容）
             else if (upperSpec.equals("COMMENT") && i + 1 < columnSpecs.size()) {

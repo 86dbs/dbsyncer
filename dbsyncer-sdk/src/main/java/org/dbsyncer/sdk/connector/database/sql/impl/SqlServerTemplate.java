@@ -185,10 +185,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             sql.append(" NOT NULL");
         }
         
-        // 添加 DEFAULT 值
-        if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-            sql.append(" DEFAULT ").append(field.getDefaultValue());
-        }
+        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // SQL Server 的注释需要使用扩展属性，这里暂时不处理
         // 如果需要添加注释，可以使用：
@@ -236,7 +233,8 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             String ddlType = convertToDatabaseType(field);
             String columnName = buildColumn(field.getName());
             
-            // 构建列定义：列名 类型 [NOT NULL] [IDENTITY(1,1)] [DEFAULT value]
+            // 构建列定义：列名 类型 [NOT NULL] [IDENTITY(1,1)]
+            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             StringBuilder columnDef = new StringBuilder();
             columnDef.append(String.format("  %s %s", columnName, ddlType));
             
@@ -246,10 +244,6 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             
             if (field.isAutoincrement()) {
                 columnDef.append(" IDENTITY(1,1)");
-            }
-            
-            if (field.getDefaultValue() != null && !field.getDefaultValue().isEmpty()) {
-                columnDef.append(String.format(" DEFAULT %s", field.getDefaultValue()));
             }
             
             columnDefs.add(columnDef.toString());

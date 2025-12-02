@@ -69,12 +69,6 @@ public class Field {
     private Boolean nullable;
 
     /**
-     * 字段默认值
-     * 例如：0, 'default', CURRENT_TIMESTAMP 等
-     */
-    private String defaultValue;
-
-    /**
      * 字段注释
      * 例如：'年龄', '用户ID' 等
      */
@@ -224,22 +218,6 @@ public class Field {
      */
     public void setNullable(Boolean nullable) {
         this.nullable = nullable;
-    }
-
-    /**
-     * 获取字段默认值
-     * @return 默认值字符串，如果未设置则返回null
-     */
-    public String getDefaultValue() {
-        return defaultValue;
-    }
-
-    /**
-     * 设置字段默认值
-     * @param defaultValue 默认值字符串，例如：0, 'default', CURRENT_TIMESTAMP 等
-     */
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
     }
 
     /**
