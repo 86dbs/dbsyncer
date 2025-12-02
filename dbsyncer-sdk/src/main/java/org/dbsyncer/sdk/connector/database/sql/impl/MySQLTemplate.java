@@ -126,6 +126,20 @@ public class MySQLTemplate extends AbstractSqlTemplate {
     @Override
     public String buildCreateTableSql(String schema, String tableName, List<Field> fields, List<String> primaryKeys) {
         List<String> columnDefs = new ArrayList<>();
+        List<String> effectivePrimaryKeys = primaryKeys != null ? new ArrayList<>(primaryKeys) : new ArrayList<>();
+        
+        // MySQL 要求：AUTO_INCREMENT 列必须是主键
+        // 检查是否有 AUTO_INCREMENT 字段，如果不在主键列表中，自动添加到主键列表
+        for (Field field : fields) {
+            if (field.isAutoincrement()) {
+                String fieldName = field.getName();
+                if (!effectivePrimaryKeys.contains(fieldName)) {
+                    // AUTO_INCREMENT 字段不在主键列表中，添加到主键列表（放在最前面）
+                    effectivePrimaryKeys.add(0, fieldName);
+                }
+            }
+        }
+        
         for (Field field : fields) {
             String ddlType = convertToDatabaseType(field);
             String columnName = buildColumn(field.getName());
@@ -153,8 +167,8 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         
         // 构建主键定义
         String pkClause = "";
-        if (primaryKeys != null && !primaryKeys.isEmpty()) {
-            String pkColumns = primaryKeys.stream()
+        if (!effectivePrimaryKeys.isEmpty()) {
+            String pkColumns = effectivePrimaryKeys.stream()
                     .map(this::buildColumn)
                     .collect(java.util.stream.Collectors.joining(", "));
             pkClause = String.format(",\n  PRIMARY KEY (%s)", pkColumns);
