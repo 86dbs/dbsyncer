@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
@@ -50,6 +51,9 @@ public class MappingChecker extends AbstractChecker {
     @Resource
     private TableGroupChecker tableGroupChecker;
 
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
@@ -79,6 +83,8 @@ public class MappingChecker extends AbstractChecker {
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
+
+        preloadTemplate.reConnect(mapping);
 
         // 创建meta
         addMeta(mapping);
@@ -137,6 +143,8 @@ public class MappingChecker extends AbstractChecker {
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
+
+        preloadTemplate.reConnect(mapping);
 
         // 合并关联的映射关系配置
         batchMergeConfig(mapping, params);

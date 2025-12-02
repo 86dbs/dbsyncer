@@ -51,9 +51,10 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 建立连接
      *
      * @param connectorConfig
+     * @param context
      * @return
      */
-    ConnectorInstance connect(C connectorConfig);
+    ConnectorInstance connect(C connectorConfig, ConnectorServiceContext context);
 
     /**
      * 连接器配置校验器

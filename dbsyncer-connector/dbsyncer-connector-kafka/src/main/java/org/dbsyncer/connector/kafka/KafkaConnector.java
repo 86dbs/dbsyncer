@@ -54,7 +54,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public ConnectorInstance connect(KafkaConfig config) {
+    public ConnectorInstance connect(KafkaConfig config, ConnectorServiceContext context) {
         return new KafkaConnectorInstance(config);
     }
 

@@ -16,7 +16,6 @@ import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -165,11 +164,7 @@ public class TaskController extends BaseController {
     @ResponseBody
     public RestResult getDatabases(@RequestParam("connectorId") String connectorId) {
         try {
-            Connector connector = connectorService.getConnector(connectorId);
-            if (connector == null) {
-                return RestResult.restFail("连接器不存在");
-            }
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
             List<String> databases = getDatabaseList(connectorInstance);
 
             return RestResult.restSuccess(databases);
@@ -186,15 +181,9 @@ public class TaskController extends BaseController {
     @ResponseBody
     public RestResult getTables(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema) {
         try {
-            Connector connector = connectorService.getConnector(connectorId);
-            if (connector == null) {
-                return RestResult.restFail("连接器不存在");
-            }
-
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
-            List<Table> tables = connectorFactory.getTable(connectorInstance, context);
-            return RestResult.restSuccess(tables);
+            return RestResult.restSuccess(connectorFactory.getTables(connectorInstance, context));
         } catch (Exception e) {
             log.error("获取表列表失败", e);
             return RestResult.restFail("获取表列表失败: " + e.getMessage());
@@ -208,12 +197,7 @@ public class TaskController extends BaseController {
     @ResponseBody
     public RestResult getTableFields(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema, @RequestParam("tableName") String tableName) {
         try {
-            Connector connector = connectorService.getConnector(connectorId);
-            if (connector == null) {
-                return RestResult.restFail("连接器不存在");
-            }
-
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
             ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
             List<MetaInfo> metaInfos = connectorFactory.getMetaInfo(connectorInstance, context);
             MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);

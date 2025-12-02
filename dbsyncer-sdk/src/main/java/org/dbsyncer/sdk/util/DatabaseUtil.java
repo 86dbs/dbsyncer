@@ -83,21 +83,4 @@ public abstract class DatabaseUtil {
         return properties;
     }
 
-    public static String propertiesToParams(Properties properties) {
-        if (properties == null || properties.isEmpty()) {
-            return "";
-        }
-        StringBuilder params = new StringBuilder();
-        boolean first = true;
-        for (String key : properties.stringPropertyNames()) {
-            if (!first) {
-                params.append("&");
-            }
-            String value = properties.getProperty(key);
-            params.append(key).append("=").append(value);
-            first = false;
-        }
-        return params.toString();
-    }
-
 }

@@ -18,6 +18,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -175,9 +176,10 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public Object getPosition(String id) {
-        Connector connector = getConnector(id);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+    public Object getPosition(String mappingId) {
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         return connectorFactory.getPosition(connectorInstance);
     }
 

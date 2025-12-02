@@ -6,6 +6,7 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogService;
@@ -22,6 +23,7 @@ import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
@@ -126,15 +129,36 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         List<Meta> metas = profileComponent.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
             metas.forEach(m -> {
-                // 恢复驱动状态
-                if (MetaEnum.RUNNING.getCode() == m.getState()) {
+                try {
+                    // 重连
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
-                    managerFactory.start(mapping);
-                } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
-                    managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
+                    reConnect(mapping);
+
+                    // 恢复驱动状态
+                    if (MetaEnum.RUNNING.getCode() == m.getState()) {
+                        managerFactory.start(mapping);
+                    } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
+                        managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
+                    }
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
                 }
             });
         }
+    }
+
+    public void reConnect(Mapping mapping) {
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        connectorFactory.disconnect(sourceInstanceId);
+        connectorFactory.disconnect(targetInstanceId);
+
+        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
+        Assert.notNull(instance, "Source connector instance can not null");
+        connector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), mapping.getTargetDatabase(), mapping.getTargetSchema());
+        Assert.notNull(instance, "Target connector instance can not null");
     }
 
     private void execute(CommandEnum commandEnum) {
@@ -199,7 +223,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 generalExecutor.execute(() -> {
                     try {
                         connectorFactory.disconnect(connector.getId());
-                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
                         logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
                     } catch (Exception e) {
                         logger.error("连接配置异常", e);

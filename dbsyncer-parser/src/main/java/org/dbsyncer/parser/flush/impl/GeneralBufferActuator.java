@@ -25,6 +25,7 @@ import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
@@ -199,8 +200,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(mapping.getSourceConnectorId(), sourceConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(mapping.getTargetConnectorId(), getConnectorConfig(mapping.getTargetConnectorId())));
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
         context.setTraceId(response.getTraceId());
@@ -242,7 +245,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
             // 1.生成目标表执行SQL(暂支持同源)
             if (mapping.getListener().isEnableDDL() && StringUtil.equals(sConnType, tConnType)) {
-                ConnectorInstance tConnectorInstance = connectorFactory.connect(mapping.getTargetConnectorId(), tConnConfig);
+                String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+                ConnectorInstance tConnectorInstance = connectorFactory.connect(instanceId);
                 Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
                 // 2.持久化增量事件数据
                 result.setTableGroupId(tableGroup.getId());
@@ -252,11 +256,18 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
             // 3.更新表属性字段
             DefaultConnectorServiceContext sourceContext = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), tableGroup.getSourceTable().getName());
-            DefaultConnectorServiceContext targetContext = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), tableGroup.getTargetTable().getName());
-            List<MetaInfo> sourceMetaInfos = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), sourceContext);
+            sourceContext.setMappingId(mapping.getId());
+            sourceContext.setConnectorId(mapping.getSourceConnectorId());
+            sourceContext.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
+            List<MetaInfo> sourceMetaInfos = parserComponent.getMetaInfo(sourceContext);
             MetaInfo sourceMetaInfo = CollectionUtils.isEmpty(sourceMetaInfos) ? null : sourceMetaInfos.get(0);
             Assert.notNull(sourceMetaInfo, "无法获取连接器表信息:" + tableGroup.getSourceTable().getName());
-            List<MetaInfo> targetMetaInfos = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), targetContext);
+
+            DefaultConnectorServiceContext targetContext = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), tableGroup.getTargetTable().getName());
+            targetContext.setMappingId(mapping.getId());
+            targetContext.setConnectorId(mapping.getTargetConnectorId());
+            targetContext.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
+            List<MetaInfo> targetMetaInfos = parserComponent.getMetaInfo(targetContext);
             MetaInfo targetMetaInfo = CollectionUtils.isEmpty(targetMetaInfos) ? null : targetMetaInfos.get(0);
             Assert.notNull(targetMetaInfo, "无法获取连接器表信息:" + tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());

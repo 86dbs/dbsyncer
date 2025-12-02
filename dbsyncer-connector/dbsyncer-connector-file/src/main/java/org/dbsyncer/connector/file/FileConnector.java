@@ -74,7 +74,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public ConnectorInstance connect(FileConfig config) {
+    public ConnectorInstance connect(FileConfig config, ConnectorServiceContext context) {
         return new FileConnectorInstance(config);
     }
 
@@ -126,7 +126,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         AtomicLong count = new AtomicLong();
         FileReader reader = null;
         try {
-            reader = new FileReader(new File(command.get(FILE_PATH)));
+            reader = new FileReader(command.get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
             while (lineIterator.hasNext()) {
                 lineIterator.next();

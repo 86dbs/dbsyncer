@@ -10,6 +10,7 @@ import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -50,6 +51,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Resource
     private ParserComponent parserComponent;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @Resource
     private DispatchTaskService dispatchTaskService;
@@ -239,6 +243,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setTableGroups(list);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setConnectorFactory(connectorFactory);
         task.setTableGroupService(this);
         dispatchTaskService.execute(task);
     }

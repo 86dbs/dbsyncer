@@ -4,7 +4,6 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.RepeatedTableGroupException;
@@ -29,8 +28,8 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -71,9 +70,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private TableGroupService tableGroupService;
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
@@ -103,7 +99,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
-
         // 匹配相似表 on
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
             matchSimilarTableGroups(model);
@@ -214,24 +209,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (exclude != null && exclude == 1) {
             return convertMapping2Vo(mapping);
         }
-        ConnectorInstance connectorInstance = null;
-        ConnectorServiceContext context = null;
-        if (mapping.getSourceColumn() == null) {
-            Connector connector = connectorService.getConnector(mapping.getSourceConnectorId());
-            if (connector != null) {
-                connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
-                context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
-                mapping.setSourceTable(connectorFactory.getTable(connectorInstance, context));
-            }
-        }
-        if (mapping.getTargetTable() == null) {
-            Connector targetConnect = connectorService.getConnector(mapping.getSourceConnectorId());
-            if (targetConnect != null) {
-                connectorInstance = connectorFactory.connect(targetConnect.getId(), targetConnect.getConfig());
-                context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
-                mapping.setTargetTable(connectorFactory.getTable(connectorInstance, context));
-            }
-        }
         // 过滤已映射的表
         MappingVo vo = convertMapping2Vo(mapping);
         List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
@@ -304,8 +281,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String refreshMappingTables(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
-        mapping.setSourceTable(getConnectorTables(mapping.getSourceConnectorId(), mapping.getSourceDatabase(), mapping.getSourceSchema()));
-        mapping.setTargetTable(getConnectorTables(mapping.getTargetConnectorId(), mapping.getTargetDatabase(), mapping.getTargetSchema()));
+
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), StringUtil.EMPTY);
+        context.setMappingId(mapping.getId());
+        context.setConnectorId(mapping.getSourceConnectorId());
+        context.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
+        mapping.setSourceTable(getConnectorTables(context));
+
+        context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), StringUtil.EMPTY);
+        context.setMappingId(mapping.getId());
+        context.setConnectorId(mapping.getTargetConnectorId());
+        context.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
+        mapping.setTargetTable(getConnectorTables(context));
         profileComponent.editConfigModel(mapping);
         return "刷新驱动表成功";
     }
@@ -320,15 +307,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
         task.setTableGroupService(tableGroupService);
+        task.setConnectorFactory(connectorFactory);
         dispatchTaskService.execute(task);
     }
 
-    private List<Table> getConnectorTables(String connectorId, String catalog, String schema) {
-        Connector connector = profileComponent.getConnector(connectorId);
-        Assert.notNull(connector, "The connector id is invalid.");
-        // 刷新数据表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
-        return connectorFactory.getTable(connectorInstance, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
+    private List<Table> getConnectorTables(DefaultConnectorServiceContext context) {
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        return connectorFactory.getTables(connectorInstance, context);
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {

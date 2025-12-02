@@ -117,7 +117,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public ConnectorInstance connect(ESConfig config) {
+    public ConnectorInstance connect(ESConfig config, ConnectorServiceContext context) {
         return new ESConnectorInstance(config);
     }
 

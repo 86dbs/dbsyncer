@@ -32,6 +32,10 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
 
     private List<SqlTable> sqlTablePatterns;
 
+    private String mappingId;
+    private String connectorId;
+    private String suffix;
+
     public DefaultConnectorServiceContext(String catalog, String schema, String tablePattern) {
         this.catalog = catalog;
         this.schema = schema;
@@ -80,5 +84,29 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
 
     public void setSqlTablePatterns(List<SqlTable> sqlTablePatterns) {
         this.sqlTablePatterns = sqlTablePatterns;
+    }
+
+    public String getMappingId() {
+        return mappingId;
+    }
+
+    public void setMappingId(String mappingId) {
+        this.mappingId = mappingId;
+    }
+
+    public String getConnectorId() {
+        return connectorId;
+    }
+
+    public void setConnectorId(String connectorId) {
+        this.connectorId = connectorId;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
     }
 }

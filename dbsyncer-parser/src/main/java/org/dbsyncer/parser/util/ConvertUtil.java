@@ -9,9 +9,6 @@ import java.util.Map;
 
 public abstract class ConvertUtil {
 
-    private ConvertUtil() {
-    }
-
     /**
      * 转换参数
      *

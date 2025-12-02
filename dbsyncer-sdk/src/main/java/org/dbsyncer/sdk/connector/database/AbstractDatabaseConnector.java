@@ -72,8 +72,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public ConnectorInstance connect(DatabaseConfig config) {
-        return new DatabaseConnectorInstance(config);
+    public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
+        return new DatabaseConnectorInstance(config, context.getCatalog(), context.getSchema());
     }
 
     @Override

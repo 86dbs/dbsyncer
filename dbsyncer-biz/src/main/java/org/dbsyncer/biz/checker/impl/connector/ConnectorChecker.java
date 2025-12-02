@@ -5,6 +5,7 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -67,7 +68,7 @@ public class ConnectorChecker extends AbstractChecker {
         this.modifyConfigModel(connector, params);
 
         // 连接并获取数据库列表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
         List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
         connector.setDataBaseName(databaseNames);
 
@@ -94,7 +95,7 @@ public class ConnectorChecker extends AbstractChecker {
         configValidator.modify(connectorService, config, params);
 
         // 连接并获取数据库列表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config);
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
         String connectorType = config.getConnectorType();
         List<String> databaseNames = fetchDatabaseNames(connectorInstance, connectorType);
         connector.setDataBaseName(databaseNames);

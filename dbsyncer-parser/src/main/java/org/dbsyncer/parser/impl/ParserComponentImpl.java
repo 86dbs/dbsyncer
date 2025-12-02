@@ -10,13 +10,13 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -24,7 +24,7 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -73,9 +73,9 @@ public class ParserComponentImpl implements ParserComponent {
     private ApplicationContext applicationContext;
 
     @Override
-    public List<MetaInfo> getMetaInfo(String connectorId, ConnectorServiceContext context) {
-        Connector connector = profileComponent.getConnector(connectorId);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig());
+    public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
@@ -98,18 +98,14 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        ConnectorInstance sourceInstance = connectorFactory.connect(mapping.getSourceConnectorId(), sConnConfig);
-        ConnectorInstance targetInstance = connectorFactory.connect(mapping.getTargetConnectorId(), tConnConfig);
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance sourceInstance = connectorFactory.connect(sourceInstanceId);
+        ConnectorInstance targetInstance = connectorFactory.connect(targetInstanceId);
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, sourceInstance, tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, targetInstance, null);
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
-    }
-
-    @Override
-    public long getCount(String connectorId, ConnectorServiceContext context, Map<String, String> command) {
-        ConnectorInstance connectorInstance = connectorFactory.connect(connectorId, getConnectorConfig(connectorId));
-        return connectorFactory.getCount(connectorInstance, command);
     }
 
     @Override
@@ -134,8 +130,11 @@ public class ParserComponentImpl implements ParserComponent {
         Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         final FullPluginContext context = new FullPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sourceConnectorId, sConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(targetConnectorId, tConfig));
+
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
+        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
         context.setSourceTableName(sTableName);
         context.setTargetTableName(tTableName);
         context.setEvent(ConnectorConstant.OPERTION_INSERT);

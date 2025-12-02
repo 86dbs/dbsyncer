@@ -7,7 +7,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
-import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.enums.StatisticEnum;
@@ -61,9 +60,6 @@ public class MonitorController extends BaseController {
 
     @Resource
     private ConnectorService connectorService;
-
-    @Resource
-    private SystemConfigService systemConfigService;
 
     @Resource
     private PreloadTemplate preloadTemplate;
