@@ -114,7 +114,7 @@ public class MonitorController extends BaseController {
         }
     }
 
-    @GetMapping("/queryData")
+    @PostMapping("/queryData")
     @ResponseBody
     public RestResult queryData(HttpServletRequest request) {
         try {

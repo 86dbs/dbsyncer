@@ -143,13 +143,13 @@
     <div class="card-header">
         <div class="grid grid-cols-12 items-center">
             <div class="lg:col-span-3">
-                <select id="searchMetaData" class="form-control">
+                <select id="searchDataMeta" class="form-control">
                     <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
                 </select>
             </div>
             <div class="lg:col-span-3">
                 <select id="searchDataStatus" class="form-control">
-                    <option value="-1" selected="selected">无</option>
+                    <option value="" selected="selected">无</option>
                     <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
                 </select>
             </div>
@@ -180,48 +180,8 @@
                 <th>操作</th>
             </tr>
             </thead>
-            <tbody id="dataList">
-            <tr th:each="d,s : ${pagingData?.data}">
-                <td class="text-center text-tertiary" th:text="${s.index}+1" />
-                <td class="font-medium" th:text="${d?.targetTableName}" />
-                <td th:text="${d?.event}" />
-                <td>
-                    <span th:if="${d?.success == 1}" class="badge badge-success">成功</span>
-                    <span th:if="${d?.success == 0}" class="badge badge-warning">失败</span>
-                </td>
-                <td class="text-ellipsis" style="max-width: 300px;">
-                    <a href="javascript:;" class="text-secondary hover-underline queryError" th:text="${d?.error}"></a>
-                </td>
-                <td class="text-sm text-secondary" th:text="${#dates.format(d?.createTime, 'yyyy-MM-dd HH:mm:ss')}" />
-                <td>
-                    <div class="flex gap-2">
-                        <a th:json="${d?.json}" href="javascript:;" class="btn btn-sm btn-info queryData">
-                            <i class="fa fa-eye"></i> 查看数据
-                        </a>
-                        <a th:if="${d?.success == 0}" th:id="${d?.id}" href="javascript:;" class="btn btn-sm btn-warning retryData">
-                            <i class="fa fa-refresh"></i> 重试
-                        </a>
-                    </div>
-                    <div class="hidden" th:text="${d?.json}"></div>
-                </td>
-            </tr>
-            </tbody>
+            <tbody id="dataTableBody"></tbody>
         </table>
-
-        <!-- 分页信息 -->
-        <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-            <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingData?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
-            <div class="pagination-bar flex items-center gap-2">
-                <button class="pagination-btn" disabled>
-                    <i class="fa fa-angle-left"></i>
-                </button>
-                <button class="pagination-btn active">1</button>
-                <button class="pagination-btn">2</button>
-                <button class="pagination-btn">
-                    <i class="fa fa-angle-right"></i>
-                </button>
-            </div>
-        </div>
 
     </div>
 </div>

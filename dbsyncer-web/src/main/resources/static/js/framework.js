@@ -535,7 +535,7 @@ function renderSyncResult(mapping) {
     // 全量模式显示总数
     if (mapping?.model === 'full') {
         const total = meta?.total || 0;
-        content.push(`总数:${total}`);
+        content.push(`总数: ${total}`);
         if (meta?.counting) {
             content.push(`(正在统计中)`);
         }
@@ -544,26 +544,29 @@ function renderSyncResult(mapping) {
         // 执行中，显示进度
         if (total > 0 && (success + fail) > 0) {
             const progress = (success + fail) / total;
-            content.push(`进度:${formatPercent(progress, 2)}`);
+            content.push(`<br />进度: ${formatPercent(progress, 2)}`);
             const beginTime = meta?.beginTime;
             const endTime = meta?.endTime;
             if (beginTime && endTime) {
                 const seconds = Math.floor((endTime - beginTime) / 1000);
                 if (seconds < 60) {
-                    content.push(`耗时:${seconds}秒`);
+                    content.push(`<br />耗时: ${seconds}秒`);
                 } else {
                     const minutes = Math.floor(seconds / 60);
                     const remainingSeconds = seconds % 60;
-                    content.push(`耗时:${minutes}分${remainingSeconds}秒`);
+                    content.push(`<br />耗时: ${minutes}分${remainingSeconds}秒`);
                 }
             }
         }
+        // 成功数量
+        content.push(`<br />成功: ${meta.success}`);
+    } else {
+        // 成功数量
+        content.push(`成功: ${meta.success}`);
     }
-    // 成功数量
-    content.push(`成功:${meta.success}`);
     // 失败数量
     if (meta.fail > 0) {
-        content.push(`失败:<span class="btn btn-link text-error text-md" title='查看错误日志' onclick="showMappingError('${meta.id}')">${meta.fail}</span>`);
+        content.push(`失败: <span class="text-error">${meta.fail}</span> <span class="btn btn-link text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
     }
     return content.join(' ');
 }

@@ -171,12 +171,6 @@
 .text-gray-200 { color: #e5e7eb; }
 .text-gray-500 { color: #6b7280; }
 
-.text-ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .whitespace-nowrap { white-space: nowrap; }
 .hover-underline:hover { text-decoration: underline; }
 

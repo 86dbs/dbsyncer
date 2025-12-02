@@ -150,9 +150,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
-        String dataStatus = params.get("dataStatus");
+        String status = params.get("status");
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, dataStatus);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
         for (Map row : data) {
@@ -259,7 +259,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String dataStatus) {
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status) {
         // 没有驱动
         if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
@@ -274,8 +274,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询数据状态
-        if (StringUtil.isNotBlank(dataStatus)) {
-            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(dataStatus));
+        if (StringUtil.isNotBlank(status)) {
+            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(status));
         }
         query.setMetaId(metaId);
         query.setType(StorageEnum.DATA);

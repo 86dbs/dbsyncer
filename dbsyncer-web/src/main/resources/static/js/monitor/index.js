@@ -2,87 +2,110 @@
  * 监控页面 - 实时性能监控
  */
 
-// 显示更多
-function showMore($this, $url, $params, $call) {
-    $params.pageNum = parseInt($this.attr("num")) + 1;
-    $params.pageSize = 10;
-    doGetter($url, $params, function (data) {
-        if (data.success === true) {
-            if (data.resultValue.data.length > 0) {
-                $this.attr("num", $params.pageNum);
+// 查看数据
+function bindQueryDataEvent() {
+    let pagination;
+    let metaSelect;
+    let statusSelect;
+    let searchInput;
+
+    function renderDataState(success) {
+        const state = {
+            0: {
+                class: 'badge-error',
+                text: '失败',
+            },
+            1: {
+                class: 'badge-success',
+                text: '成功',
             }
-            $call(data.resultValue);
-        } else {
-            bootGrowl(data.resultValue, "danger");
+        };
+        const config = state[success];
+        return `<span class="badge ${config.class}">${config.text}</span>`;
+    }
+
+    function renderDataButton(row) {
+        const content = [];
+        content.push(`<button class="table-action-btn view" title="查看数据" onclick="queryData('${row?.json}')">
+                    <i class="fa fa-eye"></i>
+                </button>`);
+        // 如果失败，显示重试按钮
+        if (row.success === 0) {
+            content.push(`<button class="table-action-btn play" title="重试" onclick="retryData('${row?.id}')">
+                            <i class="fa fa-refresh"></i>
+                        </button>`);
         }
+        return content.join(' ');
+    }
+
+    // 初始化分页管理器
+    pagination = new PaginationManager({
+        requestUrl: '/monitor/queryData',
+        tableBodySelector: '#dataTableBody',
+        pageSize: 5,
+        renderRow: function(d, index) {
+            return `
+                <tr>
+                    <td class="text-center text-tertiary">${index}</td>
+                    <td class="font-medium">${d?.targetTableName}</td>
+                    <td>${d?.event}</td>
+                    <td>${renderDataState(d.success)}</td>
+                    <td>
+                        <span class="text-secondary hover-underline queryError">${d?.error}</span>
+                    </td>
+                    <td class="text-sm text-secondary">${formatDate(d?.createTime)}</td>
+                    <td>
+                        <div class="flex items-center gap-1">${renderDataButton(d)}</div>
+                    </td>
+                </tr>`;
+        },
+        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
-}
+    // 搜索框输入事件
+    searchInput = initSearch('searchData', search);
+    // 结果下拉
+    statusSelect = $('#searchDataStatus').dbSelect({
+        type: 'single',
+        onSelect: search
+    });
+    // 驱动下拉
+    metaSelect = $('#searchDataMeta').dbSelect({
+        type: 'single',
+        onSelect: search
+    });
 
-function showLog($logList, arr, append) {
-    const size = arr.length;
-    let html = '';
-    if (size > 0) {
-        const start = append ? $logList.find("tr").size() : 0;
-        for (i = 0; i < size; i++) {
-            html += '<tr>';
-            html += '<td>' + (start + i + 1) + '</td>';
-            html += '<td>' + arr[i].json + '</td>';
-            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
-            html += '</tr>';
+    function search(data) {
+        if (pagination && metaSelect && statusSelect && searchInput) {
+            let metaIds = metaSelect.getValues();
+            if (!metaIds) return;
+            pagination.doSearch({
+                "id": metaIds[0],
+                "status": statusSelect.getValues()[0],
+                "error": searchInput.getValue(),
+            });
+        } else {
+            console.log("searchInput=" + searchInput);
+            console.log("statusSelect=" + statusSelect);
+            console.log("metaSelect=" + metaSelect);
         }
     }
-    return html;
 }
 
-function refreshLogList(resultValue, append) {
-    const $logList = $("#logList");
-    const $logTotal = $("#logTotal");
-    const html = showLog($logList, resultValue.data, append);
-    if (append) {
-        $logList.append(html);
-    } else {
-        $logList.html(html);
-        $("#queryLogMore").attr("num", 1);
-    }
-    $logTotal.html(resultValue.total);
-}
-
-function showData($dataList, arr, append) {
-    let html = '';
-    const size = arr.length;
-    if (size > 0) {
-        const start = append ? $dataList.find("tr").size() : 0;
-        for (i = 0; i < size; i++) {
-            html += '<tr>';
-            html += '<td>' + (start + i + 1) + '</td>';
-            html += '<td>' + arr[i].targetTableName + '</td>';
-            html += '<td>' + arr[i].event + '</td>';
-            html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
-            html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
-            html += '<td>' + formatDate(arr[i].createTime) + '</td>';
-            html += '<td><div class="hidden">' + arr[i].json + '</div><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;';
-            html += (arr[i].success ? '' : '<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a>');
-            html += '</td>';
-            html += '</tr>';
-        }
-    }
-    return html;
-}
-
-function refreshDataList(resultValue, append) {
-    const $dataList = $("#dataList");
-    const $dataTotal = $("#dataTotal");
-    const html = showData($dataList, resultValue.data, append);
-    if (append) {
-        $dataList.append(html);
-    } else {
-        $dataList.html(html);
-        $("#queryDataMore").attr("num", 1);
-    }
-    $dataTotal.html(resultValue.total);
-    // bindQueryDataDetailEvent();
-    // bindQueryDataRetryEvent();
-    // bindQueryErrorDetailEvent();
+function bindCleanData() {
+    $("#clearDataBtn").unbind('click').bind('click', function () {
+        let metaId = $(this).attr("metaId");
+        showConfirm({
+            title: '确认清空数据？', icon: 'warning', size: 'large', confirmType: 'danger', onConfirm: function () {
+                doPoster("/monitor/clearData", {id: metaId}, function (response) {
+                    if (response.success) {
+                        bootGrowl('清空数据成功!', 'success');
+                    } else {
+                        bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
+                    }
+                });
+            }
+        });
+    })
 }
 
 // 查看日志
@@ -96,7 +119,7 @@ function bindQueryLogEvent() {
                 <tr>
                     <td>${index}</td>
                     <td>${escapeHtml(row.json || '')}</td>
-                    <td>${formatDate(row.createTime || '')}</td>
+                    <td>${formatRelativeTime(row.createTime || '')}</td>
                 </tr>
             `;
         }
@@ -107,67 +130,24 @@ function bindQueryLogEvent() {
     });
 }
 
-function bindQueryLogMoreEvent() {
-    $("#queryLogMore").click(function () {
-        const keyword = $("#searchLogKeyword").val();
-        showMore($(this), '/monitor/queryLog', {"json": keyword}, function (resultValue) {
-            refreshLogList(resultValue, true)
-        });
-    });
-}
-
-// 查看数据
-function bindQueryDataEvent() {
-    initSearch("searchData", function(value){
-        const id = $("#searchMetaData").val();
-        const success = $("#searchDataSuccess").val();
-        doGetter('/monitor/queryData', {
-            "error": value,
-            "success": success,
-            "id": id,
-            "pageNum": 1,
-            "pageSize": 10
-        }, function (data) {
-            if (data.success === true) {
-                refreshDataList(data.resultValue);
-            } else {
-                bootGrowl(data.resultValue, "danger");
+function bindCleanLog() {
+    $("#clearLogBtn").unbind('click').bind('click', function () {
+        showConfirm({
+            title: '确认清空日志？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function() {
+                doPoster("/monitor/clearLog", {}, function (response) {
+                    if (response.success) {
+                        bootGrowl('清空日志成功!', 'success');
+                    } else {
+                        bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
+                    }
+                });
             }
         });
-    });
-}
-
-function bindQueryDataMoreEvent() {
-    $("#queryDataMore").click(function () {
-        const keyword = $("#searchDataKeyword").val();
-        const id = $("#searchMetaData").val();
-        const success = $("#searchDataSuccess").val();
-        showMore($(this), '/monitor/queryData', {
-            "error": keyword,
-            "success": success,
-            "id": id
-        }, function (resultValue) {
-            refreshDataList(resultValue, true)
-        });
-    });
-}
-
-// 清空数据
-function bindClearEvent($btn, $title, $msg, $url, $callback) {
-    $btn.click(function () {
-        if (confirm($title)) {
-            const $id = null != $callback ? $callback() : $(this).attr("metaId");
-            const data = {"id": $id};
-            doPoster($url, data, function (data) {
-                if (data.success === true) {
-                    bootGrowl($msg, "success");
-                    doLoader('/monitor?id=' + $id);
-                } else {
-                    bootGrowl(data.resultValue, "danger");
-                }
-            });
-        }
-    });
+    })
 }
 
 $(function () {
@@ -476,16 +456,9 @@ $(function () {
     // 立即执行一次更新
     updateMonitorData();
 
-    bindQueryLogEvent();
-    bindQueryLogMoreEvent();
     bindQueryDataEvent();
-    bindQueryDataMoreEvent();
-    bindClearEvent($("#clearDataBtn"), "确认清空数据？", "清空数据成功!", "/monitor/clearData", function (){
-        // todo 刷新驱动数据
-    });
-    bindClearEvent($("#clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
+    bindCleanData();
 
-    $('#searchDataStatus').dbSelect({
-        type: 'single'
-    });
+    bindQueryLogEvent();
+    bindCleanLog();
 });
