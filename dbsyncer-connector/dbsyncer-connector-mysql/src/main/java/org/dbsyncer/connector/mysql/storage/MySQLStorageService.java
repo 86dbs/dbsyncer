@@ -512,12 +512,12 @@ public class MySQLStorageService extends AbstractStorageService {
 
         public void build(String... fieldNames) {
             fields = new ArrayList<>(fieldNames.length);
-            Stream.of(fieldNames).parallel().forEach(k -> {
-                if (fieldMap.containsKey(k)) {
-                    Field field = fieldMap.get(k);
+            for (String k : fieldNames) {
+                Field field = fieldMap.get(k);
+                if (field != null) {
                     fields.add(field);
                 }
-            });
+            }
         }
     }
 
