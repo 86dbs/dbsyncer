@@ -161,7 +161,7 @@ public class DDLSqlServerIntegrationTest {
             // 使用按数据库类型分类的脚本
             String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql, resetSql);
+                testDatabaseManager.resetTableStructure(resetSql);
                 logger.debug("测试数据库表结构重置完成");
             }
         } catch (Exception e) {

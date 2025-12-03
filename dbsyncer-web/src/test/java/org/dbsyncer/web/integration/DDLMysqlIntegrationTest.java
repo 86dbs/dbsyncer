@@ -5,6 +5,7 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -12,11 +13,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.web.Application;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +110,9 @@ public class DDLMysqlIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
+        // 先清理可能残留的测试 mapping（防止上一个测试清理失败导致残留）
+        cleanupResidualTestMappings();
+
         // 确保每个测试开始时数据库表结构是初始状态
         resetDatabaseTableStructure();
 
@@ -154,9 +154,41 @@ public class DDLMysqlIntegrationTest {
         } catch (Exception e) {
             logger.warn("清理Connector失败", e);
         }
+    }
 
-        // 重置表结构
-        resetDatabaseTableStructure();
+    /**
+     * 清理残留的测试 mapping
+     * 防止上一个测试清理失败导致残留，确保每个测试开始时环境干净
+     */
+    private void cleanupResidualTestMappings() {
+        try {
+            List<Mapping> allMappings = profileComponent.getMappingAll();
+            int cleanedCount = 0;
+
+            for (Mapping mapping : allMappings) {
+                String mappingName = mapping.getName();
+                // 清理包含"测试"或"Test"的 mapping（测试相关的 mapping）
+                try {
+                    String mappingId = mapping.getId();
+                    try {
+                        mappingService.stop(mappingId);
+                        mappingService.remove(mappingId);
+                        cleanedCount++;
+                        logger.debug("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
+                    } catch (Exception e) {
+                        logger.debug("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
+                    }
+                } catch (Exception e) {
+                    logger.debug("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
+                }
+            }
+
+            if (cleanedCount > 0) {
+                logger.info("清理完成，共清理了 {} 个残留的测试 mapping", cleanedCount);
+            }
+        } catch (Exception e) {
+            logger.debug("清理残留测试 mapping 时出错: {}", e.getMessage());
+        }
     }
 
     /**
@@ -172,19 +204,19 @@ public class DDLMysqlIntegrationTest {
             forceDropTable("ddlTestTarget", sourceConfig);
             forceDropTable("ddlTestSource", targetConfig);
             forceDropTable("ddlTestTarget", targetConfig);
-            
+
             // 等待一小段时间，确保删除操作完成
-            Thread.sleep(100);
-            
+            Thread.sleep(200);
+
             // 使用按数据库类型分类的脚本重建表
             String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql, resetSql);
+                testDatabaseManager.resetTableStructure(resetSql);
                 logger.debug("测试数据库表结构重置完成");
-                
+
                 // 再次等待，确保表创建完成
-                Thread.sleep(100);
-                
+                Thread.sleep(200);
+
                 // 验证表结构确实被重置（检查表是否存在且只有初始字段）
                 verifyTableStructureReset();
             } else {
@@ -235,28 +267,28 @@ public class DDLMysqlIntegrationTest {
                 if (sourceTableCount == null || sourceTableCount == 0) {
                     logger.warn("表 ddlTestSource 不存在，可能需要重新创建");
                 }
-                
+
                 // 检查目标表是否存在
                 String checkTargetTableSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ddlTestTarget'";
                 Integer targetTableCount = databaseTemplate.queryForObject(checkTargetTableSql, Integer.class);
                 if (targetTableCount == null || targetTableCount == 0) {
                     logger.warn("表 ddlTestTarget 不存在，可能需要重新创建");
                 }
-                
+
                 // 检查源表的字段列表（应该只有初始字段：id, first_name, last_name, department, created_at）
                 String checkSourceColumnsSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ddlTestSource' ORDER BY ORDINAL_POSITION";
                 List<String> sourceColumns = databaseTemplate.queryForList(checkSourceColumnsSql, String.class);
-                
+
                 if (sourceColumns != null && sourceColumns.size() > 5) {
                     logger.warn("表 ddlTestSource 包含额外字段，可能未正确重置。当前字段: {}", sourceColumns);
                 } else {
                     logger.debug("源表结构验证通过，字段数: {}", sourceColumns != null ? sourceColumns.size() : 0);
                 }
-                
+
                 // 检查目标表的字段列表
                 String checkTargetColumnsSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ddlTestTarget' ORDER BY ORDINAL_POSITION";
                 List<String> targetColumns = databaseTemplate.queryForList(checkTargetColumnsSql, String.class);
-                
+
                 if (targetColumns != null && targetColumns.size() > 5) {
                     logger.warn("表 ddlTestTarget 包含额外字段，可能未正确重置。当前字段: {}", targetColumns);
                 } else {
@@ -280,7 +312,7 @@ public class DDLMysqlIntegrationTest {
                 // 直接执行SQL，不通过testDatabaseManager
                 DatabaseConnectorInstance sourceInstance = new DatabaseConnectorInstance(sourceConfig);
                 DatabaseConnectorInstance targetInstance = new DatabaseConnectorInstance(targetConfig);
-                
+
                 sourceInstance.execute(databaseTemplate -> {
                     String[] statements = resetSql.split(";");
                     for (String stmt : statements) {
@@ -295,7 +327,7 @@ public class DDLMysqlIntegrationTest {
                     }
                     return null;
                 });
-                
+
                 targetInstance.execute(databaseTemplate -> {
                     String[] statements = resetSql.split(";");
                     for (String stmt : statements) {
@@ -310,7 +342,7 @@ public class DDLMysqlIntegrationTest {
                     }
                     return null;
                 });
-                
+
                 logger.info("强制重置表结构完成");
             }
         } catch (Exception e) {
@@ -332,13 +364,13 @@ public class DDLMysqlIntegrationTest {
         // 启动Mapping
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("age", 10000);
 
@@ -383,14 +415,14 @@ public class DDLMysqlIntegrationTest {
             }
             throw e;
         }
-        
+
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("email", 10000);
 
@@ -403,6 +435,9 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到email字段的映射", foundEmailMapping);
         verifyFieldExistsInTargetDatabase("email", "ddlTestTarget", targetConfig);
+        
+        // 验证字段位置：email应该在first_name之后
+        verifyFieldPosition("email", "first_name", "ddlTestTarget", targetConfig, true);
 
         logger.info("ADD COLUMN带AFTER子句测试通过");
     }
@@ -418,12 +453,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("priority", 10000);
 
@@ -436,6 +471,9 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到priority字段的映射", foundPriorityMapping);
         verifyFieldExistsInTargetDatabase("priority", "ddlTestTarget", targetConfig);
+        
+        // 验证字段位置：priority应该在第一位
+        verifyFieldIsFirst("priority", "ddlTestTarget", targetConfig);
 
         logger.info("ADD COLUMN带FIRST子句测试通过");
     }
@@ -451,12 +489,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("status", 10000);
 
@@ -469,6 +507,9 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到status字段的映射", foundStatusMapping);
         verifyFieldExistsInTargetDatabase("status", "ddlTestTarget", targetConfig);
+        
+        // 验证字段默认值：status应该有默认值'active'
+        verifyFieldDefaultValue("status", "ddlTestTarget", targetConfig, "'active'");
 
         logger.info("ADD COLUMN带默认值测试通过");
     }
@@ -484,12 +525,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("phone", 10000);
 
@@ -502,6 +543,9 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到phone字段的映射", foundPhoneMapping);
         verifyFieldExistsInTargetDatabase("phone", "ddlTestTarget", targetConfig);
+        
+        // 验证字段NOT NULL约束
+        verifyFieldNotNull("phone", "ddlTestTarget", targetConfig);
 
         logger.info("ADD COLUMN带NOT NULL约束测试通过");
     }
@@ -517,12 +561,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("created_by", 10000);
 
@@ -535,6 +579,10 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到created_by字段的映射", foundCreatedByMapping);
         verifyFieldExistsInTargetDatabase("created_by", "ddlTestTarget", targetConfig);
+        
+        // 验证字段默认值和NOT NULL约束
+        verifyFieldDefaultValue("created_by", "ddlTestTarget", targetConfig, "'system'");
+        verifyFieldNotNull("created_by", "ddlTestTarget", targetConfig);
 
         logger.info("ADD COLUMN带默认值和NOT NULL约束测试通过");
     }
@@ -552,12 +600,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待DDL DROP处理完成（使用轮询方式）
         waitForDDLDropProcessingComplete("department", 10000);
 
@@ -586,12 +634,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // MODIFY操作不需要等待新字段，只需要验证现有字段映射仍然存在
         Thread.sleep(2000);
 
@@ -603,6 +651,9 @@ public class DDLMysqlIntegrationTest {
                         fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
 
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
+        
+        // 验证字段长度已修改为100
+        verifyFieldLength("first_name", "ddlTestTarget", targetConfig, 100);
 
         logger.info("MODIFY COLUMN修改长度测试通过");
     }
@@ -635,6 +686,9 @@ public class DDLMysqlIntegrationTest {
                         fm.getTarget() != null && "count_num".equals(fm.getTarget().getName()));
 
         assertTrue("应找到count_num字段的映射", foundCountNumMapping);
+        
+        // 验证字段类型已修改为BIGINT
+        verifyFieldType("count_num", "ddlTestTarget", targetConfig, "bigint");
 
         logger.info("MODIFY COLUMN修改类型测试通过");
     }
@@ -650,12 +704,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // MODIFY操作不需要等待新字段，只需要验证现有字段映射仍然存在
         Thread.sleep(2000);
 
@@ -667,6 +721,9 @@ public class DDLMysqlIntegrationTest {
                         fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
 
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
+        
+        // 验证字段NOT NULL约束
+        verifyFieldNotNull("first_name", "ddlTestTarget", targetConfig);
 
         logger.info("MODIFY COLUMN添加NOT NULL约束测试通过");
     }
@@ -700,6 +757,9 @@ public class DDLMysqlIntegrationTest {
                         fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
 
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
+        
+        // 验证字段可空（NULL约束）
+        verifyFieldNullable("first_name", "ddlTestTarget", targetConfig);
 
         logger.info("MODIFY COLUMN移除NOT NULL约束测试通过");
     }
@@ -717,12 +777,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待CHANGE COLUMN处理完成（使用轮询方式）
         waitForDDLProcessingComplete("full_name", 10000);
 
@@ -762,7 +822,7 @@ public class DDLMysqlIntegrationTest {
         String sourceDDL = "ALTER TABLE ddlTestSource CHANGE COLUMN description desc_text TEXT";
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待CHANGE COLUMN处理完成（使用轮询方式）
         waitForDDLProcessingComplete("desc_text", 10000);
 
@@ -781,6 +841,9 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到desc_text到desc_text的字段映射", foundNewMapping);
         assertTrue("不应找到description到description的旧字段映射", notFoundOldMapping);
+        
+        // 验证字段类型已修改为TEXT
+        verifyFieldType("desc_text", "ddlTestTarget", targetConfig, "text");
 
         logger.info("CHANGE COLUMN重命名并修改类型测试通过");
     }
@@ -796,12 +859,12 @@ public class DDLMysqlIntegrationTest {
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
-        
+
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
         executeDDLToSourceDatabase(sourceDDL, sourceConfig);
-        
+
         // 等待CHANGE COLUMN处理完成（使用轮询方式）
         waitForDDLProcessingComplete("user_name", 10000);
 
@@ -820,6 +883,10 @@ public class DDLMysqlIntegrationTest {
 
         assertTrue("应找到user_name到user_name的字段映射", foundNewMapping);
         assertTrue("不应找到first_name到first_name的旧字段映射", notFoundOldMapping);
+        
+        // 验证字段长度已修改为100，并且有NOT NULL约束
+        verifyFieldLength("user_name", "ddlTestTarget", targetConfig, 100);
+        verifyFieldNotNull("user_name", "ddlTestTarget", targetConfig);
 
         logger.info("CHANGE COLUMN重命名并修改长度和约束测试通过");
     }
@@ -860,7 +927,7 @@ public class DDLMysqlIntegrationTest {
         params.put("enableDelete", "true");
 
         String mappingId = mappingService.add(params);
-        
+
         // 创建后需要编辑一次以正确设置增量同步配置（因为 checkAddConfigModel 默认可能是全量同步）
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
@@ -912,7 +979,7 @@ public class DDLMysqlIntegrationTest {
                 }
             }
         }
-        
+
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
         instance.execute(databaseTemplate -> {
             databaseTemplate.execute(sql);
@@ -927,8 +994,8 @@ public class DDLMysqlIntegrationTest {
         try {
             // 匹配模式: ADD COLUMN column_name ...
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
-                "(?i)ADD\\s+COLUMN\\s+([a-zA-Z_][a-zA-Z0-9_]*)", 
-                java.util.regex.Pattern.CASE_INSENSITIVE
+                    "(?i)ADD\\s+COLUMN\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                    java.util.regex.Pattern.CASE_INSENSITIVE
             );
             java.util.regex.Matcher matcher = pattern.matcher(sql);
             if (matcher.find()) {
@@ -948,8 +1015,8 @@ public class DDLMysqlIntegrationTest {
             DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
             return instance.execute(databaseTemplate -> {
                 String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
-                                 "WHERE TABLE_SCHEMA = DATABASE() " +
-                                 "AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                        "WHERE TABLE_SCHEMA = DATABASE() " +
+                        "AND TABLE_NAME = ? AND COLUMN_NAME = ?";
                 Integer count = databaseTemplate.queryForObject(checkSql, Integer.class, tableName, columnName);
                 return count != null && count > 0;
             });
@@ -990,6 +1057,219 @@ public class DDLMysqlIntegrationTest {
     }
 
     /**
+     * 验证字段位置：验证指定字段是否在另一个字段之后（或之前）
+     *
+     * @param fieldName 要验证的字段名
+     * @param referenceFieldName 参考字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     * @param after true表示验证fieldName在referenceFieldName之后，false表示之前
+     */
+    private void verifyFieldPosition(String fieldName, String referenceFieldName, String tableName, DatabaseConfig config, boolean after) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的位置顺序
+            String sql = "SELECT COLUMN_NAME, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? " +
+                        "AND COLUMN_NAME IN (?, ?) " +
+                        "ORDER BY ORDINAL_POSITION";
+            
+            List<Map<String, Object>> columns = databaseTemplate.queryForList(sql, tableName, fieldName, referenceFieldName);
+            
+            if (columns.size() != 2) {
+                throw new AssertionError(String.format("未找到字段 %s 或 %s", fieldName, referenceFieldName));
+            }
+            
+            int fieldPosition = -1;
+            int refPosition = -1;
+            for (Map<String, Object> col : columns) {
+                String colName = (String) col.get("COLUMN_NAME");
+                Integer position = ((Number) col.get("ORDINAL_POSITION")).intValue();
+                if (fieldName.equalsIgnoreCase(colName)) {
+                    fieldPosition = position;
+                } else if (referenceFieldName.equalsIgnoreCase(colName)) {
+                    refPosition = position;
+                }
+            }
+            
+            if (after) {
+                assertTrue(String.format("字段 %s 应在字段 %s 之后，但实际位置: %s=%d, %s=%d", 
+                        fieldName, referenceFieldName, fieldName, fieldPosition, referenceFieldName, refPosition),
+                        fieldPosition > refPosition);
+                logger.info("字段位置验证通过: {} (位置{}) 在 {} (位置{}) 之后", fieldName, fieldPosition, referenceFieldName, refPosition);
+            } else {
+                assertTrue(String.format("字段 %s 应在字段 %s 之前，但实际位置: %s=%d, %s=%d", 
+                        fieldName, referenceFieldName, fieldName, fieldPosition, referenceFieldName, refPosition),
+                        fieldPosition < refPosition);
+                logger.info("字段位置验证通过: {} (位置{}) 在 {} (位置{}) 之前", fieldName, fieldPosition, referenceFieldName, refPosition);
+            }
+            
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段是否在第一位
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     */
+    private void verifyFieldIsFirst(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的位置
+            String sql = "SELECT ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            Integer position = databaseTemplate.queryForObject(sql, Integer.class, tableName, fieldName);
+            
+            assertNotNull(String.format("未找到字段 %s", fieldName), position);
+            assertEquals(String.format("字段 %s 应在第一位，但实际位置是 %d", fieldName, position), 
+                    Integer.valueOf(1), position);
+            
+            logger.info("字段位置验证通过: {} 在第一位", fieldName);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段的默认值
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     * @param expectedDefault 期望的默认值（SQL格式，如 'active' 或 NULL）
+     */
+    private void verifyFieldDefaultValue(String fieldName, String tableName, DatabaseConfig config, String expectedDefault) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的默认值
+            String sql = "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            String actualDefault = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            
+            if (expectedDefault == null || "NULL".equalsIgnoreCase(expectedDefault)) {
+                assertTrue(String.format("字段 %s 的默认值应为 NULL，但实际是 %s", fieldName, actualDefault),
+                        actualDefault == null || "NULL".equalsIgnoreCase(actualDefault));
+            } else {
+                // MySQL的默认值可能包含引号，需要比较时去除引号
+                String normalizedExpected = expectedDefault.replace("'", "").replace("\"", "");
+                String normalizedActual = actualDefault != null ? actualDefault.replace("'", "").replace("\"", "") : "";
+                
+                assertTrue(String.format("字段 %s 的默认值应为 %s，但实际是 %s", fieldName, expectedDefault, actualDefault),
+                        normalizedExpected.equalsIgnoreCase(normalizedActual));
+            }
+            
+            logger.info("字段默认值验证通过: {} 的默认值是 {}", fieldName, actualDefault);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段是否为NOT NULL
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     */
+    private void verifyFieldNotNull(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的IS_NULLABLE属性
+            String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            String isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            
+            assertNotNull(String.format("未找到字段 %s", fieldName), isNullable);
+            assertEquals(String.format("字段 %s 应为NOT NULL，但实际是 %s", fieldName, isNullable),
+                    "NO", isNullable.toUpperCase());
+            
+            logger.info("字段NOT NULL约束验证通过: {} 是NOT NULL", fieldName);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段是否可空（NULL）
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     */
+    private void verifyFieldNullable(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的IS_NULLABLE属性
+            String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            String isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            
+            assertNotNull(String.format("未找到字段 %s", fieldName), isNullable);
+            assertEquals(String.format("字段 %s 应为NULL（可空），但实际是 %s", fieldName, isNullable),
+                    "YES", isNullable.toUpperCase());
+            
+            logger.info("字段NULL约束验证通过: {} 是可空的", fieldName);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段长度
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     * @param expectedLength 期望的长度
+     */
+    private void verifyFieldLength(String fieldName, String tableName, DatabaseConfig config, int expectedLength) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的CHARACTER_MAXIMUM_LENGTH属性
+            String sql = "SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            Integer actualLength = databaseTemplate.queryForObject(sql, Integer.class, tableName, fieldName);
+            
+            assertNotNull(String.format("未找到字段 %s 或字段没有长度属性", fieldName), actualLength);
+            assertEquals(String.format("字段 %s 的长度应为 %d，但实际是 %d", fieldName, expectedLength, actualLength),
+                    Integer.valueOf(expectedLength), actualLength);
+            
+            logger.info("字段长度验证通过: {} 的长度是 {}", fieldName, actualLength);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段类型
+     *
+     * @param fieldName 要验证的字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     * @param expectedType 期望的类型（不区分大小写，如 "varchar", "int", "bigint", "text"）
+     */
+    private void verifyFieldType(String fieldName, String tableName, DatabaseConfig config, String expectedType) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 查询字段的DATA_TYPE属性
+            String sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            
+            String actualType = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            
+            assertNotNull(String.format("未找到字段 %s", fieldName), actualType);
+            assertTrue(String.format("字段 %s 的类型应为 %s，但实际是 %s", fieldName, expectedType, actualType),
+                    expectedType.equalsIgnoreCase(actualType));
+            
+            logger.info("字段类型验证通过: {} 的类型是 {}", fieldName, actualType);
+            return null;
+        });
+    }
+
+    /**
      * 从URL推断连接器类型
      */
     private static String determineConnectorType(DatabaseConfig config) {
@@ -1025,9 +1305,9 @@ public class DDLMysqlIntegrationTest {
 
     /**
      * 根据数据库类型加载对应的SQL脚本
-     * 
+     *
      * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
-     * @param config 数据库配置，用于推断数据库类型
+     * @param config         数据库配置，用于推断数据库类型
      * @return SQL脚本内容
      */
     private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
@@ -1100,18 +1380,18 @@ public class DDLMysqlIntegrationTest {
 
     /**
      * 等待DDL处理完成（通过轮询检查字段映射是否已更新）
-     * 
+     *
      * @param expectedFieldName 期望的字段名
-     * @param timeoutMs 超时时间（毫秒）
+     * @param timeoutMs         超时时间（毫秒）
      * @throws InterruptedException 如果等待过程中被中断
-     * @throws Exception 如果查询TableGroup时发生异常
+     * @throws Exception            如果查询TableGroup时发生异常
      */
     private void waitForDDLProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
         long startTime = System.currentTimeMillis();
         long checkInterval = 300; // 每300ms检查一次
-        
+
         logger.info("等待DDL处理完成，期望字段: {}", expectedFieldName);
-        
+
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
             if (tableGroups != null && !tableGroups.isEmpty()) {
@@ -1119,7 +1399,7 @@ public class DDLMysqlIntegrationTest {
                 boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
                         .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
                                 fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
-                
+
                 if (foundFieldMapping) {
                     logger.info("DDL处理完成，字段 {} 的映射已更新", expectedFieldName);
                     // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
@@ -1129,32 +1409,32 @@ public class DDLMysqlIntegrationTest {
             }
             Thread.sleep(checkInterval);
         }
-        
+
         // 超时后记录警告，但不抛出异常（让后续的断言来处理）
         logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
     }
 
     /**
      * 等待DDL DROP处理完成（通过轮询检查字段映射是否已移除）
-     * 
+     *
      * @param expectedFieldName 期望被移除的字段名
-     * @param timeoutMs 超时时间（毫秒）
+     * @param timeoutMs         超时时间（毫秒）
      * @throws InterruptedException 如果等待过程中被中断
-     * @throws Exception 如果查询TableGroup时发生异常
+     * @throws Exception            如果查询TableGroup时发生异常
      */
     private void waitForDDLDropProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
         long startTime = System.currentTimeMillis();
         long checkInterval = 300; // 每300ms检查一次
-        
+
         logger.info("等待DDL DROP处理完成，期望移除字段: {}", expectedFieldName);
-        
+
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
             if (tableGroups != null && !tableGroups.isEmpty()) {
                 TableGroup tableGroup = tableGroups.get(0);
                 boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
                         .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
-                
+
                 if (!foundFieldMapping) {
                     logger.info("DDL DROP处理完成，字段 {} 的映射已移除", expectedFieldName);
                     // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
@@ -1164,42 +1444,42 @@ public class DDLMysqlIntegrationTest {
             }
             Thread.sleep(checkInterval);
         }
-        
+
         // 超时后记录警告，但不抛出异常（让后续的断言来处理）
         logger.warn("等待DDL DROP处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
     }
 
     /**
      * 等待Meta进入运行状态
-     * 
-     * @param metaId Meta ID
+     *
+     * @param metaId    Meta ID
      * @param timeoutMs 超时时间（毫秒）
      * @throws InterruptedException 如果等待过程中被中断
      */
     private void waitForMetaRunning(String metaId, long timeoutMs) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long checkInterval = 200; // 每200ms检查一次
-        
+
         logger.info("等待Meta进入运行状态: metaId={}", metaId);
-        
+
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             Meta meta = profileComponent.getMeta(metaId);
             if (meta != null) {
                 // 使用info级别记录状态，便于调试
-                logger.info("Meta状态检查: metaId={}, state={}, isRunning={}, errorMessage={}", 
-                        metaId, meta.getState(), meta.isRunning(), 
+                logger.info("Meta状态检查: metaId={}, state={}, isRunning={}, errorMessage={}",
+                        metaId, meta.getState(), meta.isRunning(),
                         meta.getErrorMessage() != null && !meta.getErrorMessage().isEmpty() ? meta.getErrorMessage() : "无");
-                
+
                 if (meta.isRunning()) {
                     logger.info("Meta {} 已处于运行状态", metaId);
                     // 额外等待一小段时间，确保 Listener 完全启动并开始监听
                     Thread.sleep(1000);
                     return;
                 }
-                
+
                 // 如果处于错误状态，记录详细信息并立即抛出异常
                 if (meta.isError()) {
-                    String errorMsg = String.format("Meta %s 处于错误状态: state=%d, errorMessage=%s", 
+                    String errorMsg = String.format("Meta %s 处于错误状态: state=%d, errorMessage=%s",
                             metaId, meta.getState(), meta.getErrorMessage());
                     logger.error(errorMsg);
                     throw new RuntimeException(errorMsg);
@@ -1209,15 +1489,15 @@ public class DDLMysqlIntegrationTest {
             }
             Thread.sleep(checkInterval);
         }
-        
+
         // 超时后再次检查一次，如果仍未运行则抛出异常
         Meta meta = profileComponent.getMeta(metaId);
         assertNotNull("Meta不应为null", meta);
-        logger.error("Meta状态检查失败: metaId={}, state={}, isRunning={}, errorMessage={}", 
+        logger.error("Meta状态检查失败: metaId={}, state={}, isRunning={}, errorMessage={}",
                 metaId, meta.getState(), meta.isRunning(), meta.getErrorMessage());
-        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState() + 
-                   (meta.getErrorMessage() != null ? ", 错误信息: " + meta.getErrorMessage() : ""), 
-                   meta.isRunning());
+        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState() +
+                        (meta.getErrorMessage() != null ? ", 错误信息: " + meta.getErrorMessage() : ""),
+                meta.isRunning());
     }
 }
 

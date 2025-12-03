@@ -184,7 +184,7 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
                             "    first_name NVARCHAR(50) NOT NULL\n" +
                             ");";
 
-            testDatabaseManager.resetTableStructure(mysqlResetSql, sqlServerResetSql);
+            testDatabaseManager.resetTableStructure(mysqlResetSql);
             logger.debug("测试数据库表结构重置完成");
         } catch (Exception e) {
             logger.error("重置测试数据库表结构失败", e);

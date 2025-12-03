@@ -75,18 +75,12 @@ public class TestDatabaseManager {
      * 重置测试数据库表结构到初始状态
      * 用于在测试之间恢复表结构，确保测试间的隔离性
      *
-     * @param sourceResetSql 重置源数据库的SQL脚本
-     * @param targetResetSql 重置目标数据库的SQL脚本
      */
-    public void resetTableStructure(String sourceResetSql, String targetResetSql) {
+    public void resetTableStructure(String script) {
         logger.debug("开始重置测试数据库表结构");
 
         try {
-            // 重置源数据库表结构
-            executeSql(sourceConnectorInstance, sourceResetSql);
-
-            // 重置目标数据库表结构
-            executeSql(targetConnectorInstance, targetResetSql);
+            executeSql(sourceConnectorInstance, script);
 
             logger.debug("测试数据库表结构重置完成");
         } catch (Exception e) {
@@ -106,21 +100,24 @@ public class TestDatabaseManager {
             return;
         }
 
+        // 预处理SQL脚本：移除注释和空行，合并多行语句为单行
+        String processedSql = preprocessSqlScript(sql);
+
         connectorInstance.execute(databaseTemplate -> {
             try (Connection connection = databaseTemplate.getSimpleConnection().getConnection();
                  Statement statement = connection.createStatement()) {
 
                 // 按分号分割SQL语句并逐个执行
-                String[] sqlStatements = sql.split(";");
+                String[] sqlStatements = processedSql.split(";");
                 for (String sqlStatement : sqlStatements) {
                     String trimmedSql = sqlStatement.trim();
                     if (!trimmedSql.isEmpty()) {
-                        logger.debug("执行SQL: {}", trimmedSql);
+                        logger.info("执行SQL: {}", trimmedSql);
                         try {
                             statement.execute(trimmedSql);
                         } catch (SQLException e) {
                             // 对于清理操作，某些语句可能失败（如表不存在），我们记录但不中断执行
-                            logger.debug("SQL执行失败（可能可忽略）: {}", trimmedSql, e);
+                            logger.error("SQL执行失败（可能可忽略）: {}", trimmedSql, e);
                         }
                     }
                 }
@@ -132,9 +129,39 @@ public class TestDatabaseManager {
             }
         });
     }
+
+    /**
+     * 预处理SQL脚本：移除注释行和空行，合并多行语句为单行
+     * 这样可以让简单的 split(";") 正确处理多行SQL语句（如CREATE TABLE）
+     *
+     * @param sql 原始SQL脚本
+     * @return 处理后的SQL脚本（单行格式，用空格分隔）
+     */
+    private String preprocessSqlScript(String sql) {
+        if (sql == null || sql.trim().isEmpty()) {
+            return "";
+        }
+
+        StringBuilder result = new StringBuilder();
+        String[] lines = sql.split("\n");
+        
+        for (String line : lines) {
+            String trimmed = line.trim();
+            // 跳过空行和注释行（以--开头的行）
+            if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+                continue;
+            }
+            // 移除行内注释（-- 后面的内容）
+            int commentIndex = trimmed.indexOf("--");
+            if (commentIndex >= 0) {
+                trimmed = trimmed.substring(0, commentIndex).trim();
+            }
+            if (!trimmed.isEmpty()) {
+                result.append(trimmed).append(" ");
+            }
+        }
+        
+        return result.toString().trim();
+    }
 }
-
-
-
-
 
