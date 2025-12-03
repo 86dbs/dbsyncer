@@ -46,13 +46,27 @@
         $select.data('dbSelectInitialized', true);
 
         // 默认配置
+        let defaultValue = options.defaultValue || null;
+
+        // 如果没有设置 defaultValue，尝试从 HTML 中读取 option:selected 的值
+        if (!defaultValue && $select.is('select')) {
+            const $selectedOption = $select.find('option:selected');
+            if ($selectedOption.length > 0) {
+                const selectedValue = $selectedOption.val();
+                if (selectedValue && selectedValue !== '') {
+                    defaultValue = selectedValue;
+                }
+            }
+        }
+
         const config = {
             type: options.type || 'single',
             data: options.data || [],
-            defaultValue: options.defaultValue || null,
+            defaultValue: defaultValue,
             disabled: options.disabled || false,
             customButtons: (options.customButtons || []).slice(0, 2), // 最多2个
             onSelect: options.onSelect || function() {},
+            onReady: options.onReady || function() {},
             onCustomButton: options.onCustomButton || function() {}
         };
 
@@ -572,6 +586,8 @@
         // 保存 API 到组件和原始元素
         $component.data('dbSelect', api);
         $select.data('dbSelect', api);
+        // 触发初始化完成事件
+        config.onReady(selectedValues);
 
         return api;
     };

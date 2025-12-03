@@ -1,6 +1,3 @@
-/**
- * 监控页面 - 实时性能监控
- */
 
 // 查看数据
 function bindQueryDataEvent() {
@@ -8,6 +5,35 @@ function bindQueryDataEvent() {
     let metaSelect;
     let statusSelect;
     let searchInput;
+
+    function params() {
+        const metaIds = metaSelect.getValues();
+        return {
+            "id": metaIds[0],
+            "status": statusSelect.getValues()[0] || '',
+            "error": searchInput.getValue() || '',
+        }
+    }
+
+    // 搜索函数
+    function search() {
+        pagination.doSearch(params());
+    }
+
+    // 搜索框输入事件
+    searchInput = initSearch('searchData', search);
+
+    // 结果下拉（跳过初始化回调，避免初始化时触发搜索）
+    statusSelect = $('#searchDataStatus').dbSelect({
+        type: 'single',
+        onSelect: search
+    });
+
+    // 驱动下拉（跳过初始化回调，避免初始化时触发搜索）
+    metaSelect = $('#searchDataMeta').dbSelect({
+        type: 'single',
+        onSelect: search
+    });
 
     function renderDataState(success) {
         const state = {
@@ -42,6 +68,7 @@ function bindQueryDataEvent() {
     pagination = new PaginationManager({
         requestUrl: '/monitor/queryData',
         tableBodySelector: '#dataTableBody',
+        params: params(),
         pageSize: 5,
         renderRow: function(d, index) {
             return `
@@ -61,34 +88,6 @@ function bindQueryDataEvent() {
         },
         emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
-    // 搜索框输入事件
-    searchInput = initSearch('searchData', search);
-    // 结果下拉
-    statusSelect = $('#searchDataStatus').dbSelect({
-        type: 'single',
-        onSelect: search
-    });
-    // 驱动下拉
-    metaSelect = $('#searchDataMeta').dbSelect({
-        type: 'single',
-        onSelect: search
-    });
-
-    function search(data) {
-        if (pagination && metaSelect && statusSelect && searchInput) {
-            let metaIds = metaSelect.getValues();
-            if (!metaIds) return;
-            pagination.doSearch({
-                "id": metaIds[0],
-                "status": statusSelect.getValues()[0],
-                "error": searchInput.getValue(),
-            });
-        } else {
-            console.log("searchInput=" + searchInput);
-            console.log("statusSelect=" + statusSelect);
-            console.log("metaSelect=" + metaSelect);
-        }
-    }
 }
 
 function bindCleanData() {

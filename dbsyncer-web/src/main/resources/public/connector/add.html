@@ -39,17 +39,23 @@
 
 <script>
 $(document).ready(function() {
-    $('#connectorType').dbSelect({
-        type: 'single',
-        onSelect: function (data) {
+    function changeConfig(selectedValues) {
+        // 初始化完成后，如果有默认选中值，触发加载配置
+        if (selectedValues && selectedValues.length > 0) {
+            const selectedValue = selectedValues[0];
             const $connectorConfig = $("#connectorConfig");
             $connectorConfig.html('<div class="loading"><div class="loading-spinner"></div>加载中...</div>');
-            $connectorConfig.load($basePath + "/connector/page/add" + data, function (response, status) {
+            $connectorConfig.load($basePath + "/connector/page/add" + selectedValue, function (response, status) {
                 if (status !== 'success') {
                     $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-warning"></i></div><div class="empty-text">加载连接失败</div></div>');
                 }
             });
         }
+    }
+    $('#connectorType').dbSelect({
+        type: 'single',
+        onSelect: changeConfig,
+        onReady: changeConfig
     });
 
     // 绑定保存按钮事件

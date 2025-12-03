@@ -149,7 +149,7 @@
             </div>
             <div class="lg:col-span-3">
                 <select id="searchDataStatus" class="form-control">
-                    <option value="" selected="selected">无</option>
+                    <option value="-1" selected="selected">无</option>
                     <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
                 </select>
             </div>

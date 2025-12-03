@@ -274,7 +274,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询数据状态
-        if (StringUtil.isNotBlank(status)) {
+        if (StringUtil.isNotBlank(status) && !StringUtil.equals("-1", status)) {
             query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(status));
         }
         query.setMetaId(metaId);

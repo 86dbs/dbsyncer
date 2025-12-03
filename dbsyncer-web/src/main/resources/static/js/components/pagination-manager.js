@@ -33,6 +33,7 @@
             totalPagesSelector: options.totalPagesSelector,
             renderRow: options.renderRow,
             emptyHtml: options.emptyHtml || '',
+            params: options.params || {},
             pageIndex: options.pageIndex || 1,
             pageSize: options.pageSize || 10
         };
@@ -211,7 +212,7 @@
         this.initPaginationStructure();
         
         // 开始加载数据
-        this.doSearch({}, this.currentPage);
+        this.doSearch(config.params, this.currentPage);
     }
     
     // 导出到全局
