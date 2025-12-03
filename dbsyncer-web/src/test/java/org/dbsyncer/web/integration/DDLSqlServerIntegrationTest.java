@@ -81,8 +81,8 @@ public class DDLSqlServerIntegrationTest {
         // 创建测试数据库管理器
         testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
 
-        // 初始化测试环境
-        String initSql = loadSqlScript("ddl/init-test-data.sql");
+        // 初始化测试环境（使用按数据库类型分类的脚本）
+        String initSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
         testDatabaseManager.initializeTestEnvironment(initSql, initSql);
 
         logger.info("SQL Server到SQL Server的DDL同步测试环境初始化完成");
@@ -93,8 +93,8 @@ public class DDLSqlServerIntegrationTest {
         logger.info("开始清理SQL Server到SQL Server的DDL同步测试环境");
 
         try {
-            // 清理测试环境
-            String cleanupSql = loadSqlScript("ddl/cleanup-test-data.sql");
+            // 清理测试环境（使用按数据库类型分类的脚本）
+            String cleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", sourceConfig);
             testDatabaseManager.cleanupTestEnvironment(cleanupSql, cleanupSql);
 
             logger.info("SQL Server到SQL Server的DDL同步测试环境清理完成");
@@ -158,18 +158,8 @@ public class DDLSqlServerIntegrationTest {
     private void resetDatabaseTableStructure() {
         logger.debug("开始重置测试数据库表结构");
         try {
-            // SQL Server 专用的重置 SQL：删除并重建 ddlTestEmployee 表
-            String resetSql = 
-                "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
-                "CREATE TABLE ddlTestEmployee (\n" +
-                "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
-                "    first_name NVARCHAR(50) NOT NULL,\n" +
-                "    last_name NVARCHAR(50),\n" +
-                "    department NVARCHAR(100),\n" +
-                "    created_at DATETIME2 DEFAULT GETDATE()\n" +
-                ");\n" +
-                "DELETE FROM ddlTestEmployee;";
-            
+            // 使用按数据库类型分类的脚本
+            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
                 testDatabaseManager.resetTableStructure(resetSql, resetSql);
                 logger.debug("测试数据库表结构重置完成");
@@ -562,6 +552,36 @@ public class DDLSqlServerIntegrationTest {
     }
 
     /**
+     * 从数据库配置推断数据库类型（用于加载对应的SQL脚本）
+     */
+    private static String determineDatabaseType(DatabaseConfig config) {
+        String url = config.getUrl();
+        if (url == null) {
+            return "mysql";
+        }
+        String urlLower = url.toLowerCase();
+        if (urlLower.contains("mysql") || urlLower.contains("mariadb")) {
+            return "mysql";
+        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
+            return "sqlserver";
+        }
+        return "mysql";
+    }
+
+    /**
+     * 根据数据库类型加载对应的SQL脚本
+     * 
+     * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
+     * @param config 数据库配置，用于推断数据库类型
+     * @return SQL脚本内容
+     */
+    private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
+        String dbType = determineDatabaseType(config);
+        String resourcePath = String.format("ddl/%s-%s.sql", scriptBaseName, dbType);
+        return loadSqlScript(resourcePath);
+    }
+
+    /**
      * 加载测试配置文件
      */
     private static void loadTestConfig() throws IOException {
@@ -607,14 +627,16 @@ public class DDLSqlServerIntegrationTest {
      * 加载SQL脚本文件
      */
     private static String loadSqlScript(String resourcePath) {
-        try (InputStream input = DDLSqlServerIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
+        try {
+            InputStream input = DDLSqlServerIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
             if (input == null) {
                 logger.warn("未找到SQL脚本文件: {}", resourcePath);
                 return "";
             }
 
-            return reader.lines().collect(Collectors.joining("\n"));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
+                return reader.lines().collect(Collectors.joining("\n"));
+            }
         } catch (Exception e) {
             logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
             return "";

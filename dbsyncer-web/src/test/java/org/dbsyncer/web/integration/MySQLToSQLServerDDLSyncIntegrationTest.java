@@ -21,10 +21,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import javax.annotation.Resource;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -102,8 +105,11 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
         logger.info("开始清理MySQL到SQL Server的DDL同步测试环境");
 
         try {
-            String cleanupSql = "DROP TABLE IF EXISTS ddlTestEmployee;";
-            testDatabaseManager.cleanupTestEnvironment(cleanupSql, cleanupSql);
+            // 清理测试环境（使用按数据库类型分类的脚本）
+            // 源数据库是MySQL，目标数据库是SQL Server，需要分别加载对应的清理脚本
+            String sourceCleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", mysqlConfig);
+            String targetCleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", sqlServerConfig);
+            testDatabaseManager.cleanupTestEnvironment(sourceCleanupSql, targetCleanupSql);
             logger.info("MySQL到SQL Server的DDL同步测试环境清理完成");
         } catch (Exception e) {
             logger.error("清理测试环境失败", e);
@@ -687,6 +693,56 @@ public class MySQLToSQLServerDDLSyncIntegrationTest {
             return "SqlServer";
         }
         return "MySQL";
+    }
+
+    /**
+     * 从数据库配置推断数据库类型（用于加载对应的SQL脚本）
+     */
+    private static String determineDatabaseType(DatabaseConfig config) {
+        String url = config.getUrl();
+        if (url == null) {
+            return "mysql";
+        }
+        String urlLower = url.toLowerCase();
+        if (urlLower.contains("mysql") || urlLower.contains("mariadb")) {
+            return "mysql";
+        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
+            return "sqlserver";
+        }
+        return "mysql";
+    }
+
+    /**
+     * 根据数据库类型加载对应的SQL脚本
+     * 
+     * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
+     * @param config 数据库配置，用于推断数据库类型
+     * @return SQL脚本内容
+     */
+    private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
+        String dbType = determineDatabaseType(config);
+        String resourcePath = String.format("ddl/%s-%s.sql", scriptBaseName, dbType);
+        return loadSqlScript(resourcePath);
+    }
+
+    /**
+     * 加载SQL脚本文件
+     */
+    private static String loadSqlScript(String resourcePath) {
+        try {
+            InputStream input = MySQLToSQLServerDDLSyncIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
+            if (input == null) {
+                logger.warn("未找到SQL脚本文件: {}", resourcePath);
+                return "";
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
+                return reader.lines().collect(Collectors.joining("\n"));
+            }
+        } catch (Exception e) {
+            logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
+            return "";
+        }
     }
 
     /**

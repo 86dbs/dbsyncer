@@ -783,6 +783,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Result result = new Result<DDLConfig>();
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
+            logger.info("执行 DDL SQL: {}", config.getSql());
             connectorInstance.execute(databaseTemplate -> {
                 // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
                 String sql = config.getSql();
@@ -799,11 +800,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
                 return true;
             });
+            logger.info("DDL SQL 执行成功: {}", config.getSql());
             Map<String, String> successMap = new HashMap<>();
             successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
             result.addSuccessData(Collections.singletonList(successMap));
         } catch (Exception e) {
-            logger.error("执行DDL失败: {}", e.getMessage());
+            logger.error("执行DDL失败: sql={}, error={}", config.getSql(), e.getMessage(), e);
             // 将DDLConfig转换为Map格式，以便FlushStrategyImpl可以正确序列化
             // 使用JSON序列化保存完整的DDLConfig信息，以便将来可以反序列化并重新处理
             Map<String, Object> failMap = new HashMap<>();

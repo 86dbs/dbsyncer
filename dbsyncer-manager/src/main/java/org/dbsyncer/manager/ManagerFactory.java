@@ -37,13 +37,15 @@ public class ManagerFactory {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         meta.setBeginTime(Instant.now().toEpochMilli());
         meta.saveState(MetaEnum.RUNNING);
+        logService.log(LogType.MappingLog.RUNNING, String.format("设置Meta状态为RUNNING: mappingId=%s, metaId=%s", mapping.getId(), mapping.getMetaId()));
 
         try {
             puller.start(mapping);
+            logService.log(LogType.MappingLog.RUNNING, String.format("Puller启动成功: mappingId=%s, metaId=%s", mapping.getId(), mapping.getMetaId()));
         } catch (Exception e) {
             // 记录异常状态和异常信息到Meta对象，使用统一方法
             meta.saveState(MetaEnum.ERROR, e.getMessage());
-            logService.log(LogType.MappingLog.RUNNING, e.getMessage());
+            logService.log(LogType.MappingLog.RUNNING, String.format("Puller启动失败: mappingId=%s, metaId=%s, error=%s", mapping.getId(), mapping.getMetaId(), e.getMessage()));
             throw new ManagerException(e.getMessage());
         }
     }

@@ -84,17 +84,27 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     public void start(Mapping mapping) throws Exception {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
+        logger.info("IncrementPuller.start() 开始: mappingId={}, metaId={}", mappingId, metaId);
+        
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         Assert.notNull(connector, "连接器不能为空.");
+        logger.debug("获取源连接器成功: connectorId={}", mapping.getSourceConnectorId());
+        
         Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
+        logger.debug("获取目标连接器成功: connectorId={}", mapping.getTargetConnectorId());
+        
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
+        logger.debug("获取TableGroup列表成功: count={}", list.size());
+        
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
         meta.setSyncPhase(SyncPhaseEnum.INCREMENTAL);
+        logger.debug("设置同步阶段为增量: metaId={}", metaId);
 
         Thread worker = new Thread(() -> {
+            logger.info("IncrementPuller worker线程启动: mappingId={}, metaId={}", mappingId, metaId);
             try {
                 Listener listener = meta.getListener();
                 if (listener == null) {

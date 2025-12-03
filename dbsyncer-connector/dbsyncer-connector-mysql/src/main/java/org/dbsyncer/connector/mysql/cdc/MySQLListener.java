@@ -359,6 +359,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (isFilterTable(databaseName, tableName)) {
                 // DDL 事件会改变表结构，清除对应表的列名缓存
                 clearColumnNamesCache(tableName);
+                logger.info("捕获到 DDL 事件: database={}, table={}, sql={}", databaseName, tableName, data.getSql());
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
                         data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
             }
