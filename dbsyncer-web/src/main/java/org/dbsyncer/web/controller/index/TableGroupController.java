@@ -13,6 +13,8 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -151,31 +153,72 @@ public class TableGroupController extends BaseController {
             Assert.notNull(sourceMetaInfo, "无法获取源表结构: " + sourceTable);
             Assert.notEmpty(sourceMetaInfo.getColumn(), "源表没有字段: " + sourceTable);
 
-            // 将源表的字段类型转换为标准类型（重要：避免类型污染）
-            // 因为 sourceMetaInfo 中的字段类型是源数据库特定类型（如 SQL Server 的 NVARCHAR），
-            // 需要先转换为标准类型，然后目标数据库的 SqlTemplate 才能正确转换为目标数据库类型
-            ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceConnector.getConfig().getConnectorType());
-            ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetConnector.getConfig().getConnectorType());
-            SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+            // 判断是否为同类型数据库
+            String sourceType = sourceConnector.getConfig().getConnectorType();
+            String targetType = targetConnector.getConfig().getConnectorType();
+            boolean isSameType = sourceType.equals(targetType);
 
-            // 创建标准化的 MetaInfo
-            MetaInfo standardizedMetaInfo = new MetaInfo();
-            standardizedMetaInfo.setTableType(sourceMetaInfo.getTableType());
-            standardizedMetaInfo.setSql(sourceMetaInfo.getSql());
-            standardizedMetaInfo.setIndexType(sourceMetaInfo.getIndexType());
+            String createTableDDL;
+            
+            if (isSameType) {
+                // 同类型数据库优化：直接使用源 MetaInfo，跳过类型转换，提高性能并保持一致性
+                logger.debug("检测到同类型数据库（{}），使用优化路径创建表", sourceType);
+                
+                // 获取目标连接器的 SqlTemplate
+                ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetType);
+                if (!(targetConnectorService instanceof AbstractDatabaseConnector)) {
+                    throw new UnsupportedOperationException("目标连接器不支持直接访问 SqlTemplate: " + targetType);
+                }
+                
+                AbstractDatabaseConnector targetDatabaseConnector = (AbstractDatabaseConnector) targetConnectorService;
+                SqlTemplate sqlTemplate = targetDatabaseConnector.sqlTemplate;
+                if (sqlTemplate == null) {
+                    throw new UnsupportedOperationException("目标连接器未初始化 SqlTemplate: " + targetType);
+                }
+                
+                // 提取字段和主键
+                List<Field> fields = sourceMetaInfo.getColumn();
+                List<String> primaryKeys = new ArrayList<>();
+                for (Field field : fields) {
+                    if (field.isPk()) {
+                        primaryKeys.add(field.getName());
+                    }
+                }
+                
+                // 直接调用 buildCreateTableSql，跳过类型转换
+                createTableDDL = sqlTemplate.buildCreateTableSql(null, targetTable, fields, primaryKeys);
+                logger.debug("使用优化路径生成 CREATE TABLE DDL（跳过类型转换）");
+            } else {
+                // 不同类型数据库：走原有转换流程
+                logger.debug("检测到不同类型数据库（{} -> {}），使用标准转换流程", sourceType, targetType);
+                
+                // 将源表的字段类型转换为标准类型（重要：避免类型污染）
+                // 因为 sourceMetaInfo 中的字段类型是源数据库特定类型（如 SQL Server 的 NVARCHAR），
+                // 需要先转换为标准类型，然后目标数据库的 SqlTemplate 才能正确转换为目标数据库类型
+                ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceType);
+                ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetType);
+                SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
 
-            // 将源字段转换为标准类型（toStandardType 会自动保留所有元数据属性）
-            List<Field> standardizedFields = new ArrayList<>();
-            for (Field sourceField : sourceMetaInfo.getColumn()) {
-                Field standardField = sourceSchemaResolver.toStandardType(sourceField);
-                standardizedFields.add(standardField);
+                // 创建标准化的 MetaInfo
+                MetaInfo standardizedMetaInfo = new MetaInfo();
+                standardizedMetaInfo.setTableType(sourceMetaInfo.getTableType());
+                standardizedMetaInfo.setSql(sourceMetaInfo.getSql());
+                standardizedMetaInfo.setIndexType(sourceMetaInfo.getIndexType());
+
+                // 将源字段转换为标准类型（toStandardType 会自动保留所有元数据属性）
+                List<Field> standardizedFields = new ArrayList<>();
+                for (Field sourceField : sourceMetaInfo.getColumn()) {
+                    Field standardField = sourceSchemaResolver.toStandardType(sourceField);
+                    standardizedFields.add(standardField);
+                }
+                standardizedMetaInfo.setColumn(standardizedFields);
+
+                // 生成 CREATE TABLE DDL（使用标准化后的 MetaInfo）
+                createTableDDL = targetConnectorService.generateCreateTableDDL(standardizedMetaInfo, targetTable);
             }
-            standardizedMetaInfo.setColumn(standardizedFields);
 
             // 检查连接器是否支持生成 CREATE TABLE DDL
             try {
-                // 尝试生成 CREATE TABLE DDL（使用标准化后的 MetaInfo）
-                String createTableDDL = targetConnectorService.generateCreateTableDDL(standardizedMetaInfo, targetTable);
                 Assert.hasText(createTableDDL, "无法生成 CREATE TABLE DDL");
 
                 // 执行 CREATE TABLE DDL
