@@ -104,7 +104,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 }).start();
             } catch (Exception e) {
                 close(metaId);
-                logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
+                logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
         });
