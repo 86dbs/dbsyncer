@@ -79,7 +79,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         running = true;
 
         scheduledTaskService.start(taskKey, listenerConfig.getCron(), this);
-        logger.info("启动定时任务:{} >> {}", taskKey, listenerConfig.getCron());
+        logger.info("启动定时任务:{}[{}]", taskKey, listenerConfig.getCron());
+        run();
     }
 
     @Override
@@ -137,6 +138,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
             context.setPageIndex(pageIndex++);
             Result reader = connectorService.reader(connectorInstance, context);
             List<Map> data = reader.getSuccessData();
+            logger.info("执行定时任务:{}[{}], data=[{}]", taskKey, listenerConfig.getCron(), data.size());
             if (CollectionUtils.isEmpty(data)) {
                 cursors = new Object[0];
                 break;
