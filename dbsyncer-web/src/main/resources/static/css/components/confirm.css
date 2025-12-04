@@ -34,6 +34,7 @@
   animation: confirm-dialog-show 0.2s ease;
   display: flex;
   flex-direction: column;
+  max-height: 80vh;
 }
 
 .confirm-dialog.hidden {
@@ -50,7 +51,9 @@
 }
 
 .confirm-dialog.size-max {
-  width: 600px;
+  width: 60vw;
+  max-width: 90%;
+  max-height: 80vh;
 }
 
 /* 对话框头部 */
@@ -96,6 +99,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .confirm-title {
@@ -111,6 +116,31 @@
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
+  word-break: break-all;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: var(--spacing-xs);
+}
+
+/* 为 message 添加滚动条样式 */
+.confirm-message::-webkit-scrollbar {
+  width: 6px;
+}
+
+.confirm-message::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.confirm-message::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.confirm-message::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 /* 对话框主体 */
@@ -118,10 +148,32 @@
   padding: var(--spacing-lg);
   flex: 1;
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 50vh;
   color: var(--text-primary);
   font-size: var(--font-size-sm);
   line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* 为 body 添加滚动条样式 */
+.confirm-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.confirm-body::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.confirm-body::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.confirm-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .confirm-body:empty {

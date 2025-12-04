@@ -566,7 +566,7 @@ function renderSyncResult(mapping) {
     }
     // 失败数量
     if (meta.fail > 0) {
-        content.push(`失败: <span class="text-error">${meta.fail}</span> <span class="btn btn-link text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
+        content.push(`失败: <span class="text-error">${meta.fail}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
     }
     return content.join(' ');
 }

@@ -1,4 +1,19 @@
 
+// 显示对话框
+function showMessageDetail($message, icon, title) {
+    $message.unbind('click').bind('click', function() {
+        const content = $(this).text();
+        if (content && content.trim()) {
+            showConfirm({
+                title: title,
+                icon: icon,
+                size: 'max',
+                message: content
+            });
+        }
+    });
+}
+
 // 查看数据
 function bindQueryDataEvent() {
     let pagination;
@@ -52,12 +67,12 @@ function bindQueryDataEvent() {
 
     function renderDataButton(row) {
         const content = [];
-        content.push(`<button class="table-action-btn view" title="查看数据" onclick="queryData('${row?.json}')">
+        content.push(`<button class="table-action-btn view" title="查看数据" onclick="showDataDetail('${row?.id}')">
                     <i class="fa fa-eye"></i>
                 </button>`);
         // 如果失败，显示重试按钮
         if (row.success === 0) {
-            content.push(`<button class="table-action-btn play" title="重试" onclick="retryData('${row?.id}')">
+            content.push(`<button class="table-action-btn play" title="重试" onclick="showDataDetail('${row?.id}')">
                             <i class="fa fa-refresh"></i>
                         </button>`);
         }
@@ -70,23 +85,27 @@ function bindQueryDataEvent() {
         tableBodySelector: '#dataTableBody',
         params: params(),
         pageSize: 5,
-        renderRow: function(d, index) {
+        renderRow: function (d, index) {
             return `
                 <tr>
-                    <td class="text-center text-tertiary">${index}</td>
-                    <td class="font-medium">${d?.targetTableName}</td>
+                    <td>${index}</td>
+                    <td>${d?.targetTableName}</td>
                     <td>${d?.event}</td>
                     <td>${renderDataState(d.success)}</td>
                     <td>
-                        <span class="text-secondary hover-underline queryError">${d?.error}</span>
+                        <span class="hover-underline cursor-pointer data-error">${d?.error || ''}</span>
                     </td>
-                    <td class="text-sm text-secondary">${formatDate(d?.createTime)}</td>
+                    <td>${formatDate(d?.createTime)}</td>
                     <td>
                         <div class="flex items-center gap-1">${renderDataButton(d)}</div>
+                        <span id="${d.id}" class="hidden">${escapeHtml(d.json || '')}</span>
                     </td>
                 </tr>`;
         },
-        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
+        refreshComplete: function () {
+            showMessageDetail($('.data-error'), 'warning', '异常信息');
+        },
+        emptyHtml: '<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
 }
 
@@ -107,20 +126,73 @@ function bindCleanData() {
     })
 }
 
+// 将 JSON 对象转换为表格 HTML
+function jsonToTable(jsonObj) {
+    let $content = '<table class="table">';
+    $content += '<thead><tr><th></th><th>字段</th><th>值</th></tr></thead>';
+    $content += '<tbody>';
+    let index = 1;
+    $.each(jsonObj, function (name, value) {
+        $content += '<tr>';
+        $content += '<td>' + index + '</td>';
+        $content += '<td>' + name + '</td>';
+        $content += '<td>' + value + '</td>';
+        $content += '</tr>';
+        index++;
+    });
+    $content += '</tbody>';
+    $content += '</table>';
+    return $content;
+}
+
+// 显示数据详情对话框
+function showDataDetail(id) {
+    const $element = $("#" + id);
+    const content = $element.text();
+    if (!content || !content.trim()) {
+        return;
+    }
+
+    try {
+        // 尝试解析 JSON
+        const jsonObj = JSON.parse(content);
+        showConfirm({
+            title: '数据详情',
+            icon: 'info',
+            size: 'max',
+            body: jsonToTable(jsonObj),
+            confirmText: '关闭',
+            confirmType: 'primary'
+        });
+    } catch (e) {
+        // 如果解析失败，显示原始文本
+        showConfirm({
+            title: '数据详情',
+            icon: 'info',
+            size: 'max',
+            message: content
+        });
+    }
+}
+
 // 查看日志
 function bindQueryLogEvent() {
     // 初始化分页管理器
     const pagination = new PaginationManager({
         requestUrl: '/monitor/queryLog',
         tableBodySelector: '#logList',
-        renderRow: function(row, index) {
+        pageSize: 5,
+        renderRow: function (row, index) {
             return `
                 <tr>
                     <td>${index}</td>
-                    <td>${escapeHtml(row.json || '')}</td>
+                    <td><span class="hover-underline cursor-pointer log-detail">${row.json || ''}</span></td>
                     <td>${formatRelativeTime(row.createTime || '')}</td>
                 </tr>
             `;
+        },
+        refreshComplete: function () {
+            showMessageDetail($('.log-detail'), 'info', '日志信息');
         }
     });
     // 搜索框输入事件

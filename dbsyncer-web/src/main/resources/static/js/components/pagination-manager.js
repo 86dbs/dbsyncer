@@ -35,7 +35,8 @@
             emptyHtml: options.emptyHtml || '',
             params: options.params || {},
             pageIndex: options.pageIndex || 1,
-            pageSize: options.pageSize || 10
+            pageSize: options.pageSize || 10,
+            refreshComplete: options.refreshComplete || function() {}
         };
 
         // 自动创建分页容器和结构
@@ -134,6 +135,9 @@
 
             // 显示/隐藏分页区域
             this.togglePagination(items.length > 0);
+
+            // 刷新完成
+            config.refreshComplete();
         };
 
         // 渲染表格数据
