@@ -143,7 +143,6 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     private Listener getListener(Mapping mapping, Connector connector,Connector targetConnector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
-        ConnectorConfig targetConnectorConfig = targetConnector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();
 
