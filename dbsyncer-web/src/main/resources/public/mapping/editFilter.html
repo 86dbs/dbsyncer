@@ -233,8 +233,6 @@
             type: 'single',
             onSelect: function (values) {
                 const selectedValue = values && values.length > 0 ? values[0] : '';
-                console.log(values);
-                console.log(selectedValue);
                 if (!isBlank(selectedValue)) {
                     const $tmpVal = $("#conditionArg");
                     $tmpVal.val($tmpVal.val() + selectedValue);

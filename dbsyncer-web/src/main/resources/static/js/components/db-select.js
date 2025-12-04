@@ -82,9 +82,11 @@
             });
         }
 
-        // 创建 Select 组件 HTML
-        const selectId = 'dbsyncer-select-' + Date.now();
-        const dropdownId = 'dbsyncer-select-dropdown-' + Date.now();
+        // 创建 Select 组件 HTML（使用更唯一的 ID，避免快速重复初始化时冲突）
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 9);
+        const selectId = 'dbsyncer-select-' + timestamp + '-' + random;
+        const dropdownId = 'dbsyncer-select-dropdown-' + timestamp + '-' + random;
         
         const selectHTML = `
             <div class="dbsyncer-select ${config.disabled ? 'disabled' : ''}" id="${selectId}">
@@ -155,7 +157,7 @@
                     </label>
                 `);
 
-                $option.on('click', function(e) {
+                $option.on('click.dbSelect-' + selectId, function(e) {
                     if (item.disabled) {
                         e.preventDefault();
                         return;
@@ -249,7 +251,7 @@
                     if (labels.length <= displayCount) {
                         labels.forEach(function(label) {
                             const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
-                            $tag.find('.dbsyncer-select-tag-remove').on('click', function(e) {
+                            $tag.find('.dbsyncer-select-tag-remove').on('click.dbSelect-' + selectId, function(e) {
                                 e.stopPropagation();
                                 const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
                                 if (idx > -1) {
@@ -265,7 +267,7 @@
                         for (let i = 0; i < displayCount; i++) {
                             const label = labels[i];
                             const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
-                            $tag.find('.dbsyncer-select-tag-remove').on('click', function(e) {
+                            $tag.find('.dbsyncer-select-tag-remove').on('click.dbSelect-' + selectId, function(e) {
                                 e.stopPropagation();
                                 const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
                                 if (idx > -1) {
@@ -391,7 +393,7 @@
         }
 
         // 绑定事件
-        $trigger.on('click', function(e) {
+        $trigger.on('click.dbSelect-' + selectId, function(e) {
             e.stopPropagation();
             if ($dropdown.hasClass('hidden')) {
                 openDropdown();
@@ -401,14 +403,14 @@
         });
 
         // 搜索
-        $searchInput.on('input', function() {
+        $searchInput.on('input.dbSelect-' + selectId, function() {
             const text = $(this).val();
             $searchClear.toggleClass('active', text.length > 0);
             renderOptions(text);
         });
 
         // 清除搜索
-        $searchClear.on('click', function(e) {
+        $searchClear.on('click.dbSelect-' + selectId, function(e) {
             e.stopPropagation();
             $searchInput.val('').focus();
             $searchClear.removeClass('active');
@@ -428,13 +430,13 @@
             const $selectAllBtn = $(`<button class="dbsyncer-select-action-btn">全选</button>`);
             const $deselectAllBtn = $(`<button class="dbsyncer-select-action-btn">取消全选</button>`);
 
-            $selectAllBtn.on('click', function(e) {
+            $selectAllBtn.on('click.dbSelect-' + selectId, function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 selectAll();
             });
 
-            $deselectAllBtn.on('click', function(e) {
+            $deselectAllBtn.on('click.dbSelect-' + selectId, function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 deselectAll();
@@ -446,7 +448,7 @@
         // 添加自定义按钮
         config.customButtons.forEach(function(btn, index) {
             const $btn = $(`<button class="dbsyncer-select-action-btn">${escapeHtml(btn.text)}</button>`);
-            $btn.on('click', function(e) {
+            $btn.on('click.dbSelect-' + selectId, function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (typeof btn.callback === 'function') {
@@ -571,8 +573,36 @@
                 return this;
             },
             destroy: function() {
+                // 先关闭下拉菜单
+                closeDropdown();
+                
+                // 移除文档级别的事件监听
                 $(document).off('click.dbselect_' + selectId);
-                $component.remove();
+                
+                // 移除窗口事件监听
+                $(window).off('scroll.dbSelect-' + selectId);
+                $(window).off('resize.dbSelect-' + selectId);
+                
+                // 移除组件内所有使用命名空间的事件监听（包括所有子元素）
+                if ($component && $component.length) {
+                    // 清理组件及其所有子元素上的事件
+                    // 使用命名空间清理，确保只清理当前实例的事件
+                    const namespace = '.dbSelect-' + selectId;
+                    $component.off(namespace);
+                    $component.find('*').off(namespace);
+                }
+                
+                // 移除组件 DOM（这会自动清理所有绑定的事件）
+                if ($component && $component.length) {
+                    $component.remove();
+                }
+                
+                // 显示原始 select 元素
+                if ($select && $select.length) {
+                    $select.show();
+                }
+                
+                // 清理数据
                 $select.removeData('dbSelectInitialized');
                 $select.removeData('dbSelect');
                 // 如果销毁的是当前打开的实例，清空全局变量
