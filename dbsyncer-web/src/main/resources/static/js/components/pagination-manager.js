@@ -36,7 +36,7 @@
             params: options.params || {},
             pageIndex: options.pageIndex || 1,
             pageSize: options.pageSize || 10,
-            refreshComplete: options.refreshComplete || function() {}
+            refreshCompleted: options.refreshCompleted || function() {}
         };
 
         // 自动创建分页容器和结构
@@ -137,7 +137,7 @@
             this.togglePagination(items.length > 0);
 
             // 刷新完成
-            config.refreshComplete();
+            config.refreshCompleted();
         };
 
         // 渲染表格数据

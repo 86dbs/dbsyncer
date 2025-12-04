@@ -107,7 +107,7 @@ function copyMapping(id) {
             bootGrowl('复制成功', 'success');
             backIndexPage();
         } else {
-            bootGrowl('复制失败: ' + response.message, 'danger');
+            bootGrowl('复制失败: ' + response.resultValue, 'danger');
         }
     });
 }

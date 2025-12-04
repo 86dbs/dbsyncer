@@ -103,7 +103,7 @@ function copyConnector(id) {
             bootGrowl('复制成功', 'success');
             backIndexPage();
         } else {
-            bootGrowl('复制失败: ' + response.message, 'danger');
+            bootGrowl('复制失败: ' + response.resultValue, 'danger');
         }
     });
 }
@@ -121,7 +121,7 @@ function testConnector(id) {
         if (response.success) {
             bootGrowl('测试成功', 'success');
         } else {
-            bootGrowl('测试失败: ' + response.message, 'danger');
+            bootGrowl('测试失败: ' + response.resultValue, 'danger');
         }
     });
 }

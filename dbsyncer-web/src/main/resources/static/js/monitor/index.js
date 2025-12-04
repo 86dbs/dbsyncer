@@ -102,7 +102,7 @@ function bindQueryDataEvent() {
                     </td>
                 </tr>`;
         },
-        refreshComplete: function () {
+        refreshCompleted: function () {
             showMessageDetail($('.data-error'), 'warning', '异常信息');
         },
         emptyHtml: '<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
@@ -191,7 +191,7 @@ function bindQueryLogEvent() {
                 </tr>
             `;
         },
-        refreshComplete: function () {
+        refreshCompleted: function () {
             showMessageDetail($('.log-detail'), 'info', '日志信息');
         }
     });

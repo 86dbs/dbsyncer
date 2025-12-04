@@ -138,55 +138,7 @@
     </div>
 </div>
 
-<!-- 查询数据 -->
-<div class="form-container mb-4">
-    <div class="card-header">
-        <div class="grid grid-cols-12 items-center">
-            <div class="lg:col-span-3">
-                <select id="searchDataMeta" class="form-control">
-                    <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
-                </select>
-            </div>
-            <div class="lg:col-span-3">
-                <select id="searchDataStatus" class="form-control">
-                    <option value="-1" selected="selected">无</option>
-                    <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
-                </select>
-            </div>
-            <div id="searchData" class="lg:col-span-3 search-wrapper">
-                <i class="fa fa-search search-icon"></i>
-                <input class="search-input" type="text" maxlength="32" placeholder="搜索异常关键字">
-                <span class="search-clear" title="清除">
-                    <i class="fa fa-times"></i>
-                </span>
-            </div>
-            <div class="lg:col-span-3 flex items-center justify-end">
-                <button id="clearDataBtn" th:metaId="${metaId}" type="button" class="btn btn-outline">
-                    清空数据
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="card-body">
-        <table class="table">
-            <thead>
-            <tr>
-                <th></th>
-                <th>目标表</th>
-                <th>事件</th>
-                <th>结果</th>
-                <th>异常</th>
-                <th>时间</th>
-                <th>操作</th>
-            </tr>
-            </thead>
-            <tbody id="dataTableBody"></tbody>
-        </table>
-
-    </div>
-</div>
-
-<div class="grid grid-cols-2">
+<div class="grid grid-cols-2 mb-5">
     <!-- 查询执行器任务 -->
     <div class="form-container">
         <div class="card-header">
@@ -285,6 +237,56 @@
                 </tr>
                 </thead>
                 <tbody id="logList"></tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <!-- 查询数据 -->
+    <div class="form-container mb-4">
+        <div class="card-header">
+            <div class="grid grid-cols-12 items-center">
+                <div class="lg:col-span-3">
+                    <select id="searchDataMeta" class="form-control">
+                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
+                    </select>
+                </div>
+                <div class="lg:col-span-3">
+                    <select id="searchDataStatus" class="form-control">
+                        <option value="-1" selected="selected">无</option>
+                        <option th:value="${c?.value}" th:text="${c?.message}" th:each="c,state : ${storageDataStatus}" th:selected="${c?.value eq dataStatus}"/>
+                    </select>
+                </div>
+                <div id="searchData" class="lg:col-span-3 search-wrapper">
+                    <i class="fa fa-search search-icon"></i>
+                    <input class="search-input" type="text" maxlength="32" placeholder="搜索异常关键字">
+                    <span class="search-clear" title="清除">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>
+                <div class="lg:col-span-3 flex items-center justify-end">
+                    <button id="clearDataBtn" th:metaId="${metaId}" type="button" class="btn btn-outline">
+                        清空数据
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>目标表</th>
+                    <th>事件</th>
+                    <th>结果</th>
+                    <th>异常</th>
+                    <th>时间</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody id="dataTableBody"></tbody>
             </table>
 
         </div>
