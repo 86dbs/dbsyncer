@@ -80,30 +80,22 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             }
         }
         
-        // 如果有要添加的列，生成 ALTER TABLE 语句（使用 IF NOT EXISTS 检查，避免列已存在时报错）
+        // 如果有要添加的列，生成单个 ALTER TABLE 语句（SQL Server支持在单个语句中添加多个列）
+        // 移除 IF NOT EXISTS 检查，因为：
+        // 1. DDL 同步场景中，如果列已存在，说明可能已经同步过了，应该报错而不是静默跳过
+        // 2. 合并多个列到一个 ALTER TABLE 语句中，减少分号的使用，避免 split 的需求
         if (!columnDefinitions.isEmpty()) {
-            String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
-            
-            // 为每个列生成独立的 IF NOT EXISTS 检查
+            result.append("ALTER TABLE ").append(quotedTableName).append(" ADD ");
             for (int i = 0; i < columnDefinitions.size(); i++) {
                 if (i > 0) {
-                    result.append("; ");
+                    result.append(", ");
                 }
-                Field column = columns.get(i);
-                String columnName = column.getName();
-                
-                // 使用 IF NOT EXISTS 检查列是否存在，如果不存在才添加
-                result.append("IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('")
-                      .append(effectiveSchema).append(".").append(tableName)
-                      .append("') AND name = '").append(columnName).append("') ");
-                result.append("BEGIN ");
-                result.append("ALTER TABLE ").append(quotedTableName).append(" ADD ")
-                      .append(columnDefinitions.get(i));
-                result.append(" END");
+                result.append(columnDefinitions.get(i));
             }
         }
         
         // 如果有 COMMENT，追加 COMMENT 语句（使用分号分隔，作为独立的 SQL 语句）
+        // 注意：COMMENT 必须使用独立的 EXEC 语句，无法合并到 ALTER TABLE 中
         if (!columnsWithComment.isEmpty()) {
             String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
             for (Field column : columnsWithComment) {

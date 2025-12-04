@@ -787,17 +787,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             connectorInstance.execute(databaseTemplate -> {
                 // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
                 String sql = config.getSql();
-                
-                // 按分号分割SQL语句并逐个执行
-                // 这样可以避免SQL Server将分号后的语句误解析为前一个语句的一部分
-                String[] sqlStatements = sql.split(";");
-                for (String sqlStatement : sqlStatements) {
-                    String trimmedSql = sqlStatement.trim();
-                    if (!trimmedSql.isEmpty()) {
-                        // 每个语句都带上dbs唯一标识码，防止双向同步导致死循环
-                        databaseTemplate.execute("/*dbs*/".concat(trimmedSql));
-                    }
-                }
+                // 每个语句都带上dbs唯一标识码，防止双向同步导致死循环
+                databaseTemplate.execute("/*dbs*/".concat(sql));
                 return true;
             });
             logger.info("DDL SQL 执行成功: {}", config.getSql());

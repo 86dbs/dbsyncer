@@ -65,7 +65,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         
         // 添加 COMMENT
         if (field.getComment() != null && !field.getComment().isEmpty()) {
-            sql.append(" COMMENT '").append(field.getComment().replace("'", "''")).append("'");
+            sql.append(" COMMENT '").append(escapeMySQLString(field.getComment())).append("'");
         }
         
         return sql.toString();
@@ -87,7 +87,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         
         // 添加 COMMENT
         if (field.getComment() != null && !field.getComment().isEmpty()) {
-            sql.append(" COMMENT '").append(field.getComment().replace("'", "''")).append("'");
+            sql.append(" COMMENT '").append(escapeMySQLString(field.getComment())).append("'");
         }
         
         return sql.toString();
@@ -110,7 +110,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         
         // 添加 COMMENT
         if (newField.getComment() != null && !newField.getComment().isEmpty()) {
-            sql.append(" COMMENT '").append(newField.getComment().replace("'", "''")).append("'");
+            sql.append(" COMMENT '").append(escapeMySQLString(newField.getComment())).append("'");
         }
         
         return sql.toString();
@@ -158,7 +158,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             }
             
             if (field.getComment() != null && !field.getComment().isEmpty()) {
-                String escapedComment = field.getComment().replace("'", "''");
+                String escapedComment = escapeMySQLString(field.getComment());
                 columnDef.append(String.format(" COMMENT '%s'", escapedComment));
             }
             
@@ -278,5 +278,24 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             default:
                 return typeName;
         }
+    }
+
+    /**
+     * 转义 MySQL 字符串字面量中的特殊字符
+     * 在 MySQL 中，字符串字面量需要转义以下字符：
+     * - 单引号 (') -> ''
+     * - 反斜杠 (\) -> \\
+     * - 其他控制字符也需要转义
+     * 
+     * @param str 原始字符串
+     * @return 转义后的字符串
+     */
+    private String escapeMySQLString(String str) {
+        if (str == null) {
+            return null;
+        }
+        // 先转义反斜杠，再转义单引号
+        // 注意：必须先转义反斜杠，否则转义单引号时可能会影响反斜杠的转义
+        return str.replace("\\", "\\\\").replace("'", "''");
     }
 }
