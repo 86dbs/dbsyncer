@@ -22,9 +22,8 @@ function bindQueryDataEvent() {
     let searchInput;
 
     function params() {
-        const metaIds = metaSelect.getValues();
         return {
-            "id": metaIds[0],
+            "id": metaSelect.getValues()[0] || '',
             "status": statusSelect.getValues()[0] || '',
             "error": searchInput.getValue() || '',
         }
@@ -107,16 +106,14 @@ function bindQueryDataEvent() {
         },
         emptyHtml: '<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
-}
 
-function bindCleanData() {
     $("#clearDataBtn").unbind('click').bind('click', function () {
-        let metaId = $(this).attr("metaId");
         showConfirm({
             title: '确认清空数据？', icon: 'warning', size: 'large', confirmType: 'danger', onConfirm: function () {
-                doPoster("/monitor/clearData", {id: metaId}, function (response) {
+                doPoster("/monitor/clearData", {id: metaSelect.getValues()[0] || ''}, function (response) {
                     if (response.success) {
                         bootGrowl('清空数据成功!', 'success');
+                        search();
                     } else {
                         bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
                     }
@@ -197,11 +194,9 @@ function bindQueryLogEvent() {
     });
     // 搜索框输入事件
     initSearch('searchLog', function (searchKey) {
-        pagination.doSearch({'json': searchKey, 'pageNum': 1, 'pageSize': 10});
+        pagination.doSearch({'json': searchKey});
     });
-}
 
-function bindCleanLog() {
     $("#clearLogBtn").unbind('click').bind('click', function () {
         showConfirm({
             title: '确认清空日志？',
@@ -212,6 +207,7 @@ function bindCleanLog() {
                 doPoster("/monitor/clearLog", {}, function (response) {
                     if (response.success) {
                         bootGrowl('清空日志成功!', 'success');
+                        pagination.doSearch({});
                     } else {
                         bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
                     }
@@ -228,9 +224,8 @@ function bindQueryActuatorEvent() {
     let searchInput;
 
     function params() {
-        const metaIds = metaSelect.getValues();
         return {
-            "id": metaIds[0],
+            "id": metaSelect.getValues()[0] || '',
             "name": searchInput.getValue() || '',
         }
     }
@@ -263,7 +258,8 @@ function bindQueryActuatorEvent() {
                     <td>${row.measurements[0].value || ''}</td>
                 </tr>
             `;
-        }
+        },
+        emptyHtml: '<td colspan="3" class="text-center"><i class="fa fa-tasks empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
 }
 
@@ -574,10 +570,8 @@ $(function () {
     updateMonitorData();
 
     bindQueryDataEvent();
-    bindCleanData();
 
     bindQueryLogEvent();
-    bindCleanLog();
 
     bindQueryActuatorEvent();
 });
