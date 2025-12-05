@@ -55,7 +55,15 @@
             </div>
 
             <div class="form-actions">
-                <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
+                <span th:if="${mapping?.meta?.state ne 0}">
+                    <button type="button" class="btn btn-info" disabled>
+                        <i class="fa fa-save"></i> 运行中
+                    </button>
+                </span>
+                <button th:if="${mapping?.meta?.state eq 0}" 
+                        id="mappingSubmitBtn" 
+                        type="button" 
+                        class="btn btn-primary">
                     <i class="fa fa-save"></i> 保存
                 </button>
                 <button id="mappingBackBtn" type="button" class="btn btn-outline" onclick="backIndexPage()">

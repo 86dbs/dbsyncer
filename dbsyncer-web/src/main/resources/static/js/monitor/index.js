@@ -221,6 +221,52 @@ function bindCleanLog() {
     })
 }
 
+// 查看表执行器
+function bindQueryActuatorEvent() {
+    let pagination;
+    let metaSelect;
+    let searchInput;
+
+    function params() {
+        const metaIds = metaSelect.getValues();
+        return {
+            "id": metaIds[0],
+            "name": searchInput.getValue() || '',
+        }
+    }
+
+    // 搜索函数
+    function search() {
+        pagination.doSearch(params());
+    }
+
+    // 驱动下拉（跳过初始化回调，避免初始化时触发搜索）
+    metaSelect = $('#searchActuatorMeta').dbSelect({
+        type: 'single',
+        onSelect: search
+    });
+
+    // 搜索框输入事件
+    searchInput = initSearch('searchActuator', search);
+
+    // 初始化分页管理器
+    pagination = new PaginationManager({
+        requestUrl: '/monitor/queryActuator',
+        tableBodySelector: '#actuatorList',
+        pageSize: 5,
+        params: params(),
+        renderRow: function (row, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td>[${row.group || ''}]${row.metricName || ''}</td>
+                    <td>${row.measurements[0].value || ''}</td>
+                </tr>
+            `;
+        }
+    });
+}
+
 $(function () {
     // 图表实例
     let charts = {
@@ -532,4 +578,6 @@ $(function () {
 
     bindQueryLogEvent();
     bindCleanLog();
+
+    bindQueryActuatorEvent();
 });

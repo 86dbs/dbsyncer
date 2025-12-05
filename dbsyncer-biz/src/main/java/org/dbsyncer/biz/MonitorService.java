@@ -100,4 +100,10 @@ public interface MonitorService {
      */
     AppReportMetric queryAppReportMetric(List<MetricResponse> metrics);
 
+    /**
+     * 查询表执行器
+     *
+     * @return
+     */
+    Paging<MetricResponse> queryActuator(Map<String, String> params);
 }

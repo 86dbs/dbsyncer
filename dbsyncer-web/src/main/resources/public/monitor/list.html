@@ -144,9 +144,15 @@
         <div class="card-header">
             <!-- 表格工具栏 -->
             <div class="grid grid-cols-6 items-center">
-                <div id="searchTableActuator" class="lg:col-span-3 search-wrapper">
+                <div class="lg:col-span-3">
+                    <select id="searchActuatorMeta" class="form-control">
+                        <option value="" selected="selected">无</option>
+                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'"/>
+                    </select>
+                </div>
+                <div id="searchActuator" class="lg:col-span-3 search-wrapper">
                     <i class="fa fa-search search-icon"></i>
-                    <input class="search-input" type="text" maxlength="32" placeholder="搜索驱动或表关键字" />
+                    <input class="search-input" type="text" maxlength="32" placeholder="搜索表关键字" />
                     <span class="search-clear" title="清除">
                         <i class="fa fa-times"></i>
                     </span>
@@ -162,49 +168,8 @@
                     <th>结果</th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>[阿里云同步]xhtb_user</td>
-                    <td>堆积:8907/10000 线程:1/1 完成:999</td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>[阿里云同步]xhtb_user_order</td>
-                    <td>堆积:5677/10000 线程:1/1 完成:111</td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>[阿里云同步]xhtb_task</td>
-                    <td>堆积:0/10000 线程:0/1 完成:0</td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>[阿里云同步]xhtb_task1</td>
-                    <td>堆积:0/10000 线程:0/1 完成:0</td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>[阿里云同步]xhtb_task2</td>
-                    <td>堆积:0/10000 线程:0/1 完成:0</td>
-                </tr>
-                </tbody>
+                <tbody id="actuatorList"></tbody>
             </table>
-
-            <!-- 分页信息 -->
-            <div class="p-5 border-t border-gray-100 flex items-center justify-between">
-                <p class="text-sm text-gray-500">共 <span class="totalCount" th:text="${pagingTask?.total}">0</span> 条，第 <span class="currentPage">1</span> / <span class="totalPages">1</span> 页</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 

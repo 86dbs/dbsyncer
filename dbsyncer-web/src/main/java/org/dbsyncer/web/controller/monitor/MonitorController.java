@@ -192,6 +192,18 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @ResponseBody
+    @PostMapping("/queryActuator")
+    public RestResult queryActuator(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.queryActuator(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     /**
      * 硬盘状态
      *

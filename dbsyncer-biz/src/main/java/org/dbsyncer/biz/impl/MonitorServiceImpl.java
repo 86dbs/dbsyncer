@@ -59,6 +59,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -229,6 +230,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
+    public Paging<MetricResponse> queryActuator(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String metaId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
+        return metricReporter.queryActuator(metaId, name, pageNum, pageSize);
+    }
+
+    @Override
     public void run() {
         // 预警：驱动出现失败记录，发送通知消息
         List<Meta> metaAll = profileComponent.getMetaAll();
@@ -336,9 +346,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         List<MetricResponse> metricList = metricReporter.getMetricInfo();
         // 线程池状态
         metrics.addAll(metricList);
+        // 合并分组显示
+        return metricGroupProcessor.process(metricResponseToVo(metrics));
+    }
 
-        // 转换显示
-        List<MetricResponseVo> formatMetrics = metrics.stream().map(metric -> {
+    private List<MetricResponseVo> metricResponseToVo(Collection<MetricResponse> metrics) {
+        return metrics.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             vo.setCode(metric.getCode());
             vo.setGroup(metric.getGroup());
@@ -350,8 +363,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             });
             return vo;
         }).collect(Collectors.toList());
-        // 合并分组显示
-        return metricGroupProcessor.process(formatMetrics);
     }
 
 }
