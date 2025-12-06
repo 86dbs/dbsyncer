@@ -14,6 +14,11 @@ function showMessageDetail($message, icon, title) {
     });
 }
 
+// 打开重试页面
+function showRetryDetail(metaId, messageId) {
+    doLoader("/monitor/page/retry?metaId=" + metaId + "&messageId=" + messageId);
+}
+
 // 查看数据
 function bindQueryDataEvent() {
     let pagination;
@@ -71,7 +76,8 @@ function bindQueryDataEvent() {
                 </button>`);
         // 如果失败，显示重试按钮
         if (row.success === 0) {
-            content.push(`<button class="table-action-btn play" title="重试" onclick="showDataDetail('${row?.id}')">
+            let metaId = metaSelect.getValues()[0] || '';
+            content.push(`<button class="table-action-btn play" title="重试" onclick="showRetryDetail('${metaId}','${row?.id}')">
                             <i class="fa fa-refresh"></i>
                         </button>`);
         }
@@ -568,6 +574,11 @@ $(function () {
     
     // 立即执行一次更新
     updateMonitorData();
+
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/monitor');
+    };
 
     bindQueryDataEvent();
 

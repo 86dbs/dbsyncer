@@ -6,6 +6,7 @@ package org.dbsyncer.web.controller.monitor;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
+import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
@@ -14,6 +15,7 @@ import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.Sample;
 import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -62,6 +64,9 @@ public class MonitorController extends BaseController {
     private ConnectorService connectorService;
 
     @Resource
+    private MappingService mappingService;
+
+    @Resource
     private PreloadTemplate preloadTemplate;
 
     @Resource
@@ -89,7 +94,9 @@ public class MonitorController extends BaseController {
 
     @GetMapping("/page/retry")
     public String page(ModelMap model, String metaId, String messageId) {
-        model.put("meta", monitorService.getMetaVo(metaId));
+        MetaVo metaVo = monitorService.getMetaVo(metaId);
+        model.put("meta", metaVo);
+        model.put("mapping", mappingService.getMapping(metaVo.getMappingId()));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
     }

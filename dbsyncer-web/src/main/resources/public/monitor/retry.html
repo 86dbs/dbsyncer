@@ -2,4 +2,147 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">异常数据 - [[${meta?.mappingName}]]</h3>
+    </div>
+    <div class="card-body">
+        <!-- 驱动同步关系 -->
+        <div class="grid grid-cols-3">
+            <div class="flex items-center gap-3">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
+                <div>
+                    <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
+                    <p class="text-sm">数据源表：[[${message?.sourceTableName}]]</p>
+                </div>
+            </div>
+            <div class="text-info items-center text-center">
+                <p></p>
+                <i class="fa fa-arrow-right fa-3x"></i>
+            </div>
+            <div class="flex items-center gap-3">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
+                <div>
+                    <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
+                    <p class="text-sm">目标源表：[[${message?.targetTableName}]]</p>
+                </div>
+            </div>
+        </div>
+
+        <form id="retryDataForm">
+            <div class="">
+                <input type="text" name="metaId" th:value="${meta?.id}"/>
+                <input type="text" name="messageId" th:value="${message?.id}"/>
+                <input type="text" id="retryDataParams" name="retryDataParams"/>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <i class="fa fa-info-circle text-warning"></i>
+                    <span class="text-sm text-secondary">执行前，请先检查数据。确认字段类型是否支持当前值</span>
+                </div>
+
+                <div class="form-actions">
+                    <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
+                        <i class="fa fa-refresh"></i> 执行重试
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                        <i class="fa fa-reply"></i> 返回
+                    </button>
+                </div>
+            </div>
+
+            <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>目标表字段</th>
+                <th>值类型</th>
+                <th>值</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr th:each="c,state : ${message?.columns}">
+                    <td th:text="${state.index}+1"></td>
+                    <td>
+                        <span class="font-medium" th:text="${c?.key}"></span>
+                        <span class="text-sm text-tertiary" th:text="'(' + ${c?.keyType} + ')'"></span>
+                    </td>
+                    <td>
+                        <span class="badge badge-info" th:text="${c?.valueType}"></span>
+                    </td>
+                    <td class="font-mono text-sm" th:text="${c?.value}"></td>
+                    <td>
+                        <button type="button" th:data-key="${c?.key}" class="btn btn-text retryDataModify" title="修改">
+                            <i class="fa fa-edit text-success"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+            </table>
+
+        </form>
+    </div>
+</div>
+
+<script>
+    // 生成修改参数
+    function createRetryDataParams($key, $value) {
+        let $params = $("#retryDataParams");
+        let val = $params.val();
+        let jsonObj = {};
+        if (!isBlank(val)) {
+            jsonObj = $.parseJSON(val);
+        }
+
+        jsonObj[$key] = $value;
+        $params.val(JSON.stringify(jsonObj));
+    }
+
+    // 修改增量数据
+    function bindRetryDataModifyClick() {
+        $(".retryDataModify").click(function () {
+            let $key = $(this).attr("data-key");
+            let $tr = $(this).parent().parent();
+            let $value = $tr.find("td:eq(3)");
+            let tmp = $value.text();
+            $value.text("");
+            $value.append("<input type='text' class='form-control text-md'/>");
+            let $input = $value.find("input");
+            $input.focus().val(tmp);
+            $input.blur(function () {
+                $value.text($(this).val());
+                if (tmp !== $(this).val()) {
+                    createRetryDataParams($key, $(this).val());
+                    $tr.addClass("success");
+                    $tr.attr("title", "已修改");
+                }
+                $input.unbind();
+            });
+        })
+    }
+
+    $(function () {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/monitor?id=' + $("input[name='metaId']").val());
+        };
+
+        bindRetryDataModifyClick();
+
+        //保存
+        $("#retryDataSubmitBtn").click(function () {
+            const $form = $("#retryDataForm");
+            doPoster("/monitor/sync", $form.serializeJson(), function (data) {
+                if (data.success === true) {
+                    bootGrowl("正在同步中.", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.resultValue, "danger");
+                }
+            });
+        });
+    });
+</script>
 </html>
