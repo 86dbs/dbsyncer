@@ -47,9 +47,10 @@ public final class MySQLByteType extends ByteType {
         }
         if (val instanceof byte[]) {
             byte[] bytes = (byte[]) val;
-            if (bytes.length > 1) {
-                return bytes[1];
+            if (bytes.length > 0) {
+                return bytes[0];
             }
+            return 0;
         }
         return throwUnsupportedException(val, field);
     }
