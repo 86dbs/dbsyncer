@@ -85,13 +85,13 @@ public class Picker {
         return targetMapList;
     }
 
-    public List<Object> pickSourceData(Map target) {
+    public List<Object> pickSourceData(List<Field> sourceColumn, Map target) {
         Map<String, Object> source = new HashMap<>();
         if (!CollectionUtils.isEmpty(target)) {
             exchange(tFieldSize, sFieldSize, targetFields, sourceFields, target, source);
         }
 
-        return getFields(sourceFields).stream().map(field -> source.get(field.getName())).collect(Collectors.toList());
+        return getFields(sourceColumn).stream().map(field -> source.get(field.getName())).collect(Collectors.toList());
     }
 
     public List<Field> getSourceFields() {

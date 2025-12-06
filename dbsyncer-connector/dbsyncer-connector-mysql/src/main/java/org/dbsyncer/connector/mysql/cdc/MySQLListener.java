@@ -99,6 +99,10 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
+        // 排除手动重试操作
+        if (StringUtil.isBlank(offset.getNextFileName()) && offset.getPosition() == null) {
+            return;
+        }
         refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
     }
 
