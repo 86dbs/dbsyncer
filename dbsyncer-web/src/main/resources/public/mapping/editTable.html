@@ -50,7 +50,7 @@
     <!-- 操作按钮区域 -->
     <div class="flex items-center justify-end mt-4">
         <div class="form-actions">
-            <button id="tableGroupAddBtn" type="button" class="btn btn-info">
+            <button id="tableGroupAddBtn" type="button" class="btn btn-info" th:if="${mapping?.meta?.state eq 0}">
                 <i class="fa fa-plus"></i> 添加
             </button>
             <button id="tableGroupDelBtn" type="button" class="btn btn-outline" disabled="disabled">

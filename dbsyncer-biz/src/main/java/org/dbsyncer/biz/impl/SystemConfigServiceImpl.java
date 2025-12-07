@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author AE86
@@ -93,9 +94,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         List<ConfigModel> list = new ArrayList<>();
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
-        profileComponent.getConnectorAll().forEach(config -> list.add(config));
-        profileComponent.getMappingAll().forEach(config -> list.add(config));
-        profileComponent.getMetaAll().forEach(config -> list.add(config));
+        list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
+        list.addAll(profileComponent.getMappingAll().stream().limit(5).collect(Collectors.toList()));
+        list.addAll(profileComponent.getMetaAll().stream().limit(5).collect(Collectors.toList()));
         return list;
     }
 

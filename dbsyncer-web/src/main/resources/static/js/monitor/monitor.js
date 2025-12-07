@@ -138,8 +138,8 @@ function jsonToTable(jsonObj) {
     $.each(jsonObj, function (name, value) {
         $content += '<tr>';
         $content += '<td>' + index + '</td>';
-        $content += '<td>' + name + '</td>';
-        $content += '<td>' + value + '</td>';
+        $content += '<td>' + escapeHtml(name || '') + '</td>';
+        $content += '<td class="white-space-none">' + escapeHtml(value || '') + '</td>';
         $content += '</tr>';
         index++;
     });

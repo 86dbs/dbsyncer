@@ -4,7 +4,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
     <div class="card-header">
-        <h3 class="card-title text-center">异常数据 - [[${meta?.mappingName}]]</h3>
+        <h3 class="card-title text-center">[[${meta?.mappingName}]]</h3>
     </div>
     <div class="card-body">
         <!-- 驱动同步关系 -->
@@ -29,21 +29,21 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             </div>
         </div>
 
-        <form id="retryDataForm">
-            <div class="">
-                <input type="text" name="metaId" th:value="${meta?.id}"/>
-                <input type="text" name="messageId" th:value="${message?.id}"/>
-                <input type="text" id="retryDataParams" name="retryDataParams"/>
+        <form id="editDataForm">
+            <div>
+                <input type="hidden" name="metaId" th:value="${meta?.id}"/>
+                <input type="hidden" name="messageId" th:value="${message?.id}"/>
+                <input type="hidden" name="retryDataParams"/>
             </div>
 
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mt-4 mb-4">
                 <div>
                     <i class="fa fa-info-circle text-warning"></i>
-                    <span class="text-sm text-secondary">执行前，请先检查数据。确认字段类型是否支持当前值</span>
+                    <span class="text-sm text-secondary">请检查数据的<b>字段类型、长度、非空</b>等是否符合目标库的设计规范。</span>
                 </div>
 
                 <div class="form-actions">
-                    <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
+                    <button id="editDataSubmitBtn" type="button" class="btn btn-primary">
                         <i class="fa fa-refresh"></i> 执行重试
                     </button>
                     <button type="button" class="btn btn-outline" onclick="backIndexPage()">
@@ -74,7 +74,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                     </td>
                     <td class="font-mono text-sm" th:text="${c?.value}"></td>
                     <td>
-                        <button type="button" th:data-key="${c?.key}" class="btn btn-text retryDataModify" title="修改">
+                        <button type="button" th:data-key="${c?.key}" class="table-action-btn play editData" title="修改">
                             <i class="fa fa-edit text-success"></i>
                         </button>
                     </td>
@@ -87,62 +87,63 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 </div>
 
 <script>
-    // 生成修改参数
-    function createRetryDataParams($key, $value) {
-        let $params = $("#retryDataParams");
-        let val = $params.val();
-        let jsonObj = {};
-        if (!isBlank(val)) {
-            jsonObj = $.parseJSON(val);
-        }
+    function bindEditData() {
+        const $paramsInput = $("input[name='retryDataParams']");
+        let originalParams = {};
+        let modifiedParams = {};
 
-        jsonObj[$key] = $value;
-        $params.val(JSON.stringify(jsonObj));
-    }
-
-    // 修改增量数据
-    function bindRetryDataModifyClick() {
-        $(".retryDataModify").click(function () {
-            let $key = $(this).attr("data-key");
-            let $tr = $(this).parent().parent();
-            let $value = $tr.find("td:eq(3)");
-            let tmp = $value.text();
-            $value.text("");
-            $value.append("<input type='text' class='form-control text-md'/>");
-            let $input = $value.find("input");
-            $input.focus().val(tmp);
+        $(".editData").unbind('click').bind('click', function () {
+            const $btn = $(this);
+            const $tr = $btn.closest("tr");
+            const key = $btn.data("key");
+            const $valueCell = $tr.find("td").eq(3);
+            let currentValue = $valueCell.text().trim();
+            if (!originalParams[key]) {
+                originalParams[key] = currentValue;
+            }
+            $valueCell.text('').append("<input type='text' class='form-control'/>");
+            let $input = $valueCell.find("input");
+            $input.val(currentValue).focus();
             $input.blur(function () {
-                $value.text($(this).val());
-                if (tmp !== $(this).val()) {
-                    createRetryDataParams($key, $(this).val());
-                    $tr.addClass("success");
-                    $tr.attr("title", "已修改");
+                const newValue = $(this).val().trim();
+                $valueCell.text(newValue);
+                // 更新值
+                if (newValue !== originalParams[key]) {
+                    modifiedParams[key] = newValue;
+                    $paramsInput.val(JSON.stringify(modifiedParams));
+                    $tr.addClass("badge-success").attr("title", "已修改");
+                } else {
+                    // 恢复原值，移除修改标记
+                    delete modifiedParams[key];
+                    $paramsInput.val(JSON.stringify(modifiedParams));
+                    $tr.removeClass("badge-success").removeAttr("title");
                 }
-                $input.unbind();
+                $input.remove();
             });
         })
     }
 
     $(function () {
-        // 定义返回函数，子页面返回
-        window.backIndexPage = function () {
-            doLoader('/monitor?id=' + $("input[name='metaId']").val());
-        };
+        // 绑定修改数据事件
+        bindEditData();
 
-        bindRetryDataModifyClick();
-
-        //保存
-        $("#retryDataSubmitBtn").click(function () {
-            const $form = $("#retryDataForm");
-            doPoster("/monitor/sync", $form.serializeJson(), function (data) {
-                if (data.success === true) {
-                    bootGrowl("正在同步中.", "success");
+        // 提交重试
+        $("#editDataSubmitBtn").on("click", function() {
+            doPoster("/monitor/sync", $("#editDataForm").serializeJson(), function(data) {
+                if (data.success) {
+                    bootGrowl("执行重试成功", "success");
                     backIndexPage();
                 } else {
                     bootGrowl(data.resultValue, "danger");
                 }
             });
         });
+
+        // 返回函数
+        window.backIndexPage = () => {
+            const metaId = $("input[name='metaId']").val();
+            doLoader(`/monitor?id=${metaId}`);
+        };
     });
 </script>
 </html>

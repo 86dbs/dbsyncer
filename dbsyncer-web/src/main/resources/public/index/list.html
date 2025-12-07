@@ -275,7 +275,7 @@
                 return `<tr>
                     <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>
                     <td>${renderModelText(mapping?.model)}</td>
-                    <td class="text-md">${renderSyncResult(mapping)}</td>
+                    <td>${renderSyncResult(mapping)}</td>
                     <td>${renderStateText(mapping?.meta?.state || 0)}</td>
                     <td>${formatRelativeTime(mapping?.meta.updateTime || '')}</td>
                 </tr>`;

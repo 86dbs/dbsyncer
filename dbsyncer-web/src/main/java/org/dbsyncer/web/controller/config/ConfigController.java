@@ -55,17 +55,6 @@ public class ConfigController {
         return "config/list";
     }
 
-    @PostMapping(value = "/getAll")
-    @ResponseBody
-    public RestResult getAll() {
-        try {
-            return RestResult.restSuccess("ok");
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {

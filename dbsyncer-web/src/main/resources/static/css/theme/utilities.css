@@ -40,6 +40,16 @@
   white-space: nowrap;
 }
 
+/* 允许文本换行显示 */
+.white-space-none {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
 /* ========== 布局工具类 ========== */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }

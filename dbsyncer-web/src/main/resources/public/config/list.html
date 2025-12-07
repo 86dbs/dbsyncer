@@ -20,18 +20,16 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>ID</th>
                         <th>类型</th>
                         <th>名称</th>
                         <th>修改时间</th>
                     </tr>
                     </thead>
-                    <tbody id="pluginList">
+                    <tbody>
                     <tr th:if="${config == null or config.isEmpty()}">
                         <td colspan="5" class="text-center text-tertiary py-8">暂无配置数据</td>
                     </tr>
                     <tr th:id="${c?.name}" th:each="c : ${config}">
-                        <td><span class="text-mono text-sm" th:text="${c?.id}"></span></td>
                         <td><span class="badge badge-primary" th:text="${c?.type}"></span></td>
                         <td><span class="font-medium" th:text="${c?.name}"></span></td>
                         <td><span class="text-sm text-secondary" th:text="${#dates.format(c?.updateTime, 'yyyy-MM-dd HH:mm:ss')}"></span></td>
