@@ -298,4 +298,25 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         // 注意：必须先转义反斜杠，否则转义单引号时可能会影响反斜杠的转义
         return str.replace("\\", "\\\\").replace("'", "''");
     }
+
+    @Override
+    public String buildMetadataCountSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedTableName = tableName.replace("'", "''");
+        
+        if (schema != null && !schema.trim().isEmpty()) {
+            String escapedSchema = schema.replace("'", "''");
+            return String.format(
+                "SELECT table_rows FROM information_schema.tables WHERE table_schema = '%s' AND table_name = '%s'",
+                escapedSchema,
+                escapedTableName
+            );
+        } else {
+            // 使用 DATABASE() 函数获取当前数据库名
+            return String.format(
+                "SELECT table_rows FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'",
+                escapedTableName
+            );
+        }
+    }
 }

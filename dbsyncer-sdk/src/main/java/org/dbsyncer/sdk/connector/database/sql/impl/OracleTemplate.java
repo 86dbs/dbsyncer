@@ -218,4 +218,25 @@ public class OracleTemplate extends AbstractSqlTemplate {
                 return typeName;
         }
     }
+
+    @Override
+    public String buildMetadataCountSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedTableName = tableName.replace("'", "''");
+        
+        if (schema != null && !schema.trim().isEmpty()) {
+            String escapedSchema = schema.replace("'", "''");
+            return String.format(
+                "SELECT num_rows FROM all_tables WHERE owner = UPPER('%s') AND table_name = UPPER('%s')",
+                escapedSchema,
+                escapedTableName
+            );
+        } else {
+            // 使用 user_tables（当前用户的表）
+            return String.format(
+                "SELECT num_rows FROM user_tables WHERE table_name = UPPER('%s')",
+                escapedTableName
+            );
+        }
+    }
 }

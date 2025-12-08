@@ -432,4 +432,19 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             quotedTableName, constraintName, defaultValue, quotedColumnName
         );
     }
+
+    @Override
+    public String buildMetadataCountSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedTableName = tableName.replace("'", "''");
+        String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
+        
+        return String.format(
+            "SELECT p.rows FROM sys.tables t " +
+            "INNER JOIN sys.partitions p ON t.object_id = p.object_id " +
+            "WHERE t.name = '%s' AND t.schema_id = SCHEMA_ID('%s') AND p.index_id IN (0, 1)",
+            escapedTableName,
+            schemaName
+        );
+    }
 }

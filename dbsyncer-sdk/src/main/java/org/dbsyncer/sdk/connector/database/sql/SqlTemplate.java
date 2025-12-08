@@ -64,14 +64,38 @@ public interface SqlTemplate {
 
     /**
      * 构建计数查询SQL
+     * 当没有WHERE过滤条件时，优先使用元数据查询（如果支持）
      *
      * @param buildContext 构建上下文
      * @return 构建后的SQL（包含?占位符）
      */
     default String buildQueryCountSql(SqlBuildContext buildContext) {
-        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
         String queryFilter = buildContext.getQueryFilter();
+        
+        // 如果没有WHERE条件，尝试使用元数据查询优化
+        if (StringUtil.isBlank(queryFilter)) {
+            String metadataSql = buildMetadataCountSql(buildContext.getSchema(), buildContext.getTableName());
+            if (StringUtil.isNotBlank(metadataSql)) {
+                return metadataSql;
+            }
+        }
+        
+        // 有WHERE条件或不支持元数据查询时，使用标准COUNT查询
+        String schemaTable = buildTable(buildContext.getSchema(), buildContext.getTableName());
         return buildQueryCountSql(schemaTable, queryFilter);
+    }
+
+    /**
+     * 构建元数据查询SQL（用于快速获取表行数近似值）
+     * 仅在没有WHERE过滤条件时使用
+     *
+     * @param schema 架构名
+     * @param tableName 表名
+     * @return 元数据查询SQL，如果不支持则返回null
+     */
+    default String buildMetadataCountSql(String schema, String tableName) {
+        // 默认不支持元数据查询，返回null
+        return null;
     }
 
     /**

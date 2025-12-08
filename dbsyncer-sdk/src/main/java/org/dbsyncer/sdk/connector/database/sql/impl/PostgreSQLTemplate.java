@@ -217,4 +217,18 @@ public class PostgreSQLTemplate extends AbstractSqlTemplate {
         }
     }
 
+    @Override
+    public String buildMetadataCountSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedTableName = tableName.replace("'", "''");
+        String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "public";
+        
+        return String.format(
+            "SELECT reltuples::BIGINT AS row_count FROM pg_class " +
+            "WHERE relname = '%s' AND relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '%s')",
+            escapedTableName,
+            schemaName
+        );
+    }
+
 }
