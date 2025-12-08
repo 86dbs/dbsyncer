@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.PrimaryKeyRequiredException;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -258,7 +259,15 @@ public class TableGroupChecker extends AbstractChecker {
         if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
             List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
             List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
-            Assert.isTrue(!CollectionUtils.isEmpty(sourceTablePrimaryKeys) && !CollectionUtils.isEmpty(targetTablePrimaryKeys), "数据源表和目标源表必须包含主键.");
+            
+            // 检查源表和目标表是否都有主键
+            if (CollectionUtils.isEmpty(sourceTablePrimaryKeys)) {
+                throw new PrimaryKeyRequiredException(String.format("数据源表 %s 缺少主键，无法进行数据同步。", tableGroup.getSourceTable().getName()));
+            }
+            if (CollectionUtils.isEmpty(targetTablePrimaryKeys)) {
+                throw new PrimaryKeyRequiredException(String.format("目标表 %s 缺少主键，无法进行数据同步。", tableGroup.getTargetTable().getName()));
+            }
+            
             String sPK = sourceTablePrimaryKeys.stream().findFirst().get();
             String tPK = targetTablePrimaryKeys.stream().findFirst().get();
             tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));

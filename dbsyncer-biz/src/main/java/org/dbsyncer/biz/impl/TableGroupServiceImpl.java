@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.PrimaryKeyRequiredException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
@@ -59,14 +60,23 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             String id = null;
             List<String> list = new ArrayList<>();
             for (int i = 0; i < tableSize; i++) {
-                params.put("sourceTable", sourceTableArray[i]);
-                params.put("targetTable", targetTableArray[i]);
-                TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
-                log(LogType.TableGroupLog.INSERT, model);
-                int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
-                model.setIndex(tableGroupCount + 1);
-                id = profileComponent.addTableGroup(model);
-                list.add(id);
+                try {
+                    params.put("sourceTable", sourceTableArray[i]);
+                    params.put("targetTable", targetTableArray[i]);
+                    TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
+                    log(LogType.TableGroupLog.INSERT, model);
+                    int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
+                    model.setIndex(tableGroupCount + 1);
+                    id = profileComponent.addTableGroup(model);
+                    list.add(id);
+                } catch (PrimaryKeyRequiredException e) {
+                    // 如果数据表没有主键，则跳过该表并记录日志
+                    String sourceTableName = sourceTableArray[i];
+                    String targetTableName = targetTableArray[i];
+                    String mappingName = mapping != null ? mapping.getName() : mappingId;
+                    log(LogType.SystemLog.ERROR, "跳过缺少主键的表组 - 驱动:%s, 源表:%s, 目标表:%s, 原因:%s",
+                            mappingName, sourceTableName, targetTableName, e.getMessage());
+                }
             }
             submitTableGroupCountTask(mapping, list);
 

@@ -8,8 +8,10 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.beans.BeanUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,24 @@ public abstract class PickerUtil {
     public static TableGroup mergeTableGroupConfig(Mapping mapping, TableGroup tableGroup) {
         TableGroup group = new TableGroup();
         BeanUtils.copyProperties(tableGroup, group);
+
+        // 深拷贝command Map，避免多线程环境下共享引用导致的数据错配
+        // 问题：BeanUtils.copyProperties是浅拷贝，command Map会被多个TableGroup实例共享
+        // 在多表并发同步时（如150个表），可能导致表名和schema错配
+        if (tableGroup.getCommand() != null) {
+            group.setCommand(new HashMap<>(tableGroup.getCommand()));
+        }
+
+        // 深拷贝Table对象，避免多线程环境下共享引用导致column字段被并发修改
+        // 问题：BeanUtils.copyProperties是浅拷贝，Table对象（包括column字段）会被多个TableGroup实例共享
+        // 在多表并发同步时（如150个表），可能导致column字段为空或状态不一致
+        // 使用Table.clone()方法进行深拷贝，该方法会深拷贝column列表
+        if (tableGroup.getSourceTable() != null) {
+            group.setSourceTable(tableGroup.getSourceTable().clone());
+        }
+        if (tableGroup.getTargetTable() != null) {
+            group.setTargetTable(tableGroup.getTargetTable().clone());
+        }
 
         // 参数配置(默认使用全局)
         group.setParams(CollectionUtils.isEmpty(tableGroup.getParams()) ? mapping.getParams() : tableGroup.getParams());

@@ -83,6 +83,13 @@ public class BaseServiceImpl {
     }
 
     /**
+     * 记录自定义日志消息
+     */
+    protected void log(LogType logType, String format, Object... args) {
+        logService.log(logType, format, args);
+    }
+
+    /**
      * 发送通知消息
      */
     protected void sendNotifyMessage(String title, String content) {

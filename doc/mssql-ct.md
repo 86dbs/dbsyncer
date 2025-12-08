@@ -20,7 +20,7 @@
 - 表必须有主键
 - 只返回变更标识和变更类型，需要 JOIN 原表获取数据
 - DELETE 操作无法 JOIN 原表获取完整数据
-- DDL 检测有延迟（3-30 秒）
+- DDL 检测依赖 DML 查询，如果表长时间没有 DML 变更，DDL 变更会在下次 DML 查询时检测到
 
 ## 二、核心实现架构
 
@@ -32,7 +32,7 @@
 │              (Change Tracking Enabled Tables)              │
 │                                                             │
 │  DML变更 → Change Tracking 捕获 → 版本号递增                │
-│  DDL变更 → 程序端轮询表结构 → 比对差异 → 生成 DDL           │
+│  DDL变更 → DML查询时检测哈希值 → 比对差异 → 生成 DDL         │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                             │ VersionPuller 轮询
@@ -64,9 +64,10 @@
 │  3. pull(stopVersion)                                       │
 │     - 查询 DML 变更（CHANGETABLE）                           │
 │     - JOIN 原表获取完整数据                                  │
-│     - 从 DDL 队列获取 DDL 变更                               │
-│     - 合并并按版本号排序                                      │
-│     - 按顺序解析和发送                                        │
+│     - 检测表结构哈希值变化（ResultSetMetaData）              │
+│     - 哈希值变化时查询 INFORMATION_SCHEMA 进行完整比对       │
+│     - 生成 DDL 事件并与 DML 事件合并                          │
+│     - 按版本号排序并发送                                      │
 │  4. 统一更新 lastVersion 并保存到 snapshot                   │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -78,24 +79,12 @@
 │  changeEvent() → watcher.changeEvent()                      │
 └─────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────┐
-│         DDLDetector (独立线程)                              │
-│                                                             │
-│  每 3-5 秒轮询:                                             │
-│  1. 查询所有表的当前结构（INFORMATION_SCHEMA）              │
-│  2. 与上次快照比对差异                                       │
-│  3. 生成 DDL 语句                                           │
-│  4. 获取当前版本号并创建 DDL 事件                            │
-│  5. 加入 DDL 事件队列                                        │
-│  6. 更新表结构快照                                           │
-└─────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 关键组件
 
 - `SqlServerCTListener`：监听器主类，管理 CT 生命周期
 - `VersionPuller`：全局版本号轮询器（单例）
-- `DDLDetector`：DDL 检测器（哈希值检测 + 兜底轮询）
 
 ## 三、Change Tracking 启用和配置
 
@@ -210,7 +199,7 @@ ORDER BY ORDINAL_POSITION;
 
 ### 5.1 程序端字段比对方案
 
-Change Tracking 不直接支持 DDL 变更跟踪，通过程序端定期轮询表结构并比对差异来检测 DDL 变更：
+Change Tracking 不直接支持 DDL 变更跟踪，通过在 DML 查询过程中检测表结构哈希值变化，并比对差异来检测 DDL 变更：
 
 #### 5.1.1 表结构查询
 
@@ -437,59 +426,46 @@ private String generateAlterColumnDDL(String tableName, Field oldCol, Field newC
 }
 ```
 
-#### 5.1.5 DDL 检测轮询机制
+#### 5.1.5 DDL 检测机制（在 DML 查询时触发）
 
 ```java
 /**
- * DDL 检测器（定期轮询表结构）
+ * 在 DML 查询过程中检测 DDL 变更
  */
-private class DDLDetector {
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final long pollInterval = 5000;  // 轮询间隔（默认 5 秒）
-    private final BlockingQueue<DDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
+private void detectDDLChangesInDMLQuery(String tableName, ResultSetMetaData metaData) throws Exception {
+    // 1. 从 ResultSetMetaData 计算当前表结构哈希值
+    String currentHash = calculateSchemaHashFromMetaData(metaData);
+    String lastHash = getSchemaHash(tableName);
     
-    public void start() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                detectDDLChanges();
-            } catch (Exception e) {
-                logger.error("DDL 检测失败", e);
-            }
-        }, pollInterval, pollInterval, TimeUnit.MILLISECONDS);
+    if (lastHash == null) {
+        // 首次检测，保存哈希值并初始化快照
+        Map<String, Integer> ordinalPositions = new HashMap<>();
+        MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
+        Long currentVersion = getCurrentVersion();
+        saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
+        return;
     }
     
-    private void detectDDLChanges() throws Exception {
-        Long currentVersion = getCurrentVersion();  // 获取当前 Change Tracking 版本号
+    if (!lastHash.equals(currentHash)) {
+        // 2. 哈希值变化，触发完整比对
+        Map<String, Integer> ordinalPositions = new HashMap<>();
+        MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
+        Long currentVersion = getCurrentVersion();
+        MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
         
-        for (String tableName : tables) {
-            // 1. 查询当前表结构（使用 MetaInfo）
-            Map<String, Integer> ordinalPositions = new HashMap<>();
-            MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
-            
-            // 2. 读取上次保存的表结构快照
-            MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
-            
-            // 3. 如果是首次检测，保存快照并跳过
-            if (lastMetaInfo == null) {
-                // 计算初始哈希值
-                String currentHash = calculateSchemaHashFromMetaInfo(currentMetaInfo);
-                saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
-                continue;
-            }
-            
-            // 4. 比对差异
+        if (lastMetaInfo != null) {
             List<String> lastPrimaryKeys = getPrimaryKeysFromMetaInfo(lastMetaInfo);
             List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
             Map<String, Integer> lastOrdinalPositions = getColumnOrdinalPositions(tableName);
             
-            List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo, 
-                                                        lastPrimaryKeys, currentPrimaryKeys, 
-                                                        lastOrdinalPositions, ordinalPositions);
+            // 3. 比对差异
+            List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo,
+                                                         lastPrimaryKeys, currentPrimaryKeys,
+                                                         lastOrdinalPositions, ordinalPositions);
             
-            // 5. 如果有变更，生成 DDL 事件并发送
+            // 4. 如果有变更，生成 DDL 事件
             if (!changes.isEmpty()) {
                 for (DDLChange change : changes) {
-                    // 使用当前版本号作为 DDL 事件的版本号
                     DDLEvent ddlEvent = new DDLEvent(
                         tableName, 
                         change.getDdlCommand(), 
@@ -501,19 +477,20 @@ private class DDLDetector {
                     ddlEventQueue.offer(ddlEvent);
                 }
                 
-                // 6. 更新表结构快照
-                String currentHash = calculateSchemaHashFromMetaInfo(currentMetaInfo);
+                // 5. 更新表结构快照
                 saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
                 
                 logger.info("检测到表 {} 的 DDL 变更，共 {} 个变更", tableName, changes.size());
+            } else {
+                // 即使没有检测到变更，也更新哈希值（可能是精度/尺寸变化导致哈希变化但无法检测）
+                snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
             }
         }
     }
-    
-    public BlockingQueue<DDLEvent> getDdlEventQueue() {
-        return ddlEventQueue;
-    }
 }
+
+// DDL 事件队列（用于与 DML 事件合并）
+private final BlockingQueue<DDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
 ```
 
 #### 5.1.6 表结构快照持久化
@@ -714,19 +691,18 @@ private String calculateSchemaHashFromMetaInfo(MetaInfo metaInfo) {
  * 合并 DDL 和 DML 事件（按版本号排序）
  */
 private void mergeAndProcessEvents(Long stopVersion) throws Exception {
-    // 1. 查询 DML 变更
+    // 1. 查询 DML 变更（在查询过程中会检测 DDL 变更）
     List<CTEvent> dmlEvents = pullDMLChanges(stopVersion);
     
     // 2. 从 DDL 队列中取出所有待处理的 DDL 事件
     List<DDLEvent> ddlEvents = new ArrayList<>();
-    BlockingQueue<DDLEvent> ddlQueue = ddlDetector.getDdlEventQueue();
     DDLEvent ddlEvent;
-    while ((ddlEvent = ddlQueue.poll()) != null) {
+    while ((ddlEvent = ddlEventQueue.poll()) != null) {
         if (ddlEvent.getVersion() <= stopVersion) {
             ddlEvents.add(ddlEvent);
         } else {
             // 版本号超过 stopVersion，放回队列
-            ddlQueue.offer(ddlEvent);
+            ddlEventQueue.offer(ddlEvent);
             break;
         }
     }
@@ -771,60 +747,48 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
 ```
 
 **关键点**：
-- DDL 变更通过程序端轮询检测，使用 Change Tracking 版本号进行排序
+- DDL 变更通过在 DML 查询时检测哈希值变化来发现，使用 Change Tracking 版本号进行排序
 - 确保 DDL 和 DML 变更可以按版本号合并排序
 - 表结构快照保存到 `snapshot`，支持断点续传
 - 首次检测时只保存快照，不生成 DDL 事件
+- 不需要定期轮询，在 DML 查询时即可检测到 DDL 变更
 
-### 5.3 推荐方案：混合 DDL 检测（哈希值检测 + 兜底轮询）
+### 5.3 DDL 检测实现方案
 
 **实现策略**：
-1. **主要检测**：在 DML 同步过程中，从 `ResultSetMetaData` 获取表结构信息，计算哈希值并比对
-2. **兜底机制**：定期轮询（30 秒间隔），确保长时间没有 DML 变更的表也能检测到 DDL
+1. **哈希值检测**：在 DML 查询过程中，从 `ResultSetMetaData` 获取表结构信息，计算哈希值并比对
+2. **完整比对**：哈希值变化时，立即查询 `INFORMATION_SCHEMA` 进行完整比对，生成 DDL 事件
 
 **关键实现**：
 
 ```java
 // 在 pullDMLChanges 中检测哈希值
-ResultSetMetaData metaData = rs.getMetaData();
-String currentHash = calculateSchemaHashFromMetaData(metaData);
-String lastHash = getSchemaHash(tableName);
-
-if (lastHash == null) {
-    // 首次检测，保存哈希值
-    snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
-} else if (!lastHash.equals(currentHash)) {
-    // 哈希值变化，触发完整比对
-    Map<String, Integer> ordinalPositions = new HashMap<>();
-    MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
-    Long currentVersion = getCurrentVersion();
-    MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
+private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion) throws Exception {
+    // ... 构建查询 SQL ...
     
-    if (lastMetaInfo != null) {
-        List<String> lastPrimaryKeys = getPrimaryKeysFromMetaInfo(lastMetaInfo);
-        List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
-        Map<String, Integer> lastOrdinalPositions = getColumnOrdinalPositions(tableName);
+    return queryAndMapList(sql, statement -> {
+        statement.setLong(1, startVersion);
+        statement.setLong(2, startVersion);
+        statement.setLong(3, stopVersion);
+    }, rs -> {
+        // 在第一次获取结果时检测表结构
+        ResultSetMetaData metaData = rs.getMetaData();
+        detectDDLChangesInDMLQuery(tableName, metaData);
         
-        List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo,
-                                                     lastPrimaryKeys, currentPrimaryKeys,
-                                                     lastOrdinalPositions, ordinalPositions);
-        // 生成 DDL 事件并更新快照...
-        if (!changes.isEmpty()) {
-            // 生成 DDL 事件...
-            saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
-        } else {
-            // 即使没有检测到变更，也更新哈希值（可能是精度/尺寸变化导致哈希变化但无法检测）
-            snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
+        List<CTEvent> events = new ArrayList<>();
+        while (rs.next()) {
+            // ... 处理 DML 事件 ...
         }
-    }
+        return events;
+    });
 }
-
-// 兜底轮询（30 秒间隔）
-scheduler.scheduleAtFixedRate(() -> {
-    // 只检测长时间没有 DML 变更的表
-    fallbackDetectByPolling();
-}, 30000, 30000, TimeUnit.MILLISECONDS);
 ```
+
+**为什么不需要轮询？**
+
+1. **精确性**：哈希值变化时，可以在 DML 查询时立即查询 `INFORMATION_SCHEMA`，不需要轮询
+2. **兜底机制**：如果表结构变了但没有 DML 变更，没有数据需要同步，表结构变化不会影响数据同步；当有 DML 变更时，会在查询时检测到结构变化
+3. **完整性**：只需要检测影响数据结构的 DDL（增删改列），这些都可以在 DML 查询时检测到
 
 **sp_rename 支持**：
 - 通过完整比对可以检测到列名变化
@@ -956,6 +920,10 @@ private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long s
         statement.setLong(2, startVersion);   // WHERE 起始版本
         statement.setLong(3, stopVersion);    // WHERE 结束版本
     }, rs -> {
+        // 在第一次获取结果时检测表结构（DDL 变更）
+        ResultSetMetaData metaData = rs.getMetaData();
+        detectDDLChangesInDMLQuery(tableName, metaData);
+        
         List<CTEvent> events = new ArrayList<>();
         while (rs.next()) {
             Long version = rs.getLong(1);
@@ -964,7 +932,7 @@ private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long s
             
             // 构建行数据
             List<Object> row = new ArrayList<>();
-            for (int i = 4; i <= rs.getMetaData().getColumnCount(); i++) {
+            for (int i = 4; i <= metaData.getColumnCount(); i++) {
                 row.add(rs.getObject(i));
             }
             
@@ -982,15 +950,14 @@ private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long s
 
 ```java
 /**
- * DDL 变更通过 DDLDetector 异步检测，这里从队列中获取
+ * DDL 变更在 DML 查询时检测，这里从队列中获取
  */
 private List<DDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
     List<DDLEvent> events = new ArrayList<>();
-    BlockingQueue<DDLEvent> ddlQueue = ddlDetector.getDdlEventQueue();
     
     // 从队列中取出所有在版本范围内的 DDL 事件
     DDLEvent ddlEvent;
-    while ((ddlEvent = ddlQueue.poll()) != null) {
+    while ((ddlEvent = ddlEventQueue.poll()) != null) {
         if (ddlEvent.getVersion() > startVersion && ddlEvent.getVersion() <= stopVersion) {
             // 检查表名是否匹配
             if (filterTable.contains(ddlEvent.getTableName())) {
@@ -998,7 +965,7 @@ private List<DDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throw
             }
         } else if (ddlEvent.getVersion() > stopVersion) {
             // 版本号超过范围，放回队列
-            ddlQueue.offer(ddlEvent);
+            ddlEventQueue.offer(ddlEvent);
             break;
         }
         // 版本号小于等于 startVersion 的事件直接丢弃（已处理过）
@@ -1176,12 +1143,14 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 - 无法像 LSN 那样精确反映事务时间点
 - 对于同一事务内的多个变更，版本号可能相同
 
-### 9.4 DDL 检测轮询
+### 9.4 DDL 检测机制
 
-- 轮询间隔建议 3-5 秒，过短会增加数据库负载，过长会延迟 DDL 检测
+- DDL 检测在 DML 查询时触发，通过 `ResultSetMetaData` 计算哈希值进行快速检测
+- 哈希值变化时，立即查询 `INFORMATION_SCHEMA` 进行完整比对
 - 表结构快照保存到 `snapshot`，占用一定存储空间
 - 首次检测时只保存快照，不生成 DDL 事件
 - 某些复杂 DDL（如索引变更、约束变更）可能无法检测
+- 不需要定期轮询，减少数据库负载
 
 ### 9.5 变更保留时间
 
@@ -1191,8 +1160,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 ## 十、性能优化
 
 - 使用 `TRACK_COLUMNS_UPDATED = ON` 优化 UPDATE 查询
-- DDL 检测只查询配置的表，避免全库扫描
-- 哈希值检测利用 DML 查询时的元数据，零额外开销
+- DDL 检测在 DML 查询时触发，利用 `ResultSetMetaData` 进行哈希值检测，零额外开销
+- 哈希值变化时才查询 `INFORMATION_SCHEMA`，避免不必要的查询
+- 不需要定期轮询表结构，减少数据库负载
 
 ## 十一、错误处理
 

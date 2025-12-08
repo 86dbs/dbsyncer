@@ -2,6 +2,7 @@ package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -111,6 +112,12 @@ public class Table {
 
     @Override
     public Table clone() {
-        return new Table(name, type, column, sql, indexType);
+        // 深拷贝column列表，避免多线程环境下共享引用
+        List<Field> clonedColumns = null;
+        if (column != null) {
+            clonedColumns = new ArrayList<>(column);
+        }
+        // 创建新的Table对象，使用深拷贝的column列表
+        return new Table(name, type, clonedColumns, sql, indexType);
     }
 }
