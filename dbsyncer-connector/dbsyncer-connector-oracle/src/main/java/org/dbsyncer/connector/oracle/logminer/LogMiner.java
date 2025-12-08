@@ -33,21 +33,23 @@ public class LogMiner {
     private final String url;
     private final String schema;
     private final String driverClassName;
-    private final int queryTimeout = 300;
-    
+    private volatile int queryTimeout = 300;
+
     // 动态 FetchSize 配置
-    private final int minFetchSize = 100;
+    private final int minFetchSize = 500;
     private final int maxFetchSize = 5000;
     private volatile int currentFetchSize = 1000;
-    
+
     // 动态休眠时间配置（毫秒）
     private final int minSleepMillis = 100;
     private final int maxSleepMillis = 3000;
     private volatile int currentSleepMillis = 1000;
-    
+
     // 查询范围控制
-    private final long MAX_SCN_RANGE = 10000;
-    
+    private volatile long currentScnRange = 10000;
+    private final long MIN_SCN_RANGE = 5000;
+    private final long MAX_SCN_RANGE = 50000;
+
     // 性能统计
     private volatile long lastQueryRows = 0;
     private volatile long consecutiveEmptyQueries = 0;
@@ -55,7 +57,7 @@ public class LogMiner {
     private volatile long totalRowsProcessed = 0;
     private volatile long totalEmptyQueries = 0;
     private volatile long lastStatsTime = System.currentTimeMillis();
-    
+
     private volatile boolean connected = false;
     private Connection connection;
     private List<BigInteger> currentRedoLogSequences;
@@ -271,19 +273,19 @@ public class LogMiner {
     private void updateCommittedScn(long newScn) {
         committedScn = newScn > committedScn ? newScn : committedScn;
     }
-    
+
     /**
      * 动态调整 FetchSize
-     * 根据查询结果动态调整，提升性能和内存利用率
+     * 优化策略：只有在真正空闲时才降低，避免误判
      */
     private void adjustFetchSize() {
         if (lastQueryRows == 0) {
             consecutiveEmptyQueries++;
-            // 连续空查询，降低 fetchSize 节省内存
-            if (consecutiveEmptyQueries > 10 && currentFetchSize > minFetchSize) {
-                currentFetchSize = Math.max(minFetchSize, currentFetchSize / 2);
+            // 只有在连续大量空查询时才降低 fetchSize
+            if (consecutiveEmptyQueries > 20 && currentFetchSize > minFetchSize) {
+                currentFetchSize = Math.max(minFetchSize, (int) (currentFetchSize * 0.8));
                 logger.debug("Reduce fetchSize to {} after {} consecutive empty queries",
-                    currentFetchSize, consecutiveEmptyQueries);
+                        currentFetchSize, consecutiveEmptyQueries);
             }
         } else {
             consecutiveEmptyQueries = 0;
@@ -293,21 +295,50 @@ public class LogMiner {
                 int newSize = Math.min(maxFetchSize, currentFetchSize * 2);
                 if (newSize != currentFetchSize) {
                     currentFetchSize = newSize;
-                    logger.debug("Increase fetchSize to {} (utilization: {}%)", 
-                        currentFetchSize, (lastQueryRows * 100 / currentFetchSize));
+                    logger.info("Increase fetchSize to {} (utilization: {}%)",
+                            currentFetchSize, (lastQueryRows * 100 / currentFetchSize));
                 }
-            } else if (lastQueryRows < currentFetchSize * 0.3 && currentFetchSize > minFetchSize) {
-                // 利用率低，降低 fetchSize
-                int newSize = Math.max(minFetchSize, (int)(lastQueryRows * 1.5));
-                if (newSize != currentFetchSize) {
-                    currentFetchSize = newSize;
-                    logger.debug("Adjust fetchSize to {} based on actual rows {}", 
-                        currentFetchSize, lastQueryRows);
-                }
+            }
+            // 移除了过早降低的逻辑，保持稳定的 fetchSize
+        }
+    }
+
+    /**
+     * 动态调整 SCN 查询范围
+     * 根据积压情况和查询性能自适应调整
+     */
+    private void adjustScnRange(long backlog, long queryDuration) {
+        // 根据积压情况调整
+        if (backlog > MAX_SCN_RANGE * 5) {
+            // 严重积压，增大查询范围
+            long newRange = Math.min(MAX_SCN_RANGE, currentScnRange * 2);
+            if (newRange != currentScnRange) {
+                currentScnRange = newRange;
+                logger.info("Increase SCN range to {} due to large backlog: {}",
+                        currentScnRange, backlog);
+            }
+        } else if (backlog < MAX_SCN_RANGE && currentScnRange > MIN_SCN_RANGE) {
+            // 积压不多，可以降低范围提高实时性
+            long newRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
+            if (newRange != currentScnRange) {
+                currentScnRange = newRange;
+                logger.info("Decrease SCN range to {} (backlog: {})",
+                        currentScnRange, backlog);
+            }
+        }
+
+        // 根据查询时长调整
+        if (queryDuration > 60000) {
+            // 查询超过1分钟，缩小范围
+            long newRange = Math.max(MIN_SCN_RANGE, (long) (currentScnRange * 0.8));
+            if (newRange != currentScnRange) {
+                currentScnRange = newRange;
+                logger.warn("Decrease SCN range to {} due to slow query ({}ms)",
+                        currentScnRange, queryDuration);
             }
         }
     }
-    
+
     /**
      * 动态调整休眠时间
      * 根据数据量灵活调整轮询间隔，平衡延迟和CPU占用
@@ -335,32 +366,38 @@ public class LogMiner {
             }
         }
     }
-    
+
     /**
      * 收集性能统计信息
      * 每分钟输出一次统计报告
      */
-    private void collectStatistics() {
+    private void collectStatistics(long currentScn, long queryDuration) {
         totalQueriesCount++;
         totalRowsProcessed += lastQueryRows;
         if (lastQueryRows == 0) {
             totalEmptyQueries++;
         }
-        
+
         long now = System.currentTimeMillis();
         if (now - lastStatsTime > 60000) {  // 每分钟输出一次
             long avgRows = totalQueriesCount > 0 ? totalRowsProcessed / totalQueriesCount : 0;
             long emptyRate = totalQueriesCount > 0 ? totalEmptyQueries * 100 / totalQueriesCount : 0;
-            
+            long backlog = currentScn - startScn;
+
             logger.info("=== LogMiner Performance Stats (1min) ===");
-            logger.info("Queries: {}, Rows: {}, Empty: {}", 
-                totalQueriesCount, totalRowsProcessed, totalEmptyQueries);
+            logger.info("Queries: {}, Rows: {}, Empty: {}",
+                    totalQueriesCount, totalRowsProcessed, totalEmptyQueries);
             logger.info("Avg rows/query: {}, Empty rate: {}%", avgRows, emptyRate);
-            logger.info("Current fetchSize: {}, sleep: {}ms", currentFetchSize, currentSleepMillis);
-            logger.info("Current SCN: {}, Committed SCN: {}, Buffer size: {}", 
-                startScn, committedScn, transactionalBuffer.isEmpty() ? 0 : "non-zero");
+            logger.info("Current fetchSize: {}, scnRange: {}, sleep: {}ms",
+                    currentFetchSize, currentScnRange, currentSleepMillis);
+            logger.info("SCN backlog: {}, processing speed: {}/min",
+                    backlog, totalQueriesCount > 0 ? (totalRowsProcessed * 60 / totalQueriesCount) : 0);
+            logger.info("Start SCN: {}, Current SCN: {}, Committed SCN: {}",
+                    startScn, currentScn, committedScn);
+            logger.info("Buffer size: {}, Last query: {}ms",
+                    transactionalBuffer.isEmpty() ? 0 : "non-zero", queryDuration);
             logger.info("=========================================");
-            
+
             // 重置统计（滚动窗口）
             totalQueriesCount = 0;
             totalRowsProcessed = 0;
@@ -430,6 +467,7 @@ public class LogMiner {
             }
         }
     }
+
     private long getNewStartScn(Long smallestUncommittedScn, long endScn) {
         long newStartScn;
         if (smallestUncommittedScn != null && committedScn > smallestUncommittedScn) {
@@ -496,18 +534,19 @@ public class LogMiner {
                         connection = createConnection();
                         cachedStatement = createStatement();
                     }
-                    
+
                     // 关闭上一轮的 ResultSet（但复用 PreparedStatement）
                     close(rs);
-                    
-                    // 2. 确定查询范围（控制单次查询的 SCN 跨度）
+
+                    // 2. 确定查询范围（动态调整 SCN 跨度）
                     long currentScn = LogMinerHelper.getCurrentScn(connection);
-                    long endScn = Math.min(currentScn, startScn + MAX_SCN_RANGE);
-                    
+                    long endScn = Math.min(currentScn, startScn + currentScnRange);
+
                     // 检测积压情况
                     long backlog = currentScn - startScn;
-                    if (backlog > MAX_SCN_RANGE * 2) {
-                        logger.warn("Large SCN backlog detected: {}, current processing may be slow", backlog);
+                    if (backlog > currentScnRange * 2) {
+                        logger.warn("SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE",
+                                backlog, currentScnRange);
                     }
 
                     // 3. 检查 Redo Log 切换
@@ -518,12 +557,13 @@ public class LogMiner {
 
                     // 4. 查询 LogMiner 视图（复用 PreparedStatement）
                     processedScn = startScn;
-                    
+                    long queryStartTime = System.currentTimeMillis();
+
                     // 5. 动态设置 fetchSize
                     cachedStatement.setFetchSize(currentFetchSize);
                     cachedStatement.setString(1, String.valueOf(startScn));
                     cachedStatement.setString(2, String.valueOf(endScn));
-                    
+
                     try {
                         rs = cachedStatement.executeQuery();
                         logMinerViewProcessor(rs);
@@ -533,22 +573,30 @@ public class LogMiner {
                             LogMinerHelper.endLogMiner(connection);
                             restartLogMiner(endScn);
                             continue;
+                        } else if (e.getMessage().contains("ORA-01013")) {
+                            // 查询超时，缩小查询范围
+                            logger.error("Query timeout after {}s, reducing SCN range", queryTimeout);
+                            currentScnRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
+                            continue;
                         }
                         throw e;
                     }
-                    
+
+                    long queryDuration = System.currentTimeMillis() - queryStartTime;
+
                     // 6. 推进 SCN
                     Long smallestUncommittedScn = transactionalBuffer.getSmallestScn();
                     long newStartScn = getNewStartScn(smallestUncommittedScn, endScn);
                     if (newStartScn != startScn) {
                         startScn = newStartScn;
                     }
-                    
+
                     // 7. 性能统计和动态调整
-                    collectStatistics();
+                    collectStatistics(currentScn, queryDuration);
                     adjustFetchSize();
+                    adjustScnRange(backlog, queryDuration);
                     adjustSleepTime();
-                    
+
                     // 8. 动态休眠
                     try {
                         TimeUnit.MILLISECONDS.sleep(currentSleepMillis);
