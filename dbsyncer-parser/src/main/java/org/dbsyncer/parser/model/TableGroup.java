@@ -11,6 +11,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -171,16 +172,28 @@ public class TableGroup extends AbstractConfigModel {
         Table sTable = sourceTable.clone().setColumn(new ArrayList<>());
         Table tTable = targetTable.clone().setColumn(new ArrayList<>());
         List<FieldMapping> fieldMapping = this.getFieldMapping();
-        if (!CollectionUtils.isEmpty(fieldMapping)) {
-            fieldMapping.forEach(m -> {
-                if (null != m.getSource()) {
-                    sTable.getColumn().add(m.getSource());
-                }
-                if (null != m.getTarget()) {
-                    tTable.getColumn().add(m.getTarget());
-                }
-            });
+
+        // 关键修复：fieldMapping 不能为空，重置任务不应该操作 fieldMapping
+        // 如果 fieldMapping 为空，说明在添加或编辑时没有正确配置，应该抛出异常
+        if (CollectionUtils.isEmpty(fieldMapping)) {
+            throw new SdkException(String.format(
+                    "字段映射为空！表组ID=%s, 表组名=%s, 源表=%s, 目标表=%s。请在添加或编辑表组时配置字段映射关系。",
+                    this.getId(), this.getName(),
+                    sourceTable != null ? sourceTable.getName() : "null",
+                    targetTable != null ? targetTable.getName() : "null"));
         }
+
+        // 同步字段主要参考源库：sTable 使用所有有 source 的字段映射
+        // tTable 只使用有 target 的字段映射（如果 fieldMapping 中有 target）
+        fieldMapping.forEach(m -> {
+            if (null != m.getSource()) {
+                sTable.getColumn().add(m.getSource());
+            }
+            // 选项1：tTable 使用 target 字段（如果 fieldMapping 中有 target）
+            if (null != m.getTarget()) {
+                tTable.getColumn().add(m.getTarget());
+            }
+        });
         // 如果 tableGroup.getFilter()空使用 mapping.getFilter()0
         List<Filter> filters = CollectionUtils.isEmpty(this.getFilter()) ? mapping.getFilter() : this.getFilter();
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable,

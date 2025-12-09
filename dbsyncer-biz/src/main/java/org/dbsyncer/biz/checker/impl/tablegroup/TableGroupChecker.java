@@ -4,7 +4,6 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
-import org.dbsyncer.biz.PrimaryKeyRequiredException;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -25,7 +24,6 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,7 +31,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -81,11 +78,13 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
-        // 匹配相似字段映射关系
+        // 字段映射关系：如果 fieldMappings 为空，基于源表字段构建 fieldMapping（target 为 null）
+        // 同步字段主要参考源库，target 字段是可选的
         if (StringUtil.isNotBlank(fieldMappings)) {
             matchFieldMapping(tableGroup, fieldMappings);
         } else {
-            matchFieldMapping(tableGroup);
+            // 如果 fieldMappings 为空，基于源表所有字段构建 fieldMapping（target 为 null）
+            buildFieldMappingFromSourceTable(tableGroup);
         }
 
         return tableGroup;
@@ -101,29 +100,28 @@ public class TableGroupChecker extends AbstractChecker {
         Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
-        // 字段映射可以为空，为空时自动映射全部源表字段
 
         // 新增：支持修改目标表名称
         String newTargetTableName = params.get("targetTable");
         if (StringUtil.isNotBlank(newTargetTableName)) {
             String sourceTableName = tableGroup.getSourceTable().getName();
             String oldTargetTableName = tableGroup.getTargetTable().getName();
-            
+
             // 如果目标表名称发生变化，需要重新获取目标表信息
             if (!StringUtil.equals(newTargetTableName, oldTargetTableName)) {
                 // 检查是否与其他表映射冲突
                 checkRepeatedTable(mapping.getId(), sourceTableName, newTargetTableName, id);
-                
+
                 // 获取新目标表的主键信息（保持原有主键配置）
                 List<String> targetTablePks = new ArrayList<>();
                 if (tableGroup.getTargetTable().getColumn() != null) {
                     targetTablePks = tableGroup.getTargetTable().getColumn().stream()
-                        .filter(Field::isPk)
-                        .map(Field::getName)
-                        .collect(Collectors.toList());
+                            .filter(Field::isPk)
+                            .map(Field::getName)
+                            .collect(Collectors.toList());
                 }
                 String targetTablePK = StringUtil.join(targetTablePks, ",");
-                
+
                 // 重新获取目标表信息
                 Table newTargetTable = getTable(mapping.getTargetConnectorId(), newTargetTableName, targetTablePK);
                 tableGroup.setTargetTable(newTargetTable);
@@ -136,12 +134,14 @@ public class TableGroupChecker extends AbstractChecker {
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(tableGroup, params);
 
-        // 字段映射关系
-        if (StringUtil.isBlank(fieldMappingJson)) {
-            // 字段映射为空时，自动映射全部源表字段
-            autoMatchAllSourceFields(tableGroup);
-        } else {
+        // 字段映射关系：如果 fieldMappingJson 为空，基于源表重新构建 fieldMapping（与添加时逻辑一致）
+        // 这样可以确保字段映射与源表结构一致，如果源表结构发生变化，字段映射会自动更新
+        if (StringUtil.isNotBlank(fieldMappingJson)) {
             setFieldMapping(tableGroup, fieldMappingJson);
+        } else {
+            // 如果 fieldMappingJson 为空，基于源表重新构建 fieldMapping（target 为 null）
+            // 与添加时的逻辑保持一致，确保字段映射与源表结构一致
+            buildFieldMappingFromSourceTable(tableGroup);
         }
 
         return tableGroup;
@@ -192,9 +192,10 @@ public class TableGroupChecker extends AbstractChecker {
 
     /**
      * 检查是否存在重复映射关系
-     * @param mappingId 映射ID
-     * @param sourceTable 源表名称
-     * @param targetTable 目标表名称
+     *
+     * @param mappingId           映射ID
+     * @param sourceTable         源表名称
+     * @param targetTable         目标表名称
      * @param excludeTableGroupId 排除的表映射ID（编辑时使用，新增时传null）
      */
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable, String excludeTableGroupId) throws Exception {
@@ -212,59 +213,6 @@ public class TableGroupChecker extends AbstractChecker {
                     throw new RepeatedTableGroupException(error);
                 }
             }
-        }
-    }
-
-    private void matchFieldMapping(TableGroup tableGroup) {
-        List<Field> sCol = tableGroup.getSourceTable().getColumn();
-        List<Field> tCol = tableGroup.getTargetTable().getColumn();
-        if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
-            return;
-        }
-
-        Map<String, Field> m1 = new HashMap<>();
-        Map<String, Field> m2 = new HashMap<>();
-        Set<String> sourceFieldNames = new LinkedHashSet<>();
-        Set<String> targetFieldNames = new LinkedHashSet<>();
-        shuffleColumn(sCol, sourceFieldNames, m1);
-        shuffleColumn(tCol, targetFieldNames, m2);
-
-        // 模糊匹配相似字段
-        AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
-        AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
-        sourceFieldNames.forEach(s -> {
-            for (String t : targetFieldNames) {
-                if (StringUtil.equalsIgnoreCase(s, t)) {
-                    Field f1 = m1.get(s);
-                    Field f2 = m2.get(t);
-                    tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
-                    if (f1.isPk()) {
-                        existSourcePKFieldMapping.set(true);
-                    }
-                    if (f2.isPk()) {
-                        existTargetPKFieldMapping.set(true);
-                    }
-                    break;
-                }
-            }
-        });
-
-        // 没有主键映射关系，取第一个主键作为映射关系
-        if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
-            List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
-            List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
-            
-            // 检查源表和目标表是否都有主键
-            if (CollectionUtils.isEmpty(sourceTablePrimaryKeys)) {
-                throw new PrimaryKeyRequiredException(String.format("数据源表 %s 缺少主键，无法进行数据同步。", tableGroup.getSourceTable().getName()));
-            }
-            if (CollectionUtils.isEmpty(targetTablePrimaryKeys)) {
-                throw new PrimaryKeyRequiredException(String.format("目标表 %s 缺少主键，无法进行数据同步。", tableGroup.getTargetTable().getName()));
-            }
-            
-            String sPK = sourceTablePrimaryKeys.stream().findFirst().get();
-            String tPK = targetTablePrimaryKeys.stream().findFirst().get();
-            tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));
         }
     }
 
@@ -316,15 +264,6 @@ public class TableGroupChecker extends AbstractChecker {
             }
         }
         exist.clear();
-    }
-
-    private void shuffleColumn(List<Field> col, Set<String> key, Map<String, Field> map) {
-        col.forEach(f -> {
-            if (!key.contains(f.getName())) {
-                key.add(f.getName());
-                map.put(f.getName(), f);
-            }
-        });
     }
 
     /**
@@ -384,55 +323,26 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     /**
-     * 自动匹配全部源表字段
-     * 当字段映射为空时，自动映射所有源表字段到目标表字段（按名称匹配）
-     * 
+     * 基于源表字段构建 fieldMapping（target 为 null）
+     * 同步字段主要参考源库，target 字段是可选的
+     *
      * @param tableGroup 表映射组
      */
-    private void autoMatchAllSourceFields(TableGroup tableGroup) throws Exception {
+    private void buildFieldMappingFromSourceTable(TableGroup tableGroup) {
         List<Field> sCol = tableGroup.getSourceTable().getColumn();
-        List<Field> tCol = tableGroup.getTargetTable().getColumn();
-        
+
         if (CollectionUtils.isEmpty(sCol)) {
             tableGroup.setFieldMapping(new ArrayList<>());
             return;
         }
 
-        final Map<String, Field> sMap = PickerUtil.convert2Map(sCol);
-        final Map<String, Field> tMap = CollectionUtils.isEmpty(tCol) ? new HashMap<>() : PickerUtil.convert2Map(tCol);
-        
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
-        ConnectorConfig sourceConnectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
-        ConnectorConfig targetConnectorConfig = getConnectorConfig(mapping.getTargetConnectorId());
-        ConnectorService<?, ?> sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig.getConnectorType());
-        ConnectorService<?, ?> targetConnectorService = connectorFactory.getConnectorService(targetConnectorConfig.getConnectorType());
-        SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
-        SchemaResolver targetSchemaResolver = targetConnectorService.getSchemaResolver();
-
+        // 基于源表所有字段构建 fieldMapping，target 为 null
+        // 同步字段主要参考源库，target 字段可以在后续编辑时配置
         List<FieldMapping> fieldMappingList = new ArrayList<>();
-        
-        // 遍历所有源表字段，按名称匹配目标表字段
         for (Field sourceField : sCol) {
-            String sourceFieldName = sourceField.getName();
-            Field targetField = tMap.get(sourceFieldName);
-            
-            // 如果目标表中没有对应字段，创建新字段（进行类型标准化和转换）
-            if (targetField == null) {
-                // 1. 先用源连接器将源字段标准化为Java标准类型
-                Field standardField = sourceSchemaResolver.toStandardType(sourceField);
-                
-                // 2. 再用目标连接器将Java标准类型转换为目标数据库类型
-                if (targetSchemaResolver == null) {
-                    // 如下游是 kafka
-                    targetField = standardField;
-                } else {
-                    targetField = targetSchemaResolver.fromStandardType(standardField);
-                }
-            }
-            
-            fieldMappingList.add(new FieldMapping(sourceField, targetField));
+            fieldMappingList.add(new FieldMapping(sourceField, null));
         }
-        
+
         tableGroup.setFieldMapping(fieldMappingList);
     }
 
