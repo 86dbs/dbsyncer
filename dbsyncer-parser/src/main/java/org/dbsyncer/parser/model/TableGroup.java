@@ -184,16 +184,17 @@ public class TableGroup extends AbstractConfigModel {
         }
 
         // 同步字段主要参考源库：sTable 使用所有有 source 的字段映射
-        // tTable 只使用有 target 的字段映射（如果 fieldMapping 中有 target）
+        // tTable 使用有 target 的字段映射（target 字段依据源表字段构建）
         fieldMapping.forEach(m -> {
             if (null != m.getSource()) {
                 sTable.getColumn().add(m.getSource());
             }
-            // 选项1：tTable 使用 target 字段（如果 fieldMapping 中有 target）
+            // tTable 使用 target 字段（target 字段依据源表字段构建）
             if (null != m.getTarget()) {
                 tTable.getColumn().add(m.getTarget());
             }
         });
+        
         // 如果 tableGroup.getFilter()空使用 mapping.getFilter()0
         List<Filter> filters = CollectionUtils.isEmpty(this.getFilter()) ? mapping.getFilter() : this.getFilter();
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable,

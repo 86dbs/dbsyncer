@@ -335,8 +335,9 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     /**
-     * 基于源表字段构建 fieldMapping（target 为 null）
-     * 同步字段主要参考源库，target 字段是可选的
+     * 基于源表字段构建 fieldMapping
+     * 依据源表字段构建 target 字段（通过类型转换）
+     * 目标表的主键字段必须来源于源表的主键字段
      *
      * @param tableGroup 表映射组
      */
@@ -348,11 +349,36 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        // 基于源表所有字段构建 fieldMapping，target 为 null
-        // 同步字段主要参考源库，target 字段可以在后续编辑时配置
+        // 获取连接器的 SchemaResolver 用于类型转换
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        ConnectorConfig sourceConnectorConfig = getConnectorConfig(mapping.getSourceConnectorId());
+        ConnectorConfig targetConnectorConfig = getConnectorConfig(mapping.getTargetConnectorId());
+        ConnectorService<?, ?> sourceConnectorService = connectorFactory.getConnectorService(sourceConnectorConfig.getConnectorType());
+        ConnectorService<?, ?> targetConnectorService = connectorFactory.getConnectorService(targetConnectorConfig.getConnectorType());
+        SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+        SchemaResolver targetSchemaResolver = targetConnectorService.getSchemaResolver();
+
+        // 基于源表所有字段构建 fieldMapping，依据源表字段构建 target 字段
         List<FieldMapping> fieldMappingList = new ArrayList<>();
         for (Field sourceField : sCol) {
-            fieldMappingList.add(new FieldMapping(sourceField, null));
+            Field targetField = null;
+            
+            // 依据源字段信息构建目标字段，需要进行类型标准化和转换
+            if (sourceSchemaResolver != null && targetSchemaResolver != null) {
+                // 1. 先用源连接器将源字段标准化为Java标准类型
+                Field standardField = sourceSchemaResolver.toStandardType(sourceField);
+                
+                // 2. 再用目标连接器将Java标准类型转换为目标数据库类型
+                targetField = targetSchemaResolver.fromStandardType(standardField);
+                
+                // 3. 保持源字段的主键标记
+                targetField.setPk(sourceField.isPk());
+            } else if (targetSchemaResolver == null) {
+                // 如果目标连接器没有 SchemaResolver（如下游是 kafka），直接使用源字段
+                targetField = sourceField;
+            }
+            
+            fieldMappingList.add(new FieldMapping(sourceField, targetField));
         }
 
         tableGroup.setFieldMapping(fieldMappingList);

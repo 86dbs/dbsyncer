@@ -402,15 +402,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) throws Exception {
         Table table = commandConfig.getTable();
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
-        if (CollectionUtils.isEmpty(primaryKeys)) {
-            return new HashMap<>();
-        }
+        assert  primaryKeys != null && !primaryKeys.isEmpty();
 
         String tableName = table.getName();
-        if (StringUtil.isBlank(tableName)) {
-            logger.error("目标源表不能为空.");
-            throw new SdkException("目标源表不能为空.");
-        }
+        assert tableName != null && !tableName.isEmpty();
 
         // 架构名
         DatabaseConfig databaseConfig = (DatabaseConfig) commandConfig.getConnectorConfig();
