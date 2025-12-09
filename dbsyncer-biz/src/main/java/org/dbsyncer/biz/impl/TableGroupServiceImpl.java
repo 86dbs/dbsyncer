@@ -11,6 +11,7 @@ import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
@@ -42,6 +43,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private ParserComponent parserComponent;
 
     @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
     private DispatchTaskService dispatchTaskService;
 
     @Override
@@ -68,6 +72,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                     int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
                     model.setIndex(tableGroupCount + 1);
                     id = profileComponent.addTableGroup(model);
+                    // 初始化 TableGroup（设置运行时组件并初始化 command）
+                    model.isInit = false;
+                    model.initTableGroup(parserComponent, profileComponent, connectorFactory);
                     list.add(id);
                 } catch (PrimaryKeyRequiredException e) {
                     // 如果数据表没有主键，则跳过该表并记录日志
@@ -97,6 +104,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
         profileComponent.editTableGroup(model);
+        // 初始化 TableGroup（设置运行时组件并初始化 command）
+        model.isInit = false;
+        model.initTableGroup(parserComponent, profileComponent, connectorFactory);
         List<String> list = new ArrayList<>();
         list.add(model.getId());
         submitTableGroupCountTask(mapping, list);

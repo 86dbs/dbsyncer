@@ -4,6 +4,7 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.ProcessEvent;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
@@ -45,12 +46,19 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     private ProfileComponent profileComponent;
 
     @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
     private LogService logService;
 
     @Override
     public void start(Mapping mapping) throws Exception {
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
         Assert.notEmpty(list, "映射关系不能为空");
+        // 初始化 TableGroup（设置运行时组件并初始化 command）
+        for (TableGroup tableGroup : list) {
+            tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
+        }
         Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());

@@ -88,9 +88,6 @@ public class TableGroupChecker extends AbstractChecker {
             matchFieldMapping(tableGroup);
         }
 
-        // 重新初始化 sql 语言和相关缓存
-        tableGroup.initCommand(mapping, connectorFactory);
-
         return tableGroup;
     }
 
@@ -146,9 +143,6 @@ public class TableGroupChecker extends AbstractChecker {
         } else {
             setFieldMapping(tableGroup, fieldMappingJson);
         }
-
-        // 重新初始化 sql 语言和相关缓存
-        tableGroup.initCommand(mapping, connectorFactory);
 
         return tableGroup;
     }

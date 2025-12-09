@@ -141,7 +141,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public TableGroup getTableGroup(String tableGroupId) throws Exception {
         TableGroup tableGroup = operationTemplate.queryObject(TableGroup.class, tableGroupId);
-        tableGroup.initTableGroup(parserComponent, this, connectorFactory);
         return tableGroup;
     }
 
@@ -149,9 +148,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     public List<TableGroup> getTableGroupAll(String mappingId) throws Exception {
         TableGroup temp = new TableGroup().setMappingId(mappingId);
         List<TableGroup> tableGroups = operationTemplate.queryAll(new QueryConfig<>(temp, GroupStrategyEnum.TABLE));
-        for (TableGroup tableGroup : tableGroups) {
-            tableGroup.initTableGroup(parserComponent, this, connectorFactory);
-        }
         return tableGroups;
     }
 

@@ -13,7 +13,6 @@
 - 自动创建缺失的目标表。
 - 提升统计计数的性能。
 - UI: 监控页日志可按 info, warn, error 分别查询。突触 error 的显示。
-- 新功能：基于 CT(change tracing) 实现 mssql ddl，之所以不用 cdc 主要是 sql server 端的压力，同时消除表结构变化这种自身缺陷影响同步数据正确性问题.
 
 ## 问题池
 

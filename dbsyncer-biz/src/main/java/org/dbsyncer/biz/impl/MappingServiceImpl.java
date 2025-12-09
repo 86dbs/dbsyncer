@@ -121,10 +121,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
-            
+
             // 在保存之前，检查所有已存在的表映射关系的目标表是否存在
             checkAllTargetTablesExist(mapping);
-            
+
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
 
@@ -486,6 +486,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
             for (TableGroup tableGroup : tableGroupAll) {
                 tableGroup.clear();
+                tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
                 profileComponent.editConfigModel(tableGroup);
             }
             log(LogType.MappingLog.RESET, mapping);

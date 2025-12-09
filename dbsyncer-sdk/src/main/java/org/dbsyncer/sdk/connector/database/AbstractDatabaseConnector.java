@@ -28,8 +28,6 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
-import java.sql.ResultSetMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -38,10 +36,7 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -326,15 +321,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         Table table = commandConfig.getTable();
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
-        if (CollectionUtils.isEmpty(primaryKeys)) {
-            return new HashMap<>();
-        }
+        assert primaryKeys != null && !primaryKeys.isEmpty();
 
         String tableName = table.getName();
-        if (StringUtil.isBlank(tableName)) {
-            logger.error("数据源表不能为空.");
-            throw new SdkException("数据源表不能为空.");
-        }
+        assert !StringUtil.isBlank(tableName);
 
         // 子类实现具体的SQL生成逻辑
         return buildSourceCommands(commandConfig);
@@ -496,9 +486,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 typeName = metaData.getColumnTypeName(i);
                 columnType = metaData.getColumnType(i);
                 pk = isPk(tables, table, name);
-                
+
                 Field field = new Field(label, typeName, columnType, pk);
-                
+
                 // 尝试从 DatabaseMetaData 获取自增信息
                 // 注意：DQL 模式下，表名可能不准确，所以这里使用 try-catch 处理可能的异常
                 try (ResultSet columnMetadata = md.getColumns(catalog, schema, table, name)) {
@@ -517,7 +507,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     // 如果获取失败（例如表名不准确），默认为 false
                     field.setAutoincrement(false);
                 }
-                
+
                 fields.add(field);
             }
         } finally {

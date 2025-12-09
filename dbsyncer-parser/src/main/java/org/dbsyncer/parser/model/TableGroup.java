@@ -252,6 +252,7 @@ public class TableGroup extends AbstractConfigModel {
      */
     @JsonIgnore
     public void clear() {
+        isInit = false;
         fullCompleted = false;
         cursors = null;
         this.errorMessage = null;
