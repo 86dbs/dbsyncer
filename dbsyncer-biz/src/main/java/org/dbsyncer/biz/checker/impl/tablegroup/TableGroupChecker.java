@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.PrimaryKeyRequiredException;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -24,6 +25,7 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -74,6 +76,16 @@ public class TableGroupChecker extends AbstractChecker {
         TableGroup tableGroup = TableGroup.create(mappingId, sourceTable, parserComponent, profileComponent);
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
+
+        // 检查主键：源表和目标表都必须有主键
+        List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+        if (CollectionUtils.isEmpty(sourceTablePrimaryKeys)) {
+            throw new PrimaryKeyRequiredException(String.format("数据源表 %s 缺少主键，无法进行数据同步。", sourceTable));
+        }
+        List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
+        if (CollectionUtils.isEmpty(targetTablePrimaryKeys)) {
+            throw new PrimaryKeyRequiredException(String.format("目标表 %s 缺少主键，无法进行数据同步。", targetTable));
+        }
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
