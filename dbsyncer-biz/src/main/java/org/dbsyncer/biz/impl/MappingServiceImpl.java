@@ -225,6 +225,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public MappingVo getMapping(String id) {
         Mapping mapping = profileComponent.getMapping(id);
+        Assert.notNull(mapping, String.format("Mapping can not be null. id: %s", id));
         return convertMapping2Vo(mapping);
     }
 
@@ -331,7 +332,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
-        Assert.notNull(mapping, "Mapping can not be null.");
         Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
         Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
         ConnectorVo sConn = new ConnectorVo(connectorService.isAlive(s.getId()));
