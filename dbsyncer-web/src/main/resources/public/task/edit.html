@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">编辑任务</h3>
+    </div>
+
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="taskSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i>
+                保存
+            </button>
+            <button id="taskBackBtn" type="button" class="btn btn-outline">
+                <i class="fa fa-reply"></i>
+                返回
+            </button>
+        </div>
+
+        <!-- 步骤指示器 -->
+        <div class="dbsyncer-steps" style="display: flex; justify-content: center; align-items: center; max-width: 600px; margin: 0 auto;">
+            <div class="step-item active" id="step1Indicator" style="flex: 1; display: flex; align-items: center;">
+                <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px;">
+                    1
+                </div>
+                <div class="step-label" style="margin-left: 12px; flex: 1;">
+                    <div style="font-weight: 500; color: var(--text-primary);">基础配置</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">任务基本信息</div>
+                </div>
+            </div>
+            <div class="step-line" style="width: 80px; height: 2px; background: #e5e7eb; margin: 0 16px;"></div>
+            <div class="step-item" id="step2Indicator" style="flex: 1; display: flex; align-items: center;">
+                <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px;">
+                    2
+                </div>
+                <div class="step-label" style="margin-left: 12px; flex: 1;">
+                    <div style="font-weight: 500; color: var(--text-secondary);">表映射配置</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">配置表和字段映射</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表单主体 -->
+        <form id="taskAddForm">
+            <!-- 任务ID（隐藏字段，用于编辑） -->
+            <input type="hidden" id="taskId" name="id" th:value="${taskId}" />
+
+            <!-- 第一步：基础配置 -->
+            <div id="step1Content" class="step-content">
+
+                <!-- 任务基本配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 8px;"></i>
+                            任务基本配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 任务名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-tag" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    任务名称<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="name" type="text" maxlength="200"
+                                           required placeholder="请输入任务名称" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务类型（隐藏字段，使用默认值） -->
+                        <input type="hidden" name="type" value="SYNC" />
+                    </div>
+                </div>
+
+
+
+                <!-- 数据库配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-database" style="color: var(--success-color); margin-right: 8px;"></i>
+                            数据库配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 源连接器 和 源数据库名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源连接器<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control select-control" required>
+                                        <option value="">请选择源连接器</option>
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                                th:text="${c?.name + ' (' + c?.config?.connectorType + ')'}" />
+                                    </select>
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源数据库<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="sourceDatabaseName" id="sourceDatabaseName" class="form-control select-control" required>
+                                        <option value="">请先选择源连接器</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 目标连接器 和 目标数据库名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-plug" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标连接器<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="targetConnectorId" id="targetConnectorId" class="form-control select-control" required>
+                                        <option value="">请选择目标连接器</option>
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                                th:text="${c?.name + ' (' + c?.config?.connectorType + ')'}" />
+                                    </select>
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-database" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标数据库<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="targetDatabaseName" id="targetDatabaseName" class="form-control select-control" required>
+                                        <option value="">请先选择目标连接器</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Schema 配置 (条件显示) -->
+                        <div class="form-group" id="sourceSchemaGroup" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-sitemap" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源Schema
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="sourceSchema" id="sourceSchema" type="text"
+                                           placeholder="请输入源Schema" />
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-sitemap" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标Schema
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="targetSchema" id="targetSchema" type="text"
+                                           placeholder="请输入目标Schema" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 同步触发规则 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-clock-o" style="color: var(--warning-color); margin-right: 8px;"></i>
+                            同步触发规则
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 触发方式 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 4px;"></i>
+                                    触发方式<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <label class="radio-inline" style="margin-right: 24px;">
+                                        <input type="radio" name="trigger" value="once" checked
+                                               style="margin-right: 6px; width: 16px; height: 16px; vertical-align: middle;">
+                                        <span style="vertical-align: middle;">执行一次</span>
+                                    </label>
+                                    <label class="radio-inline">
+                                        <input type="radio" name="trigger" value="timing"
+                                               style="margin-right: 6px; width: 16px; height: 16px; vertical-align: middle;">
+                                        <span style="vertical-align: middle;">定时触发</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cron 表达式 (条件显示) -->
+                        <div class="form-group" id="cronGroup" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 100px; align-items: center; gap: 16px;">
+                                <label class="form-label">
+                                    <i class="fa fa-calendar" style="color: var(--warning-color); margin-right: 4px;"></i>
+                                    Cron表达式<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="cron" type="text" value="0 0 1 * * ?"
+                                           placeholder="请输入Cron表达式，例如：0 0 1 * * ?" />
+                                </div>
+                                <div>
+                                    <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary"
+                                            onclick="showCronHelp()" style="width: 100%;">
+                                        <i class="fa fa-question-circle dbsyncer-btn-icon-left"></i>
+                                        帮助
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 同步范围与策略 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-sliders" style="color: var(--danger-color); margin-right: 8px;"></i>
+                            同步范围与策略
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <!-- 左列 -->
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="autoMatchTable" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-magic" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>自动匹配表</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="verification" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-check-circle" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>数据校验</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="correction" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-wrench" style="color: var(--warning-color); margin-right: 6px;"></i>
+                                    <span>数据修正</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="tableStructure" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-table" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>表结构同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="rowData" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-list" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>行数据同步</span>
+                                </label>
+                            </div>
+
+                            <!-- 右列 -->
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="index" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-bookmark" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>索引同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="triggerFlag" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-bolt" style="color: var(--warning-color); margin-right: 6px;"></i>
+                                    <span>触发器同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="function" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-code" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>函数同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="storedProcedure" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-file-code-o" style="color: var(--danger-color); margin-right: 6px;"></i>
+                                    <span>存储过程同步</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第一步操作按钮 -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary" id="step1BackBtn">
+                        <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
+                        返回
+                    </button>
+                    <button type="button" class="dbsyncer-btn dbsyncer-btn-primary" id="step1NextBtn">
+                        <span>下一步</span>
+                        <i class="fa fa-arrow-right" style="margin-left: 8px;"></i>
+                    </button>
+                </div>
+
+            </div>
+            <!-- 第一步结束 -->
+
+            <!-- 第二步：表映射配置 -->
+            <div id="step2Content" class="step-content hidden">
+
+                <!-- 表映射配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-exchange" style="color: var(--primary-color); margin-right: 8px;"></i>
+                            表映射配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body" style="padding: 24px;">
+                        
+                        <!-- 添加映射表区域 -->
+                        <div class="grid grid-cols-9 items-center mt-4">
+                            <!-- 数据源表选择器 -->
+                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                                <label class="form-label">数据源表</label>
+                                <div class="form-control-area">
+                                    <select id="step2SourceTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
+                                        <!-- 选项将通过 JavaScript 动态加载 -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="text-info items-center text-center">
+                                <i class="fa fa-arrow-right"></i>
+                            </div>
+
+                            <!-- 目标源表选择器 -->
+                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                                <label class="form-label">目标源表</label>
+                                <div class="form-control-area">
+                                    <select id="step2TargetTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
+                                        <!-- 选项将通过 JavaScript 动态加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 标记主键区域 -->
+                        <div class="grid grid-cols-9 items-center mt-4">
+                            <!-- 数据源主键 -->
+                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                                <label class="form-label">标记主键<i class="fa fa-question-circle" title="数据源表/视图没有主键，自定义一个或多个主键"></i></label>
+                                <div class="form-control-area">
+                                    <input id="step2SourceTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
+                                </div>
+                            </div>
+
+                            <div class="text-info items-center text-center">
+                                <i class="fa fa-arrow-right"></i>
+                            </div>
+
+                            <!-- 目标源主键 -->
+                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                                <label class="form-label">标记主键<i class="fa fa-question-circle" title="目标源表/视图没有主键，自定义一个或多个主键"></i></label>
+                                <div class="form-control-area">
+                                    <input id="step2TargetTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作按钮区域 -->
+                        <div class="flex items-center justify-between mt-4">
+                            <button id="refreshTableBtn" class="btn btn-outline" title="刷新数据源和目标源表">
+                                <i class="fa fa-refresh"></i> 刷新表
+                            </button>
+                            <div class="form-actions">
+                                <button id="addTableMappingBtn" type="button" class="btn btn-primary">
+                                    <i class="fa fa-plus"></i> 添加
+                                </button>
+                                <button id="removeTableMappingBtn" type="button" class="btn btn-outline" disabled="disabled">
+                                    <i class="fa fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 表映射列表 -->
+                        <table class="table" id="tableMappingTable" style="margin-top: 24px;">
+                            <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>数据源表</th>
+                                <th>目标源表</th>
+                                <th onclick="event.stopPropagation();">
+                                    <input type="checkbox" id="selectAllMappings" class="tableGroupCheckboxAll" onclick="event.stopPropagation();" />
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody id="tableMappingsContainer">
+                                <!-- 表映射行将动态添加到这里 -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- 空状态提示 -->
+                        <div id="emptyTableMappingTip" style="text-align: center; padding: 40px 0; color: var(--text-tertiary); display: none;">
+                            <i class="fa fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                            <p style="font-size: 14px;">暂无表映射配置，请点击"添加表映射"按钮添加</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二步操作按钮 -->
+                <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary" id="step2PrevBtn">
+                        <i class="fa fa-arrow-left dbsyncer-btn-icon-left"></i>
+                        上一步
+                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary" id="step2BackBtn">
+                            <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
+                            返回列表
+                        </button>
+                        <button type="button" class="dbsyncer-btn dbsyncer-btn-primary" id="step2SubmitBtn">
+                            <i class="fa fa-check dbsyncer-btn-icon-left"></i>
+                            完成
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            <!-- 第二步结束 -->
+
+        </form>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // 全局变量
+    let currentStep = 1; // 当前步骤
+    let savedTaskId = null; // 保存的任务ID
+    let tableMappingIndex = 0; // 下一个表映射的索引
+    let fieldMappingIndex = {}; // 每个表的字段映射索引
+    let step1Data = null; // 第一步的数据（暂存，不提交）
+    let isEditMode = false; // 是否为编辑模式
+    let currentTaskId = null; // 当前编辑的任务ID
+
+    // 绑定事件处理函数
+    function bindEvents() {
+        // 初始化字段映射索引
+        $('.table-mapping-item').each(function () {
+            const tableIndex = $(this).data('index');
+            fieldMappingIndex[tableIndex] = 1; // 下一个字段映射的索引
+        });
+        
+        // 初始化所有 select 元素（如果 enhanceAllSelects 函数存在）
+        if (typeof enhanceAllSelects === 'function') {
+            console.log('[任务编辑] 初始化 select 元素增强');
+            enhanceAllSelects();
+        }
+        
+        // 绑定步骤切换按钮事件
+        $('#step1BackBtn').off('click').on('click', function () {
+            backTaskIndexPage();
+        });
+        
+        $('#step1NextBtn').off('click').on('click', function () {
+            saveStep1AndGoNext();
+        });
+        
+        $('#step2PrevBtn').off('click').on('click', function () {
+            console.log('[第二步] 返回第一步');
+            goToStep(1);
+        });
+        
+        $('#step2BackBtn').off('click').on('click', function () {
+            backTaskIndexPage();
+        });
+        
+        $('#step2SubmitBtn').off('click').on('click', function () {
+            saveStep2AndComplete();
+        });
+        
+        // 隐藏顶部工具栏的保存和返回按钮
+        $('#taskSubmitBtn, #taskBackBtn').hide();
+
+        // 触发方式变化事件
+        $('input[name="trigger"]').off('change').on('change', function () {
+            if ($(this).val() === 'timing') {
+                $('#cronGroup').show();
+            } else {
+                $('#cronGroup').hide();
+            }
+        });
+
+        // 源连接器变化事件
+        $('#sourceConnectorId').off('change').on('change', function () {
+            const connectorId = $(this).val();
+            if (connectorId) {
+                loadDatabases(connectorId, 'source');
+                checkAndShowSchema(connectorId, 'source');
+            } else {
+                $('#sourceDatabaseName').html('<option value="">请先选择源连接器</option>');
+                $('#sourceSchemaGroup').hide();
+            }
+        });
+
+        // 目标连接器变化事件
+        $('#targetConnectorId').off('change').on('change', function () {
+            const connectorId = $(this).val();
+            if (connectorId) {
+                loadDatabases(connectorId, 'target');
+                checkAndShowSchema(connectorId, 'target');
+            } else {
+                $('#targetDatabaseName').html('<option value="">请先选择目标连接器</option>');
+                $('#sourceSchemaGroup').hide();
+            }
+        });
+
+        // 源表选择变化事件
+        $(document).off('change', '.source-table-select').on('change', '.source-table-select', function () {
+            const tableIndex = $(this).data('table-index');
+            const tableName = $(this).val();
+            const connectorId = $('#sourceConnectorId').val();
+            
+            if (tableName && connectorId) {
+                loadTableFields(connectorId, tableName, tableIndex, 'source');
+            } else {
+                clearTableFields(tableIndex, 'source');
+            }
+        });
+
+        // 目标表选择变化事件
+        $(document).off('change', '.target-table-select').on('change', '.target-table-select', function () {
+            const tableIndex = $(this).data('table-index');
+            const tableName = $(this).val();
+            const connectorId = $('#targetConnectorId').val();
+            
+            if (tableName && connectorId) {
+                loadTableFields(connectorId, tableName, tableIndex, 'target');
+            } else {
+                clearTableFields(tableIndex, 'target');
+            }
+        });
+
+        // 初始化 tagsinput
+        if (typeof $.fn.tagsinput === 'function') {
+            $('#step2SourceTablePK, #step2TargetTablePK').tagsinput({
+                tagClass: 'label label-info'
+            });
+        }
+
+        // 添加表映射
+        $('#addTableMappingBtn').off('click').on('click', function () {
+            addTableMappingRow();
+        });
+
+        // 刷新表列表
+        $('#refreshTableBtn').off('click').on('click', function () {
+            if (step1Data) {
+                loadTablesForStep2(step1Data);
+                bootGrowl("表列表刷新成功！", "success");
+            } else {
+                bootGrowl("无法刷新，请先完成第一步配置！", "warning");
+            }
+        });
+
+        // 删除选中的表映射
+        $('#removeTableMappingBtn').off('click').on('click', function () {
+            removeSelectedTableMappings();
+        });
+
+        // 全选/取消全选表映射
+        $('#selectAllMappings').off('change').on('change', function () {
+            const isChecked = $(this).prop('checked');
+            $('.table-mapping-checkbox').prop('checked', isChecked);
+            updateDeleteButtonState();
+        });
+
+        // 监听复选框变化，更新删除按钮状态
+        $(document).off('change', '.table-mapping-checkbox').on('change', '.table-mapping-checkbox', function () {
+            updateDeleteButtonState();
+        });
+
+        // 点击表映射行打开字段映射配置
+        $(document).off('click', '.table-mapping-row').on('click', '.table-mapping-row', function (e) {
+            if ($(e.target).is('input[type="checkbox"]')) {
+                return;
+            }
+            const $row = $(this);
+            openFieldMappingDialog($row);
+        });
+
+        // 删除表映射
+        $(document).off('click', '.remove-table-mapping').on('click', '.remove-table-mapping', function () {
+            $(this).closest('.table-mapping-item').remove();
+            updateTableMappingIndexes();
+        });
+
+        // 添加字段映射
+        $(document).off('click', '.add-field-mapping').on('click', '.add-field-mapping', function () {
+            const tableIndex = $(this).data('table-index');
+            addFieldMapping(tableIndex);
+        });
+
+        // 删除字段映射
+        $(document).off('click', '.remove-field-mapping').on('click', '.remove-field-mapping', function () {
+            $(this).closest('.field-mapping-item').remove();
+        });
+    }
+    
+    // 初始化函数
+    function initEditPage() {
+        console.log('[任务编辑] 开始初始化页面');
+        
+        // 检查关键DOM元素是否存在
+        if ($('#step1Content').length === 0 || $('#step2Content').length === 0) {
+            console.log('[任务编辑] DOM元素未加载完成，等待重试...');
+            setTimeout(initEditPage, 100);
+            return;
+        }
+        
+        console.log('[任务编辑] DOM元素已加载完成');
+        
+        // 确保第一步内容默认显示
+        $('#step1Content').removeClass('hidden').show();
+        $('#step2Content').addClass('hidden').hide();
+        
+        // 获取任务ID（优先从隐藏字段获取，如果没有则从URL参数获取）
+        currentTaskId = $('#taskId').val();
+        if (!currentTaskId) {
+            // 从URL参数中获取
+            const urlParams = new URLSearchParams(window.location.search);
+            currentTaskId = urlParams.get('id');
+            if (currentTaskId) {
+                $('#taskId').val(currentTaskId);
+            }
+        }
+        
+        console.log('[任务编辑] step1Content 是否存在:', $('#step1Content').length > 0);
+        console.log('[任务编辑] step2Content 是否存在:', $('#step2Content').length > 0);
+        
+        // 绑定所有事件
+        bindEvents();
+        
+        if (currentTaskId) {
+            isEditMode = true;
+            console.log('[任务编辑] 编辑模式，任务ID:', currentTaskId);
+            // 加载任务数据
+            loadTaskData(currentTaskId);
+        } else {
+            console.log('[任务编辑] 新增模式');
+        }
+    }
+
+    /**
+     * 步骤切换函数
+     */
+    function goToStep(step) {
+        console.log('[步骤切换] 切换到步骤:', step);
+        currentStep = step;
+        
+        if (step === 1) {
+            $('#step1Content').removeClass('hidden').show();
+            $('#step2Content').addClass('hidden').hide();
+            
+            // 更新步骤指示器
+            $('#step1Indicator').addClass('active');
+            $('#step1Indicator .step-circle').css({
+                'background': 'var(--primary-color)',
+                'color': 'white'
+            });
+            $('#step1Indicator .step-label > div:first-child').css('color', 'var(--text-primary)');
+            
+            $('#step2Indicator').removeClass('active');
+            $('#step2Indicator .step-circle').css({
+                'background': '#e5e7eb',
+                'color': '#9ca3af'
+            });
+            $('#step2Indicator .step-label > div:first-child').css('color', 'var(--text-secondary)');
+            
+        } else if (step === 2) {
+            $('#step1Content').addClass('hidden').hide();
+            $('#step2Content').removeClass('hidden').show();
+            
+            // 更新步骤指示器
+            $('#step1Indicator .step-circle').css({
+                'background': 'var(--success-color)',
+                'color': 'white'
+            });
+            $('#step1Indicator .step-label > div:first-child').css('color', 'var(--text-secondary)');
+            
+            $('#step2Indicator').addClass('active');
+            $('#step2Indicator .step-circle').css({
+                'background': 'var(--primary-color)',
+                'color': 'white'
+            });
+            $('#step2Indicator .step-label > div:first-child').css('color', 'var(--text-primary)');
+            
+            // 更新连接线
+            $('.step-line').css('background', 'var(--success-color)');
+        }
+        
+        // 滚动到顶部
+        window.scrollTo(0, 0);
+    }
+
+    /**
+     * 构建第一步的配置（基础配置）
+     */
+    function buildStep1Config() {
+        const formData = $('#taskAddForm').serializeArray();
+        const config = {};
+
+        // 基础配置
+        formData.forEach(function (item) {
+            if (item.name.includes('tableMappings')) {
+                // 表映射配置跳过，第二步处理
+                return;
+            }
+
+            if (item.name === 'trigger') {
+                config[item.name] = item.value;
+            } else if (item.name === 'cron' && config.trigger === 'timing') {
+                config[item.name] = item.value;
+            } else if (['autoMatchTable', 'verification', 'correction', 'tableStructure', 'rowData', 'index', 'triggerFlag', 'function', 'storedProcedure'].includes(item.name)) {
+                config[item.name] = item.value === 'true';
+            } else {
+                config[item.name] = item.value;
+            }
+        });
+
+        return config;
+    }
+
+    /**
+     * 验证第一步并进入下一步（不保存到服务器）
+     */
+    function saveStep1AndGoNext() {
+        console.log('[第一步] 开始验证基础配置');
+        
+        // 表单验证
+<!--        const $form = $("#taskAddForm");-->
+<!--        if (validateForm($form)) {-->
+<!--            return;-->
+<!--        }-->
+        
+        const config = buildStep1Config();
+        
+        // 验证必填字段
+        if (!config.name) {
+            bootGrowl("请输入任务名称！", "danger");
+            return;
+        }
+        // 如果没有填写任务类型，使用默认值
+        if (!config.type) {
+            config.type = 'SYNC';
+        }
+        if (!config.sourceConnectorId) {
+                bootGrowl("请选择源连接器！", "danger");
+            return;
+        }
+        if (!config.targetConnectorId) {
+                bootGrowl("请选择目标连接器！", "danger");
+            return;
+        }
+        if (!config.sourceDatabaseName) {
+                bootGrowl("请输入源数据库名称！", "danger");
+            return;
+        }
+        if (!config.targetDatabaseName) {
+                bootGrowl("请输入目标数据库名称！", "danger");
+            return;
+        }
+        if (config.trigger === 'timing' && !config.cron) {
+                bootGrowl("定时触发模式下，请输入Cron表达式！", "danger");
+            return;
+        }
+
+        // 暂存第一步数据（不提交到服务器）
+        step1Data = config;
+        console.log('[第一步] 验证通过，数据已暂存');
+        bootGrowl("基础配置验证通过！", "success");
+        
+        // 确保 DOM 元素存在
+        if ($('#step2Content').length === 0) {
+            console.error('[第一步] 错误：第二步的 DOM 元素不存在！');
+                bootGrowl("页面错误，请刷新后重试", "danger");
+            return;
+        }
+        
+        // 加载表列表并进入第二步
+        loadTablesForStep2(config);
+    }
+
+    /**
+     * 为第二步加载表列表
+     */
+    function loadTablesForStep2(config) {
+        console.log('[第二步] 开始加载表列表');
+        
+        // 同时加载源表和目标表
+        let sourceTablesLoaded = false;
+        let targetTablesLoaded = false;
+        let sourceTables = [];
+        let targetTables = [];
+        
+        // 加载源表
+        $.ajax({
+            url: $basePath + "/task/getTables",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: config.sourceConnectorId,
+                database: config.sourceDatabaseName || '',
+                schema: config.sourceSchema || ''
+            },
+            success: function (result) {
+                console.log('[第二步] 源表加载成功:', result);
+                sourceTablesLoaded = true;
+                if (result.success && result.resultValue) {
+                    sourceTables = result.resultValue;
+                }
+                checkBothLoaded();
+            },
+            error: function (xhr, status, error) {
+                console.error('[第二步] 源表加载失败:', status, error);
+                sourceTablesLoaded = true;
+                bootGrowl("加载源表列表失败", "danger");
+                checkBothLoaded();
+            }
+        });
+        
+        // 加载目标表
+        $.ajax({
+            url: $basePath + "/task/getTables",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: config.targetConnectorId,
+                database: config.targetDatabaseName || '',
+                schema: config.targetSchema || ''
+            },
+            success: function (result) {
+                console.log('[第二步] 目标表加载成功:', result);
+                targetTablesLoaded = true;
+                if (result.success && result.resultValue) {
+                    targetTables = result.resultValue;
+                }
+                checkBothLoaded();
+            },
+            error: function (xhr, status, error) {
+                console.error('[第二步] 目标表加载失败:', status, error);
+                targetTablesLoaded = true;
+                bootGrowl("加载目标表列表失败", "danger");
+                checkBothLoaded();
+            }
+        });
+        
+        // 检查是否都加载完成
+        function checkBothLoaded() {
+            if (sourceTablesLoaded && targetTablesLoaded) {
+                console.log('[第二步] 表列表加载完成，源表数量:', sourceTables.length, '目标表数量:', targetTables.length);
+                
+                // 填充表选择器
+                populateTableSelects(sourceTables, targetTables);
+                
+                // 切换到第二步
+                goToStep(2);
+                
+                console.log('[第二步] 已切换到第二步，表列表已填充');
+                
+                // 如果勾选了自动匹配表，则自动创建表映射
+                if (config.autoMatchTable === true) {
+                    console.log('[自动匹配表] 检测到勾选了自动匹配表，开始自动匹配');
+                    setTimeout(function() {
+                        autoMatchTables(sourceTables, targetTables);
+                    }, 500);
+                }
+            }
+        }
+    }
+    
+    /**
+     * 自动匹配表（找出源表和目标表中同名的表，自动创建表映射）
+     */
+    function autoMatchTables(sourceTables, targetTables) {
+        console.log('[自动匹配表] 开始自动匹配同名表');
+        
+        // 构建目标表名称映射
+        const targetTableMap = {};
+        targetTables.forEach(function(table) {
+            const tableName = table.name || table;
+            targetTableMap[tableName] = table;
+        });
+        
+        console.log('[自动匹配表] 目标表映射:', Object.keys(targetTableMap));
+        
+        let matchedCount = 0;
+        
+        // 遍历源表，查找目标表中是否有同名表
+        sourceTables.forEach(function(sourceTable) {
+            const sourceTableName = sourceTable.name || sourceTable;
+            
+            // 如果目标表中有同名表
+            if (targetTableMap[sourceTableName]) {
+                const targetTableName = sourceTableName;
+                
+                // 检查是否已存在相同的映射
+                let exists = false;
+                $('#tableMappingsContainer tr').each(function() {
+                    const existingSource = $(this).find('td:eq(1)').text().trim();
+                    const existingTarget = $(this).find('td:eq(2)').text().trim();
+                    if (existingSource === sourceTableName && existingTarget === targetTableName) {
+                        exists = true;
+                        return false; // break
+                    }
+                });
+                
+                if (!exists) {
+                    console.log('[自动匹配表] 找到同名表:', sourceTableName);
+                    
+                    const index = tableMappingIndex++;
+                    const rowHtml = `
+                        <tr data-mapping-index="${index}" 
+                            title="点击配置字段映射" 
+                            class="table-mapping-row"
+                            data-source-table="${sourceTableName}" 
+                            data-target-table="${targetTableName}"
+                            data-source-pk=""
+                            data-target-pk="">
+                            <td>${index + 1}</td>
+                            <td>${sourceTableName}</td>
+                            <td>${targetTableName}</td>
+                            <td onclick="event.stopPropagation();">
+                                <input type="checkbox" class="table-mapping-checkbox" 
+                                       onclick="event.stopPropagation();" />
+                            </td>
+                        </tr>
+                    `;
+                    
+                    const $row = $(rowHtml);
+                    $('#tableMappingsContainer').append($row);
+                    
+                    // 自动加载字段映射
+                    loadFieldMappingForRow($row, sourceTableName, targetTableName);
+                    
+                    matchedCount++;
+                }
+            }
+        });
+        
+        if (matchedCount > 0) {
+            updateTableMappingIndexes();
+            updateEmptyState();
+            updateDeleteButtonState();
+            bootGrowl(`自动匹配成功！已创建 ${matchedCount} 个表映射`, "success");
+            console.log('[自动匹配表] 自动匹配完成，创建了', matchedCount, '个表映射');
+        } else {
+            bootGrowl("未找到同名表，请手动添加表映射", "info");
+            console.log('[自动匹配表] 未找到同名表');
+        }
+    }
+
+    /**
+     * 填充表选择器
+     */
+    function populateTableSelects(sourceTables, targetTables) {
+        console.log('[第二步] 填充表选择器，源表数量:', sourceTables.length, '目标表数量:', targetTables.length);
+        
+        // 缓存表列表，供后续使用
+        window.cachedSourceTables = sourceTables;
+        window.cachedTargetTables = targetTables;
+        
+        // 构建源表数据
+        const sourceTableData = [];
+        if (sourceTables && sourceTables.length > 0) {
+            sourceTables.forEach(function (table) {
+                const tableName = table.name || table;
+                const tableType = table.type || 'TABLE';
+                sourceTableData.push({
+                    value: tableName,
+                    label: tableName + ' (' + tableType + ')'
+                });
+            });
+        }
+        
+        // 构建目标表数据
+        const targetTableData = [];
+        if (targetTables && targetTables.length > 0) {
+            targetTables.forEach(function (table) {
+                const tableName = table.name || table;
+                const tableType = table.type || 'TABLE';
+                targetTableData.push({
+                    value: tableName,
+                    label: tableName + ' (' + tableType + ')'
+                });
+            });
+        }
+        
+        // 销毁旧的 dbSelect 实例（如果存在）
+        const oldSourceInstance = $('#step2SourceTable').data('dbSelect');
+        if (oldSourceInstance && typeof oldSourceInstance.destroy === 'function') {
+            oldSourceInstance.destroy();
+        }
+        const oldTargetInstance = $('#step2TargetTable').data('dbSelect');
+        if (oldTargetInstance && typeof oldTargetInstance.destroy === 'function') {
+            oldTargetInstance.destroy();
+        }
+        
+        // 使用 dbSelect 组件初始化源表选择器
+        if (typeof $.fn.dbSelect === 'function') {
+            console.log('[第二步] 使用 dbSelect 初始化源表选择器，数据:', sourceTableData.length);
+            $('#step2SourceTable').dbSelect({
+                type: 'multiple',
+                data: sourceTableData,
+                placeholder: '请选择数据源表...',
+                searchPlaceholder: '搜索表...',
+                onSelect: function(values) {
+                    console.log('[源表选择器] 选中的表:', values);
+                    // 联动选择：自动勾选目标表中的同名表
+                    autoSelectMatchingTargetTables(values);
+                }
+            });
+            console.log('[第二步] 源表选择器初始化完成');
+            } else {
+            console.warn('[第二步] dbSelect 组件不可用，使用原生 select');
+            // 回退到原生 select
+            let sourceOptions = '<option value="">请选择源表</option>';
+            sourceTableData.forEach(function(item) {
+                sourceOptions += '<option value="' + item.value + '">' + item.label + '</option>';
+            });
+            $('#step2SourceTable').html(sourceOptions);
+        }
+        
+        // 使用 dbSelect 组件初始化目标表选择器
+        if (typeof $.fn.dbSelect === 'function') {
+            console.log('[第二步] 使用 dbSelect 初始化目标表选择器，数据:', targetTableData.length);
+            $('#step2TargetTable').dbSelect({
+                type: 'multiple',
+                data: targetTableData,
+                placeholder: '请选择目标源表...',
+                searchPlaceholder: '搜索表...',
+                onSelect: function(values) {
+                    console.log('[目标表选择器] 选中的表:', values);
+                }
+            });
+            console.log('[第二步] 目标表选择器初始化完成');
+        } else {
+            console.warn('[第二步] dbSelect 组件不可用，使用原生 select');
+            // 回退到原生 select
+            let targetOptions = '<option value="">请选择目标表</option>';
+            targetTableData.forEach(function(item) {
+                targetOptions += '<option value="' + item.value + '">' + item.label + '</option>';
+            });
+            $('#step2TargetTable').html(targetOptions);
+        }
+    }
+
+    /**
+     * 自动选择目标表中的同名表（联动选择）
+     */
+    function autoSelectMatchingTargetTables(sourceTableValues) {
+        const targetInstance = $('#step2TargetTable').data('dbSelect');
+        if (!targetInstance || typeof targetInstance.getValues !== 'function') {
+            console.warn('[联动选择] 目标表实例不可用');
+            return;
+        }
+        
+        // 获取当前已选中的目标表
+        const currentTargetValues = targetInstance.getValues() || [];
+        console.log('[联动选择] 当前目标表选中:', currentTargetValues);
+        
+        // 获取所有可用的目标表数据
+        const targetTableData = window.cachedTargetTables || [];
+        const targetTableNames = targetTableData.map(t => t.name || t);
+        console.log('[联动选择] 可用的目标表:', targetTableNames);
+        
+        // 找出源表中有、但目标表还没选的同名表
+        const newTargetValues = [...currentTargetValues];
+        sourceTableValues.forEach(function(sourceTable) {
+            // 如果目标表中有同名表，且还没被选中，则自动选中
+            if (targetTableNames.indexOf(sourceTable) > -1 && currentTargetValues.indexOf(sourceTable) === -1) {
+                newTargetValues.push(sourceTable);
+                console.log('[联动选择] 自动勾选目标表:', sourceTable);
+            }
+        });
+        
+        // 如果有新的选中项，更新目标表选择器
+        if (newTargetValues.length !== currentTargetValues.length) {
+            targetInstance.setValues(newTargetValues);
+            console.log('[联动选择] 已更新目标表选中项:', newTargetValues);
+        }
+    }
+
+    /**
+     * 保存第二步（表映射配置）并完成（一次性提交所有配置）
+     */
+    function saveStep2AndComplete() {
+        console.log('[第二步] 开始保存表映射配置');
+        
+        // 检查第一步数据
+        if (!step1Data) {
+            bootGrowl("缺少第一步数据，请先完成第一步！", "danger");
+            goToStep(1);
+            return;
+        }
+
+        // 构建表映射配置
+        const tableMappings = [];
+        $('#tableMappingsContainer tr').each(function () {
+            const $row = $(this);
+            
+            const sourceTableName = $row.find('td:eq(1)').text().trim();
+            const targetTableName = $row.find('td:eq(2)').text().trim();
+            const sourcePK = $row.data('source-pk') || '';
+            const targetPK = $row.data('target-pk') || '';
+            const sourceFields = $row.data('source-fields') || [];
+            const targetFields = $row.data('target-fields') || [];
+            const fieldMappings = $row.data('field-mappings') || [];
+
+            if (sourceTableName && targetTableName) {
+                // 构建字段映射数组
+                const fieldMappingArray = fieldMappings.map(function(fm) {
+                    return {
+                        source: fm.source,
+                        target: fm.target
+                    };
+                });
+                
+                const tableMapping = {
+                    sourceTable: {
+                        name: sourceTableName,
+                        schema: step1Data.sourceSchema || 'public',
+                        columns: sourceFields,
+                        primaryKeys: sourcePK ? sourcePK.split(',') : []
+                    },
+                    targetTable: {
+                        name: targetTableName,
+                        schema: step1Data.targetSchema || 'public',
+                        columns: targetFields,
+                        primaryKeys: targetPK ? targetPK.split(',') : []
+                    },
+                    fieldMapping: fieldMappingArray
+                };
+                
+                console.log('[第二步] 表映射:', sourceTableName, '->', targetTableName, '字段映射:', fieldMappingArray.length);
+                tableMappings.push(tableMapping);
+            }
+        });
+
+        if (tableMappings.length === 0) {
+            bootGrowl("请至少配置一个表映射！", "danger");
+            return;
+        }
+
+        // 合并第一步和第二步的配置
+        const completeConfig = Object.assign({}, step1Data);
+        completeConfig.tableMappings = tableMappings;
+        
+        console.log('[第二步] 完整配置:', completeConfig);
+        
+        // 一次性提交所有配置创建或更新任务
+        showLoading();
+        const requestData = {
+            name: completeConfig.name,
+            type: completeConfig.type,
+            json: JSON.stringify(completeConfig),
+            STATUS: "0"
+        };
+        
+        // 如果是编辑模式，添加ID
+        if (isEditMode && currentTaskId) {
+            requestData.id = currentTaskId;
+        }
+        
+        const url = isEditMode ? $basePath + "/task/modify" : $basePath + "/task/add";
+        const successMessage = isEditMode ? "任务修改完成！" : "任务创建完成！";
+        
+        $.ajax({
+            url: url,
+            type: "POST",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(requestData),
+            success: function (result) {
+                hideLoading();
+                console.log('[第二步] Ajax 响应结果:', result);
+                
+                if (result.success == true) {
+                    if (isEditMode) {
+                        savedTaskId = currentTaskId;
+                    } else {
+                        savedTaskId = result.resultValue;
+                    }
+                    bootGrowl(successMessage, "success");
+                    console.log('[第二步] 保存成功，任务ID:', savedTaskId);
+                    
+                    // 返回任务列表
+                    setTimeout(function () {
+                        backTaskIndexPage();
+                    }, 1000);
+                } else {
+                    bootGrowl(result.resultValue, "danger");
+                }
+            },
+            error: function (xhr, status, info) {
+                hideLoading();
+                console.error('[第二步] Ajax 请求失败:', status, info);
+                bootGrowl("访问异常，请刷新或重试.", "danger");
+            }
+        });
+    }
+    
+    /**
+     * 添加字段映射
+     */
+    function addFieldMapping(tableIndex) {
+        const fieldIndex = fieldMappingIndex[tableIndex]++;
+
+        const fieldMappingHtml = `
+            <div class="field-mapping-item" data-field-index="${fieldIndex}" 
+                style="background: #f9fafb; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="display: grid; grid-template-columns: 3fr 40px 3fr 2.5fr 80px; align-items: center; gap: 12px;">
+                    <select class="form-control source-field-select select-control"
+                        name="tableMappings[${tableIndex}].fieldMapping[${fieldIndex}].sourceField"
+                        data-table-index="${tableIndex}" data-field-index="${fieldIndex}" data-type="source">
+                        <option value="">请选择源字段</option>
+                    </select>
+                    <div style="text-align: center;">
+                        <i class="fa fa-arrow-right" style="color: var(--primary-color);"></i>
+                    </div>
+                    <select class="form-control target-field-select select-control"
+                        name="tableMappings[${tableIndex}].fieldMapping[${fieldIndex}].targetField"
+                        data-table-index="${tableIndex}" data-field-index="${fieldIndex}" data-type="target">
+                        <option value="">请选择目标字段</option>
+                    </select>
+                    <select class="form-control select-control" 
+                        name="tableMappings[${tableIndex}].fieldMapping[${fieldIndex}].typeHandler">
+                        <option value="DEFAULT" selected>DEFAULT</option>
+                        <option value="DATETIME_TO_TIMESTAMP">DATETIME_TO_TIMESTAMP</option>
+                        <option value="TIMESTAMP_TO_DATETIME">TIMESTAMP_TO_DATETIME</option>
+                    </select>
+                    <button type="button" class="dbsyncer-btn dbsyncer-btn-danger remove-field-mapping"
+                        style="padding: 8px; font-size: 13px;">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        $(`.field-mappings[data-table-index="${tableIndex}"]`).append(fieldMappingHtml);
+        
+        // 增强新添加的 select 元素
+        if (typeof enhanceAllSelects === 'function') {
+            enhanceAllSelects();
+        }
+    }
+    
+    /**
+     * 添加表映射行
+     */
+    function addTableMappingRow() {
+        // 获取选中的源表和目标表
+        let selectedSourceTables = [];
+        let selectedTargetTables = [];
+        
+        // 尝试从 dbSelect 组件获取值
+        const sourceSelectInstance = $('#step2SourceTable').data('dbSelect');
+        const targetSelectInstance = $('#step2TargetTable').data('dbSelect');
+        
+        console.log('[添加表映射] 源表实例:', sourceSelectInstance);
+        console.log('[添加表映射] 目标表实例:', targetSelectInstance);
+        
+        if (sourceSelectInstance && typeof sourceSelectInstance.getValues === 'function') {
+            selectedSourceTables = sourceSelectInstance.getValues() || [];
+        } else {
+            selectedSourceTables = $('#step2SourceTable').val() || [];
+        }
+        
+        if (targetSelectInstance && typeof targetSelectInstance.getValues === 'function') {
+            selectedTargetTables = targetSelectInstance.getValues() || [];
+        } else {
+            selectedTargetTables = $('#step2TargetTable').val() || [];
+        }
+        
+        console.log('[添加表映射] 选中的源表:', selectedSourceTables);
+        console.log('[添加表映射] 选中的目标表:', selectedTargetTables);
+        
+        if (selectedSourceTables.length === 0) {
+            bootGrowl("请先选择数据源表！", "warning");
+            return;
+        }
+        
+        if (selectedTargetTables.length === 0) {
+            bootGrowl("请先选择目标源表！", "warning");
+            return;
+        }
+        
+        // 获取主键（如果有）
+        const sourcePKs = $('#step2SourceTablePK').val() || '';
+        const targetPKs = $('#step2TargetTablePK').val() || '';
+        
+        let addedCount = 0;
+        // 按索引一对一配对创建映射行（而不是笛卡尔积）
+        const maxLength = Math.max(selectedSourceTables.length, selectedTargetTables.length);
+        
+        for (let i = 0; i < maxLength; i++) {
+            // 如果某一方的表不够，则循环使用最后一个
+            const sourceTable = selectedSourceTables[Math.min(i, selectedSourceTables.length - 1)];
+            const targetTable = selectedTargetTables[Math.min(i, selectedTargetTables.length - 1)];
+            
+                // 确保 sourceTable 和 targetTable 是字符串
+                const sourceTableName = String(sourceTable);
+                const targetTableName = String(targetTable);
+                
+            console.log(`[添加表映射] 配对[${i}]:`, sourceTableName, '->', targetTableName);
+                
+                // 检查是否已存在相同的映射
+                let exists = false;
+                $('#tableMappingsContainer tr').each(function() {
+                    const existingSource = $(this).find('td:eq(1)').text().trim();
+                    const existingTarget = $(this).find('td:eq(2)').text().trim();
+                    if (existingSource === sourceTableName && existingTarget === targetTableName) {
+                    console.log('[检查重复] 发现重复映射，跳过:', sourceTableName, '->', targetTableName);
+                        exists = true;
+                        return false; // break
+                    }
+                });
+                
+                if (!exists) {
+                    const index = tableMappingIndex++;
+                    const rowHtml = `
+                        <tr data-mapping-index="${index}" 
+                            title="点击配置字段映射" 
+                            class="table-mapping-row"
+                            data-source-table="${sourceTableName}" 
+                            data-target-table="${targetTableName}"
+                            data-source-pk="${sourcePKs}"
+                            data-target-pk="${targetPKs}">
+                            <td>${index + 1}</td>
+                            <td>${sourceTableName}</td>
+                            <td>${targetTableName}</td>
+                            <td onclick="event.stopPropagation();">
+                                <input type="checkbox" class="table-mapping-checkbox" 
+                                       onclick="event.stopPropagation();" />
+                            </td>
+                        </tr>
+                    `;
+                    console.log('[添加表映射] 生成的HTML:', rowHtml);
+                    const $row = $(rowHtml);
+                    $('#tableMappingsContainer').append($row);
+                    
+                    // 自动加载字段映射
+                    loadFieldMappingForRow($row, sourceTableName, targetTableName);
+                    
+                    addedCount++;
+                }
+        }
+        
+        if (addedCount === 0) {
+            bootGrowl("选中的表映射已存在，未添加新映射！", "warning");
+            return;
+        }
+        
+        // 清空选择和主键输入
+        const sourceInstance = $('#step2SourceTable').data('dbSelect');
+        const targetInstance = $('#step2TargetTable').data('dbSelect');
+        
+        if (sourceInstance && typeof sourceInstance.clear === 'function') {
+            sourceInstance.clear();
+        } else {
+            $('#step2SourceTable').val(null).trigger('change');
+        }
+        
+        if (targetInstance && typeof targetInstance.clear === 'function') {
+            targetInstance.clear();
+        } else {
+            $('#step2TargetTable').val(null).trigger('change');
+        }
+        
+        if (typeof $.fn.tagsinput === 'function') {
+            $('#step2SourceTablePK').tagsinput('removeAll');
+            $('#step2TargetTablePK').tagsinput('removeAll');
+        }
+        
+        updateTableMappingIndexes();
+        updateEmptyState();
+        updateDeleteButtonState();
+        
+        bootGrowl(`成功添加 ${addedCount} 个表映射！`, "success");
+    }
+
+    /**
+     * 为表映射行加载字段映射
+     */
+    function loadFieldMappingForRow($row, sourceTableName, targetTableName) {
+        if (!step1Data) {
+            console.warn('[字段映射] 缺少第一步数据');
+            return;
+        }
+        
+        const sourceConnectorId = step1Data.sourceConnectorId;
+        const targetConnectorId = step1Data.targetConnectorId;
+        
+        console.log('[字段映射] 开始加载字段映射:', sourceTableName, '->', targetTableName);
+        
+        // 同时加载源表和目标表的字段
+        let sourceFields = [];
+        let targetFields = [];
+        let loadComplete = 0;
+        
+        // 加载源表字段
+        $.ajax({
+            url: $basePath + "/task/getTableFields",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: sourceConnectorId,
+                database: step1Data.sourceDatabaseName || '',
+                schema: step1Data.sourceSchema || '',
+                tableName: sourceTableName
+            },
+            success: function (result) {
+                if (result.success && result.resultValue) {
+                    sourceFields = result.resultValue || [];
+                    console.log('[字段映射] 源表字段加载成功:', sourceFields.length);
+                }
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRow($row, sourceFields, targetFields);
+                }
+            },
+            error: function () {
+                console.error('[字段映射] 源表字段加载失败');
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRow($row, sourceFields, targetFields);
+                }
+            }
+        });
+        
+        // 加载目标表字段
+        $.ajax({
+            url: $basePath + "/task/getTableFields",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: targetConnectorId,
+                database: step1Data.targetDatabaseName || '',
+                schema: step1Data.targetSchema || '',
+                tableName: targetTableName
+            },
+            success: function (result) {
+                if (result.success && result.resultValue) {
+                    targetFields = result.resultValue || [];
+                    console.log('[字段映射] 目标表字段加载成功:', targetFields.length);
+                }
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRow($row, sourceFields, targetFields);
+                }
+            },
+            error: function () {
+                console.error('[字段映射] 目标表字段加载失败');
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRow($row, sourceFields, targetFields);
+                }
+            }
+        });
+    }
+
+    /**
+     * 保存字段映射到表格行
+     */
+    function saveFieldMappingToRow($row, sourceFields, targetFields) {
+        // 自动创建字段映射（同名字段自动匹配）
+        const fieldMappings = [];
+        sourceFields.forEach(function(sourceField) {
+            const sourceFieldName = sourceField.name || sourceField.getName();
+            // 查找目标表中同名的字段
+            const matchingTarget = targetFields.find(function(targetField) {
+                const targetFieldName = targetField.name || targetField.getName();
+                return targetFieldName === sourceFieldName;
+            });
+            
+            if (matchingTarget) {
+                fieldMappings.push({
+                    source: sourceFieldName,
+                    target: matchingTarget.name || matchingTarget.getName()
+                });
+            }
+        });
+        
+        console.log('[字段映射] 自动匹配字段:', fieldMappings.length, '个');
+        
+        // 保存到行的 data 中
+        $row.data('source-fields', sourceFields);
+        $row.data('target-fields', targetFields);
+        $row.data('field-mappings', fieldMappings);
+    }
+
+    /**
+     * 打开字段映射配置对话框
+     */
+    function openFieldMappingDialog($row) {
+        const sourceTableName = $row.data('source-table');
+        const targetTableName = $row.data('target-table');
+        const sourceFields = $row.data('source-fields') || [];
+        const targetFields = $row.data('target-fields') || [];
+        let fieldMappings = $row.data('field-mappings') || [];
+        
+        console.log('[字段映射对话框] 打开配置:', sourceTableName, '->', targetTableName);
+        console.log('[字段映射对话框] 源字段:', sourceFields.length, '目标字段:', targetFields.length);
+        console.log('[字段映射对话框] 已有映射:', fieldMappings.length);
+        
+        // 构建源字段下拉选项
+        let sourceFieldOptions = '<option value="">请选择源字段</option>';
+        sourceFields.forEach(function(field) {
+            const fieldName = field.name || field.getName();
+            const fieldType = field.typeName || field.getTypeName() || '';
+            sourceFieldOptions += `<option value="${fieldName}">${fieldName} (${fieldType})</option>`;
+        });
+        
+        // 构建目标字段下拉选项
+        let targetFieldOptions = '<option value="">请选择目标字段</option>';
+        targetFields.forEach(function(field) {
+            const fieldName = field.name || field.getName();
+            const fieldType = field.typeName || field.getTypeName() || '';
+            targetFieldOptions += `<option value="${fieldName}">${fieldName} (${fieldType})</option>`;
+        });
+        
+        // 构建字段映射行HTML
+        function buildFieldMappingRows() {
+        if (fieldMappings.length === 0) {
+                return '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">暂无字段映射</td></tr>';
+            }
+            
+            let rows = '';
+            fieldMappings.forEach(function(mapping, index) {
+                rows += `
+                    <tr data-mapping-index="${index}">
+                        <td>${mapping.source}</td>
+                        <td style="text-align: center;"><i class="fa fa-arrow-right" style="color: var(--primary-color);"></i></td>
+                        <td>${mapping.target}</td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn btn-sm btn-danger remove-mapping-btn" data-index="${index}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            return rows;
+        }
+        
+        // 创建自定义对话框HTML
+        const dialogId = 'fieldMappingDialog_' + Date.now();
+        const dialogHtml = `
+            <div class="confirm-overlay" id="${dialogId}" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+                <div class="confirm-dialog size-max" style="background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 90%; max-height: 90%; overflow: hidden; display: flex; flex-direction: column;">
+                    <!-- 对话框头部 -->
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between;">
+                        <h5 style="margin: 0; font-size: 18px; font-weight: 500;">
+                            <i class="fa fa-columns" style="color: var(--primary-color); margin-right: 8px;"></i>
+                            字段映射配置
+                            <span style="font-size: 13px; color: #999; font-weight: normal; margin-left: 8px;">
+                                ${sourceTableName} → ${targetTableName}
+                            </span>
+                            </h5>
+                        <button type="button" class="btn-close-dialog" style="background: none; border: none; font-size: 24px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px;">
+                            <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    
+                    <!-- 对话框主体 -->
+                    <div style="padding: 20px; flex: 1; overflow-y: auto;">
+                        <!-- 手动添加映射区域 -->
+                        <div style="background: #f9fafb; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
+                            <div style="display: grid; grid-template-columns: 2fr 80px 2fr 100px; gap: 8px; align-items: end;">
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">源字段</label>
+                                    <select id="sourceFieldSelect" class="form-control select-control" style="width: 100%;">
+                                        ${sourceFieldOptions}
+                                    </select>
+                                </div>
+                                <div style="text-align: center; padding-top: 20px;">
+                                    <i class="fa fa-arrow-right" style="color: var(--primary-color); font-size: 20px;"></i>
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">目标字段</label>
+                                    <select id="targetFieldSelect" class="form-control select-control" style="width: 100%;">
+                                        ${targetFieldOptions}
+                                    </select>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-primary field-action-btn" id="addMappingBtn" style="width: 100%;">
+                                        <i class="fa fa-plus"></i> 添加
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 快捷操作按钮 -->
+                        <div style="margin-bottom: 12px;">
+                            <button type="button" class="btn btn-sm btn-primary field-action-btn" id="autoMatchFieldsBtn">
+                                <i class="fa fa-magic"></i> 自动匹配同名字段
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline field-action-btn" id="clearFieldMappingsBtn">
+                                <i class="fa fa-eraser"></i> 清空映射
+                            </button>
+                            <span style="margin-left: 12px; font-size: 13px; color: #666;">
+                                已映射 <strong id="mappingCount">${fieldMappings.length}</strong> 个字段
+                            </span>
+                        </div>
+                        
+                        <!-- 映射列表 -->
+                        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px;">
+                            <table class="table table-bordered" style="margin: 0;">
+                                <thead style="position: sticky; top: 0; background: #f9fafb; z-index: 1;">
+                                    <tr>
+                                        <th style="width: 40%;">源字段</th>
+                                            <th style="width: 10%; text-align: center;"></th>
+                                        <th style="width: 40%;">目标字段</th>
+                                        <th style="width: 10%; text-align: center;">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fieldMappingTableBody">
+                                    ${buildFieldMappingRows()}
+                                    </tbody>
+                                </table>
+                            </div>
+                            </div>
+                    
+                    <!-- 对话框底部按钮 -->
+                    <div style="padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button type="button" class="btn btn-outline" id="cancelMappingBtn">
+                            <i class="fa fa-times"></i> 取消
+                        </button>
+                        <button type="button" class="btn btn-primary" id="confirmMappingBtn">
+                                <i class="fa fa-check"></i> 确定
+                            </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 移除旧的对话框
+        $('.confirm-overlay').remove();
+        
+        // 添加对话框到页面
+        $('body').append(dialogHtml);
+        
+        // 显示对话框（淡入效果）
+        $('#' + dialogId).hide().fadeIn(200);
+        
+        // 等待对话框渲染完成后绑定事件（增加延迟确保DOM完全渲染）
+        setTimeout(function() {
+            console.log('[字段映射对话框] 延迟后开始初始化');
+            
+            const $dialog = $('#' + dialogId);
+            const $dialogContent = $dialog.find('.confirm-dialog');
+            
+            console.log('[字段映射对话框] 找到对话框:', $dialog.length);
+            
+            // 阻止对话框内部的点击冒泡
+            $dialogContent.off('click').on('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // 点击 overlay 背景关闭对话框
+            $dialog.off('click').on('click', function(e) {
+                if (e.target === this) {
+                    console.log('[字段映射对话框] 点击背景关闭');
+                    $(this).fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                }
+            });
+            
+            // 绑定关闭按钮
+            $('.btn-close-dialog').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[字段映射对话框] 点击X关闭');
+                $dialog.fadeOut(200, function() {
+                    $(this).remove();
+                });
+            });
+            
+            // 绑定确定按钮
+            $('#confirmMappingBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('[字段映射对话框] 点击确定按钮，保存映射:', fieldMappings.length, '个');
+                
+                // 保存字段映射到行
+                $row.data('field-mappings', fieldMappings);
+                bootGrowl("字段映射已保存！", "success");
+                
+                // 关闭对话框
+                $dialog.fadeOut(200, function() {
+                    $(this).remove();
+                });
+            });
+            
+            // 绑定取消按钮
+            $('#cancelMappingBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('[字段映射对话框] 点击取消按钮');
+                
+                // 关闭对话框
+                $dialog.fadeOut(200, function() {
+                    $(this).remove();
+                });
+            });
+            
+            // 更新映射列表显示
+            function updateMappingDisplay() {
+                console.log('[更新映射显示] 开始更新，当前映射数量:', fieldMappings.length);
+                
+                let rows = '';
+                if (fieldMappings.length === 0) {
+                    rows = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">暂无字段映射</td></tr>';
+                } else {
+                    fieldMappings.forEach(function(mapping, index) {
+                        console.log('[更新映射显示] 映射[' + index + ']:', mapping.source, '->', mapping.target);
+                        rows += `
+                            <tr data-mapping-index="${index}">
+                                <td>${mapping.source}</td>
+                                <td style="text-align: center;"><i class="fa fa-arrow-right" style="color: var(--primary-color);"></i></td>
+                                <td>${mapping.target}</td>
+                                <td style="text-align: center;">
+                                    <button type="button" class="btn btn-sm btn-danger remove-mapping-btn" data-index="${index}">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                console.log('[更新映射显示] 准备更新表格，行数:', fieldMappings.length);
+                $('#fieldMappingTableBody').html(rows);
+                $('#mappingCount').text(fieldMappings.length);
+                console.log('[更新映射显示] 表格更新完成');
+                
+                // 重新绑定删除按钮事件
+                $('.remove-mapping-btn').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    const index = $(this).data('index');
+                    console.log('[删除映射] 删除索引:', index);
+                    fieldMappings.splice(index, 1);
+                    updateMappingDisplay();
+                    bootGrowl("已删除字段映射", "info");
+                    
+                    return false;
+                });
+            }
+            
+            // 初始化日志
+            console.log('[字段映射对话框] 开始绑定事件');
+            console.log('[字段映射对话框] 找到添加按钮:', $('#addMappingBtn').length);
+            console.log('[字段映射对话框] 找到源字段选择器:', $('#sourceFieldSelect').length);
+            console.log('[字段映射对话框] 找到目标字段选择器:', $('#targetFieldSelect').length);
+            console.log('[字段映射对话框] 找到表格体:', $('#fieldMappingTableBody').length);
+            console.log('[字段映射对话框] 找到确定按钮:', $('#confirmMappingBtn').length);
+            console.log('[字段映射对话框] 找到取消按钮:', $('#cancelMappingBtn').length);
+            
+            // 绑定手动添加映射按钮
+            $('#addMappingBtn').off('click').on('click', function(e) {
+                // 强制阻止所有默认行为和冒泡
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                
+                console.log('[添加字段映射] ========== 点击添加按钮 ==========');
+                console.log('[添加字段映射] 事件对象:', e);
+                console.log('[添加字段映射] 按钮元素:', this);
+                console.log('[添加字段映射] 按钮ID:', $(this).attr('id'));
+                
+                // 检查选择器是否存在
+                const $sourceSelect = $('#sourceFieldSelect');
+                const $targetSelect = $('#targetFieldSelect');
+                console.log('[添加字段映射] 找到源字段选择器:', $sourceSelect.length, '元素:', $sourceSelect[0]);
+                console.log('[添加字段映射] 找到目标字段选择器:', $targetSelect.length, '元素:', $targetSelect[0]);
+                
+                const sourceField = $sourceSelect.val();
+                const targetField = $targetSelect.val();
+                
+                console.log('[添加字段映射] 源字段值:', sourceField, '类型:', typeof sourceField);
+                console.log('[添加字段映射] 目标字段值:', targetField, '类型:', typeof targetField);
+                console.log('[添加字段映射] 源字段选项数量:', $sourceSelect.find('option').length);
+                console.log('[添加字段映射] 目标字段选项数量:', $targetSelect.find('option').length);
+                
+                if (!sourceField) {
+                    bootGrowl("请选择源字段！", "warning");
+                    return false;
+                }
+                
+                if (!targetField) {
+                    bootGrowl("请选择目标字段！", "warning");
+                    return false;
+                }
+                
+                // 检查是否已存在相同的映射
+                const exists = fieldMappings.some(function(m) {
+                    return m.source === sourceField && m.target === targetField;
+                });
+                
+                if (exists) {
+                    bootGrowl("该字段映射已存在！", "warning");
+                    return false;
+                }
+                
+                // 添加新映射
+                fieldMappings.push({
+                    source: sourceField,
+                    target: targetField
+                });
+                
+                console.log('[添加字段映射] 已添加，当前映射数量:', fieldMappings.length);
+                console.log('[添加字段映射] 当前所有映射:', fieldMappings);
+                
+                // 重置下拉框
+                $('#sourceFieldSelect').val('');
+                $('#targetFieldSelect').val('');
+                
+                // 更新显示
+                updateMappingDisplay();
+                console.log('[添加字段映射] 更新显示完成');
+                
+                bootGrowl("已添加字段映射！", "success");
+                
+                return false;
+            });
+        
+        // 绑定自动匹配按钮
+            $('#autoMatchFieldsBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+            const newMappings = [];
+            sourceFields.forEach(function(sourceField) {
+                const sourceFieldName = sourceField.name || sourceField.getName();
+                const matchingTarget = targetFields.find(function(targetField) {
+                    const targetFieldName = targetField.name || targetField.getName();
+                    return targetFieldName === sourceFieldName;
+                });
+                
+                if (matchingTarget) {
+                    newMappings.push({
+                        source: sourceFieldName,
+                        target: matchingTarget.name || matchingTarget.getName()
+                    });
+                }
+            });
+            
+            fieldMappings = newMappings;
+                updateMappingDisplay();
+            bootGrowl(`已自动匹配 ${newMappings.length} 个字段！`, "success");
+                
+                return false;
+        });
+        
+        // 绑定清空按钮
+            $('#clearFieldMappingsBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+            fieldMappings = [];
+                updateMappingDisplay();
+            bootGrowl("已清空字段映射！", "info");
+                
+                return false;
+            });
+            
+            // 初始化删除按钮事件
+            updateMappingDisplay();
+        }, 300);
+    }
+
+    /**
+     * 删除选中的表映射
+     */
+    function removeSelectedTableMappings() {
+        const $checked = $('.table-mapping-checkbox:checked');
+        if ($checked.length === 0) {
+            bootGrowl("请先选择要删除的表映射！", "warning");
+            return;
+        }
+        
+        $checked.each(function() {
+            $(this).closest('tr').remove();
+        });
+        
+        updateTableMappingIndexes();
+        updateEmptyState();
+        updateDeleteButtonState();
+        bootGrowl("已删除 " + $checked.length + " 个表映射", "success");
+    }
+
+    /**
+     * 更新删除按钮状态
+     */
+    function updateDeleteButtonState() {
+        const $checked = $('.table-mapping-checkbox:checked');
+        if ($checked.length > 0) {
+            $('#removeTableMappingBtn').prop('disabled', false).removeClass('btn-outline').addClass('btn-danger');
+        } else {
+            $('#removeTableMappingBtn').prop('disabled', true).removeClass('btn-danger').addClass('btn-outline');
+        }
+    }
+
+    /**
+     * 更新表映射索引
+     */
+    function updateTableMappingIndexes() {
+        $('#tableMappingsContainer tr').each(function (index) {
+            $(this).attr('data-mapping-index', index);
+            // 更新序号列（第1列，索引为0）
+            $(this).find('td:eq(0)').text(index + 1);
+        });
+        
+        // 更新 tableMappingIndex
+        tableMappingIndex = $('#tableMappingsContainer tr').length;
+    }
+    
+    /**
+     * 更新空状态提示
+     */
+    function updateEmptyState() {
+        // 确保DOM元素存在
+        if ($('#tableMappingsContainer').length === 0) {
+            return;
+        }
+        
+        const rowCount = $('#tableMappingsContainer tr').length;
+        if (rowCount === 0) {
+            $('#tableMappingTable').hide();
+            $('#emptyTableMappingTip').show();
+            $('#selectAllMappings').prop('checked', false);
+        } else {
+            $('#tableMappingTable').show();
+            $('#emptyTableMappingTip').hide();
+        }
+    }
+    
+    /**
+     * 显示Cron表达式帮助
+     */
+    function showCronHelp() {
+        const helpText = `
+            <div class="alert alert-info">
+                <h4>Cron表达式格式说明：</h4>
+                <p>格式：秒 分 时 日 月 周</p>
+                <ul>
+                    <li>秒：0-59</li>
+                    <li>分：0-59</li>
+                    <li>时：0-23</li>
+                    <li>日：1-31</li>
+                    <li>月：1-12 或 JAN-DEC</li>
+                    <li>周：0-7 或 SUN-SAT (0和7都表示周日)</li>
+                </ul>
+                <h5>常用示例：</h5>
+                <ul>
+                    <li>每天凌晨1点：0 0 1 * * ?</li>
+                    <li>每小时执行：0 0 * * * ?</li>
+                    <li>每天上午10点：0 0 10 * * ?</li>
+                    <li>每周一上午9点：0 0 9 ? * MON</li>
+                </ul>
+            </div>
+        `;
+
+        bootbox.alert({
+            title: "Cron表达式帮助",
+            message: helpText,
+            size: 'large'
+        });
+    }
+
+    /**
+     * 加载数据库列表
+     */
+    function loadDatabases(connectorId, type) {
+        console.log('[加载数据库] 连接器ID:', connectorId, '类型:', type);
+        
+        // 显示加载状态
+        const selectId = type === 'source' ? '#sourceDatabaseName' : '#targetDatabaseName';
+        $(selectId).html('<option value="">加载中...</option>');
+        
+        $.ajax({
+            url: $basePath + "/connector/getDatabases",
+            type: "GET",
+            dataType: "json",
+            data: { connectorId: connectorId },
+            success: function (result) {
+                console.log('[加载数据库] 响应结果:', result);
+                
+                if (result.success) {
+                    let options = '<option value="">请选择数据库</option>';
+                    
+                    if (result.resultValue && result.resultValue.length > 0) {
+                        result.resultValue.forEach(function (db) {
+                            options += '<option value="' + db + '">' + db + '</option>';
+                        });
+                        console.log('[加载数据库] 成功加载 ' + result.resultValue.length + ' 个数据库');
+                    } else {
+                        console.warn('[加载数据库] 数据库列表为空');
+                        options = '<option value="">暂无数据库</option>';
+                    }
+                    
+                    $(selectId).html(options);
+                    
+                    // 增强更新后的 select 元素
+                    if (typeof enhanceAllSelects === 'function') {
+                        enhanceAllSelects();
+                    }
+                    
+                    // 加载表列表
+                    loadTables(connectorId, type);
+                } else {
+                    console.error('[加载数据库] 失败:', result.resultValue);
+                    $(selectId).html('<option value="">加载失败</option>');
+                    bootGrowl("获取数据库列表失败: " + result.resultValue, "danger");
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('[加载数据库] 请求异常:', status, error);
+                $(selectId).html('<option value="">加载失败</option>');
+                bootGrowl("获取数据库列表失败: " + error, "danger");
+            }
+        });
+    }
+
+    /**
+     * 加载表列表
+     */
+    function loadTables(connectorId, type) {
+        $.ajax({
+            url: $basePath + "/task/getTables",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: connectorId,
+                database: '',
+                schema: ''
+            },
+            success: function (result) {
+                if (result.success) {
+                    const tableSelects = type === 'source' ? '.source-table-select' : '.target-table-select';
+                    
+                    $(tableSelects).each(function () {
+                        let options = '<option value="">请选择表</option>';
+                        
+                        if (result.resultValue && result.resultValue.length > 0) {
+                            result.resultValue.forEach(function (table) {
+                                options += '<option value="' + table.name + '">' + table.name + '</option>';
+                            });
+                        }
+                        
+                        $(this).html(options);
+                    });
+                    
+                    // 增强更新后的 select 元素
+                    if (typeof enhanceAllSelects === 'function') {
+                        enhanceAllSelects();
+                    }
+        } else {
+                    bootGrowl("获取表列表失败: " + result.resultValue, "danger");
+                }
+            },
+            error: function () {
+                bootGrowl("获取表列表失败", "danger");
+            }
+        });
+    }
+
+    /**
+     * 加载表字段
+     */
+    function loadTableFields(connectorId, tableName, tableIndex, type) {
+        if (!step1Data) {
+            console.warn('[加载字段] 缺少第一步数据');
+            return;
+        }
+        
+        // 根据类型选择对应的database和schema
+        const database = type === 'source' ? step1Data.sourceDatabaseName : step1Data.targetDatabaseName;
+        const schema = type === 'source' ? step1Data.sourceSchema : step1Data.targetSchema;
+        
+        $.ajax({
+            url: $basePath + "/task/getTableFields",
+            type: "GET",
+            dataType: "json",
+            data: { 
+                connectorId: connectorId,
+                database: database || '',
+                schema: schema || '',
+                tableName: tableName
+            },
+            success: function (result) {
+                if (result.success) {
+                    const fieldSelects = type === 'source' ? 
+                        '.source-field-select[data-table-index="' + tableIndex + '"]' : 
+                        '.target-field-select[data-table-index="' + tableIndex + '"]';
+                    
+                    $(fieldSelects).each(function () {
+                        let options = '<option value="">请选择字段</option>';
+                        
+                        if (result.resultValue && result.resultValue.length > 0) {
+                            result.resultValue.forEach(function (field) {
+                                const fieldName = field.name || field.getName();
+                                const fieldType = field.typeName || field.getTypeName();
+                                options += '<option value="' + fieldName + '">' + 
+                                    fieldName + ' (' + fieldType + ')</option>';
+                            });
+                        }
+                        
+                        $(this).html(options);
+                    });
+                    
+                    // 增强更新后的 select 元素
+                    if (typeof enhanceAllSelects === 'function') {
+                        enhanceAllSelects();
+                    }
+                } else {
+                    bootGrowl("获取表字段失败: " + result.resultValue, "danger");
+                }
+            },
+            error: function () {
+                bootGrowl("获取表字段失败", "danger");
+            }
+        });
+    }
+
+    /**
+     * 清空表字段
+     */
+    function clearTableFields(tableIndex, type) {
+        const fieldSelects = type === 'source' ? 
+            '.source-field-select[data-table-index="' + tableIndex + '"]' : 
+            '.target-field-select[data-table-index="' + tableIndex + '"]';
+        
+        $(fieldSelects).html('<option value="">请选择字段</option>');
+    }
+
+    /**
+     * 检查并显示Schema输入框
+     */
+    function checkAndShowSchema(connectorId, type) {
+        $.ajax({
+            url: $basePath + "/task/getConnectorType",
+            type: "GET",
+            dataType: "json",
+            data: { connectorId: connectorId },
+            success: function (result) {
+                if (result.success) {
+                    const connectorType = result.resultValue.toLowerCase();
+                    let showSchema = false;
+                    let defaultSchema = '';
+                    
+                    if (connectorType.includes('oracle')) {
+                        showSchema = true;
+                        defaultSchema = 'SYSTEM';
+                    } else if (connectorType.includes('postgresql')) {
+                        showSchema = true;
+                        defaultSchema = 'public';
+                    } else if (connectorType.includes('sqlserver')) {
+                        showSchema = true;
+                        defaultSchema = 'dbo';
+                    }
+                    
+                    if (showSchema) {
+                        $('#sourceSchemaGroup').show();
+                        if (type === 'source') {
+                            $('#sourceSchema').val(defaultSchema);
+                        } else {
+                            $('#targetSchema').val(defaultSchema);
+                        }
+                    } else {
+                        $('#sourceSchemaGroup').hide();
+                    }
+                }
+            },
+            error: function () {
+                console.error("获取连接器类型失败");
+            }
+        });
+    }
+
+    /**
+     * 构建JSON配置
+     */
+    function buildTaskConfig() {
+        const formData = $('#taskAddForm').serializeArray();
+        const config = {};
+
+        // 基础配置
+        formData.forEach(function (item) {
+            if (item.name.includes('tableMappings')) {
+                // 表映射配置，稍后处理
+                return;
+            }
+
+            if (item.name === 'trigger') {
+                config[item.name] = item.value;
+            } else if (item.name === 'cron' && config.trigger === 'timing') {
+                config[item.name] = item.value;
+            } else if (['autoMatchTable', 'verification', 'correction', 'tableStructure', 'rowData', 'index', 'triggerFlag', 'function', 'storedProcedure'].includes(item.name)) {
+                config[item.name] = item.value === 'true';
+            } else {
+                config[item.name] = item.value;
+            }
+        });
+
+        // 处理表映射
+        config.tableMappings = [];
+        $('.table-mapping-item').each(function () {
+            const tableMapping = {
+                sourceTable: {
+                    name: $(this).find('select[name*="sourceTable.name"]').val(),
+                    schema: $(this).find('input[name*="sourceTable.schema"]').val(),
+                    columns: []
+                },
+                targetTable: {
+                    name: $(this).find('select[name*="targetTable.name"]').val(),
+                    schema: $(this).find('input[name*="targetTable.schema"]').val(),
+                    columns: []
+                },
+                fieldMapping: []
+            };
+
+            // 处理字段映射
+            $(this).find('.field-mapping-item').each(function () {
+                const sourceField = $(this).find('select[name*="sourceField"]').val();
+                const targetField = $(this).find('select[name*="targetField"]').val();
+                const typeHandler = $(this).find('select[name*="typeHandler"]').val();
+
+                if (sourceField && targetField) {
+                    tableMapping.fieldMapping.push({
+                        sourceField: sourceField,
+                        targetField: targetField,
+                        typeHandler: typeHandler
+                    });
+                }
+            });
+
+            if (tableMapping.sourceTable.name && tableMapping.targetTable.name) {
+                config.tableMappings.push(tableMapping);
+            }
+        });
+
+        return config;
+    }
+
+    /**
+     * 加载任务数据
+     */
+    function loadTaskData(taskId) {
+        console.log('[任务编辑] 开始加载任务数据:', taskId);
+        showLoading();
+        
+        $.ajax({
+            url: $basePath + "/task/getTask",
+            type: "GET",
+            dataType: "json",
+            data: { taskId: taskId },
+            success: function (result) {
+                hideLoading();
+                console.log('[任务编辑] 任务数据加载成功:', result);
+                
+                if (result.success && result.resultValue) {
+                    const task = result.resultValue;
+                    fillTaskForm(task);
+                } else {
+                    bootGrowl("加载任务数据失败: " + (result.resultValue || "未知错误"), "danger");
+                    setTimeout(function() {
+                        backTaskIndexPage();
+                    }, 2000);
+                }
+            },
+            error: function (xhr, status, error) {
+                hideLoading();
+                console.error('[任务编辑] 加载任务数据失败:', status, error);
+                bootGrowl("加载任务数据失败: " + error, "danger");
+                setTimeout(function() {
+                    backTaskIndexPage();
+                }, 2000);
+            }
+        });
+    }
+    
+    /**
+     * 填充连接器和数据库（带回调）
+     */
+    function fillConnectorAndDatabase(type, connectorId, databaseName, schema) {
+        const connectorSelectId = type === 'source' ? '#sourceConnectorId' : '#targetConnectorId';
+        const databaseSelectId = type === 'source' ? '#sourceDatabaseName' : '#targetDatabaseName';
+        const schemaInputId = type === 'source' ? '#sourceSchema' : '#targetSchema';
+        
+        // 设置连接器
+        $(connectorSelectId).val(connectorId);
+        
+        // 触发change事件加载数据库列表
+        $(connectorSelectId).trigger('change');
+        
+        // 监听数据库下拉框的变化，确保选项加载完成后再设置值
+        let checkCount = 0;
+        const maxChecks = 20; // 最多检查20次（2秒）
+        
+        const checkInterval = setInterval(function() {
+            checkCount++;
+            const $databaseSelect = $(databaseSelectId);
+            const optionsCount = $databaseSelect.find('option').length;
+            
+            // 如果选项数量大于1（除了"请选择"选项），说明已经加载完成
+            if (optionsCount > 1) {
+                clearInterval(checkInterval);
+                
+                // 设置数据库值
+                if (databaseName) {
+                    $databaseSelect.val(databaseName);
+                    // 触发change事件以更新select组件
+                    if (typeof enhanceAllSelects === 'function') {
+                        enhanceAllSelects();
+                    }
+                }
+                
+                // 设置schema值
+                if (schema) {
+                    $(schemaInputId).val(schema);
+                }
+                
+                console.log('[任务编辑] ' + type + ' 连接器和数据库填充完成');
+            } else if (checkCount >= maxChecks) {
+                clearInterval(checkInterval);
+                console.warn('[任务编辑] ' + type + ' 数据库列表加载超时');
+                // 即使超时也尝试设置值
+                if (databaseName) {
+                    $databaseSelect.val(databaseName);
+                }
+                if (schema) {
+                    $(schemaInputId).val(schema);
+                }
+            }
+        }, 100);
+    }
+    
+    /**
+     * 填充任务表单
+     */
+    function fillTaskForm(task) {
+        console.log('[任务编辑] 开始填充表单，任务数据:', task);
+        
+        try {
+            // 解析JSON配置
+            let config = {};
+            if (task.json) {
+                config = typeof task.json === 'string' ? JSON.parse(task.json) : task.json;
+            }
+            
+            console.log('[任务编辑] 解析后的配置:', config);
+            
+            // 填充基本信息
+            if (task.name) {
+                $('input[name="name"]').val(task.name);
+            }
+            if (task.type) {
+                $('input[name="type"]').val(task.type);
+            }
+            
+            // 填充连接器和数据库 - 使用回调方式确保数据库加载完成后再设置值
+            if (config.sourceConnectorId) {
+                fillConnectorAndDatabase('source', config.sourceConnectorId, config.sourceDatabaseName, config.sourceSchema);
+            }
+            
+            if (config.targetConnectorId) {
+                fillConnectorAndDatabase('target', config.targetConnectorId, config.targetDatabaseName, config.targetSchema);
+            }
+            
+            // 填充触发方式
+            if (config.trigger) {
+                $('input[name="trigger"][value="' + config.trigger + '"]').prop('checked', true).trigger('change');
+                if (config.trigger === 'timing' && config.cron) {
+                    $('input[name="cron"]').val(config.cron);
+                }
+            }
+            
+            // 填充复选框
+            const checkboxes = ['autoMatchTable', 'verification', 'correction', 'tableStructure', 'rowData', 'index', 'triggerFlag', 'function', 'storedProcedure'];
+            checkboxes.forEach(function(name) {
+                if (config[name] === true) {
+                    $('input[name="' + name + '"]').prop('checked', true);
+                } else {
+                    $('input[name="' + name + '"]').prop('checked', false);
+                }
+            });
+            
+            // 暂存第一步数据
+            step1Data = config;
+            
+            // 确保第一步内容可见
+            $('#step1Content').removeClass('hidden').show();
+            $('#step2Content').addClass('hidden').hide();
+            goToStep(1);
+            
+            // 如果有表映射配置，加载到第二步
+            if (config.tableMappings && config.tableMappings.length > 0) {
+                console.log('[任务编辑] 发现表映射配置，数量:', config.tableMappings.length);
+                // 延迟加载，确保第一步数据已填充
+                setTimeout(function() {
+                    loadTableMappingsForStep2(config);
+                }, 2000);
+            } else {
+                console.log('[任务编辑] 无表映射配置');
+            }
+            
+            bootGrowl("任务数据加载完成！", "success");
+        } catch (e) {
+            console.error('[任务编辑] 填充表单失败:', e);
+            bootGrowl("填充表单失败: " + e.message, "danger");
+        }
+    }
+    
+    /**
+     * 为第二步加载表映射
+     */
+    function loadTableMappingsForStep2(config) {
+        console.log('[任务编辑] 开始加载表映射到第二步');
+        
+        // 先加载表列表
+        loadTablesForStep2(config);
+        
+        // 等待表列表加载完成后再加载表映射
+        setTimeout(function() {
+            if (config.tableMappings && config.tableMappings.length > 0) {
+                config.tableMappings.forEach(function(tableMapping) {
+                    const sourceTable = tableMapping.sourceTable;
+                    const targetTable = tableMapping.targetTable;
+                    
+                    if (sourceTable && targetTable && sourceTable.name && targetTable.name) {
+                        const sourceTableName = sourceTable.name;
+                        const targetTableName = targetTable.name;
+                        const sourcePK = (sourceTable.primaryKeys && sourceTable.primaryKeys.length > 0) 
+                            ? sourceTable.primaryKeys.join(',') : '';
+                        const targetPK = (targetTable.primaryKeys && targetTable.primaryKeys.length > 0) 
+                            ? targetTable.primaryKeys.join(',') : '';
+                        
+                        // 检查是否已存在
+                        let exists = false;
+                        $('#tableMappingsContainer tr').each(function() {
+                            const existingSource = $(this).find('td:eq(1)').text().trim();
+                            const existingTarget = $(this).find('td:eq(2)').text().trim();
+                            if (existingSource === sourceTableName && existingTarget === targetTableName) {
+                                exists = true;
+                                return false;
+                            }
+                        });
+                        
+                        if (!exists) {
+                            const index = tableMappingIndex++;
+                            const rowHtml = `
+                                <tr data-mapping-index="${index}" 
+                                    title="点击配置字段映射" 
+                                    class="table-mapping-row"
+                                    data-source-table="${sourceTableName}" 
+                                    data-target-table="${targetTableName}"
+                                    data-source-pk="${sourcePK}"
+                                    data-target-pk="${targetPK}">
+                                    <td>${index + 1}</td>
+                                    <td>${sourceTableName}</td>
+                                    <td>${targetTableName}</td>
+                                    <td onclick="event.stopPropagation();">
+                                        <input type="checkbox" class="table-mapping-checkbox" 
+                                               onclick="event.stopPropagation();" />
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            const $row = $(rowHtml);
+                            $('#tableMappingsContainer').append($row);
+                            
+                            // 加载字段映射（使用已有映射）
+                            loadFieldMappingForRowWithMappings($row, sourceTableName, targetTableName, tableMapping.fieldMapping);
+                            
+                            console.log('[任务编辑] 已加载表映射:', sourceTableName, '->', targetTableName);
+                        }
+                    }
+                });
+                
+                updateTableMappingIndexes();
+                updateEmptyState();
+                updateDeleteButtonState();
+                
+                console.log('[任务编辑] 表映射加载完成');
+            }
+        }, 2000);
+    }
+    
+    /**
+     * 为表映射行加载字段映射（带已有映射）
+     */
+    function loadFieldMappingForRowWithMappings($row, sourceTableName, targetTableName, existingFieldMappings) {
+        if (!step1Data) {
+            console.warn('[字段映射] 缺少第一步数据');
+            return;
+        }
+        
+        const sourceConnectorId = step1Data.sourceConnectorId;
+        const targetConnectorId = step1Data.targetConnectorId;
+        
+        console.log('[字段映射] 开始加载字段映射（带已有映射）:', sourceTableName, '->', targetTableName);
+        
+        // 同时加载源表和目标表的字段
+        let sourceFields = [];
+        let targetFields = [];
+        let loadComplete = 0;
+        
+        // 加载源表字段
+        $.ajax({
+            url: $basePath + "/task/getTableFields",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: sourceConnectorId,
+                database: step1Data.sourceDatabaseName || '',
+                schema: step1Data.sourceSchema || '',
+                tableName: sourceTableName
+            },
+            success: function (result) {
+                if (result.success && result.resultValue) {
+                    sourceFields = result.resultValue || [];
+                    console.log('[字段映射] 源表字段加载成功:', sourceFields.length);
+                }
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRowWithMappings($row, sourceFields, targetFields, existingFieldMappings);
+                }
+            },
+            error: function () {
+                console.error('[字段映射] 源表字段加载失败');
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRowWithMappings($row, sourceFields, targetFields, existingFieldMappings);
+                }
+            }
+        });
+        
+        // 加载目标表字段
+        $.ajax({
+            url: $basePath + "/task/getTableFields",
+            type: "GET",
+            dataType: "json",
+            data: {
+                connectorId: targetConnectorId,
+                database: step1Data.targetDatabaseName || '',
+                schema: step1Data.targetSchema || '',
+                tableName: targetTableName
+            },
+            success: function (result) {
+                if (result.success && result.resultValue) {
+                    targetFields = result.resultValue || [];
+                    console.log('[字段映射] 目标表字段加载成功:', targetFields.length);
+                }
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRowWithMappings($row, sourceFields, targetFields, existingFieldMappings);
+                }
+            },
+            error: function () {
+                console.error('[字段映射] 目标表字段加载失败');
+                loadComplete++;
+                if (loadComplete === 2) {
+                    saveFieldMappingToRowWithMappings($row, sourceFields, targetFields, existingFieldMappings);
+                }
+            }
+        });
+    }
+    
+    /**
+     * 保存字段映射到表格行（带已有映射）
+     */
+    function saveFieldMappingToRowWithMappings($row, sourceFields, targetFields, existingFieldMappings) {
+        // 使用已有的字段映射，如果没有则自动匹配
+        let fieldMappings = [];
+        
+        if (existingFieldMappings && existingFieldMappings.length > 0) {
+            // 使用已有的映射
+            existingFieldMappings.forEach(function(mapping) {
+                const sourceFieldName = mapping.source || mapping.sourceField;
+                const targetFieldName = mapping.target || mapping.targetField;
+                if (sourceFieldName && targetFieldName) {
+                    fieldMappings.push({
+                        source: sourceFieldName,
+                        target: targetFieldName
+                    });
+                }
+            });
+            console.log('[字段映射] 使用已有映射:', fieldMappings.length, '个');
+        } else {
+            // 自动匹配同名字段
+            sourceFields.forEach(function(sourceField) {
+                const sourceFieldName = sourceField.name || sourceField.getName();
+                const matchingTarget = targetFields.find(function(targetField) {
+                    const targetFieldName = targetField.name || targetField.getName();
+                    return targetFieldName === sourceFieldName;
+                });
+                
+                if (matchingTarget) {
+                    fieldMappings.push({
+                        source: sourceFieldName,
+                        target: matchingTarget.name || matchingTarget.getName()
+                    });
+                }
+            });
+            console.log('[字段映射] 自动匹配字段:', fieldMappings.length, '个');
+        }
+        
+        // 保存到行的 data 中
+        $row.data('source-fields', sourceFields);
+        $row.data('target-fields', targetFields);
+        $row.data('field-mappings', fieldMappings);
+    }
+    
+    /**
+     * 返回任务列表页面
+     */
+    function backTaskIndexPage() {
+        doLoader("/task?refresh=" + new Date().getTime());
+    }
+
+    // 注意：原来的一步提交按钮事件已被分步提交代替
+    // 如需恢复一步提交，取消下面代码的注释并隐藏步骤指示器
+    /*
+    $("#taskSubmitBtn").click(function () {
+        const $form = $("#taskAddForm");
+        if (validateForm($form)) {
+            const config = buildTaskConfig();
+            // ... 原来的提交逻辑
+        }
+    });
+    */
+
+    // 原来的返回按钮事件（已被步骤按钮代替）
+    /*
+    $("#taskBackBtn").click(function () {
+        backTaskIndexPage();
+    });
+    */
+</script>
+
+</html>
