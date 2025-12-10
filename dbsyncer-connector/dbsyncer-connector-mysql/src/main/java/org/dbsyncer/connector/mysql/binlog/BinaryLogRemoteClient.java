@@ -221,6 +221,9 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         }
         if (binlogFilename == null) {
             fetchBinlogFilenameAndPosition();
+        } else {
+            // 校验请求的binlog文件是否仍然存在,若不存在则回退到最新
+            validateRequestedBinlogOrFallback();
         }
         if (binlogPosition < 4) {
             logger.warn("Binary log position adjusted from {} to {}", binlogPosition, 4);
@@ -233,6 +236,19 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         synchronized (gtidSetAccessLock) {
             String position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
             logger.info("Connected to {}:{} at {} (sid:{}, cid:{})", hostname, port, position, serverId, connectionId);
+        }
+    }
+
+    private void validateRequestedBinlogOrFallback() throws IOException {
+        channel.write(new QueryCommand("SHOW BINARY LOGS"));
+        ResultSetRowPacket[] logs = readResultSet();
+        if (logs.length == 0) {
+            return;
+        }
+        boolean exists = Arrays.stream(logs).anyMatch(r -> binlogFilename.equals(r.getValue(0)));
+        if (!exists) {
+            logger.warn("Requested binlog {} no longer exists, fallback to latest.", binlogFilename);
+            fetchBinlogFilenameAndPosition();
         }
     }
 
@@ -272,7 +288,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         try {
             while (inputStream.peek() != -1) {
                 int packetLength = inputStream.readInteger(3);
-                //noinspection ResultOfMethodCallIgnored
                 // 1 byte for sequence
                 inputStream.skip(1);
                 int marker = inputStream.read();
@@ -648,7 +663,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     break;
                 }
                 try {
-                    TimeUnit.SECONDS.sleep(15);
+                    TimeUnit.SECONDS.sleep(5);
                     channel.write(new PingCommand());
                 } catch (Exception e) {
                     notifyException(e);
@@ -658,7 +673,6 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             while (connectedError) {
                 try {
                     logger.info("Trying to restore lost connection to {}}", createClientId());
-                    TimeUnit.MILLISECONDS.sleep(500);
                     if (!connected) {
                         logger.warn("Trying to stop");
                         break;
@@ -669,6 +683,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     break;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException ex) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
         });
@@ -680,8 +699,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private void notifyException(Exception e) {
         if (connected) {
             logger.error(e.getMessage(), e);
-            lifecycleListeners.forEach(listener -> listener.onException(this, e));
+            if (e instanceof ServerException) {
+                ServerException serverException = (ServerException) e;
+                // 若binlog文件不存在（错误码1236），下次重连时回退到最新位置
+                if (serverException.getErrorCode() == 1236) {
+                    binlogFilename = null;
+                    binlogPosition = 0;
+                }
+            }
             connectedError = true;
+            lifecycleListeners.forEach(listener -> listener.onException(this, e));
         }
     }
 
