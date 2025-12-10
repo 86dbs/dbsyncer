@@ -10,14 +10,17 @@ import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.LogType;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -32,6 +35,11 @@ import java.util.stream.Stream;
  */
 @Service
 public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroupService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Resource
+    private LogService logService;
 
     @Resource
     private TableGroupChecker tableGroupChecker;
@@ -81,8 +89,10 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                     String sourceTableName = sourceTableArray[i];
                     String targetTableName = targetTableArray[i];
                     String mappingName = mapping != null ? mapping.getName() : mappingId;
-                    log(LogType.SystemLog.ERROR, "跳过缺少主键的表组 - 驱动:%s, 源表:%s, 目标表:%s, 原因:%s",
+                    String msg = String.format("跳过缺少主键的表组 - 驱动:%s, 源表:%s, 目标表:%s, 原因:%s",
                             mappingName, sourceTableName, targetTableName, e.getMessage());
+                    logger.warn(msg);
+                    logService.log(LogType.SystemLog.ERROR, msg);
                 }
             }
             submitTableGroupCountTask(mapping, list);

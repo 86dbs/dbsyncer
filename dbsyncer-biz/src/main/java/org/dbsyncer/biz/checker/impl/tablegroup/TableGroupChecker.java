@@ -77,16 +77,6 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
         tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
 
-        // 检查主键：源表和目标表都必须有主键
-        List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
-        if (CollectionUtils.isEmpty(sourceTablePrimaryKeys)) {
-            throw new PrimaryKeyRequiredException(String.format("数据源表 %s 缺少主键，无法进行数据同步。", sourceTable));
-        }
-        List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
-        if (CollectionUtils.isEmpty(targetTablePrimaryKeys)) {
-            throw new PrimaryKeyRequiredException(String.format("目标表 %s 缺少主键，无法进行数据同步。", targetTable));
-        }
-
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
 
@@ -97,6 +87,16 @@ public class TableGroupChecker extends AbstractChecker {
         } else {
             // 如果 fieldMappings 为空，基于源表所有字段构建 fieldMapping（target 为 null）
             buildFieldMappingFromSourceTable(tableGroup);
+        }
+
+        // 检查主键：源表和目标表都必须有主键
+        List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
+        if (CollectionUtils.isEmpty(sourceTablePrimaryKeys)) {
+            throw new PrimaryKeyRequiredException(String.format("数据源表 %s 缺少主键，无法进行数据同步。", sourceTable));
+        }
+        List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
+        if (CollectionUtils.isEmpty(targetTablePrimaryKeys)) {
+            throw new PrimaryKeyRequiredException(String.format("目标表 %s 缺少主键，无法进行数据同步。", targetTable));
         }
 
         return tableGroup;
@@ -385,6 +385,7 @@ public class TableGroupChecker extends AbstractChecker {
                 targetField = sourceField;
             }
 
+            tableGroup.getTargetTable().getColumn().add(targetField);
             fieldMappingList.add(new FieldMapping(sourceField, targetField));
         }
 

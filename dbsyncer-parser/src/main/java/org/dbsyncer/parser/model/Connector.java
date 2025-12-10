@@ -4,6 +4,7 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,7 +21,7 @@ public class Connector extends ConfigModel{
     /**
      * 表名,["MY_USER", "T_MY_USER", "table_999"]
      */
-    private List<Table> table;
+    private List<Table> table = new ArrayList<>();
 
     /**
      * 连接器配置
