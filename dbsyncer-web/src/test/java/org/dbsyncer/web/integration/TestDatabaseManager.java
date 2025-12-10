@@ -75,12 +75,25 @@ public class TestDatabaseManager {
      * 重置测试数据库表结构到初始状态
      * 用于在测试之间恢复表结构，确保测试间的隔离性
      *
+     * @param script SQL脚本（同时应用于源和目标数据库）
      */
     public void resetTableStructure(String script) {
+        resetTableStructure(script, script);
+    }
+
+    /**
+     * 重置测试数据库表结构到初始状态
+     * 用于在测试之间恢复表结构，确保测试间的隔离性
+     *
+     * @param sourceScript 源数据库的SQL脚本
+     * @param targetScript 目标数据库的SQL脚本
+     */
+    public void resetTableStructure(String sourceScript, String targetScript) {
         logger.debug("开始重置测试数据库表结构");
 
         try {
-            executeSql(sourceConnectorInstance, script);
+            executeSql(sourceConnectorInstance, sourceScript);
+            executeSql(targetConnectorInstance, targetScript);
 
             logger.debug("测试数据库表结构重置完成");
         } catch (Exception e) {
