@@ -31,6 +31,13 @@
             <artifactId>jts</artifactId>
         </dependency>
 
+        <!-- Apache Commons Codec for MD5 hash calculation -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

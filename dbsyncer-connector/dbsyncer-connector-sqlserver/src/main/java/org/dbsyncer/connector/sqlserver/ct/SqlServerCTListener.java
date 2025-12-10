@@ -1,0 +1,973 @@
+package org.dbsyncer.connector.sqlserver.ct;
+
+import org.apache.commons.codec.digest.DigestUtils;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.sqlserver.SqlServerException;
+import org.dbsyncer.connector.sqlserver.ct.model.*;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.UncategorizedSQLException;
+import org.springframework.util.Assert;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+
+/**
+ * SQL Server Change Tracking (CT) 监听器实现
+ * 使用 Change Tracking 替代 CDC
+ *
+ * @Author Auto-generated
+ * @Version 1.0.0
+ */
+public class SqlServerCTListener extends AbstractDatabaseListener {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    // SQL 常量
+    private static final String STATEMENTS_PLACEHOLDER = "#";
+    private static final String GET_DATABASE_NAME = "SELECT db_name()";
+    private static final String GET_TABLE_LIST = "SELECT name FROM sys.tables WHERE schema_id = schema_id('#') AND is_ms_shipped = 0";
+
+    // Change Tracking 相关 SQL
+    private static final String GET_CURRENT_VERSION = "SELECT CHANGE_TRACKING_CURRENT_VERSION()";
+    private static final String GET_DML_CHANGES =
+            "SELECT " +
+                    "    CT.SYS_CHANGE_VERSION, " +
+                    "    CT.SYS_CHANGE_OPERATION, " +
+                    "    CT.SYS_CHANGE_COLUMNS, " +
+                    "    T.* " +
+                    "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
+                    "LEFT JOIN [%s].[%s] AS T ON %s " +
+                    "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
+                    "ORDER BY CT.SYS_CHANGE_VERSION ASC";
+
+    private static final String GET_TABLE_COLUMNS =
+            "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, " +
+                    "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, ORDINAL_POSITION " +
+                    "FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
+                    "ORDER BY ORDINAL_POSITION";
+
+    private static final String GET_TABLE_PRIMARY_KEYS =
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME LIKE 'PK%%' " +
+                    "ORDER BY ORDINAL_POSITION";
+
+    // 启用 Change Tracking
+    private static final String ENABLE_DB_CHANGE_TRACKING =
+            "ALTER DATABASE [%s] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)";
+
+    private static final String ENABLE_TABLE_CHANGE_TRACKING =
+            "ALTER TABLE [%s].[%s] ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)";
+
+    private static final String IS_DB_CHANGE_TRACKING_ENABLED =
+            "SELECT is_change_tracking_on FROM sys.databases WHERE name = '%s'";
+
+    private static final String IS_TABLE_CHANGE_TRACKING_ENABLED =
+            "SELECT is_tracked_by_cdc FROM sys.tables WHERE name = '%s'";  // 注意：字段名 is_tracked_by_cdc 实际用于 Change Tracking（不是 CDC）
+
+    // Snapshot 键名
+    private static final String VERSION_POSITION = "version";
+    private static final String SCHEMA_SNAPSHOT_PREFIX = "schema_snapshot_";
+    private static final String SCHEMA_HASH_PREFIX = "schema_hash_";
+    private static final String SCHEMA_VERSION_PREFIX = "schema_version_";
+    private static final String SCHEMA_TIME_PREFIX = "schema_time_";
+    private static final String SCHEMA_ORDINAL_PREFIX = "schema_ordinal_";
+
+    private final Lock connectLock = new ReentrantLock();
+    private volatile boolean connected;
+    private Set<String> tables;
+    private DatabaseConnectorInstance instance;
+    private Worker worker;
+    private Long lastVersion;
+    private String serverName;
+    private String schema;
+    private String realDatabaseName;
+    private final int BUFFER_CAPACITY = 256;
+    private BlockingQueue<Long> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
+    private final BlockingQueue<CTDDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
+    private Lock lock = new ReentrantLock(true);
+    private Condition isFull = lock.newCondition();
+    private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
+
+    @Override
+    public void start() throws Exception {
+        try {
+            connectLock.lock();
+            if (connected) {
+                logger.error("SqlServerCTListener is already started");
+                return;
+            }
+            connected = true;
+            connect();
+            readTables();
+            Assert.notEmpty(tables, "No tables available");
+
+            enableDBChangeTracking();
+            enableTableChangeTracking();
+            readLastVersion();
+
+            worker = new Worker();
+            worker.setName(new StringBuilder("ct-parser-").append(serverName).append("_").append(worker.hashCode()).toString());
+            worker.setDaemon(false);
+            worker.start();
+            VersionPuller.addExtractor(metaId, this);
+        } catch (Exception e) {
+            close();
+            logger.error("启动失败: {}", e.getMessage(), e);
+            throw new SqlServerException(e);
+        } finally {
+            connectLock.unlock();
+        }
+    }
+
+    @Override
+    public void close() {
+        if (connected) {
+            VersionPuller.removeExtractor(metaId);
+            if (null != worker && !worker.isInterrupted()) {
+                worker.interrupt();
+                worker = null;
+            }
+            connected = false;
+        }
+    }
+
+    @Override
+    public void refreshEvent(ChangedOffset offset) {
+        if (offset.getPosition() != null) {
+            snapshot.put(VERSION_POSITION, offset.getPosition().toString());
+        }
+    }
+
+    public Long getMaxVersion() throws Exception {
+        return queryAndMap(GET_CURRENT_VERSION, rs -> {
+            Long version = rs.getLong(1);
+            return rs.wasNull() ? null : version;
+        });
+    }
+
+    public Long getLastVersion() {
+        return lastVersion;
+    }
+
+    public void pushStopVersion(Long version) {
+        if (buffer.contains(version)) {
+            return;
+        }
+        if (!buffer.offer(version)) {
+            try {
+                lock.lock();
+                while (!buffer.offer(version) && connected) {
+                    logger.warn("[{}] 缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), BUFFER_CAPACITY);
+                    try {
+                        this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    private void connect() throws Exception {
+        instance = (DatabaseConnectorInstance) connectorInstance;
+        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
+        if (service.isAlive(instance)) {
+            DatabaseConfig cfg = instance.getConfig();
+            serverName = cfg.getUrl();
+            schema = cfg.getSchema();
+            if (schema == null || schema.isEmpty()) {
+                schema = "dbo";
+            }
+        }
+    }
+
+    private void readLastVersion() throws Exception {
+        if (!snapshot.containsKey(VERSION_POSITION)) {
+            lastVersion = getMaxVersion();
+            if (lastVersion != null) {
+                snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
+                super.forceFlushEvent();
+                return;
+            }
+            throw new SqlServerException("No Change Tracking version available");
+        }
+        lastVersion = Long.valueOf(snapshot.get(VERSION_POSITION));
+    }
+
+    private void readTables() throws Exception {
+        tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs -> {
+            Set<String> tableSet = new LinkedHashSet<>();
+            while (rs.next()) {
+                String tableName = rs.getString(1);
+                if (filterTable.contains(tableName)) {
+                    tableSet.add(tableName);
+                }
+            }
+            return tableSet;
+        });
+    }
+
+    private void enableDBChangeTracking() throws Exception {
+        realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
+        Boolean enabled = queryAndMap(String.format(IS_DB_CHANGE_TRACKING_ENABLED, realDatabaseName), rs -> rs.getBoolean(1));
+        if (!Boolean.TRUE.equals(enabled)) {
+            execute(String.format(ENABLE_DB_CHANGE_TRACKING, realDatabaseName));
+            logger.info("已启用数据库 [{}] 的 Change Tracking", realDatabaseName);
+        }
+    }
+
+    private void enableTableChangeTracking() {
+        if (CollectionUtils.isEmpty(tables)) {
+            return;
+        }
+        tables.forEach(table -> {
+            try {
+                Boolean enabled = queryAndMap(IS_TABLE_CHANGE_TRACKING_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                if (!Boolean.TRUE.equals(enabled)) {
+                    try {
+                        execute(String.format(ENABLE_TABLE_CHANGE_TRACKING, schema, table));
+                        logger.info("已启用表 [{}].[{}] 的 Change Tracking", schema, table);
+                    } catch (UncategorizedSQLException e) {
+                        logger.warn("表 [{}] 的 Change Tracking 可能已存在", table);
+                    } catch (Exception e) {
+                        logger.error("启用表 [{}] 的 Change Tracking 失败: {}", table, e.getMessage(), e);
+                        throw new RuntimeException("启用表 [" + table + "] 的 Change Tracking 失败", e);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("检查表 [{}] 的 Change Tracking 状态失败: {}", table, e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void execute(String... sqlStatements) throws Exception {
+        instance.execute(databaseTemplate -> {
+            for (String sqlStatement : sqlStatements) {
+                if (sqlStatement != null) {
+                    logger.info("执行 SQL: {}", sqlStatement);
+                    databaseTemplate.execute(sqlStatement);
+                }
+            }
+            return true;
+        });
+    }
+
+    private void pull(Long stopVersion) throws Exception {
+        // 1. 查询 DML 变更
+        List<CTEvent> dmlEvents = new ArrayList<>();
+        for (String table : tables) {
+            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion);
+            dmlEvents.addAll(tableEvents);
+        }
+
+        // 2. 查询 DDL 变更
+        List<CTDDLEvent> ddlEvents = pullDDLChanges(lastVersion, stopVersion);
+
+        // 3. 合并并按版本号排序
+        List<CTUnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
+
+        // 4. 按顺序解析和发送
+        parseUnifiedEvents(unifiedEvents, stopVersion);
+    }
+
+    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion) throws Exception {
+        // 1. 获取表的主键列
+        List<String> primaryKeys = getPrimaryKeys(tableName);
+        if (primaryKeys.isEmpty()) {
+            throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
+        }
+
+        // 2. 构建 JOIN 条件（支持复合主键）
+        String joinCondition = primaryKeys.stream()
+                .map(pk -> "CT.[" + pk + "] = T.[" + pk + "]")
+                .collect(Collectors.joining(" AND "));
+
+        // 3. 构建查询 SQL
+        String sql = String.format(GET_DML_CHANGES,
+                schema, tableName,  // CHANGETABLE
+                schema, tableName,  // JOIN table
+                joinCondition       // JOIN condition（支持复合主键）
+        );
+
+        // 4. 查询变更
+        return queryAndMapList(sql, statement -> {
+            statement.setLong(1, startVersion);   // CHANGETABLE 起始版本
+            statement.setLong(2, startVersion);   // WHERE 起始版本
+            statement.setLong(3, stopVersion);     // WHERE 结束版本
+        }, rs -> {
+            // 在第一次获取结果时检测表结构（DDL 变更）
+            ResultSetMetaData metaData = rs.getMetaData();
+            try {
+                detectDDLChangesInDMLQuery(tableName, metaData);
+            } catch (Exception e) {
+                logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
+            }
+
+            List<CTEvent> events = new ArrayList<>();
+            while (rs.next()) {
+                Long version = rs.getLong(1);
+                String operation = rs.getString(2);  // 'I', 'U', 'D'
+                // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
+
+                // 构建行数据
+                List<Object> row = new ArrayList<>();
+                for (int i = 4; i <= metaData.getColumnCount(); i++) {
+                    row.add(rs.getObject(i));
+                }
+
+                // 转换操作类型
+                String operationCode = convertOperation(operation);
+
+                events.add(new CTEvent(tableName, operationCode, row, version));
+            }
+            return events;
+        });
+    }
+
+    private List<CTDDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
+        List<CTDDLEvent> events = new ArrayList<>();
+
+        // 从队列中取出所有在版本范围内的 DDL 事件
+        CTDDLEvent ddlEvent;
+        while ((ddlEvent = ddlEventQueue.poll()) != null) {
+            if (ddlEvent.getVersion() > startVersion && ddlEvent.getVersion() <= stopVersion) {
+                // 检查表名是否匹配
+                if (filterTable.contains(ddlEvent.getTableName())) {
+                    events.add(ddlEvent);
+                }
+            } else if (ddlEvent.getVersion() > stopVersion) {
+                // 版本号超过范围，放回队列
+                ddlEventQueue.offer(ddlEvent);
+                break;
+            }
+            // 版本号小于等于 startVersion 的事件直接丢弃（已处理过）
+        }
+
+        // 按版本号排序
+        events.sort(Comparator.comparing(CTDDLEvent::getVersion));
+
+        return events;
+    }
+
+    private List<CTUnifiedChangeEvent> mergeAndSortEvents(
+            List<CTDDLEvent> ddlEvents,
+            List<CTEvent> dmlEvents) {
+        List<CTUnifiedChangeEvent> unifiedEvents = new ArrayList<>();
+
+        // 添加 DDL 事件
+        for (CTDDLEvent ddlEvent : ddlEvents) {
+            unifiedEvents.add(new CTUnifiedChangeEvent(
+                    "DDL",
+                    ddlEvent.getTableName(),
+                    ddlEvent.getDdlCommand(),
+                    null,
+                    ddlEvent.getVersion()
+            ));
+        }
+
+        // 添加 DML 事件
+        for (CTEvent dmlEvent : dmlEvents) {
+            unifiedEvents.add(new CTUnifiedChangeEvent(
+                    "DML",
+                    dmlEvent.getTableName(),
+                    null,
+                    dmlEvent,
+                    dmlEvent.getVersion()
+            ));
+        }
+
+        // 按版本号排序
+        unifiedEvents.sort(CTUnifiedChangeEvent.versionComparator());
+
+        return unifiedEvents;
+    }
+
+    private void parseUnifiedEvents(List<CTUnifiedChangeEvent> events, Long stopVersion) {
+        for (int i = 0; i < events.size(); i++) {
+            boolean isEnd = i == events.size() - 1;
+            CTUnifiedChangeEvent unifiedEvent = events.get(i);
+
+            if ("DDL".equals(unifiedEvent.getEventType())) {
+                // 发送 DDL 事件
+                DDLChangedEvent ddlEvent = new DDLChangedEvent(
+                        unifiedEvent.getTableName(),
+                        ConnectorConstant.OPERTION_ALTER,
+                        unifiedEvent.getDdlCommand(),
+                        null,
+                        isEnd ? stopVersion : null  // ChangedOffset 支持 Long 类型
+                );
+                sendChangedEvent(ddlEvent);
+            } else {
+                // 发送 DML 事件
+                CTEvent ctevent = unifiedEvent.getCtevent();
+                if (ctevent != null) {
+                    RowChangedEvent rowEvent = new RowChangedEvent(
+                            ctevent.getTableName(),
+                            ctevent.getCode(),
+                            ctevent.getRow(),
+                            null,
+                            isEnd ? stopVersion : null,
+                            null  // 列名信息（可选）
+                    );
+                    sendChangedEvent(rowEvent);
+                }
+            }
+        }
+
+        // 统一更新版本号（DDL 和 DML 共享同一个版本号）
+        lastVersion = stopVersion;
+        snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
+    }
+
+    // ==================== 辅助方法 ====================
+
+    private String convertOperation(String operation) {
+        if ("I".equals(operation)) {
+            return ConnectorConstant.OPERTION_INSERT;
+        } else if ("U".equals(operation)) {
+            return ConnectorConstant.OPERTION_UPDATE;
+        } else if ("D".equals(operation)) {
+            return ConnectorConstant.OPERTION_DELETE;
+        }
+        throw new IllegalArgumentException("Unknown operation: " + operation);
+    }
+
+    private Long getCurrentVersion() throws Exception {
+        return queryAndMap(GET_CURRENT_VERSION, rs -> {
+            Long version = rs.getLong(1);
+            return rs.wasNull() ? null : version;
+        });
+    }
+
+    private List<String> getPrimaryKeys(String tableName) throws Exception {
+        return queryAndMapList(GET_TABLE_PRIMARY_KEYS, statement -> {
+            statement.setString(1, schema);
+            statement.setString(2, tableName);
+        }, rs -> {
+            List<String> pks = new ArrayList<>();
+            while (rs.next()) {
+                pks.add(rs.getString("COLUMN_NAME"));
+            }
+            return pks;
+        });
+    }
+
+    private List<String> getPrimaryKeysFromMetaInfo(MetaInfo metaInfo) {
+        if (metaInfo == null || metaInfo.getColumn() == null) {
+            return new ArrayList<>();
+        }
+        return metaInfo.getColumn().stream()
+                .filter(Field::isPk)
+                .map(Field::getName)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== DDL 检测相关方法 ====================
+
+    private void detectDDLChangesInDMLQuery(String tableName, ResultSetMetaData metaData) throws Exception {
+        // 1. 从 ResultSetMetaData 计算当前表结构哈希值
+        String currentHash = calculateSchemaHashFromMetaData(metaData);
+        String lastHash = getSchemaHash(tableName);
+
+        if (lastHash == null) {
+            // 首次检测，保存哈希值并初始化快照
+            Map<String, Integer> ordinalPositions = new HashMap<>();
+            MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
+            Long currentVersion = getCurrentVersion();
+            saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
+            return;
+        }
+
+        if (!lastHash.equals(currentHash)) {
+            // 2. 哈希值变化，触发完整比对
+            Map<String, Integer> ordinalPositions = new HashMap<>();
+            MetaInfo currentMetaInfo = queryTableMetaInfo(tableName, ordinalPositions);
+            Long currentVersion = getCurrentVersion();
+            MetaInfo lastMetaInfo = loadTableSchemaSnapshot(tableName);
+
+            if (lastMetaInfo != null) {
+                List<String> lastPrimaryKeys = getPrimaryKeysFromMetaInfo(lastMetaInfo);
+                List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
+                Map<String, Integer> lastOrdinalPositions = getColumnOrdinalPositions(tableName);
+
+                // 3. 比对差异
+                List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo,
+                        lastPrimaryKeys, currentPrimaryKeys,
+                        lastOrdinalPositions, ordinalPositions);
+
+                // 4. 如果有变更，生成 DDL 事件
+                if (!changes.isEmpty()) {
+                    for (DDLChange change : changes) {
+                        CTDDLEvent ddlEvent = new CTDDLEvent(
+                                tableName,
+                                change.getDdlCommand(),
+                                currentVersion,  // 使用当前 Change Tracking 版本号
+                                new Date()
+                        );
+
+                        // 将 DDL 事件加入待处理队列（与 DML 事件合并处理）
+                        ddlEventQueue.offer(ddlEvent);
+                    }
+
+                    // 5. 更新表结构快照
+                    saveTableSchemaSnapshot(tableName, currentMetaInfo, currentVersion, currentHash, ordinalPositions);
+
+                    logger.info("检测到表 {} 的 DDL 变更，共 {} 个变更", tableName, changes.size());
+                } else {
+                    // 即使没有检测到变更，也更新哈希值（可能是精度/尺寸变化导致哈希变化但无法检测）
+                    snapshot.put(SCHEMA_HASH_PREFIX + tableName, currentHash);
+                }
+            }
+        }
+    }
+
+    private String calculateSchemaHashFromMetaData(ResultSetMetaData metaData) throws SQLException {
+        StringBuilder hashInput = new StringBuilder();
+        int columnCount = metaData.getColumnCount();
+        for (int i = 1; i <= columnCount; i++) {
+            // 跳过 Change Tracking 系统列（SYS_CHANGE_VERSION, SYS_CHANGE_OPERATION, SYS_CHANGE_COLUMNS）
+            if (i <= 3) continue;
+            hashInput.append(metaData.getColumnName(i))
+                    .append("|").append(metaData.getColumnTypeName(i))
+                    .append("|").append(metaData.getColumnDisplaySize(i))
+                    .append("|").append(metaData.getPrecision(i))
+                    .append("|").append(metaData.getScale(i))
+                    .append("|").append(metaData.isNullable(i))
+                    .append("|");
+        }
+        return DigestUtils.md5Hex(hashInput.toString());
+    }
+
+    private List<DDLChange> compareTableSchema(String tableName, MetaInfo oldMetaInfo, MetaInfo newMetaInfo,
+                                               List<String> oldPrimaryKeys, List<String> newPrimaryKeys,
+                                               Map<String, Integer> oldOrdinalPositions, Map<String, Integer> newOrdinalPositions) {
+        List<DDLChange> changes = new ArrayList<>();
+
+        // 构建列映射
+        Map<String, Field> oldColumns = oldMetaInfo.getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, c -> c));
+        Map<String, Field> newColumns = newMetaInfo.getColumn().stream()
+                .collect(Collectors.toMap(Field::getName, c -> c));
+
+        // 1. 找出被删除的列和新增的列（用于 RENAME 检测）
+        List<Field> droppedColumns = new ArrayList<>();
+        List<Field> addedColumns = new ArrayList<>();
+
+        for (Field oldCol : oldMetaInfo.getColumn()) {
+            if (!newColumns.containsKey(oldCol.getName())) {
+                droppedColumns.add(oldCol);
+            }
+        }
+
+        for (Field newCol : newMetaInfo.getColumn()) {
+            if (!oldColumns.containsKey(newCol.getName())) {
+                addedColumns.add(newCol);
+            }
+        }
+
+        // 2. 检测 RENAME：匹配被删除的列和新增的列（属性相同）
+        Set<String> matchedOldNames = new HashSet<>();
+        Set<String> matchedNewNames = new HashSet<>();
+
+        for (Field droppedCol : droppedColumns) {
+            Field bestMatch = null;
+            int minPositionDiff = Integer.MAX_VALUE;
+
+            // 查找属性相同的新列（优先匹配位置最接近的）
+            for (Field addedCol : addedColumns) {
+                if (!matchedNewNames.contains(addedCol.getName())
+                        && isColumnEqualIgnoreName(droppedCol, addedCol)) {
+                    // 计算位置差（用于优化匹配）
+                    int oldPos = oldOrdinalPositions.getOrDefault(droppedCol.getName(), 0);
+                    int newPos = newOrdinalPositions.getOrDefault(addedCol.getName(), 0);
+                    int diff = Math.abs(oldPos - newPos);
+
+                    if (diff < minPositionDiff) {
+                        minPositionDiff = diff;
+                        bestMatch = addedCol;
+                    }
+                }
+            }
+
+            if (bestMatch != null) {
+                // 找到匹配：这是 RENAME 操作
+                String ddl = generateRenameColumnDDL(tableName, droppedCol.getName(), bestMatch.getName());
+                changes.add(new DDLChange(DDLChangeType.RENAME_COLUMN, ddl, bestMatch.getName()));
+                matchedOldNames.add(droppedCol.getName());
+                matchedNewNames.add(bestMatch.getName());
+            }
+        }
+
+        // 3. 处理剩余的 DROP（真正的删除）
+        for (Field droppedCol : droppedColumns) {
+            if (!matchedOldNames.contains(droppedCol.getName())) {
+                String ddl = generateDropColumnDDL(tableName, droppedCol);
+                changes.add(new DDLChange(DDLChangeType.DROP_COLUMN, ddl, droppedCol.getName()));
+            }
+        }
+
+        // 4. 处理剩余的 ADD（真正的新增）
+        for (Field addedCol : addedColumns) {
+            if (!matchedNewNames.contains(addedCol.getName())) {
+                String ddl = generateAddColumnDDL(tableName, addedCol);
+                changes.add(new DDLChange(DDLChangeType.ADD_COLUMN, ddl, addedCol.getName()));
+            }
+        }
+
+        // 5. 检测修改列（类型、长度、精度、可空性）
+        for (Field newCol : newMetaInfo.getColumn()) {
+            Field oldCol = oldColumns.get(newCol.getName());
+            if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
+                // 列属性变更
+                String ddl = generateAlterColumnDDL(tableName, oldCol, newCol);
+                changes.add(new DDLChange(DDLChangeType.ALTER_COLUMN, ddl, newCol.getName()));
+            }
+        }
+
+        // 6. 检测主键变更（可选，通常不常见）
+        if (!oldPrimaryKeys.equals(newPrimaryKeys)) {
+            String ddl = generateAlterPrimaryKeyDDL(tableName, oldPrimaryKeys, newPrimaryKeys);
+            changes.add(new DDLChange(DDLChangeType.ALTER_PRIMARY_KEY, ddl, null));
+        }
+
+        return changes;
+    }
+
+    private boolean isColumnEqual(Field oldCol, Field newCol) {
+        return Objects.equals(oldCol.getTypeName(), newCol.getTypeName())
+                && Objects.equals(oldCol.getColumnSize(), newCol.getColumnSize())
+                && Objects.equals(oldCol.getRatio(), newCol.getRatio())
+                && Objects.equals(oldCol.getNullable(), newCol.getNullable());
+    }
+
+    /**
+     * 判断两个列是否相等（忽略列名）
+     * 比较：类型、长度、精度、可空性
+     */
+    private boolean isColumnEqualIgnoreName(Field col1, Field col2) {
+        return Objects.equals(col1.getTypeName(), col2.getTypeName())
+                && Objects.equals(col1.getColumnSize(), col2.getColumnSize())
+                && Objects.equals(col1.getRatio(), col2.getRatio())
+                && Objects.equals(col1.getNullable(), col2.getNullable());
+    }
+
+    private String generateAddColumnDDL(String tableName, Field column) {
+        StringBuilder ddl = new StringBuilder();
+        ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
+        ddl.append("ADD [").append(column.getName()).append("] ");
+        ddl.append(column.getTypeName());
+
+        // 处理长度/精度
+        if (column.getColumnSize() > 0) {
+            String typeName = column.getTypeName().toLowerCase();
+            if (typeName.contains("varchar") || typeName.contains("char")) {
+                ddl.append("(").append(column.getColumnSize()).append(")");
+            }
+        }
+
+        // 处理数值类型的精度和小数位数
+        if (column.getRatio() >= 0 && column.getColumnSize() > 0) {
+            String typeName = column.getTypeName().toLowerCase();
+            if (typeName.contains("decimal") || typeName.contains("numeric")) {
+                ddl.append("(").append(column.getColumnSize()).append(",")
+                        .append(column.getRatio()).append(")");
+            }
+        }
+
+        // 处理可空性
+        if (Boolean.FALSE.equals(column.getNullable())) {
+            ddl.append(" NOT NULL");
+        }
+
+        return ddl.toString();
+    }
+
+    private String generateDropColumnDDL(String tableName, Field column) {
+        return String.format("ALTER TABLE [%s].[%s] DROP COLUMN [%s]",
+                schema, tableName, column.getName());
+    }
+
+    /**
+     * 生成 RENAME COLUMN 的 DDL
+     * SQL Server 使用 sp_rename 存储过程
+     */
+    private String generateRenameColumnDDL(String tableName, String oldColumnName, String newColumnName) {
+        return String.format("EXEC sp_rename '[%s].[%s].[%s]', '%s', 'COLUMN'",
+                schema, tableName, oldColumnName, newColumnName);
+    }
+
+    private String generateAlterColumnDDL(String tableName, Field oldCol, Field newCol) {
+        StringBuilder ddl = new StringBuilder();
+        ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
+        ddl.append("ALTER COLUMN [").append(newCol.getName()).append("] ");
+        ddl.append(newCol.getTypeName());
+
+        // 处理长度/精度
+        if (newCol.getColumnSize() > 0) {
+            String typeName = newCol.getTypeName().toLowerCase();
+            if (typeName.contains("varchar") || typeName.contains("char")) {
+                ddl.append("(").append(newCol.getColumnSize()).append(")");
+            }
+        }
+
+        // 处理数值类型的精度和小数位数
+        if (newCol.getRatio() >= 0 && newCol.getColumnSize() > 0) {
+            String typeName = newCol.getTypeName().toLowerCase();
+            if (typeName.contains("decimal") || typeName.contains("numeric")) {
+                ddl.append("(").append(newCol.getColumnSize()).append(",")
+                        .append(newCol.getRatio()).append(")");
+            }
+        }
+
+        // 处理可空性
+        if (Boolean.FALSE.equals(newCol.getNullable())) {
+            ddl.append(" NOT NULL");
+        } else {
+            ddl.append(" NULL");
+        }
+
+        return ddl.toString();
+    }
+
+    private String generateAlterPrimaryKeyDDL(String tableName, List<String> oldPrimaryKeys, List<String> newPrimaryKeys) {
+        // 主键变更需要先删除旧主键，再添加新主键
+        // 这是一个复杂操作，暂时返回警告信息
+        logger.warn("主键变更暂不支持: table={}, oldPK={}, newPK={}",
+                tableName, oldPrimaryKeys, newPrimaryKeys);
+        return String.format("-- 主键变更暂不支持: %s", tableName);
+    }
+
+    private void saveTableSchemaSnapshot(String tableName, MetaInfo metaInfo, Long version,
+                                         String hash, Map<String, Integer> ordinalPositions) throws Exception {
+        // 保存 MetaInfo（表结构）
+        String schemaKey = SCHEMA_SNAPSHOT_PREFIX + tableName;
+        String schemaJson = JsonUtil.objToJson(metaInfo);
+        snapshot.put(schemaKey, schemaJson);
+
+        // 保存哈希值
+        String hashKey = SCHEMA_HASH_PREFIX + tableName;
+        snapshot.put(hashKey, hash);
+
+        // 保存版本号
+        String versionKey = SCHEMA_VERSION_PREFIX + tableName;
+        snapshot.put(versionKey, String.valueOf(version));
+
+        // 保存时间戳
+        String timeKey = SCHEMA_TIME_PREFIX + tableName;
+        snapshot.put(timeKey, String.valueOf(System.currentTimeMillis()));
+
+        // 保存列位置映射（序列化为 JSON）
+        if (ordinalPositions != null && !ordinalPositions.isEmpty()) {
+            String ordinalKey = SCHEMA_ORDINAL_PREFIX + tableName;
+            String ordinalJson = JsonUtil.objToJson(ordinalPositions);
+            snapshot.put(ordinalKey, ordinalJson);
+        }
+
+        super.forceFlushEvent();
+    }
+
+    private MetaInfo loadTableSchemaSnapshot(String tableName) throws Exception {
+        String key = SCHEMA_SNAPSHOT_PREFIX + tableName;
+        String json = snapshot.get(key);
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        return JsonUtil.jsonToObj(json, MetaInfo.class);
+    }
+
+    private String getSchemaHash(String tableName) {
+        String key = SCHEMA_HASH_PREFIX + tableName;
+        return snapshot.get(key);
+    }
+
+    private Map<String, Integer> getColumnOrdinalPositions(String tableName) throws Exception {
+        String key = SCHEMA_ORDINAL_PREFIX + tableName;
+        String json = snapshot.get(key);
+        if (json == null || json.isEmpty()) {
+            return new HashMap<>();
+        }
+        return JsonUtil.jsonToObj(json, Map.class);
+    }
+
+    private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordinalPositions) throws Exception {
+        // 查询列信息
+        List<Field> columns = queryAndMapList(GET_TABLE_COLUMNS, statement -> {
+            statement.setString(1, schema);
+            statement.setString(2, tableName);
+        }, rs -> {
+            List<Field> cols = new ArrayList<>();
+            while (rs.next()) {
+                String columnName = rs.getString("COLUMN_NAME");
+                String dataType = rs.getString("DATA_TYPE");
+                Integer maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH") != null
+                        ? rs.getInt("CHARACTER_MAXIMUM_LENGTH") : null;
+                Integer precision = rs.getObject("NUMERIC_PRECISION") != null
+                        ? rs.getInt("NUMERIC_PRECISION") : null;
+                Integer scale = rs.getObject("NUMERIC_SCALE") != null
+                        ? rs.getInt("NUMERIC_SCALE") : null;
+                Boolean nullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
+                Integer ordinalPosition = rs.getInt("ORDINAL_POSITION");
+
+                // 创建 Field 对象
+                Field col = new Field();
+                col.setName(columnName);
+                col.setTypeName(dataType);
+                col.setColumnSize(maxLength != null ? maxLength : (precision != null ? precision : 0));
+                col.setRatio(scale != null ? scale : 0);
+                col.setNullable(nullable);
+
+                // 保存列位置
+                ordinalPositions.put(columnName, ordinalPosition);
+
+                cols.add(col);
+            }
+            return cols;
+        });
+
+        // 查询主键（用于设置 Field.isPk()）
+        List<String> primaryKeys = getPrimaryKeys(tableName);
+
+        // 设置主键标识
+        for (Field col : columns) {
+            col.setPk(primaryKeys.contains(col.getName()));
+        }
+
+        // 创建 MetaInfo 对象
+        MetaInfo metaInfo = new MetaInfo();
+        metaInfo.setTableType("TABLE");
+        metaInfo.setColumn(columns);
+
+        return metaInfo;
+    }
+
+    // ==================== 查询工具方法 ====================
+
+    private interface ResultSetMapper<T> {
+        T apply(ResultSet rs) throws SQLException;
+    }
+
+    private interface StatementPreparer {
+        void accept(PreparedStatement statement) throws SQLException;
+    }
+
+    private <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws Exception {
+        return queryAndMap(sql, null, mapper);
+    }
+
+    private <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
+        return query(sql, statementPreparer, (rs) -> {
+            rs.next();
+            return mapper.apply(rs);
+        });
+    }
+
+    private <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) throws Exception {
+        return queryAndMapList(sql, null, mapper);
+    }
+
+    private <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
+        return query(sql, statementPreparer, mapper);
+    }
+
+    private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
+        Object execute = instance.execute(databaseTemplate -> {
+            PreparedStatement ps = null;
+            ResultSet rs = null;
+            T apply = null;
+            try {
+                ps = databaseTemplate.getSimpleConnection().prepareStatement(preparedQuerySql);
+                if (null != statementPreparer) {
+                    statementPreparer.accept(ps);
+                }
+                rs = ps.executeQuery();
+                apply = mapper.apply(rs);
+            } catch (Exception e) {
+                logger.error("查询失败: {}", e.getMessage(), e);
+                throw e;
+            } finally {
+                close(rs);
+                close(ps);
+            }
+            return apply;
+        });
+        return (T) execute;
+    }
+
+    private void close(AutoCloseable closeable) {
+        if (null != closeable) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+            }
+        }
+    }
+
+    protected void sleepInMills(long millis) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(millis);
+        } catch (InterruptedException e) {
+            logger.warn(e.getMessage());
+        }
+    }
+
+    // ==================== Worker 线程 ====================
+
+    final class Worker extends Thread {
+        @Override
+        public void run() {
+            while (!isInterrupted() && connected) {
+                try {
+                    Long stopVersion = buffer.take();
+                    Long poll;
+                    while ((poll = buffer.poll()) != null) {
+                        stopVersion = poll;
+                    }
+                    if (stopVersion == null || stopVersion <= lastVersion) {
+                        continue;
+                    }
+
+                    pull(stopVersion);
+
+                    // 版本号已在 parseUnifiedEvents() 中统一更新，这里不需要重复更新
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    if (connected) {
+                        logger.error(e.getMessage(), e);
+                        sleepInMills(1000L);
+                    }
+                }
+            }
+        }
+    }
+}
+

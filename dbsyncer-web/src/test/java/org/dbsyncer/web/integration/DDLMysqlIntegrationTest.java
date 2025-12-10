@@ -58,12 +58,6 @@ public class DDLMysqlIntegrationTest {
 
     private static final Logger logger = LoggerFactory.getLogger(DDLMysqlIntegrationTest.class);
 
-    /**
-     * SDK ConnectorService 类型别名，避免与 biz ConnectorService 冲突
-     */
-    private static interface SdkConnectorService extends org.dbsyncer.sdk.spi.ConnectorService {
-    }
-
     @Resource
     private ConnectorService connectorService;
 

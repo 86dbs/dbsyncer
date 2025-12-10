@@ -1,2 +1,4 @@
 org.dbsyncer.connector.sqlserver.SqlServerConnector
 org.dbsyncer.connector.sqlserver.DQLSqlServerConnector
+org.dbsyncer.connector.sqlserver.SqlServerCTConnector
+org.dbsyncer.connector.sqlserver.DqlSqlServerCTConnector

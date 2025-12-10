@@ -22,9 +22,174 @@
 - DELETE 操作无法 JOIN 原表获取完整数据
 - DDL 检测依赖 DML 查询，如果表长时间没有 DML 变更，DDL 变更会在下次 DML 查询时检测到
 
-## 二、核心实现架构
+**依赖要求**：
+- 需要添加 Apache Commons Codec 依赖用于 MD5 哈希计算
+  ```xml
+  <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.15</version>
+  </dependency>
+  ```
 
-### 2.1 数据流程图
+## 二、模型类定义（兼容版本号）
+
+### 2.1 CT 专用事件模型类
+
+由于 Change Tracking 使用 `Long` 版本号，而现有的 CDC 实现使用 `Lsn`（字节数组），需要创建 CT 专用的事件模型类，避免影响现有 CDC 代码。
+
+#### 2.1.1 CTEvent（DML 事件）
+
+```java
+package org.dbsyncer.connector.sqlserver.model;
+
+import java.util.List;
+
+/**
+ * Change Tracking DML 事件模型
+ * 使用 Long 版本号，而不是 Lsn
+ */
+public class CTEvent {
+    private String tableName;
+    private int code;  // 操作类型：INSERT=1, UPDATE=2, DELETE=3
+    private List<Object> row;  // 行数据
+    private Long version;  // Change Tracking 版本号
+    private byte[] columnsUpdated;  // 被更新的列（二进制，可选）
+
+    public CTEvent(String tableName, int code, List<Object> row, Long version) {
+        this(tableName, code, row, version, null);
+    }
+
+    public CTEvent(String tableName, int code, List<Object> row, Long version, byte[] columnsUpdated) {
+        this.tableName = tableName;
+        this.code = code;
+        this.row = row;
+        this.version = version;
+        this.columnsUpdated = columnsUpdated;
+    }
+
+    // Getters and Setters
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+    
+    public int getCode() { return code; }
+    public void setCode(int code) { this.code = code; }
+    
+    public List<Object> getRow() { return row; }
+    public void setRow(List<Object> row) { this.row = row; }
+    
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
+    
+    public byte[] getColumnsUpdated() { return columnsUpdated; }
+    public void setColumnsUpdated(byte[] columnsUpdated) { this.columnsUpdated = columnsUpdated; }
+}
+```
+
+#### 2.1.2 CTDDLEvent（DDL 事件）
+
+```java
+package org.dbsyncer.connector.sqlserver.model;
+
+import java.util.Date;
+
+/**
+ * Change Tracking DDL 事件模型
+ * 使用 Long 版本号，而不是 Lsn
+ */
+public class CTDDLEvent {
+    private String tableName;
+    private String ddlCommand;
+    private Long version;  // Change Tracking 版本号（检测时的版本号）
+    private Date ddlTime;
+
+    public CTDDLEvent(String tableName, String ddlCommand, Long version, Date ddlTime) {
+        this.tableName = tableName;
+        this.ddlCommand = ddlCommand;
+        this.version = version;
+        this.ddlTime = ddlTime;
+    }
+
+    // Getters and Setters
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+    
+    public String getDdlCommand() { return ddlCommand; }
+    public void setDdlCommand(String ddlCommand) { this.ddlCommand = ddlCommand; }
+    
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
+    
+    public Date getDdlTime() { return ddlTime; }
+    public void setDdlTime(Date ddlTime) { this.ddlTime = ddlTime; }
+}
+```
+
+#### 2.1.3 CTUnifiedChangeEvent（统一变更事件）
+
+```java
+package org.dbsyncer.connector.sqlserver.model;
+
+import java.util.Comparator;
+
+/**
+ * Change Tracking 统一变更事件模型
+ * 用于合并 DDL 和 DML 事件，使用 Long 版本号排序
+ */
+public class CTUnifiedChangeEvent {
+    private Long version;  // Change Tracking 版本号
+    private String eventType;  // "DDL" 或 "DML"
+    private String tableName;
+    
+    // DDL 相关
+    private String ddlCommand;
+    
+    // DML 相关
+    private CTEvent ctevent;
+
+    public CTUnifiedChangeEvent(String eventType, String tableName, String ddlCommand, 
+                                CTEvent ctevent, Long version) {
+        this.eventType = eventType;
+        this.tableName = tableName;
+        this.ddlCommand = ddlCommand;
+        this.ctevent = ctevent;
+        this.version = version;
+    }
+
+    // Getters and Setters
+    public Long getVersion() { return version; }
+    public void setVersion(Long version) { this.version = version; }
+    
+    public String getEventType() { return eventType; }
+    public void setEventType(String eventType) { this.eventType = eventType; }
+    
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+    
+    public String getDdlCommand() { return ddlCommand; }
+    public void setDdlCommand(String ddlCommand) { this.ddlCommand = ddlCommand; }
+    
+    public CTEvent getCtevent() { return ctevent; }
+    public void setCtevent(CTEvent ctevent) { this.ctevent = ctevent; }
+    
+    /**
+     * 版本号比较器（用于排序）
+     */
+    public static Comparator<CTUnifiedChangeEvent> versionComparator() {
+        return Comparator.comparing(CTUnifiedChangeEvent::getVersion, 
+            Comparator.nullsLast(Long::compareTo));
+    }
+}
+```
+
+**注意**：
+- 这些类与现有的 `DDLEvent`、`DMLEvent`、`UnifiedChangeEvent`（使用 Lsn）是独立的
+- 保持代码隔离，避免影响现有 CDC 实现
+- 如果未来需要统一，可以考虑使用泛型或接口抽象
+
+## 三、核心实现架构
+
+### 3.1 数据流程图
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -81,14 +246,15 @@
 
 ```
 
-### 2.2 关键组件
+### 3.2 关键组件
 
 - `SqlServerCTListener`：监听器主类，管理 CT 生命周期
 - `VersionPuller`：全局版本号轮询器（单例）
+- `CTEvent`、`CTDDLEvent`、`CTUnifiedChangeEvent`：CT 专用事件模型类
 
-## 三、Change Tracking 启用和配置
+## 四、Change Tracking 启用和配置
 
-### 3.1 数据库级别启用
+### 4.1 数据库级别启用
 
 ```sql
 -- 启用数据库级别的 Change Tracking
@@ -104,7 +270,7 @@ SET CHANGE_TRACKING = ON
 - `CHANGE_RETENTION`：变更信息的保留时间，超过此时间的变更会被自动清理
 - `AUTO_CLEANUP`：是否自动清理过期的变更记录
 
-### 3.2 表级别启用
+### 4.2 表级别启用
 
 ```sql
 -- 启用表的 Change Tracking
@@ -116,7 +282,7 @@ WITH (TRACK_COLUMNS_UPDATED = ON);
 **参数说明**：
 - `TRACK_COLUMNS_UPDATED`：是否跟踪哪些列被更新（用于优化查询性能）
 
-### 3.3 检查 Change Tracking 状态
+### 4.3 检查 Change Tracking 状态
 
 ```sql
 -- 检查数据库是否启用 Change Tracking
@@ -134,9 +300,9 @@ WHERE t.name = 'table_name';
 
 **注意**：`sys.tables.is_tracked_by_cdc` 字段名称有误导性，实际上用于 Change Tracking（不是 CDC）。
 
-## 四、DML 变更捕获
+## 五、DML 变更捕获
 
-### 4.1 Change Tracking 版本号
+### 5.1 Change Tracking 版本号
 
 Change Tracking 使用版本号（BIGINT）来标识变更，版本号单调递增。
 
@@ -145,7 +311,7 @@ Change Tracking 使用版本号（BIGINT）来标识变更，版本号单调递�
 SELECT CHANGE_TRACKING_CURRENT_VERSION();
 ```
 
-### 4.2 查询 DML 变更
+### 5.2 查询 DML 变更
 
 使用 `CHANGETABLE` 函数查询变更：
 
@@ -172,11 +338,11 @@ ORDER BY CT.SYS_CHANGE_VERSION ASC;
 - 需要 JOIN 原表获取完整数据（DELETE 操作无法 JOIN，需要通过快照表获取）
 - 变更按版本号升序排序
 
-### 4.3 处理 DELETE 操作
+### 5.3 处理 DELETE 操作
 
 DELETE 操作无法通过 JOIN 原表获取数据，DELETE 事件只包含主键信息，由上层应用处理。
 
-### 4.4 主键处理
+### 5.4 主键处理
 
 Change Tracking 需要表有主键，查询变更时需要指定主键列：
 
@@ -195,13 +361,13 @@ ORDER BY ORDINAL_POSITION;
 - 如果表有复合主键，需要构建多个 JOIN 条件
 - 例如：`CT.[col1] = T.[col1] AND CT.[col2] = T.[col2]`
 
-## 五、DDL 变更捕获
+## 六、DDL 变更捕获
 
-### 5.1 程序端字段比对方案
+### 6.1 程序端字段比对方案
 
 Change Tracking 不直接支持 DDL 变更跟踪，通过在 DML 查询过程中检测表结构哈希值变化，并比对差异来检测 DDL 变更：
 
-#### 5.1.1 表结构查询
+#### 6.1.1 表结构查询
 
 使用 `INFORMATION_SCHEMA.COLUMNS` 查询表结构：
 
@@ -214,7 +380,6 @@ SELECT
     NUMERIC_PRECISION,
     NUMERIC_SCALE,
     IS_NULLABLE,
-    COLUMN_DEFAULT,
     ORDINAL_POSITION
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = @schemaName
@@ -231,7 +396,7 @@ WHERE TABLE_SCHEMA = @schemaName
 ORDER BY ORDINAL_POSITION;
 ```
 
-#### 5.1.2 表结构快照存储
+#### 6.1.2 表结构快照存储
 
 将表结构序列化为 JSON 并保存到 `snapshot` Map 中（`Map<String, String>`）：
 
@@ -257,7 +422,7 @@ private static final String SCHEMA_ORDINAL_PREFIX = "schema_ordinal_";     // �
 // 4. 这样设计避免了新建类，符合"如无必要勿增实体"的原则
 ```
 
-#### 5.1.3 表结构比对逻辑
+#### 6.1.3 表结构比对逻辑
 
 ```java
 /**
@@ -304,7 +469,7 @@ public List<DDLChange> compareTableSchema(String tableName, MetaInfo oldMetaInfo
         }
     }
     
-    // 3. 检测修改列（类型、长度、精度、可空性、默认值）
+    // 3. 检测修改列（类型、长度、精度、可空性）
     for (Field newCol : newMetaInfo.getColumn()) {
         Field oldCol = oldColumns.get(newCol.getName());
         if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
@@ -330,13 +495,11 @@ private boolean isColumnEqual(Field oldCol, Field newCol) {
     return Objects.equals(oldCol.getTypeName(), newCol.getTypeName())
         && Objects.equals(oldCol.getColumnSize(), newCol.getColumnSize())
         && Objects.equals(oldCol.getRatio(), newCol.getRatio())
-        && Objects.equals(oldCol.getNullable(), newCol.getNullable())
-        && Objects.equals(normalizeDefaultValue(oldCol.getDefaultValue()), 
-                         normalizeDefaultValue(newCol.getDefaultValue()));
+        && Objects.equals(oldCol.getNullable(), newCol.getNullable());
 }
 ```
 
-#### 5.1.4 DDL 语句生成
+#### 6.1.4 DDL 语句生成
 
 ```java
 /**
@@ -368,11 +531,6 @@ private String generateAddColumnDDL(String tableName, Field column) {
     // 处理可空性
     if (Boolean.FALSE.equals(column.getNullable())) {
         ddl.append(" NOT NULL");
-    }
-    
-    // 处理默认值
-    if (column.getDefaultValue() != null && !column.getDefaultValue().isEmpty()) {
-        ddl.append(" DEFAULT ").append(column.getDefaultValue());
     }
     
     return ddl.toString();
@@ -426,7 +584,7 @@ private String generateAlterColumnDDL(String tableName, Field oldCol, Field newC
 }
 ```
 
-#### 5.1.5 DDL 检测机制（在 DML 查询时触发）
+#### 6.1.5 DDL 检测机制（在 DML 查询时触发）
 
 ```java
 /**
@@ -466,7 +624,7 @@ private void detectDDLChangesInDMLQuery(String tableName, ResultSetMetaData meta
             // 4. 如果有变更，生成 DDL 事件
             if (!changes.isEmpty()) {
                 for (DDLChange change : changes) {
-                    DDLEvent ddlEvent = new DDLEvent(
+                    CTDDLEvent ddlEvent = new CTDDLEvent(
                         tableName, 
                         change.getDdlCommand(), 
                         currentVersion,  // 使用当前 Change Tracking 版本号
@@ -490,10 +648,10 @@ private void detectDDLChangesInDMLQuery(String tableName, ResultSetMetaData meta
 }
 
 // DDL 事件队列（用于与 DML 事件合并）
-private final BlockingQueue<DDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
+private final BlockingQueue<CTDDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
 ```
 
-#### 5.1.6 表结构快照持久化
+#### 6.1.6 表结构快照持久化
 
 ```java
 /**
@@ -575,7 +733,7 @@ private Map<String, Integer> getColumnOrdinalPositions(String tableName) throws 
 private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordinalPositions) throws Exception {
     // 查询列信息
     String sql = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, " +
-                 "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION " +
+                 "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, ORDINAL_POSITION " +
                  "FROM INFORMATION_SCHEMA.COLUMNS " +
                  "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
                  "ORDER BY ORDINAL_POSITION";
@@ -595,7 +753,6 @@ private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordin
             Integer scale = rs.getObject("NUMERIC_SCALE") != null 
                 ? rs.getInt("NUMERIC_SCALE") : null;
             Boolean nullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
-            String defaultValue = rs.getString("COLUMN_DEFAULT");
             Integer ordinalPosition = rs.getInt("ORDINAL_POSITION");
             
             // 创建 Field 对象
@@ -605,7 +762,6 @@ private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordin
             col.setColumnSize(maxLength != null ? maxLength : (precision != null ? precision : 0));
             col.setRatio(scale != null ? scale : 0);
             col.setNullable(nullable);
-            col.setDefaultValue(defaultValue);
             
             // 保存列位置（Field 类中没有此字段，需要单独存储到 snapshot）
             ordinalPositions.put(columnName, ordinalPosition);
@@ -646,6 +802,8 @@ private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordin
 
 /**
  * 从 ResultSetMetaData 计算表结构哈希值（用于 DML 同步过程中的快速检测）
+ * 
+ * 需要导入：import org.apache.commons.codec.digest.DigestUtils;
  */
 private String calculateSchemaHashFromMetaData(ResultSetMetaData metaData) throws SQLException {
     StringBuilder hashInput = new StringBuilder();
@@ -666,6 +824,8 @@ private String calculateSchemaHashFromMetaData(ResultSetMetaData metaData) throw
 
 /**
  * 从 MetaInfo 计算表结构哈希值（用于完整比对前的快速检测）
+ * 
+ * 需要导入：import org.apache.commons.codec.digest.DigestUtils;
  */
 private String calculateSchemaHashFromMetaInfo(MetaInfo metaInfo) {
     if (metaInfo == null || metaInfo.getColumn() == null) {
@@ -684,7 +844,7 @@ private String calculateSchemaHashFromMetaInfo(MetaInfo metaInfo) {
 }
 ```
 
-### 5.2 DDL 事件与 DML 事件合并
+### 6.2 DDL 事件与 DML 事件合并
 
 ```java
 /**
@@ -695,8 +855,8 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
     List<CTEvent> dmlEvents = pullDMLChanges(stopVersion);
     
     // 2. 从 DDL 队列中取出所有待处理的 DDL 事件
-    List<DDLEvent> ddlEvents = new ArrayList<>();
-    DDLEvent ddlEvent;
+    List<CTDDLEvent> ddlEvents = new ArrayList<>();
+    CTDDLEvent ddlEvent;
     while ((ddlEvent = ddlEventQueue.poll()) != null) {
         if (ddlEvent.getVersion() <= stopVersion) {
             ddlEvents.add(ddlEvent);
@@ -708,11 +868,11 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
     }
     
     // 3. 合并并按版本号排序
-    List<UnifiedChangeEvent> unifiedEvents = new ArrayList<>();
+    List<CTUnifiedChangeEvent> unifiedEvents = new ArrayList<>();
     
     // 添加 DDL 事件
-    for (DDLEvent ddlEvent : ddlEvents) {
-        unifiedEvents.add(new UnifiedChangeEvent(
+    for (CTDDLEvent ddlEvent : ddlEvents) {
+        unifiedEvents.add(new CTUnifiedChangeEvent(
             "DDL", 
             ddlEvent.getTableName(), 
             ddlEvent.getDdlCommand(), 
@@ -723,7 +883,7 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
     
     // 添加 DML 事件
     for (CTEvent dmlEvent : dmlEvents) {
-        unifiedEvents.add(new UnifiedChangeEvent(
+        unifiedEvents.add(new CTUnifiedChangeEvent(
             "DML", 
             dmlEvent.getTableName(), 
             null, 
@@ -733,16 +893,44 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
     }
     
     // 按版本号排序
-    unifiedEvents.sort(Comparator.comparing(UnifiedChangeEvent::getVersion));
+    unifiedEvents.sort(CTUnifiedChangeEvent.versionComparator());
     
     // 4. 按顺序处理事件
-    for (UnifiedChangeEvent event : unifiedEvents) {
-        if ("DDL".equals(event.getType())) {
-            parseDDLEvent(event);
+    for (int i = 0; i < unifiedEvents.size(); i++) {
+        boolean isEnd = i == unifiedEvents.size() - 1;
+        CTUnifiedChangeEvent event = unifiedEvents.get(i);
+        
+        if ("DDL".equals(event.getEventType())) {
+            // 发送 DDL 事件
+            DDLChangedEvent ddlEvent = new DDLChangedEvent(
+                    event.getTableName(),
+                    ConnectorConstant.OPERTION_ALTER,
+                    event.getDdlCommand(),
+                    null,
+                    isEnd ? stopVersion : null  // 版本号需要转换为 ChangedOffset 格式
+            );
+            sendChangedEvent(ddlEvent);
         } else {
-            parseDMLEvent(event);
+            // 发送 DML 事件
+            CTEvent ctevent = event.getCtevent();
+            if (ctevent != null) {
+                int operationCode = ctevent.getCode();
+                RowChangedEvent rowEvent = new RowChangedEvent(
+                        ctevent.getTableName(),
+                        operationCode,
+                        ctevent.getRow(),
+                        null,
+                        isEnd ? stopVersion : null,
+                        null  // 列名信息（可选）
+                );
+                sendChangedEvent(rowEvent);
+            }
         }
     }
+    
+    // 统一更新版本号（DDL 和 DML 共享同一个版本号）
+    lastVersion = stopVersion;
+    snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
 }
 ```
 
@@ -753,7 +941,7 @@ private void mergeAndProcessEvents(Long stopVersion) throws Exception {
 - 首次检测时只保存快照，不生成 DDL 事件
 - 不需要定期轮询，在 DML 查询时即可检测到 DDL 变更
 
-### 5.3 DDL 检测实现方案
+### 6.3 DDL 检测实现方案
 
 **实现策略**：
 1. **哈希值检测**：在 DML 查询过程中，从 `ResultSetMetaData` 获取表结构信息，计算哈希值并比对
@@ -794,9 +982,9 @@ private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long s
 - 通过完整比对可以检测到列名变化
 - 通过比对列属性（除列名外）是否相同来判断是 RENAME 还是 DROP+ADD
 
-## 六、版本号管理
+## 七、版本号管理
 
-### 6.1 版本号获取机制
+### 7.1 版本号获取机制
 
 ```java
 /**
@@ -816,7 +1004,7 @@ public Long getMaxVersion() {
 }
 ```
 
-### 6.2 版本号持久化
+### 7.2 版本号持久化
 
 使用 `snapshot` 持久化最后处理的版本号：
 
@@ -837,7 +1025,7 @@ private void readLastVersion() throws Exception {
 }
 ```
 
-### 6.3 版本号更新
+### 7.3 版本号更新
 
 ```java
 // 统一更新版本号（DDL 和 DML 共享同一个版本号）
@@ -845,9 +1033,25 @@ lastVersion = stopVersion;
 snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
 ```
 
-## 七、核心实现细节
+## 八、核心实现细节
 
-### 7.1 SQL 常量定义
+### 8.1 依赖和导入
+
+**Maven 依赖**：
+```xml
+<dependency>
+    <groupId>commons-codec</groupId>
+    <artifactId>commons-codec</artifactId>
+    <version>1.15</version>
+</dependency>
+```
+
+**必要的导入语句**：
+```java
+import org.apache.commons.codec.digest.DigestUtils;
+```
+
+### 8.2 SQL 常量定义
 
 ```java
 // Change Tracking 相关 SQL
@@ -868,7 +1072,7 @@ private static final String GET_DML_CHANGES =
 // 表结构查询 SQL
 private static final String GET_TABLE_COLUMNS = 
     "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, " +
-    "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION " +
+    "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, ORDINAL_POSITION " +
     "FROM INFORMATION_SCHEMA.COLUMNS " +
     "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
     "ORDER BY ORDINAL_POSITION";
@@ -892,7 +1096,7 @@ private static final String IS_TABLE_CHANGE_TRACKING_ENABLED =
     "SELECT is_tracked_by_cdc FROM sys.tables WHERE name = '%s'";  // 注意：字段名 is_tracked_by_cdc 实际用于 Change Tracking（不是 CDC）
 ```
 
-### 7.2 DML 变更查询（pullDMLChanges）
+### 8.3 DML 变更查询（pullDMLChanges）
 
 ```java
 private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion) throws Exception {
@@ -946,17 +1150,17 @@ private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long s
 }
 ```
 
-### 7.3 DDL 变更检测（pullDDLChanges）
+### 8.4 DDL 变更检测（pullDDLChanges）
 
 ```java
 /**
  * DDL 变更在 DML 查询时检测，这里从队列中获取
  */
-private List<DDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
-    List<DDLEvent> events = new ArrayList<>();
+private List<CTDDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
+    List<CTDDLEvent> events = new ArrayList<>();
     
     // 从队列中取出所有在版本范围内的 DDL 事件
-    DDLEvent ddlEvent;
+    CTDDLEvent ddlEvent;
     while ((ddlEvent = ddlEventQueue.poll()) != null) {
         if (ddlEvent.getVersion() > startVersion && ddlEvent.getVersion() <= stopVersion) {
             // 检查表名是否匹配
@@ -972,13 +1176,13 @@ private List<DDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throw
     }
     
     // 按版本号排序
-    events.sort(Comparator.comparing(DDLEvent::getVersion));
+    events.sort(Comparator.comparing(CTDDLEvent::getVersion));
     
     return events;
 }
 ```
 
-### 7.4 变更合并和排序
+### 8.5 变更合并和排序
 
 ```java
 private void pull(Long stopVersion) throws Exception {
@@ -990,23 +1194,64 @@ private void pull(Long stopVersion) throws Exception {
     }
     
     // 2. 查询 DDL 变更
-    List<DDLEvent> ddlEvents = pullDDLChanges(lastVersion, stopVersion);
+    List<CTDDLEvent> ddlEvents = pullDDLChanges(lastVersion, stopVersion);
     
     // 3. 合并并按版本号排序
-    List<UnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
+    List<CTUnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
     
     // 4. 按顺序解析和发送
     parseUnifiedEvents(unifiedEvents, stopVersion);
 }
 
-private List<UnifiedChangeEvent> mergeAndSortEvents(
-        List<DDLEvent> ddlEvents, 
+/**
+ * 解析并发送统一事件（统一更新版本号）
+ */
+private void parseUnifiedEvents(List<CTUnifiedChangeEvent> events, Long stopVersion) {
+    for (int i = 0; i < events.size(); i++) {
+        boolean isEnd = i == events.size() - 1;
+        CTUnifiedChangeEvent unifiedEvent = events.get(i);
+
+        if ("DDL".equals(unifiedEvent.getEventType())) {
+            // 发送 DDL 事件
+            // 注意：ChangedOffset 需要版本号，这里将 Long 版本号转换为字符串存储
+            DDLChangedEvent ddlEvent = new DDLChangedEvent(
+                    unifiedEvent.getTableName(),
+                    ConnectorConstant.OPERTION_ALTER,
+                    unifiedEvent.getDdlCommand(),
+                    null,
+                    isEnd ? stopVersion : null  // ChangedOffset 支持 Long 类型
+            );
+            sendChangedEvent(ddlEvent);
+        } else {
+            // 发送 DML 事件
+            CTEvent ctevent = unifiedEvent.getCtevent();
+            if (ctevent != null) {
+                RowChangedEvent rowEvent = new RowChangedEvent(
+                        ctevent.getTableName(),
+                        ctevent.getCode(),
+                        ctevent.getRow(),
+                        null,
+                        isEnd ? stopVersion : null,
+                        null  // 列名信息（可选）
+                );
+                sendChangedEvent(rowEvent);
+            }
+        }
+    }
+
+    // 统一更新版本号（DDL 和 DML 共享同一个版本号）
+    lastVersion = stopVersion;
+    snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
+}
+
+private List<CTUnifiedChangeEvent> mergeAndSortEvents(
+        List<CTDDLEvent> ddlEvents, 
         List<CTEvent> dmlEvents) {
-    List<UnifiedChangeEvent> unifiedEvents = new ArrayList<>();
+    List<CTUnifiedChangeEvent> unifiedEvents = new ArrayList<>();
     
     // 添加 DDL 事件
-    for (DDLEvent ddlEvent : ddlEvents) {
-        unifiedEvents.add(new UnifiedChangeEvent(
+    for (CTDDLEvent ddlEvent : ddlEvents) {
+        unifiedEvents.add(new CTUnifiedChangeEvent(
             "DDL", 
             ddlEvent.getTableName(), 
             ddlEvent.getDdlCommand(), 
@@ -1017,7 +1262,7 @@ private List<UnifiedChangeEvent> mergeAndSortEvents(
     
     // 添加 DML 事件
     for (CTEvent dmlEvent : dmlEvents) {
-        unifiedEvents.add(new UnifiedChangeEvent(
+        unifiedEvents.add(new CTUnifiedChangeEvent(
             "DML", 
             dmlEvent.getTableName(), 
             null, 
@@ -1027,15 +1272,15 @@ private List<UnifiedChangeEvent> mergeAndSortEvents(
     }
     
     // 按版本号排序
-    unifiedEvents.sort(Comparator.comparing(UnifiedChangeEvent::getVersion));
+    unifiedEvents.sort(CTUnifiedChangeEvent.versionComparator());
     
     return unifiedEvents;
 }
 ```
 
-## 八、与现有架构的集成
+## 九、与现有架构的集成
 
-### 8.1 版本号轮询器（VersionPuller）
+### 9.1 版本号轮询器（VersionPuller）
 
 类似于 `LsnPuller`，创建 `VersionPuller` 负责轮询版本号：
 
@@ -1074,7 +1319,7 @@ public class VersionPuller {
 }
 ```
 
-### 8.2 监听器实现（SqlServerCTListener）
+### 9.2 监听器实现（SqlServerCTListener）
 
 ```java
 public class SqlServerCTListener extends AbstractDatabaseListener {
@@ -1125,25 +1370,25 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 }
 ```
 
-## 九、关键注意事项
+## 十、关键注意事项
 
-### 9.1 主键要求
+### 10.1 主键要求
 
 - Change Tracking 要求表必须有主键
 - 复合主键需要特殊处理 JOIN 条件
 
-### 9.2 DELETE 操作处理
+### 10.2 DELETE 操作处理
 
 - DELETE 操作无法 JOIN 原表获取数据
 - 方案：只发送主键信息，由上层应用处理
 
-### 9.3 版本号精度
+### 10.3 版本号精度
 
 - Change Tracking 版本号是单调递增的整数
 - 无法像 LSN 那样精确反映事务时间点
 - 对于同一事务内的多个变更，版本号可能相同
 
-### 9.4 DDL 检测机制
+### 10.4 DDL 检测机制
 
 - DDL 检测在 DML 查询时触发，通过 `ResultSetMetaData` 计算哈希值进行快速检测
 - 哈希值变化时，立即查询 `INFORMATION_SCHEMA` 进行完整比对
@@ -1152,36 +1397,36 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 - 某些复杂 DDL（如索引变更、约束变更）可能无法检测
 - 不需要定期轮询，减少数据库负载
 
-### 9.5 变更保留时间
+### 10.5 变更保留时间
 
 - `CHANGE_RETENTION` 设置建议 2-7 天
 - 如果同步延迟超过保留时间，需要全量同步
 
-## 十、性能优化
+## 十一、性能优化
 
 - 使用 `TRACK_COLUMNS_UPDATED = ON` 优化 UPDATE 查询
 - DDL 检测在 DML 查询时触发，利用 `ResultSetMetaData` 进行哈希值检测，零额外开销
 - 哈希值变化时才查询 `INFORMATION_SCHEMA`，避免不必要的查询
 - 不需要定期轮询表结构，减少数据库负载
 
-## 十一、错误处理
+## 十二、错误处理
 
-### 11.1 版本号丢失
+### 12.1 版本号丢失
 
 - 如果 `lastVersion` 丢失，从当前版本号开始（可能导致数据重复）
 - 建议：记录版本号到快照，支持手动恢复
 
-### 11.2 DDL 检测失败
+### 12.2 DDL 检测失败
 
 - DDL 检测失败不影响 DML 同步，但会导致 DDL 变更丢失
 - 建议：监控检测器状态，记录失败日志，支持手动触发检测
 
-### 11.3 表结构快照损坏
+### 12.3 表结构快照损坏
 
 - 如果表结构快照损坏或丢失，首次检测时会重新生成
 - 建议：定期备份 `snapshot`，支持手动恢复
 
-### 11.4 变更保留时间过期
+### 12.4 变更保留时间过期
 
 - 如果同步延迟超过 `CHANGE_RETENTION`，变更会被清理
 - 建议：触发全量同步，或增加保留时间
