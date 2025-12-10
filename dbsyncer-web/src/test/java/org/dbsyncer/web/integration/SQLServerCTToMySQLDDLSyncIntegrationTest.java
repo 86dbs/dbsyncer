@@ -110,8 +110,8 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
 
         testDatabaseManager.initializeTestEnvironment(sqlServerInitSql, mysqlInitSql);
 
-        // 启用 Change Tracking（CT 模式必需）
-        enableChangeTracking(sqlServerConfig);
+        // 注意：不需要手动启用 Change Tracking
+        // SqlServerCTListener.start() 会自动调用 enableDBChangeTracking() 和 enableTableChangeTracking()
 
         logger.info("SQL Server CT到MySQL的DDL同步集成测试环境初始化完成");
     }
@@ -236,30 +236,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
         targetConnectorId = null;
     }
 
-    /**
-     * 启用 Change Tracking（CT 模式必需）
-     */
-    private static void enableChangeTracking(DatabaseConfig config) {
-        try {
-            DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-            instance.execute(databaseTemplate -> {
-                // 启用数据库级别的 Change Tracking
-                String enableDbCT = "IF NOT EXISTS (SELECT 1 FROM sys.change_tracking_databases WHERE database_id = DB_ID()) " +
-                        "ALTER DATABASE CURRENT SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)";
-                databaseTemplate.execute(enableDbCT);
-
-                // 启用表级别的 Change Tracking
-                String enableTableCT = "IF NOT EXISTS (SELECT 1 FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('ddlTestEmployee')) " +
-                        "ALTER TABLE ddlTestEmployee ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)";
-                databaseTemplate.execute(enableTableCT);
-
-                return null;
-            });
-            logger.info("已启用 Change Tracking");
-        } catch (Exception e) {
-            logger.warn("启用 Change Tracking 失败（可能已启用）: {}", e.getMessage());
-        }
-    }
 
     // ==================== SQL Server特殊类型转换测试 ====================
 

@@ -91,17 +91,8 @@ public class DDLSqlServerCTIntegrationTest {
         String initSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
         testDatabaseManager.initializeTestEnvironment(initSql, initSql);
 
-        // 启用 Change Tracking（CT 模式必需）
-        try {
-            enableChangeTracking(sourceConfig);
-        } catch (Exception e) {
-            logger.warn("启用源数据库 Change Tracking 失败: {}", e.getMessage());
-        }
-        try {
-            enableChangeTracking(targetConfig);
-        } catch (Exception e) {
-            logger.warn("启用目标数据库 Change Tracking 失败: {}", e.getMessage());
-        }
+        // 注意：不需要手动启用 Change Tracking
+        // SqlServerCTListener.start() 会自动调用 enableDBChangeTracking() 和 enableTableChangeTracking()
 
         logger.info("SQL Server CT到SQL Server CT的DDL同步测试环境初始化完成");
     }
@@ -222,30 +213,6 @@ public class DDLSqlServerCTIntegrationTest {
         }
     }
 
-    /**
-     * 启用 Change Tracking（CT 模式必需）
-     */
-    private static void enableChangeTracking(DatabaseConfig config) throws Exception {
-        try {
-            DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-            instance.execute(databaseTemplate -> {
-                // 启用数据库级别的 Change Tracking
-                String enableDbCT = "IF NOT EXISTS (SELECT 1 FROM sys.change_tracking_databases WHERE database_id = DB_ID()) " +
-                        "ALTER DATABASE CURRENT SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)";
-                databaseTemplate.execute(enableDbCT);
-
-                // 启用表级别的 Change Tracking
-                String enableTableCT = "IF NOT EXISTS (SELECT 1 FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('ddlTestEmployee')) " +
-                        "ALTER TABLE ddlTestEmployee ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)";
-                databaseTemplate.execute(enableTableCT);
-
-                return null;
-            });
-            logger.info("已启用 Change Tracking");
-        } catch (Exception e) {
-            logger.warn("启用 Change Tracking 失败（可能已启用）: {}", e.getMessage());
-        }
-    }
 
     // ==================== ADD COLUMN 测试场景 ====================
 
