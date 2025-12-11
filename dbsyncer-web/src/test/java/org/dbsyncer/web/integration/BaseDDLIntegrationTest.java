@@ -442,6 +442,48 @@ public abstract class BaseDDLIntegrationTest {
     }
 
     /**
+     * 等待数据同步完成（通过轮询检查目标表中是否存在数据）
+     *
+     * @param insertedData     插入的完整数据（Map<字段名, 值>）
+     * @param tableName        表名
+     * @param primaryKeyColumn 主键字段名（用于构建 WHERE 条件）
+     * @param targetConfig     目标数据库配置
+     * @param timeoutMs        超时时间（毫秒）
+     */
+    protected void waitForDataSync(Map<String, Object> insertedData, String tableName, String primaryKeyColumn, DatabaseConfig targetConfig, long timeoutMs) throws Exception {
+        if (insertedData == null || insertedData.isEmpty()) {
+            fail("插入的数据为空，无法验证");
+        }
+
+        Object primaryKeyValue = insertedData.get(primaryKeyColumn);
+        if (primaryKeyValue == null) {
+            fail("无法获取主键值进行验证");
+        }
+
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 300; // 每300ms检查一次
+
+        logger.info("等待数据同步完成，表: {}, 主键: {}", tableName, primaryKeyValue);
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            // 查询目标表数据
+            String whereCondition = primaryKeyColumn + " = " + (primaryKeyValue instanceof String ? "'" + primaryKeyValue + "'" : primaryKeyValue);
+            String targetSql = String.format("SELECT * FROM %s WHERE %s", tableName, whereCondition);
+            Map<String, Object> targetData = queryTableData(targetSql, targetConfig);
+
+            if (!targetData.isEmpty()) {
+                logger.info("数据同步完成，表: {}, 主键: {}", tableName, primaryKeyValue);
+                Thread.sleep(200); // 再等待一小段时间，确保数据完全同步
+                return;
+            }
+
+            Thread.sleep(checkInterval);
+        }
+
+        logger.warn("等待数据同步完成超时（{}ms），表: {}, 主键: {}", timeoutMs, tableName, primaryKeyValue);
+    }
+
+    /**
      * 验证插入的数据是否同步到目标表（直接使用插入的数据进行验证）
      *
      * @param insertedData     插入的完整数据（Map<字段名, 值>）

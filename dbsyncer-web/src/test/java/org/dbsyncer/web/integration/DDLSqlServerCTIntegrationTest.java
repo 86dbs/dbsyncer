@@ -172,8 +172,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000); // 等待数据同步
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig); // 验证初始化数据同步
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500); // 等待版本号更新
 
@@ -206,8 +205,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         verifyFieldExistsInTargetDatabase("salary", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步：验证插入的数据（包含新字段）是否同步到目标表
-        Thread.sleep(2000); // 等待数据同步
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ADD COLUMN基础测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -233,8 +231,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500);
 
@@ -263,8 +260,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         verifyFieldExistsInTargetDatabase("phone", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ADD COLUMN带NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -292,8 +288,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT"); // 这个字段将被删除
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500);
 
@@ -321,8 +316,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         verifyFieldNotExistsInTargetDatabase("department", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步（不包含被删除的字段）
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("DROP COLUMN测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -350,8 +344,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500);
 
@@ -378,8 +371,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ALTER COLUMN修改长度测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -443,8 +435,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("应找到count_num字段的映射", foundCountNumMapping);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ALTER COLUMN修改类型测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -470,8 +461,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500);
 
@@ -498,8 +488,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("应找到last_name字段的映射", foundLastNameMapping);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ALTER COLUMN添加NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -561,8 +550,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("ALTER COLUMN移除NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -591,8 +579,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         Thread.sleep(500);
 
@@ -627,8 +614,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("不应找到first_name到first_name的旧字段映射", notFoundOldMapping);
 
         // 验证 DML 数据同步（使用新字段名）
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("RENAME COLUMN重命名字段测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -713,8 +699,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         assertTrue("不应找到description到description的旧字段映射", notFoundOldMapping);
 
         // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
+        waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
         logger.info("RENAME COLUMN重命名并修改类型测试通过（DDL 和 DML 数据绑定验证完成）");
     }
