@@ -687,8 +687,13 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     private String generateAddColumnDDL(String tableName, Field column) {
         StringBuilder ddl = new StringBuilder();
-        ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
-        ddl.append("ADD [").append(column.getName()).append("] ");
+        // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致，便于 JSQLParser 解析
+        if (schema != null && !schema.trim().isEmpty()) {
+            ddl.append("ALTER TABLE ").append(schema).append(".").append(tableName).append(" ");
+        } else {
+            ddl.append("ALTER TABLE ").append(tableName).append(" ");
+        }
+        ddl.append("ADD ").append(column.getName()).append(" ");
         ddl.append(column.getTypeName());
 
         // 处理长度/精度
@@ -717,23 +722,42 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private String generateDropColumnDDL(String tableName, Field column) {
-        return String.format("ALTER TABLE [%s].[%s] DROP COLUMN [%s]",
-                schema, tableName, column.getName());
+        // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致，便于 JSQLParser 解析
+        if (schema != null && !schema.trim().isEmpty()) {
+            return String.format("ALTER TABLE %s.%s DROP COLUMN %s",
+                    schema, tableName, column.getName());
+        } else {
+            return String.format("ALTER TABLE %s DROP COLUMN %s",
+                    tableName, column.getName());
+        }
     }
 
     /**
      * 生成 RENAME COLUMN 的 DDL
      * SQL Server 使用 sp_rename 存储过程
+     * 注意：sp_rename 不是标准的 ALTER TABLE 语句，可能不会被 JSQLParser 解析
+     * 但为了保持与 CDC 方式的一致性，也使用标准格式（不带方括号）
      */
     private String generateRenameColumnDDL(String tableName, String oldColumnName, String newColumnName) {
-        return String.format("EXEC sp_rename '[%s].[%s].[%s]', '%s', 'COLUMN'",
-                schema, tableName, oldColumnName, newColumnName);
+        // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致
+        if (schema != null && !schema.trim().isEmpty()) {
+            return String.format("EXEC sp_rename '%s.%s.%s', '%s', 'COLUMN'",
+                    schema, tableName, oldColumnName, newColumnName);
+        } else {
+            return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'",
+                    tableName, oldColumnName, newColumnName);
+        }
     }
 
     private String generateAlterColumnDDL(String tableName, Field oldCol, Field newCol) {
         StringBuilder ddl = new StringBuilder();
-        ddl.append("ALTER TABLE [").append(schema).append("].[").append(tableName).append("] ");
-        ddl.append("ALTER COLUMN [").append(newCol.getName()).append("] ");
+        // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致，便于 JSQLParser 解析
+        if (schema != null && !schema.trim().isEmpty()) {
+            ddl.append("ALTER TABLE ").append(schema).append(".").append(tableName).append(" ");
+        } else {
+            ddl.append("ALTER TABLE ").append(tableName).append(" ");
+        }
+        ddl.append("ALTER COLUMN ").append(newCol.getName()).append(" ");
         ddl.append(newCol.getTypeName());
 
         // 处理长度/精度
