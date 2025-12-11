@@ -157,7 +157,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testAddColumn_Basic() throws Exception {
         logger.info("开始测试ADD COLUMN - 基础添加字段");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ADD salary DECIMAL(10,2)";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ADD salary DECIMAL(10,2)";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -171,9 +171,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000); // 等待数据同步
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig); // 验证初始化数据同步
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig); // 验证初始化数据同步
 
         Thread.sleep(500); // 等待版本号更新
 
@@ -187,7 +187,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("salary", 5000.00); // DDL 新增的字段
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("salary", 10000);
@@ -203,11 +203,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
                         fm.getTarget() != null && "salary".equals(fm.getTarget().getName()));
 
         assertTrue("应找到salary字段的映射", foundSalaryMapping);
-        verifyFieldExistsInTargetDatabase("salary", "ddlTestEmployee", targetConfig);
+        verifyFieldExistsInTargetDatabase("salary", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步：验证插入的数据（包含新字段）是否同步到目标表
         Thread.sleep(2000); // 等待数据同步
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ADD COLUMN基础测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -219,7 +219,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testAddColumn_WithNotNull() throws Exception {
         logger.info("开始测试ADD COLUMN - 带NOT NULL约束");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ADD phone NVARCHAR(20) NOT NULL";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ADD phone NVARCHAR(20) NOT NULL";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -232,9 +232,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
 
         Thread.sleep(500);
 
@@ -247,7 +247,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("phone", "13800138000"); // DDL 新增的字段（NOT NULL）
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         waitForDDLProcessingComplete("phone", 10000);
 
@@ -260,11 +260,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
                         fm.getTarget() != null && "phone".equals(fm.getTarget().getName()));
 
         assertTrue("应找到phone字段的映射", foundPhoneMapping);
-        verifyFieldExistsInTargetDatabase("phone", "ddlTestEmployee", targetConfig);
+        verifyFieldExistsInTargetDatabase("phone", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ADD COLUMN带NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -278,7 +278,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testDropColumn_Basic() throws Exception {
         logger.info("开始测试DROP COLUMN - 删除字段");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee DROP COLUMN department";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource DROP COLUMN department";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -291,9 +291,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT"); // 这个字段将被删除
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
 
         Thread.sleep(500);
 
@@ -305,7 +305,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         // 注意：不包含 department 字段，因为它已被删除
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         // 等待DDL DROP处理完成（使用轮询方式）
         waitForDDLDropProcessingComplete("department", 10000);
@@ -318,11 +318,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
                 .anyMatch(fm -> fm.getSource() != null && "department".equals(fm.getSource().getName()));
 
         assertFalse("不应找到department字段的映射", foundDepartmentMapping);
-        verifyFieldNotExistsInTargetDatabase("department", "ddlTestEmployee", targetConfig);
+        verifyFieldNotExistsInTargetDatabase("department", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步（不包含被删除的字段）
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("DROP COLUMN测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -336,7 +336,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testAlterColumn_ChangeLength() throws Exception {
         logger.info("开始测试ALTER COLUMN - 修改字段长度");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(100)";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ALTER COLUMN first_name NVARCHAR(100)";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -349,9 +349,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
 
         Thread.sleep(500);
 
@@ -363,7 +363,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("first_name", "VeryLongFirstNameThatExceedsOriginalLength"); // 使用更长的值测试长度修改
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -379,7 +379,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ALTER COLUMN修改长度测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -392,7 +392,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         logger.info("开始测试ALTER COLUMN - 修改字段类型");
 
         // 先添加一个INT字段用于测试类型修改
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD count_num INT";
+        String addColumnDDL = "ALTER TABLE ddlTestSource ADD count_num INT";
         mappingService.start(mappingId);
         Thread.sleep(2000);
         waitForMetaRunning(metaId, 10000);
@@ -403,7 +403,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（添加字段）
@@ -415,11 +415,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         dataAfterAdd.put("last_name", "User");
         dataAfterAdd.put("department", "IT");
         dataAfterAdd.put("count_num", 100); // 新添加的字段（INT类型）
-        dataAfterAdd = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
+        dataAfterAdd = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterAdd, sourceConfig);
         waitForDDLProcessingComplete("count_num", 10000);
 
         // 4. 执行第二个 DDL 操作（修改字段类型）
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN count_num BIGINT";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ALTER COLUMN count_num BIGINT";
         executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用 BIGINT 类型的值）
@@ -428,7 +428,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("count_num", 9999999999L); // 使用 BIGINT 类型的值
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -444,7 +444,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ALTER COLUMN修改类型测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -456,7 +456,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testAlterColumn_AddNotNull() throws Exception {
         logger.info("开始测试ALTER COLUMN - 添加NOT NULL约束");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN last_name NVARCHAR(50) NOT NULL";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ALTER COLUMN last_name NVARCHAR(50) NOT NULL";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -469,9 +469,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
 
         Thread.sleep(500);
 
@@ -483,7 +483,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "NotNullUser"); // NOT NULL 约束的值
         insertedData.put("department", "IT");
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -499,7 +499,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ALTER COLUMN添加NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -512,7 +512,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         logger.info("开始测试ALTER COLUMN - 移除NOT NULL约束");
 
         // 先确保字段是NOT NULL的
-        String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
+        String setNotNullDDL = "ALTER TABLE ddlTestSource ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
         mappingService.start(mappingId);
         Thread.sleep(2000);
         waitForMetaRunning(metaId, 10000);
@@ -523,7 +523,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（设置 NOT NULL）
@@ -534,11 +534,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         dataAfterNotNull.put("first_name", "NotNull");
         dataAfterNotNull.put("last_name", "User");
         dataAfterNotNull.put("department", "IT");
-        dataAfterNotNull = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterNotNull, sourceConfig);
+        dataAfterNotNull = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterNotNull, sourceConfig);
         Thread.sleep(2000);
 
         // 4. 执行第二个 DDL 操作（移除 NOT NULL）
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NULL";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ALTER COLUMN first_name NVARCHAR(50) NULL";
         executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用 NULL 值测试）
@@ -546,7 +546,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("first_name", "Test"); // 仍然使用非NULL值（因为 INSERT 需要值）
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -562,7 +562,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("ALTER COLUMN移除NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -577,7 +577,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testRenameColumn_RenameOnly() throws Exception {
         logger.info("开始测试RENAME COLUMN - 重命名字段");
 
-        String sqlServerDDL = "EXEC sp_rename 'ddlTestEmployee.first_name', 'full_name', 'COLUMN'";
+        String sqlServerDDL = "EXEC sp_rename 'ddlTestSource.first_name', 'full_name', 'COLUMN'";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);
@@ -590,9 +590,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init"); // 使用旧字段名
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(initData, getTargetTableName(), "id", targetConfig);
 
         Thread.sleep(500);
 
@@ -604,7 +604,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("full_name", "Test"); // 使用新字段名
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         // 等待RENAME COLUMN处理完成（使用轮询方式）
         waitForDDLProcessingComplete("full_name", 10000);
@@ -628,7 +628,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步（使用新字段名）
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("RENAME COLUMN重命名字段测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -642,7 +642,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         logger.info("开始测试RENAME COLUMN - 重命名并修改类型");
 
         // 先添加一个VARCHAR字段用于测试
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD description NVARCHAR(100)";
+        String addColumnDDL = "ALTER TABLE ddlTestSource ADD description NVARCHAR(100)";
         mappingService.start(mappingId);
         Thread.sleep(2000);
         waitForMetaRunning(metaId, 10000);
@@ -653,7 +653,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（添加字段）
@@ -665,11 +665,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         dataAfterAdd.put("last_name", "User");
         dataAfterAdd.put("department", "IT");
         dataAfterAdd.put("description", "Original description"); // 新添加的字段
-        dataAfterAdd = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
+        dataAfterAdd = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterAdd, sourceConfig);
         waitForDDLProcessingComplete("description", 10000);
 
         // 4. 执行第二个 DDL 操作（重命名）
-        String renameDDL = "EXEC sp_rename 'ddlTestEmployee.description', 'desc_text', 'COLUMN'";
+        String renameDDL = "EXEC sp_rename 'ddlTestSource.description', 'desc_text', 'COLUMN'";
         executeDDLToSourceDatabase(renameDDL, sourceConfig);
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用新字段名）
@@ -678,11 +678,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         dataAfterRename.put("last_name", "User");
         dataAfterRename.put("department", "IT");
         dataAfterRename.put("desc_text", "Renamed description"); // 使用新字段名
-        dataAfterRename = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterRename, sourceConfig);
+        dataAfterRename = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterRename, sourceConfig);
         waitForDDLProcessingComplete("desc_text", 10000);
 
         // 6. 执行第三个 DDL 操作（修改类型）
-        String alterDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN desc_text TEXT";
+        String alterDDL = "ALTER TABLE ddlTestSource ALTER COLUMN desc_text TEXT";
         executeDDLToSourceDatabase(alterDDL, sourceConfig);
 
         // 7. 执行 DML 操作来触发 DDL 检测（使用 TEXT 类型的值）
@@ -691,7 +691,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("desc_text", "Long text content for TEXT type"); // TEXT 类型的值
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -714,7 +714,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 验证 DML 数据同步
         Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
+        verifyDataSync(insertedData, getTargetTableName(), "id", targetConfig);
 
         logger.info("RENAME COLUMN重命名并修改类型测试通过（DDL 和 DML 数据绑定验证完成）");
     }
@@ -745,12 +745,12 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected String getSourceTableName() {
-        return "ddlTestEmployee";
+        return "ddlTestSource";
     }
 
     @Override
     protected String getTargetTableName() {
-        return "ddlTestEmployee";
+        return "ddlTestTarget";
     }
 
     @Override

@@ -227,15 +227,22 @@ public abstract class BaseDDLIntegrationTest {
 
     /**
      * 重置数据库表结构到初始状态
+     * 确保源表和目标表都被正确重置，为下次测试做好准备
      * 子类可以覆盖此方法以提供特定的重置逻辑
      */
     protected void resetDatabaseTableStructure() {
-        logger.debug("开始重置测试数据库表结构");
+        logger.debug("开始重置测试数据库表结构（源表和目标表）");
         try {
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
-            if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql);
-                logger.debug("测试数据库表结构重置完成");
+            // 加载源数据库的重置脚本
+            String sourceResetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
+            // 加载目标数据库的重置脚本（对于同构数据库，通常与源数据库相同）
+            String targetResetSql = loadSqlScriptByDatabaseType("reset-test-table", false);
+            
+            if (sourceResetSql != null && !sourceResetSql.trim().isEmpty() &&
+                targetResetSql != null && !targetResetSql.trim().isEmpty()) {
+                // 同时重置源表和目标表，确保测试间的隔离性
+                testDatabaseManager.resetTableStructure(sourceResetSql, targetResetSql);
+                logger.debug("测试数据库表结构重置完成（源表和目标表已重置）");
             } else {
                 logger.warn("重置SQL脚本为空，无法重置表结构");
             }
@@ -347,8 +354,12 @@ public abstract class BaseDDLIntegrationTest {
      * @return 插入的完整数据（Map<字段名, 值>），包含自动生成的 id，可直接用于验证数据同步
      */
     protected Map<String, Object> executeInsertDMLToSourceDatabase(String tableName, Map<String, Object> data, DatabaseConfig config) throws Exception {
-        // 生成 INSERT SQL
-        String insertSql = generateInsertSql(tableName, data);
+        // 创建不包含 id 的数据副本用于生成 INSERT SQL（id 由数据库自动生成）
+        Map<String, Object> dataWithoutId = new HashMap<>(data);
+        dataWithoutId.remove("id");
+
+        // 生成 INSERT SQL（不包含 id 字段）
+        String insertSql = generateInsertSql(tableName, dataWithoutId);
 
         // 执行 INSERT 并获取自动生成的 id
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
@@ -373,16 +384,17 @@ public abstract class BaseDDLIntegrationTest {
         });
 
         // 构建返回数据，包含自动生成的 id
+        Map<String, Object> result = new HashMap<>(dataWithoutId);
         if (generatedId != null) {
             // 将生成的 id 转换为合适的类型
             if (generatedId instanceof Number) {
-                data.put("id", ((Number) generatedId).intValue());
+                result.put("id", ((Number) generatedId).intValue());
             } else {
-                data.put("id", generatedId);
+                result.put("id", generatedId);
             }
         }
 
-        return data;
+        return result;
     }
 
 
