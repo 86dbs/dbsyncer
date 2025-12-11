@@ -20,7 +20,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -102,7 +104,8 @@ public abstract class BaseDDLIntegrationTest {
 
     /**
      * 获取连接器类型（用于createConnector）
-     * @param config 数据库配置
+     *
+     * @param config   数据库配置
      * @param isSource 是否为源连接器
      * @return 连接器类型
      */
@@ -115,6 +118,7 @@ public abstract class BaseDDLIntegrationTest {
 
     /**
      * 获取数据库类型（用于加载对应的SQL脚本）
+     *
      * @param isSource 是否为源数据库
      * @return 数据库类型字符串（如 "mysql", "sqlserver"）
      */
@@ -126,7 +130,7 @@ public abstract class BaseDDLIntegrationTest {
      * 根据数据库类型加载对应的SQL脚本
      *
      * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
-     * @param isSource 是否为源数据库
+     * @param isSource       是否为源数据库
      * @return SQL脚本内容
      */
     protected String loadSqlScriptByDatabaseType(String scriptBaseName, boolean isSource) {
@@ -139,8 +143,8 @@ public abstract class BaseDDLIntegrationTest {
      * 根据数据库类型加载对应的SQL脚本（静态版本，用于@BeforeClass/@AfterClass）
      *
      * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
-     * @param dbType 数据库类型字符串（如 "mysql", "sqlserver"）
-     * @param clazz 测试类
+     * @param dbType         数据库类型字符串（如 "mysql", "sqlserver"）
+     * @param clazz          测试类
      * @return SQL脚本内容
      */
     protected static String loadSqlScriptByDatabaseTypeStatic(String scriptBaseName, String dbType, Class<?> clazz) {
@@ -205,21 +209,18 @@ public abstract class BaseDDLIntegrationTest {
 
             for (Mapping mapping : allMappings) {
                 String mappingName = mapping.getName();
-                // 清理包含"测试"或"Test"的 mapping（测试相关的 mapping）
-                if (mappingName != null && (mappingName.contains("测试") || mappingName.contains("Test"))) {
+                try {
+                    String mappingId = mapping.getId();
                     try {
-                        String mappingId = mapping.getId();
-                        try {
-                            mappingService.stop(mappingId);
-                            mappingService.remove(mappingId);
-                            cleanedCount++;
-                            logger.debug("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
-                        } catch (Exception e) {
-                            logger.debug("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
-                        }
+                        mappingService.stop(mappingId);
+                        mappingService.remove(mappingId);
+                        cleanedCount++;
+                        logger.debug("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
                     } catch (Exception e) {
-                        logger.debug("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
+                        logger.debug("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
                     }
+                } catch (Exception e) {
+                    logger.debug("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
                 }
             }
 

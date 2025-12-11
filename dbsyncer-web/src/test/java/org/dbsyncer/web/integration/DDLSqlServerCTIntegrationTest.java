@@ -150,62 +150,6 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         }
     }
 
-    /**
-     * 清理残留的测试 mapping（覆盖基类方法，使用CT测试特定的清理逻辑）
-     */
-    @Override
-    protected void cleanupResidualTestMappings() {
-        try {
-            List<Mapping> allMappings = profileComponent.getMappingAll();
-            int cleanedCount = 0;
-
-            for (Mapping mapping : allMappings) {
-                String mappingName = mapping.getName();
-                // 清理包含"CT测试"的 mapping
-                if (mappingName != null && mappingName.contains("CT测试")) {
-                    try {
-                        String mappingId = mapping.getId();
-                        try {
-                            mappingService.stop(mappingId);
-                            mappingService.remove(mappingId);
-                            cleanedCount++;
-                            logger.debug("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
-                        } catch (Exception e) {
-                            logger.debug("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
-                        }
-                    } catch (Exception e) {
-                        logger.debug("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
-                    }
-                }
-            }
-
-            if (cleanedCount > 0) {
-                logger.info("清理完成，共清理了 {} 个残留的测试 mapping", cleanedCount);
-            }
-        } catch (Exception e) {
-            logger.debug("清理残留测试 mapping 时出错: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 重置数据库表结构到初始状态
-     */
-    @Override
-    protected void resetDatabaseTableStructure() {
-        logger.debug("开始重置测试数据库表结构");
-        try {
-            // 使用按数据库类型分类的脚本
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
-            if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql);
-                logger.debug("测试数据库表结构重置完成");
-            }
-        } catch (Exception e) {
-            logger.error("重置测试数据库表结构失败", e);
-        }
-    }
-
-
     // ==================== ADD COLUMN 测试场景 ====================
 
     /**

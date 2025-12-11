@@ -155,50 +155,6 @@ public class DDLMysqlIntegrationTest extends BaseDDLIntegrationTest {
         }
     }
 
-
-    /**
-     * 重置数据库表结构到初始状态
-     * 确保每个测试开始时表结构是干净的初始状态
-     */
-    @Override
-    protected void resetDatabaseTableStructure() {
-        logger.debug("开始重置测试数据库表结构");
-        try {
-            // 先强制删除表（确保完全清理，包括所有字段）
-            // 注意：由于源数据库和目标数据库可能是同一个，需要确保两个表都被删除
-            forceDropTable("ddlTestSource", sourceConfig);
-            forceDropTable("ddlTestTarget", sourceConfig);
-            forceDropTable("ddlTestSource", targetConfig);
-            forceDropTable("ddlTestTarget", targetConfig);
-
-            // 等待一小段时间，确保删除操作完成
-            Thread.sleep(200);
-
-            // 使用按数据库类型分类的脚本重建表
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
-            if (resetSql != null && !resetSql.trim().isEmpty()) {
-                testDatabaseManager.resetTableStructure(resetSql);
-                logger.debug("测试数据库表结构重置完成");
-
-                // 再次等待，确保表创建完成
-                Thread.sleep(200);
-
-                // 验证表结构确实被重置（检查表是否存在且只有初始字段）
-                verifyTableStructureReset();
-            } else {
-                logger.warn("重置SQL脚本为空，无法重置表结构");
-            }
-        } catch (Exception e) {
-            logger.error("重置测试数据库表结构失败", e);
-            // 重置失败时，尝试强制删除并重建表
-            try {
-                forceResetTable();
-            } catch (Exception ex) {
-                logger.error("强制重置表结构也失败", ex);
-            }
-        }
-    }
-
     /**
      * 强制删除表（忽略不存在的错误）
      */
