@@ -22,7 +22,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -1688,34 +1687,6 @@ public class DDLMysqlIntegrationTest extends BaseDDLIntegrationTest {
     @Override
     protected Class<?> getTestClass() {
         return DDLMysqlIntegrationTest.class;
-    }
-
-    @Override
-    protected void loadTestConfig() throws IOException {
-        Properties props = new Properties();
-        try (InputStream input = getTestClass().getClassLoader().getResourceAsStream("test.properties")) {
-            if (input == null) {
-                logger.warn("未找到test.properties配置文件，使用默认配置");
-                sourceConfig = createDefaultMySQLConfig();
-                targetConfig = createDefaultMySQLConfig();
-                return;
-            }
-            props.load(input);
-        }
-
-        // 创建源数据库配置
-        sourceConfig = new DatabaseConfig();
-        sourceConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/source_db"));
-        sourceConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
-        sourceConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
-        sourceConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
-
-        // 创建目标数据库配置
-        targetConfig = new DatabaseConfig();
-        targetConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/target_db"));
-        targetConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
-        targetConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
-        targetConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
     }
 
     @Override

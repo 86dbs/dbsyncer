@@ -67,12 +67,6 @@ public abstract class BaseDDLIntegrationTest {
     protected abstract Class<?> getTestClass();
 
     /**
-     * 加载测试配置
-     * 子类可以覆盖此方法以提供特定的配置加载逻辑
-     */
-    protected abstract void loadTestConfig() throws IOException;
-
-    /**
      * 创建源连接器名称
      */
     protected abstract String getSourceConnectorName();
@@ -341,6 +335,172 @@ public abstract class BaseDDLIntegrationTest {
             databaseTemplate.execute(updateSql);
             return null;
         });
+    }
+
+    /**
+     * 执行 INSERT DML 到源数据库并返回插入的数据（用于验证 DDL 和 DML 的数据绑定关系）
+     * 先定义数据，然后自动生成 INSERT SQL 并执行
+     *
+     * @param tableName 表名
+     * @param data      要插入的数据（Map<字段名, 值>）
+     * @param config    数据库配置
+     * @return 插入的完整数据（Map<字段名, 值>），可直接用于验证数据同步
+     */
+    protected Map<String, Object> executeInsertDMLToSourceDatabase(String tableName, Map<String, Object> data, DatabaseConfig config) throws Exception {
+        // 生成 INSERT SQL
+        String insertSql = generateInsertSql(tableName, data);
+
+        // 执行 INSERT
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            databaseTemplate.execute(insertSql);
+            return null;
+        });
+
+        // 返回数据（直接返回传入的数据，因为已经包含了所有字段和值）
+        return new HashMap<>(data);
+    }
+
+
+    /**
+     * 根据表名和数据生成 INSERT SQL
+     *
+     * @param tableName 表名
+     * @param data      数据（Map<字段名, 值>）
+     * @return INSERT SQL 语句
+     */
+    private String generateInsertSql(String tableName, Map<String, Object> data) {
+        if (data == null || data.isEmpty()) {
+            throw new IllegalArgumentException("数据不能为空");
+        }
+
+        StringBuilder columns = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+
+        boolean first = true;
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            if (!first) {
+                columns.append(", ");
+                values.append(", ");
+            }
+            columns.append(entry.getKey());
+
+            Object value = entry.getValue();
+            if (value == null) {
+                values.append("NULL");
+            } else if (value instanceof String) {
+                // 转义单引号
+                String strValue = ((String) value).replace("'", "''");
+                values.append("'").append(strValue).append("'");
+            } else if (value instanceof Number) {
+                values.append(value);
+            } else {
+                // 其他类型转为字符串
+                values.append("'").append(value.toString().replace("'", "''")).append("'");
+            }
+
+            first = false;
+        }
+
+        return String.format("INSERT INTO %s (%s) VALUES (%s)", tableName, columns, values);
+    }
+
+    /**
+     * 验证插入的数据是否同步到目标表（直接使用插入的数据进行验证）
+     *
+     * @param insertedData     插入的完整数据（Map<字段名, 值>）
+     * @param tableName        表名
+     * @param primaryKeyColumn 主键字段名（用于构建 WHERE 条件）
+     * @param targetConfig     目标数据库配置
+     */
+    protected void verifyDataSync(Map<String, Object> insertedData, String tableName, String primaryKeyColumn, DatabaseConfig targetConfig) throws Exception {
+        if (insertedData == null || insertedData.isEmpty()) {
+            fail("插入的数据为空，无法验证");
+        }
+
+        Object primaryKeyValue = insertedData.get(primaryKeyColumn);
+        if (primaryKeyValue == null) {
+            fail("无法获取主键值进行验证");
+        }
+
+        // 查询目标表数据
+        String whereCondition = primaryKeyColumn + " = " + (primaryKeyValue instanceof String ? "'" + primaryKeyValue + "'" : primaryKeyValue);
+        String targetSql = String.format("SELECT * FROM %s WHERE %s", tableName, whereCondition);
+        Map<String, Object> targetData = queryTableData(targetSql, targetConfig);
+
+        // 验证数据是否一致
+        if (targetData.isEmpty()) {
+            fail(String.format("目标表中未找到主键为 %s 的数据", primaryKeyValue));
+        }
+
+        for (Map.Entry<String, Object> entry : insertedData.entrySet()) {
+            String fieldName = entry.getKey();
+            Object sourceValue = entry.getValue();
+            Object targetValue = targetData.get(fieldName);
+
+            // 处理 NULL 值比较
+            if (sourceValue == null && targetValue == null) {
+                continue;
+            }
+            if (sourceValue == null || targetValue == null) {
+                fail(String.format("字段 %s 的值不一致：源表=%s, 目标表=%s（主键: %s）",
+                        fieldName, sourceValue, targetValue, primaryKeyValue));
+            }
+
+            // 比较值（处理数值类型和字符串）
+            if (!compareValues(sourceValue, targetValue)) {
+                fail(String.format("字段 %s 的值不一致：源表=%s, 目标表=%s（主键: %s）",
+                        fieldName, sourceValue, targetValue, primaryKeyValue));
+            }
+        }
+
+        logger.info("数据同步验证通过：表={}, 主键={}", tableName, primaryKeyValue);
+    }
+
+    /**
+     * 查询表数据（返回第一行数据）
+     */
+    private Map<String, Object> queryTableData(String sql, DatabaseConfig config) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        return instance.execute(databaseTemplate -> {
+            return databaseTemplate.query(sql, (java.sql.ResultSet rs) -> {
+                Map<String, Object> data = new HashMap<>();
+                if (rs.next()) {
+                    java.sql.ResultSetMetaData metaData = rs.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object value = rs.getObject(i);
+                        data.put(columnName, value);
+                    }
+                }
+                return data;
+            });
+        });
+    }
+
+    /**
+     * 比较两个值是否相等（处理数值类型精度问题和字符串）
+     */
+    private boolean compareValues(Object value1, Object value2) {
+        if (value1 == null && value2 == null) {
+            return true;
+        }
+        if (value1 == null || value2 == null) {
+            return false;
+        }
+
+        // 处理数值类型
+        if (value1 instanceof Number && value2 instanceof Number) {
+            return ((Number) value1).doubleValue() == ((Number) value2).doubleValue();
+        }
+
+        // 处理字符串（忽略大小写和前后空格）
+        if (value1 instanceof String && value2 instanceof String) {
+            return value1.toString().trim().equalsIgnoreCase(value2.toString().trim());
+        }
+
+        return value1.equals(value2);
     }
 
     // ==================== 公共验证方法 ====================
