@@ -167,7 +167,16 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
         waitForMetaRunning(metaId, 10000);
 
+        // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
+        // 1. 先执行一次 DML 操作来初始化表结构快照
+        executeDMLToSourceDatabase("ddlTestEmployee", sourceConfig);
+        Thread.sleep(500); // 等待版本号更新
+
+        // 2. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
+
+        // 3. 再执行一次 DML 操作来触发 DDL 检测（版本号变化会触发 pull，从而检测 DDL 变更）
+        executeDMLToSourceDatabase("ddlTestEmployee", sourceConfig);
 
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("salary", 10000);

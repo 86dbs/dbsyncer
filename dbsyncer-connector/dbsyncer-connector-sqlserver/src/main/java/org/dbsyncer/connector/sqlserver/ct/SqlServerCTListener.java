@@ -84,10 +84,10 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             "ALTER TABLE [%s].[%s] ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)";
 
     private static final String IS_DB_CHANGE_TRACKING_ENABLED =
-            "SELECT is_change_tracking_on FROM sys.databases WHERE name = '%s'";
+            "SELECT COUNT(*) FROM sys.change_tracking_databases WHERE database_id = DB_ID('%s')";
 
     private static final String IS_TABLE_CHANGE_TRACKING_ENABLED =
-            "SELECT is_tracked_by_cdc FROM sys.tables WHERE name = '%s'";  // 注意：字段名 is_tracked_by_cdc 实际用于 Change Tracking（不是 CDC）
+            "SELECT COUNT(*) FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('%s.%s')";
 
     // Snapshot 键名
     private static final String VERSION_POSITION = "version";
@@ -236,8 +236,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     private void enableDBChangeTracking() throws Exception {
         realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
-        Boolean enabled = queryAndMap(String.format(IS_DB_CHANGE_TRACKING_ENABLED, realDatabaseName), rs -> rs.getBoolean(1));
-        if (!Boolean.TRUE.equals(enabled)) {
+        Integer count = queryAndMap(String.format(IS_DB_CHANGE_TRACKING_ENABLED, realDatabaseName), rs -> rs.getInt(1));
+        if (count == null || count == 0) {
             execute(String.format(ENABLE_DB_CHANGE_TRACKING, realDatabaseName));
             logger.info("已启用数据库 [{}] 的 Change Tracking", realDatabaseName);
         }
@@ -249,8 +249,14 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         }
         tables.forEach(table -> {
             try {
-                Boolean enabled = queryAndMap(IS_TABLE_CHANGE_TRACKING_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
-                if (!Boolean.TRUE.equals(enabled)) {
+                String checkSql = String.format(IS_TABLE_CHANGE_TRACKING_ENABLED, schema, table);
+                Integer count = query(checkSql, null, rs -> {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                    return 0;
+                });
+                if (count == null || count == 0) {
                     try {
                         execute(String.format(ENABLE_TABLE_CHANGE_TRACKING, schema, table));
                         logger.info("已启用表 [{}].[{}] 的 Change Tracking", schema, table);

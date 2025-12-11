@@ -328,6 +328,21 @@ public abstract class BaseDDLIntegrationTest {
         });
     }
 
+    /**
+     * 执行DML到源数据库（用于触发 Change Tracking 版本号变化，从而触发 DDL 检测）
+     * SQL Server CT 模式下，DDL 检测依赖于 DML 操作来触发版本号变化
+     */
+    protected void executeDMLToSourceDatabase(String tableName, DatabaseConfig config) throws Exception {
+        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            // 执行一个简单的 UPDATE 操作来触发 Change Tracking 版本号变化
+            // 使用 WHERE 1=0 确保不影响实际数据
+            String updateSql = String.format("UPDATE [%s] SET id = id WHERE 1=0", tableName);
+            databaseTemplate.execute(updateSql);
+            return null;
+        });
+    }
+
     // ==================== 公共验证方法 ====================
 
     /**
