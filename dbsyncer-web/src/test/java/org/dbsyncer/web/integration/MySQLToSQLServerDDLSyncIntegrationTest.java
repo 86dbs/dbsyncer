@@ -654,14 +654,6 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     }
 
     @Override
-    protected void loadTestConfig() throws IOException {
-        loadTestConfigStatic();
-        // 设置基类的sourceConfig和targetConfig
-        sourceConfig = mysqlConfig;
-        targetConfig = sqlServerConfig;
-    }
-
-    @Override
     protected String getSourceConnectorName() {
         return "MySQL源连接器";
     }

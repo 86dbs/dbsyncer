@@ -599,14 +599,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     }
 
     @Override
-    protected void loadTestConfig() throws IOException {
-        loadTestConfigStatic();
-        // 设置基类的sourceConfig和targetConfig
-        sourceConfig = sqlServerConfig;
-        targetConfig = mysqlConfig;
-    }
-
-    @Override
     protected String getSourceConnectorName() {
         return "SQL Server CT源连接器";
     }
