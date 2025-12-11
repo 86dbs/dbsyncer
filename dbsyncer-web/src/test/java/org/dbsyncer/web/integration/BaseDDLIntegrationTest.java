@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -340,25 +339,50 @@ public abstract class BaseDDLIntegrationTest {
     /**
      * 执行 INSERT DML 到源数据库并返回插入的数据（用于验证 DDL 和 DML 的数据绑定关系）
      * 先定义数据，然后自动生成 INSERT SQL 并执行
+     * 如果数据中不包含 id 字段，则自动生成 id 并返回
      *
      * @param tableName 表名
-     * @param data      要插入的数据（Map<字段名, 值>）
+     * @param data      要插入的数据（Map<字段名, 值>），不应包含 id 字段（id 由数据库自动生成）
      * @param config    数据库配置
-     * @return 插入的完整数据（Map<字段名, 值>），可直接用于验证数据同步
+     * @return 插入的完整数据（Map<字段名, 值>），包含自动生成的 id，可直接用于验证数据同步
      */
     protected Map<String, Object> executeInsertDMLToSourceDatabase(String tableName, Map<String, Object> data, DatabaseConfig config) throws Exception {
         // 生成 INSERT SQL
         String insertSql = generateInsertSql(tableName, data);
 
-        // 执行 INSERT
+        // 执行 INSERT 并获取自动生成的 id
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
+        Object generatedId = instance.execute(databaseTemplate -> {
             databaseTemplate.execute(insertSql);
-            return null;
+
+            // 根据数据库类型获取自动生成的 id
+            String driverClassName = config.getDriverClassName();
+            String getIdentitySql;
+            if (driverClassName != null && driverClassName.contains("sqlserver")) {
+                // SQL Server 使用 SCOPE_IDENTITY()
+                getIdentitySql = "SELECT SCOPE_IDENTITY()";
+            } else if (driverClassName != null && driverClassName.contains("mysql")) {
+                // MySQL 使用 LAST_INSERT_ID()
+                getIdentitySql = "SELECT LAST_INSERT_ID()";
+            } else {
+                // 默认使用 SQL Server 语法
+                getIdentitySql = "SELECT SCOPE_IDENTITY()";
+            }
+
+            return databaseTemplate.queryForObject(getIdentitySql, Object.class);
         });
 
-        // 返回数据（直接返回传入的数据，因为已经包含了所有字段和值）
-        return new HashMap<>(data);
+        // 构建返回数据，包含自动生成的 id
+        if (generatedId != null) {
+            // 将生成的 id 转换为合适的类型
+            if (generatedId instanceof Number) {
+                data.put("id", ((Number) generatedId).intValue());
+            } else {
+                data.put("id", generatedId);
+            }
+        }
+
+        return data;
     }
 
 

@@ -168,11 +168,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000); // 等待数据同步
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig); // 验证初始化数据同步
 
@@ -184,12 +183,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
         // 这个 INSERT 包含 DDL 新增的 salary 字段，用于验证 DDL 和 DML 的数据绑定关系
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("salary", 5000.00); // DDL 新增的字段
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         // 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete("salary", 10000);
@@ -231,11 +229,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000);
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
 
@@ -246,12 +243,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("phone", "13800138000"); // DDL 新增的字段（NOT NULL）
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         waitForDDLProcessingComplete("phone", 10000);
 
@@ -292,11 +288,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT"); // 这个字段将被删除
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000);
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
 
@@ -307,11 +302,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测（不包含被删除的字段）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         // 注意：不包含 department 字段，因为它已被删除
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         // 等待DDL DROP处理完成（使用轮询方式）
         waitForDDLDropProcessingComplete("department", 10000);
@@ -352,11 +346,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000);
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
 
@@ -367,11 +360,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测（使用修改后的字段长度）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "VeryLongFirstNameThatExceedsOriginalLength"); // 使用更长的值测试长度修改
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -408,11 +400,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（添加字段）
@@ -420,12 +411,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测
         Map<String, Object> dataAfterAdd = new HashMap<>();
-        dataAfterAdd.put("id", 997);
         dataAfterAdd.put("first_name", "Test");
         dataAfterAdd.put("last_name", "User");
         dataAfterAdd.put("department", "IT");
         dataAfterAdd.put("count_num", 100); // 新添加的字段（INT类型）
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
+        dataAfterAdd = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
         waitForDDLProcessingComplete("count_num", 10000);
 
         // 4. 执行第二个 DDL 操作（修改字段类型）
@@ -434,12 +424,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用 BIGINT 类型的值）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("count_num", 9999999999L); // 使用 BIGINT 类型的值
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -477,11 +466,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000);
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
 
@@ -492,11 +480,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测（使用 NOT NULL 的值）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "NotNullUser"); // NOT NULL 约束的值
         insertedData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -533,11 +520,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（设置 NOT NULL）
@@ -545,11 +531,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测
         Map<String, Object> dataAfterNotNull = new HashMap<>();
-        dataAfterNotNull.put("id", 997);
         dataAfterNotNull.put("first_name", "NotNull");
         dataAfterNotNull.put("last_name", "User");
         dataAfterNotNull.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterNotNull, sourceConfig);
+        dataAfterNotNull = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterNotNull, sourceConfig);
         Thread.sleep(2000);
 
         // 4. 执行第二个 DDL 操作（移除 NOT NULL）
@@ -558,11 +543,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用 NULL 值测试）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test"); // 仍然使用非NULL值（因为 INSERT 需要值）
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
@@ -603,11 +587,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init"); // 使用旧字段名
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(2000);
         verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
 
@@ -618,11 +601,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测（使用新字段名）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("full_name", "Test"); // 使用新字段名
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         // 等待RENAME COLUMN处理完成（使用轮询方式）
         waitForDDLProcessingComplete("full_name", 10000);
@@ -668,11 +650,10 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照
         Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
         initData.put("first_name", "Init");
         initData.put("last_name", "User");
         initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
+        initData = executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
         Thread.sleep(500);
 
         // 2. 执行第一个 DDL 操作（添加字段）
@@ -680,12 +661,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 3. 执行 DML 操作来触发 DDL 检测
         Map<String, Object> dataAfterAdd = new HashMap<>();
-        dataAfterAdd.put("id", 997);
         dataAfterAdd.put("first_name", "Test");
         dataAfterAdd.put("last_name", "User");
         dataAfterAdd.put("department", "IT");
         dataAfterAdd.put("description", "Original description"); // 新添加的字段
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
+        dataAfterAdd = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterAdd, sourceConfig);
         waitForDDLProcessingComplete("description", 10000);
 
         // 4. 执行第二个 DDL 操作（重命名）
@@ -694,12 +674,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 5. 执行 DML 操作来触发 DDL 检测（使用新字段名）
         Map<String, Object> dataAfterRename = new HashMap<>();
-        dataAfterRename.put("id", 996);
         dataAfterRename.put("first_name", "Test");
         dataAfterRename.put("last_name", "User");
         dataAfterRename.put("department", "IT");
         dataAfterRename.put("desc_text", "Renamed description"); // 使用新字段名
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterRename, sourceConfig);
+        dataAfterRename = executeInsertDMLToSourceDatabase("ddlTestEmployee", dataAfterRename, sourceConfig);
         waitForDDLProcessingComplete("desc_text", 10000);
 
         // 6. 执行第三个 DDL 操作（修改类型）
@@ -708,12 +687,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 7. 执行 DML 操作来触发 DDL 检测（使用 TEXT 类型的值）
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
         insertedData.put("first_name", "Test");
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData.put("desc_text", "Long text content for TEXT type"); // TEXT 类型的值
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
 
         Thread.sleep(2000);
 
