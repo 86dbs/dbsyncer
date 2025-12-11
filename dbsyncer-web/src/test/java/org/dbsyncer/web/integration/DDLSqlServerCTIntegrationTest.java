@@ -1,33 +1,19 @@
 package org.dbsyncer.web.integration;
 
-import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.web.Application;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.annotation.Resource;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -49,46 +35,20 @@ import static org.junit.Assert.*;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-public class DDLSqlServerCTIntegrationTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(DDLSqlServerCTIntegrationTest.class);
-
-    @Resource
-    private ConnectorService connectorService;
-
-    @Resource
-    private MappingService mappingService;
-
-    @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
-    private ConnectorFactory connectorFactory;
-
-    @Resource
-    private TableGroupService tableGroupService;
-
-    private static DatabaseConfig sourceConfig;
-    private static DatabaseConfig targetConfig;
-    private static TestDatabaseManager testDatabaseManager;
-
-    private String sourceConnectorId;
-    private String targetConnectorId;
-    private String mappingId;
-    private String metaId;
+public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         logger.info("开始初始化SQL Server CT到SQL Server CT的DDL同步测试环境");
 
         // 加载测试配置
-        loadTestConfig();
+        loadTestConfigStatic();
 
         // 创建测试数据库管理器
         testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
 
         // 初始化测试环境（使用按数据库类型分类的脚本）
-        String initSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
+        String initSql = loadSqlScriptByDatabaseTypeStatic("reset-test-table", "sqlserver", DDLSqlServerCTIntegrationTest.class);
         testDatabaseManager.initializeTestEnvironment(initSql, initSql);
 
         // 注意：不需要手动启用 Change Tracking
@@ -97,13 +57,43 @@ public class DDLSqlServerCTIntegrationTest {
         logger.info("SQL Server CT到SQL Server CT的DDL同步测试环境初始化完成");
     }
 
+    /**
+     * 静态方法版本的loadTestConfig，用于@BeforeClass
+     */
+    private static void loadTestConfigStatic() throws IOException {
+        Properties props = new Properties();
+        try (InputStream input = DDLSqlServerCTIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
+            if (input == null) {
+                logger.warn("未找到test.properties配置文件，使用默认配置");
+                sourceConfig = createDefaultSQLServerConfig();
+                targetConfig = createDefaultSQLServerConfig();
+                return;
+            }
+            props.load(input);
+        }
+
+        // 创建源数据库配置(SQL Server)
+        sourceConfig = new DatabaseConfig();
+        sourceConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true"));
+        sourceConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
+        sourceConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
+        sourceConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+
+        // 创建目标数据库配置(SQL Server)
+        targetConfig = new DatabaseConfig();
+        targetConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=target_db;encrypt=false;trustServerCertificate=true"));
+        targetConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
+        targetConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
+        targetConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+    }
+
     @AfterClass
     public static void tearDownClass() {
         logger.info("开始清理SQL Server CT到SQL Server CT的DDL同步测试环境");
 
         try {
             // 清理测试环境（使用按数据库类型分类的脚本）
-            String cleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", sourceConfig);
+            String cleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "sqlserver", DDLSqlServerCTIntegrationTest.class);
             testDatabaseManager.cleanupTestEnvironment(cleanupSql, cleanupSql);
 
             logger.info("SQL Server CT到SQL Server CT的DDL同步测试环境清理完成");
@@ -121,8 +111,8 @@ public class DDLSqlServerCTIntegrationTest {
         resetDatabaseTableStructure();
 
         // 创建Connector（使用 CT 模式）
-        sourceConnectorId = createConnector("SQL Server CT源连接器", sourceConfig);
-        targetConnectorId = createConnector("SQL Server CT目标连接器", targetConfig);
+        sourceConnectorId = createConnector(getSourceConnectorName(), sourceConfig, true);
+        targetConnectorId = createConnector(getTargetConnectorName(), targetConfig, false);
 
         // 创建Mapping和TableGroup
         mappingId = createMapping();
@@ -161,9 +151,10 @@ public class DDLSqlServerCTIntegrationTest {
     }
 
     /**
-     * 清理残留的测试 mapping
+     * 清理残留的测试 mapping（覆盖基类方法，使用CT测试特定的清理逻辑）
      */
-    private void cleanupResidualTestMappings() {
+    @Override
+    protected void cleanupResidualTestMappings() {
         try {
             List<Mapping> allMappings = profileComponent.getMappingAll();
             int cleanedCount = 0;
@@ -199,11 +190,12 @@ public class DDLSqlServerCTIntegrationTest {
     /**
      * 重置数据库表结构到初始状态
      */
-    private void resetDatabaseTableStructure() {
+    @Override
+    protected void resetDatabaseTableStructure() {
         logger.debug("开始重置测试数据库表结构");
         try {
             // 使用按数据库类型分类的脚本
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
+            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
                 testDatabaseManager.resetTableStructure(resetSql);
                 logger.debug("测试数据库表结构重置完成");
@@ -591,291 +583,66 @@ public class DDLSqlServerCTIntegrationTest {
 
     // ==================== 辅助方法 ====================
 
-    /**
-     * 创建Connector（使用 CT 模式）
-     */
-    private String createConnector(String name, DatabaseConfig config) throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("name", name);
-        params.put("connectorType", "SqlServerCT"); // 使用 CT 模式
-        params.put("url", config.getUrl());
-        params.put("username", config.getUsername());
-        params.put("password", config.getPassword());
-        params.put("driverClassName", config.getDriverClassName());
-        if (config.getSchema() != null) {
-            params.put("schema", config.getSchema());
-        } else {
-            params.put("schema", "dbo"); // SQL Server 默认 schema
-        }
-        return connectorService.add(params);
+    // ==================== 抽象方法实现 ====================
+
+    @Override
+    protected Class<?> getTestClass() {
+        return DDLSqlServerCTIntegrationTest.class;
     }
 
-    /**
-     * 创建Mapping和TableGroup
-     */
-    private String createMapping() throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("name", "SQL Server CT到SQL Server CT测试Mapping");
-        params.put("sourceConnectorId", sourceConnectorId);
-        params.put("targetConnectorId", targetConnectorId);
-        params.put("model", "increment"); // 增量同步
-        params.put("incrementStrategy", "Log"); // 增量策略：日志监听（CT 模式）
-        params.put("enableDDL", "true");
-        params.put("enableInsert", "true");
-        params.put("enableUpdate", "true");
-        params.put("enableDelete", "true");
-
-        String mappingId = mappingService.add(params);
-
-        // 创建后需要编辑一次以正确设置增量同步配置
-        Map<String, String> editParams = new HashMap<>();
-        editParams.put("id", mappingId);
-        editParams.put("model", "increment");
-        editParams.put("incrementStrategy", "Log");
-        editParams.put("enableDDL", "true");
-        editParams.put("enableInsert", "true");
-        editParams.put("enableUpdate", "true");
-        editParams.put("enableDelete", "true");
-        mappingService.edit(editParams);
-
-        // 使用 tableGroupService.add() 创建 TableGroup
-        Map<String, String> tableGroupParams = new HashMap<>();
-        tableGroupParams.put("mappingId", mappingId);
-        tableGroupParams.put("sourceTable", "ddlTestEmployee");
-        tableGroupParams.put("targetTable", "ddlTestEmployee");
-        tableGroupParams.put("fieldMappings", "id|id,first_name|first_name,last_name|last_name,department|department");
-        tableGroupService.add(tableGroupParams);
-
-        return mappingId;
+    @Override
+    protected void loadTestConfig() throws IOException {
+        loadTestConfigStatic();
     }
 
-    /**
-     * 执行DDL到源数据库
-     */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
-        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sql);
-            return null;
-        });
+    @Override
+    protected String getSourceConnectorName() {
+        return "SQL Server CT源连接器";
     }
 
-    /**
-     * 验证目标数据库中字段是否存在
-     */
-    @SuppressWarnings("unchecked")
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        // 确保 connectorType 已设置
-        if (config.getConnectorType() == null) {
-            config.setConnectorType("SqlServerCT");
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = (ConnectorInstance<DatabaseConfig, ?>) connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertTrue(String.format("目标数据库表 %s 应包含字段 %s", tableName, fieldName), exists);
+    @Override
+    protected String getTargetConnectorName() {
+        return "SQL Server CT目标连接器";
     }
 
-    /**
-     * 验证目标数据库中字段是否不存在
-     */
-    @SuppressWarnings("unchecked")
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        // 确保 connectorType 已设置
-        if (config.getConnectorType() == null) {
-            config.setConnectorType("SqlServerCT");
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = (ConnectorInstance<DatabaseConfig, ?>) connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertFalse(String.format("目标数据库表 %s 不应包含字段 %s", tableName, fieldName), exists);
+    @Override
+    protected String getMappingName() {
+        return "SQL Server CT到SQL Server CT测试Mapping";
     }
 
-    /**
-     * 等待DDL处理完成（通过轮询检查字段映射是否已更新）
-     */
-    private void waitForDDLProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300; // 每300ms检查一次
-
-        logger.info("等待DDL处理完成，期望字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
-                                fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
-
-                if (foundFieldMapping) {
-                    logger.info("DDL处理完成，字段 {} 的映射已更新", expectedFieldName);
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    @Override
+    protected String getSourceTableName() {
+        return "ddlTestEmployee";
     }
 
-    /**
-     * 等待DDL DROP处理完成（通过轮询检查字段映射是否已移除）
-     */
-    private void waitForDDLDropProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300; // 每300ms检查一次
-
-        logger.info("等待DDL DROP处理完成，期望移除字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
-
-                if (!foundFieldMapping) {
-                    logger.info("DDL DROP处理完成，字段 {} 的映射已移除", expectedFieldName);
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        logger.warn("等待DDL DROP处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    @Override
+    protected String getTargetTableName() {
+        return "ddlTestEmployee";
     }
 
-    /**
-     * 等待Meta进入运行状态
-     */
-    private void waitForMetaRunning(String metaId, long timeoutMs) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 200; // 每200ms检查一次
-
-        logger.info("等待Meta进入运行状态: metaId={}", metaId);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            Meta meta = profileComponent.getMeta(metaId);
-            if (meta != null) {
-                logger.info("Meta状态检查: metaId={}, state={}, isRunning={}, errorMessage={}",
-                        metaId, meta.getState(), meta.isRunning(),
-                        meta.getErrorMessage() != null && !meta.getErrorMessage().isEmpty() ? meta.getErrorMessage() : "无");
-
-                if (meta.isRunning()) {
-                    logger.info("Meta {} 已处于运行状态", metaId);
-                    Thread.sleep(1000);
-                    return;
-                }
-
-                if (meta.isError()) {
-                    String errorMsg = String.format("Meta %s 处于错误状态: state=%d, errorMessage=%s",
-                            metaId, meta.getState(), meta.getErrorMessage());
-                    logger.error(errorMsg);
-                    throw new RuntimeException(errorMsg);
-                }
-            } else {
-                logger.warn("Meta {} 不存在", metaId);
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        Meta meta = profileComponent.getMeta(metaId);
-        assertNotNull("Meta不应为null", meta);
-        logger.error("Meta状态检查失败: metaId={}, state={}, isRunning={}, errorMessage={}",
-                metaId, meta.getState(), meta.isRunning(), meta.getErrorMessage());
-        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState() +
-                        (meta.getErrorMessage() != null ? ", 错误信息: " + meta.getErrorMessage() : ""),
-                meta.isRunning());
+    @Override
+    protected List<String> getInitialFieldMappings() {
+        List<String> fieldMappingList = new ArrayList<>();
+        fieldMappingList.add("id|id");
+        fieldMappingList.add("first_name|first_name");
+        fieldMappingList.add("last_name|last_name");
+        fieldMappingList.add("department|department");
+        return fieldMappingList;
     }
 
-    /**
-     * 从数据库配置推断数据库类型（用于加载对应的SQL脚本）
-     */
-    private static String determineDatabaseType(DatabaseConfig config) {
-        String url = config.getUrl();
-        if (url == null) {
-            return "sqlserver";
-        }
-        String urlLower = url.toLowerCase();
-        if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
-            return "sqlserver";
-        }
-        return "sqlserver";
+    @Override
+    protected String getConnectorType(DatabaseConfig config, boolean isSource) {
+        return "SqlServerCT"; // 使用 CT 模式
     }
 
-    /**
-     * 根据数据库类型加载对应的SQL脚本
-     */
-    private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
-        String dbType = determineDatabaseType(config);
-        String resourcePath = String.format("ddl/%s-%s.sql", scriptBaseName, dbType);
-        return loadSqlScript(resourcePath);
+    @Override
+    protected String getIncrementStrategy() {
+        return "Log"; // CT 模式使用日志监听
     }
 
-    /**
-     * 加载测试配置文件
-     */
-    private static void loadTestConfig() throws IOException {
-        Properties props = new Properties();
-        try (InputStream input = DDLSqlServerCTIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
-            if (input == null) {
-                logger.warn("未找到test.properties配置文件，使用默认配置");
-                sourceConfig = createDefaultSQLServerConfig();
-                targetConfig = createDefaultSQLServerConfig();
-                return;
-            }
-            props.load(input);
-        }
-
-        // 创建源数据库配置(SQL Server)
-        sourceConfig = new DatabaseConfig();
-        sourceConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true"));
-        sourceConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
-        sourceConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
-        sourceConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
-
-        // 创建目标数据库配置(SQL Server)
-        targetConfig = new DatabaseConfig();
-        targetConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=target_db;encrypt=false;trustServerCertificate=true"));
-        targetConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
-        targetConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
-        targetConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
-    }
-
-    /**
-     * 创建默认的SQL Server配置
-     */
-    private static DatabaseConfig createDefaultSQLServerConfig() {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:sqlserver://127.0.0.1:1433;DatabaseName=test;encrypt=false;trustServerCertificate=true");
-        config.setUsername("sa");
-        config.setPassword("123");
-        config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        return config;
-    }
-
-    /**
-     * 加载SQL脚本文件
-     */
-    private static String loadSqlScript(String resourcePath) {
-        try {
-            InputStream input = DDLSqlServerCTIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
-            if (input == null) {
-                logger.warn("未找到SQL脚本文件: {}", resourcePath);
-                return "";
-            }
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
-        } catch (Exception e) {
-            logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
-            return "";
-        }
+    @Override
+    protected String getDatabaseType(boolean isSource) {
+        return "sqlserver"; // SQL Server 数据库类型
     }
 
 }

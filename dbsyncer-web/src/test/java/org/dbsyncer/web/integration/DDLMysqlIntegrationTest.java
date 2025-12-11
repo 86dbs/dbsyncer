@@ -1,12 +1,6 @@
 package org.dbsyncer.web.integration;
 
-import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
@@ -21,19 +15,14 @@ import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.web.Application;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.annotation.Resource;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -54,49 +43,53 @@ import static org.junit.Assert.*;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-public class DDLMysqlIntegrationTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(DDLMysqlIntegrationTest.class);
-
-    @Resource
-    private ConnectorService connectorService;
-
-    @Resource
-    private MappingService mappingService;
-
-    @Resource
-    private ProfileComponent profileComponent;
-
-    @Resource
-    private ConnectorFactory connectorFactory;
-
-    @Resource
-    private TableGroupService tableGroupService;
-
-    private static DatabaseConfig sourceConfig;
-    private static DatabaseConfig targetConfig;
-    private static TestDatabaseManager testDatabaseManager;
-
-    private String sourceConnectorId;
-    private String targetConnectorId;
-    private String mappingId;
-    private String metaId;
+public class DDLMysqlIntegrationTest extends BaseDDLIntegrationTest {
 
     @BeforeClass
     public static void setUpClass() throws IOException {
         logger.info("开始初始化DDL同步集成测试环境");
 
         // 加载测试配置
-        loadTestConfig();
+        loadTestConfigStatic();
 
         // 创建测试数据库管理器
         testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
 
         // 初始化测试环境（使用按数据库类型分类的脚本）
-        String initSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
+        String initSql = loadSqlScriptByDatabaseTypeStatic("reset-test-table", "mysql", DDLMysqlIntegrationTest.class);
         testDatabaseManager.initializeTestEnvironment(initSql, initSql);
 
         logger.info("DDL同步集成测试环境初始化完成");
+    }
+
+    /**
+     * 静态方法版本的loadTestConfig，用于@BeforeClass
+     */
+    private static void loadTestConfigStatic() throws IOException {
+        Properties props = new Properties();
+        try (InputStream input = DDLMysqlIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
+            if (input == null) {
+                logger.warn("未找到test.properties配置文件，使用默认配置");
+                sourceConfig = createDefaultMySQLConfig();
+                targetConfig = createDefaultMySQLConfig();
+                return;
+            }
+            props.load(input);
+        }
+
+        // 创建源数据库配置
+        sourceConfig = new DatabaseConfig();
+        sourceConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/source_db"));
+        sourceConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
+        sourceConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
+        sourceConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
+
+        // 创建目标数据库配置
+        targetConfig = new DatabaseConfig();
+        targetConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/target_db"));
+        targetConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
+        targetConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
+        targetConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
     }
 
     @AfterClass
@@ -105,7 +98,7 @@ public class DDLMysqlIntegrationTest {
 
         try {
             // 清理测试环境（使用按数据库类型分类的脚本）
-            String cleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", sourceConfig);
+            String cleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "mysql", DDLMysqlIntegrationTest.class);
             testDatabaseManager.cleanupTestEnvironment(cleanupSql, cleanupSql);
 
             logger.info("DDL同步集成测试环境清理完成");
@@ -123,8 +116,8 @@ public class DDLMysqlIntegrationTest {
         resetDatabaseTableStructure();
 
         // 创建Connector
-        sourceConnectorId = createConnector("MySQL源连接器", sourceConfig);
-        targetConnectorId = createConnector("MySQL目标连接器", targetConfig);
+        sourceConnectorId = createConnector(getSourceConnectorName(), sourceConfig, true);
+        targetConnectorId = createConnector(getTargetConnectorName(), targetConfig, false);
 
         // 创建Mapping和TableGroup
         mappingId = createMapping();
@@ -162,46 +155,13 @@ public class DDLMysqlIntegrationTest {
         }
     }
 
-    /**
-     * 清理残留的测试 mapping
-     * 防止上一个测试清理失败导致残留，确保每个测试开始时环境干净
-     */
-    private void cleanupResidualTestMappings() {
-        try {
-            List<Mapping> allMappings = profileComponent.getMappingAll();
-            int cleanedCount = 0;
-
-            for (Mapping mapping : allMappings) {
-                String mappingName = mapping.getName();
-                // 清理包含"测试"或"Test"的 mapping（测试相关的 mapping）
-                try {
-                    String mappingId = mapping.getId();
-                    try {
-                        mappingService.stop(mappingId);
-                        mappingService.remove(mappingId);
-                        cleanedCount++;
-                        logger.debug("已清理残留的测试 mapping: {} ({})", mappingId, mappingName);
-                    } catch (Exception e) {
-                        logger.debug("删除残留 mapping {} 失败: {}", mappingId, e.getMessage());
-                    }
-                } catch (Exception e) {
-                    logger.debug("清理残留 mapping {} 时出错: {}", mapping.getId(), e.getMessage());
-                }
-            }
-
-            if (cleanedCount > 0) {
-                logger.info("清理完成，共清理了 {} 个残留的测试 mapping", cleanedCount);
-            }
-        } catch (Exception e) {
-            logger.debug("清理残留测试 mapping 时出错: {}", e.getMessage());
-        }
-    }
 
     /**
      * 重置数据库表结构到初始状态
      * 确保每个测试开始时表结构是干净的初始状态
      */
-    private void resetDatabaseTableStructure() {
+    @Override
+    protected void resetDatabaseTableStructure() {
         logger.debug("开始重置测试数据库表结构");
         try {
             // 先强制删除表（确保完全清理，包括所有字段）
@@ -215,7 +175,7 @@ public class DDLMysqlIntegrationTest {
             Thread.sleep(200);
 
             // 使用按数据库类型分类的脚本重建表
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
+            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
                 testDatabaseManager.resetTableStructure(resetSql);
                 logger.debug("测试数据库表结构重置完成");
@@ -313,7 +273,7 @@ public class DDLMysqlIntegrationTest {
     private void forceResetTable() {
         logger.warn("尝试强制重置表结构");
         try {
-            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", sourceConfig);
+            String resetSql = loadSqlScriptByDatabaseType("reset-test-table", true);
             if (resetSql != null && !resetSql.trim().isEmpty()) {
                 // 直接执行SQL，不通过testDatabaseManager
                 DatabaseConnectorInstance sourceInstance = new DatabaseConnectorInstance(sourceConfig);
@@ -1258,73 +1218,11 @@ public class DDLMysqlIntegrationTest {
     // ==================== 辅助方法 ====================
 
     /**
-     * 创建Connector
-     */
-    private String createConnector(String name, DatabaseConfig config) throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("name", name);
-        params.put("connectorType", determineConnectorType(config));
-        params.put("url", config.getUrl());
-        params.put("username", config.getUsername());
-        params.put("password", config.getPassword());
-        params.put("driverClassName", config.getDriverClassName());
-        if (config.getSchema() != null) {
-            params.put("schema", config.getSchema());
-        }
-        return connectorService.add(params);
-    }
-
-    /**
-     * 创建Mapping和TableGroup
-     */
-    private String createMapping() throws Exception {
-        // 先创建Mapping（不包含tableGroups）
-        Map<String, String> params = new HashMap<>();
-        params.put("name", "MySQL到MySQL测试Mapping");
-        params.put("sourceConnectorId", sourceConnectorId);
-        params.put("targetConnectorId", targetConnectorId);
-        params.put("model", "increment"); // 增量同步（使用 "increment" 而不是 "1"）
-        params.put("incrementStrategy", "Log"); // 增量策略：日志监听（MySQL 使用 binlog）
-        params.put("enableDDL", "true");
-        params.put("enableInsert", "true");
-        params.put("enableUpdate", "true");
-        params.put("enableDelete", "true");
-
-        String mappingId = mappingService.add(params);
-
-        // 创建后需要编辑一次以正确设置增量同步配置（因为 checkAddConfigModel 默认可能是全量同步）
-        Map<String, String> editParams = new HashMap<>();
-        editParams.put("id", mappingId);
-        editParams.put("model", "increment"); // 使用 "increment" 而不是 "1"
-        editParams.put("incrementStrategy", "Log");
-        editParams.put("enableDDL", "true");
-        editParams.put("enableInsert", "true");
-        editParams.put("enableUpdate", "true");
-        editParams.put("enableDelete", "true");
-        mappingService.edit(editParams);
-
-        // 然后使用tableGroupService.add()创建TableGroup
-        Map<String, String> tableGroupParams = new HashMap<>();
-        tableGroupParams.put("mappingId", mappingId);
-        tableGroupParams.put("sourceTable", "ddlTestSource");
-        tableGroupParams.put("targetTable", "ddlTestTarget");
-
-        // 构建字段映射：id|id,first_name|first_name
-        List<String> fieldMappingList = new ArrayList<>();
-        fieldMappingList.add("id|id");
-        fieldMappingList.add("first_name|first_name");
-        tableGroupParams.put("fieldMappings", String.join(",", fieldMappingList));
-
-        tableGroupService.add(tableGroupParams);
-
-        return mappingId;
-    }
-
-    /**
      * 执行DDL到源数据库
      * 在执行前会检查并处理可能的字段冲突
      */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
+    @Override
+    protected void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
         // 检查DDL语句类型，如果是ADD COLUMN，先检查字段是否已存在
         if (sql != null && sql.toUpperCase().contains("ADD COLUMN")) {
             String columnName = extractColumnNameFromAddColumn(sql);
@@ -1344,11 +1242,7 @@ public class DDLMysqlIntegrationTest {
             }
         }
 
-        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sql);
-            return null;
-        });
+        super.executeDDLToSourceDatabase(sql, config);
     }
 
     /**
@@ -1390,35 +1284,6 @@ public class DDLMysqlIntegrationTest {
         }
     }
 
-    /**
-     * 验证目标数据库中字段是否存在
-     */
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        // 确保 connectorType 已设置，否则 ConnectorFactory 无法找到对应的 ConnectorService
-        if (config.getConnectorType() == null) {
-            config.setConnectorType(determineConnectorType(config));
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertTrue(String.format("目标数据库表 %s 应包含字段 %s", tableName, fieldName), exists);
-    }
-
-    /**
-     * 验证目标数据库中字段是否不存在
-     */
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        // 确保 connectorType 已设置，否则 ConnectorFactory 无法找到对应的 ConnectorService
-        if (config.getConnectorType() == null) {
-            config.setConnectorType(determineConnectorType(config));
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertFalse(String.format("目标数据库表 %s 不应包含字段 %s", tableName, fieldName), exists);
-    }
 
     /**
      * 验证字段位置：验证指定字段是否在另一个字段之后（或之前）
@@ -1691,10 +1556,10 @@ public class DDLMysqlIntegrationTest {
 
         // 确保 connectorType 已设置，否则 ConnectorFactory 无法找到对应的 ConnectorService
         if (sourceConfig.getConnectorType() == null) {
-            sourceConfig.setConnectorType(determineConnectorType(sourceConfig));
+            sourceConfig.setConnectorType(getConnectorType(sourceConfig, true));
         }
         if (targetConfig.getConnectorType() == null) {
-            targetConfig.setConnectorType(determineConnectorType(targetConfig));
+            targetConfig.setConnectorType(getConnectorType(targetConfig, false));
         }
 
         // 1. 连接源和目标数据库
@@ -1862,59 +1727,17 @@ public class DDLMysqlIntegrationTest {
     }
 
 
-    /**
-     * 从URL推断连接器类型
-     */
-    private static String determineConnectorType(DatabaseConfig config) {
-        String url = config.getUrl();
-        if (url == null) {
-            return "MySQL";
-        }
-        String urlLower = url.toLowerCase();
-        if (urlLower.contains("mysql")) {
-            return "MySQL";
-        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
-            return "SqlServer";
-        }
-        return "MySQL";
+    // ==================== 抽象方法实现 ====================
+
+    @Override
+    protected Class<?> getTestClass() {
+        return DDLMysqlIntegrationTest.class;
     }
 
-    /**
-     * 从数据库配置推断数据库类型（用于加载对应的SQL脚本）
-     */
-    private static String determineDatabaseType(DatabaseConfig config) {
-        String url = config.getUrl();
-        if (url == null) {
-            return "mysql";
-        }
-        String urlLower = url.toLowerCase();
-        if (urlLower.contains("mysql") || urlLower.contains("mariadb")) {
-            return "mysql";
-        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
-            return "sqlserver";
-        }
-        return "mysql";
-    }
-
-    /**
-     * 根据数据库类型加载对应的SQL脚本
-     *
-     * @param scriptBaseName 脚本基础名称（不包含数据库类型后缀和扩展名）
-     * @param config         数据库配置，用于推断数据库类型
-     * @return SQL脚本内容
-     */
-    private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
-        String dbType = determineDatabaseType(config);
-        String resourcePath = String.format("ddl/%s-%s.sql", scriptBaseName, dbType);
-        return loadSqlScript(resourcePath);
-    }
-
-    /**
-     * 加载测试配置文件
-     */
-    private static void loadTestConfig() throws IOException {
+    @Override
+    protected void loadTestConfig() throws IOException {
         Properties props = new Properties();
-        try (InputStream input = DDLMysqlIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
+        try (InputStream input = getTestClass().getClassLoader().getResourceAsStream("test.properties")) {
             if (input == null) {
                 logger.warn("未找到test.properties配置文件，使用默认配置");
                 sourceConfig = createDefaultMySQLConfig();
@@ -1939,158 +1762,53 @@ public class DDLMysqlIntegrationTest {
         targetConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
     }
 
-    /**
-     * 创建默认的MySQL配置
-     */
-    private static DatabaseConfig createDefaultMySQLConfig() {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF8&serverTimezone=Asia/Shanghai&useSSL=false&verifyServerCertificate=false&autoReconnect=true&failOverReadOnly=false&tinyInt1isBit=false");
-        config.setUsername("root");
-        config.setPassword("123");
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        return config;
+    @Override
+    protected String getSourceConnectorName() {
+        return "MySQL源连接器";
     }
 
-    /**
-     * 加载SQL脚本文件
-     */
-    private static String loadSqlScript(String resourcePath) {
-        try {
-            InputStream input = DDLMysqlIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
-            if (input == null) {
-                logger.warn("未找到SQL脚本文件: {}", resourcePath);
-                return "";
-            }
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
-        } catch (Exception e) {
-            logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
-            return "";
-        }
+    @Override
+    protected String getTargetConnectorName() {
+        return "MySQL目标连接器";
     }
 
-    /**
-     * 等待DDL处理完成（通过轮询检查字段映射是否已更新）
-     *
-     * @param expectedFieldName 期望的字段名
-     * @param timeoutMs         超时时间（毫秒）
-     * @throws InterruptedException 如果等待过程中被中断
-     * @throws Exception            如果查询TableGroup时发生异常
-     */
-    private void waitForDDLProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300; // 每300ms检查一次
-
-        logger.info("等待DDL处理完成，期望字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
-                                fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
-
-                if (foundFieldMapping) {
-                    logger.info("DDL处理完成，字段 {} 的映射已更新", expectedFieldName);
-                    // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        // 超时后记录警告，但不抛出异常（让后续的断言来处理）
-        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    @Override
+    protected String getMappingName() {
+        return "MySQL到MySQL测试Mapping";
     }
 
-    /**
-     * 等待DDL DROP处理完成（通过轮询检查字段映射是否已移除）
-     *
-     * @param expectedFieldName 期望被移除的字段名
-     * @param timeoutMs         超时时间（毫秒）
-     * @throws InterruptedException 如果等待过程中被中断
-     * @throws Exception            如果查询TableGroup时发生异常
-     */
-    private void waitForDDLDropProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300; // 每300ms检查一次
-
-        logger.info("等待DDL DROP处理完成，期望移除字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
-
-                if (!foundFieldMapping) {
-                    logger.info("DDL DROP处理完成，字段 {} 的映射已移除", expectedFieldName);
-                    // 额外等待一小段时间，确保目标数据库的DDL也已执行完成
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        // 超时后记录警告，但不抛出异常（让后续的断言来处理）
-        logger.warn("等待DDL DROP处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+    @Override
+    protected String getSourceTableName() {
+        return "ddlTestSource";
     }
 
-    /**
-     * 等待Meta进入运行状态
-     *
-     * @param metaId    Meta ID
-     * @param timeoutMs 超时时间（毫秒）
-     * @throws InterruptedException 如果等待过程中被中断
-     */
-    private void waitForMetaRunning(String metaId, long timeoutMs) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 200; // 每200ms检查一次
+    @Override
+    protected String getTargetTableName() {
+        return "ddlTestTarget";
+    }
 
-        logger.info("等待Meta进入运行状态: metaId={}", metaId);
+    @Override
+    protected List<String> getInitialFieldMappings() {
+        List<String> fieldMappingList = new ArrayList<>();
+        fieldMappingList.add("id|id");
+        fieldMappingList.add("first_name|first_name");
+        return fieldMappingList;
+    }
 
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            Meta meta = profileComponent.getMeta(metaId);
-            if (meta != null) {
-                // 使用info级别记录状态，便于调试
-                logger.info("Meta状态检查: metaId={}, state={}, isRunning={}, errorMessage={}",
-                        metaId, meta.getState(), meta.isRunning(),
-                        meta.getErrorMessage() != null && !meta.getErrorMessage().isEmpty() ? meta.getErrorMessage() : "无");
+    @Override
+    protected String getConnectorType(DatabaseConfig config, boolean isSource) {
+        // MySQL 连接器类型
+        return "MySQL";
+    }
 
-                if (meta.isRunning()) {
-                    logger.info("Meta {} 已处于运行状态", metaId);
-                    // 额外等待一小段时间，确保 Listener 完全启动并开始监听
-                    Thread.sleep(1000);
-                    return;
-                }
+    @Override
+    protected String getIncrementStrategy() {
+        return "Log"; // MySQL 使用 binlog
+    }
 
-                // 如果处于错误状态，记录详细信息并立即抛出异常
-                if (meta.isError()) {
-                    String errorMsg = String.format("Meta %s 处于错误状态: state=%d, errorMessage=%s",
-                            metaId, meta.getState(), meta.getErrorMessage());
-                    logger.error(errorMsg);
-                    throw new RuntimeException(errorMsg);
-                }
-            } else {
-                logger.warn("Meta {} 不存在", metaId);
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        // 超时后再次检查一次，如果仍未运行则抛出异常
-        Meta meta = profileComponent.getMeta(metaId);
-        assertNotNull("Meta不应为null", meta);
-        logger.error("Meta状态检查失败: metaId={}, state={}, isRunning={}, errorMessage={}",
-                metaId, meta.getState(), meta.isRunning(), meta.getErrorMessage());
-        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState() +
-                        (meta.getErrorMessage() != null ? ", 错误信息: " + meta.getErrorMessage() : ""),
-                meta.isRunning());
+    @Override
+    protected String getDatabaseType(boolean isSource) {
+        return "mysql"; // MySQL 数据库类型
     }
 }
 

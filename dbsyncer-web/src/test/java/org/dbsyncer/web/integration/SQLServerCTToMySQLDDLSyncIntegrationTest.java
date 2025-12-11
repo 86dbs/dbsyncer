@@ -1,35 +1,21 @@
 package org.dbsyncer.web.integration;
 
-import org.dbsyncer.biz.ConnectorService;
-import org.dbsyncer.biz.MappingService;
-import org.dbsyncer.biz.TableGroupService;
-import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.web.Application;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.*;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -55,40 +41,21 @@ import static org.junit.Assert.*;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("test")
-public class SQLServerCTToMySQLDDLSyncIntegrationTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(SQLServerCTToMySQLDDLSyncIntegrationTest.class);
-
-    @Autowired
-    private ConnectorService connectorService;
-
-    @Autowired
-    private MappingService mappingService;
-
-    @Autowired
-    private TableGroupService tableGroupService;
-
-    @Autowired
-    private ProfileComponent profileComponent;
-
-    @Autowired
-    private ConnectorFactory connectorFactory;
+public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegrationTest {
 
     private static DatabaseConfig sqlServerConfig;
     private static DatabaseConfig mysqlConfig;
-    private static TestDatabaseManager testDatabaseManager;
-
-    private String sourceConnectorId;
-    private String targetConnectorId;
-    private String mappingId;
-    private String metaId;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
         logger.info("开始初始化SQL Server CT到MySQL的DDL同步集成测试环境");
 
         // 加载测试配置
-        loadTestConfig();
+        loadTestConfigStatic();
+
+        // 设置基类的sourceConfig和targetConfig（用于基类方法）
+        sourceConfig = sqlServerConfig;
+        targetConfig = mysqlConfig;
 
         // 创建测试数据库管理器
         testDatabaseManager = new TestDatabaseManager(sqlServerConfig, mysqlConfig);
@@ -121,8 +88,8 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
         logger.info("开始清理SQL Server CT到MySQL的DDL同步集成测试环境");
 
         try {
-            String sourceCleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", sqlServerConfig);
-            String targetCleanupSql = loadSqlScriptByDatabaseType("cleanup-test-data", mysqlConfig);
+            String sourceCleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "sqlserver", SQLServerCTToMySQLDDLSyncIntegrationTest.class);
+            String targetCleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "mysql", SQLServerCTToMySQLDDLSyncIntegrationTest.class);
             testDatabaseManager.cleanupTestEnvironment(sourceCleanupSql, targetCleanupSql);
             logger.info("SQL Server CT到MySQL的DDL同步集成测试环境清理完成");
         } catch (Exception e) {
@@ -160,8 +127,8 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
         resetDatabaseTableStructure();
 
         // 创建Connector（源使用 CT 模式，目标使用 MySQL）
-        sourceConnectorId = createConnector("SQL Server CT源连接器", sqlServerConfig, true);
-        targetConnectorId = createConnector("MySQL目标连接器", mysqlConfig, false);
+        sourceConnectorId = createConnector(getSourceConnectorName(), sqlServerConfig, true);
+        targetConnectorId = createConnector(getTargetConnectorName(), mysqlConfig, false);
 
         logger.info("已创建 Connector - 源: {}, 目标: {}", sourceConnectorId, targetConnectorId);
 
@@ -475,27 +442,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
 
     // ==================== 辅助方法 ====================
 
-    /**
-     * 等待并验证meta状态为running
-     */
-    private void waitForMetaRunning(String metaId, long timeoutMs) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 200;
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            Meta meta = profileComponent.getMeta(metaId);
-            if (meta != null && meta.isRunning()) {
-                logger.info("Meta {} 已处于运行状态", metaId);
-                return;
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        Meta meta = profileComponent.getMeta(metaId);
-        assertNotNull("Meta不应为null", meta);
-        assertTrue("Meta应在" + timeoutMs + "ms内进入运行状态，当前状态: " + meta.getState(),
-                meta.isRunning());
-    }
 
     /**
      * 检查是否有残留的测试 mapping（仅检查，不清理）
@@ -546,62 +492,7 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
         }
     }
 
-    /**
-     * 等待DDL处理完成（通过轮询检查字段映射是否已更新）
-     */
-    private void waitForDDLProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300;
 
-        logger.info("等待DDL处理完成，期望字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
-                                fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
-
-                if (foundFieldMapping) {
-                    logger.info("DDL处理完成，字段 {} 的映射已更新", expectedFieldName);
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
-    }
-
-    /**
-     * 等待DDL DROP处理完成（通过轮询检查字段映射是否已移除）
-     */
-    private void waitForDDLDropProcessingComplete(String expectedFieldName, long timeoutMs) throws InterruptedException, Exception {
-        long startTime = System.currentTimeMillis();
-        long checkInterval = 300;
-
-        logger.info("等待DDL DROP处理完成，期望移除字段: {}", expectedFieldName);
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-            if (tableGroups != null && !tableGroups.isEmpty()) {
-                TableGroup tableGroup = tableGroups.get(0);
-                boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
-                        .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()));
-
-                if (!foundFieldMapping) {
-                    logger.info("DDL DROP处理完成，字段 {} 的映射已移除", expectedFieldName);
-                    Thread.sleep(500);
-                    return;
-                }
-            }
-            Thread.sleep(checkInterval);
-        }
-
-        logger.warn("等待DDL DROP处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
-    }
 
     /**
      * 等待DDL处理完成（多个字段，通过轮询检查字段映射是否已更新）
@@ -635,83 +526,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
     }
 
     /**
-     * 创建Connector
+     * 重置数据库表结构（覆盖基类方法，使用异构数据库的特殊逻辑）
      */
-    private String createConnector(String name, DatabaseConfig config, boolean isCT) {
-        if (connectorService == null) {
-            throw new IllegalStateException("connectorService 未注入，请检查 Spring 上下文是否正确初始化。可能原因：1) Spring Boot 应用上下文未启动 2) ConnectorService bean 未注册");
-        }
-        if (config == null) {
-            throw new IllegalArgumentException("DatabaseConfig 不能为 null");
-        }
-        Map<String, String> params = new HashMap<>();
-        params.put("name", name);
-        String connectorType = isCT ? "SqlServerCT" : determineConnectorType(config);
-        params.put("connectorType", connectorType);
-        params.put("url", config.getUrl());
-        params.put("username", config.getUsername());
-        params.put("password", config.getPassword());
-        params.put("driverClassName", config.getDriverClassName());
-
-        String schema = config.getSchema();
-        if (schema == null || schema.trim().isEmpty()) {
-            if (isCT || "SqlServer".equals(connectorType)) {
-                schema = "dbo";
-            }
-        }
-        if (schema != null && !schema.trim().isEmpty()) {
-            params.put("schema", schema);
-        }
-
-        try {
-            return connectorService.add(params);
-        } catch (Exception e) {
-            logger.error("创建 Connector 失败 - name: {}, url: {}", name, config.getUrl(), e);
-            throw new RuntimeException("创建 Connector 失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 创建Mapping和TableGroup
-     */
-    private String createMapping() throws Exception {
-        Map<String, String> params = new HashMap<>();
-        params.put("name", "SQL Server CT到MySQL测试Mapping");
-        params.put("sourceConnectorId", sourceConnectorId);
-        params.put("targetConnectorId", targetConnectorId);
-        params.put("model", "increment");
-        params.put("incrementStrategy", "Log");
-        params.put("enableDDL", "true");
-        params.put("enableInsert", "true");
-        params.put("enableUpdate", "true");
-        params.put("enableDelete", "true");
-
-        String mappingId = mappingService.add(params);
-
-        Map<String, String> editParams = new HashMap<>();
-        editParams.put("id", mappingId);
-        editParams.put("model", "increment");
-        editParams.put("incrementStrategy", "Log");
-        editParams.put("enableDDL", "true");
-        editParams.put("enableInsert", "true");
-        editParams.put("enableUpdate", "true");
-        editParams.put("enableDelete", "true");
-        mappingService.edit(editParams);
-
-        Map<String, String> tableGroupParams = new HashMap<>();
-        tableGroupParams.put("mappingId", mappingId);
-        tableGroupParams.put("sourceTable", "ddlTestEmployee");
-        tableGroupParams.put("targetTable", "ddlTestEmployee");
-        tableGroupParams.put("fieldMappings", "id|id,first_name|first_name");
-        tableGroupService.add(tableGroupParams);
-
-        return mappingId;
-    }
-
-    /**
-     * 重置数据库表结构
-     */
-    private void resetDatabaseTableStructure() {
+    @Override
+    protected void resetDatabaseTableStructure() {
         try {
             String sqlServerResetSql =
                     "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
@@ -734,114 +552,18 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
     }
 
     /**
-     * 执行DDL到源数据库
+     * 执行DDL到源数据库（覆盖基类方法，添加日志）
      */
-    private void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
-        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sql);
-            return null;
-        });
+    @Override
+    protected void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
+        super.executeDDLToSourceDatabase(sql, config);
         logger.info("-----------execute sql--------- {}", sql);
     }
 
     /**
-     * 验证目标数据库中字段是否存在
+     * 静态方法版本的loadTestConfig，用于@BeforeClass
      */
-    @SuppressWarnings("unchecked")
-    private void verifyFieldExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        if (config.getConnectorType() == null) {
-            config.setConnectorType(determineConnectorType(config));
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = (ConnectorInstance<DatabaseConfig, ?>) connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertTrue(String.format("目标数据库表 %s 应包含字段 %s", tableName, fieldName), exists);
-    }
-
-    /**
-     * 验证目标数据库中字段是否不存在
-     */
-    @SuppressWarnings("unchecked")
-    private void verifyFieldNotExistsInTargetDatabase(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        if (config.getConnectorType() == null) {
-            config.setConnectorType(determineConnectorType(config));
-        }
-        ConnectorInstance<DatabaseConfig, ?> instance = (ConnectorInstance<DatabaseConfig, ?>) connectorFactory.connect(config);
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(instance, tableName);
-        boolean exists = metaInfo.getColumn().stream()
-                .anyMatch(field -> fieldName.equalsIgnoreCase(field.getName()));
-        assertFalse(String.format("目标数据库表 %s 不应包含字段 %s", tableName, fieldName), exists);
-    }
-
-    /**
-     * 从URL推断连接器类型
-     */
-    private static String determineConnectorType(DatabaseConfig config) {
-        String url = config.getUrl();
-        if (url == null) {
-            return "MySQL";
-        }
-        String urlLower = url.toLowerCase();
-        if (urlLower.contains("mysql")) {
-            return "MySQL";
-        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
-            return "SqlServer";
-        }
-        return "MySQL";
-    }
-
-    /**
-     * 从数据库配置推断数据库类型（用于加载对应的SQL脚本）
-     */
-    private static String determineDatabaseType(DatabaseConfig config) {
-        String url = config.getUrl();
-        if (url == null) {
-            return "mysql";
-        }
-        String urlLower = url.toLowerCase();
-        if (urlLower.contains("mysql") || urlLower.contains("mariadb")) {
-            return "mysql";
-        } else if (urlLower.contains("sqlserver") || urlLower.contains("jdbc:sqlserver")) {
-            return "sqlserver";
-        }
-        return "mysql";
-    }
-
-    /**
-     * 根据数据库类型加载对应的SQL脚本
-     */
-    private static String loadSqlScriptByDatabaseType(String scriptBaseName, DatabaseConfig config) {
-        String dbType = determineDatabaseType(config);
-        String resourcePath = String.format("ddl/%s-%s.sql", scriptBaseName, dbType);
-        return loadSqlScript(resourcePath);
-    }
-
-    /**
-     * 加载SQL脚本文件
-     */
-    private static String loadSqlScript(String resourcePath) {
-        try {
-            InputStream input = SQLServerCTToMySQLDDLSyncIntegrationTest.class.getClassLoader().getResourceAsStream(resourcePath);
-            if (input == null) {
-                logger.warn("未找到SQL脚本文件: {}", resourcePath);
-                return "";
-            }
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
-        } catch (Exception e) {
-            logger.error("加载SQL脚本文件失败: {}", resourcePath, e);
-            return "";
-        }
-    }
-
-    /**
-     * 加载测试配置文件
-     */
-    private static void loadTestConfig() throws IOException {
+    private static void loadTestConfigStatic() throws IOException {
         Properties props = new Properties();
         try (InputStream input = SQLServerCTToMySQLDDLSyncIntegrationTest.class.getClassLoader()
                 .getResourceAsStream("test.properties")) {
@@ -869,28 +591,75 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest {
         mysqlConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
     }
 
-    /**
-     * 创建默认的SQL Server配置
-     */
-    private static DatabaseConfig createDefaultSQLServerConfig() {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true");
-        config.setUsername("sa");
-        config.setPassword("123456");
-        config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        return config;
+    // ==================== 抽象方法实现 ====================
+
+    @Override
+    protected Class<?> getTestClass() {
+        return SQLServerCTToMySQLDDLSyncIntegrationTest.class;
     }
 
-    /**
-     * 创建默认的MySQL配置
-     */
-    private static DatabaseConfig createDefaultMySQLConfig() {
-        DatabaseConfig config = new DatabaseConfig();
-        config.setUrl("jdbc:mysql://127.0.0.1:3306/target_db");
-        config.setUsername("root");
-        config.setPassword("123456");
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        return config;
+    @Override
+    protected void loadTestConfig() throws IOException {
+        loadTestConfigStatic();
+        // 设置基类的sourceConfig和targetConfig
+        sourceConfig = sqlServerConfig;
+        targetConfig = mysqlConfig;
+    }
+
+    @Override
+    protected String getSourceConnectorName() {
+        return "SQL Server CT源连接器";
+    }
+
+    @Override
+    protected String getTargetConnectorName() {
+        return "MySQL目标连接器";
+    }
+
+    @Override
+    protected String getMappingName() {
+        return "SQL Server CT到MySQL测试Mapping";
+    }
+
+    @Override
+    protected String getSourceTableName() {
+        return "ddlTestEmployee";
+    }
+
+    @Override
+    protected String getTargetTableName() {
+        return "ddlTestEmployee";
+    }
+
+    @Override
+    protected List<String> getInitialFieldMappings() {
+        List<String> fieldMappingList = new ArrayList<>();
+        fieldMappingList.add("id|id");
+        fieldMappingList.add("first_name|first_name");
+        return fieldMappingList;
+    }
+
+    @Override
+    protected String getConnectorType(DatabaseConfig config, boolean isSource) {
+        if (isSource) {
+            return "SqlServerCT"; // 源使用 CT 模式
+        } else {
+            return "MySQL"; // 目标是 MySQL
+        }
+    }
+
+    @Override
+    protected String getIncrementStrategy() {
+        return "Log"; // CT 模式使用日志监听
+    }
+
+    @Override
+    protected String getDatabaseType(boolean isSource) {
+        if (isSource) {
+            return "sqlserver"; // 源是 SQL Server
+        } else {
+            return "mysql"; // 目标是 MySQL
+        }
     }
 
 }
