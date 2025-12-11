@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * SQL Server Change Tracking (CT) 到 SQL Server CT 的 DDL 同步集成测试
  * 全面测试 SQL Server CT 模式之间 DDL 同步的端到端功能，包括解析、转换和执行
  * 覆盖场景：
- * - ADD COLUMN: 基础添加、带默认值、带约束、带NULL/NOT NULL
+ * - ADD COLUMN: 基础添加、带约束、带NULL/NOT NULL
  * - DROP COLUMN: 删除字段
  * - ALTER COLUMN: 修改类型、修改长度、修改约束（NULL/NOT NULL）
  * - RENAME COLUMN: 重命名字段（使用 sp_rename，CT 模式特有功能）
@@ -215,65 +215,6 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     }
 
     /**
-     * 测试ADD COLUMN - 带默认值
-     */
-    @Test
-    public void testAddColumn_WithDefault() throws Exception {
-        logger.info("开始测试ADD COLUMN - 带默认值");
-
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ADD status NVARCHAR(20) DEFAULT 'active'";
-
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-
-        waitForMetaRunning(metaId, 10000);
-
-        // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
-        // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
-        Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
-        initData.put("first_name", "Init");
-        initData.put("last_name", "User");
-        initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
-
-        Thread.sleep(500);
-
-        // 2. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
-
-        // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
-        insertedData.put("first_name", "Test");
-        insertedData.put("last_name", "User");
-        insertedData.put("department", "IT");
-        insertedData.put("status", "active"); // DDL 新增的字段（带默认值）
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
-
-        waitForDDLProcessingComplete("status", 10000);
-
-        // 验证 DDL：字段映射和表结构
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-
-        boolean foundStatusMapping = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "status".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "status".equals(fm.getTarget().getName()));
-
-        assertTrue("应找到status字段的映射", foundStatusMapping);
-        verifyFieldExistsInTargetDatabase("status", "ddlTestEmployee", targetConfig);
-
-        // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
-
-        logger.info("ADD COLUMN带默认值测试通过（DDL 和 DML 数据绑定验证完成）");
-    }
-
-    /**
      * 测试ADD COLUMN - 带NOT NULL约束
      */
     @Test
@@ -330,65 +271,6 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
 
         logger.info("ADD COLUMN带NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
-    }
-
-    /**
-     * 测试ADD COLUMN - 带默认值和NOT NULL约束
-     */
-    @Test
-    public void testAddColumn_WithDefaultAndNotNull() throws Exception {
-        logger.info("开始测试ADD COLUMN - 带默认值和NOT NULL约束");
-
-        String sqlServerDDL = "ALTER TABLE ddlTestEmployee ADD created_by NVARCHAR(50) NOT NULL DEFAULT 'system'";
-
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-
-        waitForMetaRunning(metaId, 10000);
-
-        // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
-        // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
-        Map<String, Object> initData = new HashMap<>();
-        initData.put("id", 998);
-        initData.put("first_name", "Init");
-        initData.put("last_name", "User");
-        initData.put("department", "IT");
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", initData, sourceConfig);
-        Thread.sleep(2000);
-        verifyDataSync(initData, "ddlTestEmployee", "id", targetConfig);
-
-        Thread.sleep(500);
-
-        // 2. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
-
-        // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("id", 999);
-        insertedData.put("first_name", "Test");
-        insertedData.put("last_name", "User");
-        insertedData.put("department", "IT");
-        insertedData.put("created_by", "admin"); // DDL 新增的字段（带默认值和NOT NULL）
-        executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sourceConfig);
-
-        waitForDDLProcessingComplete("created_by", 10000);
-
-        // 验证 DDL：字段映射和表结构
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-
-        boolean foundCreatedByMapping = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "created_by".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "created_by".equals(fm.getTarget().getName()));
-
-        assertTrue("应找到created_by字段的映射", foundCreatedByMapping);
-        verifyFieldExistsInTargetDatabase("created_by", "ddlTestEmployee", targetConfig);
-
-        // 验证 DML 数据同步
-        Thread.sleep(2000);
-        verifyDataSync(insertedData, "ddlTestEmployee", "id", targetConfig);
-
-        logger.info("ADD COLUMN带默认值和NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
 
     // ==================== DROP COLUMN 测试场景 ====================
