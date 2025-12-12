@@ -20,6 +20,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.database.Database;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
@@ -121,16 +122,36 @@ public class DDLParserImpl implements DDLParser {
                 // 4. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
             } else {
-                // 对于同构数据库，直接使用原生SQL，不需要转换
-                // 但是需要先替换表名为目标表名，否则会执行到源库
-                alter.getTable().setName(targetTableName);
+                // 对于同构数据库，直接使用原生SQL，提高效率和准确性
+                // 策略：先保存原始SQL和表名信息，然后调用convert()来映射操作类型（用于策略模式），
+                // 最后使用SqlTemplate来替换表名和schema，避免convert()修改操作类型导致的SQL语法错误
                 
-                // 但是需要调用 SourceToIRConverter.convert 来统一处理操作类型映射
-                // 例如：SQL Server 的 ALTER COLUMN 需要映射为 MODIFY，才能被策略模式处理
+                // 1. 在调用 convert() 之前保存原始表名和 schema（convert() 可能会修改 alter 对象）
+                String originalTableName = alter.getTable().getName();
+                String originalSchemaName = alter.getTable().getSchemaName();
+                String originalSql = sql;
+                
+                // 2. 调用 SourceToIRConverter.convert 来统一处理操作类型映射
+                // 注意：convert() 会修改 alter 对象的操作类型（如 SQL Server 的 ALTER -> MODIFY）
+                // 这是为了策略模式能正确识别操作类型，但不影响最终SQL生成
                 sourceToIRConverter.convert(alter);
                 
-                // 在替换表名和转换操作类型后，生成目标SQL
-                targetSql = alter.toString();
+                // 3. 获取目标数据库的SqlTemplate，使用其replaceTableNameInSql方法来替换表名
+                // 这样每个数据库可以根据自己的引号规则来处理表名替换
+                Database targetDatabase = (Database) connectorService;
+                SqlTemplate targetSqlTemplate = targetDatabase.getSqlTemplate();
+                if (targetSqlTemplate != null) {
+                    targetSql = targetSqlTemplate.replaceTableNameInSql(originalSql, originalTableName, 
+                                                                         originalSchemaName, targetTableName, targetSchema);
+                } else {
+                    // 如果没有SqlTemplate，回退到简单的字符串替换
+                    logger.warn("目标数据库连接器未提供SqlTemplate，使用简单字符串替换表名");
+                    String originalTableNameWithSchema = (originalSchemaName != null && !originalSchemaName.trim().isEmpty()) 
+                            ? originalSchemaName + "." + originalTableName : originalTableName;
+                    String targetTableNameWithSchema = (targetSchema != null && !targetSchema.trim().isEmpty()) 
+                            ? targetSchema + "." + targetTableName : targetTableName;
+                    targetSql = originalSql.replace(originalTableNameWithSchema, targetTableNameWithSchema);
+                }
             }
 
             ddlConfig.setSql(targetSql);

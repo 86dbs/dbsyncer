@@ -801,4 +801,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public IRToTargetConverter getIRToTargetConverter() {
         return this.irToTargetConverter;
     }
+
+    @Override
+    public SqlTemplate getSqlTemplate() {
+        return sqlTemplate;
+    }
 }

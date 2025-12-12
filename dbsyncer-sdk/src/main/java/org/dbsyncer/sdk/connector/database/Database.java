@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.connector.database;
 
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
@@ -41,6 +41,14 @@ public interface Database {
         return primaryKeys;
     }
 
+    /**
+     * 获取SQL模板（用于DDL解析等场景）
+     *
+     * @return SQL模板实例
+     */
+    default SqlTemplate getSqlTemplate() {
+        return null;
+    }
 
     /**
      * 获取流式处理的 fetchSize 值

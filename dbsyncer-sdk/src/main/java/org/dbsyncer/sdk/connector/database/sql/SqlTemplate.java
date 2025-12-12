@@ -482,4 +482,60 @@ public interface SqlTemplate {
     default String buildBatchUpsertSql(String schemaTable, List<Field> fields, int rowCount, List<String> primaryKeys) {
         throw new UnsupportedOperationException("Need to overwrite this function");
     }
+
+    /**
+     * 在SQL中替换表名（用于同构数据库的DDL同步）
+     * 根据数据库的引号规则，识别并替换SQL中各种格式的表名
+     * 
+     * @param sql 原始SQL
+     * @param originalTableName 原始表名（不带引号）
+     * @param originalSchema 原始schema（可能为null）
+     * @param targetTableName 目标表名（不带引号）
+     * @param targetSchema 目标schema（可能为null）
+     * @return 替换表名后的SQL
+     */
+    default String replaceTableNameInSql(String sql, String originalTableName, String originalSchema, 
+                                         String targetTableName, String targetSchema) {
+        if (sql == null || sql.trim().isEmpty()) {
+            return sql;
+        }
+        
+        String leftQuote = getLeftQuotation();
+        String rightQuote = getRightQuotation();
+        String result = sql;
+        
+        // 构建原始和目标表名的各种格式
+        String originalTableNameWithSchema;
+        String targetTableNameWithSchema;
+        
+        if (originalSchema != null && !originalSchema.trim().isEmpty()) {
+            originalTableNameWithSchema = originalSchema + "." + originalTableName;
+        } else {
+            originalTableNameWithSchema = originalTableName;
+        }
+        
+        if (targetSchema != null && !targetSchema.trim().isEmpty()) {
+            targetTableNameWithSchema = targetSchema + "." + targetTableName;
+        } else {
+            targetTableNameWithSchema = targetTableName;
+        }
+        
+        // 替换带引号的格式：leftQuote + schema + rightQuote + "." + leftQuote + table + rightQuote
+        if (originalSchema != null && !originalSchema.trim().isEmpty()) {
+            String quotedOriginal = leftQuote + originalSchema + rightQuote + "." + leftQuote + originalTableName + rightQuote;
+            String quotedTarget = leftQuote + (targetSchema != null && !targetSchema.trim().isEmpty() ? targetSchema : originalSchema) 
+                                + rightQuote + "." + leftQuote + targetTableName + rightQuote;
+            result = result.replace(quotedOriginal, quotedTarget);
+        }
+        
+        // 替换只有表名带引号的格式：leftQuote + table + rightQuote
+        String quotedTableOnly = leftQuote + originalTableName + rightQuote;
+        String quotedTargetTableOnly = leftQuote + targetTableName + rightQuote;
+        result = result.replace(quotedTableOnly, quotedTargetTableOnly);
+        
+        // 最后替换不带引号的格式：schema.table 或 table
+        result = result.replace(originalTableNameWithSchema, targetTableNameWithSchema);
+        
+        return result;
+    }
 }
