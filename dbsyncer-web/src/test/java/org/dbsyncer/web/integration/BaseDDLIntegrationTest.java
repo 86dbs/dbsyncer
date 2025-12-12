@@ -613,6 +613,128 @@ public abstract class BaseDDLIntegrationTest {
         assertFalse(String.format("目标数据库表 %s 不应包含字段 %s", tableName, fieldName), exists);
     }
 
+    /**
+     * 验证字段的默认值（支持 MySQL 和 SQL Server）
+     * 
+     * @param fieldName 字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     * @param expectedDefault 期望的默认值（例如：'' 表示空字符串，'0' 表示0，null 表示无默认值）
+     */
+    protected void verifyFieldDefaultValue(String fieldName, String tableName, DatabaseConfig config, String expectedDefault) throws Exception {
+        // 确保 connectorType 已设置
+        if (config.getConnectorType() == null) {
+            config.setConnectorType(getConnectorType(config, false));
+        }
+        
+        String connectorType = config.getConnectorType();
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance = 
+            (org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance) connectorFactory.connect(config);
+        
+        instance.execute(databaseTemplate -> {
+            String sql;
+            String actualDefault;
+            
+            if ("mysql".equalsIgnoreCase(connectorType) || "Mysql".equals(connectorType)) {
+                // MySQL: 使用 INFORMATION_SCHEMA.COLUMNS
+                sql = "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS " +
+                      "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                actualDefault = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            } else if ("SqlServer".equals(connectorType) || "SqlServerCT".equals(connectorType)) {
+                // SQL Server: 使用 INFORMATION_SCHEMA.COLUMNS，但需要指定 schema（通常是 dbo）
+                // 先尝试获取当前 schema
+                String schemaSql = "SELECT SCHEMA_NAME()";
+                String schema = databaseTemplate.queryForObject(schemaSql, String.class);
+                if (schema == null || schema.trim().isEmpty()) {
+                    schema = "dbo"; // 默认 schema
+                }
+                
+                sql = "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS " +
+                      "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                actualDefault = databaseTemplate.queryForObject(sql, String.class, schema, tableName, fieldName);
+            } else {
+                throw new UnsupportedOperationException("不支持的数据库类型: " + connectorType);
+            }
+            
+            if (expectedDefault == null || "NULL".equalsIgnoreCase(expectedDefault)) {
+                assertTrue(String.format("字段 %s 的默认值应为 NULL，但实际是 %s", fieldName, actualDefault),
+                        actualDefault == null || "NULL".equalsIgnoreCase(actualDefault));
+            } else {
+                // 标准化比较：去除引号和空格，统一大小写
+                String normalizedExpected = expectedDefault.replace("'", "").replace("\"", "").trim().toUpperCase();
+                String normalizedActual = actualDefault != null ? 
+                    actualDefault.replace("'", "").replace("\"", "").trim().toUpperCase() : "";
+                
+                // SQL Server 的默认值可能包含括号，例如 (N'') 或 ('')
+                // 需要进一步处理
+                normalizedActual = normalizedActual.replace("(", "").replace(")", "");
+                normalizedExpected = normalizedExpected.replace("(", "").replace(")", "");
+                
+                // 对于空字符串，SQL Server 可能返回 N'' 或 ''，MySQL 可能返回 ''
+                if (normalizedExpected.equals("") || normalizedExpected.equals("N")) {
+                    assertTrue(String.format("字段 %s 的默认值应为空字符串，但实际是 %s", fieldName, actualDefault),
+                            normalizedActual.equals("") || normalizedActual.equals("N"));
+                } else {
+                    assertTrue(String.format("字段 %s 的默认值应为 %s，但实际是 %s", fieldName, expectedDefault, actualDefault),
+                            normalizedExpected.equals(normalizedActual));
+                }
+            }
+            
+            logger.info("字段默认值验证通过: {} 的默认值是 {}", fieldName, actualDefault);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段是否为NOT NULL（支持 MySQL 和 SQL Server）
+     * 
+     * @param fieldName 字段名
+     * @param tableName 表名
+     * @param config 数据库配置
+     */
+    protected void verifyFieldNotNull(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        // 确保 connectorType 已设置
+        if (config.getConnectorType() == null) {
+            config.setConnectorType(getConnectorType(config, false));
+        }
+        
+        String connectorType = config.getConnectorType();
+        @SuppressWarnings("unchecked")
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance = 
+            (org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance) connectorFactory.connect(config);
+        
+        instance.execute(databaseTemplate -> {
+            String sql;
+            String isNullable;
+            
+            if ("mysql".equalsIgnoreCase(connectorType) || "Mysql".equals(connectorType)) {
+                // MySQL: 使用 INFORMATION_SCHEMA.COLUMNS
+                sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                      "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            } else if ("SqlServer".equals(connectorType) || "SqlServerCT".equals(connectorType)) {
+                // SQL Server: 使用 INFORMATION_SCHEMA.COLUMNS，需要指定 schema
+                String schemaSql = "SELECT SCHEMA_NAME()";
+                String schema = databaseTemplate.queryForObject(schemaSql, String.class);
+                if (schema == null || schema.trim().isEmpty()) {
+                    schema = "dbo"; // 默认 schema
+                }
+                
+                sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                      "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                isNullable = databaseTemplate.queryForObject(sql, String.class, schema, tableName, fieldName);
+            } else {
+                throw new UnsupportedOperationException("不支持的数据库类型: " + connectorType);
+            }
+            
+            assertTrue(String.format("字段 %s 应为 NOT NULL，但实际 IS_NULLABLE = %s", fieldName, isNullable),
+                    "NO".equalsIgnoreCase(isNullable));
+            
+            logger.info("字段NOT NULL约束验证通过: {}", fieldName);
+            return null;
+        });
+    }
+
     // ==================== 公共等待方法 ====================
 
     /**

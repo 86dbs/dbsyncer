@@ -1229,56 +1229,8 @@ public class DDLMysqlIntegrationTest extends BaseDDLIntegrationTest {
      * @param config          数据库配置
      * @param expectedDefault 期望的默认值（SQL格式，如 'active' 或 NULL）
      */
-    private void verifyFieldDefaultValue(String fieldName, String tableName, DatabaseConfig config, String expectedDefault) throws Exception {
-        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            // 查询字段的默认值
-            String sql = "SELECT COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-
-            String actualDefault = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
-
-            if (expectedDefault == null || "NULL".equalsIgnoreCase(expectedDefault)) {
-                assertTrue(String.format("字段 %s 的默认值应为 NULL，但实际是 %s", fieldName, actualDefault),
-                        actualDefault == null || "NULL".equalsIgnoreCase(actualDefault));
-            } else {
-                // MySQL的默认值可能包含引号，需要比较时去除引号
-                String normalizedExpected = expectedDefault.replace("'", "").replace("\"", "");
-                String normalizedActual = actualDefault != null ? actualDefault.replace("'", "").replace("\"", "") : "";
-
-                assertTrue(String.format("字段 %s 的默认值应为 %s，但实际是 %s", fieldName, expectedDefault, actualDefault),
-                        normalizedExpected.equalsIgnoreCase(normalizedActual));
-            }
-
-            logger.info("字段默认值验证通过: {} 的默认值是 {}", fieldName, actualDefault);
-            return null;
-        });
-    }
-
-    /**
-     * 验证字段是否为NOT NULL
-     *
-     * @param fieldName 要验证的字段名
-     * @param tableName 表名
-     * @param config    数据库配置
-     */
-    private void verifyFieldNotNull(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            // 查询字段的IS_NULLABLE属性
-            String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-
-            String isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
-
-            assertNotNull(String.format("未找到字段 %s", fieldName), isNullable);
-            assertEquals(String.format("字段 %s 应为NOT NULL，但实际是 %s", fieldName, isNullable),
-                    "NO", isNullable.toUpperCase());
-
-            logger.info("字段NOT NULL约束验证通过: {} 是NOT NULL", fieldName);
-            return null;
-        });
-    }
+    // 注意：verifyFieldDefaultValue 和 verifyFieldNotNull 方法已移至基类 BaseDDLIntegrationTest
+    // 现在使用基类中的 protected 方法，支持 MySQL 和 SQL Server
 
     /**
      * 验证字段是否可空（NULL）
