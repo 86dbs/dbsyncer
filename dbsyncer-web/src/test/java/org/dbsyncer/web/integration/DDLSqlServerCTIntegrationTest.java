@@ -217,7 +217,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
     public void testAddColumn_WithNotNull() throws Exception {
         logger.info("开始测试ADD COLUMN - 带NOT NULL约束");
 
-        String sqlServerDDL = "ALTER TABLE ddlTestSource ADD phone NVARCHAR(20) NOT NULL";
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ADD phone NVARCHAR(20) NOT NULL DEFAULT ''";
 
         mappingService.start(mappingId);
         Thread.sleep(2000);

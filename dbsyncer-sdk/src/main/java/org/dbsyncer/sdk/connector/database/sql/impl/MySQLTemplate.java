@@ -59,9 +59,14 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         // 添加 NOT NULL 约束
         if (field.getNullable() != null && !field.getNullable()) {
             sql.append(" NOT NULL");
+            // MySQL 语法要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+            // 注意：这是为了满足 MySQL 的语法约束，不是通用的缺省值处理
+            // 生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果
+            String defaultValue = MySQLTemplate.getDefaultValueForNotNullColumn(field);
+            if (defaultValue != null) {
+                sql.append(" DEFAULT ").append(defaultValue);
+            }
         }
-        
-        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // 添加 COMMENT
         if (field.getComment() != null && !field.getComment().isEmpty()) {
@@ -283,6 +288,65 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             default:
                 return typeName;
         }
+    }
+
+    /**
+     * 根据字段类型获取 NOT NULL 列的默认值
+     * 
+     * 注意：此方法仅用于满足 MySQL 的语法约束，不是通用的缺省值处理。
+     * MySQL 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值。
+     * 
+     * 背景说明：
+     * - 项目在 2.7.0 版本取消了通用的缺省值处理（见 release-log.md），因为各数据库缺省值函数表达差异很大
+     * - 但 MySQL 的语法要求必须提供 DEFAULT 值，否则 DDL 执行会失败
+     * - 此方法生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果（数据同步不依赖缺省值）
+     * 
+     * @param field 字段信息
+     * @return 默认值表达式，如果不支持则返回 null
+     */
+    public static String getDefaultValueForNotNullColumn(Field field) {
+        if (field == null || field.getTypeName() == null) {
+            return null;
+        }
+        
+        String typeName = field.getTypeName().toUpperCase();
+        
+        // 字符串类型：使用空字符串
+        if (typeName.contains("VARCHAR") || typeName.contains("CHAR") || 
+            typeName.contains("TEXT")) {
+            return "''";
+        }
+        
+        // 数值类型：使用 0
+        if (typeName.contains("INT") || typeName.contains("BIGINT") || 
+            typeName.contains("SMALLINT") || typeName.contains("TINYINT") ||
+            typeName.contains("DECIMAL") || typeName.contains("NUMERIC") ||
+            typeName.contains("FLOAT") || typeName.contains("DOUBLE") ||
+            typeName.contains("REAL")) {
+            return "0";
+        }
+        
+        // 布尔类型（TINYINT(1)）：使用 0
+        if (typeName.equals("BOOLEAN") || typeName.equals("BOOL")) {
+            return "0";
+        }
+        
+        // 日期时间类型：使用 '1900-01-01' 或 '1900-01-01 00:00:00'
+        if (typeName.contains("DATE") || typeName.contains("TIME")) {
+            if (typeName.contains("DATETIME") || typeName.contains("TIMESTAMP")) {
+                return "'1900-01-01 00:00:00'";
+            }
+            return "'1900-01-01'";
+        }
+        
+        // 二进制类型：使用 0x（空二进制）
+        if (typeName.contains("BINARY") || typeName.contains("VARBINARY") ||
+            typeName.contains("BLOB")) {
+            return "0x";
+        }
+        
+        // 其他类型：返回 null，让调用者决定如何处理
+        return null;
     }
 
     /**

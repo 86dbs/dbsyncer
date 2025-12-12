@@ -183,8 +183,9 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 添加 NOT NULL 约束
         if (field.getNullable() != null && !field.getNullable()) {
             sql.append(" NOT NULL");
-            // SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
-            // 根据字段类型自动添加合适的默认值
+            // SQL Server 语法要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+            // 注意：这是为了满足 SQL Server 的语法约束，不是通用的缺省值处理
+            // 生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果
             String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(field);
             if (defaultValue != null) {
                 sql.append(" DEFAULT ").append(defaultValue);
@@ -200,7 +201,14 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
     
     /**
      * 根据字段类型获取 NOT NULL 列的默认值
-     * SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+     * 
+     * 注意：此方法仅用于满足 SQL Server 的语法约束，不是通用的缺省值处理。
+     * SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值。
+     * 
+     * 背景说明：
+     * - 项目在 2.7.0 版本取消了通用的缺省值处理（见 release-log.md），因为各数据库缺省值函数表达差异很大
+     * - 但 SQL Server 的语法要求必须提供 DEFAULT 值，否则 DDL 执行会失败
+     * - 此方法生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果（数据同步不依赖缺省值）
      * 
      * @param field 字段信息
      * @return 默认值表达式，如果不支持则返回 null
