@@ -183,15 +183,77 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 添加 NOT NULL 约束
         if (field.getNullable() != null && !field.getNullable()) {
             sql.append(" NOT NULL");
+            // SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+            // 根据字段类型自动添加合适的默认值
+            String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(field);
+            if (defaultValue != null) {
+                sql.append(" DEFAULT ").append(defaultValue);
+            }
         }
-        
-        // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
         
         // SQL Server 的注释需要使用扩展属性，这里暂时不处理
         // 如果需要添加注释，可以使用：
         // EXEC sp_addextendedproperty 'MS_Description', 'comment', 'SCHEMA', 'dbo', 'TABLE', tableName, 'COLUMN', fieldName;
         
         return sql.toString();
+    }
+    
+    /**
+     * 根据字段类型获取 NOT NULL 列的默认值
+     * SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+     * 
+     * @param field 字段信息
+     * @return 默认值表达式，如果不支持则返回 null
+     */
+    public static String getDefaultValueForNotNullColumn(Field field) {
+        if (field == null || field.getTypeName() == null) {
+            return null;
+        }
+        
+        String typeName = field.getTypeName().toUpperCase();
+        
+        // 字符串类型：使用空字符串
+        if (typeName.contains("VARCHAR") || typeName.contains("CHAR") || 
+            typeName.contains("TEXT") || typeName.contains("NCHAR") || 
+            typeName.contains("NVARCHAR")) {
+            // Unicode 字符串类型使用 N''
+            if (typeName.contains("NCHAR") || typeName.contains("NVARCHAR") || 
+                typeName.contains("NTEXT")) {
+                return "N''";
+            }
+            return "''";
+        }
+        
+        // 数值类型：使用 0
+        if (typeName.contains("INT") || typeName.contains("BIGINT") || 
+            typeName.contains("SMALLINT") || typeName.contains("TINYINT") ||
+            typeName.contains("DECIMAL") || typeName.contains("NUMERIC") ||
+            typeName.contains("FLOAT") || typeName.contains("REAL") ||
+            typeName.contains("MONEY") || typeName.contains("SMALLMONEY")) {
+            return "0";
+        }
+        
+        // 布尔类型（BIT）：使用 0
+        if (typeName.equals("BIT")) {
+            return "0";
+        }
+        
+        // 日期时间类型：使用 '1900-01-01'
+        if (typeName.contains("DATE") || typeName.contains("TIME")) {
+            if (typeName.contains("DATETIME2") || typeName.contains("DATETIMEOFFSET")) {
+                return "'1900-01-01 00:00:00'";
+            }
+            return "'1900-01-01'";
+        }
+        
+        // 二进制类型：使用 0x（空二进制）
+        if (typeName.contains("BINARY") || typeName.contains("VARBINARY") ||
+            typeName.contains("IMAGE")) {
+            return "0x";
+        }
+        
+        // 其他类型：返回 null，让调用者决定如何处理
+        return null;
     }
 
     @Override

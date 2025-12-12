@@ -2,6 +2,7 @@ package org.dbsyncer.connector.sqlserver.converter;
 
 import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.sdk.connector.database.sql.SqlTemplate;
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.parser.ddl.converter.AbstractIRToTargetConverter;
 
@@ -68,9 +69,13 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             // 添加 NOT NULL 约束
             if (column.getNullable() != null && !column.getNullable()) {
                 columnDef.append(" NOT NULL");
+                // SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+                // 根据字段类型自动添加合适的默认值
+                String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(column);
+                if (defaultValue != null) {
+                    columnDef.append(" DEFAULT ").append(defaultValue);
+                }
             }
-            
-            // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
             
             columnDefinitions.add(columnDef.toString());
             

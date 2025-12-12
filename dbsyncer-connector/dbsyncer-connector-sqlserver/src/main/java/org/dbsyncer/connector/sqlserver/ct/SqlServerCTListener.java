@@ -8,6 +8,7 @@ import org.dbsyncer.connector.sqlserver.ct.model.*;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
@@ -716,6 +717,12 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         // 处理可空性
         if (Boolean.FALSE.equals(column.getNullable())) {
             ddl.append(" NOT NULL");
+            // SQL Server 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
+            // 根据字段类型自动添加合适的默认值
+            String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(column);
+            if (defaultValue != null) {
+                ddl.append(" DEFAULT ").append(defaultValue);
+            }
         }
 
         return ddl.toString();
