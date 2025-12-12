@@ -188,6 +188,11 @@ public class MySQLTemplate extends AbstractSqlTemplate {
         
         // 处理参数（长度、精度等）
         switch (typeName) {
+            case "CHAR":
+                if (column.getColumnSize() > 0) {
+                    return typeName + "(" + column.getColumnSize() + ")";
+                }
+                throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
             case "VARCHAR":
                 if (column.getColumnSize() > 0) {
                     return typeName + "(" + column.getColumnSize() + ")";
