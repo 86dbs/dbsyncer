@@ -21,14 +21,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.util.Assert;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -679,13 +676,17 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     /**
      * 判断两个列是否相等（忽略列名）
-     * 比较：类型、长度、精度、可空性
+     * 比较：类型、长度、精度
+     * 注意：忽略 nullable 和 DEFAULT 值的比较，因为：
+     * 1. SQL Server 在执行 sp_rename 后，列的 nullable 属性可能发生变化
+     * 2. 快照保存/加载时，nullable 可能为 null（JSON 序列化/反序列化问题）
+     * 3. DEFAULT 值不影响 RENAME 识别
+     * 示例：first_name (nullable=null) vs full_name (nullable=false) 应该识别为 RENAME
      */
     private boolean isColumnEqualIgnoreName(Field col1, Field col2) {
         return Objects.equals(col1.getTypeName(), col2.getTypeName())
                 && Objects.equals(col1.getColumnSize(), col2.getColumnSize())
-                && Objects.equals(col1.getRatio(), col2.getRatio())
-                && Objects.equals(col1.getNullable(), col2.getNullable());
+                && Objects.equals(col1.getRatio(), col2.getRatio());
     }
 
     private String generateAddColumnDDL(String tableName, Field column) {
@@ -970,7 +971,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         final int maxRetries = 3;
         final long retryDelayMs = 100;
         Exception lastException = null;
-        
+
         for (int attempt = 0; attempt < maxRetries; attempt++) {
             try {
                 Object execute = instance.execute(databaseTemplate -> {
@@ -1024,7 +1025,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 throw e;
             }
         }
-        
+
         // 所有重试都失败
         if (lastException != null) {
             throw lastException;
