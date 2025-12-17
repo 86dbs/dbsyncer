@@ -200,6 +200,17 @@ public class MonitorController extends BaseController {
     }
 
     @ResponseBody
+    @GetMapping("/dashboard")
+    public RestResult dashboard() {
+        try {
+            return RestResult.restSuccess(monitorService.queryDashboardMetric());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @ResponseBody
     @PostMapping("/queryActuator")
     public RestResult queryActuator(HttpServletRequest request) {
         try {
@@ -211,11 +222,6 @@ public class MonitorController extends BaseController {
         }
     }
 
-    /**
-     * 硬盘状态
-     *
-     * @return
-     */
     private List<MetricResponse> getDiskHealth() {
         List<MetricResponse> list = new ArrayList<>();
         SystemHealth health = (SystemHealth) healthEndpoint.health();

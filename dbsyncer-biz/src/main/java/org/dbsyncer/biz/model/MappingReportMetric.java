@@ -27,6 +27,16 @@ public class MappingReportMetric {
      */
     private long delete;
 
+    /**
+     * ddl事件
+     */
+    private long ddl;
+
+    /**
+     * 昨天同步总数（成功+失败）
+     */
+    private long yesterdayTotal;
+
     public long getSuccess() {
         return success;
     }
@@ -67,4 +77,29 @@ public class MappingReportMetric {
         this.delete = delete;
     }
 
+    public long getDdl() {
+        return ddl;
+    }
+
+    public void setDdl(long ddl) {
+        this.ddl = ddl;
+    }
+
+    public long getYesterdayTotal() {
+        return yesterdayTotal;
+    }
+
+    public void setYesterdayTotal(long yesterdayTotal) {
+        this.yesterdayTotal = yesterdayTotal;
+    }
+
+    public void reset() {
+        this.success = 0;
+        this.fail = 0;
+        this.insert = 0;
+        this.update = 0;
+        this.delete = 0;
+        this.ddl = 0;
+        this.yesterdayTotal = 0;
+    }
 }

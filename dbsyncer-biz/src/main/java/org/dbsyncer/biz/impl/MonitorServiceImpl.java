@@ -19,6 +19,7 @@ import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
@@ -230,6 +231,11 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
+    public DashboardMetric queryDashboardMetric() {
+        return metricReporter.getMappingReportMetric();
+    }
+
+    @Override
     public Paging<MetricResponse> queryActuator(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
@@ -248,24 +254,28 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
         StringBuilder content = new StringBuilder();
         metaAll.forEach(meta -> {
-            // 有失败记录
+            // 统计运行中和失败数
             if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
-                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-                if (null != mapping) {
-                    ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-                    content.append("<p>");
-                    content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
-                    if (ModelEnum.FULL == modelEnum) {
-                        content.append(String.format(", 总数:%s", meta.getTotal()));
-                    }
-                    content.append("<p>");
-                }
+                writeMappingReport(meta, content);
             }
         });
 
         String msg = content.toString();
         if (StringUtil.isNotBlank(msg)) {
             sendNotifyMessage("同步失败", msg);
+        }
+    }
+
+    private void writeMappingReport(Meta meta, StringBuilder content) {
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        if (null != mapping) {
+            ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
+            content.append("<p>");
+            content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
+            if (ModelEnum.FULL == modelEnum) {
+                content.append(String.format(", 总数:%s", meta.getTotal()));
+            }
+            content.append("<p>");
         }
     }
 

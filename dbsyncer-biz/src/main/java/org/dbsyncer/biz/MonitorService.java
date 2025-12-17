@@ -5,6 +5,7 @@ package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
@@ -99,6 +100,13 @@ public interface MonitorService {
      * @return
      */
     AppReportMetric queryAppReportMetric(List<MetricResponse> metrics);
+
+    /**
+     * 获取仪表盘报告
+     *
+     * @return
+     */
+    DashboardMetric queryDashboardMetric();
 
     /**
      * 查询表执行器

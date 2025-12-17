@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2 success">
-                <span class="text-3xl font-bold">24</span>
+                <span class="text-3xl font-bold" id="totalMeta"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                     <i class="fa fa-arrow-up mr-1"></i> 3 个
                 </span>
@@ -29,7 +29,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold">18</span>
+                <span class="text-3xl font-bold" id="runningMeta"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                         <i class="fa fa-check mr-1"></i> 正常
                     </span>
@@ -45,10 +45,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold">2</span>
-                <span class="text-error text-sm mb-1 flex items-center">
-                    <i class="fa fa-arrow-up mr-1"></i> 1 个
-                </span>
+                <span class="text-3xl font-bold" id="failMeta"></span>
             </div>
             <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
         </div>
@@ -61,7 +58,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold">14.2 GB</span>
+                <span class="text-3xl font-bold" id="yesterdayTotal"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                     <i class="fa fa-arrow-up mr-1"></i> 23%
                 </span>
@@ -94,7 +91,7 @@
                         <p class="mini-stat-title">成功</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-success">10,009,999</span>
+                        <span class="mini-stat-number text-success" id="success"></span>
                     </div>
                 </div>
                 <div class="mini-stat-card mini-stat-card--error">
@@ -102,7 +99,7 @@
                         <p class="mini-stat-title">失败</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-error">10,009,999</span>
+                        <span class="mini-stat-number text-error" id="fail"></span>
                     </div>
                 </div>
                 <div class="mini-stat-card mini-stat-card--primary">
@@ -110,7 +107,7 @@
                         <p class="mini-stat-title">新增</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-primary">10,009,999</span>
+                        <span class="mini-stat-number text-primary" id="insert"></span>
                     </div>
                 </div>
                 <div class="mini-stat-card mini-stat-card--info">
@@ -118,7 +115,7 @@
                         <p class="mini-stat-title">修改</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-info">10,009,999</span>
+                        <span class="mini-stat-number text-info" id="update"></span>
                     </div>
                 </div>
                 <div class="mini-stat-card mini-stat-card--warning">
@@ -126,7 +123,7 @@
                         <p class="mini-stat-title">删除</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-warning">10,009,999</span>
+                        <span class="mini-stat-number text-warning" id="delete"></span>
                     </div>
                 </div>
                 <div class="mini-stat-card mini-stat-card--violet">
@@ -134,7 +131,7 @@
                         <p class="mini-stat-title">DDL</p>
                     </div>
                     <div class="mini-stat-value">
-                        <span class="mini-stat-number text-violet">10,009,999</span>
+                        <span class="mini-stat-number text-violet" id="ddl"></span>
                     </div>
                 </div>
             </div>
@@ -240,6 +237,24 @@
         window.backIndexPage = function () {
             doLoader('/index');
         };
+
+        // 驱动任务数
+        doGetter("/monitor/dashboard", {}, function (data) {
+            if (data.success === true) {
+                const r = data.resultValue;
+                $("#totalMeta").text(r.totalMeta);
+                $("#lastWeekTotalMeta").text(r.lastWeekTotalMeta);
+                $("#runningMeta").text(r.runningMeta);
+                $("#failMeta").text(r.failMeta);
+                $("#success").text(r.success);
+                $("#fail").text(r.fail);
+                $("#insert").text(r.insert);
+                $("#update").text(r.update);
+                $("#delete").text(r.delete);
+                $("#ddl").text(r.ddl);
+                $("#yesterdayTotal").text(r.yesterdayTotal);
+            }
+        });
 
         // 初始化分页管理器
         new PaginationManager({

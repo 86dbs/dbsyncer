@@ -17,6 +17,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
@@ -24,8 +25,11 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
@@ -81,7 +85,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private LocalDateTime queryTime;
 
-    private final MappingReportMetric mappingReportMetric = new MappingReportMetric();
+    private final DashboardMetric dashboardMetric = new DashboardMetric();
 
     private final AppReportMetric report = new AppReportMetric();
 
@@ -142,11 +146,6 @@ public class MetricReporter implements ScheduledTaskJob {
 
     public AppReportMetric getAppReportMetric() {
         queryTime = LocalDateTime.now();
-        report.setSuccess(mappingReportMetric.getSuccess());
-        report.setFail(mappingReportMetric.getFail());
-        report.setInsert(mappingReportMetric.getInsert());
-        report.setUpdate(mappingReportMetric.getUpdate());
-        report.setDelete(mappingReportMetric.getDelete());
         // 堆积任务(通用执行器 + 表执行器)
         report.setQueueUp(bufferActuatorRouter.getQueueSize().addAndGet(generalBufferActuator.getQueue().size()));
         report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
@@ -156,6 +155,11 @@ public class MetricReporter implements ScheduledTaskJob {
         // 执行器TPS
         report.setTps(getOneMinBufferActuatorRate());
         return report;
+    }
+
+    public DashboardMetric getMappingReportMetric() {
+        queryTime = LocalDateTime.now();
+        return dashboardMetric;
     }
 
     @Override
@@ -172,11 +176,39 @@ public class MetricReporter implements ScheduledTaskJob {
         try {
             running = true;
             final List<Meta> metaAll = profileComponent.getMetaAll();
-            mappingReportMetric.setSuccess(getMappingSuccess(metaAll));
-            mappingReportMetric.setFail(getMappingFail(metaAll));
-            mappingReportMetric.setInsert(getMappingInsert(metaAll));
-            mappingReportMetric.setUpdate(getMappingUpdate(metaAll));
-            mappingReportMetric.setDelete(getMappingDelete(metaAll));
+            if (CollectionUtils.isEmpty(metaAll)) {
+                dashboardMetric.reset();
+                return;
+            }
+            dashboardMetric.setSuccess(getMappingSuccess(metaAll));
+            dashboardMetric.setFail(getMappingFail(metaAll));
+            dashboardMetric.setYesterdayTotal(getMappingYesterdayAll(metaAll));
+            dashboardMetric.setInsert(getMappingInsert(metaAll));
+            dashboardMetric.setUpdate(getMappingUpdate(metaAll));
+            dashboardMetric.setDelete(getMappingDelete(metaAll));
+            dashboardMetric.setDdl(0);
+
+            AtomicLong running = new AtomicLong();
+            AtomicLong fail = new AtomicLong();
+            AtomicLong lastWeek = new AtomicLong();
+            long lastWeekTime = Timestamp.valueOf(LocalDateTime.now().minusWeeks(1)).getTime();
+            metaAll.forEach(meta -> {
+                // 统计上周任务总数
+                if (meta.getCreateTime() <= lastWeekTime) {
+                    lastWeek.incrementAndGet();
+                }
+                // 统计运行中和失败数
+                if (MetaEnum.isRunning(meta.getState())) {
+                    running.incrementAndGet();
+                    if (meta.getFail().get() > 0) {
+                        fail.incrementAndGet();
+                    }
+                }
+            });
+            dashboardMetric.setTotalMeta(metaAll.size());
+            dashboardMetric.setLastWeekTotalMeta(lastWeek.get());
+            dashboardMetric.setRunningMeta(running.get());
+            dashboardMetric.setFailMeta(fail.get());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
@@ -228,6 +260,20 @@ public class MetricReporter implements ScheduledTaskJob {
      */
     private long getMappingFail(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+    }
+
+    /**
+     * 获取昨天驱动成功+失败数
+     *
+     * @param metaAll
+     * @return
+     */
+    private long getMappingYesterdayAll(List<Meta> metaAll) {
+        return queryMappingMetricCount(metaAll, (query) -> {
+            long yesterday = Timestamp.valueOf(LocalDateTime.now().minusDays(1)).getTime();
+            LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, yesterday);
+            query.setBooleanFilter(new BooleanFilter().add(filter));
+        });
     }
 
     /**

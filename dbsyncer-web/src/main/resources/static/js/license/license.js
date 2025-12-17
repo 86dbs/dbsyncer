@@ -13,24 +13,27 @@ $(function () {
     // 删除激活码
     $("#removeBtn").on('click', function(){
         const $btn = $(this);
-        
-        if (confirm('删除激活码后，产品功能将不可用，确认是否删除？')) {
-            $btn.prop('disabled', true);
-            const originalText = $btn.html();
-            $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...');
-            
-            doPoster("/license/remove", {}, function (response) {
-                $btn.prop('disabled', false);
-                $btn.html(originalText);
-                
-                if (response.success == true) {
-                    bootGrowl("删除激活码成功！", "success");
-                    doLoader("/license");
-                } else {
-                    bootGrowl(response.resultValue || "删除失败", "danger");
-                }
-            });
-        }
+        showConfirm({
+            title: '删除激活码后，产品功能将不可用，确认是否删除？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function () {
+                // 禁用按钮，防止重复点击
+                const originalText = $btn.html();
+                $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
+                doPoster("/license/remove", {}, function (response) {
+                    $btn.prop('disabled', false);
+                    $btn.html(originalText);
+                    if (response.success === true) {
+                        bootGrowl("删除激活码成功！", "success");
+                        doLoader("/license");
+                    } else {
+                        bootGrowl(response.resultValue || "删除失败", "danger");
+                    }
+                });
+            }
+        });
     });
 
     // 在线激活
@@ -45,16 +48,12 @@ $(function () {
             return;
         }
 
-        $btn.prop('disabled', true);
         const originalText = $btn.html();
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...');
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...').prop('disabled', true);
+        doPoster("/license/activate", $form.serializeJson(), function (response) {
+            $btn.html(originalText).prop('disabled', false);
 
-        const data = $form.serializeJson();
-        doPoster("/license/activate", data, function (response) {
-            $btn.prop('disabled', false);
-            $btn.html(originalText);
-
-            if (response.success == true) {
+            if (response.success === true) {
                 bootGrowl("在线激活成功！", "success");
                 doLoader("/license");
             } else {

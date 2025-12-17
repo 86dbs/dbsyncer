@@ -8,7 +8,7 @@ import org.dbsyncer.biz.vo.MetricResponseVo;
 
 import java.util.List;
 
-public class AppReportMetric extends MappingReportMetric {
+public class AppReportMetric {
 
     /**
      * 待处理数
