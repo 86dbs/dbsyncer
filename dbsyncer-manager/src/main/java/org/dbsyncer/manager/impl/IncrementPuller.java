@@ -162,6 +162,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 Assert.notEmpty(fields, "表字段映射关系不能为空：" + group.getSourceTable().getName() + " > " + group.getTargetTable().getName());
                 return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getTargetTable(), t.getCommand(), group.getPlugin(), group.getPluginExtInfo());
             }).collect(Collectors.toList());
+            quartzListener.setMappingName(mapping.getName());
             quartzListener.setCommands(quartzCommands);
         }
 
