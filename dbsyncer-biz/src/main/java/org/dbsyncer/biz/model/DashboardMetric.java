@@ -18,7 +18,7 @@ public final class DashboardMetric extends MappingReportMetric {
     /**
      * 上周任务数
      */
-    private long lastWeekTotalMeta;
+    private long lastWeekMeta;
 
     /**
      * 运行任务数
@@ -38,12 +38,12 @@ public final class DashboardMetric extends MappingReportMetric {
         this.totalMeta = totalMeta;
     }
 
-    public long getLastWeekTotalMeta() {
-        return lastWeekTotalMeta;
+    public long getLastWeekMeta() {
+        return lastWeekMeta;
     }
 
-    public void setLastWeekTotalMeta(long lastWeekTotalMeta) {
-        this.lastWeekTotalMeta = lastWeekTotalMeta;
+    public void setLastWeekMeta(long lastWeekMeta) {
+        this.lastWeekMeta = lastWeekMeta;
     }
 
     public long getRunningMeta() {
@@ -65,7 +65,7 @@ public final class DashboardMetric extends MappingReportMetric {
     public void reset() {
         super.reset();
         this.totalMeta = 0;
-        this.lastWeekTotalMeta = 0;
+        this.lastWeekMeta = 0;
         this.runningMeta = 0;
         this.failMeta = 0;
     }

@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2 success">
-                <span class="text-3xl font-bold" id="totalMeta"></span>
+                <span class="text-xxl font-bold" id="totalMeta"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                     <i class="fa fa-arrow-up mr-1"></i> 3 个
                 </span>
@@ -29,7 +29,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold" id="runningMeta"></span>
+                <span class="text-xxl font-bold" id="runningMeta"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                         <i class="fa fa-check mr-1"></i> 正常
                     </span>
@@ -45,7 +45,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold" id="failMeta"></span>
+                <span class="text-xxl font-bold" id="failMeta"></span>
             </div>
             <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
         </div>
@@ -58,7 +58,7 @@
                 </div>
             </div>
             <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold" id="yesterdayTotal"></span>
+                <span class="text-xxl font-bold" id="yesterdayData"></span>
                 <span class="text-success text-sm mb-1 flex items-center">
                     <i class="fa fa-arrow-up mr-1"></i> 23%
                 </span>
@@ -243,7 +243,7 @@
             if (data.success === true) {
                 const r = data.resultValue;
                 $("#totalMeta").text(r.totalMeta);
-                $("#lastWeekTotalMeta").text(r.lastWeekTotalMeta);
+                $("#lastWeekMeta").text(r.lastWeekMeta);
                 $("#runningMeta").text(r.runningMeta);
                 $("#failMeta").text(r.failMeta);
                 $("#success").text(r.success);
@@ -252,7 +252,7 @@
                 $("#update").text(r.update);
                 $("#delete").text(r.delete);
                 $("#ddl").text(r.ddl);
-                $("#yesterdayTotal").text(r.yesterdayTotal);
+                $("#yesterdayData").text(r.yesterdayData);
             }
         });
 

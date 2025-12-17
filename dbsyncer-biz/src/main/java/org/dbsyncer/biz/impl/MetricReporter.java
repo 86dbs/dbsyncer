@@ -182,7 +182,7 @@ public class MetricReporter implements ScheduledTaskJob {
             }
             dashboardMetric.setSuccess(getMappingSuccess(metaAll));
             dashboardMetric.setFail(getMappingFail(metaAll));
-            dashboardMetric.setYesterdayTotal(getMappingYesterdayAll(metaAll));
+            dashboardMetric.setYesterdayData(getMappingYesterdayAll(metaAll));
             dashboardMetric.setInsert(getMappingInsert(metaAll));
             dashboardMetric.setUpdate(getMappingUpdate(metaAll));
             dashboardMetric.setDelete(getMappingDelete(metaAll));
@@ -206,7 +206,7 @@ public class MetricReporter implements ScheduledTaskJob {
                 }
             });
             dashboardMetric.setTotalMeta(metaAll.size());
-            dashboardMetric.setLastWeekTotalMeta(lastWeek.get());
+            dashboardMetric.setLastWeekMeta(lastWeek.get());
             dashboardMetric.setRunningMeta(running.get());
             dashboardMetric.setFailMeta(fail.get());
         } catch (Exception e) {

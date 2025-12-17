@@ -35,7 +35,7 @@ public class MappingReportMetric {
     /**
      * 昨天同步总数（成功+失败）
      */
-    private long yesterdayTotal;
+    private long yesterdayData;
 
     public long getSuccess() {
         return success;
@@ -85,12 +85,12 @@ public class MappingReportMetric {
         this.ddl = ddl;
     }
 
-    public long getYesterdayTotal() {
-        return yesterdayTotal;
+    public long getYesterdayData() {
+        return yesterdayData;
     }
 
-    public void setYesterdayTotal(long yesterdayTotal) {
-        this.yesterdayTotal = yesterdayTotal;
+    public void setYesterdayData(long yesterdayData) {
+        this.yesterdayData = yesterdayData;
     }
 
     public void reset() {
@@ -100,6 +100,6 @@ public class MappingReportMetric {
         this.update = 0;
         this.delete = 0;
         this.ddl = 0;
-        this.yesterdayTotal = 0;
+        this.yesterdayData = 0;
     }
 }
