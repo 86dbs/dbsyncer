@@ -38,7 +38,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String CURSOR = "cursor";
-    private final int READ_NUM = 1000;
+    private final int READ_NUM = 5000;
+    private String mappingName;
     private List<TableGroupQuartzCommand> commands;
     private String eventFieldName;
     private boolean customEvent;
@@ -78,9 +79,9 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         taskKey = UUIDUtil.getUUID();
         running = true;
 
+        flushPoint();
         scheduledTaskService.start(taskKey, listenerConfig.getCron(), this);
-        logger.info("启动定时任务:{}[{}]", taskKey, listenerConfig.getCron());
-        run();
+        logger.info("启动定时任务:{}[{}]", mappingName, listenerConfig.getCron());
     }
 
     @Override
@@ -90,6 +91,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         try {
             locked = taskLock.tryLock(3, TimeUnit.SECONDS);
             if (locked) {
+                logger.info("执行定时任务:{}[{}]", mappingName, listenerConfig.getCron());
                 for (int i = 0; i < commands.size(); i++) {
                     execute(commands.get(i), i);
                 }
@@ -108,6 +110,19 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
     public void close() {
         scheduledTaskService.stop(taskKey);
         running = false;
+    }
+
+    private void flushPoint() {
+        if (CollectionUtils.isEmpty(snapshot)) {
+            for (int i = 0; i < commands.size(); i++) {
+                final Map<String, String> command = commands.get(i).getCommand();
+                // 获取最新增量点
+                Point point = checkLastPoint(command, i);
+                // 更新
+                snapshot.putAll(point.getPosition());
+            }
+            super.forceFlushEvent();
+        }
     }
 
     private void execute(TableGroupQuartzCommand cmd, int index) {
@@ -138,12 +153,11 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
             context.setPageIndex(pageIndex++);
             Result reader = connectorService.reader(connectorInstance, context);
             List<Map> data = reader.getSuccessData();
-            logger.info("执行定时任务:{}[{}], data=[{}]", taskKey, listenerConfig.getCron(), data.size());
             if (CollectionUtils.isEmpty(data)) {
                 cursors = new Object[0];
                 break;
             }
-
+            logger.info("{}[{}], data=[{}]", mappingName, context.getSourceTableName(), data.size());
             for (Map<String, Object> row : data) {
                 if (customEvent) {
                     trySendEvent(new ScanChangedEvent(table.getName(), event, cmd.getChangedRow(row)));
@@ -197,6 +211,10 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
                 }
             }
         }
+    }
+
+    public void setMappingName(String mappingName) {
+        this.mappingName = mappingName;
     }
 
     public void setCommands(List<TableGroupQuartzCommand> commands) {
