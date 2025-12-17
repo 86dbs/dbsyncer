@@ -7,7 +7,6 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
@@ -21,7 +20,6 @@ import java.util.Properties;
 
 @EnableAsync
 @EnableScheduling
-@EnableCaching
 @SpringBootApplication(scanBasePackages = "org.dbsyncer")
 public class Application {
 
