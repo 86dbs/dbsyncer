@@ -5,37 +5,9 @@
 <div th:fragment="index">
     <!-- 统计卡片 -->
     <div class="grid grid-cols-4 mb-5">
-        <div class="card px-6">
-            <div class="flex items-center justify-between">
-                <p class="text-gray-500">总任务数</p>
-                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <i class="fa fa-tasks"></i>
-                </div>
-            </div>
-            <div class="flex items-end gap-2 success">
-                <span class="text-xxl font-bold" id="totalMeta"></span>
-                <span class="text-success text-sm mb-1 flex items-center">
-                    <i class="fa fa-arrow-up mr-1"></i> 3 个
-                </span>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">较上周增长 14%</p>
-        </div>
+        <div class="card px-6" id="totalMeta"></div>
 
-        <div class="card px-6">
-            <div class="flex items-center justify-between">
-                <p class="text-gray-500">运行中任务</p>
-                <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
-                    <i class="fa fa-play"></i>
-                </div>
-            </div>
-            <div class="flex items-end gap-2">
-                <span class="text-xxl font-bold" id="runningMeta"></span>
-                <span class="text-success text-sm mb-1 flex items-center">
-                        <i class="fa fa-check mr-1"></i> 正常
-                    </span>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">占总任务数 75%</p>
-        </div>
+        <div class="card px-6" id="runningMeta"></div>
 
         <div class="card px-6">
             <div class="flex items-center justify-between">
@@ -50,21 +22,7 @@
             <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
         </div>
 
-        <div class="card px-6">
-            <div class="flex items-center justify-between">
-                <p class="text-gray-500">同步数据量</p>
-                <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
-                    <i class="fa fa-database"></i>
-                </div>
-            </div>
-            <div class="flex items-end gap-2">
-                <span class="text-xxl font-bold" id="yesterdayData"></span>
-                <span class="text-success text-sm mb-1 flex items-center">
-                    <i class="fa fa-arrow-up mr-1"></i> 23%
-                </span>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">较昨日增长</p>
-        </div>
+        <div class="card px-6" id="allData"></div>
     </div>
 
     <!-- 同步趋势图表 -->
@@ -185,7 +143,7 @@
             labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
             datasets: [
                 {
-                    label: '同步数据量 (MB)',
+                    label: '同步成功',
                     data: [1250, 1900, 1750, 2400, 2100, 1800, 2300],
                     borderColor: '#165DFF',
                     backgroundColor: 'rgba(22, 93, 255, 0.1)',
@@ -193,7 +151,7 @@
                     fill: true
                 },
                 {
-                    label: '同步次数',
+                    label: '同步失败',
                     data: [32, 45, 38, 52, 48, 36, 42],
                     borderColor: '#36CFC9',
                     backgroundColor: 'transparent',
@@ -214,7 +172,7 @@
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: '数据量 (MB)'
+                        text: '同步成功'
                     }
                 },
                 y1: {
@@ -222,7 +180,7 @@
                     position: 'right',
                     title: {
                         display: true,
-                        text: '同步次数'
+                        text: '同步失败'
                     },
                     grid: {
                         drawOnChartArea: false
@@ -238,21 +196,94 @@
             doLoader('/index');
         };
 
+        function renderTotalMeta(r) {
+            const isIncrease = r.lastWeekMeta <= r.totalMeta;
+            const diff = isIncrease ? (r.totalMeta - r.lastWeekMeta) : (r.lastWeekMeta - r.totalMeta);
+            const percent = r.lastWeekMeta > 0 ? (diff / r.lastWeekMeta * 100) : 0;
+            const config = isIncrease ? {
+                class: 'fa-arrow-up',
+                text: '增长',
+                colorClass: 'text-success'
+            } : {
+                class: 'fa-arrow-down',
+                text: '降低',
+                colorClass: 'text-warning'
+            };
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">总任务数</p>
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <i class="fa fa-tasks"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2 success">
+                <span class="text-xxl font-bold">${r.totalMeta}</span>
+                <span class="${config.colorClass} text-sm mb-1 flex items-center">
+                    <i class="fa ${config.class} mr-1"></i> ${diff} 个
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较上周${config.text} ${percent.toFixed(2)}%</p>`;
+        }
+
+        function renderRunningMeta(r) {
+            const percent = r.totalMeta > 0 ? (r.runningMeta / r.totalMeta * 100) : 0;
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">运行中任务</p>
+                <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                    <i class="fa fa-play"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-xxl font-bold">${r.runningMeta}</span>
+                <span class="text-success text-sm mb-1 flex items-center">
+                        <i class="fa fa-check mr-1"></i> 正常
+                    </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">占总任务数 ${percent.toFixed(2)}%</p>`;
+        }
+
+        function renderAllData(r) {
+            const total = r.success + r.fail;
+            const isIncrease = r.yesterdayData <= total;
+            const diff = isIncrease ? (total - r.yesterdayData) : (r.yesterdayData - total);
+            const percent = r.yesterdayData > 0 ? (diff / r.yesterdayData * 100) : 0;
+            const config = isIncrease ? {
+                class: 'fa-arrow-up',
+                text: '增长',
+                colorClass: 'text-success'
+            } : {
+                class: 'fa-arrow-down',
+                text: '降低',
+                colorClass: 'text-warning'
+            };
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">同步总数</p>
+                <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+                    <i class="fa fa-database"></i>
+                </div>
+            </div>
+            <div class="flex items-end gap-2 success">
+                <span class="text-xxl font-bold">${total}</span>
+                <span class="${config.colorClass} text-sm mb-1 flex items-center">
+                    <i class="fa ${config.class} mr-1"></i> ${percent.toFixed(2)}%
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较昨日${config.text}</p>`;
+        }
+
         // 驱动任务数
         doGetter("/monitor/dashboard", {}, function (data) {
             if (data.success === true) {
                 const r = data.resultValue;
-                $("#totalMeta").text(r.totalMeta);
-                $("#lastWeekMeta").text(r.lastWeekMeta);
-                $("#runningMeta").text(r.runningMeta);
+                $("#totalMeta").html(renderTotalMeta(r));
+                $("#runningMeta").html(renderRunningMeta(r));
                 $("#failMeta").text(r.failMeta);
+                $("#allData").html(renderAllData(r));
                 $("#success").text(r.success);
                 $("#fail").text(r.fail);
                 $("#insert").text(r.insert);
                 $("#update").text(r.update);
                 $("#delete").text(r.delete);
                 $("#ddl").text(r.ddl);
-                $("#yesterdayData").text(r.yesterdayData);
             }
         });
 
