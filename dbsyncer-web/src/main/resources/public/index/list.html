@@ -153,7 +153,7 @@
                 {
                     label: '同步失败',
                     data: [32, 45, 38, 52, 48, 36, 42],
-                    borderColor: '#36CFC9',
+                    borderColor: '#fa8c16',
                     backgroundColor: 'transparent',
                     tension: 0.3,
                     yAxisID: 'y1'
@@ -270,25 +270,27 @@
             <p class="text-xs text-gray-500 mt-1">较昨日${config.text}</p>`;
         }
 
-        // 驱动任务数
-        doGetter("/monitor/dashboard", {}, function (data) {
-            if (data.success === true) {
-                const r = data.resultValue;
-                $("#totalMeta").html(renderTotalMeta(r));
-                $("#runningMeta").html(renderRunningMeta(r));
-                $("#failMeta").text(r.failMeta);
-                $("#allData").html(renderAllData(r));
-                $("#success").text(r.success);
-                $("#fail").text(r.fail);
-                $("#insert").text(r.insert);
-                $("#update").text(r.update);
-                $("#delete").text(r.delete);
-                $("#ddl").text(r.ddl);
-            }
-        });
+        // 刷新仪表板数据
+        function refreshDashboardData() {
+            doGetter("/monitor/dashboard", {}, function (data) {
+                if (data.success === true) {
+                    const r = data.resultValue;
+                    $("#totalMeta").html(renderTotalMeta(r));
+                    $("#runningMeta").html(renderRunningMeta(r));
+                    $("#failMeta").text(r.failMeta);
+                    $("#allData").html(renderAllData(r));
+                    $("#success").text(r.success);
+                    $("#fail").text(r.fail);
+                    $("#insert").text(r.insert);
+                    $("#update").text(r.update);
+                    $("#delete").text(r.delete);
+                    $("#ddl").text(r.ddl);
+                }
+            });
+        }
 
         // 初始化分页管理器
-        new PaginationManager({
+        let searchConnector = new PaginationManager({
             requestUrl: '/connector/search',
             tableBodySelector: '#connectorTable',
             paginationSelector: '#connectorPagination',
@@ -313,7 +315,7 @@
         });
 
         // 初始化分页管理器
-        new PaginationManager({
+        let searchMapping = new PaginationManager({
             requestUrl: '/mapping/search',
             tableBodySelector: '#mappingTable',
             pageSize: 5,
@@ -328,6 +330,17 @@
             },
             emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
         });
+
+        // 初始化时立即刷新一次
+        refreshDashboardData();
+        
+        // 注册到全局定时刷新管理器
+        PageRefreshManager.register(() => {
+            refreshDashboardData();
+            searchConnector.doSearch({}, searchConnector.currentPage);
+            searchMapping.doSearch({}, searchMapping.currentPage);
+        });
+
     });
 </script>
 </div>

@@ -251,10 +251,74 @@ function validateForm($form) {
     return isValid;
 }
 
+// ******************* 全局定时刷新管理器 ***************************
+/**
+ * 全局定时刷新管理器
+ * 全局只启动一个定时任务，间隔固定5秒执行一次
+ * 每个页面可以注册自己的刷新函数，只刷新当前显示页面的内容
+ */
+const PageRefreshManager = (function() {
+    let refreshTimer = null;
+    let currentRefreshFn = null;
+    const REFRESH_INTERVAL = 5000; // 5秒
+
+    // 启动定时器
+    function startTimer() {
+        if (refreshTimer === null) {
+            refreshTimer = setInterval(function() {
+                if (currentRefreshFn && typeof currentRefreshFn === 'function') {
+                    try {
+                        currentRefreshFn();
+                    } catch (e) {
+                        console.error('页面刷新函数执行错误:', e);
+                    }
+                }
+            }, REFRESH_INTERVAL);
+        }
+    }
+
+    // 停止定时器
+    function stopTimer() {
+        if (refreshTimer !== null) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+        }
+    }
+
+    return {
+        /**
+         * 注册当前页面的刷新函数
+         * @param {Function} refreshFn - 刷新函数
+         */
+        register: function(refreshFn) {
+            currentRefreshFn = refreshFn;
+            startTimer();
+        },
+        
+        /**
+         * 取消注册当前页面的刷新函数
+         */
+        unregister: function() {
+            currentRefreshFn = null;
+        },
+        
+        /**
+         * 停止定时器（通常不需要手动调用）
+         */
+        stop: function() {
+            stopTimer();
+            currentRefreshFn = null;
+        }
+    };
+})();
+
 // 全局加载页面
 function doLoader(url) {
     // 使用统一的内容区域
     if ($mainContent.length) {
+        // 清除之前页面的刷新函数注册
+        PageRefreshManager.unregister();
+        
         // 显示加载状态
         showLoading();
 
