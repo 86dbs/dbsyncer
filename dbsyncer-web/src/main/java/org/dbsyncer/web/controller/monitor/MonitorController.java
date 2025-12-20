@@ -8,15 +8,17 @@ import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.MonitorService;
-import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
-import org.dbsyncer.biz.enums.StatisticEnum;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.vo.CpuVO;
+import org.dbsyncer.biz.vo.DiskSpaceVO;
 import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.MemoryVO;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -39,8 +41,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,8 +54,9 @@ public class MonitorController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final static int COUNT = 60;
-    private final HistoryStackVo cpu = new HistoryStackVo();
-    private final HistoryStackVo memory = new HistoryStackVo();
+    private final CpuVO cpu = new CpuVO();
+    private final MemoryVO memory = new MemoryVO();
+    private final DiskSpaceVO disk = new DiskSpaceVO();
 
     @Resource
     private MonitorService monitorService;
@@ -105,6 +109,7 @@ public class MonitorController extends BaseController {
     public void recordHistoryStackMetric() {
         recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
         recordHistoryStackMetric(MetricEnum.MEMORY_USED, memory, memoryHistoryStackValueFormatterImpl);
+        getDiskSpace();
     }
 
     @Scheduled(fixedRate = 10000)
@@ -180,18 +185,18 @@ public class MonitorController extends BaseController {
     }
 
     @ResponseBody
-    @GetMapping("/queryAppReportMetric")
-    public RestResult queryAppReportMetric() {
+    @GetMapping("/metric")
+    public RestResult metric() {
         try {
             List<MetricResponse> list = new ArrayList<>();
             List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
             if (!CollectionUtils.isEmpty(metricEnumList)) {
                 metricEnumList.forEach(m -> list.add(getMetricResponse(m.getCode())));
             }
-            list.addAll(getDiskHealth());
-            AppReportMetric reportMetric = monitorService.queryAppReportMetric(list);
+            AppReportMetric reportMetric = monitorService.queryAppMetric(list);
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
+            reportMetric.setDisk(disk);
             return RestResult.restSuccess(reportMetric);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -222,21 +227,34 @@ public class MonitorController extends BaseController {
         }
     }
 
-    private List<MetricResponse> getDiskHealth() {
-        List<MetricResponse> list = new ArrayList<>();
+    private void getDiskSpace() {
         SystemHealth health = (SystemHealth) healthEndpoint.health();
         Map<String, HealthComponent> details = health.getComponents();
         Health diskSpace = (Health) details.get("diskSpace");
         Map<String, Object> diskSpaceDetails = diskSpace.getDetails();
-        list.add(createDiskMetricResponse(DiskMetricEnum.THRESHOLD, diskSpaceDetails.get("threshold")));
-        list.add(createDiskMetricResponse(DiskMetricEnum.FREE, diskSpaceDetails.get("free")));
-        list.add(createDiskMetricResponse(DiskMetricEnum.TOTAL, diskSpaceDetails.get("total")));
-        return list;
+        // 已使用
+        long threshold = NumberUtil.toLong(diskSpaceDetails.get("threshold").toString());
+        disk.setThreshold(convertToGB(threshold));
+        // 剩余量
+        long free = NumberUtil.toLong(diskSpaceDetails.get("free").toString());
+        disk.setFree(convertToGB(free));
+        // 总容量
+        long total = NumberUtil.toLong(diskSpaceDetails.get("total").toString());
+        disk.setTotal(convertToGB(total));
+        // 使用百分比
+
     }
 
-    private MetricResponse createDiskMetricResponse(DiskMetricEnum metricEnum, Object value) {
-        return new MetricResponse(metricEnum.getCode(), metricEnum.getGroup(), metricEnum.getMetricName(),
-                Collections.singletonList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), value)));
+    private long convertToGB(long value) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(value));
+        BigDecimal bt = divide(decimal,0);
+        BigDecimal mb = divide(bt,0);
+        BigDecimal gb = divide(mb,2);
+        return gb.longValue();
+    }
+
+    private BigDecimal divide(BigDecimal d1, int scale) {
+        return d1.divide(new BigDecimal("1024"), scale, RoundingMode.HALF_UP);
     }
 
     private MetricResponse getMetricResponse(String code) {

@@ -99,7 +99,7 @@ public interface MonitorService {
      *
      * @return
      */
-    AppReportMetric queryAppReportMetric(List<MetricResponse> metrics);
+    AppReportMetric queryAppMetric(List<MetricResponse> metrics);
 
     /**
      * 获取仪表盘报告

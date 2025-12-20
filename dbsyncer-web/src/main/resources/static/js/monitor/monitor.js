@@ -278,18 +278,7 @@ $(function () {
         cpu: null,
         memory: null
     };
-    
-    // 数据历史记录（最多保留50个点）
-    const MAX_DATA_POINTS = 50;
-    let dataHistory = {
-        queue: [],
-        storage: [],
-        tps: [],
-        cpu: [],
-        memory: [],
-        labels: []
-    };
-    
+
     // Chart.js 默认配置
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
     Chart.defaults.font.size = 12;
@@ -362,7 +351,7 @@ $(function () {
     /**
      * 初始化折线图（TPS、CPU、内存）
      */
-    function initLineChart(canvasId, label, color, suggestedMax, solidFill) {
+    function initLineChart(canvasId, label, color, solidFill) {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return null;
         
@@ -405,7 +394,7 @@ $(function () {
                     y: {
                         display: true,
                         beginAtZero: true,
-                        suggestedMax: suggestedMax || 100,
+                        // suggestedMax: suggestedMax || 100,
                         grid: {
                             color: 'rgba(0, 0, 0, 0.05)'
                         }
@@ -447,26 +436,6 @@ $(function () {
     }
     
     /**
-     * 添加数据点到历史记录
-     */
-    function addDataPoint(type, value) {
-        if (dataHistory[type].length >= MAX_DATA_POINTS) {
-            dataHistory[type].shift();
-        }
-        dataHistory[type].push(value);
-    }
-    
-    /**
-     * 获取当前时间标签
-     */
-    function getTimeLabel() {
-        const now = new Date();
-        return now.getHours().toString().padStart(2, '0') + ':' + 
-               now.getMinutes().toString().padStart(2, '0') + ':' + 
-               now.getSeconds().toString().padStart(2, '0');
-    }
-    
-    /**
      * 初始化所有图表
      */
     function initCharts() {
@@ -475,9 +444,9 @@ $(function () {
         charts.storage = initGaugeChart('storageChart', '持久化', 50000);
         
         // 折线图
-        charts.tps = initLineChart('tpsChart', 'TPS', 'rgba(245, 108, 108, 1)', 1000, false);
-        charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', 100, false);
-        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', 1000, true);
+        charts.tps = initLineChart('tpsChart', 'TPS', 'rgba(245, 108, 108, 1)', false);
+        charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', false);
+        charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', true);
     }
     
     /**
@@ -513,43 +482,20 @@ $(function () {
             }
         }
     }
-    
-    /**
-     * 模拟数据更新（实际应该从后端API获取）
-     */
+
+    function updateMetricsTable(metrics){
+        const trs = [];
+        $.each(metrics, function (i) {
+            trs.push(`<tr><td>${metrics[i].group}</td><td>${metrics[i].detail}</td></tr>`);
+        });
+        $("#metrics").html(trs);
+    }
+
     function updateMonitorData() {
-        // 获取当前时间标签
-        const timeLabel = getTimeLabel();
-        if (dataHistory.labels.length >= MAX_DATA_POINTS) {
-            dataHistory.labels.shift();
-        }
-        dataHistory.labels.push(timeLabel);
-        
-        // 模拟数据（实际应该通过AJAX从后端获取）
-        const queueValue = Math.floor(Math.random() * 50000);
-        const storageValue = Math.floor(Math.random() * 10000);
-        const tpsValue = Math.floor(Math.random() * 800 + 200);
-        const cpuValue = Math.floor(Math.random() * 30 + 20);
-        const memoryValue = Math.floor(Math.random() * 300 + 400);
-        
         // 右侧进度条数据（模拟）
         const cpuPercent = Math.floor(Math.random() * 30 + 50); // 50-80%
         const memoryPercent = Math.floor(Math.random() * 20 + 60); // 60-80%
         const diskPercent = Math.floor(Math.random() * 20 + 30); // 30-50%
-        
-        // 更新仪表盘
-        updateGaugeChart(charts.queue, queueValue, 320000);
-        updateGaugeChart(charts.storage, storageValue, 50000);
-        
-        // 更新折线图数据
-        addDataPoint('tps', tpsValue);
-        addDataPoint('cpu', cpuValue);
-        addDataPoint('memory', memoryValue);
-        
-        updateLineChart(charts.tps, dataHistory.labels, dataHistory.tps);
-        updateLineChart(charts.cpu, dataHistory.labels, dataHistory.cpu);
-        updateLineChart(charts.memory, dataHistory.labels, dataHistory.memory);
-        
         // 更新右侧进度条
         updateProgressBar('cpuProgressBar', 'cpuPercentValue', cpuPercent);
         updateProgressBar('memoryProgressBar', 'memoryPercentValue', memoryPercent);
@@ -564,6 +510,21 @@ $(function () {
         
         const diskUsed = Math.floor(1.2 * 1024 * diskPercent / 100);
         $('#diskUsed').text(diskUsed + ' GB');
+
+        doGetter("/monitor/metric", {}, function (data) {
+            if (data.success === true) {
+                const r = data.resultValue;
+                // 更新折线图数据
+                updateLineChart(charts.tps, r.tps.name, r.tps.value);
+                $("#tps").text(r.tps.average > 0 ? '执行器TPS, 平均:'+ r.tps.average + '/秒' : '执行器TPS');
+                updateLineChart(charts.cpu, r.cpu.name, r.cpu.value);
+                updateLineChart(charts.memory, r.memory.name, r.memory.value);
+                // 更新仪表盘
+                updateGaugeChart(charts.queue, r.queueUp, r.queueCapacity);
+                updateGaugeChart(charts.storage, r.storageQueueUp, r.storageQueueCapacity);
+                updateMetricsTable(r.metrics);
+            }
+        });
     }
     
     // 页面加载完成后初始化
@@ -574,12 +535,12 @@ $(function () {
         doLoader('/monitor');
     };
 
+    // // 立即执行一次更新
+    // updateMonitorData();
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
         updateMonitorData();
     });
-    // 立即执行一次更新
-    updateMonitorData();
 
     bindQueryDataEvent();
 

@@ -11,7 +11,7 @@
             <!-- TPS图表 -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title text-center">执行器TPS</h3>
+                    <h3 class="card-title text-center" id="tps">执行器TPS</h3>
                 </div>
                 <div class="card-body">
                     <canvas id="tpsChart" height="200"></canvas>
@@ -111,28 +111,7 @@
         <!-- 应用状态 -->
         <div class="mb-3">
             <table class="table">
-                <tbody>
-                <tr>
-                    <td>[应用线程]</td>
-                    <td>活跃:48 峰值:55</td>
-                </tr>
-                <tr>
-                    <td>[调度线程池]</td>
-                    <td>堆积:11/1000 线程:0/16 完成:0</td>
-                </tr>
-                <tr>
-                    <td>[GC]</td>
-                    <td>2次，耗时:0.14秒，最长:0秒</td>
-                </tr>
-                <tr>
-                    <td>[通用执行器]</td>
-                    <td>堆积:0/50000 线程:0/16 完成:3</td>
-                </tr>
-                <tr>
-                    <td>[持久化执行器]</td>
-                    <td>堆积:0/50000 线程:0/8 完成:0</td>
-                </tr>
-                </tbody>
+                <tbody id="metrics"></tbody>
             </table>
         </div>
     </div>

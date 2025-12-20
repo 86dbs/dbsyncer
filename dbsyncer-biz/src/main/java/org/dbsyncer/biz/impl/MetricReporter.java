@@ -9,6 +9,7 @@ import org.dbsyncer.biz.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.biz.model.*;
 import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.SyncTrendStackVO;
+import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.metric.Bucket;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Paging;
@@ -267,9 +268,9 @@ public class MetricReporter implements ScheduledTaskJob {
      *
      * @return
      */
-    private HistoryStackVo getOneMinBufferActuatorRate() {
+    public TpsVO getOneMinBufferActuatorRate() {
         Bucket[] buckets = timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getBucketAll();
-        HistoryStackVo vo = new HistoryStackVo();
+        TpsVO vo = new TpsVO();
         Instant now = Instant.now();
         long oneMin = now.minus(1, ChronoUnit.MINUTES).toEpochMilli();
         // 只显示1分钟内
