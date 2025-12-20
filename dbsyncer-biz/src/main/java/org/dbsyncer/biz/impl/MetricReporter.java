@@ -8,6 +8,7 @@ import org.dbsyncer.biz.enums.StatisticEnum;
 import org.dbsyncer.biz.enums.ThreadPoolMetricEnum;
 import org.dbsyncer.biz.model.*;
 import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.SyncTrendStackVO;
 import org.dbsyncer.common.metric.Bucket;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Paging;
@@ -29,6 +30,7 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.IntFilter;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -88,6 +90,8 @@ public class MetricReporter implements ScheduledTaskJob {
     private final DashboardMetric dashboardMetric = new DashboardMetric();
 
     private final AppReportMetric report = new AppReportMetric();
+
+    private final static int SHOW_REPORT_DAYS = 30;
 
     @PostConstruct
     private void init() {
@@ -187,6 +191,8 @@ public class MetricReporter implements ScheduledTaskJob {
             dashboardMetric.setUpdate(getMappingUpdate(metaAll));
             dashboardMetric.setDelete(getMappingDelete(metaAll));
             dashboardMetric.setDdl(0);
+            // 获取同步趋势数据
+            updateSyncTrendData(metaAll, dashboardMetric);
 
             AtomicLong running = new AtomicLong();
             AtomicLong fail = new AtomicLong();
@@ -214,6 +220,46 @@ public class MetricReporter implements ScheduledTaskJob {
         } finally {
             running = false;
         }
+    }
+
+    private void updateSyncTrendData(List<Meta> metaAll, DashboardMetric dashboardMetric) {
+        SyncTrendStackVO stack = dashboardMetric.getTrend();
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+        String today = DateFormatUtil.timestampToString(timestamp, DateFormatUtil.MM_DD);
+        // 未加载数据
+        List<String> labels = stack.getLabels();
+        if (CollectionUtils.isEmpty(labels)) {
+            // 获取30天前的数据
+            for (int i = SHOW_REPORT_DAYS - 1; i > 0; i--) {
+                Timestamp time = Timestamp.valueOf(now.minusDays(i));
+                labels.add(DateFormatUtil.timestampToString(time, DateFormatUtil.MM_DD));
+                stack.getSuccess().add(getMappingDataCount(metaAll, time.getTime(), StorageDataStatusEnum.SUCCESS));
+                stack.getFail().add(getMappingDataCount(metaAll, time.getTime(), StorageDataStatusEnum.FAIL));
+            }
+            // 记录今日数据
+            labels.add(today);
+            stack.getSuccess().add(dashboardMetric.getSuccess());
+            stack.getFail().add(dashboardMetric.getFail());
+            return;
+        }
+
+        // 日期发生变更
+        if (!StringUtil.equals(today, labels.get(labels.size() - 1))) {
+            // 移除最早的日期
+            List<String> newLabels = labels.stream().skip(1).collect(Collectors.toList());
+            labels.clear();
+            labels.addAll(newLabels);
+            // 记录今日数据
+            labels.add(today);
+            stack.getSuccess().add(dashboardMetric.getSuccess());
+            stack.getFail().add(dashboardMetric.getFail());
+            return;
+        }
+
+        // 更新今日数据
+        stack.getSuccess().set(stack.getSuccess().size() - 1, dashboardMetric.getSuccess());
+        stack.getFail().set(stack.getFail().size() - 1, dashboardMetric.getFail());
     }
 
     /**
@@ -260,6 +306,22 @@ public class MetricReporter implements ScheduledTaskJob {
      */
     private long getMappingFail(List<Meta> metaAll) {
         return queryMappingMetricCount(metaAll, (query) -> query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+    }
+
+    /**
+     * 获取所有驱动数据
+     *
+     * @param metaAll
+     * @param time
+     * @param status
+     * @return
+     */
+    private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
+        return queryMappingMetricCount(metaAll, (query) -> {
+            LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
+            IntFilter success = new IntFilter(ConfigConstant.DATA_SUCCESS, status.getValue());
+            query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
+        });
     }
 
     /**

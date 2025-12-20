@@ -137,7 +137,7 @@
 /* ========== 迷你统计卡片 ========== */
 .mini-stats-grid {
   display: grid;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
@@ -156,7 +156,7 @@
 .mini-stat-card {
   position: relative;
   overflow: hidden;
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   border-radius: var(--radius-lg);
   background-color: var(--bg-primary);
   border: 1px solid rgba(22, 93, 255, 0.08);
@@ -194,7 +194,7 @@
 }
 
 .mini-stat-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   color: var(--text-secondary);
   margin: 0;
 }

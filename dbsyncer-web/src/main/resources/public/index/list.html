@@ -28,18 +28,16 @@
     <!-- 同步趋势图表 -->
     <div class="grid grid-cols-2 mb-5">
         <!-- 同步趋势图表 -->
-        <div class="form-container p-5">
+        <div class="form-container px-5">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg">同步趋势</h3>
                 <div class="flex gap-2">
-                    <button class="btn btn-outline text-sm">今日</button>
-                    <button class="btn btn-outline text-sm text-primary">本周</button>
-                    <button class="btn btn-outline text-sm">本月</button>
+                    <button class="btn btn-outline text-sm trend-item text-primary" data-key="7">一周</button>
+                    <button class="btn btn-outline text-sm trend-item" data-key="15">半个月</button>
+                    <button class="btn btn-outline text-sm trend-item" data-key="30">一个月</button>
                 </div>
             </div>
-            <div>
-                <canvas id="syncTrendChart"></canvas>
-            </div>
+            <canvas id="trendChart"></canvas>
         </div>
 
         <div class="form-container p-5">
@@ -134,67 +132,85 @@
     </div>
 
 <script>
-    // 初始化图表
-    // 同步趋势图表
-    const trendCtx = document.getElementById('syncTrendChart').getContext('2d');
-    const trendChart = new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-            datasets: [
-                {
-                    label: '同步成功',
-                    data: [1250, 1900, 1750, 2400, 2100, 1800, 2300],
-                    borderColor: '#165DFF',
-                    backgroundColor: 'rgba(22, 93, 255, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: '同步失败',
-                    data: [32, 45, 38, 52, 48, 36, 42],
-                    borderColor: '#fa8c16',
-                    backgroundColor: 'transparent',
-                    tension: 0.3,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: '同步成功'
-                    }
-                },
-                y1: {
-                    beginAtZero: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: '同步失败'
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                }
-            }
-        }
-    });
-
     $(function () {
         // 定义返回函数，子页面返回
         window.backIndexPage = function () {
             doLoader('/index');
         };
+
+        // 同步趋势图表
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '同步成功',
+                        data: [],
+                        borderColor: '#165DFF',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: '同步失败',
+                        data: [],
+                        borderColor: '#fa8c16',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(250, 140, 22, 0.3)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            }
+        });
+        const trendConfig = {
+            'data':{},
+            'type': '7',
+            '7': function (data) {
+                if (!data || data.length === 0) {
+                    return [];
+                }
+                return data.length > 7 ? data.slice(-7) : data;
+            },
+            '15': function (data) {
+                if (!data || data.length === 0) {
+                    return [];
+                }
+                return data.length > 15 ? data.slice(-15) : data;
+            },
+            '30': function (data) {
+                return data || [];
+            }
+        };
+        function refreshLineChatData(trend) {
+            trendConfig['data'] = trend;
+            let strategy = trendConfig[trendConfig.type];
+            trendChart.data.labels = strategy(trend.labels);
+            trendChart.data.datasets[0].data = strategy(trend.success);
+            trendChart.data.datasets[1].data = strategy(trend.fail);
+            trendChart.update('none');
+        }
+        $('.trend-item').unbind('click').bind('click', function(){
+            $('.trend-item').removeClass('text-primary');
+            $(this).addClass('text-primary');
+            trendConfig.type = $(this).data("key");
+            refreshLineChatData(trendConfig['data']);
+        })
 
         function renderTotalMeta(r) {
             const isIncrease = r.lastWeekMeta <= r.totalMeta;
@@ -285,6 +301,7 @@
                     $("#update").text(r.update);
                     $("#delete").text(r.delete);
                     $("#ddl").text(r.ddl);
+                    refreshLineChatData(r.trend);
                 }
             });
         }

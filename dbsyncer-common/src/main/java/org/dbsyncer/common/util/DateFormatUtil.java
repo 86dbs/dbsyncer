@@ -57,6 +57,7 @@ public abstract class DateFormatUtil {
     // 定义常见的日期时间格式模式
     private static final String[] SIMPLE_PATTERNS = {PATTERN_YYYY_MM_DD, PATTERN_YYYY_MM_DD_HH_MM_SS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS, PATTERN_YYYYMMDD, PATTERN_YYYYMMDDHHMMSS, PATTERN_YYYYMMDDHHMMSSSSS};
 
+    public static final DateTimeFormatter MM_DD = DateTimeFormatter.ofPattern("MM-dd");
     public static final DateTimeFormatter HH_MM_SS = DateTimeFormatter.ofPattern("HH:mm:ss");
     /**
      * 默认时区
