@@ -44,63 +44,6 @@
 </div>
 
 <script>
-/**
- * 启动同步任务列表自动刷新定时器
- */
-function startMappingListAutoRefresh(searchInput, pagination) {
-    // 先清除已存在的定时器
-    stopMappingListAutoRefresh();
-    
-    // 启动新的定时器
-    mappingListAutoRefreshTimer = setInterval(function() {
-        try {
-            // 检查表格是否存在（更准确的判断方法）
-            const $mappingTableBody = $('#mappingTableBody');
-
-            console.log('[自动刷新] 检查表格元素:', {
-                tableBodyExists: $mappingTableBody.length > 0,
-                currentTime: new Date().toLocaleTimeString()
-            });
-            
-            // 只有当表格存在时才执行刷新
-            if ($mappingTableBody.length) {
-                console.log('[自动刷新] 开始静默刷新数据');
-                // 静默刷新（不显示加载提示和成功消息），使用当前页数
-                const currentPage = pagination.currentPage || 1;
-                pagination.doSearch({'searchKey': searchInput.getValue()}, currentPage);
-            } else {
-                // 如果表格不存在，说明已经离开列表页面，停止定时器
-                console.log('[自动刷新] 表格元素不存在，停止自动刷新');
-                stopMappingListAutoRefresh();
-            }
-        } catch (e) {
-            // 如果出现错误，停止定时器
-            console.error('[自动刷新] 出错:', e);
-            stopMappingListAutoRefresh();
-        }
-    }, MAPPING_LIST_REFRESH_INTERVAL);
-
-    console.log('[自动刷新] 已启动，刷新间隔: ' + (MAPPING_LIST_REFRESH_INTERVAL / 1000) + '秒');
-}
-
-/**
- * 停止自动刷新定时器
- */
-function stopMappingListAutoRefresh() {
-    if (mappingListAutoRefreshTimer !== null) {
-        clearInterval(mappingListAutoRefreshTimer);
-        mappingListAutoRefreshTimer = null;
-        console.log('[自动刷新] 已停止');
-    }
-}
-
-function editMapping(id) {
-    // 停止自动刷新定时器
-    stopMappingListAutoRefresh();
-
-    doLoader("/mapping/page/edit?id="+id);
-}
-
 function copyMapping(id) {
     doPoster("/mapping/copy", { id: id }, function (response) {
         if (response.success) {
@@ -185,7 +128,7 @@ $(document).ready(function() {
                     <td>${formatDate(mapping?.meta.updateTime || '')}</td>
                     <td>
                         <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="修改" onclick="editMapping('${mapping.id}')">
+                            <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
                             ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
@@ -208,8 +151,10 @@ $(document).ready(function() {
         pagination.doSearch({'searchKey': searchKey});
     });
 
-    // 启动自动刷新定时器
-    startMappingListAutoRefresh(searchInput, pagination);
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    });
 });
 </script>
 

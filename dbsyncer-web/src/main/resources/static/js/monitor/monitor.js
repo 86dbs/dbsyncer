@@ -568,17 +568,18 @@ $(function () {
     
     // 页面加载完成后初始化
     initCharts();
-    
-    // 开始定时更新数据（每3秒更新一次）
-    setInterval(updateMonitorData, 3000);
-    
-    // 立即执行一次更新
-    updateMonitorData();
 
     // 定义返回函数，子页面返回
     window.backIndexPage = function () {
         doLoader('/monitor');
     };
+
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        updateMonitorData();
+    });
+    // 立即执行一次更新
+    updateMonitorData();
 
     bindQueryDataEvent();
 

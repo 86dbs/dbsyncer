@@ -65,7 +65,7 @@ $(document).ready(function() {
                     <td>${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}</td>
                     <td>
                         <div class="flex items-center gap-1">
-                            <button class="table-action-btn view" title="修改" onclick="editConnector('${connector?.id}')">
+                            <button class="table-action-btn view" title="修改" onclick="doLoader('/connector/page/edit?id=${connector?.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
                             <button class="table-action-btn play" title="测试" onclick="testConnector('${connector?.id}')">
@@ -86,15 +86,15 @@ $(document).ready(function() {
     });
 
     // 搜索框输入事件
-    initSearch('searchConnector', function (searchKey) {
+    let searchInput = initSearch('searchConnector', function (searchKey) {
         pagination.doSearch({'searchKey': searchKey});
     });
-});
 
-// 编辑连接
-function editConnector(id) {
-    doLoader('/connector/page/edit?id=' + id)
-}
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    });
+});
 
 // 复制连接
 function copyConnector(id) {
