@@ -284,19 +284,51 @@ public class MonitorController extends BaseController {
         memory.setJvmTotal(jvmTotal);
         
         // 系统内存信息（通过 OperatingSystemMXBean 获取）
-        com.sun.management.OperatingSystemMXBean osBean =
-                (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-        long totalPhysicalMemory = osBean.getTotalPhysicalMemorySize();
-        long freePhysicalMemory = osBean.getFreePhysicalMemorySize();
-        long usedPhysicalMemory = totalPhysicalMemory - freePhysicalMemory;
+        try {
+            com.sun.management.OperatingSystemMXBean osBean =
+                    (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+            long totalPhysicalMemory = osBean.getTotalPhysicalMemorySize();
+            long freePhysicalMemory = osBean.getFreePhysicalMemorySize();
+            
+            // 注意：在 macOS 上，getFreePhysicalMemorySize() 返回的是真正的空闲内存（不包括缓存）
+            // macOS 会积极使用内存作为文件缓存，这些缓存内存虽然被"占用"，但在需要时可以被释放
+            // 所以计算出的 usedPhysicalMemory = total - free 会包括缓存，导致数值看起来偏高
+            // 这是 macOS 内存管理的特性，不是计算错误
+            long usedPhysicalMemory = totalPhysicalMemory - freePhysicalMemory;
+            
+            // 确保已使用内存不超过总内存（防止计算错误）
+            if (usedPhysicalMemory > totalPhysicalMemory) {
+                usedPhysicalMemory = totalPhysicalMemory;
+                logger.warn("Calculated used memory exceeds total memory, using total memory as used memory");
+            }
+            if (usedPhysicalMemory < 0) {
+                usedPhysicalMemory = 0;
+                logger.warn("Calculated used memory is negative, setting to 0");
+            }
 
-        BigDecimal sysTotal = gbValueFormatter.formatValue(totalPhysicalMemory);
-        BigDecimal sysUsed = gbValueFormatter.formatValue(usedPhysicalMemory);
-        memory.setSysTotal(sysTotal);
-        memory.setSysUsed(sysUsed);
+            BigDecimal sysTotal = gbValueFormatter.formatValue(totalPhysicalMemory);
+            BigDecimal sysUsed = gbValueFormatter.formatValue(usedPhysicalMemory);
+            
+            // 再次验证：确保格式化后的值不超过总内存
+            if (sysUsed.compareTo(sysTotal) > 0) {
+                logger.warn("Formatted used memory ({}) exceeds total memory ({}), using total memory", sysUsed, sysTotal);
+                sysUsed = sysTotal;
+            }
+            
+            memory.setSysTotal(sysTotal);
+            memory.setSysUsed(sysUsed);
 
-        // 计算总使用百分比
-        memory.setUsedPercent(formatPercent(jvmUsed.add(sysUsed), sysTotal));
+            // 总使用百分比（基于系统内存：包括缓存）
+            // 注意：在 macOS 上，这个值可能看起来很高，因为它包含了文件缓存
+            // 实际的应用程序内存使用可能低于这个值
+            memory.setUsedPercent(formatPercent(sysUsed, sysTotal));
+        } catch (Exception e) {
+            logger.warn("Failed to collect system memory info: " + e.getMessage(), e);
+            memory.setSysTotal(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            memory.setSysUsed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+            // 如果系统内存获取失败，使用 JVM 内存使用率作为总使用率
+            memory.setUsedPercent(formatPercent(jvmUsed, jvmTotal));
+        }
     }
 
     private void collectDiskSpace() {
