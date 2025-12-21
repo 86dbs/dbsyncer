@@ -15,6 +15,7 @@ public final class MemoryVO extends HistoryStackVo {
     private BigDecimal jvmTotal;
     private BigDecimal sysUsed;
     private BigDecimal sysTotal;
+    // 总使用百分比
     private BigDecimal usedPercent;
 
     public BigDecimal getJvmUsed() {
@@ -56,4 +57,5 @@ public final class MemoryVO extends HistoryStackVo {
     public void setUsedPercent(BigDecimal usedPercent) {
         this.usedPercent = usedPercent;
     }
+
 }

@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.biz.vo;
 
+import java.math.BigDecimal;
+
 /**
  * @Author 穿云
  * @Version 1.0.0
@@ -12,17 +14,38 @@ public final class CpuVO extends HistoryStackVo {
 
     private final int core = Runtime.getRuntime().availableProcessors();
 
-    private double usedPercent;
+    // 用户使用百分比
+    private BigDecimal userPercent;
+    // 系统化使用百分比
+    private BigDecimal sysPercent;
+    // 总使用百分比
+    private BigDecimal usedPercent;
 
     public int getCore() {
         return core;
     }
 
-    public double getUsedPercent() {
+    public BigDecimal getUserPercent() {
+        return userPercent;
+    }
+
+    public void setUserPercent(BigDecimal userPercent) {
+        this.userPercent = userPercent;
+    }
+
+    public BigDecimal getSysPercent() {
+        return sysPercent;
+    }
+
+    public void setSysPercent(BigDecimal sysPercent) {
+        this.sysPercent = sysPercent;
+    }
+
+    public BigDecimal getUsedPercent() {
         return usedPercent;
     }
 
-    public void setUsedPercent(double usedPercent) {
+    public void setUsedPercent(BigDecimal usedPercent) {
         this.usedPercent = usedPercent;
     }
 }

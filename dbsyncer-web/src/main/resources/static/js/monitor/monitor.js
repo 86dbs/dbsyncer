@@ -490,8 +490,8 @@ $(function () {
             </div>
             <div class="progress-detail">
                 <span>核心数 <strong>${data.core}</strong></span>
-                <span>用户态 <strong>${data.usedPercent}%</strong></span>
-                <span>系统态 <strong>23%</strong></span>
+                <span>用户态 <strong>${data.userPercent}%</strong></span>
+                <span>系统态 <strong>${data.sysPercent}%</strong></span>
             </div>`);
     }
 
@@ -508,8 +508,9 @@ $(function () {
                 <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
             </div>
             <div class="progress-detail">
-                <span>总内存 <strong>${data.jvmTotal} GB</strong></span>
-                <span>已使用 <strong>${data.jvmUsed} GB</strong></span>
+                <span>总内存 <strong>${data.sysTotal} GB</strong></span>
+                <span>用户态 <strong>${data.jvmUsed} GB</strong></span>
+                <span>系统态 <strong>${data.sysUsed} GB</strong></span>
             </div>`);
     }
 

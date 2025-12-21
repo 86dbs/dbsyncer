@@ -232,21 +232,71 @@ public class MonitorController extends BaseController {
 
     private void collectCpu() {
         collectStackMetric(MetricEnum.CPU_USAGE, cpu, cpuValueFormatter);
-        // 已使用
+        // 总体使用率
+        BigDecimal totalPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         if (!CollectionUtils.isEmpty(cpu.getValue())) {
-            cpu.setUsedPercent((Double) cpu.getValue().get(cpu.getValue().size() - 1));
+            Object lastValue = cpu.getValue().get(cpu.getValue().size() - 1);
+            if (lastValue instanceof Number) {
+                totalPercent = new BigDecimal(String.valueOf(lastValue)).setScale(2, RoundingMode.HALF_UP);
+            }
         }
+        cpu.setUsedPercent(totalPercent);
+        
+        // 尝试通过指标获取用户态和系统态使用率
+        BigDecimal userPercent = getMetricValue("system.cpu.user");
+        BigDecimal systemPercent = getMetricValue("system.cpu.system");
+        
+        // 如果指标不可用，使用总体使用率按比例估算（用户态通常占大部分）
+        if (userPercent == null && systemPercent == null) {
+            // 如果两个都获取不到，按经验比例分配：用户态75%，系统态25%
+            if (totalPercent.compareTo(BigDecimal.ZERO) > 0) {
+                userPercent = totalPercent.multiply(new BigDecimal("0.75")).setScale(2, RoundingMode.HALF_UP);
+                systemPercent = totalPercent.multiply(new BigDecimal("0.25")).setScale(2, RoundingMode.HALF_UP);
+            } else {
+                userPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+                systemPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
+        } else if (userPercent == null) {
+            // 只有用户态不可用，使用总体减去系统态
+            userPercent = totalPercent.subtract(systemPercent);
+            if (userPercent.compareTo(BigDecimal.ZERO) < 0) {
+                userPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
+        } else if (systemPercent == null) {
+            // 只有系统态不可用，使用总体减去用户态
+            systemPercent = totalPercent.subtract(userPercent);
+            if (systemPercent.compareTo(BigDecimal.ZERO) < 0) {
+                systemPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
+        }
+        
+        cpu.setUserPercent(userPercent);
+        cpu.setSysPercent(systemPercent);
     }
 
     private void collectMemory() {
         collectStackMetric(MetricEnum.MEMORY_USED, memory, memoryValueFormatter);
-        // 已使用
+        // JVM 内存已使用
         BigDecimal jvmUsed = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_USED));
-        // 总使用
+        // JVM 内存总使用
         BigDecimal jvmTotal = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_MAX));
         memory.setJvmUsed(jvmUsed);
         memory.setJvmTotal(jvmTotal);
-        memory.setUsedPercent(formatPercent(jvmUsed, jvmTotal));
+        
+        // 系统内存信息（通过 OperatingSystemMXBean 获取）
+        com.sun.management.OperatingSystemMXBean osBean =
+                (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        long totalPhysicalMemory = osBean.getTotalPhysicalMemorySize();
+        long freePhysicalMemory = osBean.getFreePhysicalMemorySize();
+        long usedPhysicalMemory = totalPhysicalMemory - freePhysicalMemory;
+
+        BigDecimal sysTotal = gbValueFormatter.formatValue(totalPhysicalMemory);
+        BigDecimal sysUsed = gbValueFormatter.formatValue(usedPhysicalMemory);
+        memory.setSysTotal(sysTotal);
+        memory.setSysUsed(sysUsed);
+
+        // 计算总使用百分比
+        memory.setUsedPercent(formatPercent(jvmUsed.add(sysUsed), sysTotal));
     }
 
     private void collectDiskSpace() {
@@ -316,6 +366,34 @@ public class MonitorController extends BaseController {
             return measurements.get(0).getValue();
         }
         return 0;
+    }
+
+    /**
+     * 安全获取指标值，如果指标不存在则返回 null
+     */
+    private BigDecimal getMetricValue(String metricCode) {
+        try {
+            MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(metricCode, null);
+            if (metric != null && !CollectionUtils.isEmpty(metric.getMeasurements())) {
+                Object value = metric.getMeasurements().get(0).getValue();
+                if (value != null) {
+                    BigDecimal result = new BigDecimal(String.valueOf(value));
+                    // 如果值小于1，说明是小数形式（0-1之间），需要乘以100转换为百分比
+                    if (result.compareTo(BigDecimal.ONE) < 0) {
+                        result = result.multiply(new BigDecimal("100"));
+                    }
+                    return result.setScale(2, RoundingMode.HALF_UP);
+                }
+            } else {
+                logger.trace("Metric {} returned null or empty measurements", metricCode);
+            }
+        } catch (IllegalArgumentException e) {
+            // 指标不存在，这是正常的
+            logger.trace("Metric {} not found: {}", metricCode, e.getMessage());
+        } catch (Exception e) {
+            logger.debug("Error getting metric {}: {}", metricCode, e.getMessage());
+        }
+        return null;
     }
 
     private void optimizeStackOverflow(List<Object> stack) {
