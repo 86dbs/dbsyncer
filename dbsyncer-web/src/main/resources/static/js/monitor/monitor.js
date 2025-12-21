@@ -448,40 +448,6 @@ $(function () {
         charts.cpu = initLineChart('cpuChart', 'CPU使用率', 'rgba(82, 196, 26, 1)', false);
         charts.memory = initLineChart('memoryChart', '内存使用', 'rgba(24, 144, 255, 1)', true);
     }
-    
-    /**
-     * 更新右侧进度条
-     */
-    function updateProgressBar(elementId, valueId, percent, type) {
-        const progressBar = document.getElementById(elementId);
-        const valueElement = document.getElementById(valueId);
-        
-        if (progressBar) {
-            progressBar.style.width = percent + '%';
-            // 根据百分比动态调整颜色
-            progressBar.className = 'progress-fill';
-            if (percent >= 80) {
-                progressBar.classList.add('danger');
-            } else if (percent >= 60) {
-                progressBar.classList.add('warning');
-            } else {
-                progressBar.classList.add('success');
-            }
-        }
-        
-        if (valueElement) {
-            valueElement.textContent = percent + '%';
-            // 根据百分比动态调整文字颜色
-            valueElement.className = 'progress-value';
-            if (percent >= 80) {
-                valueElement.classList.add('progress-value-danger');
-            } else if (percent >= 60) {
-                valueElement.classList.add('progress-value-warning');
-            } else {
-                valueElement.classList.add('progress-value-success');
-            }
-        }
-    }
 
     function updateMetricsTable(metrics){
         const trs = [];
@@ -491,26 +457,81 @@ $(function () {
         $("#metrics").html(trs);
     }
 
-    function updateMonitorData() {
-        // 右侧进度条数据（模拟）
-        const cpuPercent = Math.floor(Math.random() * 30 + 50); // 50-80%
-        const memoryPercent = Math.floor(Math.random() * 20 + 60); // 60-80%
-        const diskPercent = Math.floor(Math.random() * 20 + 30); // 30-50%
-        // 更新右侧进度条
-        updateProgressBar('cpuProgressBar', 'cpuPercentValue', cpuPercent);
-        updateProgressBar('memoryProgressBar', 'memoryPercentValue', memoryPercent);
-        updateProgressBar('diskProgressBar', 'diskPercentValue', diskPercent);
-        
-        // 更新详细信息（可选）
-        $('#cpuUser').text(Math.floor(cpuPercent * 0.65) + '%');
-        $('#cpuSystem').text(Math.floor(cpuPercent * 0.35) + '%');
-        
-        const memoryUsed = Math.floor(32 * memoryPercent / 100);
-        $('#memoryUsed').text(memoryUsed + ' GB');
-        
-        const diskUsed = Math.floor(1.2 * 1024 * diskPercent / 100);
-        $('#diskUsed').text(diskUsed + ' GB');
+    function processBarState(percent) {
+        if (percent >= 80) {
+            return {
+                value: 'danger',
+                title: 'progress-value-danger'
+            }
+        }
+        if (percent >= 60) {
+            return {
+                value: 'warning',
+                title: 'progress-value-warning'
+            }
+        }
+        return {
+            value: 'success',
+            title: 'progress-value-success'
+        }
+    }
 
+    function updateCpuProcessBar(data){
+        if (!data) {
+            return;
+        }
+        let state = processBarState(data.usedPercent);
+        $("#cpuProgressBar").html(`<div class="progress-header">
+                <span class="progress-title">CPU使用率</span>
+                <span class="progress-value ${state.title}">${data.usedPercent}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
+            </div>
+            <div class="progress-detail">
+                <span>核心数 <strong>${data.core}</strong></span>
+                <span>用户态 <strong>${data.usedPercent}%</strong></span>
+                <span>系统态 <strong>23%</strong></span>
+            </div>`);
+    }
+
+    function updateMemoryProcessBar(data){
+        if (!data) {
+            return;
+        }
+        let state = processBarState(data.usedPercent);
+        $("#memoryProgressBar").html(`<div class="progress-header">
+                <span class="progress-title">内存使用率</span>
+                <span class="progress-value ${state.title}">${data.usedPercent}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
+            </div>
+            <div class="progress-detail">
+                <span>总内存 <strong>${data.jvmTotal} GB</strong></span>
+                <span>已使用 <strong>${data.jvmUsed} GB</strong></span>
+            </div>`);
+    }
+
+    function updateDiskProcessBar(data){
+        if (!data) {
+            return;
+        }
+        let state = processBarState(data.usedPercent);
+        $("#diskProgressBar").html(`<div class="progress-header">
+                <span class="progress-title">磁盘使用率</span>
+                <span class="progress-value ${state.title}">${data.usedPercent}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
+            </div>
+            <div class="progress-detail">
+                <span>总容量 <strong>${data.total} GB</strong></span>
+                <span>已使用 <strong>${data.used} GB</strong></span>
+            </div>`);
+    }
+
+    function updateMonitorData() {
         doGetter("/monitor/metric", {}, function (data) {
             if (data.success === true) {
                 const r = data.resultValue;
@@ -523,6 +544,9 @@ $(function () {
                 updateGaugeChart(charts.queue, r.queueUp, r.queueCapacity);
                 updateGaugeChart(charts.storage, r.storageQueueUp, r.storageQueueCapacity);
                 updateMetricsTable(r.metrics);
+                updateCpuProcessBar(r.cpu);
+                updateMemoryProcessBar(r.memory);
+                updateDiskProcessBar(r.disk);
             }
         });
     }
@@ -535,16 +559,17 @@ $(function () {
         doLoader('/monitor');
     };
 
-    // // 立即执行一次更新
-    // updateMonitorData();
-    // 注册到全局定时刷新管理器
-    PageRefreshManager.register(() => {
-        updateMonitorData();
-    });
+    // 立即执行一次更新
+    updateMonitorData();
 
     bindQueryDataEvent();
 
     bindQueryLogEvent();
 
     bindQueryActuatorEvent();
+
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        updateMonitorData();
+    });
 });

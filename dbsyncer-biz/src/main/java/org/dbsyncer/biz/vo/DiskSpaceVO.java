@@ -3,37 +3,48 @@
  */
 package org.dbsyncer.biz.vo;
 
+import java.math.BigDecimal;
+
 /**
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2025-12-20 20:50
  */
-public class DiskSpaceVO {
-    private long threshold;
-    private long free;
-    private long total;
+public final class DiskSpaceVO {
+    private BigDecimal used;
+    private BigDecimal free;
+    private BigDecimal total;
+    private BigDecimal usedPercent;
 
-    public long getThreshold() {
-        return threshold;
+    public BigDecimal getUsed() {
+        return used;
     }
 
-    public void setThreshold(long threshold) {
-        this.threshold = threshold;
+    public void setUsed(BigDecimal used) {
+        this.used = used;
     }
 
-    public long getFree() {
+    public BigDecimal getFree() {
         return free;
     }
 
-    public void setFree(long free) {
+    public void setFree(BigDecimal free) {
         this.free = free;
     }
 
-    public long getTotal() {
+    public BigDecimal getTotal() {
         return total;
     }
 
-    public void setTotal(long total) {
+    public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    public BigDecimal getUsedPercent() {
+        return usedPercent;
+    }
+
+    public void setUsedPercent(BigDecimal usedPercent) {
+        this.usedPercent = usedPercent;
     }
 }

@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
@@ -86,13 +85,6 @@ public interface MonitorService {
      * @return
      */
     List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
-
-    /**
-     * 获取监控系统指标
-     *
-     * @return
-     */
-    List<MetricEnum> getMetricEnumAll();
 
     /**
      * 获取应用报告

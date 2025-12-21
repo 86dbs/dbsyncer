@@ -8,5 +8,21 @@ package org.dbsyncer.biz.vo;
  * @Version 1.0.0
  * @Date 2025-12-20 21:22
  */
-public class CpuVO extends HistoryStackVo {
+public final class CpuVO extends HistoryStackVo {
+
+    private final int core = Runtime.getRuntime().availableProcessors();
+
+    private double usedPercent;
+
+    public int getCore() {
+        return core;
+    }
+
+    public double getUsedPercent() {
+        return usedPercent;
+    }
+
+    public void setUsedPercent(double usedPercent) {
+        this.usedPercent = usedPercent;
+    }
 }

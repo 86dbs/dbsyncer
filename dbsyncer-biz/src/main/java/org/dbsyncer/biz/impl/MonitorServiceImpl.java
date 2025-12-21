@@ -11,10 +11,8 @@ import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
-import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
-import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.DashboardMetric;
@@ -57,7 +55,6 @@ import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -105,13 +102,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private void init() {
         metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
-        metricMap.putIfAbsent(BufferActuatorMetricEnum.TABLE_GROUP.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_USED.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_COMMITTED.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_MAX.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.CPU_USAGE.getCode(), new CpuMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
 
         // 间隔10分钟预警
@@ -214,17 +206,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public List<MetricEnum> getMetricEnumAll() {
-        return Arrays.asList(MetricEnum.values());
-    }
-
-    @Override
     public AppReportMetric queryAppMetric(List<MetricResponse> metrics) {
         AppReportMetric app = metricReporter.getAppReportMetric();
         // 系统指标
-        List<MetricResponse> metricList = metricReporter.getMetricInfo();
-        // 线程池状态
-        metrics.addAll(metricList);
+        metrics.addAll(metricReporter.getMetricInfo());
         // 合并分组显示
         app.setMetrics(metricGroupProcessor.process(metricResponseToVo(metrics)));
         return app;

@@ -18,12 +18,14 @@ import org.dbsyncer.biz.vo.HistoryStackVo;
 import org.dbsyncer.biz.vo.MemoryVO;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
+import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
+import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -46,6 +48,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Controller
 @RequestMapping("/monitor")
@@ -80,10 +84,13 @@ public class MonitorController extends BaseController {
     private HealthEndpoint healthEndpoint;
 
     @Resource
-    private HistoryStackValueFormatter cpuHistoryStackValueFormatterImpl;
+    private CpuValueFormatter cpuValueFormatter;
 
     @Resource
-    private HistoryStackValueFormatter memoryHistoryStackValueFormatterImpl;
+    private MemoryValueFormatter memoryValueFormatter;
+
+    @Resource
+    private GBValueFormatter gbValueFormatter;
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
@@ -107,9 +114,9 @@ public class MonitorController extends BaseController {
 
     @Scheduled(fixedRate = 5000)
     public void recordHistoryStackMetric() {
-        recordHistoryStackMetric(MetricEnum.CPU_USAGE, cpu, cpuHistoryStackValueFormatterImpl);
-        recordHistoryStackMetric(MetricEnum.MEMORY_USED, memory, memoryHistoryStackValueFormatterImpl);
-        getDiskSpace();
+        collectCpu();
+        collectMemory();
+        collectDiskSpace();
     }
 
     @Scheduled(fixedRate = 10000)
@@ -188,12 +195,8 @@ public class MonitorController extends BaseController {
     @GetMapping("/metric")
     public RestResult metric() {
         try {
-            List<MetricResponse> list = new ArrayList<>();
-            List<MetricEnum> metricEnumList = monitorService.getMetricEnumAll();
-            if (!CollectionUtils.isEmpty(metricEnumList)) {
-                metricEnumList.forEach(m -> list.add(getMetricResponse(m.getCode())));
-            }
-            AppReportMetric reportMetric = monitorService.queryAppMetric(list);
+            AppReportMetric reportMetric = monitorService.queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK, MetricEnum.GC_PAUSE)
+                    .map(m -> getMetricResponse(m.getCode())).collect(Collectors.toList()));
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
             reportMetric.setDisk(disk);
@@ -227,34 +230,51 @@ public class MonitorController extends BaseController {
         }
     }
 
-    private void getDiskSpace() {
+    private void collectCpu() {
+        collectStackMetric(MetricEnum.CPU_USAGE, cpu, cpuValueFormatter);
+        // 已使用
+        if (!CollectionUtils.isEmpty(cpu.getValue())) {
+            cpu.setUsedPercent((Double) cpu.getValue().get(cpu.getValue().size() - 1));
+        }
+    }
+
+    private void collectMemory() {
+        collectStackMetric(MetricEnum.MEMORY_USED, memory, memoryValueFormatter);
+        // 已使用
+        BigDecimal jvmUsed = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_USED));
+        // 总使用
+        BigDecimal jvmTotal = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_MAX));
+        memory.setJvmUsed(jvmUsed);
+        memory.setJvmTotal(jvmTotal);
+        memory.setUsedPercent(formatPercent(jvmUsed, jvmTotal));
+    }
+
+    private void collectDiskSpace() {
         SystemHealth health = (SystemHealth) healthEndpoint.health();
         Map<String, HealthComponent> details = health.getComponents();
         Health diskSpace = (Health) details.get("diskSpace");
         Map<String, Object> diskSpaceDetails = diskSpace.getDetails();
-        // 已使用
-        long threshold = NumberUtil.toLong(diskSpaceDetails.get("threshold").toString());
-        disk.setThreshold(convertToGB(threshold));
-        // 剩余量
-        long free = NumberUtil.toLong(diskSpaceDetails.get("free").toString());
-        disk.setFree(convertToGB(free));
         // 总容量
-        long total = NumberUtil.toLong(diskSpaceDetails.get("total").toString());
-        disk.setTotal(convertToGB(total));
+        disk.setTotal(gbValueFormatter.formatValue(diskSpaceDetails.get("total")));
+        // 剩余量
+        disk.setFree(gbValueFormatter.formatValue(diskSpaceDetails.get("free")));
+        // 已使用
+        disk.setUsed(disk.getTotal().subtract(disk.getFree()));
         // 使用百分比
-
+        disk.setUsedPercent(formatPercent(disk.getUsed(), disk.getTotal()));
     }
 
-    private long convertToGB(long value) {
-        BigDecimal decimal = new BigDecimal(String.valueOf(value));
-        BigDecimal bt = divide(decimal,0);
-        BigDecimal mb = divide(bt,0);
-        BigDecimal gb = divide(mb,2);
-        return gb.longValue();
-    }
-
-    private BigDecimal divide(BigDecimal d1, int scale) {
-        return d1.divide(new BigDecimal("1024"), scale, RoundingMode.HALF_UP);
+    private BigDecimal formatPercent(BigDecimal used, BigDecimal total) {
+        if (total == null || total.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        if (used == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal percent = used
+                .divide(total, 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
+        return percent.setScale(2, RoundingMode.HALF_UP);
     }
 
     private MetricResponse getMetricResponse(String code) {
@@ -278,7 +298,7 @@ public class MonitorController extends BaseController {
         return metricResponse;
     }
 
-    private void recordHistoryStackMetric(MetricEnum metricEnum, HistoryStackVo stackVo, HistoryStackValueFormatter formatter) {
+    private void collectStackMetric(MetricEnum metricEnum, HistoryStackVo stackVo, ValueFormatter<Object, Object> formatter) {
         MetricResponse metricResponse = getMetricResponse(metricEnum.getCode());
         List<Sample> measurements = metricResponse.getMeasurements();
         if (!CollectionUtils.isEmpty(measurements)) {
@@ -287,6 +307,15 @@ public class MonitorController extends BaseController {
             optimizeStackOverflow(stackVo.getName());
             optimizeStackOverflow(stackVo.getValue());
         }
+    }
+
+    private Object collectValue(MetricEnum metricEnum) {
+        MetricResponse metricResponse = getMetricResponse(metricEnum.getCode());
+        List<Sample> measurements = metricResponse.getMeasurements();
+        if (!CollectionUtils.isEmpty(measurements)) {
+            return measurements.get(0).getValue();
+        }
+        return 0;
     }
 
     private void optimizeStackOverflow(List<Object> stack) {

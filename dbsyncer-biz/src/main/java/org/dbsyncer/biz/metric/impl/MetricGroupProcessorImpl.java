@@ -29,9 +29,6 @@ public final class MetricGroupProcessorImpl implements MetricGroupProcessor {
                 switch (metricEnum) {
                     case THREADS_LIVE:
                     case THREADS_PEAK:
-                    case MEMORY_USED:
-                    case MEMORY_COMMITTED:
-                    case MEMORY_MAX:
                         buildMetricResponseVo(group, metricEnum.getGroup(), metricEnum.getMetricName(), metric.getDetail());
                         iterator.remove();
                         break;
