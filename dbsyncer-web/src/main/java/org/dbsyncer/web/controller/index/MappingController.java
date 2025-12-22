@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -67,6 +68,29 @@ public class MappingController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取与特定数据源关联的驱动列表
+     * @param connectorId
+     * @return
+     */
+
+    @GetMapping("/getRelatedMappings")
+    @ResponseBody
+    public RestResult getRelatedMappings(@RequestParam(value = "connectorId") String connectorId) {
+        try {
+            List<MappingVo> allMappings = mappingService.getMappingAll();
+            // 筛选与指定数据源相关的映射（作为源或目标）
+            List<MappingVo> relatedMappings = allMappings.stream()
+                    .filter(mapping -> connectorId.equals(mapping.getSourceConnectorId()) ||
+                            connectorId.equals(mapping.getTargetConnectorId()))
+                    .collect(java.util.stream.Collectors.toList());
+            return RestResult.restSuccess(relatedMappings);
+        } catch (Exception e) {
+            logger.error("获取关联映射列表失败", e);
+            return RestResult.restFail("获取关联映射列表失败: " + e.getMessage());
         }
     }
 

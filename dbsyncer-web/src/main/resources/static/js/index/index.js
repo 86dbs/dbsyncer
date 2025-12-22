@@ -141,15 +141,22 @@ function bindConnectorDropdownMenu() {
     });
 }
 
-// 给驱动下拉菜单绑定事件
-function bindMappingDropdownMenu() {
-    $(".mappingList .dropdown-menu li").click(function () {
-        var $url = $(this).attr("url");
+// 给驱动操作按钮绑定事件
+function bindMappingOperationButtons() {
+    // 绑定所有操作按钮的点击事件
+    $('.operation-buttons a').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // 优先从data-url获取URL
+        var $url = $(this).data('url') || $(this).attr("th\:url") || $(this).attr("href");
+        // 移除javascript:;前缀
+        $url = $url ? $url.replace('javascript:;', '') : '';
         var $confirm = $(this).attr("confirm");
         var $confirmMessage = $(this).attr("confirmMessage");
 
         if ("true" == $confirm) {
-            // 如果当前为恢复状态
+            // 如果需要确认操作
             BootstrapDialog.show({
                 title: "警告",
                 type: BootstrapDialog.TYPE_DANGER,
@@ -171,7 +178,19 @@ function bindMappingDropdownMenu() {
             return;
         }
 
-        doPost($url);
+        // 对于编辑按钮，使用doLoader而不是doPost
+        if ($(this).hasClass('fa-pencil') || $(this).find('.fa-pencil').length > 0) {
+            doLoader($url);
+        } else if ($(this).hasClass('queryData') || $(this).hasClass('fa-file-text-o') || $(this).find('.fa-file-text-o').length > 0) {
+            // 日志按钮特殊处理
+            var $id = $(this).attr("id");
+            var $menu = $('#menu > li');
+            $menu.removeClass('active');
+            $menu.find("a[url='/monitor']").parent().addClass('active');
+            doLoader('/monitor?dataStatus=0&id=' + $id);
+        } else {
+            doPost($url);
+        }
     });
 }
 
@@ -379,5 +398,7 @@ $(function () {
     bindQueryData();
 
     bindConnectorDropdownMenu();
-    bindMappingDropdownMenu();
+    //bindMappingDropdownMenu();
+    // 替换下拉菜单事件为直接按钮事件
+    bindMappingOperationButtons();
 });
