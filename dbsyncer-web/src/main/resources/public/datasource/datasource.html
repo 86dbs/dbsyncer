@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数据源管理</title>
+
+    <!-- 图标库 -->
+<link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
+
+<!-- Bootstrap核心样式 -->
+<link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap.min.css"/>
+
+<!-- Bootstrap组件样式 -->
+<link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.17/css/bootstrap-select.min.css"/>
+<link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.34.5/css/bootstrap-dialog.min.css"/>
+<link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap3/bootstrap-switch.min.css"/>
+<link rel="stylesheet" type="text/css" th:href="@{/css/common.css}">
+<link rel="stylesheet" type="text/css" th:href="@{/css/index/index.css}">
+<link rel="stylesheet" type="text/css" th:href="@{/css/datasource/datasource.css}">
+</head>
+<body>
+<div class="wrapper">
+    <!-- 头部 -->
+    <div class="header">
+        <div id="nav"></div>
+    </div>
+    
+    <!-- 主体内容 -->
+    <div class="container-fluid datasource-container">
+        <!-- 左侧数据源列表 - 30%宽度 -->
+        <div class="left-panel">
+            <div class="left-header">
+                <h2>数据源列表</h2>
+                <button id="add-connector" class="btn btn-primary">添加数据源</button>
+            </div>
+            <div id="connector-list" class="connector-list-vertical">
+                <!-- 数据源列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 右侧数据源详情 - 70%宽度 -->
+        <div class="right-panel">
+            <!-- 上半部分：数据源详细信息 -->
+            <div id="connector-detail" class="connector-detail detail-section">
+                <div class="no-connector-selected">
+                    <p>请从左侧选择一个数据源或点击"添加数据源"按钮</p>
+                </div>
+                <!-- 数据源详情将通过JavaScript动态生成 -->
+            </div>
+            
+            <!-- 下半部分：关联驱动列表 -->
+            <div id="related-drivers" class="drivers-section">
+                <div class="drivers-header">
+                    <h3>关联驱动</h3>
+                </div>
+                <div id="drivers-list" class="drivers-list">
+                    <div class="no-drivers-selected">
+                        <p>请从左侧选择一个数据源查看关联驱动</p>
+                    </div>
+                    <!-- 驱动列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 1. 浏览器兼容性支持 -->
+<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+
+<!-- 2. jQuery核心库 -->
+<script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+<!-- 3. Bootstrap核心库 -->
+<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+<!-- 4. Bootstrap组件库（包括selectpicker） -->
+<script th:if="${enableCDN}" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.17/js/bootstrap-select.min.js"></script>
+
+<!-- 5. 项目工具库 -->
+<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
+
+<!-- 6. 项目自定义脚本 -->
+<script type="text/javascript" th:src="@{/js/common.js}"></script>
+<script type="text/javascript" th:src="@{/js/datasource/datasource.js}"></script>
+</body>
+</html>

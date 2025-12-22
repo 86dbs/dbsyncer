@@ -74,6 +74,11 @@ function backIndexPage(projectGroupId) {
     // 加载页面
     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
     doLoader("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+
+     // 设置导航栏活动状态为驱动
+    var $menu = $('#menu > li');
+    $menu.removeClass('active');
+    $menu.eq(0).addClass('active')
 }
 
 // 美化SQL

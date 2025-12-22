@@ -7,28 +7,206 @@
 .connectorList .dropdown-menu {left: auto; top: 15px;}
 .connectorList .dropdown-menu i{font-size: 20px;}
 
-.mappingList .line{margin: 43px -30px;width: 188px;border-top: 1px solid #8c7c7c;}
-.mappingList .line .running-through-rate{position: absolute;left: calc(50% - 11px);top: 13px;font-size: 26px;font-weight: bold;}
-.mappingList .line .mapping-error-sign {position: absolute;left: calc(50% - 11px);top: 13px;font-size: 26px;color: #ff0000;animation: blink 3s infinite;cursor: pointer;}
-.mappingList .line .running-state{position: absolute;left: calc(50% - 22px);;top: 45px;font-weight: bold;}
-.mappingList .well-sign-left{position: absolute;top: -10px;left: 3px;}
-.mappingList .well-sign-right{position: absolute;top: -31px;left: -7px;}
-.mappingList .mapping_well {word-wrap: break-word;word-break: normal;overflow:hidden;background-color: #ffffff;border: 1px solid #8c7c7c;border-radius: 6px;}
-.mappingList .mapping_well img{float:left;padding:8px 2px; border-radius: 20%;}
-.mappingList .mapping_well span{float:left;margin:21px 10px;}
+/* 确保连接状态指示器颜色在所有位置都能正确显示 */
+.well-sign-green{color:  #4CAF50  !important;}
+.well-sign-red{color: #ff0000 !important;}
+
+.mappingList {display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: flex-start;
+    margin: 0 -7.5px;
+}
+
+.mappingList .col-md-6 {max-width: 50%;
+    flex: 0 0 50%;
+    padding: 0 7.5px;
+    margin-bottom: 15px;
+}
+
+.mappingList .dbsyncer_block {border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    min-height: 220px;
+    background-color: #fff;
+}
+
+.mappingList .dbsyncer_block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.mappingList .line{margin: 43px auto;
+    width: 80px;
+    border-top: 1px solid #8c7c7c;
+    position: relative;
+}
+
+.mappingList .line .running-through-rate{position: absolute;
+    left: calc(50% - 11px);
+    top: -25px;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.mappingList .line .mapping-error-sign {position: absolute;
+    left: calc(50% - 11px);
+    top: -25px;
+    font-size: 26px;
+    color: #ff0000;
+    animation: blink 3s infinite;
+    cursor: pointer;
+}
+
+.mappingList .line .running-state{position: absolute;
+    left: calc(50% - 22px);
+    top: 10px;
+    font-weight: bold;
+}
+
+.mappingList .well-sign-left{position: absolute;
+    top: 25px;
+    left: 15px;
+    z-index: 1;
+}
+
+.mappingList .well-sign-right{position: absolute;
+    top: 25px;
+    right: 15px;
+    z-index: 1;
+}
+
+.mappingList .mapping_well {word-wrap: break-word;
+    word-break: normal;
+    overflow:hidden;
+    background-color: #ffffff;
+    border: 1px solid #8c7c7c;
+    border-radius: 6px;
+    padding: 8px;
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.mappingList .mapping_well img{border-radius: 20%;
+    width: 45px;
+    height: 45px;
+    margin-right: 10px;
+}
+
+.mappingList .mapping_well span{font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
 .mappingList .well-sign-green{color: #808040;}
 .mappingList .well-sign-red{color: #ff0000;}
-.mappingList .well-sign-operation{position: absolute; right:12px; color: #999999; border-radius: 50%;}
-.mappingList .well-sign-operation:hover { color: #333333;}
-.mappingList .dropdown {position: absolute; right:0px; top: 0px;}
-.mappingList .dropdown-menu {right: 12px;left: auto; top: 28px;}
-.mappingList .dropdown-menu i{font-size: 20px;}
-.mappingList .text-right {margin-right: -10px;}
+
+.mappingList .well-sign-operation{position: absolute; 
+    right:12px; 
+    top: 10px;
+    color: #999999; 
+    border-radius: 50%;
+}
+
+.mappingList .well-sign-operation:hover { 
+    color: #333333;
+}
+
+.mappingList .dropdown {position: absolute; 
+    right:0px; 
+    top: 0px;
+    z-index: 10;
+}
+
+.mappingList .dropdown-menu {right: 0px;
+    left: auto; 
+    top: 28px;
+    min-width: 120px;
+}
+
+.mappingList .dropdown-menu i{font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.mappingList .text-right {margin-right: 0;
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+}
 
 /* 闪烁动画 */
 @keyframes blink {0% {opacity: 1;}50% {opacity: 0.3;}100% {opacity: 1;}}
 
-.dbsyncer_driver_name { margin-bottom: 5px;}
-.dbsyncer_block_increment { background: -webkit-linear-gradient(left, #ffffff, #dffbdc);}
-.dbsyncer_block_full { background: -webkit-linear-gradient(left, #ffffff, #dcf5fb);}
-.dbsyncer_block_fullIncrement { background: -webkit-linear-gradient(left, #ffffff, #f9d0ff);}
+.dbsyncer_driver_name { margin-bottom: 10px; 
+    font-size: 16px; 
+    font-weight: bold; 
+    color: #333; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+}
+
+.dbsyncer_block_increment { background: -webkit-linear-gradient(left, #ffffff, #dffbdc);
+    border-left: 4px solid #4CAF50;
+}
+
+.dbsyncer_block_full { background: -webkit-linear-gradient(left, #ffffff, #dcf5fb);
+    border-left: 4px solid #2196F3;
+}
+
+.dbsyncer_block_fullIncrement { background: -webkit-linear-gradient(left, #ffffff, #f9d0ff);
+    border-left: 4px solid #9C27B0;
+}
+
+/* 表格样式优化 */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table th,
+.table td {
+    white-space: nowrap;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 操作按钮组样式 */
+.btn-group .dropdown-menu {
+    min-width: 120px;
+}
+
+.btn-group .dropdown-menu li a {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* 操作按钮样式 */
+.margin-right-5 {
+    margin-right: 5px;
+}
+
+/* 操作按钮的修改，目前 */
+.operation-buttons {
+    display: flex;
+    /* flex-wrap: wrap; */
+    gap: 5px;
+}
+
