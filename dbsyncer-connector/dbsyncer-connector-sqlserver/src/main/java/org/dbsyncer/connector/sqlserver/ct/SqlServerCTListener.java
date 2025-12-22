@@ -703,16 +703,20 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         ddl.append(column.getTypeName());
 
         // 处理长度/精度
+        String typeName = column.getTypeName().toLowerCase();
         if (column.getColumnSize() > 0) {
-            String typeName = column.getTypeName().toLowerCase();
-            if (typeName.contains("varchar") || typeName.contains("char")) {
+            if (typeName.contains("varchar") || typeName.contains("char") || typeName.contains("varbinary") || typeName.contains("binary")) {
                 ddl.append("(").append(column.getColumnSize()).append(")");
+            }
+        } else if (column.getColumnSize() == -1) {
+            // SQL Server 中 -1 表示 MAX 长度（VARCHAR(MAX), NVARCHAR(MAX), VARBINARY(MAX)）
+            if (typeName.contains("varchar") || typeName.contains("varbinary")) {
+                ddl.append("(MAX)");
             }
         }
 
         // 处理数值类型的精度和小数位数
         if (column.getRatio() >= 0 && column.getColumnSize() > 0) {
-            String typeName = column.getTypeName().toLowerCase();
             if (typeName.contains("decimal") || typeName.contains("numeric")) {
                 ddl.append("(").append(column.getColumnSize()).append(",")
                         .append(column.getRatio()).append(")");
@@ -809,16 +813,20 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         ddl.append(newCol.getTypeName());
 
         // 处理长度/精度
+        String typeName = newCol.getTypeName().toLowerCase();
         if (newCol.getColumnSize() > 0) {
-            String typeName = newCol.getTypeName().toLowerCase();
-            if (typeName.contains("varchar") || typeName.contains("char")) {
+            if (typeName.contains("varchar") || typeName.contains("char") || typeName.contains("varbinary") || typeName.contains("binary")) {
                 ddl.append("(").append(newCol.getColumnSize()).append(")");
+            }
+        } else if (newCol.getColumnSize() == -1) {
+            // SQL Server 中 -1 表示 MAX 长度（VARCHAR(MAX), NVARCHAR(MAX), VARBINARY(MAX)）
+            if (typeName.contains("varchar") || typeName.contains("varbinary")) {
+                ddl.append("(MAX)");
             }
         }
 
         // 处理数值类型的精度和小数位数
         if (newCol.getRatio() >= 0 && newCol.getColumnSize() > 0) {
-            String typeName = newCol.getTypeName().toLowerCase();
             if (typeName.contains("decimal") || typeName.contains("numeric")) {
                 ddl.append("(").append(newCol.getColumnSize()).append(",")
                         .append(newCol.getRatio()).append(")");

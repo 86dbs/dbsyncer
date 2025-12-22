@@ -138,8 +138,9 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
             logger.warn("清理Connector失败", e);
         }
 
-        // 重置表结构
-        resetDatabaseTableStructure();
+        // 注意：不需要在 tearDown() 中重置表结构
+        // 因为下一个测试的 setUp() 会重置表结构，避免重复操作
+        // 如果测试失败，下一个测试的 setUp() 也会确保从干净状态开始
     }
 
     /**

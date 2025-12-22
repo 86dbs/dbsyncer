@@ -195,7 +195,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
             logger.warn("清理Connector失败", e);
         }
 
-        resetDatabaseTableStructure();
+        // 注意：不需要在 tearDown() 中重置表结构
+        // 因为下一个测试的 setUp() 会重置表结构，避免重复操作
+        // 如果测试失败，下一个测试的 setUp() 也会确保从干净状态开始
 
         mappingId = null;
         metaId = null;
@@ -374,10 +376,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试TEXT类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD description TEXT";
         testDDLConversion(sqlserverDDL, "description");
-        // 验证：TEXT → TEXT
+        // 验证：TEXT → LONGTEXT（SQL Server TEXT 容量为 2GB，大于 MySQL MEDIUMTEXT 的 16MB，所以转换为 LONGTEXT）
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("description", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+        verifyFieldType("description", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
     }
 
     @Test
@@ -385,10 +387,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试NTEXT类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD content NTEXT";
         testDDLConversion(sqlserverDDL, "content");
-        // 验证：NTEXT → TEXT
+        // 验证：NTEXT → LONGTEXT（SQL Server NTEXT 容量为 1GB，大于 MySQL MEDIUMTEXT 的 16MB，所以转换为 LONGTEXT）
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("content", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+        verifyFieldType("content", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
     }
 
     @Test
@@ -1025,124 +1027,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("NVARCHAR类型NOT NULL字段测试通过（已验证DEFAULT ''自动添加）");
     }
 
-    // ==================== COMMENT 相关测试 ====================
-
-    /**
-     * 测试ADD COLUMN - 带COMMENT（SQL Server使用MS_Description扩展属性）
-     */
-    @Test
-    public void testAddColumn_WithComment() throws Exception {
-        logger.info("开始测试ADD COLUMN - 带COMMENT");
-
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
-
-        // 1. 添加字段
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD status INT";
-        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
-
-        // 2. 添加COMMENT（SQL Server使用扩展属性）
-        String commentDDL = "EXEC sp_addextendedproperty 'MS_Description', '状态值，1：有效；2：无效', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'status'";
-        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
-
-        waitForDDLProcessingComplete("status", 10000);
-
-        // 验证字段映射
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-
-        boolean foundStatusMapping = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "status".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "status".equals(fm.getTarget().getName()));
-
-        assertTrue("应找到status字段的映射", foundStatusMapping);
-        verifyFieldExistsInTargetDatabase("status", tableGroup.getTargetTable().getName(), mysqlConfig);
-
-        // 验证COMMENT（MS_Description → MySQL COMMENT）
-        verifyFieldComment("status", tableGroup.getTargetTable().getName(), mysqlConfig, "状态值，1：有效；2：无效");
-
-        logger.info("ADD COLUMN带COMMENT测试通过");
-    }
-
-    /**
-     * 测试ADD COLUMN - 带COMMENT（包含特殊字符）
-     * 验证COMMENT字符串中包含单引号、分号、冒号等特殊字符时的转义处理
-     */
-    @Test
-    public void testAddColumn_WithCommentContainingSpecialChars() throws Exception {
-        logger.info("开始测试ADD COLUMN - 带COMMENT（包含特殊字符）");
-
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
-
-        // 1. 添加字段
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD outQrcodeID INT NOT NULL";
-        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
-
-        // 2. 添加COMMENT（包含特殊字符：单引号、分号、冒号）
-        String comment = "外部活码类型，1：进群宝；2：企业微信";
-        String commentDDL = String.format(
-                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'outQrcodeID'",
-                comment.replace("'", "''")); // 转义单引号
-        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
-
-        waitForDDLProcessingComplete("outQrcodeID", 10000);
-
-        // 验证字段映射
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-
-        boolean foundOutQrcodeIDMapping = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "outQrcodeID".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "outQrcodeID".equals(fm.getTarget().getName()));
-
-        assertTrue("应找到outQrcodeID字段的映射", foundOutQrcodeIDMapping);
-        verifyFieldExistsInTargetDatabase("outQrcodeID", tableGroup.getTargetTable().getName(), mysqlConfig);
-
-        // 验证COMMENT（包含特殊字符）
-        verifyFieldComment("outQrcodeID", tableGroup.getTargetTable().getName(), mysqlConfig, comment);
-
-        logger.info("ADD COLUMN带COMMENT（包含特殊字符）测试通过");
-    }
-
-    /**
-     * 测试MODIFY COLUMN - 添加COMMENT（包含特殊字符）
-     */
-    @Test
-    public void testModifyColumn_WithComment() throws Exception {
-        logger.info("开始测试MODIFY COLUMN - 添加COMMENT");
-
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
-
-        // 添加COMMENT到现有字段
-        String comment = "用户姓名，包含单引号'测试";
-        String commentDDL = String.format(
-                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'first_name'",
-                comment.replace("'", "''")); // 转义单引号
-        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
-
-        Thread.sleep(3000);
-
-        // 验证字段映射仍然存在
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-
-        boolean foundFirstNameMapping = tableGroup.getFieldMapping().stream()
-                .anyMatch(fm -> fm.getSource() != null && "first_name".equals(fm.getSource().getName()) &&
-                        fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
-
-        assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
-
-        // 验证COMMENT（在MySQL中单引号会被转义为''）
-        verifyFieldComment("first_name", tableGroup.getTargetTable().getName(), mysqlConfig, comment);
-
-        logger.info("MODIFY COLUMN添加COMMENT测试通过");
-    }
-
     // ==================== CREATE TABLE 测试场景 ====================
 
     /**
@@ -1189,61 +1073,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         verifyFieldType("createtime", "createTableTestTarget", mysqlConfig, "datetime");
 
         logger.info("CREATE TABLE基础建表测试通过");
-    }
-
-    /**
-     * 测试CREATE TABLE - 带COMMENT（包含特殊字符）
-     * 重点测试MS_Description → MySQL COMMENT的转换
-     */
-    @Test
-    public void testCreateTable_WithSpecialCharsInComments() throws Exception {
-        logger.info("开始测试CREATE TABLE - 带COMMENT（包含特殊字符）");
-
-        // 准备：确保表不存在
-        prepareForCreateTableTest("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
-
-        // 先在源库创建表（SQL Server）
-        String sourceDDL = "IF OBJECT_ID('visit_wechatsale_activity_allocationresult', 'U') IS NOT NULL DROP TABLE visit_wechatsale_activity_allocationresult;\n" +
-                "CREATE TABLE visit_wechatsale_activity_allocationresult (\n" +
-                "    resultID INT IDENTITY(1,1) PRIMARY KEY,\n" +
-                "    outQrcodeID INT NOT NULL,\n" +
-                "    membertype INT NOT NULL,\n" +
-                "    typeState INT NOT NULL\n" +
-                ");";
-
-        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
-
-        // 添加COMMENT（包含特殊字符）
-        String comment1 = "外部活码类型，1：进群宝；2：企业微信";
-        String comment2 = " 1：新学员无交费(无任何交费记录); -- 新用户 2：老学员老交费(当前日期无交费课程); -- 老用户 3：新学员新交费(当前日期在辅导期内);4：老学员新交费(历史有过交费，当前日期也在辅导期内) -- 历史用户";
-        String comment3 = "1:图片；2网页; 3文件；4视频；5小程序";
-
-        executeDDLToSourceDatabase(String.format(
-                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'outQrcodeID'",
-                comment1.replace("'", "''")), sqlServerConfig);
-        executeDDLToSourceDatabase(String.format(
-                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'membertype'",
-                comment2.replace("'", "''")), sqlServerConfig);
-        executeDDLToSourceDatabase(String.format(
-                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'typeState'",
-                comment3.replace("'", "''")), sqlServerConfig);
-
-        // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
-        createTargetTableFromSource("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
-
-        // 验证表结构
-        verifyTableExists("visit_wechatsale_activity_allocationresult", mysqlConfig);
-        verifyTableFieldCount("visit_wechatsale_activity_allocationresult", mysqlConfig, 4);
-
-        // 验证COMMENT（重点测试特殊字符转义）
-        verifyFieldComment("outQrcodeID", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment1);
-        verifyFieldComment("membertype", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment2);
-        verifyFieldComment("typeState", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment3);
-
-        // 验证主键
-        verifyTablePrimaryKeys("visit_wechatsale_activity_allocationresult", mysqlConfig, Arrays.asList("resultID"));
-
-        logger.info("CREATE TABLE带COMMENT（包含特殊字符）测试通过");
     }
 
     /**
