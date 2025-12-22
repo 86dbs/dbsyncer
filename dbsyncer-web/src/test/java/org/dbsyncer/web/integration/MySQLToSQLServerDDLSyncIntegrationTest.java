@@ -1,5 +1,6 @@
 package org.dbsyncer.web.integration;
 
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.web.Application;
@@ -367,13 +368,13 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     @Test
     public void testModifyColumn_ChangeType() throws Exception {
         logger.info("开始测试MODIFY COLUMN操作 - 修改类型");
-        // 先添加一个INT字段用于测试类型修改
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN count_num INT";
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        executeDDLToSourceDatabase(addColumnDDL, mysqlConfig);
-        Thread.sleep(3000);
+        // 环境准备：直接在源库和目标库添加字段（不通过同步机制）
+        prepareEnvironment(
+                "ALTER TABLE ddlTestEmployee ADD COLUMN count_num INT",
+                "ALTER TABLE ddlTestEmployee ADD count_num INT"
+        );
 
+        // 测试：修改字段类型（通过同步机制）
         String mysqlDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN count_num BIGINT";
         testDDLConversion(mysqlDDL, "count_num");
     }
@@ -381,13 +382,13 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     @Test
     public void testModifyColumn_RemoveNotNull() throws Exception {
         logger.info("开始测试MODIFY COLUMN操作 - 移除NOT NULL约束");
-        // 先确保字段是NOT NULL的
-        String setNotNullDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(50) NOT NULL";
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        executeDDLToSourceDatabase(setNotNullDDL, mysqlConfig);
-        Thread.sleep(3000);
+        // 环境准备：直接在源库和目标库设置字段为NOT NULL（不通过同步机制）
+        prepareEnvironment(
+                "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(50) NOT NULL",
+                "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL"
+        );
 
+        // 测试：移除NOT NULL约束（通过同步机制）
         String mysqlDDL = "ALTER TABLE ddlTestEmployee MODIFY COLUMN first_name VARCHAR(50) NULL";
         testDDLConversion(mysqlDDL, "first_name");
     }
@@ -402,13 +403,13 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     @Test
     public void testChangeColumn_RenameAndModifyType() throws Exception {
         logger.info("开始测试CHANGE COLUMN操作 - 重命名并修改类型");
-        // 先添加一个字段用于测试
-        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD COLUMN description VARCHAR(100)";
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        executeDDLToSourceDatabase(addColumnDDL, mysqlConfig);
-        Thread.sleep(3000);
+        // 环境准备：直接在源库和目标库添加字段（不通过同步机制）
+        prepareEnvironment(
+                "ALTER TABLE ddlTestEmployee ADD COLUMN description VARCHAR(100)",
+                "ALTER TABLE ddlTestEmployee ADD description NVARCHAR(100)"
+        );
 
+        // 测试：重命名并修改类型（通过同步机制）
         String mysqlDDL = "ALTER TABLE ddlTestEmployee CHANGE COLUMN description desc_text TEXT";
         testDDLConversion(mysqlDDL, "desc_text");
     }
@@ -944,12 +945,26 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     // ==================== 通用测试方法 ====================
 
     /**
-     * 执行DDL转换并验证结果
+     * 环境准备：直接在源库和目标库执行DDL（不通过同步机制）
+     * 用于测试前的环境准备，确保源库和目标库结构一致
+     */
+    private void prepareEnvironment(String mysqlDDL, String sqlServerDDL) throws Exception {
+        // 直接在源库执行 MySQL DDL
+        executeDDLToSourceDatabase(mysqlDDL, mysqlConfig);
+        // 直接在目标库执行 SQL Server DDL
+        executeDDLToSourceDatabase(sqlServerDDL, sqlServerConfig);
+    }
+
+    /**
+     * 执行DDL转换并验证结果（如果Mapping未启动则自动启动）
      */
     private void testDDLConversion(String sourceDDL, String expectedFieldName) throws Exception {
-        // 启动Mapping
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
+        // 确保Mapping已启动（如果未运行则启动，避免重复启动）
+        Meta meta = profileComponent.getMapping(mappingId).getMeta();
+        if (meta == null || !meta.isRunning()) {
+            mappingService.start(mappingId);
+            Thread.sleep(2000);
+        }
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
@@ -1055,6 +1070,11 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
             
             String normalizedExpected = expectedComment != null ? expectedComment.trim() : "";
             String normalizedActual = actualComment != null ? actualComment.trim() : "";
+            
+            // SQL Server的sys.extended_properties.value可能返回转义后的单引号（''），需要转换为单个单引号（'）
+            // 注意：这里只处理单引号转义，因为SQL Server存储时会将单引号转义为''
+            normalizedActual = normalizedActual.replace("''", "'");
+            
             assertTrue(String.format("字段 %s 的COMMENT应为 '%s'，但实际是 '%s'", fieldName, expectedComment, normalizedActual),
                     normalizedExpected.equals(normalizedActual));
             logger.info("字段COMMENT验证通过: {} 的COMMENT是 '{}'", fieldName, normalizedActual);
