@@ -162,7 +162,11 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             } else {
                 // 字段名改变了，需要两步操作：
                 // 1. 先使用sp_rename重命名字段
-                result.append(sqlServerTemplate.buildRenameColumnSql(tableName, oldColumnName, column));
+                // sp_rename 需要完整的对象名称，使用方括号避免特殊字符问题：'[schema].[table].[column]'
+                String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+                String fullObjectName = String.format("[%s].[%s].[%s]", effectiveSchema, tableName, oldColumnName);
+                result.append(String.format("EXEC sp_rename '%s', '%s', 'COLUMN'",
+                        fullObjectName, newColumnName));
                 // 2. 然后使用ALTER COLUMN修改类型（CHANGE操作总是包含新的类型定义，包含 DEFAULT 和 COMMENT 处理）
                 result.append("; ");
                 String modifySql = convertColumnsToModify(tableName, schema, java.util.Collections.singletonList(column));

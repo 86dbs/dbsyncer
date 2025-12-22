@@ -124,11 +124,41 @@ if (isHeterogeneous || hasChangeOperation) {
 - ✅ 同构 SQL Server 场景下，`CHANGE COLUMN` 正确转换为 `sp_rename`
 - ✅ 其他同构场景（如 ADD、MODIFY、DROP）仍保持高效的原生 SQL 处理
 
+### 3.4 已实施：修复 sp_rename 的 schema 支持 ✅
+
+**问题**：`IRToSQLServerConverter.convertColumnsToChange` 生成的 `sp_rename` SQL 缺少 schema，导致 SQL Server 报错：`参数 @objname 不明确或所声明的 @objtype (COLUMN)有误。`
+
+**为什么 `testRenameColumn_RenameOnly` 没有出现这个问题？**
+
+虽然两个测试都会生成 `sp_rename` + `ALTER COLUMN`，但区别在于：
+- `testRenameColumn_RenameOnly`：只重命名，类型相同，`ALTER COLUMN` 可能被优化或未实际执行，错误可能被掩盖
+- `testRenameColumn_RenameAndModifyType`：重命名后还有类型修改，`ALTER COLUMN` 一定会执行，更容易暴露 schema 问题
+
+实际上，两个测试都存在 schema 问题，只是 `testRenameColumn_RenameAndModifyType` 更容易暴露。
+
+**修复内容**：在 `IRToSQLServerConverter.convertColumnsToChange` 中，构建 `sp_rename` SQL 时包含完整的对象名称（`schema.table.column`）。
+
+**代码位置**：`IRToSQLServerConverter.convertColumnsToChange()` (line 162-169)
+
+**修复后的逻辑**：
+```java
+// sp_rename 需要完整的对象名称，使用方括号避免特殊字符问题：'[schema].[table].[column]'
+String effectiveSchema = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+String fullObjectName = String.format("[%s].[%s].[%s]", effectiveSchema, tableName, oldColumnName);
+result.append(String.format("EXEC sp_rename '%s', '%s', 'COLUMN'",
+        fullObjectName, newColumnName));
+```
+
+**修复效果**：
+- ✅ `sp_rename` SQL 现在包含完整的 `[schema].[table].[column]` 格式（使用方括号）
+- ✅ 解决了 SQL Server 的 "参数 @objname 不明确" 错误
+- ✅ 使用方括号可以避免表名或列名包含特殊字符时的问题
+
 ## 四、关键代码位置
 
 1. **列属性比较**：`SqlServerCTListener.isColumnEqualIgnoreName()` (line 684-689) ✅ 已修复
 2. **RENAME DDL 生成**：`SqlServerCTListener.generateRenameColumnDDL()` (line 746-790) ✅ 已修复
 3. **DDL 解析**：`DDLParserImpl.parse()` (line 98-123) ✅ 已修复（同构场景下检测 CHANGE 操作并走转换流程）
-4. **DDL 转换**：`IRToSQLServerConverter.convertColumnsToChange()` (line 140-173) ✅ 自动转换为 sp_rename
+4. **DDL 转换**：`IRToSQLServerConverter.convertColumnsToChange()` (line 162-169) ✅ 已修复（包含 schema 的 sp_rename）
 5. **DDL 执行**：`GeneralBufferActuator.parseDDl()` (line 290-360)
 
