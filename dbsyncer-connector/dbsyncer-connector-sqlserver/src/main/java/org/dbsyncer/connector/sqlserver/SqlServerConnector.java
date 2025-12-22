@@ -289,6 +289,28 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
         // 调用 SqlTemplate 的 buildCreateTableSql 方法进行 SQL 模板组装
         // SqlTemplate 负责 SQL 语法和模板组装，Connector 只负责参数加工
-        return sqlTemplate.buildCreateTableSql(null, targetTableName, fields, primaryKeys);
+        StringBuilder ddl = new StringBuilder();
+        ddl.append(sqlTemplate.buildCreateTableSql(null, targetTableName, fields, primaryKeys));
+        
+        // 如果有 COMMENT，追加 COMMENT 语句（使用分号分隔，作为独立的 SQL 语句）
+        // 注意：COMMENT 必须使用独立的 EXEC 语句，无法合并到 CREATE TABLE 中
+        String effectiveSchema = "dbo"; // SQL Server 默认 schema
+        List<Field> fieldsWithComment = new ArrayList<>();
+        for (Field field : fields) {
+            if (field.getComment() != null && !field.getComment().trim().isEmpty()) {
+                fieldsWithComment.add(field);
+            }
+        }
+        
+        if (!fieldsWithComment.isEmpty() && sqlTemplate instanceof org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) {
+            org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate sqlServerTemplate = 
+                    (org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate) sqlTemplate;
+            for (Field field : fieldsWithComment) {
+                ddl.append("; ");
+                ddl.append(sqlServerTemplate.buildCommentSql(effectiveSchema, targetTableName, field.getName(), field.getComment()));
+            }
+        }
+        
+        return ddl.toString();
     }
 }
