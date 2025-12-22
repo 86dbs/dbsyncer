@@ -52,6 +52,9 @@ public final class MySQLByteType extends ByteType {
             }
             return 0;
         }
+        if (val instanceof String) {
+            return Byte.parseByte((String) val);
+        }
         return throwUnsupportedException(val, field);
     }
 
