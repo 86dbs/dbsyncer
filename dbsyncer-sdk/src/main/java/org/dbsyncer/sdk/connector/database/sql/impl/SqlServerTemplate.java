@@ -251,10 +251,9 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         }
         
         // 日期时间类型：使用 '1900-01-01'
+        // 注意：对于 DATETIME2 和 DATETIMEOFFSET，SQL Server 会接受 '1900-01-01' 并自动补全时间部分为 '00:00:00'
+        // 但为了与测试期望一致（测试验证时会标准化比较，只检查日期部分），统一使用 '1900-01-01'
         if (upperTypeName.contains("DATE") || upperTypeName.contains("TIME")) {
-            if (upperTypeName.contains("DATETIME2") || upperTypeName.contains("DATETIMEOFFSET")) {
-                return "'1900-01-01 00:00:00'";
-            }
             return "'1900-01-01'";
         }
         
