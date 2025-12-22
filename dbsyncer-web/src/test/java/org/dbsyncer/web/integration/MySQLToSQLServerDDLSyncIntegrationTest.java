@@ -8,8 +8,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +32,7 @@ import static org.junit.Assert.*;
  * @Version 1.0.0
  * @Date 2025-10-28
  */
+@RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTest {
@@ -89,6 +92,9 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
 
     @Before
     public void setUp() throws Exception {
+        // 先清理可能残留的测试 mapping（防止上一个测试清理失败导致残留）
+        cleanupResidualTestMappings();
+
         // 确保每个测试开始时数据库表结构是初始状态
         resetDatabaseTableStructure();
 
@@ -1278,10 +1284,11 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     // ==================== 辅助方法 ====================
 
     /**
-     * 创建Mapping和TableGroup（覆盖基类方法，使用特殊的JSON格式）
+     * 创建Mapping和TableGroup（使用基类方法，确保TableGroup正确创建）
      */
     @Override
     protected String createMapping() throws Exception {
+        // 先创建Mapping（不包含tableGroups）
         Map<String, String> params = new HashMap<>();
         params.put("name", getMappingName());
         params.put("sourceConnectorId", sourceConnectorId);
@@ -1292,29 +1299,6 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         params.put("enableInsert", "true");
         params.put("enableUpdate", "true");
         params.put("enableDelete", "true");
-
-        // 创建TableGroup JSON（这个测试类使用特殊的JSON格式）
-        Map<String, Object> tableGroup = new HashMap<>();
-        tableGroup.put("sourceTable", getSourceTableName());
-        tableGroup.put("targetTable", getTargetTableName());
-
-        List<Map<String, String>> fieldMappings = new ArrayList<>();
-        for (String mapping : getInitialFieldMappings()) {
-            String[] parts = mapping.split("\\|");
-            if (parts.length == 2) {
-                Map<String, String> fieldMapping = new HashMap<>();
-                fieldMapping.put("source", parts[0]);
-                fieldMapping.put("target", parts[1]);
-                fieldMappings.add(fieldMapping);
-            }
-        }
-
-        tableGroup.put("fieldMapping", fieldMappings);
-
-        List<Map<String, Object>> tableGroups = new ArrayList<>();
-        tableGroups.add(tableGroup);
-
-        params.put("tableGroups", org.dbsyncer.common.util.JsonUtil.objToJson(tableGroups));
 
         String mappingId = mappingService.add(params);
 
@@ -1328,6 +1312,14 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         editParams.put("enableUpdate", "true");
         editParams.put("enableDelete", "true");
         mappingService.edit(editParams);
+
+        // 然后使用tableGroupService.add()创建TableGroup
+        Map<String, String> tableGroupParams = new HashMap<>();
+        tableGroupParams.put("mappingId", mappingId);
+        tableGroupParams.put("sourceTable", getSourceTableName());
+        tableGroupParams.put("targetTable", getTargetTableName());
+        tableGroupParams.put("fieldMappings", String.join(",", getInitialFieldMappings()));
+        tableGroupService.add(tableGroupParams);
 
         return mappingId;
     }
