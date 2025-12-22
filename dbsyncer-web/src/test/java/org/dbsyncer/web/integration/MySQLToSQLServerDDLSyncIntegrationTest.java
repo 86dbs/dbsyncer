@@ -968,16 +968,19 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
 
         // 执行DDL
         executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
-        Thread.sleep(3000);
+
+        // 等待DDL处理完成（使用轮询方式，而不是固定等待）
+        boolean isAddOperation = sourceDDL.toUpperCase().contains("ADD");
+        boolean isChangeOperation = sourceDDL.toUpperCase().contains("CHANGE");
+        if (isAddOperation || isChangeOperation) {
+            waitForDDLProcessingComplete(expectedFieldName, 10000);
+        }
 
         // 验证字段映射是否更新
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         assertNotNull("应找到TableGroup列表", tableGroups);
         assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
         TableGroup tableGroup = tableGroups.get(0);
-
-        boolean isAddOperation = sourceDDL.toUpperCase().contains("ADD");
-        boolean isChangeOperation = sourceDDL.toUpperCase().contains("CHANGE");
 
         if (isAddOperation || isChangeOperation) {
             boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
