@@ -19,6 +19,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -93,6 +94,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Resource
     private ParserComponent parserComponent;
 
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     @Override
     public String add(Map<String, String> params) {
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
@@ -128,6 +132,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         mappingChecker.addMeta(newMapping);
 
         profileComponent.addConfigModel(newMapping);
+        preloadTemplate.reConnect(newMapping);
         log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系

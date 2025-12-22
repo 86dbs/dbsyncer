@@ -317,11 +317,7 @@ public class MonitorController extends BaseController {
             
             memory.setSysTotal(sysTotal);
             memory.setSysUsed(sysUsed);
-
-            // 总使用百分比（基于系统内存：包括缓存）
-            // 注意：在 macOS 上，这个值可能看起来很高，因为它包含了文件缓存
-            // 实际的应用程序内存使用可能低于这个值
-            memory.setUsedPercent(formatPercent(sysUsed, sysTotal));
+            memory.setUsedPercent(formatPercent(jvmUsed, sysTotal));
         } catch (Exception e) {
             logger.warn("Failed to collect system memory info: " + e.getMessage(), e);
             memory.setSysTotal(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));

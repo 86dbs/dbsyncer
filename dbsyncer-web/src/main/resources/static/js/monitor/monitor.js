@@ -509,7 +509,7 @@ $(function () {
             </div>
             <div class="progress-detail">
                 <span>总内存 <strong>${data.sysTotal} GB</strong></span>
-                <span>用户态 <strong>${data.jvmUsed} GB</strong></span>
+                <span>用户态 <strong>${data.jvmUsed} / ${data.jvmTotal} GB</strong></span>
                 <span>系统态 <strong>${data.sysUsed} GB</strong></span>
             </div>`);
     }
