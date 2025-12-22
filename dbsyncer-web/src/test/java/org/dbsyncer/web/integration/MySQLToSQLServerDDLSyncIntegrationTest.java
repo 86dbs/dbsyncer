@@ -969,6 +969,14 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         
         TableGroup tableGroup = tableGroups.get(0);
         
+        // 确保 connectorType 已设置
+        if (mysqlConfig.getConnectorType() == null) {
+            mysqlConfig.setConnectorType(getConnectorType(mysqlConfig, true));
+        }
+        if (sqlServerConfig.getConnectorType() == null) {
+            sqlServerConfig.setConnectorType(getConnectorType(sqlServerConfig, false));
+        }
+        
         // 刷新表结构（从数据库重新获取字段信息）
         org.dbsyncer.sdk.model.MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(
                 connectorFactory.connect(mysqlConfig), tableGroup.getSourceTable().getName());
