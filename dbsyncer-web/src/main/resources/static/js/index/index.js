@@ -20,37 +20,37 @@ function doEditProjectGroup($projectGroupSelect) {
 // 删除分组
 function doRemoveProjectGroup($projectGroupSelect) {
 
-        var $id = $projectGroupSelect;
-        if (isBlank($id)) {
-            bootGrowl("请选择分组", "danger");
-            return;
-        }
-        BootstrapDialog.show({
-            title: "提示",
-            type: BootstrapDialog.TYPE_INFO,
-            message: "确认删除分组？",
-            size: BootstrapDialog.SIZE_NORMAL,
-            buttons: [{
-                label: "确定",
-                action: function (dialog) {
-                    doPoster('/projectGroup/remove', {id: $id}, function (data) {
-                        if (data.success == true) {
-                            // 显示主页
-                            backIndexPage();
-                            bootGrowl(data.resultValue, "success");
-                        } else {
-                            bootGrowl(data.resultValue, "danger");
-                        }
-                    });
-                    dialog.close();
-                }
-            }, {
-                label: "取消",
-                action: function (dialog) {
-                    dialog.close();
-                }
-            }]
-        });
+    var $id = $projectGroupSelect;
+    if (isBlank($id)) {
+        bootGrowl("请选择分组", "danger");
+        return;
+    }
+    BootstrapDialog.show({
+        title: "提示",
+        type: BootstrapDialog.TYPE_INFO,
+        message: "确认删除分组？",
+        size: BootstrapDialog.SIZE_NORMAL,
+        buttons: [{
+            label: "确定",
+            action: function (dialog) {
+                doPoster('/projectGroup/remove', { id: $id }, function (data) {
+                    if (data.success == true) {
+                        // 显示主页
+                        backIndexPage();
+                        bootGrowl(data.resultValue, "success");
+                    } else {
+                        bootGrowl(data.resultValue, "danger");
+                    }
+                });
+                dialog.close();
+            }
+        }, {
+            label: "取消",
+            action: function (dialog) {
+                dialog.close();
+            }
+        }]
+    });
 }
 
 // 给分组下拉绑定事件
@@ -144,10 +144,10 @@ function bindConnectorDropdownMenu() {
 // 给驱动操作按钮绑定事件
 function bindMappingOperationButtons() {
     // 绑定所有操作按钮的点击事件
-    $('.operation-buttons a').click(function(e) {
+    $('.operation-buttons a').click(function (e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // 优先从data-url获取URL
         var $url = $(this).data('url') || $(this).attr("th\:url") || $(this).attr("href");
         // 移除javascript:;前缀
@@ -231,144 +231,208 @@ function createTimer($projectGroupSelect) {
 
 function refreshMappingList() {
 
-     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
-            if (data.success == true) {
+    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
+        if (data.success == true) {
 
-                if (timer2 == null) {
-                    timer2 = setInterval(function () {
-                        var projectGroupId = $("#projectGroup").val();
-                        // 加载页面
-                        $.ajax({
-                               url: '/index/mappingdata?projectGroupId='+ projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取驱动列表的接口
-                               type: 'GET',
-                               success: function(data) {
-                                    if(data.success && data.status == 200 ){
-                                         var datalist = data.resultValue;
-                                         if(Array.isArray(datalist) ){
-                                            // 遍历数组并拼接 div 字符串
-                                              $.each(datalist, function(index, m) {
-                                                var htmlContent = '';
-                                                // 安全访问对象属性
-                                                var mid = m && m.id ? m.id : '';
-                                                var model = m && m.model ? m.model : '';
-                                                var modelname =  '';
-                                                if(model == 'full'){
-                                                  modelname= '全量';
-                                                }else if(model == 'increment'){
-                                                  modelname= '增量';
-                                                }else if(model == 'fullIncrement'){
-                                                 modelname= '混合';
-                                                }
-                                                var meta = m && m.meta ? m.meta : {};
-                                                var total = meta.total || 0;
-                                                var success = meta.success || 0;
-                                                var fail = meta.fail || 0;
-                                                var beginTime = meta.beginTime || 0;
-                                                var updateTime = meta.updateTime || 0;
-                                                var syncPhase = meta.syncPhase || {};
-                                                var syncPhaseCode = syncPhase.code || 0;
-                                                var counting = meta.counting || false;
-                                                var errorMessage = meta.errorMessage || '';
-                                                var id = meta.id || '';
-                                                var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
-                                                 var stateHtmlContent = '';
-                                                 if(stateVal == 0){
-                                                      stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
-                                                 }else if(stateVal == 1){
-                                                      stateHtmlContent += '<span class="running-through-rate well-sign-green">✔</span>';
-                                                      stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
-                                                 }else if(stateVal == 2){
-                                                      stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
-                                                 }else if(stateVal == 3){
-                                                      stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
-                                                      stateHtmlContent += '<span title=" '+errorMessage +' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
-                                                 }
+            if (timer2 == null) {
+                timer2 = setInterval(function () {
+                    var projectGroupId = $("#projectGroup").val();
+                    // 加载页面
+                    $.ajax({
+                        url: '/index/mappingdata?projectGroupId=' + projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取驱动列表的接口
+                        type: 'GET',
+                        success: function (data) {
+                            if (data.success && data.status == 200) {
+                                var datalist = data.resultValue;
+                                if (Array.isArray(datalist)) {
+                                    // 遍历数组并拼接 div 字符串
+                                    $.each(datalist, function (index, m) {
+                                        var htmlContent = '';
+                                        // 安全访问对象属性
+                                        var mid = m && m.id ? m.id : '';
+                                        var model = m && m.model ? m.model : '';
+                                        var modelname = '';
+                                        if (model == 'full') {
+                                            modelname = '全量';
+                                        } else if (model == 'increment') {
+                                            modelname = '增量';
+                                        } else if (model == 'fullIncrement') {
+                                            modelname = '混合';
+                                        }
+                                        var meta = m && m.meta ? m.meta : {};
+                                        var total = meta.total || 0;
+                                        var success = meta.success || 0;
+                                        var fail = meta.fail || 0;
+                                        var beginTime = meta.beginTime || 0;
+                                        var updateTime = meta.updateTime || 0;
+                                        var syncPhase = meta.syncPhase || {};
+                                        var syncPhaseCode = syncPhase.code || 0;
+                                        var counting = meta.counting || false;
+                                        var errorMessage = meta.errorMessage || '';
+                                        var id = meta.id || '';
+                                        var stateVal = meta.state != null && meta.state !== '' ? parseInt(meta.state) : 0;
+                                        var stateHtmlContent = '';
+                                        if (stateVal == 0) {
+                                            stateHtmlContent += '<span class="running-state label label-info">未运行</span>';
+                                        } else if (stateVal == 1) {
+                                            stateHtmlContent += '<span class="running-through-rate well-sign-green">✔</span>';
+                                            stateHtmlContent += '<span class="running-state label label-success">运行中</span>';
+                                        } else if (stateVal == 2) {
+                                            stateHtmlContent += '<span class="running-state label label-warning">停止中</span>';
+                                        } else if (stateVal == 3) {
+                                            stateHtmlContent += '<span class="running-state label label-danger">异常</span>';
+                                            stateHtmlContent += '<span title=" ' + errorMessage + ' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
+                                        }
 
 
-                                                htmlContent += '<tbody>';
-                                                htmlContent += '<tr>';
-                                                htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
-                                                htmlContent += modelname + '同步>总数:' + total;
+                                        htmlContent += '<tbody>';
+                                        htmlContent += '<tr>';
+                                        htmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
+                                        htmlContent += modelname + '同步>总数:' + total;
 
-                                                // 检查同步阶段是否为0（正在统计中）
-                                                if (syncPhaseCode === 0) {
-                                                   if (counting) {
-                                                       htmlContent += '(正在统计中)';
-                                                   }
-                                                   if (total > 0 && (success + fail) > 0) {
-                                                       var progress = ((success + fail) / total * 100).toFixed(2);
-                                                       htmlContent += ',进度:' + progress + '%';
-                                                   }
+                                        // 检查同步阶段是否为0（正在统计中）
+                                        if (syncPhaseCode === 0) {
+                                            if (counting) {
+                                                htmlContent += '(正在统计中)';
+                                            }
+                                            if (total > 0 && (success + fail) > 0) {
+                                                var progress = ((success + fail) / total * 100).toFixed(2);
+                                                htmlContent += ',进度:' + progress + '%';
+                                            }
 
-                                                   // 计算耗时
-                                                   var seconds = Math.floor((updateTime - beginTime) / 1000);
-                                                   htmlContent += ',耗时:';
-                                                   if (seconds < 60) {
-                                                       htmlContent += seconds + '秒';
-                                                   } else {
-                                                       var minutes = Math.floor(seconds / 60);
-                                                       htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
-                                                   }
-                                                }
+                                            // 计算耗时
+                                            var seconds = Math.floor((updateTime - beginTime) / 1000);
+                                            htmlContent += ',耗时:';
+                                            if (seconds < 60) {
+                                                htmlContent += seconds + '秒';
+                                            } else {
+                                                var minutes = Math.floor(seconds / 60);
+                                                htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
+                                            }
+                                        }
 
-                                                if (success > 0) {
-                                                   htmlContent += ',成功:' + success;
-                                                }
-                                                if (fail > 0) {
-                                                   htmlContent += ',失败:' + fail;
-                                                   htmlContent += ' <a id="' + id + '" href="javascript:;" class="label label-danger queryData">日志</a>';
-                                                }
-                                                htmlContent += '</td>';
-                                                htmlContent += '</tr>';
+                                        if (success > 0) {
+                                            htmlContent += ',成功:' + success;
+                                        }
+                                        if (fail > 0) {
+                                            htmlContent += ',失败:' + fail;
+                                            htmlContent += ' <a id="' + id + '" href="javascript:;" class="label label-danger queryData">日志</a>';
+                                        }
+                                        htmlContent += '</td>';
+                                        htmlContent += '</tr>';
 
-                                                // 启动时间行
-                                                htmlContent += '<tr>';
-                                                htmlContent += '<td class="text-left">';
-                                                htmlContent += '启动时间>';
-                                                if (beginTime > 0) {
-                                                   var date = new Date(beginTime);
-                                                   htmlContent += date.getFullYear() + '-' +
-                                                                 String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                                                                 String(date.getDate()).padStart(2, '0') + ' ' +
-                                                                 String(date.getHours()).padStart(2, '0') + ':' +
-                                                                 String(date.getMinutes()).padStart(2, '0') + ':' +
-                                                                 String(date.getSeconds()).padStart(2, '0');
-                                                }
-                                                htmlContent += '</td>';
-                                                htmlContent += '</tr>';
-                                                htmlContent += '</tbody>';
-                                                $("#"+mid).find(".table-hover").html(htmlContent);
-                                                $("#"+mid).find("#stateId").html(stateHtmlContent);
-                                             });
-                                         }
-                                    }else{
-                                         bootGrowl(data.resultValue, "danger");
-                                    }
-                               },
-                               error: function() {
-                                   bootGrowl('刷新失败', "danger");
-                               }
-                           });
-                    }, data.resultValue * 1000);
-                }
-
-            } else {
-                bootGrowl(data.resultValue, "danger");
+                                        // 启动时间行
+                                        htmlContent += '<tr>';
+                                        htmlContent += '<td class="text-left">';
+                                        htmlContent += '启动时间>';
+                                        if (beginTime > 0) {
+                                            var date = new Date(beginTime);
+                                            htmlContent += date.getFullYear() + '-' +
+                                                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                                                String(date.getDate()).padStart(2, '0') + ' ' +
+                                                String(date.getHours()).padStart(2, '0') + ':' +
+                                                String(date.getMinutes()).padStart(2, '0') + ':' +
+                                                String(date.getSeconds()).padStart(2, '0');
+                                        }
+                                        htmlContent += '</td>';
+                                        htmlContent += '</tr>';
+                                        htmlContent += '</tbody>';
+                                        $("#" + mid).find(".table-hover").html(htmlContent);
+                                        $("#" + mid).find("#stateId").html(stateHtmlContent);
+                                    });
+                                }
+                            } else {
+                                bootGrowl(data.resultValue, "danger");
+                            }
+                        },
+                        error: function () {
+                            bootGrowl('刷新失败', "danger");
+                        }
+                    });
+                }, data.resultValue * 1000);
             }
-        });
+
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
 
 }
 
-function groupShow(id){
+function groupShow(id) {
     var projectGroupId = (typeof id === 'string') ? id : '';
     timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
     $("#projectGroup").val(projectGroupId);
 }
 
-function nextToMapping(str){
+function bindMappingSearch() {
+    // 搜索按钮点击事件
+    $("#mappingSearchBtn").click(function () {
+        performMappingSearch();
+    });
+
+    // 搜索框回车事件
+    $("#mappingSearchInput").keypress(function (e) {
+        if (e.which === 13) { // Enter键
+            performMappingSearch();
+        }
+    });
+}
+
+function performMappingSearch() {
+    var keyword = $("#mappingSearchInput").val().trim();
+    var projectGroupId = $("#projectGroup").val() || '';
+
+    $.ajax({
+        url: '/index/searchMapping',
+        type: 'GET',
+        data: {
+            keyword: keyword,
+            projectGroupId: projectGroupId
+        },
+        success: function (data) {
+            if (data.success && data.status === 200) {
+                var searchResults = data.resultValue;
+
+                // 获取原始的表格行
+                var tableBody = $("table.table-hover tbody");
+                var originalRows = tableBody.find("tr");
+
+                // 隐藏无搜索结果提示
+                $("#noSearchResults").hide();
+
+                if (searchResults.length === 0) {
+                    // 隐藏所有行
+                    originalRows.hide();
+                    // 显示无搜索结果提示
+                    $("#noSearchResults").show();
+                } else {
+                    // 隐藏所有行
+                    originalRows.hide();
+                    // 只显示匹配的行
+                    searchResults.forEach(function (result) {
+                        if (result && result.id) {
+                            var row = $("tr[id='" + result.id + "']");
+                            if (row.length > 0) {
+                                row.show();
+                            }
+                        }
+                    });
+                }
+            } else {
+                bootGrowl(data.resultValue || '搜索失败', "danger");
+            }
+        },
+        error: function () {
+            bootGrowl('搜索请求失败', "danger");
+        }
+    });
+}
+
+function nextToMapping(str) {
 
     // 获取映射关系标签页及对应链接
-    const $baseConfigTab = $('#'+str);
+    const $baseConfigTab = $('#' + str);
     const $baseConfigLink = $('a[href="#' + str + '"]');
 
     if ($baseConfigTab.length && $baseConfigLink.length) {
@@ -387,7 +451,7 @@ $(function () {
     //initSelectIndex($(".select-control"));
     bindAddProjectGroup();
 
-   //异步刷新  同步进度 部分HTML
+    //异步刷新  同步进度 部分HTML
     refreshMappingList();
 
     bindAddConnector();
@@ -401,4 +465,7 @@ $(function () {
     //bindMappingDropdownMenu();
     // 替换下拉菜单事件为直接按钮事件
     bindMappingOperationButtons();
+
+    // 绑定驱动搜索功能
+    bindMappingSearch();
 });
