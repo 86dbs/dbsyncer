@@ -98,8 +98,20 @@ public class DDLParserImpl implements DDLParser {
             String targetSql;
             boolean isHeterogeneous = !StringUtil.equals(sourceConnectorType, targetConnectorType);
             
-            if (isHeterogeneous) {
-                // 对于异构数据库，进行DDL语法转换
+            // 检查是否有 CHANGE 操作（即使是同构数据库，CHANGE COLUMN 也需要转换为目标数据库的语法）
+            // 例如：SQL Server 同构场景下，CHANGE COLUMN 需要转换为 sp_rename
+            boolean hasChangeOperation = false;
+            if (alter.getAlterExpressions() != null) {
+                for (AlterExpression expr : alter.getAlterExpressions()) {
+                    if (expr.getOperation() == AlterOperation.CHANGE) {
+                        hasChangeOperation = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (isHeterogeneous || hasChangeOperation) {
+                // 对于异构数据库，或者同构数据库但包含 CHANGE 操作，进行DDL语法转换
                 // 使用原始表名（不带引号），因为IRToTargetConverter的buildAddColumnSql会自己加引号
                 alter.getTable().setName(targetTableName);
 
@@ -122,7 +134,7 @@ public class DDLParserImpl implements DDLParser {
                 // 4. 中间表示转目标DDL
                 targetSql = irToTargetConverter.convert(ir);
             } else {
-                // 对于同构数据库，直接使用原生SQL，提高效率和准确性
+                // 对于同构数据库且没有 CHANGE 操作，直接使用原生SQL，提高效率和准确性
                 // 策略：先保存原始SQL和表名信息，然后调用convert()来映射操作类型（用于策略模式），
                 // 最后使用SqlTemplate来替换表名和schema，避免convert()修改操作类型导致的SQL语法错误
                 

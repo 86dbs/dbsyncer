@@ -625,7 +625,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
             if (bestMatch != null) {
                 // 找到匹配：这是 RENAME 操作
-                String ddl = generateRenameColumnDDL(tableName, droppedCol.getName(), bestMatch.getName());
+                // 使用标准的 CHANGE COLUMN 语法（类似 MySQL），便于 JSQLParser 解析
+                // DDL 解析器会自动转换为目标数据库的语法（如同构 SQL Server 的 sp_rename）
+                String ddl = generateRenameColumnDDL(tableName, droppedCol, bestMatch);
                 changes.add(new DDLChange(DDLChangeType.RENAME_COLUMN, ddl, bestMatch.getName()));
                 matchedOldNames.add(droppedCol.getName());
                 matchedNewNames.add(bestMatch.getName());
@@ -745,19 +747,53 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     /**
      * 生成 RENAME COLUMN 的 DDL
-     * SQL Server 使用 sp_rename 存储过程
-     * 注意：sp_rename 不是标准的 ALTER TABLE 语句，可能不会被 JSQLParser 解析
-     * 但为了保持与 CDC 方式的一致性，也使用标准格式（不带方括号）
+     * 使用标准的 CHANGE COLUMN 语法（类似 MySQL），便于 JSQLParser 解析
+     * DDL 解析器会自动转换为目标数据库的语法：
+     * - 同构 SQL Server：IRToSQLServerConverter 会将其转换为 sp_rename
+     * - 异构场景：可以转换为目标数据库的 RENAME 语法
+     * 
+     * 格式：ALTER TABLE table CHANGE COLUMN old_name new_name type [NOT NULL]
      */
-    private String generateRenameColumnDDL(String tableName, String oldColumnName, String newColumnName) {
-        // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致
+    private String generateRenameColumnDDL(String tableName, Field oldColumn, Field newColumn) {
+        StringBuilder ddl = new StringBuilder();
+        
+        // 构建表名（带 schema）
         if (schema != null && !schema.trim().isEmpty()) {
-            return String.format("EXEC sp_rename '%s.%s.%s', '%s', 'COLUMN'",
-                    schema, tableName, oldColumnName, newColumnName);
+            ddl.append("ALTER TABLE ").append(schema).append(".").append(tableName).append(" ");
         } else {
-            return String.format("EXEC sp_rename '%s.%s', '%s', 'COLUMN'",
-                    tableName, oldColumnName, newColumnName);
+            ddl.append("ALTER TABLE ").append(tableName).append(" ");
         }
+        
+        // CHANGE COLUMN old_name new_name
+        ddl.append("CHANGE COLUMN ").append(oldColumn.getName())
+           .append(" ").append(newColumn.getName()).append(" ");
+        
+        // 添加类型信息
+        ddl.append(newColumn.getTypeName());
+        
+        // 处理长度/精度
+        if (newColumn.getColumnSize() > 0) {
+            String typeName = newColumn.getTypeName().toLowerCase();
+            if (typeName.contains("varchar") || typeName.contains("char") || typeName.contains("nvarchar") || typeName.contains("nchar")) {
+                ddl.append("(").append(newColumn.getColumnSize()).append(")");
+            }
+        }
+        
+        // 处理数值类型的精度和小数位数
+        if (newColumn.getRatio() >= 0 && newColumn.getColumnSize() > 0) {
+            String typeName = newColumn.getTypeName().toLowerCase();
+            if (typeName.contains("decimal") || typeName.contains("numeric")) {
+                ddl.append("(").append(newColumn.getColumnSize()).append(",")
+                   .append(newColumn.getRatio()).append(")");
+            }
+        }
+        
+        // 处理可空性
+        if (Boolean.FALSE.equals(newColumn.getNullable())) {
+            ddl.append(" NOT NULL");
+        }
+        
+        return ddl.toString();
     }
 
     private String generateAlterColumnDDL(String tableName, Field oldCol, Field newCol) {

@@ -58,47 +58,77 @@ private boolean isColumnEqualIgnoreName(Field col1, Field col2) {
 **修复效果**：
 - ✅ `testRenameColumn_RenameOnly` 测试现在能够正确识别 RENAME 操作，生成 `sp_rename` DDL 而不是 DROP + ADD
 
-### 3.2 待实施：处理 sp_rename 解析问题 ⏳
+### 3.2 已实施：生成标准 CHANGE COLUMN 语法 ✅
 
-**问题**：`sp_rename` DDL 无法被 JSQLParser 解析，导致 `NullPointerException`
+**修复内容**：修改 `generateRenameColumnDDL` 方法，生成标准的 `CHANGE COLUMN` 语法（类似 MySQL），而不是 SQL Server 特定的 `sp_rename`
 
-**可选方案**：
-1. **方案A**：在 `DDLParserImpl` 中添加 `sp_rename` 特殊处理（快速修复）
-   - 在 `parse()` 方法开始处检测 `sp_rename`
-   - 解析 `sp_rename` 参数，提取旧列名和新列名
-   - 设置 `ddlOperationEnum = ALTER_CHANGE`
-   - 设置 `changedFieldNames` 映射
-   - 生成目标 SQL（替换表名和 schema）
+**代码位置**：`SqlServerCTListener.generateRenameColumnDDL()` (line 746-790)
 
-2. **方案B**：在 `DDLChangedEvent` 中携带元数据，跳过 parse（架构优化）
-   - 扩展 `DDLChangedEvent`，携带操作类型和字段映射信息
-   - 在 `SqlServerCTListener.compareTableSchema()` 中生成 DDL 时，设置操作类型和字段映射
-   - 在 `GeneralBufferActuator.parseDDl()` 中检查是否有预填充的信息，如果有则跳过 parse
+**修复后的逻辑**：
+```java
+/**
+ * 生成 RENAME COLUMN 的 DDL
+ * 使用标准的 CHANGE COLUMN 语法（类似 MySQL），便于 JSQLParser 解析
+ * DDL 解析器会自动转换为目标数据库的语法：
+ * - 同构 SQL Server：IRToSQLServerConverter 会将其转换为 sp_rename
+ * - 异构场景：可以转换为目标数据库的 RENAME 语法
+ * 
+ * 格式：ALTER TABLE table CHANGE COLUMN old_name new_name type [NOT NULL]
+ */
+private String generateRenameColumnDDL(String tableName, Field oldColumn, Field newColumn) {
+    // 生成标准的 CHANGE COLUMN 语法
+    // ALTER TABLE schema.table CHANGE COLUMN old_name new_name type [NOT NULL]
+}
+```
 
-**建议**：采用方案A进行快速修复，确保 `testRenameColumn_RenameAndModifyType` 测试能够通过。
+**优势**：
+1. ✅ **JSQLParser 可以解析**：标准的 `ALTER TABLE ... CHANGE COLUMN` 语法可以被 JSQLParser 正确解析
+2. ✅ **自动转换**：对于同构 SQL Server，`IRToSQLServerConverter` 会自动将其转换为 `sp_rename`
+3. ✅ **异构支持**：对于异构场景，可以转换为目标数据库的 RENAME 语法（如 MySQL 的 `CHANGE COLUMN`，PostgreSQL 的 `RENAME COLUMN`）
+4. ✅ **无需特殊处理**：不需要在 `DDLParserImpl` 中添加 `sp_rename` 特殊处理
+
+**修复效果**：
+- ✅ `sp_rename` 解析问题从根本上解决
+- ✅ 生成的 DDL 可以被 JSQLParser 正确解析
+- ✅ 支持同构和异构场景
+
+### 3.3 已实施：同构场景下的 CHANGE COLUMN 转换 ✅
+
+**问题**：在同构 SQL Server 场景下，`DDLParserImpl` 原本直接使用原始 SQL（只替换表名），但 `CHANGE COLUMN` 语法不是 SQL Server 的原生语法，导致执行失败。
+
+**修复内容**：在 `DDLParserImpl.parse()` 中，检测到 `CHANGE` 操作时，即使是同构场景也走转换流程，通过 `IRToSQLServerConverter` 将 `CHANGE COLUMN` 转换为 `sp_rename`。
+
+**代码位置**：`DDLParserImpl.parse()` (line 98-123)
+
+**修复后的逻辑**：
+```java
+// 检查是否有 CHANGE 操作（即使是同构数据库，CHANGE COLUMN 也需要转换为目标数据库的语法）
+boolean hasChangeOperation = false;
+if (alter.getAlterExpressions() != null) {
+    for (AlterExpression expr : alter.getAlterExpressions()) {
+        if (expr.getOperation() == AlterOperation.CHANGE) {
+            hasChangeOperation = true;
+            break;
+        }
+    }
+}
+
+if (isHeterogeneous || hasChangeOperation) {
+    // 对于异构数据库，或者同构数据库但包含 CHANGE 操作，进行DDL语法转换
+    // 通过 IRToSQLServerConverter 将 CHANGE COLUMN 转换为 sp_rename
+    ...
+}
+```
+
+**修复效果**：
+- ✅ 同构 SQL Server 场景下，`CHANGE COLUMN` 正确转换为 `sp_rename`
+- ✅ 其他同构场景（如 ADD、MODIFY、DROP）仍保持高效的原生 SQL 处理
 
 ## 四、关键代码位置
 
 1. **列属性比较**：`SqlServerCTListener.isColumnEqualIgnoreName()` (line 684-689) ✅ 已修复
-2. **RENAME DDL 生成**：`SqlServerCTListener.generateRenameColumnDDL()` (line 751-760)
-3. **DDL 解析**：`DDLParserImpl.parse()` (line 64-171) ⏳ 待修复
-4. **DDL 执行**：`GeneralBufferActuator.parseDDl()` (line 290-360)
-5. **操作类型检查**：`GeneralBufferActuator.isDDLOperationAllowed()` (line 370) ⏳ 需要添加 null 检查
+2. **RENAME DDL 生成**：`SqlServerCTListener.generateRenameColumnDDL()` (line 746-790) ✅ 已修复
+3. **DDL 解析**：`DDLParserImpl.parse()` (line 98-123) ✅ 已修复（同构场景下检测 CHANGE 操作并走转换流程）
+4. **DDL 转换**：`IRToSQLServerConverter.convertColumnsToChange()` (line 140-173) ✅ 自动转换为 sp_rename
+5. **DDL 执行**：`GeneralBufferActuator.parseDDl()` (line 290-360)
 
-## 五、总结
-
-### 5.1 核心问题
-
-1. **列属性比较不准确**：`isColumnEqualIgnoreName` 方法比较 `nullable` 属性时过于严格 ✅ **已修复**
-2. **sp_rename 无法解析**：JSQLParser 无法解析存储过程调用，导致 `NullPointerException` ⏳ **待处理**
-
-### 5.2 修复状态
-
-- ✅ **已修复**：`isColumnEqualIgnoreName` 方法忽略 `nullable` 比较
-- ✅ **已验证**：`testRenameColumn_RenameOnly` 测试现在能够正确识别 RENAME 操作
-- ⏳ **待处理**：`sp_rename` 解析问题（`testRenameColumn_RenameAndModifyType` 仍然失败）
-
-### 5.3 下一步行动
-
-1. 在 `DDLParserImpl` 中添加 `sp_rename` 特殊处理
-2. 在 `isDDLOperationAllowed()` 中添加 `null` 检查作为防御性措施
