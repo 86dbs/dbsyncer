@@ -267,23 +267,36 @@ public class DDLParserImpl implements DDLParser {
             FieldMapping fieldMapping = iterator.next();
             Field source = fieldMapping.getSource();
             Field target = fieldMapping.getTarget();
+            
             for (Map.Entry<String, String> entry : entries) {
                 String oldName = entry.getKey();
                 String newName = entry.getValue();
+                
+                // 只处理源字段名匹配的情况（changedFieldNames 中的键是源数据库的字段名）
                 if (source != null && StringUtil.equals(oldName, source.getName())) {
-                    Field newSourceFiled = sourceFiledMap.get(newName);
-                    if (newSourceFiled != null) {
-                        fieldMapping.setSource(newSourceFiled);
-                    } else {
+                    Field newSourceField = sourceFiledMap.get(newName);
+                    if (newSourceField == null) {
+                        logger.warn("源表中未找到新字段 {}，移除字段映射", newName);
                         iterator.remove();
+                        break; // 已移除，跳过后续处理
                     }
-                }
-                if (target != null && StringUtil.equals(oldName, target.getName())) {
-                    Field newTargetFiled = targetFiledMap.get(newName);
-                    if (newTargetFiled != null) {
-                        fieldMapping.setTarget(newTargetFiled);
+                    
+                    // 更新源字段
+                    fieldMapping.setSource(newSourceField);
+                    
+                    // 如果源字段名和目标字段名相同，则同时更新目标字段
+                    // 这符合常见场景：同名字段应该同步更新
+                    if (target != null && StringUtil.equals(oldName, target.getName())) {
+                        Field newTargetField = targetFiledMap.get(newName);
+                        if (newTargetField != null) {
+                            fieldMapping.setTarget(newTargetField);
+                            logger.debug("更新字段映射: {} -> {} (源和目标字段名相同，同时更新)", oldName, newName);
+                        } else {
+                            logger.warn("目标表中未找到新字段 {}，但保留字段映射（源字段已更新）", newName);
+                        }
                     } else {
-                        iterator.remove();
+                        // 源字段名和目标字段名不同（自定义映射），只更新源字段
+                        logger.debug("更新字段映射源字段: {} -> {} (目标字段名不同，仅更新源)", oldName, newName);
                     }
                 }
             }

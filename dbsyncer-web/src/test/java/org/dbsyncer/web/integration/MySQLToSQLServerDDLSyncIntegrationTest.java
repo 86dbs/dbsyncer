@@ -943,12 +943,78 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
     /**
      * 环境准备：直接在源库和目标库执行DDL（不通过同步机制）
      * 用于测试前的环境准备，确保源库和目标库结构一致
+     * 执行后会自动更新 TableGroup 的字段映射，添加新字段的映射
      */
     private void prepareEnvironment(String mysqlDDL, String sqlServerDDL) throws Exception {
         // 直接在源库执行 MySQL DDL
         executeDDLToSourceDatabase(mysqlDDL, mysqlConfig);
         // 直接在目标库执行 SQL Server DDL
         executeDDLToSourceDatabase(sqlServerDDL, sqlServerConfig);
+        
+        // 更新 TableGroup 的字段映射，添加新字段的映射
+        // 因为字段是通过直接 SQL 添加的，需要手动更新字段映射，否则后续的 DDL 同步无法处理这些字段
+        refreshTableGroupFieldMapping();
+    }
+    
+    /**
+     * 刷新 TableGroup 的字段映射，添加数据库中新增的字段
+     */
+    private void refreshTableGroupFieldMapping() throws Exception {
+        // 获取 TableGroup
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        if (tableGroups == null || tableGroups.isEmpty()) {
+            logger.warn("未找到 TableGroup，跳过字段映射更新");
+            return;
+        }
+        
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        // 刷新表结构（从数据库重新获取字段信息）
+        org.dbsyncer.sdk.model.MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(
+                connectorFactory.connect(mysqlConfig), tableGroup.getSourceTable().getName());
+        org.dbsyncer.sdk.model.MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(
+                connectorFactory.connect(sqlServerConfig), tableGroup.getTargetTable().getName());
+        
+        tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
+        tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+        
+        // 构建字段名映射（源字段名 -> 目标字段名）
+        Map<String, String> sourceToTargetFieldMap = tableGroup.getFieldMapping().stream()
+                .filter(fm -> fm.getSource() != null && fm.getTarget() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        fm -> fm.getSource().getName(),
+                        fm -> fm.getTarget().getName(),
+                        (v1, v2) -> v1 // 如果有重复，保留第一个
+                ));
+        
+        // 添加新字段的映射（如果源表和目标表中都有该字段，且字段名相同）
+        Map<String, org.dbsyncer.sdk.model.Field> sourceFieldMap = tableGroup.getSourceTable().getColumn().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        org.dbsyncer.sdk.model.Field::getName,
+                        field -> field
+                ));
+        Map<String, org.dbsyncer.sdk.model.Field> targetFieldMap = tableGroup.getTargetTable().getColumn().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        org.dbsyncer.sdk.model.Field::getName,
+                        field -> field
+                ));
+        
+        // 检查是否有新字段需要添加映射
+        for (String sourceFieldName : sourceFieldMap.keySet()) {
+            // 如果字段映射中不存在该字段，且目标表中也有同名字段，则添加映射
+            if (!sourceToTargetFieldMap.containsKey(sourceFieldName)) {
+                org.dbsyncer.sdk.model.Field targetField = targetFieldMap.get(sourceFieldName);
+                if (targetField != null) {
+                    org.dbsyncer.sdk.model.Field sourceField = sourceFieldMap.get(sourceFieldName);
+                    tableGroup.getFieldMapping().add(new org.dbsyncer.parser.model.FieldMapping(sourceField, targetField));
+                    logger.info("添加新字段映射: {} -> {}", sourceFieldName, sourceFieldName);
+                }
+            }
+        }
+        
+        // 持久化更新后的 TableGroup
+        profileComponent.editTableGroup(tableGroup);
+        logger.info("TableGroup 字段映射已更新，当前映射数量: {}", tableGroup.getFieldMapping().size());
     }
 
     /**
@@ -960,6 +1026,8 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         if (meta == null || !meta.isRunning()) {
             mappingService.start(mappingId);
             Thread.sleep(2000);
+            // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
+            waitForMetaRunning(metaId, 10000);
         }
 
         // 执行DDL

@@ -750,6 +750,20 @@ public abstract class BaseDDLIntegrationTest {
             List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
             if (tableGroups != null && !tableGroups.isEmpty()) {
                 TableGroup tableGroup = tableGroups.get(0);
+                
+                // 增强日志：输出当前所有字段映射，便于调试（每3秒输出一次）
+                long elapsed = System.currentTimeMillis() - startTime;
+                if (elapsed > 0 && elapsed % 3000 < checkInterval) {
+                    List<String> currentFieldNames = tableGroup.getFieldMapping().stream()
+                            .map(fm -> {
+                                String sourceName = fm.getSource() != null ? fm.getSource().getName() : "null";
+                                String targetName = fm.getTarget() != null ? fm.getTarget().getName() : "null";
+                                return sourceName + "->" + targetName;
+                            })
+                            .collect(java.util.stream.Collectors.toList());
+                    logger.info("等待中... 当前字段映射: {}", currentFieldNames);
+                }
+                
                 boolean foundFieldMapping = tableGroup.getFieldMapping().stream()
                         .anyMatch(fm -> fm.getSource() != null && expectedFieldName.equals(fm.getSource().getName()) &&
                                 fm.getTarget() != null && expectedFieldName.equals(fm.getTarget().getName()));
@@ -763,7 +777,21 @@ public abstract class BaseDDLIntegrationTest {
             Thread.sleep(checkInterval);
         }
 
-        logger.warn("等待DDL处理完成超时（{}ms），字段: {}", timeoutMs, expectedFieldName);
+        // 超时时输出当前字段映射，便于调试
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        if (tableGroups != null && !tableGroups.isEmpty()) {
+            TableGroup tableGroup = tableGroups.get(0);
+            List<String> currentFieldNames = tableGroup.getFieldMapping().stream()
+                    .map(fm -> {
+                        String sourceName = fm.getSource() != null ? fm.getSource().getName() : "null";
+                        String targetName = fm.getTarget() != null ? fm.getTarget().getName() : "null";
+                        return sourceName + "->" + targetName;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            logger.warn("等待DDL处理完成超时（{}ms），字段: {}，当前字段映射: {}", timeoutMs, expectedFieldName, currentFieldNames);
+        } else {
+            logger.warn("等待DDL处理完成超时（{}ms），字段: {}，TableGroup列表为空", timeoutMs, expectedFieldName);
+        }
     }
 
     /**
