@@ -234,6 +234,161 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         testDDLConversion(sqlserverDDL, "price");
     }
 
+    @Test
+    public void testAddColumn_XMLType() throws Exception {
+        logger.info("开始测试XML类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD metadata XML";
+        testDDLConversion(sqlserverDDL, "metadata");
+        // 验证：XML → LONGTEXT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("metadata", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+    }
+
+    @Test
+    public void testAddColumn_UNIQUEIDENTIFIERType() throws Exception {
+        logger.info("开始测试UNIQUEIDENTIFIER类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD guid_id UNIQUEIDENTIFIER";
+        testDDLConversion(sqlserverDDL, "guid_id");
+        // 验证：UNIQUEIDENTIFIER → CHAR(36)
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("guid_id", tableGroup.getTargetTable().getName(), mysqlConfig, "char");
+        verifyFieldLength("guid_id", tableGroup.getTargetTable().getName(), mysqlConfig, 36);
+    }
+
+    @Test
+    public void testAddColumn_MONEYType() throws Exception {
+        logger.info("开始测试MONEY类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary MONEY";
+        testDDLConversion(sqlserverDDL, "salary");
+        // 验证：MONEY → DECIMAL(19,4)
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("salary", tableGroup.getTargetTable().getName(), mysqlConfig, "decimal");
+    }
+
+    @Test
+    public void testAddColumn_SMALLMONEYType() throws Exception {
+        logger.info("开始测试SMALLMONEY类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD bonus SMALLMONEY";
+        testDDLConversion(sqlserverDDL, "bonus");
+        // 验证：SMALLMONEY → DECIMAL(10,4)
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("bonus", tableGroup.getTargetTable().getName(), mysqlConfig, "decimal");
+    }
+
+    @Test
+    public void testAddColumn_DATETIME2Type() throws Exception {
+        logger.info("开始测试DATETIME2类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2";
+        testDDLConversion(sqlserverDDL, "created_at");
+        // 验证：DATETIME2 → DATETIME
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("created_at", tableGroup.getTargetTable().getName(), mysqlConfig, "datetime");
+    }
+
+    @Test
+    public void testAddColumn_DATETIMEOFFSETType() throws Exception {
+        logger.info("开始测试DATETIMEOFFSET类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD updated_at DATETIMEOFFSET";
+        testDDLConversion(sqlserverDDL, "updated_at");
+        // 验证：DATETIMEOFFSET → VARCHAR（带时区信息）
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("updated_at", tableGroup.getTargetTable().getName(), mysqlConfig, "varchar");
+    }
+
+    @Test
+    public void testAddColumn_TIMESTAMPType() throws Exception {
+        logger.info("开始测试TIMESTAMP类型转换（rowversion）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD rowversion TIMESTAMP";
+        testDDLConversion(sqlserverDDL, "rowversion");
+        // 验证：TIMESTAMP (rowversion) → BIGINT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("rowversion", tableGroup.getTargetTable().getName(), mysqlConfig, "bigint");
+    }
+
+    @Test
+    public void testAddColumn_IMAGEType() throws Exception {
+        logger.info("开始测试IMAGE类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD photo IMAGE";
+        testDDLConversion(sqlserverDDL, "photo");
+        // 验证：IMAGE → LONGBLOB
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("photo", tableGroup.getTargetTable().getName(), mysqlConfig, "longblob");
+    }
+
+    @Test
+    public void testAddColumn_TEXTType() throws Exception {
+        logger.info("开始测试TEXT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD description TEXT";
+        testDDLConversion(sqlserverDDL, "description");
+        // 验证：TEXT → TEXT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("description", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+    }
+
+    @Test
+    public void testAddColumn_NTEXTType() throws Exception {
+        logger.info("开始测试NTEXT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD content NTEXT";
+        testDDLConversion(sqlserverDDL, "content");
+        // 验证：NTEXT → TEXT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("content", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+    }
+
+    @Test
+    public void testAddColumn_BITType() throws Exception {
+        logger.info("开始测试BIT类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD is_active BIT";
+        testDDLConversion(sqlserverDDL, "is_active");
+        // 验证：BIT → TINYINT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("is_active", tableGroup.getTargetTable().getName(), mysqlConfig, "tinyint");
+    }
+
+    @Test
+    public void testAddColumn_SMALLDATETIMEType() throws Exception {
+        logger.info("开始测试SMALLDATETIME类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD event_time SMALLDATETIME";
+        testDDLConversion(sqlserverDDL, "event_time");
+        // 验证：SMALLDATETIME → DATETIME
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("event_time", tableGroup.getTargetTable().getName(), mysqlConfig, "datetime");
+    }
+
+    @Test
+    public void testAddColumn_VARCHARMAXType() throws Exception {
+        logger.info("开始测试VARCHAR(MAX)类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD large_text VARCHAR(MAX)";
+        testDDLConversion(sqlserverDDL, "large_text");
+        // 验证：VARCHAR(MAX) → LONGTEXT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("large_text", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+    }
+
+    @Test
+    public void testAddColumn_NVARCHARMAXType() throws Exception {
+        logger.info("开始测试NVARCHAR(MAX)类型转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD unicode_text NVARCHAR(MAX)";
+        testDDLConversion(sqlserverDDL, "unicode_text");
+        // 验证：NVARCHAR(MAX) → LONGTEXT
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("unicode_text", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+    }
+
     // ==================== DDL操作测试 ====================
 
     @Test
@@ -262,6 +417,26 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
 
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN count_num BIGINT";
         testDDLConversion(sqlserverDDL, "count_num");
+    }
+
+    @Test
+    public void testModifyColumn_RemoveNotNull() throws Exception {
+        logger.info("开始测试MODIFY COLUMN操作 - 移除NOT NULL约束");
+        // 先确保字段是NOT NULL的
+        String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(setNotNullDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NULL";
+        testDDLConversion(sqlserverDDL, "first_name");
+
+        // 验证字段可空（NULL约束）
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldNullable("first_name", tableGroup.getTargetTable().getName(), mysqlConfig);
     }
 
     @Test
@@ -317,6 +492,100 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("RENAME COLUMN重命名字段测试通过");
     }
 
+    /**
+     * 测试RENAME COLUMN - 重命名并修改类型（先重命名，再修改类型）
+     * 这种情况会生成 RENAME + ALTER 两个操作
+     */
+    @Test
+    public void testRenameColumn_RenameAndModifyType() throws Exception {
+        logger.info("开始测试RENAME COLUMN - 重命名并修改类型");
+
+        // 先添加一个NVARCHAR字段用于测试
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD description NVARCHAR(100)";
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("description", 10000);
+
+        // 1. 执行 RENAME 操作
+        String renameDDL = "EXEC sp_rename 'ddlTestEmployee.description', 'desc_text', 'COLUMN'";
+        executeDDLToSourceDatabase(renameDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("desc_text", 10000);
+
+        // 2. 执行 ALTER COLUMN 修改类型
+        String alterDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN desc_text TEXT";
+        executeDDLToSourceDatabase(alterDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+
+        // 验证新映射存在
+        boolean foundNewMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "desc_text".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "desc_text".equals(fm.getTarget().getName()));
+
+        // 验证旧映射不存在
+        boolean notFoundOldMapping = tableGroup.getFieldMapping().stream()
+                .noneMatch(fm -> fm.getSource() != null && "description".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "description".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到desc_text到desc_text的字段映射", foundNewMapping);
+        assertTrue("不应找到description到description的旧字段映射", notFoundOldMapping);
+
+        // 验证字段类型已修改为TEXT
+        verifyFieldType("desc_text", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+
+        logger.info("RENAME COLUMN重命名并修改类型测试通过");
+    }
+
+    /**
+     * 测试RENAME COLUMN - 重命名并修改长度和约束
+     */
+    @Test
+    public void testRenameColumn_RenameAndModifyLengthAndConstraint() throws Exception {
+        logger.info("开始测试RENAME COLUMN - 重命名并修改长度和约束");
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+
+        // 1. 执行 RENAME 操作
+        String renameDDL = "EXEC sp_rename 'ddlTestEmployee.first_name', 'user_name', 'COLUMN'";
+        executeDDLToSourceDatabase(renameDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("user_name", 10000);
+
+        // 2. 执行 ALTER COLUMN 修改长度和约束
+        String alterDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN user_name NVARCHAR(100) NOT NULL";
+        executeDDLToSourceDatabase(alterDDL, sqlServerConfig);
+        Thread.sleep(3000);
+
+        // 验证字段映射
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+
+        // 验证新映射存在
+        boolean foundNewMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "user_name".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "user_name".equals(fm.getTarget().getName()));
+
+        // 验证旧映射不存在
+        boolean notFoundOldMapping = tableGroup.getFieldMapping().stream()
+                .noneMatch(fm -> fm.getSource() != null && "first_name".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到user_name到user_name的字段映射", foundNewMapping);
+        assertTrue("不应找到first_name到first_name的旧字段映射", notFoundOldMapping);
+
+        // 验证字段长度和NOT NULL约束
+        verifyFieldLength("user_name", tableGroup.getTargetTable().getName(), mysqlConfig, 100);
+        verifyFieldNotNull("user_name", tableGroup.getTargetTable().getName(), mysqlConfig);
+
+        logger.info("RENAME COLUMN重命名并修改长度和约束测试通过");
+    }
+
     // ==================== 复杂场景测试 ====================
 
     @Test
@@ -353,11 +622,20 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("多字段添加测试通过 - salary和bonus字段都已正确转换");
     }
 
+    /**
+     * 测试ADD COLUMN - 带DEFAULT值（源DDL中的DEFAULT值会被忽略）
+     * 注意：根据2.7.0版本的设计，缺省值处理已被忽略，因为各数据库缺省值函数表达差异很大
+     * 源DDL中的DEFAULT值在解析时会被跳过，不会同步到目标数据库
+     */
     @Test
     public void testAddColumn_WithDefault() throws Exception {
-        logger.info("开始测试带默认值的字段添加");
+        logger.info("开始测试带默认值的字段添加（源DDL中的DEFAULT值会被忽略）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD status NVARCHAR(20) DEFAULT 'active'";
         testDDLConversion(sqlserverDDL, "status");
+        
+        // 验证：源DDL中的DEFAULT值不会被同步，目标字段不应该有DEFAULT值（除非是NOT NULL字段自动生成的）
+        // status字段是可空的，所以不应该有DEFAULT值
+        // 注意：这里不验证DEFAULT值，因为源DDL中的DEFAULT值已被忽略（AbstractSourceToIRConverter会跳过DEFAULT值）
     }
 
     @Test
@@ -365,13 +643,560 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试带NOT NULL约束的字段添加");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD phone NVARCHAR(20) NOT NULL";
         testDDLConversion(sqlserverDDL, "phone");
+        
+        // 验证：NOT NULL字段会自动添加DEFAULT值（仅为了满足MySQL语法要求）
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldDefaultValue("phone", tableGroup.getTargetTable().getName(), mysqlConfig, "''");
     }
 
+    /**
+     * 测试ADD COLUMN - 带DEFAULT值和NOT NULL约束（源DDL中的DEFAULT值会被忽略）
+     * 注意：源DDL中的DEFAULT值在解析时会被跳过，目标数据库会使用自动生成的DEFAULT值（仅为了满足语法要求）
+     */
     @Test
     public void testAddColumn_WithDefaultAndNotNull() throws Exception {
-        logger.info("开始测试带默认值和NOT NULL约束的字段添加");
+        logger.info("开始测试带默认值和NOT NULL约束的字段添加（源DDL中的DEFAULT值会被忽略）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_by NVARCHAR(50) NOT NULL DEFAULT 'system'";
         testDDLConversion(sqlserverDDL, "created_by");
+        
+        // 验证：源DDL中的DEFAULT 'system'会被忽略，目标数据库会使用自动生成的DEFAULT ''（仅为了满足语法要求）
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldDefaultValue("created_by", tableGroup.getTargetTable().getName(), mysqlConfig, "''");
+        verifyFieldNotNull("created_by", tableGroup.getTargetTable().getName(), mysqlConfig);
+    }
+
+    // ==================== 数据类型边界测试 ====================
+
+    /**
+     * 测试DECIMAL精度转换
+     * 验证SQL Server DECIMAL(19,4) → MySQL DECIMAL(19,4)的精度保持
+     */
+    @Test
+    public void testAddColumn_DECIMALPrecision() throws Exception {
+        logger.info("开始测试DECIMAL精度转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD amount DECIMAL(19,4)";
+        testDDLConversion(sqlserverDDL, "amount");
+        
+        // 验证精度
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("amount", tableGroup.getTargetTable().getName(), mysqlConfig, "decimal");
+        // 注意：MySQL的INFORMATION_SCHEMA中NUMERIC_PRECISION和NUMERIC_SCALE可以验证精度
+    }
+
+    /**
+     * 测试DATETIME2精度转换
+     * 验证SQL Server DATETIME2(7) → MySQL DATETIME（精度会被截断）
+     */
+    @Test
+    public void testAddColumn_DATETIME2Precision() throws Exception {
+        logger.info("开始测试DATETIME2精度转换");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD precise_time DATETIME2(7)";
+        testDDLConversion(sqlserverDDL, "precise_time");
+        
+        // 验证：DATETIME2(7) → DATETIME（MySQL的DATETIME精度是秒级）
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        verifyFieldType("precise_time", tableGroup.getTargetTable().getName(), mysqlConfig, "datetime");
+    }
+
+    /**
+     * 测试VARCHAR长度边界
+     * 验证不同长度的VARCHAR转换
+     */
+    @Test
+    public void testAddColumn_VARCHARLengthBoundary() throws Exception {
+        logger.info("开始测试VARCHAR长度边界");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD short_text VARCHAR(255), long_text VARCHAR(4000)";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete(Arrays.asList("short_text", "long_text"), 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("short_text", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldExistsInTargetDatabase("long_text", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldLength("short_text", tableGroup.getTargetTable().getName(), mysqlConfig, 255);
+        verifyFieldLength("long_text", tableGroup.getTargetTable().getName(), mysqlConfig, 4000);
+        
+        logger.info("VARCHAR长度边界测试通过");
+    }
+
+    /**
+     * 测试NVARCHAR长度边界
+     * 验证不同长度的NVARCHAR转换
+     */
+    @Test
+    public void testAddColumn_NVARCHARLengthBoundary() throws Exception {
+        logger.info("开始测试NVARCHAR长度边界");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD unicode_short NVARCHAR(255), unicode_long NVARCHAR(2000)";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete(Arrays.asList("unicode_short", "unicode_long"), 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("unicode_short", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldExistsInTargetDatabase("unicode_long", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldLength("unicode_short", tableGroup.getTargetTable().getName(), mysqlConfig, 255);
+        verifyFieldLength("unicode_long", tableGroup.getTargetTable().getName(), mysqlConfig, 2000);
+        
+        logger.info("NVARCHAR长度边界测试通过");
+    }
+
+    // ==================== 约束完整测试 ====================
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（INT类型）
+     * SQL Server添加NOT NULL字段时，MySQL应该自动添加DEFAULT 0
+     */
+    @Test
+    public void testAddColumn_WithNotNull_INT() throws Exception {
+        logger.info("开始测试INT类型NOT NULL字段（应自动添加DEFAULT 0）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD age INT NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("age", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("age", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue("age", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
+        verifyFieldNotNull("age", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("INT类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+    }
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（BIGINT类型）
+     */
+    @Test
+    public void testAddColumn_WithNotNull_BIGINT() throws Exception {
+        logger.info("开始测试BIGINT类型NOT NULL字段（应自动添加DEFAULT 0）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD count_num BIGINT NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("count_num", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("count_num", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue("count_num", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
+        verifyFieldNotNull("count_num", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("BIGINT类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+    }
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（DECIMAL类型）
+     */
+    @Test
+    public void testAddColumn_WithNotNull_DECIMAL() throws Exception {
+        logger.info("开始测试DECIMAL类型NOT NULL字段（应自动添加DEFAULT 0）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD price DECIMAL(10,2) NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("price", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("price", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue("price", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
+        verifyFieldNotNull("price", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("DECIMAL类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+    }
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（DATE类型）
+     */
+    @Test
+    public void testAddColumn_WithNotNull_DATE() throws Exception {
+        logger.info("开始测试DATE类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD birth_date DATE NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("birth_date", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig, "'1900-01-01'");
+        verifyFieldNotNull("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("DATE类型NOT NULL字段测试通过（已验证DEFAULT '1900-01-01'自动添加）");
+    }
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（DATETIME2类型）
+     */
+    @Test
+    public void testAddColumn_WithNotNull_DATETIME2() throws Exception {
+        logger.info("开始测试DATETIME2类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2 NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("created_at", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("created_at", tableGroup.getTargetTable().getName(), mysqlConfig);
+        // DATETIME2 → DATETIME，默认值应该是 '1900-01-01 00:00:00' 或 '1900-01-01'
+        verifyFieldDefaultValue("created_at", tableGroup.getTargetTable().getName(), mysqlConfig, "'1900-01-01'");
+        verifyFieldNotNull("created_at", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("DATETIME2类型NOT NULL字段测试通过（已验证DEFAULT值自动添加）");
+    }
+
+    /**
+     * 测试NOT NULL + 自动DEFAULT值（NVARCHAR类型）
+     */
+    @Test
+    public void testAddColumn_WithNotNull_NVARCHAR() throws Exception {
+        logger.info("开始测试NVARCHAR类型NOT NULL字段（应自动添加DEFAULT ''）");
+        String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD code NVARCHAR(10) NOT NULL";
+        
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        waitForDDLProcessingComplete("code", 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase("code", tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue("code", tableGroup.getTargetTable().getName(), mysqlConfig, "''");
+        verifyFieldNotNull("code", tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("NVARCHAR类型NOT NULL字段测试通过（已验证DEFAULT ''自动添加）");
+    }
+
+    // ==================== COMMENT 相关测试 ====================
+
+    /**
+     * 测试ADD COLUMN - 带COMMENT（SQL Server使用MS_Description扩展属性）
+     */
+    @Test
+    public void testAddColumn_WithComment() throws Exception {
+        logger.info("开始测试ADD COLUMN - 带COMMENT");
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+
+        // 1. 添加字段
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD status INT";
+        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
+
+        // 2. 添加COMMENT（SQL Server使用扩展属性）
+        String commentDDL = "EXEC sp_addextendedproperty 'MS_Description', '状态值，1：有效；2：无效', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'status'";
+        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
+
+        waitForDDLProcessingComplete("status", 10000);
+
+        // 验证字段映射
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundStatusMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "status".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "status".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到status字段的映射", foundStatusMapping);
+        verifyFieldExistsInTargetDatabase("status", tableGroup.getTargetTable().getName(), mysqlConfig);
+
+        // 验证COMMENT（MS_Description → MySQL COMMENT）
+        verifyFieldComment("status", tableGroup.getTargetTable().getName(), mysqlConfig, "状态值，1：有效；2：无效");
+
+        logger.info("ADD COLUMN带COMMENT测试通过");
+    }
+
+    /**
+     * 测试ADD COLUMN - 带COMMENT（包含特殊字符）
+     * 验证COMMENT字符串中包含单引号、分号、冒号等特殊字符时的转义处理
+     */
+    @Test
+    public void testAddColumn_WithCommentContainingSpecialChars() throws Exception {
+        logger.info("开始测试ADD COLUMN - 带COMMENT（包含特殊字符）");
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+
+        // 1. 添加字段
+        String addColumnDDL = "ALTER TABLE ddlTestEmployee ADD outQrcodeID INT NOT NULL";
+        executeDDLToSourceDatabase(addColumnDDL, sqlServerConfig);
+
+        // 2. 添加COMMENT（包含特殊字符：单引号、分号、冒号）
+        String comment = "外部活码类型，1：进群宝；2：企业微信";
+        String commentDDL = String.format(
+                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'outQrcodeID'",
+                comment.replace("'", "''")); // 转义单引号
+        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
+
+        waitForDDLProcessingComplete("outQrcodeID", 10000);
+
+        // 验证字段映射
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundOutQrcodeIDMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "outQrcodeID".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "outQrcodeID".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到outQrcodeID字段的映射", foundOutQrcodeIDMapping);
+        verifyFieldExistsInTargetDatabase("outQrcodeID", tableGroup.getTargetTable().getName(), mysqlConfig);
+
+        // 验证COMMENT（包含特殊字符）
+        verifyFieldComment("outQrcodeID", tableGroup.getTargetTable().getName(), mysqlConfig, comment);
+
+        logger.info("ADD COLUMN带COMMENT（包含特殊字符）测试通过");
+    }
+
+    /**
+     * 测试MODIFY COLUMN - 添加COMMENT（包含特殊字符）
+     */
+    @Test
+    public void testModifyColumn_WithComment() throws Exception {
+        logger.info("开始测试MODIFY COLUMN - 添加COMMENT");
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+        waitForMetaRunning(metaId, 5000);
+
+        // 添加COMMENT到现有字段
+        String comment = "用户姓名，包含单引号'测试";
+        String commentDDL = String.format(
+                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'ddlTestEmployee', 'COLUMN', 'first_name'",
+                comment.replace("'", "''")); // 转义单引号
+        executeDDLToSourceDatabase(commentDDL, sqlServerConfig);
+
+        Thread.sleep(3000);
+
+        // 验证字段映射仍然存在
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundFirstNameMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "first_name".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
+
+        // 验证COMMENT（在MySQL中单引号会被转义为''）
+        verifyFieldComment("first_name", tableGroup.getTargetTable().getName(), mysqlConfig, comment);
+
+        logger.info("MODIFY COLUMN添加COMMENT测试通过");
+    }
+
+    // ==================== CREATE TABLE 测试场景 ====================
+
+    /**
+     * 测试CREATE TABLE - 基础建表（配置阶段）
+     * 验证SQL Server到MySQL的类型转换和约束转换
+     */
+    @Test
+    public void testCreateTable_Basic() throws Exception {
+        logger.info("开始测试CREATE TABLE - 基础建表（配置阶段）");
+
+        // 准备：确保表不存在
+        prepareForCreateTableTest("createTableTestSource", "createTableTestTarget");
+
+        // 先在源库创建表（SQL Server）
+        String sourceDDL = "IF OBJECT_ID('createTableTestSource', 'U') IS NOT NULL DROP TABLE createTableTestSource;\n" +
+                "CREATE TABLE createTableTestSource (\n" +
+                "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                "    actID INT NOT NULL,\n" +
+                "    pid INT NOT NULL,\n" +
+                "    mediumID INT NOT NULL,\n" +
+                "    createtime DATETIME2 NOT NULL\n" +
+                ");";
+
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+
+        // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
+        createTargetTableFromSource("createTableTestSource", "createTableTestTarget");
+
+        // 验证表结构
+        verifyTableExists("createTableTestTarget", mysqlConfig);
+        verifyTableFieldCount("createTableTestTarget", mysqlConfig, 5);
+        verifyFieldExistsInTargetDatabase("id", "createTableTestTarget", mysqlConfig);
+        verifyFieldExistsInTargetDatabase("actID", "createTableTestTarget", mysqlConfig);
+        verifyFieldExistsInTargetDatabase("pid", "createTableTestTarget", mysqlConfig);
+        verifyFieldExistsInTargetDatabase("mediumID", "createTableTestTarget", mysqlConfig);
+        verifyFieldExistsInTargetDatabase("createtime", "createTableTestTarget", mysqlConfig);
+
+        // 验证主键（IDENTITY → AUTO_INCREMENT）
+        verifyTablePrimaryKeys("createTableTestTarget", mysqlConfig, Arrays.asList("id"));
+
+        // 验证字段属性
+        verifyFieldNotNull("id", "createTableTestTarget", mysqlConfig);
+        verifyFieldNotNull("actID", "createTableTestTarget", mysqlConfig);
+        verifyFieldType("createtime", "createTableTestTarget", mysqlConfig, "datetime");
+
+        logger.info("CREATE TABLE基础建表测试通过");
+    }
+
+    /**
+     * 测试CREATE TABLE - 带COMMENT（包含特殊字符）
+     * 重点测试MS_Description → MySQL COMMENT的转换
+     */
+    @Test
+    public void testCreateTable_WithSpecialCharsInComments() throws Exception {
+        logger.info("开始测试CREATE TABLE - 带COMMENT（包含特殊字符）");
+
+        // 准备：确保表不存在
+        prepareForCreateTableTest("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
+
+        // 先在源库创建表（SQL Server）
+        String sourceDDL = "IF OBJECT_ID('visit_wechatsale_activity_allocationresult', 'U') IS NOT NULL DROP TABLE visit_wechatsale_activity_allocationresult;\n" +
+                "CREATE TABLE visit_wechatsale_activity_allocationresult (\n" +
+                "    resultID INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                "    outQrcodeID INT NOT NULL,\n" +
+                "    membertype INT NOT NULL,\n" +
+                "    typeState INT NOT NULL\n" +
+                ");";
+
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+
+        // 添加COMMENT（包含特殊字符）
+        String comment1 = "外部活码类型，1：进群宝；2：企业微信";
+        String comment2 = " 1：新学员无交费(无任何交费记录); -- 新用户 2：老学员老交费(当前日期无交费课程); -- 老用户 3：新学员新交费(当前日期在辅导期内);4：老学员新交费(历史有过交费，当前日期也在辅导期内) -- 历史用户";
+        String comment3 = "1:图片；2网页; 3文件；4视频；5小程序";
+
+        executeDDLToSourceDatabase(String.format(
+                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'outQrcodeID'",
+                comment1.replace("'", "''")), sqlServerConfig);
+        executeDDLToSourceDatabase(String.format(
+                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'membertype'",
+                comment2.replace("'", "''")), sqlServerConfig);
+        executeDDLToSourceDatabase(String.format(
+                "EXEC sp_addextendedproperty 'MS_Description', '%s', 'SCHEMA', 'dbo', 'TABLE', 'visit_wechatsale_activity_allocationresult', 'COLUMN', 'typeState'",
+                comment3.replace("'", "''")), sqlServerConfig);
+
+        // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
+        createTargetTableFromSource("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
+
+        // 验证表结构
+        verifyTableExists("visit_wechatsale_activity_allocationresult", mysqlConfig);
+        verifyTableFieldCount("visit_wechatsale_activity_allocationresult", mysqlConfig, 4);
+
+        // 验证COMMENT（重点测试特殊字符转义）
+        verifyFieldComment("outQrcodeID", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment1);
+        verifyFieldComment("membertype", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment2);
+        verifyFieldComment("typeState", "visit_wechatsale_activity_allocationresult", mysqlConfig, comment3);
+
+        // 验证主键
+        verifyTablePrimaryKeys("visit_wechatsale_activity_allocationresult", mysqlConfig, Arrays.asList("resultID"));
+
+        logger.info("CREATE TABLE带COMMENT（包含特殊字符）测试通过");
+    }
+
+    /**
+     * 测试CREATE TABLE - 带约束（NOT NULL、IDENTITY）
+     */
+    @Test
+    public void testCreateTable_WithConstraints() throws Exception {
+        logger.info("开始测试CREATE TABLE - 带约束");
+
+        // 准备：确保表不存在
+        prepareForCreateTableTest("testTableWithConstraints", "testTableWithConstraints");
+
+        // 先在源库创建表（SQL Server，包含各种约束）
+        String sourceDDL = "IF OBJECT_ID('testTableWithConstraints', 'U') IS NOT NULL DROP TABLE testTableWithConstraints;\n" +
+                "CREATE TABLE testTableWithConstraints (\n" +
+                "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                "    username NVARCHAR(50) NOT NULL,\n" +
+                "    email NVARCHAR(100),\n" +
+                "    age INT NOT NULL,\n" +
+                "    status TINYINT NOT NULL DEFAULT 1\n" +
+                ");";
+
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+
+        // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
+        createTargetTableFromSource("testTableWithConstraints", "testTableWithConstraints");
+
+        // 验证表结构
+        verifyTableExists("testTableWithConstraints", mysqlConfig);
+        verifyTableFieldCount("testTableWithConstraints", mysqlConfig, 5);
+
+        // 验证约束
+        verifyFieldNotNull("id", "testTableWithConstraints", mysqlConfig);
+        verifyFieldNotNull("username", "testTableWithConstraints", mysqlConfig);
+        verifyFieldNotNull("age", "testTableWithConstraints", mysqlConfig);
+        verifyFieldNotNull("status", "testTableWithConstraints", mysqlConfig);
+        verifyFieldNullable("email", "testTableWithConstraints", mysqlConfig);
+
+        // 验证主键（IDENTITY → AUTO_INCREMENT）
+        verifyTablePrimaryKeys("testTableWithConstraints", mysqlConfig, Arrays.asList("id"));
+
+        logger.info("CREATE TABLE带约束测试通过");
+    }
+
+    /**
+     * 测试CREATE TABLE - 复合主键
+     */
+    @Test
+    public void testCreateTable_WithCompositePrimaryKey() throws Exception {
+        logger.info("开始测试CREATE TABLE - 复合主键");
+
+        // 准备：确保表不存在
+        prepareForCreateTableTest("testTableCompositePK", "testTableCompositePK");
+
+        // 先在源库创建表（SQL Server，复合主键）
+        String sourceDDL = "IF OBJECT_ID('testTableCompositePK', 'U') IS NOT NULL DROP TABLE testTableCompositePK;\n" +
+                "CREATE TABLE testTableCompositePK (\n" +
+                "    user_id INT NOT NULL,\n" +
+                "    role_id INT NOT NULL,\n" +
+                "    created_at DATETIME2 NOT NULL,\n" +
+                "    PRIMARY KEY (user_id, role_id)\n" +
+                ");";
+
+        executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
+
+        // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
+        createTargetTableFromSource("testTableCompositePK", "testTableCompositePK");
+
+        // 验证表结构
+        verifyTableExists("testTableCompositePK", mysqlConfig);
+        verifyTableFieldCount("testTableCompositePK", mysqlConfig, 3);
+
+        // 验证复合主键
+        verifyTablePrimaryKeys("testTableCompositePK", mysqlConfig, Arrays.asList("user_id", "role_id"));
+
+        logger.info("CREATE TABLE复合主键测试通过");
     }
 
     // ==================== 通用测试方法 ====================
@@ -558,6 +1383,263 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     protected void executeDDLToSourceDatabase(String sql, DatabaseConfig config) throws Exception {
         super.executeDDLToSourceDatabase(sql, config);
         logger.info("-----------execute sql--------- {}", sql);
+    }
+
+    // ==================== 辅助验证方法 ====================
+
+    /**
+     * 验证字段类型
+     */
+    private void verifyFieldType(String fieldName, String tableName, DatabaseConfig config, String expectedType) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            String actualType = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            assertNotNull(String.format("未找到字段 %s", fieldName), actualType);
+            assertTrue(String.format("字段 %s 的类型应为 %s，但实际是 %s", fieldName, expectedType, actualType),
+                    expectedType.equalsIgnoreCase(actualType));
+            logger.info("字段类型验证通过: {} 的类型是 {}", fieldName, actualType);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段长度
+     */
+    private void verifyFieldLength(String fieldName, String tableName, DatabaseConfig config, int expectedLength) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            Integer actualLength = databaseTemplate.queryForObject(sql, Integer.class, tableName, fieldName);
+            assertNotNull(String.format("未找到字段 %s 或字段没有长度属性", fieldName), actualLength);
+            assertEquals(String.format("字段 %s 的长度应为 %d，但实际是 %d", fieldName, expectedLength, actualLength),
+                    Integer.valueOf(expectedLength), actualLength);
+            logger.info("字段长度验证通过: {} 的长度是 {}", fieldName, actualLength);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段的COMMENT
+     */
+    private void verifyFieldComment(String fieldName, String tableName, DatabaseConfig config, String expectedComment) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            String actualComment = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            // MySQL中，如果没有COMMENT，返回空字符串而不是NULL
+            String normalizedExpected = expectedComment != null ? expectedComment.trim() : "";
+            String normalizedActual = actualComment != null ? actualComment.trim() : "";
+            assertTrue(String.format("字段 %s 的COMMENT应为 '%s'，但实际是 '%s'", fieldName, expectedComment, normalizedActual),
+                    normalizedExpected.equals(normalizedActual));
+            logger.info("字段COMMENT验证通过: {} 的COMMENT是 '{}'", fieldName, normalizedActual);
+            return null;
+        });
+    }
+
+    /**
+     * 验证字段是否可空（NULL）
+     */
+    private void verifyFieldNullable(String fieldName, String tableName, DatabaseConfig config) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+            String isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            assertNotNull(String.format("未找到字段 %s", fieldName), isNullable);
+            assertEquals(String.format("字段 %s 应为NULL（可空），但实际是 %s", fieldName, isNullable),
+                    "YES", isNullable.toUpperCase());
+            logger.info("字段NULL约束验证通过: {} 是可空的", fieldName);
+            return null;
+        });
+    }
+
+    /**
+     * 验证表是否存在
+     */
+    private void verifyTableExists(String tableName, DatabaseConfig config) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?";
+            Integer count = databaseTemplate.queryForObject(sql, Integer.class, tableName);
+            assertTrue(String.format("表 %s 应存在，但未找到", tableName), count != null && count > 0);
+            logger.info("表存在验证通过: {}", tableName);
+            return null;
+        });
+    }
+
+    /**
+     * 验证表的字段数量
+     */
+    private void verifyTableFieldCount(String tableName, DatabaseConfig config, int expectedCount) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?";
+            Integer actualCount = databaseTemplate.queryForObject(sql, Integer.class, tableName);
+            assertNotNull(String.format("未找到表 %s", tableName), actualCount);
+            assertEquals(String.format("表 %s 的字段数量应为 %d，但实际是 %d", tableName, expectedCount, actualCount),
+                    Integer.valueOf(expectedCount), actualCount);
+            logger.info("表字段数量验证通过: {} 有 {} 个字段", tableName, actualCount);
+            return null;
+        });
+    }
+
+    /**
+     * 验证表的主键
+     */
+    private void verifyTablePrimaryKeys(String tableName, DatabaseConfig config, List<String> expectedKeys) throws Exception {
+        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+        instance.execute(databaseTemplate -> {
+            String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? " +
+                    "AND CONSTRAINT_NAME LIKE 'PRIMARY' " +
+                    "ORDER BY ORDINAL_POSITION";
+            List<String> actualKeys = databaseTemplate.queryForList(sql, String.class, tableName);
+            assertNotNull(String.format("未找到表 %s 的主键信息", tableName), actualKeys);
+            assertEquals(String.format("表 %s 的主键数量应为 %d，但实际是 %d", tableName, expectedKeys.size(), actualKeys.size()),
+                    expectedKeys.size(), actualKeys.size());
+            for (int i = 0; i < expectedKeys.size(); i++) {
+                String expectedKey = expectedKeys.get(i);
+                String actualKey = actualKeys.get(i);
+                assertTrue(String.format("表 %s 的主键第 %d 列应为 %s，但实际是 %s", tableName, i + 1, expectedKey, actualKey),
+                        expectedKey.equalsIgnoreCase(actualKey));
+            }
+            logger.info("表主键验证通过: {} 的主键是 {}", tableName, actualKeys);
+            return null;
+        });
+    }
+
+    /**
+     * 准备建表测试环境（确保表不存在）
+     */
+    private void prepareForCreateTableTest(String sourceTable, String targetTable) throws Exception {
+        logger.debug("准备建表测试环境，确保表不存在: sourceTable={}, targetTable={}", sourceTable, targetTable);
+
+        // 删除源表和目标表（如果存在）
+        forceDropTable(sourceTable, sqlServerConfig);
+        forceDropTable(targetTable, sqlServerConfig);
+        forceDropTable(sourceTable, mysqlConfig);
+        forceDropTable(targetTable, mysqlConfig);
+
+        // 等待删除完成
+        Thread.sleep(200);
+
+        logger.debug("建表测试环境准备完成");
+    }
+
+    /**
+     * 强制删除表（忽略不存在的错误）
+     */
+    private void forceDropTable(String tableName, DatabaseConfig config) {
+        try {
+            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                    new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+            instance.execute(databaseTemplate -> {
+                try {
+                    String dropSql;
+                    if (config.getDriverClassName() != null && config.getDriverClassName().contains("sqlserver")) {
+                        dropSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", tableName, tableName);
+                    } else {
+                        dropSql = String.format("DROP TABLE IF EXISTS %s", tableName);
+                    }
+                    databaseTemplate.execute(dropSql);
+                    logger.debug("已删除表: {}", tableName);
+                } catch (Exception e) {
+                    logger.debug("删除表失败（可能不存在）: {}", e.getMessage());
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            logger.debug("强制删除表时出错（可忽略）: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 模拟配置阶段的建表流程：从源表结构创建目标表
+     * 这是配置阶段建表的核心逻辑，会触发 COMMENT 转义功能
+     */
+    private void createTargetTableFromSource(String sourceTable, String targetTable) throws Exception {
+        logger.info("开始从源表创建目标表: {} -> {}", sourceTable, targetTable);
+
+        // 确保 connectorType 已设置
+        if (sqlServerConfig.getConnectorType() == null) {
+            sqlServerConfig.setConnectorType(getConnectorType(sqlServerConfig, true));
+        }
+        if (mysqlConfig.getConnectorType() == null) {
+            mysqlConfig.setConnectorType(getConnectorType(mysqlConfig, false));
+        }
+
+        // 1. 连接源和目标数据库
+        org.dbsyncer.sdk.connector.ConnectorInstance sourceConnectorInstance = connectorFactory.connect(sqlServerConfig);
+        org.dbsyncer.sdk.connector.ConnectorInstance targetConnectorInstance = connectorFactory.connect(mysqlConfig);
+
+        // 2. 检查目标表是否已存在
+        try {
+            org.dbsyncer.sdk.model.MetaInfo existingTable = connectorFactory.getMetaInfo(targetConnectorInstance, targetTable);
+            if (existingTable != null && existingTable.getColumn() != null && !existingTable.getColumn().isEmpty()) {
+                logger.info("目标表已存在，跳过创建: {}", targetTable);
+                return;
+            }
+        } catch (Exception e) {
+            logger.debug("目标表不存在，开始创建: {}", targetTable);
+        }
+
+        // 3. 获取源表结构
+        org.dbsyncer.sdk.model.MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(sourceConnectorInstance, sourceTable);
+        assertNotNull("无法获取源表结构: " + sourceTable, sourceMetaInfo);
+        assertFalse("源表没有字段: " + sourceTable, sourceMetaInfo.getColumn() == null || sourceMetaInfo.getColumn().isEmpty());
+
+        // 4. 不同类型数据库：走标准转换流程
+        String sourceType = sqlServerConfig.getConnectorType();
+        String targetType = mysqlConfig.getConnectorType();
+        logger.debug("检测到不同类型数据库（{} -> {}），使用标准转换流程", sourceType, targetType);
+
+        org.dbsyncer.sdk.spi.ConnectorService sourceConnectorService = connectorFactory.getConnectorService(sourceType);
+        org.dbsyncer.sdk.spi.ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetType);
+        org.dbsyncer.sdk.schema.SchemaResolver sourceSchemaResolver = sourceConnectorService.getSchemaResolver();
+
+        // 创建标准化的 MetaInfo
+        org.dbsyncer.sdk.model.MetaInfo standardizedMetaInfo = new org.dbsyncer.sdk.model.MetaInfo();
+        standardizedMetaInfo.setTableType(sourceMetaInfo.getTableType());
+        standardizedMetaInfo.setSql(sourceMetaInfo.getSql());
+        standardizedMetaInfo.setIndexType(sourceMetaInfo.getIndexType());
+
+        // 将源字段转换为标准类型（toStandardType 会自动保留所有元数据属性，包括 COMMENT）
+        List<org.dbsyncer.sdk.model.Field> standardizedFields = new ArrayList<>();
+        for (org.dbsyncer.sdk.model.Field sourceField : sourceMetaInfo.getColumn()) {
+            org.dbsyncer.sdk.model.Field standardField = sourceSchemaResolver.toStandardType(sourceField);
+            standardizedFields.add(standardField);
+        }
+        standardizedMetaInfo.setColumn(standardizedFields);
+
+        // 生成 CREATE TABLE DDL（使用标准化后的 MetaInfo）
+        String createTableDDL = targetConnectorService.generateCreateTableDDL(standardizedMetaInfo, targetTable);
+
+        // 5. 执行 CREATE TABLE DDL
+        assertNotNull("无法生成 CREATE TABLE DDL", createTableDDL);
+        assertFalse("生成的 CREATE TABLE DDL 为空", createTableDDL.trim().isEmpty());
+
+        org.dbsyncer.sdk.config.DDLConfig ddlConfig = new org.dbsyncer.sdk.config.DDLConfig();
+        ddlConfig.setSql(createTableDDL);
+        org.dbsyncer.common.model.Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+
+        if (result != null && result.error != null && !result.error.trim().isEmpty()) {
+            throw new RuntimeException("创建表失败: " + result.error);
+        }
+
+        logger.info("成功创建目标表: {}", targetTable);
     }
 
     /**
