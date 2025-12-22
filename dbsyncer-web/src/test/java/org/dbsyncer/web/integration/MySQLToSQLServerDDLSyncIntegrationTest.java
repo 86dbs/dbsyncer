@@ -788,17 +788,16 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         // 准备：确保表不存在
         prepareForCreateTableTest("createTableTestSource", "createTableTestTarget");
 
-        // 先在源库创建表（MySQL）
-        String sourceDDL = "DROP TABLE IF EXISTS createTableTestSource;\n" +
-                "CREATE TABLE createTableTestSource (\n" +
+        // 先在源库创建表（MySQL）- 分开执行多个SQL语句
+        executeDDLToSourceDatabase("DROP TABLE IF EXISTS createTableTestSource", mysqlConfig);
+        String createTableDDL = "CREATE TABLE createTableTestSource (\n" +
                 "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
                 "    actID INT NOT NULL,\n" +
                 "    pid INT NOT NULL,\n" +
                 "    mediumID INT NOT NULL,\n" +
                 "    createtime DATETIME NOT NULL\n" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-
-        executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
+        executeDDLToSourceDatabase(createTableDDL, mysqlConfig);
 
         // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
         createTargetTableFromSource("createTableTestSource", "createTableTestTarget");
@@ -834,16 +833,15 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         // 准备：确保表不存在
         prepareForCreateTableTest("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
 
-        // 先在源库创建表（MySQL，包含特殊字符的COMMENT）
-        String sourceDDL = "DROP TABLE IF EXISTS visit_wechatsale_activity_allocationresult;\n" +
-                "CREATE TABLE visit_wechatsale_activity_allocationresult (\n" +
+        // 先在源库创建表（MySQL，包含特殊字符的COMMENT）- 分开执行多个SQL语句
+        executeDDLToSourceDatabase("DROP TABLE IF EXISTS visit_wechatsale_activity_allocationresult", mysqlConfig);
+        String createTableDDL = "CREATE TABLE visit_wechatsale_activity_allocationresult (\n" +
                 "    resultID INT AUTO_INCREMENT PRIMARY KEY,\n" +
                 "    outQrcodeID INT NOT NULL COMMENT '外部活码类型，1：进群宝；2：企业微信',\n" +
                 "    membertype INT NOT NULL COMMENT ' 1：新学员无交费(无任何交费记录); -- 新用户 2：老学员老交费(当前日期无交费课程); -- 老用户 3：新学员新交费(当前日期在辅导期内);4：老学员新交费(历史有过交费，当前日期也在辅导期内) -- 历史用户',\n" +
                 "    typeState INT NOT NULL COMMENT '1:图片；2网页; 3文件；4视频；5小程序'\n" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-
-        executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
+        executeDDLToSourceDatabase(createTableDDL, mysqlConfig);
 
         // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
         createTargetTableFromSource("visit_wechatsale_activity_allocationresult", "visit_wechatsale_activity_allocationresult");
@@ -876,17 +874,16 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         // 准备：确保表不存在
         prepareForCreateTableTest("testTableWithConstraints", "testTableWithConstraints");
 
-        // 先在源库创建表（MySQL，包含各种约束）
-        String sourceDDL = "DROP TABLE IF EXISTS testTableWithConstraints;\n" +
-                "CREATE TABLE testTableWithConstraints (\n" +
+        // 先在源库创建表（MySQL，包含各种约束）- 分开执行多个SQL语句
+        executeDDLToSourceDatabase("DROP TABLE IF EXISTS testTableWithConstraints", mysqlConfig);
+        String createTableDDL = "CREATE TABLE testTableWithConstraints (\n" +
                 "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
                 "    username VARCHAR(50) NOT NULL,\n" +
                 "    email VARCHAR(100),\n" +
                 "    age INT NOT NULL,\n" +
                 "    status TINYINT NOT NULL DEFAULT 1\n" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-
-        executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
+        executeDDLToSourceDatabase(createTableDDL, mysqlConfig);
 
         // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
         createTargetTableFromSource("testTableWithConstraints", "testTableWithConstraints");
@@ -918,16 +915,15 @@ public class MySQLToSQLServerDDLSyncIntegrationTest extends BaseDDLIntegrationTe
         // 准备：确保表不存在
         prepareForCreateTableTest("testTableCompositePK", "testTableCompositePK");
 
-        // 先在源库创建表（MySQL，复合主键）
-        String sourceDDL = "DROP TABLE IF EXISTS testTableCompositePK;\n" +
-                "CREATE TABLE testTableCompositePK (\n" +
+        // 先在源库创建表（MySQL，复合主键）- 分开执行多个SQL语句
+        executeDDLToSourceDatabase("DROP TABLE IF EXISTS testTableCompositePK", mysqlConfig);
+        String createTableDDL = "CREATE TABLE testTableCompositePK (\n" +
                 "    user_id INT NOT NULL,\n" +
                 "    role_id INT NOT NULL,\n" +
                 "    created_at DATETIME NOT NULL,\n" +
                 "    PRIMARY KEY (user_id, role_id)\n" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-
-        executeDDLToSourceDatabase(sourceDDL, mysqlConfig);
+        executeDDLToSourceDatabase(createTableDDL, mysqlConfig);
 
         // 模拟配置阶段的建表流程：获取源表结构 -> 生成DDL -> 执行DDL
         createTargetTableFromSource("testTableCompositePK", "testTableCompositePK");
