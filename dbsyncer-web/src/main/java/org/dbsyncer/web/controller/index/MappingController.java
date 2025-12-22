@@ -6,6 +6,7 @@ import org.dbsyncer.biz.TargetTableNotExistsException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.MappingJsonVo;
 import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;

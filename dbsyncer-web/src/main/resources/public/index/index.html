@@ -22,9 +22,9 @@
                             <div class="btn-group-vertical" style="width: 100%;">
                                 <button type="button" class="btn btn-default btn-block text-left"
                                     th:classappend="${#strings.isEmpty(projectGroupId)} ? 'active'"
-                                    th:onclick="groupShow('')"
-                                    style="padding-left: 30px; position: relative;">
-                                    <img th:src="@{/img/File.png}" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;" />
+                                    th:onclick="groupShow('')" style="padding-left: 30px; position: relative;">
+                                    <img th:src="@{/img/File.png}"
+                                        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;" />
                                     <span style="vertical-align: middle;">&nbsp;★&nbsp;未分配</span>
                                 </button>
                                 <div th:each="g,s:${projectGroups}" class="btn-group btn-block"
@@ -33,8 +33,10 @@
                                         th:classappend="${g?.id eq projectGroupId} ? 'active'"
                                         th:attr="onclick='groupShow(\'' + ${g?.id} + '\')'"
                                         style="width: calc(100% - 40px); display: inline-block; float: left; border-top-right-radius: 0; border-bottom-right-radius: 0; padding-left: 30px; position: relative;">
-                                        <img th:src="@{/img/File.png}" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;" />
-                                        <span style="vertical-align: middle;">&nbsp;★&nbsp;<span th:text="${g?.name}"></span></span>
+                                        <img th:src="@{/img/File.png}"
+                                            style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;" />
+                                        <span style="vertical-align: middle;">&nbsp;★&nbsp;<span
+                                                th:text="${g?.name}"></span></span>
                                     </button>
                                     <div style="display: inline-block; width: 40px; float: right;">
                                         <div class="dropdown">
@@ -71,9 +73,23 @@
                             <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
                                 <span class="fa fa-plus"></span>添加驱动([[${mappings?.size()} ?: 0]])
                             </button>
+                            <div class="input-group" style="display: inline-flex; width: 300px; margin-left: 20px;">
+                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="按名称搜索驱动..."
+                                    style="border-radius: 4px 0 0 4px;" />
+                                <span class="input-group-btn" style="display: inline;">
+                                    <button class="btn btn-default" id="mappingSearchBtn" type="button"
+                                        style="border-radius: 0 4px 4px 0; margin-left: -1px;">
+                                        <i class="fa fa-search"></i> 搜索
+                                    </button>
+                                </span>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- 无搜索结果提示 -->
+                    <div id="noSearchResults" class="alert alert-info" style="display: none; margin-top: 20px;">
+                        <strong>提示：</strong>没有找到匹配的驱动，请尝试其他关键词。
+                    </div>
                     <!-- 显示驱动列表 - 表格形式 -->
                     <div class="row" th:if="${mappings?.size() gt 0}">
                         <div class="col-md-12">

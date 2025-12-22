@@ -91,6 +91,46 @@ public class IndexController {
     }
 
 
+    /**
+     * 根据驱动名称进行模糊搜索
+     * @param keyword 搜索关键词
+     * @param projectGroupId 项目组ID
+     * @return 匹配的驱动列表
+     */
+    @GetMapping("/searchMapping")
+    @ResponseBody
+    public RestResult searchMapping(String keyword, String projectGroupId) {
+        try {
+            ProjectGroupVo projectGroup = new ProjectGroupVo();
+            if ("".equals(projectGroupId)) {
+                projectGroup = projectGroupService.getProjectGroupUnUsed();
+                projectGroupId = "";
+            } else {
+                projectGroup = projectGroupService.getProjectGroup(projectGroupId);
+            }
+            List<MappingVo> mappings = projectGroup.getMappings();
+            List<MappingJsonVo> resultMapping = new ArrayList<>();
+
+            // 只根据驱动名称进行模糊匹配，不按ID搜索
+            for (MappingVo mapping : mappings) {
+                if (keyword == null || keyword.trim().isEmpty() ||
+                        (mapping.getName() != null && mapping.getName().toLowerCase().contains(keyword.toLowerCase()))) {
+                    MappingJsonVo mappingJsonVo = new MappingJsonVo();
+                    mappingJsonVo.setId(mapping.getId());
+                    mappingJsonVo.setMeta(mapping.getMeta());
+                    mappingJsonVo.setModel(mapping.getModel());
+                    resultMapping.add(mappingJsonVo);
+                }
+            }
+
+            return RestResult.restSuccess(resultMapping);
+        } catch (Exception e) {
+            logger.error("搜索驱动失败: " + e.getMessage(), e);
+            return RestResult.restFail("搜索驱动失败: " + e.getMessage());
+        }
+    }
+
+
     @GetMapping("/version.json")
     @ResponseBody
     public RestResult version() throws Exception {
