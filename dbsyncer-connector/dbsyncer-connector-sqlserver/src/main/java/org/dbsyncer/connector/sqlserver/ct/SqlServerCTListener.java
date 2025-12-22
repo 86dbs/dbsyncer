@@ -725,7 +725,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             // SQL Server 语法要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
             // 注意：这是为了满足 SQL Server 的语法约束，不是通用的缺省值处理
             // 生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果
-            String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(column);
+            // column.getTypeName() 已经是 SQL Server 类型名称（从系统表查询出来的）
+            String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumnByTypeName(column.getTypeName());
             if (defaultValue != null) {
                 ddl.append(" DEFAULT ").append(defaultValue);
             }

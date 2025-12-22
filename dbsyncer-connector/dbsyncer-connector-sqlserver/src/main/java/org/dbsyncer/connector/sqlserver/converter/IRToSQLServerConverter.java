@@ -63,8 +63,9 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
             
             // 直接构建列定义：[col] type [NOT NULL] [DEFAULT value]
             StringBuilder columnDef = new StringBuilder();
+            String databaseType = sqlServerTemplateImpl.convertToDatabaseType(column);
             columnDef.append(sqlServerTemplate.buildColumn(column.getName()))
-                     .append(" ").append(sqlServerTemplateImpl.convertToDatabaseType(column));
+                     .append(" ").append(databaseType);
             
             // 添加 NOT NULL 约束
             if (column.getNullable() != null && !column.getNullable()) {
@@ -72,7 +73,8 @@ public class IRToSQLServerConverter extends AbstractIRToTargetConverter {
                 // SQL Server 语法要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
                 // 注意：这是为了满足 SQL Server 的语法约束，不是通用的缺省值处理
                 // 生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果
-                String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumn(column);
+                // 使用转换后的 SQL Server 类型名称（databaseType，如 "BIGINT"）来判断默认值
+                String defaultValue = SqlServerTemplate.getDefaultValueForNotNullColumnByTypeName(databaseType);
                 if (defaultValue != null) {
                     columnDef.append(" DEFAULT ").append(defaultValue);
                 }
