@@ -87,9 +87,16 @@ public class MySQLTemplate extends AbstractSqlTemplate {
            .append(" MODIFY COLUMN ").append(buildColumn(field.getName()))
            .append(" ").append(convertToDatabaseType(field));
         
-        // 添加 NOT NULL 约束
-        if (field.getNullable() != null && !field.getNullable()) {
-            sql.append(" NOT NULL");
+        // 处理 NULL/NOT NULL 约束
+        // 在 MySQL 中，要移除 NOT NULL 约束，需要显式指定 NULL
+        if (field.getNullable() != null) {
+            if (field.getNullable()) {
+                // 字段可空：显式指定 NULL，以移除 NOT NULL 约束
+                sql.append(" NULL");
+            } else {
+                // 字段不可空：添加 NOT NULL 约束
+                sql.append(" NOT NULL");
+            }
         }
         
         // 注意：不再支持 DEFAULT 值，因为数据同步不需要默认值支持
