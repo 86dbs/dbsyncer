@@ -427,10 +427,15 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NULL";
         testDDLConversion(sqlserverDDL, "first_name");
 
-        // 验证字段可空（NULL约束）
+        // 对于 ALTER COLUMN 操作，waitForDDLProcessingComplete 可能不够（因为字段映射在 DDL 之前就存在）
+        // 需要额外等待 DDL 在目标数据库执行完成，通过轮询检查字段的 nullable 属性
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldNullable("first_name", tableGroup.getTargetTable().getName(), mysqlConfig);
+        String targetTableName = tableGroup.getTargetTable().getName();
+        waitForFieldNullable("first_name", targetTableName, mysqlConfig, 10000);
+
+        // 验证字段可空（NULL约束）
+        verifyFieldNullable("first_name", targetTableName, mysqlConfig);
     }
 
     @Test
@@ -1468,6 +1473,36 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
             logger.info("字段COMMENT验证通过: {} 的COMMENT是 '{}'", fieldName, normalizedActual);
             return null;
         });
+    }
+
+    /**
+     * 等待字段变为可空（通过轮询检查字段的 nullable 属性）
+     */
+    private void waitForFieldNullable(String fieldName, String tableName, DatabaseConfig config, long timeoutMs) throws Exception {
+        long startTime = System.currentTimeMillis();
+        long checkInterval = 300; // 每300ms检查一次
+
+        logger.info("等待字段 {} 变为可空（NULL）", fieldName);
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                    new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+            String isNullable = instance.execute(databaseTemplate -> {
+                String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
+                return databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
+            });
+
+            if (isNullable != null && "YES".equalsIgnoreCase(isNullable)) {
+                logger.info("字段 {} 已变为可空（NULL）", fieldName);
+                Thread.sleep(500); // 额外等待500ms确保稳定
+                return;
+            }
+
+            Thread.sleep(checkInterval);
+        }
+
+        logger.warn("等待字段 {} 变为可空超时（{}ms）", fieldName, timeoutMs);
     }
 
     /**
