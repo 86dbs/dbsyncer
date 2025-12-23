@@ -689,13 +689,24 @@ public abstract class BaseDDLIntegrationTest {
                     assertTrue(String.format("字段 %s 的默认值应为空字符串，但实际是 %s", fieldName, actualDefault),
                             normalizedActual.equals("") || normalizedActual.equals("N"));
                 } else {
-                    // 对于日期时间类型，SQL Server 可能自动补全时间部分
-                    // 例如：'1900-01-01' 会被存储为 '1900-01-01 00:00:00'
-                    // 这里我们检查实际值是否以期望值开头（对于日期类型）
-                    boolean matches = normalizedExpected.equals(normalizedActual);
-                    if (!matches && normalizedExpected.contains("1900-01-01") && normalizedActual.contains("1900-01-01")) {
-                        // 如果期望值是日期，实际值是日期时间，且日期部分相同，则认为匹配
-                        matches = normalizedActual.startsWith(normalizedExpected);
+                    // 尝试数值比较：对于数值类型，0 和 0.00 应该被认为是相等的
+                    boolean matches = false;
+                    try {
+                        // 尝试将期望值和实际值都转换为数值进行比较
+                        java.math.BigDecimal expectedNum = new java.math.BigDecimal(normalizedExpected);
+                        java.math.BigDecimal actualNum = new java.math.BigDecimal(normalizedActual);
+                        matches = expectedNum.compareTo(actualNum) == 0;
+                    } catch (NumberFormatException e) {
+                        // 如果转换失败，说明不是数值类型，使用字符串比较
+                        matches = normalizedExpected.equals(normalizedActual);
+                        
+                        // 对于日期时间类型，SQL Server 可能自动补全时间部分
+                        // 例如：'1900-01-01' 会被存储为 '1900-01-01 00:00:00'
+                        // 这里我们检查实际值是否以期望值开头（对于日期类型）
+                        if (!matches && normalizedExpected.contains("1900-01-01") && normalizedActual.contains("1900-01-01")) {
+                            // 如果期望值是日期，实际值是日期时间，且日期部分相同，则认为匹配
+                            matches = normalizedActual.startsWith(normalizedExpected);
+                        }
                     }
                     assertTrue(String.format("字段 %s 的默认值应为 %s，但实际是 %s", fieldName, expectedDefault, actualDefault),
                             matches);
