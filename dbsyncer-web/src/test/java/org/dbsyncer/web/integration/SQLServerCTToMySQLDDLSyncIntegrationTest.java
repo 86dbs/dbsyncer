@@ -430,8 +430,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
         executeDDLToSourceDatabase(setNotNullDDL, sqlServerConfig);
         
-        // 3. 执行 DML 操作来触发 DDL 检测
-        triggerDDLDetection(null);
+        // 3. 执行 DML 操作来触发 DDL 检测（必须包含 first_name，因为它是 NOT NULL）
+        Map<String, Object> insertedData = new HashMap<>();
+        insertedData.put(MAIN_TEST_FIELD, "Test"); // first_name 是 NOT NULL，必须提供值
+        insertedData = executeInsertDMLToSourceDatabase(TABLE_NAME, insertedData, sqlServerConfig);
         Thread.sleep(2000);
 
         // 4. 执行第二个 DDL 操作（移除 NOT NULL）
@@ -590,8 +592,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         String alterDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN user_name NVARCHAR(100) NOT NULL";
         executeDDLToSourceDatabase(alterDDL, sqlServerConfig);
         
-        // 5. 执行 DML 操作来触发 DDL 检测
-        triggerDDLDetection(null);
+        // 5. 执行 DML 操作来触发 DDL 检测（必须包含 user_name，因为它是 NOT NULL）
+        Map<String, Object> insertedData = new HashMap<>();
+        insertedData.put("user_name", "Test"); // user_name 是 NOT NULL，必须提供值
+        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sqlServerConfig);
         Thread.sleep(2000);
 
         // 验证字段映射
