@@ -610,8 +610,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         assertTrue("应找到desc_text到desc_text的字段映射", foundNewMapping);
         assertTrue("不应找到description到description的旧字段映射", notFoundOldMapping);
 
-        // 验证字段类型已修改为TEXT
-        verifyFieldType("desc_text", tableGroup.getTargetTable().getName(), mysqlConfig, "text");
+        // 验证字段类型已修改为LONGTEXT
+        // SQL Server TEXT 容量为 2GB，大于 MySQL MEDIUMTEXT 的 16MB，所以转换为 LONGTEXT
+        verifyFieldType("desc_text", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
 
         logger.info("RENAME COLUMN重命名并修改类型测试通过");
     }
