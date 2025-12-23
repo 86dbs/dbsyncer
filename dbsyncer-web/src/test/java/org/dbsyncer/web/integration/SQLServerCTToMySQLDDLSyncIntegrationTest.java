@@ -878,10 +878,20 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试INT类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD age INT NOT NULL";
         
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
+        // 1. 准备 DDL 测试环境（初始化表结构快照）
+        prepareForDDLTest();
+        
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        triggerDDLDetection("age");
+        
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("age", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -902,10 +912,20 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试BIGINT类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD count_num BIGINT NOT NULL";
         
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
+        // 1. 准备 DDL 测试环境（初始化表结构快照）
+        prepareForDDLTest();
+        
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        triggerDDLDetection("count_num");
+        
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("count_num", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -926,10 +946,20 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试DECIMAL类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD price DECIMAL(10,2) NOT NULL";
         
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
+        // 1. 准备 DDL 测试环境（初始化表结构快照）
+        prepareForDDLTest();
+        
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        triggerDDLDetection("price");
+        
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("price", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -950,10 +980,20 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         logger.info("开始测试DATE类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD birth_date DATE NOT NULL";
         
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-        waitForMetaRunning(metaId, 5000);
+        // 1. 准备 DDL 测试环境（初始化表结构快照）
+        prepareForDDLTest();
+        
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        triggerDDLDetection("birth_date");
+        
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("birth_date", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -977,13 +1017,17 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         // 1. 准备 DDL 测试环境（初始化表结构快照）
         prepareForDDLTest();
         
-        // 2. 执行 DDL 操作
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
         
-        // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
         triggerDDLDetection("created_at");
         
-        // 4. 等待DDL处理完成
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("created_at", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
@@ -1008,13 +1052,17 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         // 1. 准备 DDL 测试环境（初始化表结构快照）
         prepareForDDLTest();
         
-        // 2. 执行 DDL 操作
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
         
-        // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
         triggerDDLDetection("code");
         
-        // 4. 等待DDL处理完成
+        // 5. 等待DDL处理完成
         waitForDDLProcessingComplete("code", 10000);
         
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
