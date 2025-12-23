@@ -64,7 +64,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
             switch (expr.getOperation()) {
                 case ADD:
                     currentOperation = AlterOperation.ADD;
-                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList(), expr);
                     break;
                 case DROP:
                     currentOperation = AlterOperation.DROP;
@@ -72,7 +72,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                     break;
                 case MODIFY:
                     currentOperation = AlterOperation.MODIFY;
-                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList(), expr);
                     break;
                 case ALTER:
                     // ALTER 操作的映射由子类根据数据库类型决定
@@ -84,11 +84,11 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                     }
                     expr.setOperation(mappedType); // IMPORTANT: 修改 ALTER 操作的类型
                     currentOperation = mappedType;
-                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList(), expr);
                     break;
                 case CHANGE:
                     currentOperation = AlterOperation.CHANGE;
-                    newColumns = convertColumnDataTypes(expr.getColDataTypeList());
+                    newColumns = convertColumnDataTypes(expr.getColDataTypeList(), expr);
                     // 保存旧字段名到新字段名的映射
                     if (expr.getColumnOldName() != null && expr.getColDataTypeList() != null) {
                         String oldColumnName = removeIdentifier(expr.getColumnOldName());
@@ -121,7 +121,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                             // 需要将单个 ColumnDataType 转换为列表
                             List<AlterExpression.ColumnDataType> columnDataTypes = getColumnDataTypes(expr);
                             if (columnDataTypes != null && !columnDataTypes.isEmpty()) {
-                                newColumns = convertColumnDataTypes(columnDataTypes);
+                                newColumns = convertColumnDataTypes(columnDataTypes, expr);
                             } else {
                                 // 如果 getColumnDataTypes 返回空列表，尝试直接从表达式创建 Field
                                 newColumns = convertColumnFromUnspecific(expr, inferredType);
@@ -132,7 +132,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                             break;
                         case CHANGE:
                             List<AlterExpression.ColumnDataType> changeColumnDataTypes = getColumnDataTypes(expr);
-                            newColumns = convertColumnDataTypes(changeColumnDataTypes);
+                            newColumns = convertColumnDataTypes(changeColumnDataTypes, expr);
                             // 保存旧字段名到新字段名的映射
                             if (expr.getColumnOldName() != null && changeColumnDataTypes != null) {
                                 String oldColumnName = removeIdentifier(expr.getColumnOldName());
@@ -191,7 +191,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         return new ArrayList<>();
     }
 
-    protected List<Field> convertColumnDataTypes(List<AlterExpression.ColumnDataType> columnDataTypes) {
+    protected List<Field> convertColumnDataTypes(List<AlterExpression.ColumnDataType> columnDataTypes, AlterExpression expr) {
         List<Field> columns = new ArrayList<>();
         if (columnDataTypes != null) {
             for (AlterExpression.ColumnDataType columnDataType : columnDataTypes) {
@@ -221,7 +221,7 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
                 }
                 
                 // 提取列规范信息（NOT NULL、DEFAULT、COMMENT等）
-                extractColumnSpecs(columnDataType, column);
+                extractColumnSpecs(columnDataType, column, expr);
                 
                 columns.add(column);
             }
@@ -234,8 +234,9 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
      * 
      * @param columnDataType JSQLParser 的 ColumnDataType 对象
      * @param column 目标 Field 对象
+     * @param expr AlterExpression 对象（用于获取原始 DDL 信息）
      */
-    protected void extractColumnSpecs(AlterExpression.ColumnDataType columnDataType, Field column) {
+    protected void extractColumnSpecs(AlterExpression.ColumnDataType columnDataType, Field column, AlterExpression expr) {
         if (columnDataType == null || column == null) {
             return;
         }
@@ -245,6 +246,70 @@ public abstract class AbstractSourceToIRConverter implements SourceToIRConverter
         
         // 如果 ColumnDataType 没有列规范，尝试从字符串表示中解析（后备方案）
         if (columnSpecs == null || columnSpecs.isEmpty()) {
+            // 尝试从 AlterExpression 的 getOptionalSpecifier() 中解析 NULL/NOT NULL
+            // 这对于 SQL Server 的 ALTER COLUMN ... NULL 语法特别重要
+            // 因为 JSQLParser 可能不会将 NULL 放入 columnSpecs
+            if (expr != null) {
+                try {
+                    String exprStr = expr.getOptionalSpecifier();
+                    if (exprStr != null && !exprStr.trim().isEmpty()) {
+                        String upperString = exprStr.toUpperCase().trim();
+                        // 检查是否包含 NOT NULL
+                        if (upperString.contains("NOT NULL")) {
+                            column.setNullable(false);
+                            return;
+                        }
+                        // 检查是否包含单独的 NULL（不是 NOT NULL）
+                        // 使用单词边界匹配，避免误匹配（如 "NULLABLE"）
+                        if (upperString.matches(".*\\bNULL\\b.*") && !upperString.contains("NOT NULL")) {
+                            column.setNullable(true);
+                            return;
+                        }
+                    }
+                } catch (Exception e) {
+                    // 解析失败，忽略
+                }
+            }
+            // 如果 getOptionalSpecifier() 解析失败，尝试从 AlterExpression 的 toString() 解析
+            if (expr != null) {
+                try {
+                    String exprString = expr.toString();
+                    if (exprString != null && !exprString.trim().isEmpty()) {
+                        String upperString = exprString.toUpperCase().trim();
+                        // 检查是否包含 NOT NULL
+                        if (upperString.contains("NOT NULL")) {
+                            column.setNullable(false);
+                            return;
+                        }
+                        // 检查是否包含单独的 NULL（不是 NOT NULL）
+                        if (upperString.matches(".*\\bNULL\\b.*") && !upperString.contains("NOT NULL")) {
+                            column.setNullable(true);
+                            return;
+                        }
+                    }
+                } catch (Exception e) {
+                    // 解析失败，忽略
+                }
+            }
+            // 最后尝试从 ColumnDataType 的 toString() 解析
+            try {
+                String stringRep = columnDataType.toString();
+                if (stringRep != null && !stringRep.trim().isEmpty()) {
+                    String upperString = stringRep.toUpperCase().trim();
+                    // 检查是否包含 NOT NULL
+                    if (upperString.contains("NOT NULL")) {
+                        column.setNullable(false);
+                        return;
+                    }
+                    // 检查是否包含单独的 NULL（不是 NOT NULL）
+                    if (upperString.matches(".*\\bNULL\\b.*") && !upperString.contains("NOT NULL")) {
+                        column.setNullable(true);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // 解析失败，忽略
+            }
             return;
         }
         
