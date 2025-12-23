@@ -95,7 +95,7 @@
                         <div id="queryDataPanel" class="panel-body panel-collapse collapse in">
                             <div class="form-group">
                                 <div class="col-md-3">
-                                    <!-- 驱动下拉 -->
+                                    <!-- 任务下拉 -->
                                     <select id="searchMetaData" class="form-control select-control">
                                         <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'" th:selected="${m?.id eq metaId}"/>
                                     </select>
