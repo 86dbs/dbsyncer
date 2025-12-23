@@ -54,9 +54,9 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                 </div>
               </div>
 
-              <!-- 选择驱动 -->
+              <!-- 选择任务 -->
               <div class="form-group">
-                <label class="col-sm-2 control-label">驱动</label>
+                <label class="col-sm-2 control-label">任务</label>
                 <div class="col-sm-10">
                   <select id="mappingIds" name="mappingIds" class="form-control select-control-table" multiple="multiple">
                     <option th:each="m,s:${mappings}" th:value="${m?.id}" th:text="${m?.name}" />

@@ -65,16 +65,27 @@
             </div>
 
             <div class="col-md-9">
-                <!-- 驱动管理 -->
+                <!-- 任务管理 -->
                 <div class="col-md-12">
-                    <!-- 驱动开始位置 -->
+                    <!-- 任务开始位置 -->
                     <div class="form-group" th:if="${connectorSize gt 0}">
                         <div class="col-md-12">
                             <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
-                                <span class="fa fa-plus"></span>添加驱动([[${mappings?.size()} ?: 0]])
+                                <span class="fa fa-plus"></span>添加任务([[${mappings?.size()} ?: 0]])
                             </button>
+                            
+                            <!-- 布局切换按钮 -->
+                            <div class="btn-group" style="margin-left: 10px;">
+                                <button type="button" class="btn btn-default active" id="listViewBtn" title="列表视图">
+                                    <i class="fa fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-default" id="cardViewBtn" title="卡片视图">
+                                    <i class="fa fa-th-large"></i>
+                                </button>
+                            </div>
+                            
                             <div class="input-group" style="display: inline-flex; width: 300px; margin-left: 20px;">
-                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="按名称搜索驱动..."
+                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="按名称搜索任务..."
                                     style="border-radius: 4px 0 0 4px;" />
                                 <span class="input-group-btn" style="display: inline;">
                                     <button class="btn btn-default" id="mappingSearchBtn" type="button"
@@ -88,11 +99,12 @@
 
                     <!-- 无搜索结果提示 -->
                     <div id="noSearchResults" class="alert alert-info" style="display: none; margin-top: 20px;">
-                        <strong>提示：</strong>没有找到匹配的驱动，请尝试其他关键词。
+                        <strong>提示：</strong>没有找到匹配的任务，请尝试其他关键词。
                     </div>
-                    <!-- 显示驱动列表 - 表格形式 -->
+                    <!-- 显示任务列表 -->
                     <div class="row" th:if="${mappings?.size() gt 0}">
-                        <div class="col-md-12">
+                        <!-- 列表视图 -->
+                        <div id="listView" class="col-md-12">
                             <div class="panel panel-default">
                                 <div class="panel-body">
                                     <div class="table-responsive">
@@ -128,7 +140,7 @@
                                                             class="label label-warning">停止中</span>
                                                         <span th:if="${m?.meta?.state eq 3}"
                                                             class="label label-danger">异常</span>
-                                                        <!-- 驱动异常提示 -->
+                                                        <!-- 任务异常提示 -->
                                                         <span th:if="${m?.meta?.state eq 3}"
                                                             th:title="${m?.meta?.errorMessage}"
                                                             class="mapping-error-sign" data-toggle="tooltip"
@@ -181,8 +193,8 @@
                                                         <span th:if="${m?.meta?.syncPhase.code eq 0}">
                                                             <span th:if="${m?.meta?.counting}">(统计中)</span>
                                                             <span
-                                                                th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">,
-                                                                进度:[[${#numbers.formatPercent(((m?.meta?.success +
+                                                                th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
+                                                                ,进度:[[${#numbers.formatPercent(((m?.meta?.success +
                                                                 m?.meta?.fail) / m?.meta?.total), 2, 2)}]]
                                                             </span>
                                                         </span>
@@ -249,13 +261,13 @@
                                                             <a th:if="${m?.meta?.state ne 1}"
                                                                 th:attr="data-url='/mapping/remove?id='+${m?.id}"
                                                                 href="javascript:;" confirm="true"
-                                                                confirmMessage="确认删除驱动?"
+                                                                confirmMessage="确认删除任务?"
                                                                 class="btn btn-xs btn-danger margin-right-5"><i
                                                                     class="fa fa-trash"></i> 删除</a>
                                                             <!-- 重置 -->
                                                             <a th:attr="data-url='/mapping/reset?id='+${m?.id}"
                                                                 href="javascript:;" confirm="true"
-                                                                confirmMessage="确认重置驱动?"
+                                                                confirmMessage="确认重置任务?"
                                                                 class="btn btn-xs btn-default margin-right-5"><i
                                                                     class="fa fa-refresh"></i> 重置</a>
                                                             <!-- 日志 -->
@@ -272,8 +284,167 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- 卡片视图 -->
+                        <div id="cardView" class="col-md-12" style="display: none;">
+                            <div class="row mappingList">
+                                <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-5 col-sm-6 mb-3">
+                                    <div class="panel panel-default dbsyncer_block">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <!-- 任务信息头部 -->
+                                                <div class="col-md-12">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <h5 th:text="${m?.name}" class="text-primary" style="margin: 0;"></h5>
+                                                        <div id="stateId">
+                                                            <span th:if="${m?.meta?.state eq 0}"
+                                                                class="label label-info">未运行</span>
+                                                            <span th:if="${m?.meta?.state eq 1}"
+                                                                class="label label-success">运行中</span>
+                                                            <span th:if="${m?.meta?.state eq 2}"
+                                                                class="label label-warning">停止中</span>
+                                                            <span th:if="${m?.meta?.state eq 3}"
+                                                                class="label label-danger">异常</span>
+                                                            <!-- 任务异常提示 -->
+                                                            <span th:if="${m?.meta?.state eq 3}"
+                                                                th:title="${m?.meta?.errorMessage}"
+                                                                class="mapping-error-sign" data-toggle="tooltip"
+                                                                data-placement="top"><i
+                                                                    class="fa fa-exclamation-triangle"></i></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- 同步类型 -->
+                                                    <div class="mb-2">
+                                                        <span class="text-muted">同步类型：</span>
+                                                        <span th:text="${m?.meta?.model}"></span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 连接信息 -->
+                                                <div class="col-md-12 mb-3">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <span class="text-muted mr-2">起始源：</span>
+                                                        <img draggable="false"
+                                                            th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}"
+                                                            style="width: 16px; height: 16px; margin-right: 5px;">
+                                                        <span th:text="${m?.sourceConnector?.name}"
+                                                            th:title="${m?.sourceConnector?.name}"></span>
+                                                        <span th:if="${m?.sourceConnector?.running}" th:title="连接正常"
+                                                            style="margin-left: 5px;"><i
+                                                                class="fa fa-circle well-sign-green"></i></span>
+                                                        <span th:unless="${m?.sourceConnector?.running}"
+                                                            th:title="连接异常" style="margin-left: 5px;"><i
+                                                                class="fa fa-times-circle-o well-sign-red"></i></span>
+                                                    </div>
+                                                    
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="text-muted mr-2">目标源：</span>
+                                                        <img draggable="false"
+                                                            th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}"
+                                                            style="width: 16px; height: 16px; margin-right: 5px;">
+                                                        <span th:text="${m?.targetConnector?.name}"
+                                                            th:title="${m?.targetConnector?.name}"></span>
+                                                        <span th:if="${m?.targetConnector?.running}" th:title="连接正常"
+                                                            style="margin-left: 5px;"><i
+                                                                class="fa fa-circle well-sign-green"></i></span>
+                                                        <span th:unless="${m?.targetConnector?.running}"
+                                                            th:title="连接异常" style="margin-left: 5px;"><i
+                                                                class="fa fa-times-circle-o well-sign-red"></i></span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 同步统计信息 -->
+                                                <div class="col-md-12 mb-3">
+                                                    <table class="table table-hover table-sm">
+                                                        <tbody>
+                                                            <tr>
+                                                                <td class="text-left">
+                                                                    <span th:text="${m?.meta?.model eq 'full' ? '全量' : (m?.meta?.model eq 'increment' ? '增量' : '混合')}"></span>同步>总数:[[${m?.meta?.total}]]
+                                                                    <span th:if="${m?.meta?.syncPhase.code eq 0}">
+                                                                        <span th:if="${m?.meta?.counting}">(正在统计中)</span>
+                                                                        <span th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
+                                                                            ,进度:[[${#numbers.formatPercent(((m?.meta?.success + m?.meta?.fail) / m?.meta?.total), 2, 2)}]]
+                                                                        </span>
+                                                                    </span>
+                                                                    <span th:if="${m?.meta?.success gt 0}" style="margin-left: 5px; color: green;">成功:[[${m?.meta?.success}]]</span>
+                                                                    <span th:if="${m?.meta?.fail gt 0}" style="margin-left: 5px; color: red;">失败:[[${m?.meta?.fail}]]</span>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-left">
+                                                                    启动时间>
+                                                                    <span th:if="${m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime, 'yyyy-MM-dd HH:mm:ss')}]]</span>
+                                                                    <span th:unless="${m?.meta?.beginTime gt 0}">-</span>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td class="text-left">
+                                                                    耗时>
+                                                                    <span th:if="${m?.meta?.beginTime gt 0 and m?.meta?.updateTime gt 0}">
+                                                                        <span th:with="seconds=${(m?.meta?.updateTime - m?.meta?.beginTime) / 1000}">
+                                                                            <span th:if="${seconds lt 60}" th:text="${seconds + '秒'}" />
+                                                                            <span th:if="${seconds ge 60}" th:with="minutes=${seconds / 60}" th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" />
+                                                                        </span>
+                                                                    </span>
+                                                                    <span th:unless="${m?.meta?.beginTime gt 0 and m?.meta?.updateTime gt 0}">-</span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                
+                                                <!-- 操作按钮 -->
+                                                <div class="col-md-12">
+                                                    <div class="operation-buttons btn-group btn-group-sm">
+                                                        <!-- 未运行 -->
+                                                        <a th:if="${m?.meta?.state ne 1}"
+                                                            th:attr="data-url='/mapping/start?id='+${m?.id}"
+                                                            href="javascript:;"
+                                                            class="btn btn-xs btn-primary margin-right-5 mb-1"><i
+                                                                class="fa fa-check-circle-o"></i> 启动</a>
+                                                        <!-- 运行中 -->
+                                                        <a th:if="${m?.meta?.state eq 1}"
+                                                            th:attr="data-url='/mapping/stop?id='+${m?.id}"
+                                                            href="javascript:;"
+                                                            class="btn btn-xs btn-warning margin-right-5 mb-1"><i
+                                                                class="fa fa-times-circle-o"></i> 停止</a>
+                                                        <a th:attr="data-url='/mapping/copy?id='+${m?.id}"
+                                                            href="javascript:;"
+                                                            class="btn btn-xs btn-info margin-right-5 mb-1"><i
+                                                                class="fa fa-copy"></i> 复制</a>
+                                                        <a href="javascript:;"
+                                                            th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
+                                                            class="btn btn-xs btn-primary margin-right-5 mb-1"><i
+                                                                class="fa fa-pencil"></i> 编辑</a>
+                                                        <!-- 未运行 -->
+                                                        <a th:if="${m?.meta?.state ne 1}"
+                                                            th:attr="data-url='/mapping/remove?id='+${m?.id}"
+                                                            href="javascript:;" confirm="true"
+                                                            confirmMessage="确认删除任务?"
+                                                            class="btn btn-xs btn-danger margin-right-5 mb-1"><i
+                                                                class="fa fa-trash"></i> 删除</a>
+                                                        <!-- 重置 -->
+                                                        <a th:attr="data-url='/mapping/reset?id='+${m?.id}"
+                                                            href="javascript:;" confirm="true"
+                                                            confirmMessage="确认重置任务?"
+                                                            class="btn btn-xs btn-default margin-right-5 mb-1"><i
+                                                                class="fa fa-refresh"></i> 重置</a>
+                                                        <!-- 日志 -->
+                                                        <a th:if="${m?.meta?.fail gt 0}" th:attr="id=${m?.meta?.id}"
+                                                            href="javascript:;"
+                                                            class="btn btn-xs btn-default queryData margin-right-5 mb-1"><i
+                                                                class="fa fa-file-text-o"></i> 日志</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <!-- 驱动结束位置 -->
+                    <!-- 任务结束位置 -->
                 </div>
             </div>
 
