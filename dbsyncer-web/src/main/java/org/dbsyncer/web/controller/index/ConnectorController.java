@@ -119,24 +119,6 @@ public class ConnectorController extends BaseController {
         }
     }
 
-    /**
-     * 获取连接器的数据库列表
-     */
-    @GetMapping("/getDatabases")
-    @ResponseBody
-    public RestResult getDatabases(@RequestParam("connectorId") String connectorId) {
-        try {
-            Connector connector = connectorService.getConnector(connectorId);
-            if (connector == null) {
-                return RestResult.restFail("连接器不存在");
-            }
-            return RestResult.restSuccess(connector.getDataBaseName());
-        } catch (Exception e) {
-            logger.error("获取数据库列表失败", e);
-            return RestResult.restFail("获取数据库列表失败: " + e.getMessage());
-        }
-    }
-
     @PostMapping("/test")
     @ResponseBody
     public RestResult test(@RequestParam(value = "id") String id) {
@@ -153,4 +135,14 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @GetMapping("/getConnectorInfo")
+    @ResponseBody
+    public RestResult getConnectorInfo(String id) {
+        try {
+            return RestResult.restSuccess(connectorService.getConnector(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 }

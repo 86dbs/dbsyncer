@@ -60,6 +60,10 @@ public class MonitorController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private final SystemInfo systemInfo = new SystemInfo();
+    private final CentralProcessor processor = systemInfo.getHardware().getProcessor();
+    private final GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
+    private long[] prevTicks = processor.getSystemCpuLoadTicks();
     private final static int COUNT = 60;
     private final CpuVO cpu = new CpuVO();
     private final MemoryVO memory = new MemoryVO();
@@ -94,11 +98,6 @@ public class MonitorController extends BaseController {
 
     @Resource
     private GBValueFormatter gbValueFormatter;
-
-    private final SystemInfo systemInfo = new SystemInfo();
-    private final CentralProcessor processor = systemInfo.getHardware().getProcessor();
-    private final GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
-    private long[] prevTicks = processor.getSystemCpuLoadTicks();
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {

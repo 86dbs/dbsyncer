@@ -40,8 +40,8 @@
                 </div>
             </div>
 
-            <!-- 数据库配置 (MySQL) -->
-            <div class="grid grid-cols-2 mt-5" id="databaseGroup">
+            <!-- 数据库配置 -->
+            <div class="grid grid-cols-2 mt-5">
                 <div class="form-item">
                     <label class="form-label">源库<strong class="text-primary">*</strong></label>
                     <select name="sourceDatabase" id="sourceDatabase" class="form-control"></select>
@@ -52,8 +52,8 @@
                 </div>
             </div>
 
-            <!-- Schema配置 (Oracle/SQL Server/PostgreSQL) -->
-            <div class="grid grid-cols-2 mt-5" id="schemaGroup">
+            <!-- Schema配置 -->
+            <div class="grid grid-cols-2 mt-5">
                 <div class="form-item">
                     <label class="form-label">源Schema</label>
                     <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
@@ -114,18 +114,16 @@
 </div>
 
 <script>
-function loadDatabaseList(connectorId, databaseSelect) {
-    // 显示加载状态
-    doGetter('/connector/getDatabases', { connectorId: connectorId }, function(response){
-        if (response.success) {
-            const databases = response.resultValue;
-            if (databases && databases.length > 0) {
-                // 显示数据库配置组
-                $("#databaseGroup").removeClass('hidden');
-
-                // 添加数据库选项
+function onConnectorChange(connectorId, databaseSelect) {
+    doGetter('/connector/getConnectorInfo', { id: connectorId }, function(response){
+        if (response.success && response.resultValue) {
+            // 保存连接器类型
+            // connectorTypes[type] = connector.config.connectorType.toLowerCase();
+            const data = response.resultValue;
+            const database = data.database;
+            if (database && database.length > 0) {
                 let data = [];
-                databases.forEach(function(dbName) {
+                database.forEach(function(dbName) {
                     data.push({ label: dbName, value: dbName, disabled: false })
                 });
                 databaseSelect.setData(data);
@@ -134,119 +132,25 @@ function loadDatabaseList(connectorId, databaseSelect) {
             bootGrowl("获取库列表失败: " + response.resultValue, "danger");
         }
     })
-
 }
-function onConnectorChange(connectorId, databaseSelect) {
-    doGetter('/mapping/getConnectorInfo', { connectorId: connectorId }, function(response){
-        if (response.success && response.resultValue) {
-            // const connector = response.resultValue;
-            // 保存连接器类型
-            // connectorTypes[type] = connector.config.connectorType.toLowerCase();
-            // 无论什么类型的连接器，都尝试加载数据库列表
-            loadDatabaseList(connectorId, databaseSelect);
 
-            // 更新字段显示状态
-            // updateFieldsVisibility();
+function initDBSelect($sourceConnectorId, $sourceDatabase) {
+    const dbSelect = $sourceDatabase.dbSelect({});
+    let connectorSelect = $sourceConnectorId.dbSelect({
+        type: 'single',
+        onSelect: function (connectorId) {
+            onConnectorChange(connectorId[0], dbSelect);
         }
-    })
-}
-
-/**
- * 根据源和目标连接器类型更新字段显示状态
- */
-function updateFieldsVisibility() {
-    var databaseGroup = $("#databaseGroup");
-    var schemaGroup = $("#schemaGroup");
-    var sourceDb = $("#sourceDatabase");
-    var targetDb = $("#targetDatabase");
-    var sourceSchema = $("#sourceSchema");
-    var targetSchema = $("#targetSchema");
-
-    var sourceType = connectorTypes.source;
-    var targetType = connectorTypes.target;
-
-    console.log('[字段可见性] 源类型:', sourceType, '目标类型:', targetType);
-
-    // 判断是否需要显示数据库组和Schema组
-    var showDatabaseGroup = false;
-    var showSchemaGroup = false;
-
-    // 源连接器：只要选中了连接器就显示数据库配置
-    if (sourceType) {
-        showDatabaseGroup = true;
-        sourceDb.closest('.form-item').show();
-    } else {
-        sourceDb.closest('.form-item').hide();
-        sourceDb.val('');
-    }
-
-    // 目标连接器：只要选中了连接器就显示数据库配置
-    if (targetType) {
-        showDatabaseGroup = true;
-        targetDb.closest('.form-item').show();
-    } else {
-        targetDb.closest('.form-item').hide();
-        targetDb.val('');
-    }
-
-    // 源连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
-    if (sourceType && (sourceType.indexOf('oracle') !== -1 ||
-        sourceType.indexOf('sqlserver') !== -1 ||
-        sourceType.indexOf('postgresql') !== -1)) {
-        showSchemaGroup = true;
-        sourceSchema.closest('.form-item').show();
-    } else {
-        sourceSchema.closest('.form-item').hide();
-        sourceSchema.val('');
-    }
-
-    // 目标连接器需要Schema配置（Oracle/SQL Server/PostgreSQL）
-    if (targetType && (targetType.indexOf('oracle') !== -1 ||
-        targetType.indexOf('sqlserver') !== -1 ||
-        targetType.indexOf('postgresql') !== -1)) {
-        showSchemaGroup = true;
-        targetSchema.closest('.form-item').show();
-    } else {
-        targetSchema.closest('.form-item').hide();
-        targetSchema.val('');
-    }
-
-    // 显示或隐藏整个组
-    if (showDatabaseGroup) {
-        databaseGroup.show();
-        console.log('[字段可见性] 显示数据库配置组');
-    } else {
-        databaseGroup.hide();
-        console.log('[字段可见性] 隐藏数据库配置组');
-    }
-
-    if (showSchemaGroup) {
-        schemaGroup.show();
-        console.log('[字段可见性] 显示Schema配置组');
-    } else {
-        schemaGroup.hide();
-        console.log('[字段可见性] 隐藏Schema配置组');
+    });
+    let selected = connectorSelect.getValues();
+    if (selected.length >= 1) {
+        onConnectorChange(selected[0], dbSelect);
     }
 }
 
 $(document).ready(function() {
-    // 监听数据源选择变化 - 直接返回 dbSelect 实例
-    const sourceDatabase = $('#sourceDatabase').dbSelect({});
-    $('#sourceConnectorId').dbSelect({
-        type: 'single',
-        onSelect: function (connectorId) {
-            onConnectorChange(connectorId[0], sourceDatabase);
-        }
-    });
-
-    // 监听目标源选择变化
-    const targetDatabase = $('#targetDatabase').dbSelect({});
-    $('#targetConnectorId').dbSelect({
-        type: 'single',
-        onSelect: function (connectorId) {
-            onConnectorChange(connectorId[0], targetDatabase);
-        }
-    });
+    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'));
+    initDBSelect($('#targetConnectorId'), $('#targetDatabase'));
 
     //保存
     $("#mappingSubmitBtn").click(function () {

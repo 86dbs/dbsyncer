@@ -544,7 +544,7 @@ function refreshLicense() {
 
 // ******************* 驱动表格展示内容 ***************************
 function showMappingError(metaId){
-    doLoader('/monitor?id='+metaId);
+    doLoader('/monitor?dataStatus=0&id='+metaId);
     // 激活监控菜单
     $('.sidebar-item').removeClass('active');
     $('.sidebar-item[url="/monitor"]').addClass('active');

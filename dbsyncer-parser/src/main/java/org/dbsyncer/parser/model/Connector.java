@@ -21,7 +21,15 @@ public class Connector extends ConfigModel {
      */
     private ConnectorConfig config;
 
-    private List<String> dataBaseName;
+    /**
+     * 数据库列表
+     */
+    private List<String> database;
+
+    /**
+     * schema列表
+     */
+    private List<String> schema;
 
     public ConnectorConfig getConfig() {
         return config;
@@ -32,11 +40,19 @@ public class Connector extends ConfigModel {
         return this;
     }
 
-    public List<String> getDataBaseName() {
-        return dataBaseName;
+    public List<String> getDatabase() {
+        return database;
     }
 
-    public void setDataBaseName(List<String> dataBaseName) {
-        this.dataBaseName = dataBaseName;
+    public void setDatabase(List<String> database) {
+        this.database = database;
+    }
+
+    public List<String> getSchema() {
+        return schema;
+    }
+
+    public void setSchema(List<String> schema) {
+        this.schema = schema;
     }
 }

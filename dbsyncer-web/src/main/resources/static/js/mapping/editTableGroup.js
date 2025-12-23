@@ -44,10 +44,7 @@ function bindFieldSelect(selector, onChange){
                     bindRefreshTableFieldsClick();
                 }
             }
-        ],
-        onCustomButton: function(index, values, text) {  // 自定义按钮点击
-            console.log('按钮索引:', index, '选中值:', values, '按钮文本:', text);
-        }
+        ]
     });
 }
 

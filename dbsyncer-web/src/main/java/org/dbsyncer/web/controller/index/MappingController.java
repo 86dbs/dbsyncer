@@ -157,38 +157,4 @@ public class MappingController extends BaseController {
         }
     }
 
-    /**
-     * 获取连接器信息（类型等）
-     *
-     * @param connectorId 连接器ID
-     * @return 连接器信息
-     */
-    @GetMapping("/getConnectorInfo")
-    @ResponseBody
-    public RestResult getConnectorInfo(@RequestParam(value = "connectorId") String connectorId) {
-        try {
-            return RestResult.restSuccess(connectorService.getConnector(connectorId));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
-    /**
-     * 获取数据库列表或Schema列表
-     *
-     * @param connectorId 连接器ID
-     * @return 数据库或Schema列表
-     */
-    @GetMapping("/getDatabaseOrSchemaList")
-    @ResponseBody
-    public RestResult getDatabaseOrSchemaList(@RequestParam(value = "connectorId") String connectorId) {
-        try {
-            return RestResult.restSuccess(connectorService.getConnector(connectorId));
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
 }
