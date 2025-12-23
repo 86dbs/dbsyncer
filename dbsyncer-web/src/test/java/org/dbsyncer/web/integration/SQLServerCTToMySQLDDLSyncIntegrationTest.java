@@ -1208,6 +1208,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
             data.put(fieldName, 100);
         } else if (lowerFieldName.contains("price") || lowerFieldName.contains("salary") || lowerFieldName.contains("bonus")) {
             data.put(fieldName, 1000.00);
+        } else if (lowerFieldName.contains("date") || lowerFieldName.contains("birth")) {
+            // DATE 类型，使用 LocalDate
+            data.put(fieldName, java.time.LocalDate.of(1990, 1, 1));
         } else if (lowerFieldName.contains("created") || lowerFieldName.contains("created_at")) {
             data.put(fieldName, java.time.LocalDateTime.now());
         } else if (lowerFieldName.contains("updated") || lowerFieldName.contains("updated_at")) {
