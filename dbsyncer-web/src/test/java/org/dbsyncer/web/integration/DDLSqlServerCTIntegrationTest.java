@@ -396,7 +396,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         initData.put("last_name", "User");
         initData.put("department", "IT");
         initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(500);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
 
         // 2. 执行第一个 DDL 操作（添加字段）
         executeDDLToSourceDatabase(addColumnDDL, sourceConfig);
