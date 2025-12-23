@@ -24,7 +24,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Oracle连接器实现
@@ -64,6 +66,32 @@ public final class OracleConnector extends AbstractDatabaseConnector {
             return new OracleListener();
         }
         return null;
+    }
+
+    @Override
+    public String queryDatabaseSql() {
+        return "SELECT USERNAME FROM ALL_USERS ORDER BY USERNAME";
+    }
+
+    @Override
+    public boolean isSystemDatabase(String database) {
+        Set<String> tables = new HashSet<>();
+        // Oracle系统用户
+        tables.add("SYS");
+        tables.add("SYSTEM");
+        tables.add("DBSNMP");
+        tables.add("SYSMAN");
+        tables.add("OUTLN");
+        tables.add("MDSYS");
+        tables.add("ORDSYS");
+        tables.add("EXFSYS");
+        tables.add("CTXSYS");
+        tables.add("XDB");
+        tables.add("ANONYMOUS");
+        tables.add("ORACLE_OCM");
+        tables.add("APPQOSSYS");
+        tables.add("WMSYS");
+        return tables.contains(database.toUpperCase());
     }
 
     @Override

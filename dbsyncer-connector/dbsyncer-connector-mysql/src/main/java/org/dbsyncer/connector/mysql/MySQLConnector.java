@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.Types;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * MySQL连接器实现
@@ -41,6 +44,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
+    private final Set<String> SYSTEM_DATABASES = Stream.of("information_schema", "mysql", "performance_schema", "sys").collect(Collectors.toSet());
 
     public MySQLConnector() {
         VALUE_MAPPERS.put(Types.DATE, new MySQLDateValueMapper());
@@ -66,6 +70,16 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             return new MySQLListener();
         }
         return null;
+    }
+
+    @Override
+    public String queryDatabaseSql() {
+        return "SHOW DATABASES";
+    }
+
+    @Override
+    public boolean isSystemDatabase(String database) {
+        return SYSTEM_DATABASES.contains(database.toLowerCase());
     }
 
     @Override

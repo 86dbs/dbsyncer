@@ -69,9 +69,9 @@ public class ConnectorChecker extends AbstractChecker {
 
         // 连接并获取数据库列表
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
-        connector.setDatabase(queryDatabase(connectorInstance, connectorType));
+        connector.setDatabases(connectorService.getDatabases(connectorInstance));
         // TODO
-        connector.setSchema(null);
+        connector.setSchemas(null);
 
         return connector;
     }
@@ -97,10 +97,9 @@ public class ConnectorChecker extends AbstractChecker {
 
         // 连接并获取数据库列表
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
-        String connectorType = config.getConnectorType();
-        connector.setDatabase(queryDatabase(connectorInstance, connectorType));
+        connector.setDatabases(connectorService.getDatabases(connectorInstance));
         // TODO
-        connector.setSchema(null);
+        connector.setSchemas(null);
 
         return connector;
     }
@@ -116,143 +115,6 @@ public class ConnectorChecker extends AbstractChecker {
             logger.error(e.getMessage());
             throw new BizException("获取连接器配置异常.");
         }
-    }
-
-    private List<String> queryDatabase(ConnectorInstance connectorInstance, String connectorType) {
-        List<String> databases = new ArrayList<>();
-        // 只处理数据库类型的连接器
-        if (!(connectorInstance instanceof DatabaseConnectorInstance)) {
-            return databases;
-        }
-
-        // TODO 应抽象连接器实现
-        DatabaseConnectorInstance connection = (DatabaseConnectorInstance) connectorInstance;
-        String type = connectorType.toLowerCase();
-        if (type.contains("mysql")) {
-            // MySQL: SHOW DATABASES
-            databases = connection.execute(databaseTemplate -> {
-                List<String> dbList = new ArrayList<>();
-                try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                        .executeQuery("SHOW DATABASES")) {
-                    while (rs.next()) {
-                        String dbName = rs.getString(1);
-                        // 过滤系统数据库
-                        if (!isSystemDatabase(dbName)) {
-                            dbList.add(dbName);
-                        }
-                    }
-                }
-                return dbList;
-            });
-            logger.info("成功获取MySQL数据库列表，共{}个数据库", databases.size());
-
-        } else if (type.contains("postgresql")) {
-            // PostgreSQL: SELECT datname FROM pg_database
-            databases = connection.execute(databaseTemplate -> {
-                List<String> dbList = new ArrayList<>();
-                try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                        .executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")) {
-                    while (rs.next()) {
-                        String dbName = rs.getString(1);
-                        if (!isSystemDatabase(dbName)) {
-                            dbList.add(dbName);
-                        }
-                    }
-                }
-                return dbList;
-            });
-            logger.info("成功获取PostgreSQL数据库列表，共{}个数据库", databases.size());
-
-        } else if (type.contains("oracle")) {
-            // Oracle: SELECT username FROM all_users
-            databases = connection.execute(databaseTemplate -> {
-                List<String> dbList = new ArrayList<>();
-                try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                        .executeQuery("SELECT username FROM all_users ORDER BY username")) {
-                    while (rs.next()) {
-                        String dbName = rs.getString(1);
-                        if (!isSystemDatabase(dbName)) {
-                            dbList.add(dbName);
-                        }
-                    }
-                }
-                return dbList;
-            });
-            logger.info("成功获取Oracle用户列表，共{}个用户", databases.size());
-
-        } else if (type.contains("sqlserver")) {
-            // SQL Server: SELECT name FROM sys.databases
-            databases = connection.execute(databaseTemplate -> {
-                List<String> dbList = new ArrayList<>();
-                try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement()
-                        .executeQuery("SELECT name FROM sys.databases WHERE database_id > 4")) {
-                    while (rs.next()) {
-                        String dbName = rs.getString(1);
-                        if (!isSystemDatabase(dbName)) {
-                            dbList.add(dbName);
-                        }
-                    }
-                }
-                return dbList;
-            });
-            logger.info("成功获取SQL Server数据库列表，共{}个数据库", databases.size());
-
-        } else {
-            // 其他数据库类型暂不支持
-            logger.info("连接器类型{}暂不支持自动获取数据库列表", connectorType);
-        }
-        return databases;
-    }
-
-    /**
-     * 判断是否为系统数据库
-     * 
-     * @param dbName 数据库名称
-     * @return true表示系统数据库
-     */
-    private boolean isSystemDatabase(String dbName) {
-        if (dbName == null || dbName.isEmpty()) {
-            return true;
-        }
-        
-        // 定义系统数据库列表
-        Set<String> systemDatabases = new HashSet<>();
-        
-        // MySQL系统数据库
-        systemDatabases.add("information_schema");
-        systemDatabases.add("mysql");
-        systemDatabases.add("performance_schema");
-        systemDatabases.add("sys");
-        
-        // PostgreSQL系统数据库
-        systemDatabases.add("postgres");
-        systemDatabases.add("template0");
-        systemDatabases.add("template1");
-        
-        // Oracle系统用户
-        systemDatabases.add("SYS");
-        systemDatabases.add("SYSTEM");
-        systemDatabases.add("DBSNMP");
-        systemDatabases.add("SYSMAN");
-        systemDatabases.add("OUTLN");
-        systemDatabases.add("MDSYS");
-        systemDatabases.add("ORDSYS");
-        systemDatabases.add("EXFSYS");
-        systemDatabases.add("CTXSYS");
-        systemDatabases.add("XDB");
-        systemDatabases.add("ANONYMOUS");
-        systemDatabases.add("ORACLE_OCM");
-        systemDatabases.add("APPQOSSYS");
-        systemDatabases.add("WMSYS");
-        
-        // SQL Server系统数据库已通过SQL过滤 (database_id > 4)
-        systemDatabases.add("master");
-        systemDatabases.add("tempdb");
-        systemDatabases.add("model");
-        systemDatabases.add("msdb");
-        
-        return systemDatabases.contains(dbName.toLowerCase()) || 
-               systemDatabases.contains(dbName.toUpperCase());
     }
 
 }

@@ -79,6 +79,17 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     boolean isAlive(I connectorInstance);
 
     /**
+     * 获取所有的数据库
+     *
+     * @param connectorInstance
+     * @return
+     */
+    default List<String> getDatabases(I connectorInstance){
+        // TODO 所有的连接器都需实现
+        throw new SdkException("Not support method.");
+    }
+
+    /**
      * 获取所有表名
      *
      * @param connectorInstance
@@ -185,4 +196,5 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     default Object getPosition(I connectorInstance) {
         return StringUtil.EMPTY;
     }
+
 }

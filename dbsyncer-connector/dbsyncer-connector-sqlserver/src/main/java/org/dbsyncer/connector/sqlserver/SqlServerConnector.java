@@ -28,7 +28,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * SqlServer连接器实现
@@ -41,6 +43,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
+    private final Set<String> SYSTEM_DATABASES = Stream.of("master", "tempdb", "model", "msdb").collect(Collectors.toSet());
 
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
 
@@ -64,6 +67,16 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             return new SqlServerListener();
         }
         return null;
+    }
+
+    @Override
+    public String queryDatabaseSql() {
+        return "SELECT NAME FROM SYS.DATABASES WHERE DATABASE_ID > 4";
+    }
+
+    @Override
+    public boolean isSystemDatabase(String database) {
+        return SYSTEM_DATABASES.contains(database.toLowerCase());
     }
 
     @Override

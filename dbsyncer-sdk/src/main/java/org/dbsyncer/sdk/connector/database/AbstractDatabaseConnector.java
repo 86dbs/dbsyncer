@@ -66,6 +66,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
+
     @Override
     public Class<DatabaseConfig> getConfigClass() {
         return DatabaseConfig.class;
@@ -85,6 +87,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public boolean isAlive(DatabaseConnectorInstance connectorInstance) {
         Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
+    }
+
+    @Override
+    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
+        return connectorInstance.execute(databaseTemplate -> {
+            List<String> databases = databaseTemplate.queryForList(queryDatabaseSql(), String.class);
+            if (!CollectionUtils.isEmpty(databases)) {
+                return databases.stream().filter(name -> !isSystemDatabase(name)).collect(Collectors.toList());
+            }
+            return Collections.EMPTY_LIST;
+        });
     }
 
     @Override
@@ -389,6 +402,25 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 查询所有的数据库名
+     *
+     * @return
+     */
+    protected String queryDatabaseSql(){
+        return "";
+    }
+
+    /**
+     * 是否是系统表
+     *
+     * @param database
+     * @return
+     */
+    protected boolean isSystemDatabase(String database){
+        return false;
+    }
+
+    /**
      * 获取查询总数SQL
      *
      * @param commandConfig
@@ -536,6 +568,25 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return primaryKeys;
     }
 
+    @Override
+    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
+        Result result = new Result();
+        try {
+            Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
+            connectorInstance.execute(databaseTemplate -> {
+                // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
+                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
+                return true;
+            });
+            Map<String, String> successMap = new HashMap<>();
+            successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
+            result.addSuccessData(Collections.singletonList(successMap));
+        } catch (Exception e) {
+            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
+        }
+        return result;
+    }
+
     private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
         return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
     }
@@ -643,24 +694,4 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         });
     }
 
-    @Override
-    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
-        Result result = new Result();
-        try {
-            Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
-            connectorInstance.execute(databaseTemplate -> {
-                // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
-                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
-                return true;
-            });
-            Map<String, String> successMap = new HashMap<>();
-            successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
-            result.addSuccessData(Collections.singletonList(successMap));
-        } catch (Exception e) {
-            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
-        }
-        return result;
-    }
-
-    public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
 }

@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
  * @Version 1.0.0
  * @Date 2021-11-22 23:55
  */
+@Deprecated
 public final class DQLMySQLConnector extends AbstractDQLConnector {
 
     @Override

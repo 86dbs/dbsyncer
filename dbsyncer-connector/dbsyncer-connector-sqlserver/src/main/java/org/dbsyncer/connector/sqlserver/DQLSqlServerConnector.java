@@ -22,6 +22,7 @@ import java.util.List;
  * @Version 1.0.0
  * @Date 2022-05-22 22:56
  */
+@Deprecated
 public final class DQLSqlServerConnector extends AbstractDQLConnector {
 
     @Override

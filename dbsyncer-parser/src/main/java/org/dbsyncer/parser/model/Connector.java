@@ -24,12 +24,12 @@ public class Connector extends ConfigModel {
     /**
      * 数据库列表
      */
-    private List<String> database;
+    private List<String> databases;
 
     /**
-     * schema列表
+     * Schema列表
      */
-    private List<String> schema;
+    private List<String> schemas;
 
     public ConnectorConfig getConfig() {
         return config;
@@ -40,19 +40,19 @@ public class Connector extends ConfigModel {
         return this;
     }
 
-    public List<String> getDatabase() {
-        return database;
+    public List<String> getDatabases() {
+        return databases;
     }
 
-    public void setDatabase(List<String> database) {
-        this.database = database;
+    public void setDatabases(List<String> databases) {
+        this.databases = databases;
     }
 
-    public List<String> getSchema() {
-        return schema;
+    public List<String> getSchemas() {
+        return schemas;
     }
 
-    public void setSchema(List<String> schema) {
-        this.schema = schema;
+    public void setSchemas(List<String> schemas) {
+        this.schemas = schemas;
     }
 }

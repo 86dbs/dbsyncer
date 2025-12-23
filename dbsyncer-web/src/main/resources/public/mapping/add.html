@@ -119,10 +119,10 @@ function onConnectorChange(connectorId, databaseSelect) {
         if (response.success && response.data) {
             // 保存连接器类型
             // connectorTypes[type] = connector.config.connectorType.toLowerCase();
-            const data = response.data;
-            if (data.database && data.database.length > 0) {
+            const databases = response.data.databases;
+            if (databases && databases.length > 0) {
                 let db = [];
-                data.database.forEach(function(dbName) {
+                databases.forEach(function(dbName) {
                     db.push({ label: dbName, value: dbName, disabled: false })
                 });
                 databaseSelect.setData(db);

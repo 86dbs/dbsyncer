@@ -4,7 +4,6 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -23,6 +22,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,6 +69,12 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
             return new DatabaseQuartzListener();
         }
         return null;
+    }
+
+    @Override
+    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
+        // TODO 扫描当前路径下的文件名 ls *.db *.sqlite
+        return Collections.EMPTY_LIST;
     }
 
     @Override

@@ -25,7 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * PostgreSQL连接器实现
@@ -39,8 +43,8 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
-
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
+    private final Set<String> SYSTEM_DATABASES = Stream.of("postgres", "template0", "template1").collect(Collectors.toSet());
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
@@ -155,5 +159,15 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             url.append(database);
         }
         return url.toString();
+    }
+
+    @Override
+    public String queryDatabaseSql() {
+        return "SELECT DATNAME FROM PG_DATABASE WHERE DATISTEMPLATE = FALSE";
+    }
+
+    @Override
+    public boolean isSystemDatabase(String database) {
+        return SYSTEM_DATABASES.contains(database.toLowerCase());
     }
 }
