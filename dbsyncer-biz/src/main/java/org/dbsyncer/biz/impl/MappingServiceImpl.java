@@ -103,6 +103,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
+        // 加载驱动表
+        refreshMappingTables(id);
+
         // 匹配相似表 on
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
             matchSimilarTableGroups(model);
