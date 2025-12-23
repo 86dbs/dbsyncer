@@ -237,56 +237,35 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     public void testAddColumn_XMLType() throws Exception {
         logger.info("开始测试XML类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD metadata XML";
-        testDDLConversion(sqlserverDDL, "metadata");
-        // 验证：XML → LONGTEXT
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("metadata", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "metadata", "longtext", null);
     }
 
     @Test
     public void testAddColumn_UNIQUEIDENTIFIERType() throws Exception {
         logger.info("开始测试UNIQUEIDENTIFIER类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD guid_id UNIQUEIDENTIFIER";
-        testDDLConversion(sqlserverDDL, "guid_id");
-        // 验证：UNIQUEIDENTIFIER → CHAR(36)
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("guid_id", tableGroup.getTargetTable().getName(), mysqlConfig, "char");
-        verifyFieldLength("guid_id", tableGroup.getTargetTable().getName(), mysqlConfig, 36);
+        testDDLConversionWithTypeVerification(sqlserverDDL, "guid_id", "char", 36);
     }
 
     @Test
     public void testAddColumn_MONEYType() throws Exception {
         logger.info("开始测试MONEY类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD salary MONEY";
-        testDDLConversion(sqlserverDDL, "salary");
-        // 验证：MONEY → DECIMAL(19,4)
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("salary", tableGroup.getTargetTable().getName(), mysqlConfig, "decimal");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "salary", "decimal", null);
     }
 
     @Test
     public void testAddColumn_SMALLMONEYType() throws Exception {
         logger.info("开始测试SMALLMONEY类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD bonus SMALLMONEY";
-        testDDLConversion(sqlserverDDL, "bonus");
-        // 验证：SMALLMONEY → DECIMAL(10,4)
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("bonus", tableGroup.getTargetTable().getName(), mysqlConfig, "decimal");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "bonus", "decimal", null);
     }
 
     @Test
     public void testAddColumn_DATETIME2Type() throws Exception {
         logger.info("开始测试DATETIME2类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2";
-        testDDLConversion(sqlserverDDL, "created_at");
-        // 验证：DATETIME2 → DATETIME
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("created_at", tableGroup.getTargetTable().getName(), mysqlConfig, "datetime");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "created_at", "datetime", null);
     }
 
     @Test
@@ -350,88 +329,58 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     public void testAddColumn_TIMESTAMPType() throws Exception {
         logger.info("开始测试TIMESTAMP类型转换（rowversion）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD rowversion TIMESTAMP";
-        testDDLConversion(sqlserverDDL, "rowversion");
-        // 验证：TIMESTAMP (rowversion) → BIGINT
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("rowversion", tableGroup.getTargetTable().getName(), mysqlConfig, "bigint");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "rowversion", "bigint", null);
     }
 
     @Test
     public void testAddColumn_IMAGEType() throws Exception {
         logger.info("开始测试IMAGE类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD photo IMAGE";
-        testDDLConversion(sqlserverDDL, "photo");
-        // 验证：IMAGE → LONGBLOB
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("photo", tableGroup.getTargetTable().getName(), mysqlConfig, "longblob");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "photo", "longblob", null);
     }
 
     @Test
     public void testAddColumn_TEXTType() throws Exception {
         logger.info("开始测试TEXT类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD description TEXT";
-        testDDLConversion(sqlserverDDL, "description");
         // 验证：TEXT → LONGTEXT（SQL Server TEXT 容量为 2GB，大于 MySQL MEDIUMTEXT 的 16MB，所以转换为 LONGTEXT）
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("description", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "description", "longtext", null);
     }
 
     @Test
     public void testAddColumn_NTEXTType() throws Exception {
         logger.info("开始测试NTEXT类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD content NTEXT";
-        testDDLConversion(sqlserverDDL, "content");
         // 验证：NTEXT → LONGTEXT（SQL Server NTEXT 容量为 1GB，大于 MySQL MEDIUMTEXT 的 16MB，所以转换为 LONGTEXT）
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("content", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "content", "longtext", null);
     }
 
     @Test
     public void testAddColumn_BITType() throws Exception {
         logger.info("开始测试BIT类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD is_active BIT";
-        testDDLConversion(sqlserverDDL, "is_active");
-        // 验证：BIT → TINYINT
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("is_active", tableGroup.getTargetTable().getName(), mysqlConfig, "tinyint");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "is_active", "tinyint", null);
     }
 
     @Test
     public void testAddColumn_SMALLDATETIMEType() throws Exception {
         logger.info("开始测试SMALLDATETIME类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD event_time SMALLDATETIME";
-        testDDLConversion(sqlserverDDL, "event_time");
-        // 验证：SMALLDATETIME → DATETIME
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("event_time", tableGroup.getTargetTable().getName(), mysqlConfig, "datetime");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "event_time", "datetime", null);
     }
 
     @Test
     public void testAddColumn_VARCHARMAXType() throws Exception {
         logger.info("开始测试VARCHAR(MAX)类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD large_text VARCHAR(MAX)";
-        testDDLConversion(sqlserverDDL, "large_text");
-        // 验证：VARCHAR(MAX) → LONGTEXT
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("large_text", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "large_text", "longtext", null);
     }
 
     @Test
     public void testAddColumn_NVARCHARMAXType() throws Exception {
         logger.info("开始测试NVARCHAR(MAX)类型转换");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD unicode_text NVARCHAR(MAX)";
-        testDDLConversion(sqlserverDDL, "unicode_text");
-        // 验证：NVARCHAR(MAX) → LONGTEXT
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        verifyFieldType("unicode_text", tableGroup.getTargetTable().getName(), mysqlConfig, "longtext");
+        testDDLConversionWithTypeVerification(sqlserverDDL, "unicode_text", "longtext", null);
     }
 
     // ==================== DDL操作测试 ====================
@@ -873,33 +822,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_INT() throws Exception {
-        logger.info("开始测试INT类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD age INT NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("age");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("age", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("age", tableGroup.getTargetTable().getName(), mysqlConfig);
-        verifyFieldDefaultValue("age", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
-        verifyFieldNotNull("age", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("INT类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "age", "0", 
+                "开始测试INT类型NOT NULL字段（应自动添加DEFAULT 0）");
     }
 
     /**
@@ -907,33 +832,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_BIGINT() throws Exception {
-        logger.info("开始测试BIGINT类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD count_num BIGINT NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("count_num");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("count_num", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("count_num", tableGroup.getTargetTable().getName(), mysqlConfig);
-        verifyFieldDefaultValue("count_num", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
-        verifyFieldNotNull("count_num", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("BIGINT类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "count_num", "0", 
+                "开始测试BIGINT类型NOT NULL字段（应自动添加DEFAULT 0）");
     }
 
     /**
@@ -941,33 +842,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_DECIMAL() throws Exception {
-        logger.info("开始测试DECIMAL类型NOT NULL字段（应自动添加DEFAULT 0）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD price DECIMAL(10,2) NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("price");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("price", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("price", tableGroup.getTargetTable().getName(), mysqlConfig);
-        verifyFieldDefaultValue("price", tableGroup.getTargetTable().getName(), mysqlConfig, "0");
-        verifyFieldNotNull("price", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("DECIMAL类型NOT NULL字段测试通过（已验证DEFAULT 0自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "price", "0", 
+                "开始测试DECIMAL类型NOT NULL字段（应自动添加DEFAULT 0）");
     }
 
     /**
@@ -975,33 +852,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_DATE() throws Exception {
-        logger.info("开始测试DATE类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD birth_date DATE NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("birth_date");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("birth_date", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig);
-        verifyFieldDefaultValue("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig, "'1900-01-01'");
-        verifyFieldNotNull("birth_date", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("DATE类型NOT NULL字段测试通过（已验证DEFAULT '1900-01-01'自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "birth_date", "'1900-01-01'", 
+                "开始测试DATE类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
     }
 
     /**
@@ -1009,34 +862,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_DATETIME2() throws Exception {
-        logger.info("开始测试DATETIME2类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD created_at DATETIME2 NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("created_at");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("created_at", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("created_at", tableGroup.getTargetTable().getName(), mysqlConfig);
-        // DATETIME2 → DATETIME，默认值应该是 '1900-01-01 00:00:00' 或 '1900-01-01'
-        verifyFieldDefaultValue("created_at", tableGroup.getTargetTable().getName(), mysqlConfig, "'1900-01-01'");
-        verifyFieldNotNull("created_at", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("DATETIME2类型NOT NULL字段测试通过（已验证DEFAULT值自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "created_at", "'1900-01-01'", 
+                "开始测试DATETIME2类型NOT NULL字段（应自动添加DEFAULT '1900-01-01'）");
     }
 
     /**
@@ -1044,33 +872,9 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      */
     @Test
     public void testAddColumn_WithNotNull_NVARCHAR() throws Exception {
-        logger.info("开始测试NVARCHAR类型NOT NULL字段（应自动添加DEFAULT ''）");
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ADD code NVARCHAR(10) NOT NULL";
-        
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
-        clearTableData("ddlTestEmployee", sqlServerConfig);
-        clearTableData("ddlTestEmployee", mysqlConfig);
-        
-        // 3. 执行 DDL 操作
-        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
-        
-        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
-        triggerDDLDetection("code");
-        
-        // 5. 等待DDL处理完成
-        waitForDDLProcessingComplete("code", 10000);
-        
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
-        TableGroup tableGroup = tableGroups.get(0);
-        
-        verifyFieldExistsInTargetDatabase("code", tableGroup.getTargetTable().getName(), mysqlConfig);
-        verifyFieldDefaultValue("code", tableGroup.getTargetTable().getName(), mysqlConfig, "''");
-        verifyFieldNotNull("code", tableGroup.getTargetTable().getName(), mysqlConfig);
-        
-        logger.info("NVARCHAR类型NOT NULL字段测试通过（已验证DEFAULT ''自动添加）");
+        testAddColumnWithNotNullAndDefault(sqlserverDDL, "code", "''", 
+                "开始测试NVARCHAR类型NOT NULL字段（应自动添加DEFAULT ''）");
     }
 
     // ==================== CREATE TABLE 测试场景 ====================
@@ -1198,6 +1002,67 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     }
 
     // ==================== 通用测试方法 ====================
+
+    /**
+     * 执行DDL转换并验证字段类型（用于类型转换测试）
+     * 
+     * @param sourceDDL DDL语句
+     * @param expectedFieldName 期望的字段名
+     * @param expectedType 期望的MySQL类型（可选，为null时只验证字段存在）
+     * @param expectedLength 期望的字段长度（可选，为null时不验证长度）
+     */
+    private void testDDLConversionWithTypeVerification(String sourceDDL, String expectedFieldName, 
+                                                        String expectedType, Integer expectedLength) throws Exception {
+        testDDLConversion(sourceDDL, expectedFieldName);
+        
+        if (expectedType != null) {
+            List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+            TableGroup tableGroup = tableGroups.get(0);
+            verifyFieldType(expectedFieldName, tableGroup.getTargetTable().getName(), mysqlConfig, expectedType);
+            
+            if (expectedLength != null) {
+                verifyFieldLength(expectedFieldName, tableGroup.getTargetTable().getName(), mysqlConfig, expectedLength);
+            }
+        }
+    }
+
+    /**
+     * 测试添加NOT NULL字段并验证自动添加的DEFAULT值（通用方法）
+     * 
+     * @param sqlserverDDL DDL语句
+     * @param fieldName 字段名
+     * @param expectedDefaultValue 期望的默认值（如 "0", "''", "'1900-01-01'"）
+     * @param testDescription 测试描述（用于日志）
+     */
+    private void testAddColumnWithNotNullAndDefault(String sqlserverDDL, String fieldName, 
+                                                     String expectedDefaultValue, String testDescription) throws Exception {
+        logger.info(testDescription);
+        
+        // 1. 准备 DDL 测试环境（初始化表结构快照）
+        prepareForDDLTest();
+        
+        // 2. 清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列）
+        clearTableData("ddlTestEmployee", sqlServerConfig);
+        clearTableData("ddlTestEmployee", mysqlConfig);
+        
+        // 3. 执行 DDL 操作
+        executeDDLToSourceDatabase(sqlserverDDL, sqlServerConfig);
+        
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        triggerDDLDetection(fieldName);
+        
+        // 5. 等待DDL处理完成
+        waitForDDLProcessingComplete(fieldName, 10000);
+        
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        TableGroup tableGroup = tableGroups.get(0);
+        
+        verifyFieldExistsInTargetDatabase(fieldName, tableGroup.getTargetTable().getName(), mysqlConfig);
+        verifyFieldDefaultValue(fieldName, tableGroup.getTargetTable().getName(), mysqlConfig, expectedDefaultValue);
+        verifyFieldNotNull(fieldName, tableGroup.getTargetTable().getName(), mysqlConfig);
+        
+        logger.info("{}测试通过（已验证DEFAULT {}自动添加）", testDescription, expectedDefaultValue);
+    }
 
     /**
      * 执行DDL转换并验证结果（集成测试版本）
