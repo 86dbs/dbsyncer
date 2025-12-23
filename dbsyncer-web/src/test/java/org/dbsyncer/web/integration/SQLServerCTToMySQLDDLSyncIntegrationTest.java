@@ -1158,10 +1158,15 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      * SQL Server CT 模式下会自动处理 DML 初始化以触发 DDL 检测
      */
     private void testDDLConversion(String sourceDDL, String expectedFieldName) throws Exception {
-        mappingService.start(mappingId);
-        Thread.sleep(2000);
-
-        waitForMetaRunning(metaId, 10000);
+        // 检查 mapping 是否已经在运行，如果已经在运行就不需要再次启动
+        Meta meta = profileComponent.getMapping(mappingId).getMeta();
+        if (meta == null || !meta.isRunning()) {
+            mappingService.start(mappingId);
+            Thread.sleep(2000);
+            waitForMetaRunning(metaId, 10000);
+        } else {
+            logger.debug("Mapping {} 已在运行，跳过启动", mappingId);
+        }
 
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
         // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
@@ -1172,10 +1177,21 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
 
         Thread.sleep(500); // 等待版本号更新
 
-        // 2. 执行 DDL 操作
+        // 2. 检测是否需要清空表数据（SQL Server 不允许向非空表添加 NOT NULL 列，除非有 DEFAULT）
+        boolean isAddNotNullWithoutDefault = sourceDDL.toUpperCase().contains("ADD") && 
+                                            sourceDDL.toUpperCase().contains("NOT NULL") && 
+                                            !sourceDDL.toUpperCase().contains("DEFAULT");
+        if (isAddNotNullWithoutDefault) {
+            // 清空表数据，以满足 SQL Server 的语法要求
+            clearTableData("ddlTestEmployee", sqlServerConfig);
+            clearTableData("ddlTestEmployee", mysqlConfig);
+            logger.debug("已清空表数据，以满足 SQL Server 添加 NOT NULL 列的语法要求");
+        }
+
+        // 3. 执行 DDL 操作
         executeDDLToSourceDatabase(sourceDDL, sqlServerConfig);
 
-        // 3. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
+        // 4. 执行包含新字段的 INSERT 操作（既触发 DDL 检测，又用于验证数据同步）
         // 对于 ADD COLUMN 操作，需要包含新字段；对于其他操作，使用基础字段即可
         boolean isAddOperation = sourceDDL.toUpperCase().contains("ADD");
         Map<String, Object> insertedData = new HashMap<>();
@@ -1188,10 +1204,10 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         
         insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sqlServerConfig);
 
-        // 4. 等待DDL处理完成（使用轮询方式）
+        // 5. 等待DDL处理完成（使用轮询方式）
         waitForDDLProcessingComplete(expectedFieldName, 10000);
 
-        // 5. 验证 DDL：字段映射和表结构
+        // 6. 验证 DDL：字段映射和表结构
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         assertNotNull("应找到TableGroup列表", tableGroups);
         assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
@@ -1212,7 +1228,7 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
             assertTrue("应找到字段 " + expectedFieldName + " 的映射", foundFieldMapping);
         }
 
-        // 6. 验证 DML 数据同步（如果包含新字段）
+        // 7. 验证 DML 数据同步（如果包含新字段）
         if (isAddOperation && insertedData.containsKey(expectedFieldName)) {
             waitForDataSync(insertedData, "ddlTestEmployee", "id", mysqlConfig, 10000);
         }
@@ -1269,6 +1285,13 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     private void addFieldValueForDDLTest(Map<String, Object> data, String fieldName) {
         // 根据字段名推断合适的默认值
         String lowerFieldName = fieldName.toLowerCase();
+        
+        // SQL Server TIMESTAMP (rowversion) 类型不能显式插入值，需要跳过
+        // rowversion 字段名通常包含 "rowversion"
+        if (lowerFieldName.contains("rowversion")) {
+            // TIMESTAMP (rowversion) 类型，不添加值，让 SQL Server 自动生成
+            return;
+        }
         
         if (lowerFieldName.contains("age") || lowerFieldName.contains("count") || lowerFieldName.contains("num")) {
             data.put(fieldName, 100);
@@ -1619,6 +1642,28 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         Thread.sleep(200);
 
         logger.debug("建表测试环境准备完成");
+    }
+
+    /**
+     * 清空表数据（用于满足 SQL Server 添加 NOT NULL 列的语法要求）
+     */
+    private void clearTableData(String tableName, DatabaseConfig config) {
+        try {
+            org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
+                    new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
+            instance.execute(databaseTemplate -> {
+                try {
+                    String deleteSql = String.format("DELETE FROM %s", tableName);
+                    databaseTemplate.execute(deleteSql);
+                    logger.debug("已清空表数据: {}", tableName);
+                } catch (Exception e) {
+                    logger.debug("清空表数据失败: {}", e.getMessage());
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            logger.debug("清空表数据时出错（可忽略）: {}", e.getMessage());
+        }
     }
 
     /**
