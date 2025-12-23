@@ -43,6 +43,12 @@ import static org.junit.Assert.*;
 @ActiveProfiles("test")
 public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegrationTest {
 
+    // 测试表字段名常量
+    private static final String TABLE_NAME = "ddlTestEmployee";
+    private static final String PRIMARY_KEY_FIELD = "id";
+    private static final String MAIN_TEST_FIELD = "first_name";  // 主要测试字段，用于大多数 DDL 操作
+    private static final String FALLBACK_FIELD = "department";   // 备用字段，用于 DROP COLUMN 操作后的 DML 触发
+
     private static DatabaseConfig sqlServerConfig;
     private static DatabaseConfig mysqlConfig;
 
@@ -61,21 +67,12 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         testDatabaseManager = new TestDatabaseManager(sqlServerConfig, mysqlConfig);
 
         // 初始化测试环境
-        String sqlServerInitSql =
-                "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
-                        "CREATE TABLE ddlTestEmployee (\n" +
-                        "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
-                        "    first_name NVARCHAR(50) NOT NULL\n" +
-                        ");";
-
-        String mysqlInitSql =
-                "DROP TABLE IF EXISTS ddlTestEmployee;\n" +
-                        "CREATE TABLE ddlTestEmployee (\n" +
-                        "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
-                        "    first_name VARCHAR(50) NOT NULL\n" +
-                        ");";
-
-        testDatabaseManager.initializeTestEnvironment(sqlServerInitSql, mysqlInitSql);
+        // 表结构设计说明：
+        // - id: 主键（IDENTITY/AUTO_INCREMENT）
+        // - first_name: 主要测试字段，用于大多数 DDL 操作测试
+        // - department: 备用字段，用于 DROP COLUMN 操作后的 DML 触发（避免表只剩下主键无法插入数据）
+        String[] tableSqls = generateTableStructureSql();
+        testDatabaseManager.initializeTestEnvironment(tableSqls[0], tableSqls[1]);
 
         // 注意：不需要手动启用 Change Tracking
         // SqlServerCTListener.start() 会自动调用 enableDBChangeTracking() 和 enableTableChangeTracking()
@@ -1311,24 +1308,23 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      * SQL Server CT 模式下执行 DDL 后的触发操作（执行 DML 操作以触发 DDL 检测）
      * 这个方法应该在执行 DDL 之后调用，用于触发 DDL 检测
      * 
-     * @param newFieldName 如果是 ADD COLUMN 操作，传入新字段名；如果是 DROP COLUMN 操作，传入 null（使用其他字段，避免使用被删除的字段）
+     * @param newFieldName 如果是 ADD COLUMN 操作，传入新字段名；如果是 DROP COLUMN 操作，传入 null（使用备用字段，避免使用被删除的字段）
      * @return 插入的数据（可用于后续验证）
      */
     private Map<String, Object> triggerDDLDetection(String newFieldName) throws Exception {
         Map<String, Object> insertedData = new HashMap<>();
         
-        // 如果是 ADD COLUMN 操作，添加基础字段和新字段的值
         if (newFieldName != null && !newFieldName.isEmpty()) {
-            insertedData.put("first_name", "Test");
+            // ADD COLUMN 操作：添加主要测试字段和新字段的值
+            insertedData.put(MAIN_TEST_FIELD, "Test");
             addFieldValueForDDLTest(insertedData, newFieldName);
         } else {
-            // 如果是 DROP COLUMN 操作（newFieldName 为 null），使用其他字段来触发 DDL 检测
-            // 注意：对于 DROP COLUMN 操作，被删除的字段不应该出现在 INSERT 语句中
-            // 使用 last_name 字段（如果表中有的话），或者使用其他存在的字段
-            insertedData.put("last_name", "Test");
+            // DROP COLUMN 操作：使用备用字段来触发 DDL 检测
+            // 使用备用字段可以避免使用被删除的字段，确保 DML 操作能够成功执行
+            insertedData.put(FALLBACK_FIELD, "Test");
         }
         
-        insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sqlServerConfig);
+        insertedData = executeInsertDMLToSourceDatabase(TABLE_NAME, insertedData, sqlServerConfig);
         return insertedData;
     }
 
@@ -1509,26 +1505,42 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     }
 
     /**
-     * 重置数据库表结构（覆盖基类方法，使用异构数据库的特殊逻辑）
+     * 生成表结构 SQL（统一管理，确保一致性）
+     * 
+     * @return SQL Server 和 MySQL 的表结构 SQL 数组 [sqlServerSql, mysqlSql]
+     */
+    private static String[] generateTableStructureSql() {
+        String sqlServerSql = String.format(
+                "IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s;\n" +
+                "CREATE TABLE %s (\n" +
+                "    %s INT IDENTITY(1,1) PRIMARY KEY,\n" +
+                "    %s NVARCHAR(50) NOT NULL,\n" +
+                "    %s NVARCHAR(100)\n" +
+                ");",
+                TABLE_NAME, TABLE_NAME, TABLE_NAME,
+                PRIMARY_KEY_FIELD, MAIN_TEST_FIELD, FALLBACK_FIELD);
+
+        String mysqlSql = String.format(
+                "DROP TABLE IF EXISTS %s;\n" +
+                "CREATE TABLE %s (\n" +
+                "    %s INT AUTO_INCREMENT PRIMARY KEY,\n" +
+                "    %s VARCHAR(50) NOT NULL,\n" +
+                "    %s VARCHAR(100)\n" +
+                ");",
+                TABLE_NAME, TABLE_NAME,
+                PRIMARY_KEY_FIELD, MAIN_TEST_FIELD, FALLBACK_FIELD);
+
+        return new String[]{sqlServerSql, mysqlSql};
+    }
+
+    /**
+     * 重置数据库表结构（覆盖基类方法，使用统一的表结构定义）
      */
     @Override
     protected void resetDatabaseTableStructure() {
         try {
-            String sqlServerResetSql =
-                    "IF OBJECT_ID('ddlTestEmployee', 'U') IS NOT NULL DROP TABLE ddlTestEmployee;\n" +
-                            "CREATE TABLE ddlTestEmployee (\n" +
-                            "    id INT IDENTITY(1,1) PRIMARY KEY,\n" +
-                            "    first_name NVARCHAR(50) NOT NULL\n" +
-                            ");";
-
-            String mysqlResetSql =
-                    "DROP TABLE IF EXISTS ddlTestEmployee;\n" +
-                            "CREATE TABLE ddlTestEmployee (\n" +
-                            "    id INT AUTO_INCREMENT PRIMARY KEY,\n" +
-                            "    first_name VARCHAR(50) NOT NULL\n" +
-                            ");";
-
-            testDatabaseManager.resetTableStructure(sqlServerResetSql, mysqlResetSql);
+            String[] tableSqls = generateTableStructureSql();
+            testDatabaseManager.resetTableStructure(tableSqls[0], tableSqls[1]);
         } catch (Exception e) {
             logger.error("重置测试数据库表结构失败", e);
         }

@@ -359,7 +359,7 @@ public abstract class BaseDDLIntegrationTest {
         dataWithoutId.remove("id");
 
         // 生成 INSERT SQL（不包含 id 字段）
-        String insertSql = generateInsertSql(tableName, dataWithoutId);
+        String insertSql = generateInsertSql(tableName, dataWithoutId, config);
 
         // 执行 INSERT 并获取自动生成的 id
         DatabaseConnectorInstance instance = new DatabaseConnectorInstance(config);
@@ -405,9 +405,23 @@ public abstract class BaseDDLIntegrationTest {
      * @param data      数据（Map<字段名, 值>）
      * @return INSERT SQL 语句
      */
-    private String generateInsertSql(String tableName, Map<String, Object> data) {
+    private String generateInsertSql(String tableName, Map<String, Object> data, DatabaseConfig config) {
         if (data == null || data.isEmpty()) {
-            throw new IllegalArgumentException("数据不能为空");
+            // 对于空数据，根据数据库类型生成不同的 SQL
+            // SQL Server 不支持 DEFAULT VALUES，需要至少一个列
+            // MySQL 支持 INSERT INTO table () VALUES ()，但需要至少一个列
+            // 这里我们使用一个虚拟值来触发插入
+            String driverClassName = config != null ? config.getDriverClassName() : null;
+            if (driverClassName != null && driverClassName.contains("sqlserver")) {
+                // SQL Server: 对于只有 IDENTITY 列的表，无法插入空行
+                // 这种情况下，我们需要确保表至少有一个非 IDENTITY 列
+                // 如果表只有 IDENTITY 列，这个调用应该失败，提示需要至少一个非主键列
+                throw new IllegalArgumentException("SQL Server 不支持向只有 IDENTITY 列的表插入空数据。表 " + tableName + " 需要至少一个非主键列。");
+            } else {
+                // MySQL: 支持 INSERT INTO table () VALUES ()，但需要至少一个列
+                // 如果表只有 AUTO_INCREMENT 主键，也需要至少一个非主键列
+                throw new IllegalArgumentException("MySQL 不支持向只有 AUTO_INCREMENT 主键的表插入空数据。表 " + tableName + " 需要至少一个非主键列。");
+            }
         }
 
         StringBuilder columns = new StringBuilder();
