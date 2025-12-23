@@ -134,7 +134,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
                     bootGrowl("执行重试成功", "success");
                     backIndexPage();
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    bootGrowl(data.message, "danger");
                 }
             });
         });

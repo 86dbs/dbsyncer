@@ -116,20 +116,19 @@
 <script>
 function onConnectorChange(connectorId, databaseSelect) {
     doGetter('/connector/getConnectorInfo', { id: connectorId }, function(response){
-        if (response.success && response.resultValue) {
+        if (response.success && response.data) {
             // 保存连接器类型
             // connectorTypes[type] = connector.config.connectorType.toLowerCase();
-            const data = response.resultValue;
-            const database = data.database;
-            if (database && database.length > 0) {
-                let data = [];
-                database.forEach(function(dbName) {
-                    data.push({ label: dbName, value: dbName, disabled: false })
+            const data = response.data;
+            if (data.database && data.database.length > 0) {
+                let db = [];
+                data.database.forEach(function(dbName) {
+                    db.push({ label: dbName, value: dbName, disabled: false })
                 });
-                databaseSelect.setData(data);
+                databaseSelect.setData(db);
             }
         } else {
-            bootGrowl("获取库列表失败: " + response.resultValue, "danger");
+            bootGrowl("获取库列表失败: " + response.message, "danger");
         }
     })
 }
@@ -156,12 +155,12 @@ $(document).ready(function() {
     $("#mappingSubmitBtn").click(function () {
         const $form = $("#mappingAddForm");
         if (validateForm($form)) {
-            doPoster("/mapping/add", $form.serializeJson(), function (data) {
-                if (data.success === true) {
+            doPoster("/mapping/add", $form.serializeJson(), function (response) {
+                if (response.success === true) {
                     bootGrowl("新增驱动成功!", "success");
                     backIndexPage();
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    bootGrowl(response.message, "danger");
                 }
             });
         }

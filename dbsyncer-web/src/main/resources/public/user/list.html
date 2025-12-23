@@ -104,7 +104,7 @@
                             bootGrowl("删除成功！", "success");
                             doLoader("/user?refresh=" + new Date().getTime());
                         } else {
-                            bootGrowl(data.resultValue || "删除失败", "danger");
+                            bootGrowl(data.message || "删除失败", "danger");
                         }
                     });
                 }

@@ -121,7 +121,7 @@ function bindQueryDataEvent() {
                         bootGrowl('清空数据成功!', 'success');
                         search();
                     } else {
-                        bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
+                        bootGrowl('清空数据失败: ' + response.message, 'danger');
                     }
                 });
             }
@@ -215,7 +215,7 @@ function bindQueryLogEvent() {
                         bootGrowl('清空日志成功!', 'success');
                         pagination.doSearch({});
                     } else {
-                        bootGrowl('清空数据失败: ' + response.resultValue, 'danger');
+                        bootGrowl('清空数据失败: ' + response.message, 'danger');
                     }
                 });
             }
@@ -533,9 +533,9 @@ $(function () {
     }
 
     function updateMonitorData() {
-        doGetter("/monitor/metric", {}, function (data) {
-            if (data.success === true) {
-                const r = data.resultValue;
+        doGetter("/monitor/metric", {}, function (response) {
+            if (response.success === true) {
+                const r = response.data;
                 // 更新折线图数据
                 updateLineChart(charts.tps, r.tps.name, r.tps.value);
                 $("#tps").text(r.tps.average > 0 ? '执行器TPS, 平均:'+ r.tps.average + '/秒' : '执行器TPS');

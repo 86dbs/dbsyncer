@@ -88,7 +88,7 @@
                 bootGrowl("新增用户成功！", "success");
                 doLoader("/user?refresh=" + new Date().getTime());
             } else {
-                bootGrowl(response.resultValue || "新增失败", "danger");
+                bootGrowl(response.message || "新增失败", "danger");
             }
         });
     });

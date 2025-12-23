@@ -116,11 +116,11 @@
             });
         };
 
-        this.refreshPagination = function(data, params) {
-            const resultValue = data.resultValue || {};
-            const items = resultValue.data || [];
-            const total = resultValue.total || 0;
-            const pageNum = resultValue.pageNum || config.pageIndex;
+        this.refreshPagination = function(response, params) {
+            const result = response.data || {};
+            const items = result.data || [];
+            const total = result.total || 0;
+            const pageNum = result.pageNum || config.pageIndex;
             // 更新分页管理器状态
             this.currentPage = pageNum;
             // 渲染表格

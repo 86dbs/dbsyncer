@@ -6,103 +6,81 @@ package org.dbsyncer.biz.vo;
 import java.io.Serializable;
 
 /**
- * Rest请求响应对象
- * 
+ * 请求响应对象
+ *
  * @author AE86
- * @date 2017年3月30日 下午2:26:19
  * @version 1.0.0
+ * @date 2017年3月30日 下午2:26:19
  */
 public class RestResult implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * 请求是否成功
-	 */
-	private boolean success;
+    /**
+     * 是否成功
+     */
+    private boolean success;
 
-	/**
-	 * 请求成功后返回的结果数据
-	 */
-	private Object resultValue;
+    /**
+     * 数据
+     */
+    private Object data;
 
-	/**
-	 * 状态码
-	 */
-	private int status;
+    /**
+     * 消息
+     */
+    private String message;
 
-	/**
-	 * 请求失败返回提示信息
-	 * 
-	 * @param resultValue
-	 * @return RestResult
-	 */
-	public static RestResult restFail(Object resultValue) {
-		return new RestResult(false, resultValue);
-	}
-	
-	/**
-	 * 请求失败返回提示信息
-	 * 
-	 * @param resultValue
-	 * @param status 状态码
-	 * @return RestResult
-	 */
-	public static RestResult restFail(Object resultValue, int status) {
-		return new RestResult(false, resultValue, status);
-	}
+    /**
+     * 状态码
+     */
+    private int status;
 
-	/**
-	 * 请求成功返回结果数据
-	 * 
-	 * @param resultValue
-	 * @return RestResult
-	 */
-	public static RestResult restSuccess(Object resultValue) {
-		return new RestResult(true, resultValue, 200);
-	}
+    public RestResult(boolean success, Object data, int status) {
+        this.success = success;
+        this.data = data;
+        this.status = status;
+    }
 
-	public boolean isSuccess() {
-		return success;
-	}
+    public static RestResult restFail(Object msg) {
+        return new RestResult(false, msg, 500);
+    }
 
-	public void setSuccess(boolean success) {
-		this.success = success;
-	}
+    public static RestResult restFail(Object msg, int status) {
+        return new RestResult(false, msg, status);
+    }
 
-	public Object getResultValue() {
-		return resultValue;
-	}
+    public static RestResult restSuccess(Object data) {
+        return new RestResult(true, data, 200);
+    }
 
-	public void setResultValue(Object resultValue) {
-		this.resultValue = resultValue;
-	}
+    public boolean isSuccess() {
+        return success;
+    }
 
-	public int getStatus() {
-		return status;
-	}
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
 
-	public void setStatus(int status) {
-		this.status = status;
-	}
+    public Object getData() {
+        return data;
+    }
 
-	public RestResult(boolean success, Object resultValue) {
-		super();
-		this.success = success;
-		this.resultValue = resultValue;
-	}
+    public void setData(Object data) {
+        this.data = data;
+    }
 
-	public RestResult(boolean success, Object resultValue, int status) {
-		super();
-		this.success = success;
-		this.resultValue = resultValue;
-		this.status = status;
-	}
+    public int getStatus() {
+        return status;
+    }
 
-	@Override
-	public String toString() {
-		return "RestResult [success=" + success + ", resultValue=" +
-                resultValue + ", status=" + status + "]";
-	}
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    @Override
+    public String toString() {
+        return "RestResult [success=" + success + ", data=" + data + ", message=" + message + ", status=" + status + "]";
+    }
 
 }

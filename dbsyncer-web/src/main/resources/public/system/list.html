@@ -144,13 +144,13 @@
                 const submitBtn = $(this);
                 const originalText = submitBtn.html();
                 submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-                doPoster('/system/edit', $form.serializeJson(), function (data) {
+                doPoster('/system/edit', $form.serializeJson(), function (response) {
                     submitBtn.html(originalText).prop('disabled', false);
-                    if (data.success === true) {
+                    if (response.success === true) {
                         bootGrowl("修改成功!", "success");
                         doLoader("/system");
                     } else {
-                        bootGrowl(data.resultValue, "danger");
+                        bootGrowl(response.message, "danger");
                     }
                 });
             }

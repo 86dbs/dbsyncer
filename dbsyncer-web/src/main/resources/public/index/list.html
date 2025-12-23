@@ -287,9 +287,9 @@
 
         // 刷新仪表板数据
         function refreshDashboardData() {
-            doGetter("/monitor/dashboard", {}, function (data) {
-                if (data.success === true) {
-                    const r = data.resultValue;
+            doGetter("/monitor/dashboard", {}, function (response) {
+                if (response.success === true) {
+                    const r = response.data;
                     $("#totalMeta").html(renderTotalMeta(r));
                     $("#runningMeta").html(renderRunningMeta(r));
                     $("#failMeta").text(r.failMeta);

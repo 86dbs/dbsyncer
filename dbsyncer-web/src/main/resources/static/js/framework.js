@@ -497,9 +497,9 @@ function logout() {
 // 刷新登录人信息
 function refreshLoginUser() {
     // 刷新登录用户
-    doGetter("/user/getUserInfo.json", {}, function (data) {
-        if (data.success === true) {
-            $("#currentUser").text(data.resultValue.nickname);
+    doGetter("/user/getUserInfo.json", {}, function (response) {
+        if (response.success) {
+            $("#currentUser").text(response.data.nickname);
         }
     });
 }
@@ -507,15 +507,15 @@ function refreshLoginUser() {
 // 刷新授权信息
 function refreshLicense() {
     // 刷新授权信息
-    doGetter("/license/query.json", {}, function (data) {
-        if (data.success === true) {
+    doGetter("/license/query.json", {}, function (response) {
+        if (response.success === true) {
             // 社区版
-            if (isBlank(data.resultValue.key)) {
+            if (isBlank(response.data.key)) {
                 return;
             }
             $("#licenseInfo").show();
             // 专业版
-            const licenseInfo = data.resultValue;
+            const licenseInfo = response.data;
             const $content = $("#effectiveContent");
             const $effectiveTime = licenseInfo.effectiveTime;
             if ($effectiveTime <= 0) {
@@ -675,11 +675,11 @@ $(function () {
     refreshLoginUser();
     refreshLicense();
     // 初始化版权信息
-    doGetter("/index/version.json", {}, function (data) {
-        if (data.success === true) {
+    doGetter("/index/version.json", {}, function (response) {
+        if (response.success === true) {
             // 获取底部版权信息
-            $("#copyRight").html(data.resultValue.appCopyRight);
-            settings.watermark_txt = data.resultValue.watermark;
+            $("#copyRight").html(response.data.appCopyRight);
+            settings.watermark_txt = response.data.watermark;
             watermark();
         }
     });

@@ -133,7 +133,7 @@
                 bootGrowl("刷新表成功!", "success");
                 refreshMappingEditPage();
             } else {
-                bootGrowl(data.resultValue, "danger");
+                bootGrowl(data.message, "danger");
             }
         });
     }
@@ -167,7 +167,7 @@
                 if (data.success === true) {
                     bootGrowl("新增映射关系成功!", "success");
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    bootGrowl(data.message, "danger");
                 }
                 refreshMappingEditPage();
             });
@@ -185,12 +185,12 @@
             });
             if (ids.length > 0) {
                 let id = $("#mappingId").val();
-                doPoster("/tableGroup/remove", {"mappingId": id, "ids" : ids.join()}, function (data) {
-                    if (data.success === true) {
+                doPoster("/tableGroup/remove", {"mappingId": id, "ids" : ids.join()}, function (response) {
+                    if (response.success === true) {
                         bootGrowl("删除映射关系成功!", "success");
                         refreshMappingEditPage();
                     } else {
-                        bootGrowl(data.resultValue, "danger");
+                        bootGrowl(response.message, "danger");
                     }
                 });
             }

@@ -251,7 +251,7 @@ public class MyPlugin implements PluginService {
                     bootGrowl("插件上传成功！", "success");
                     doLoader("/plugin");
                 } else {
-                    bootGrowl(response.resultValue || "上传失败", "danger");
+                    bootGrowl(response.message || "上传失败", "danger");
                 }
             },
             onError: function(file, error) {

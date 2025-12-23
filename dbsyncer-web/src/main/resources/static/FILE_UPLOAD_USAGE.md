@@ -130,7 +130,7 @@ files: [File, File, ...]
 ```json
 {
   "success": false,
-  "resultValue": "文件格式不正确"
+  "message": "文件格式不正确"
 }
 ```
 

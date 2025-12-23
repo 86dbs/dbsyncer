@@ -107,7 +107,7 @@
         doPoster("/user/edit", data, function (response) {
             $btn.html(originalText).prop('disabled', false);
             if (response.success !== true) {
-                bootGrowl(response.resultValue || "修改失败", "danger");
+                bootGrowl(response.message || "修改失败", "danger");
                 return;
             }
             // 刷新个人信息

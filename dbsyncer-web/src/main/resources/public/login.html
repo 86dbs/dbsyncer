@@ -282,10 +282,10 @@
         fetch('/index/version.json').then(response => {
             if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
             return response.json();
-        }).then(data => {
-            if (data.success === true) {
-                document.getElementById('appName').textContent = data.resultValue.appName;
-                document.getElementById('appCopyRight').innerHTML = data.resultValue.appCopyRight;
+        }).then(response => {
+            if (response.success === true) {
+                document.getElementById('appName').textContent = response.data.appName;
+                document.getElementById('appCopyRight').innerHTML = response.data.appCopyRight;
             }
         }).catch(error => {
             throw new Error(`请求错误: ${error.message}`);

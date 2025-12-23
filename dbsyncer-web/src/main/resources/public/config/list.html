@@ -74,7 +74,7 @@ $(function() {
                 notify({ message: '上传成功！', type: 'success' });
                 doLoader("/config");
             } else {
-                notify({ message: response.resultValue || '上传失败', type: 'danger' });
+                notify({ message: response.message || '上传失败', type: 'danger' });
             }
         },
         onError: function(file, error) {

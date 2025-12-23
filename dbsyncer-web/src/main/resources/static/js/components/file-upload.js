@@ -94,7 +94,7 @@
                 if (!validateFile(file)) return;
 
                 // 添加到文件列表
-                var fileObj = {
+                const fileObj = {
                     id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     file: file,
                     name: file.name,
@@ -118,7 +118,7 @@
         function validateFile(file) {
             // 检查文件扩展名
             if (config.accept.length > 0) {
-                var ext = '.' + file.name.split('.').pop().toLowerCase();
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
                 if (config.accept.indexOf(ext) === -1) {
                     window.notify({ 
                         message: '不支持的文件类型：' + ext, 
@@ -142,7 +142,7 @@
 
         // 渲染文件项
         function renderFileItem(fileObj) {
-            var item = document.createElement('div');
+            const item = document.createElement('div');
             item.className = 'upload-item ' + fileObj.status;
             item.setAttribute('data-file-id', fileObj.id);
             item.innerHTML = 
@@ -171,14 +171,14 @@
 
         // 更新文件项状态
         function updateFileItem(fileObj) {
-            var item = uploadList.querySelector('[data-file-id="' + fileObj.id + '"]');
+            const item = uploadList.querySelector('[data-file-id="' + fileObj.id + '"]');
             if (!item) return;
 
             item.className = 'upload-item ' + fileObj.status;
 
-            var statusEl = item.querySelector('.upload-item-status');
-            var progressEl = item.querySelector('.upload-item-progress');
-            var progressBar = item.querySelector('.upload-item-progress-bar');
+            const statusEl = item.querySelector('.upload-item-status');
+            const progressEl = item.querySelector('.upload-item-progress');
+            const progressBar = item.querySelector('.upload-item-progress-bar');
 
             if (fileObj.status === 'uploading') {
                 statusEl.innerHTML = '<div class="upload-status-icon loading"><i class="fa fa-spinner fa-spin"></i></div>';
@@ -208,10 +208,10 @@
             updateFileItem(fileObj);
             uploadingCount++;
 
-            var formData = new FormData();
+            const formData = new FormData();
             formData.append('files', fileObj.file);
 
-            var xhr = new XMLHttpRequest();
+            const xhr = new XMLHttpRequest();
 
             // 上传进度
             xhr.upload.addEventListener('progress', function(e) {
@@ -226,14 +226,14 @@
             xhr.addEventListener('load', function() {
                 uploadingCount--;
                 try {
-                    var response = JSON.parse(xhr.responseText);
+                    const response = JSON.parse(xhr.responseText);
                     if (xhr.status === 200 && response.success) {
                         fileObj.status = 'success';
                         updateFileItem(fileObj);
                         config.onSuccess(fileObj, response);
                     } else {
                         fileObj.status = 'error';
-                        fileObj.error = response.resultValue || response.message || '上传失败';
+                        fileObj.error = response.message || '上传失败';
                         updateFileItem(fileObj);
                         config.onError(fileObj, fileObj.error);
                     }

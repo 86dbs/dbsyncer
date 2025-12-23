@@ -187,7 +187,7 @@ function bindRefreshTableFieldsClick() {
             bootGrowl("刷新字段成功!", "success");
             doLoader('/tableGroup/page/editTableGroup?id=' + id);
         } else {
-            bootGrowl(data.resultValue, "danger");
+            bootGrowl(data.message, "danger");
         }
     });
 }
@@ -315,7 +315,7 @@ $(function() {
                     bootGrowl("修改表字段映射成功!", "success");
                     backIndexPage();
                 } else {
-                    bootGrowl(data.resultValue, "danger");
+                    bootGrowl(data.message, "danger");
                 }
             });
         }

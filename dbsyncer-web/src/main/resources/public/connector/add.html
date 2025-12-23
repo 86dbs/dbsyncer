@@ -73,7 +73,7 @@ $(document).ready(function() {
                     bootGrowl("保存成功!", "success");
                     backIndexPage();
                 } else {
-                    bootGrowl(response.resultValue, "danger");
+                    bootGrowl(response.message, "danger");
                 }
             });
         }

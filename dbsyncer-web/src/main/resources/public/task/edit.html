@@ -816,11 +816,11 @@
                 database: config.sourceDatabaseName || '',
                 schema: config.sourceSchema || ''
             },
-            success: function (result) {
-                console.log('[第二步] 源表加载成功:', result);
+            success: function (response) {
+                console.log('[第二步] 源表加载成功:', response);
                 sourceTablesLoaded = true;
-                if (result.success && result.resultValue) {
-                    sourceTables = result.resultValue;
+                if (response.success && response.data) {
+                    sourceTables = response.data;
                 }
                 checkBothLoaded();
             },
@@ -845,8 +845,8 @@
             success: function (result) {
                 console.log('[第二步] 目标表加载成功:', result);
                 targetTablesLoaded = true;
-                if (result.success && result.resultValue) {
-                    targetTables = result.resultValue;
+                if (result.success && result.data) {
+                    targetTables = result.data;
                 }
                 checkBothLoaded();
             },
@@ -1192,7 +1192,7 @@
                     if (isEditMode) {
                         savedTaskId = currentTaskId;
                     } else {
-                        savedTaskId = result.resultValue;
+                        savedTaskId = result.data;
                     }
                     bootGrowl(successMessage, "success");
                     console.log('[第二步] 保存成功，任务ID:', savedTaskId);
@@ -1202,7 +1202,7 @@
                         backTaskIndexPage();
                     }, 1000);
                 } else {
-                    bootGrowl(result.resultValue, "danger");
+                    bootGrowl(result.message, "danger");
                 }
             },
             error: function (xhr, status, info) {
@@ -1423,8 +1423,8 @@
                 tableName: sourceTableName
             },
             success: function (result) {
-                if (result.success && result.resultValue) {
-                    sourceFields = result.resultValue || [];
+                if (result.success && result.data) {
+                    sourceFields = result.data || [];
                     console.log('[字段映射] 源表字段加载成功:', sourceFields.length);
                 }
                 loadComplete++;
@@ -1453,8 +1453,8 @@
                 tableName: targetTableName
             },
             success: function (result) {
-                if (result.success && result.resultValue) {
-                    targetFields = result.resultValue || [];
+                if (result.success && result.data) {
+                    targetFields = result.data || [];
                     console.log('[字段映射] 目标表字段加载成功:', targetFields.length);
                 }
                 loadComplete++;
@@ -2010,11 +2010,11 @@
                 if (result.success) {
                     let options = '<option value="">请选择数据库</option>';
                     
-                    if (result.resultValue && result.resultValue.length > 0) {
-                        result.resultValue.forEach(function (db) {
+                    if (result.data && result.data.length > 0) {
+                        result.data.forEach(function (db) {
                             options += '<option value="' + db + '">' + db + '</option>';
                         });
-                        console.log('[加载数据库] 成功加载 ' + result.resultValue.length + ' 个数据库');
+                        console.log('[加载数据库] 成功加载 ' + result.data.length + ' 个数据库');
                     } else {
                         console.warn('[加载数据库] 数据库列表为空');
                         options = '<option value="">暂无数据库</option>';
@@ -2030,9 +2030,9 @@
                     // 加载表列表
                     loadTables(connectorId, type);
                 } else {
-                    console.error('[加载数据库] 失败:', result.resultValue);
+                    console.error('[加载数据库] 失败:', result.data);
                     $(selectId).html('<option value="">加载失败</option>');
-                    bootGrowl("获取数据库列表失败: " + result.resultValue, "danger");
+                    bootGrowl("获取数据库列表失败: " + result.data, "danger");
                 }
             },
             error: function (xhr, status, error) {
@@ -2063,8 +2063,8 @@
                     $(tableSelects).each(function () {
                         let options = '<option value="">请选择表</option>';
                         
-                        if (result.resultValue && result.resultValue.length > 0) {
-                            result.resultValue.forEach(function (table) {
+                        if (result.data && result.data.length > 0) {
+                            result.data.forEach(function (table) {
                                 options += '<option value="' + table.name + '">' + table.name + '</option>';
                             });
                         }
@@ -2077,7 +2077,7 @@
                         enhanceAllSelects();
                     }
         } else {
-                    bootGrowl("获取表列表失败: " + result.resultValue, "danger");
+                    bootGrowl("获取表列表失败: " + result.data, "danger");
                 }
             },
             error: function () {
@@ -2118,8 +2118,8 @@
                     $(fieldSelects).each(function () {
                         let options = '<option value="">请选择字段</option>';
                         
-                        if (result.resultValue && result.resultValue.length > 0) {
-                            result.resultValue.forEach(function (field) {
+                        if (result.data && result.data.length > 0) {
+                            result.data.forEach(function (field) {
                                 const fieldName = field.name || field.getName();
                                 const fieldType = field.typeName || field.getTypeName();
                                 options += '<option value="' + fieldName + '">' + 
@@ -2135,7 +2135,7 @@
                         enhanceAllSelects();
                     }
                 } else {
-                    bootGrowl("获取表字段失败: " + result.resultValue, "danger");
+                    bootGrowl("获取表字段失败: " + result.data, "danger");
                 }
             },
             error: function () {
@@ -2166,7 +2166,7 @@
             data: { connectorId: connectorId },
             success: function (result) {
                 if (result.success) {
-                    const connectorType = result.resultValue.toLowerCase();
+                    const connectorType = result.data.toLowerCase();
                     let showSchema = false;
                     let defaultSchema = '';
                     
@@ -2280,11 +2280,11 @@
                 hideLoading();
                 console.log('[任务编辑] 任务数据加载成功:', result);
                 
-                if (result.success && result.resultValue) {
-                    const task = result.resultValue;
+                if (result.success && result.data) {
+                    const task = result.data;
                     fillTaskForm(task);
                 } else {
-                    bootGrowl("加载任务数据失败: " + (result.resultValue || "未知错误"), "danger");
+                    bootGrowl("加载任务数据失败: " + (result.data || "未知错误"), "danger");
                     setTimeout(function() {
                         backTaskIndexPage();
                     }, 2000);
@@ -2539,8 +2539,8 @@
                 tableName: sourceTableName
             },
             success: function (result) {
-                if (result.success && result.resultValue) {
-                    sourceFields = result.resultValue || [];
+                if (result.success && result.data) {
+                    sourceFields = result.data || [];
                     console.log('[字段映射] 源表字段加载成功:', sourceFields.length);
                 }
                 loadComplete++;
@@ -2569,8 +2569,8 @@
                 tableName: targetTableName
             },
             success: function (result) {
-                if (result.success && result.resultValue) {
-                    targetFields = result.resultValue || [];
+                if (result.success && result.data) {
+                    targetFields = result.data || [];
                     console.log('[字段映射] 目标表字段加载成功:', targetFields.length);
                 }
                 loadComplete++;

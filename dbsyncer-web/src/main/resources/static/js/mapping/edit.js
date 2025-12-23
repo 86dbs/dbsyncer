@@ -109,7 +109,7 @@ $(function () {
                     // 返回到默认主页
                     backIndexPage();
                 } else {
-                    bootGrowl(response.resultValue, "danger");
+                    bootGrowl(response.message, "danger");
                 }
             });
         }

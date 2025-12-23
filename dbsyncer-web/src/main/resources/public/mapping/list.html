@@ -50,7 +50,7 @@ function copyMapping(id) {
             bootGrowl('复制成功', 'success');
             backIndexPage();
         } else {
-            bootGrowl('复制失败: ' + response.resultValue, 'danger');
+            bootGrowl('复制失败: ' + response.message, 'danger');
         }
     });
 }
@@ -67,7 +67,7 @@ function changeMappingState(id, url, title) {
             bootGrowl(title +'成功', 'success');
             backIndexPage();
         } else {
-            bootGrowl(title +'失败: ' + response.resultValue, 'danger');
+            bootGrowl(title +'失败: ' + response.message, 'danger');
         }
     })
 }
@@ -80,12 +80,12 @@ function deleteMapping(id) {
         confirmType: 'danger',
         onConfirm: function () {
             // 禁用按钮，防止重复点击
-            doPoster('/mapping/remove', {id: id}, function (data) {
-                if (data.success === true) {
+            doPoster('/mapping/remove', {id: id}, function (response) {
+                if (response.success === true) {
                     bootGrowl("删除成功！", "success");
                     backIndexPage();
                 } else {
-                    bootGrowl(data.resultValue || "删除失败", "danger");
+                    bootGrowl(response.message || "删除失败", "danger");
                 }
             });
         }
