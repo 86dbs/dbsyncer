@@ -98,6 +98,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private final Map<String, MetricDetailFormatter> metricMap = new ConcurrentHashMap<>();
 
+    private MetricResponse systemInfo;
+
     @PostConstruct
     private void init() {
         metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
@@ -105,6 +107,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.SYSTEM_ENV.getCode(), vo -> {
+            // 操作系统
+            String osName = System.getProperty("os.name");
+            // 架构
+            vo.setDetail(String.format("%s(%s) %s", osName, System.getProperty("os.version"), System.getProperty("os.arch")));
+        });
+        systemInfo = new MetricResponse();
+        systemInfo.setCode(MetricEnum.SYSTEM_ENV.getCode());
+        systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
 
         // 间隔10分钟预警
         scheduledTaskService.start("0 */10 * * * ?", this);
@@ -208,6 +219,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public AppReportMetric queryAppMetric(List<MetricResponse> metrics) {
         AppReportMetric app = metricReporter.getAppReportMetric();
+        metrics.add(systemInfo);
         // 系统指标
         metrics.addAll(metricReporter.getMetricInfo());
         // 合并分组显示

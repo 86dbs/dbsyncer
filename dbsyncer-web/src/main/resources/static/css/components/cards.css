@@ -156,8 +156,8 @@
 .mini-stat-card {
   position: relative;
   overflow: hidden;
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
   background-color: var(--bg-primary);
   border: 1px solid rgba(22, 93, 255, 0.08);
   box-shadow: var(--shadow-sm);

@@ -45,7 +45,12 @@ public enum MetricEnum {
     /**
      * CPU已用
      */
-    CPU_USAGE("system.cpu.usage", "CPU", "");
+    CPU_USAGE("system.cpu.usage", "CPU", ""),
+
+    /**
+     * 系统环境
+     */
+    SYSTEM_ENV("system.info", "运行环境", "");
 
     private final String code;
     private final String group;

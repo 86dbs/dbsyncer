@@ -40,6 +40,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -91,6 +94,11 @@ public class MonitorController extends BaseController {
 
     @Resource
     private GBValueFormatter gbValueFormatter;
+
+    private final SystemInfo systemInfo = new SystemInfo();
+    private final CentralProcessor processor = systemInfo.getHardware().getProcessor();
+    private final GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
+    private long[] prevTicks = processor.getSystemCpuLoadTicks();
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
@@ -232,99 +240,58 @@ public class MonitorController extends BaseController {
 
     private void collectCpu() {
         collectStackMetric(MetricEnum.CPU_USAGE, cpu, cpuValueFormatter);
-        // 总体使用率
-        BigDecimal totalPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-        if (!CollectionUtils.isEmpty(cpu.getValue())) {
-            Object lastValue = cpu.getValue().get(cpu.getValue().size() - 1);
-            if (lastValue instanceof Number) {
-                totalPercent = new BigDecimal(String.valueOf(lastValue)).setScale(2, RoundingMode.HALF_UP);
-            }
+        // 采集瞬时数据
+        long[] ticks = processor.getSystemCpuLoadTicks();
+        if (prevTicks != null) {
+            long user = ticks[CentralProcessor.TickType.USER.getIndex()] -
+                    prevTicks[CentralProcessor.TickType.USER.getIndex()];
+            long nice = ticks[CentralProcessor.TickType.NICE.getIndex()] -
+                    prevTicks[CentralProcessor.TickType.NICE.getIndex()];
+            long system = ticks[CentralProcessor.TickType.SYSTEM.getIndex()] -
+                    prevTicks[CentralProcessor.TickType.SYSTEM.getIndex()];
+            long idle = ticks[CentralProcessor.TickType.IDLE.getIndex()] -
+                    prevTicks[CentralProcessor.TickType.IDLE.getIndex()];
+            long total = user + nice + system + idle;
+
+            // 用户态CPU使用率（user + nice）
+            BigDecimal userCpuPercent = BigDecimal.valueOf(user + nice)
+                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+            cpu.setUserPercent(userCpuPercent);
+
+            // 系统态CPU使用率
+            BigDecimal systemCpuPercent = BigDecimal.valueOf(system)
+                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+            cpu.setSysPercent(systemCpuPercent);
+
+            // 总CPU使用率（非空闲时间）
+            BigDecimal totalCpuPercent = BigDecimal.valueOf(total - idle)
+                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .setScale(2, RoundingMode.HALF_UP);
+            cpu.setTotalPercent(totalCpuPercent);
+            prevTicks = ticks;
+        } else {
+            cpu.setUserPercent(BigDecimal.ZERO);
+            cpu.setSysPercent(BigDecimal.ZERO);
+            cpu.setTotalPercent(BigDecimal.ZERO);
         }
-        cpu.setUsedPercent(totalPercent);
-        
-        // 尝试通过指标获取用户态和系统态使用率
-        BigDecimal userPercent = getMetricValue("system.cpu.user");
-        BigDecimal systemPercent = getMetricValue("system.cpu.system");
-        
-        // 如果指标不可用，使用总体使用率按比例估算（用户态通常占大部分）
-        if (userPercent == null && systemPercent == null) {
-            // 如果两个都获取不到，按经验比例分配：用户态75%，系统态25%
-            if (totalPercent.compareTo(BigDecimal.ZERO) > 0) {
-                userPercent = totalPercent.multiply(new BigDecimal("0.75")).setScale(2, RoundingMode.HALF_UP);
-                systemPercent = totalPercent.multiply(new BigDecimal("0.25")).setScale(2, RoundingMode.HALF_UP);
-            } else {
-                userPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-                systemPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-            }
-        } else if (userPercent == null) {
-            // 只有用户态不可用，使用总体减去系统态
-            userPercent = totalPercent.subtract(systemPercent);
-            if (userPercent.compareTo(BigDecimal.ZERO) < 0) {
-                userPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-            }
-        } else if (systemPercent == null) {
-            // 只有系统态不可用，使用总体减去用户态
-            systemPercent = totalPercent.subtract(userPercent);
-            if (systemPercent.compareTo(BigDecimal.ZERO) < 0) {
-                systemPercent = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-            }
-        }
-        
-        cpu.setUserPercent(userPercent);
-        cpu.setSysPercent(systemPercent);
     }
 
     private void collectMemory() {
         collectStackMetric(MetricEnum.MEMORY_USED, memory, memoryValueFormatter);
-        // JVM 内存已使用
-        BigDecimal jvmUsed = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_USED));
-        // JVM 内存总使用
-        BigDecimal jvmTotal = gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_MAX));
-        memory.setJvmUsed(jvmUsed);
-        memory.setJvmTotal(jvmTotal);
-        
-        // 系统内存信息（通过 OperatingSystemMXBean 获取）
-        try {
-            com.sun.management.OperatingSystemMXBean osBean =
-                    (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-            long totalPhysicalMemory = osBean.getTotalPhysicalMemorySize();
-            long freePhysicalMemory = osBean.getFreePhysicalMemorySize();
-            
-            // 注意：在 macOS 上，getFreePhysicalMemorySize() 返回的是真正的空闲内存（不包括缓存）
-            // macOS 会积极使用内存作为文件缓存，这些缓存内存虽然被"占用"，但在需要时可以被释放
-            // 所以计算出的 usedPhysicalMemory = total - free 会包括缓存，导致数值看起来偏高
-            // 这是 macOS 内存管理的特性，不是计算错误
-            long usedPhysicalMemory = totalPhysicalMemory - freePhysicalMemory;
-            
-            // 确保已使用内存不超过总内存（防止计算错误）
-            if (usedPhysicalMemory > totalPhysicalMemory) {
-                usedPhysicalMemory = totalPhysicalMemory;
-                logger.warn("Calculated used memory exceeds total memory, using total memory as used memory");
-            }
-            if (usedPhysicalMemory < 0) {
-                usedPhysicalMemory = 0;
-                logger.warn("Calculated used memory is negative, setting to 0");
-            }
-
-            BigDecimal sysTotal = gbValueFormatter.formatValue(totalPhysicalMemory);
-            BigDecimal sysUsed = gbValueFormatter.formatValue(usedPhysicalMemory);
-            
-            // 再次验证：确保格式化后的值不超过总内存
-            if (sysUsed.compareTo(sysTotal) > 0) {
-                logger.warn("Formatted used memory ({}) exceeds total memory ({}), using total memory", sysUsed, sysTotal);
-                sysUsed = sysTotal;
-            }
-            
-            memory.setSysTotal(sysTotal);
-            memory.setSysUsed(sysUsed);
-            memory.setUsedPercent(formatPercent(jvmUsed, sysTotal));
-        } catch (Exception e) {
-            logger.warn("Failed to collect system memory info: " + e.getMessage(), e);
-            memory.setSysTotal(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-            memory.setSysUsed(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
-            // 如果系统内存获取失败，使用 JVM 内存使用率作为总使用率
-            memory.setUsedPercent(formatPercent(jvmUsed, jvmTotal));
-        }
+        // 系统 总内存
+        memory.setSysTotal(gbValueFormatter.formatValue(globalMemory.getTotal()));
+        // 系统 已使用
+        memory.setSysUsed(gbValueFormatter.formatValue(globalMemory.getTotal() - globalMemory.getAvailable()));
+        memory.setTotalPercent(formatPercent(memory.getSysUsed(), memory.getSysTotal()));
+        // JVM 已使用
+        memory.setJvmUsed(gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_USED)));
+        // JVM 总内存
+        memory.setJvmTotal(gbValueFormatter.formatValue(collectValue(MetricEnum.MEMORY_MAX)));
     }
 
     private void collectDiskSpace() {
@@ -394,34 +361,6 @@ public class MonitorController extends BaseController {
             return measurements.get(0).getValue();
         }
         return 0;
-    }
-
-    /**
-     * 安全获取指标值，如果指标不存在则返回 null
-     */
-    private BigDecimal getMetricValue(String metricCode) {
-        try {
-            MetricsEndpoint.MetricResponse metric = metricsEndpoint.metric(metricCode, null);
-            if (metric != null && !CollectionUtils.isEmpty(metric.getMeasurements())) {
-                Object value = metric.getMeasurements().get(0).getValue();
-                if (value != null) {
-                    BigDecimal result = new BigDecimal(String.valueOf(value));
-                    // 如果值小于1，说明是小数形式（0-1之间），需要乘以100转换为百分比
-                    if (result.compareTo(BigDecimal.ONE) < 0) {
-                        result = result.multiply(new BigDecimal("100"));
-                    }
-                    return result.setScale(2, RoundingMode.HALF_UP);
-                }
-            } else {
-                logger.trace("Metric {} returned null or empty measurements", metricCode);
-            }
-        } catch (IllegalArgumentException e) {
-            // 指标不存在，这是正常的
-            logger.trace("Metric {} not found: {}", metricCode, e.getMessage());
-        } catch (Exception e) {
-            logger.debug("Error getting metric {}: {}", metricCode, e.getMessage());
-        }
-        return null;
     }
 
     private void optimizeStackOverflow(List<Object> stack) {

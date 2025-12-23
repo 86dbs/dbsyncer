@@ -480,13 +480,13 @@ $(function () {
         if (!data) {
             return;
         }
-        let state = processBarState(data.usedPercent);
+        let state = processBarState(data.totalPercent);
         $("#cpuProgressBar").html(`<div class="progress-header">
                 <span class="progress-title">CPU使用率</span>
-                <span class="progress-value ${state.title}">${data.usedPercent}%</span>
+                <span class="progress-value ${state.title}">${data.totalPercent}%</span>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
+                <div class="progress-fill ${state.value}" style="width: ${data.totalPercent}%"></div>
             </div>
             <div class="progress-detail">
                 <span>核心数 <strong>${data.core}</strong></span>
@@ -499,13 +499,13 @@ $(function () {
         if (!data) {
             return;
         }
-        let state = processBarState(data.usedPercent);
+        let state = processBarState(data.totalPercent);
         $("#memoryProgressBar").html(`<div class="progress-header">
                 <span class="progress-title">内存使用率</span>
-                <span class="progress-value ${state.title}">${data.usedPercent}%</span>
+                <span class="progress-value ${state.title}">${data.totalPercent}%</span>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill ${state.value}" style="width: ${data.usedPercent}%"></div>
+                <div class="progress-fill ${state.value}" style="width: ${data.totalPercent}%"></div>
             </div>
             <div class="progress-detail">
                 <span>总内存 <strong>${data.sysTotal} GB</strong></span>

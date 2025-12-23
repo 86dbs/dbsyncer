@@ -19,7 +19,7 @@ public final class CpuVO extends HistoryStackVo {
     // 系统化使用百分比
     private BigDecimal sysPercent;
     // 总使用百分比
-    private BigDecimal usedPercent;
+    private BigDecimal totalPercent;
 
     public int getCore() {
         return core;
@@ -41,11 +41,11 @@ public final class CpuVO extends HistoryStackVo {
         this.sysPercent = sysPercent;
     }
 
-    public BigDecimal getUsedPercent() {
-        return usedPercent;
+    public BigDecimal getTotalPercent() {
+        return totalPercent;
     }
 
-    public void setUsedPercent(BigDecimal usedPercent) {
-        this.usedPercent = usedPercent;
+    public void setTotalPercent(BigDecimal totalPercent) {
+        this.totalPercent = totalPercent;
     }
 }
