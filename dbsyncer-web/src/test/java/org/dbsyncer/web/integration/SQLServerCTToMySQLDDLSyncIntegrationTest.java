@@ -1206,7 +1206,8 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         
         if (lowerFieldName.contains("age") || lowerFieldName.contains("count") || lowerFieldName.contains("num")) {
             data.put(fieldName, 100);
-        } else if (lowerFieldName.contains("price") || lowerFieldName.contains("salary") || lowerFieldName.contains("bonus")) {
+        } else if (lowerFieldName.contains("price") || lowerFieldName.contains("salary") || lowerFieldName.contains("bonus") 
+                || lowerFieldName.contains("amount") || lowerFieldName.contains("total") || lowerFieldName.contains("sum")) {
             data.put(fieldName, 1000.00);
         } else if (lowerFieldName.contains("date") || lowerFieldName.contains("birth")) {
             // DATE 类型，使用 LocalDate
