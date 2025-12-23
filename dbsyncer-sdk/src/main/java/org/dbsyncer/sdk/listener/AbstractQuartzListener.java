@@ -116,10 +116,11 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         if (CollectionUtils.isEmpty(snapshot)) {
             for (int i = 0; i < commands.size(); i++) {
                 final Map<String, String> command = commands.get(i).getCommand();
-                // 获取最新增量点
+                // 更新最新增量点
                 Point point = checkLastPoint(command, i);
-                // 更新
-                snapshot.putAll(point.getPosition());
+                if (!CollectionUtils.isEmpty(point.getPosition())) {
+                    snapshot.putAll(point.getPosition());
+                }
             }
             super.forceFlushEvent();
         }
