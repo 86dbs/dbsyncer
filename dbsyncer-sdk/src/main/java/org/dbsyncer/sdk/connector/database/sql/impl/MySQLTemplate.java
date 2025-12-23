@@ -53,8 +53,11 @@ public class MySQLTemplate extends AbstractSqlTemplate {
     public String buildAddColumnSql(String tableName, Field field) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ").append(buildQuotedTableName(tableName))
-           .append(" ADD COLUMN ").append(buildColumn(field.getName()))
-           .append(" ").append(convertToDatabaseType(field));
+           .append(" ADD COLUMN ").append(buildColumn(field.getName()));
+        
+        // 转换类型并获取 MySQL 类型字符串
+        String databaseType = convertToDatabaseType(field);
+        sql.append(" ").append(databaseType);
         
         // 添加 NOT NULL 约束
         if (field.getNullable() != null && !field.getNullable()) {
@@ -62,7 +65,8 @@ public class MySQLTemplate extends AbstractSqlTemplate {
             // MySQL 语法要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值
             // 注意：这是为了满足 MySQL 的语法约束，不是通用的缺省值处理
             // 生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果
-            String defaultValue = MySQLTemplate.getDefaultValueForNotNullColumn(field);
+            // 使用转换后的 MySQL 类型名称来判断默认值
+            String defaultValue = getDefaultValueForNotNullColumnByTypeName(databaseType);
             if (defaultValue != null) {
                 sql.append(" DEFAULT ").append(defaultValue);
             }
@@ -291,7 +295,7 @@ public class MySQLTemplate extends AbstractSqlTemplate {
     }
 
     /**
-     * 根据字段类型获取 NOT NULL 列的默认值
+     * 根据 MySQL 数据库类型名称获取 NOT NULL 列的默认值
      * 
      * 注意：此方法仅用于满足 MySQL 的语法约束，不是通用的缺省值处理。
      * MySQL 要求：向非空表添加 NOT NULL 列时，必须提供 DEFAULT 值。
@@ -301,47 +305,47 @@ public class MySQLTemplate extends AbstractSqlTemplate {
      * - 但 MySQL 的语法要求必须提供 DEFAULT 值，否则 DDL 执行会失败
      * - 此方法生成的 DEFAULT 值仅用于满足语法要求，不会影响数据同步结果（数据同步不依赖缺省值）
      * 
-     * @param field 字段信息
+     * @param typeName MySQL 数据库类型名称（如 "BIGINT", "VARCHAR(50)" 等）
      * @return 默认值表达式，如果不支持则返回 null
      */
-    public static String getDefaultValueForNotNullColumn(Field field) {
-        if (field == null || field.getTypeName() == null) {
+    public static String getDefaultValueForNotNullColumnByTypeName(String typeName) {
+        if (typeName == null || typeName.trim().isEmpty()) {
             return null;
         }
         
-        String typeName = field.getTypeName().toUpperCase();
+        String upperTypeName = typeName.toUpperCase();
         
         // 字符串类型：使用空字符串
-        if (typeName.contains("VARCHAR") || typeName.contains("CHAR") || 
-            typeName.contains("TEXT")) {
+        if (upperTypeName.contains("VARCHAR") || upperTypeName.contains("CHAR") || 
+            upperTypeName.contains("TEXT")) {
             return "''";
         }
         
         // 数值类型：使用 0
-        if (typeName.contains("INT") || typeName.contains("BIGINT") || 
-            typeName.contains("SMALLINT") || typeName.contains("TINYINT") ||
-            typeName.contains("DECIMAL") || typeName.contains("NUMERIC") ||
-            typeName.contains("FLOAT") || typeName.contains("DOUBLE") ||
-            typeName.contains("REAL")) {
+        if (upperTypeName.contains("INT") || upperTypeName.contains("BIGINT") || 
+            upperTypeName.contains("SMALLINT") || upperTypeName.contains("TINYINT") ||
+            upperTypeName.contains("DECIMAL") || upperTypeName.contains("NUMERIC") ||
+            upperTypeName.contains("FLOAT") || upperTypeName.contains("DOUBLE") ||
+            upperTypeName.contains("REAL")) {
             return "0";
         }
         
         // 布尔类型（TINYINT(1)）：使用 0
-        if (typeName.equals("BOOLEAN") || typeName.equals("BOOL")) {
+        if (upperTypeName.equals("BOOLEAN") || upperTypeName.equals("BOOL")) {
             return "0";
         }
         
         // 日期时间类型：使用 '1900-01-01' 或 '1900-01-01 00:00:00'
-        if (typeName.contains("DATE") || typeName.contains("TIME")) {
-            if (typeName.contains("DATETIME") || typeName.contains("TIMESTAMP")) {
+        if (upperTypeName.contains("DATE") || upperTypeName.contains("TIME")) {
+            if (upperTypeName.contains("DATETIME") || upperTypeName.contains("TIMESTAMP")) {
                 return "'1900-01-01 00:00:00'";
             }
             return "'1900-01-01'";
         }
         
         // 二进制类型：使用 0x（空二进制）
-        if (typeName.contains("BINARY") || typeName.contains("VARBINARY") ||
-            typeName.contains("BLOB")) {
+        if (upperTypeName.contains("BINARY") || upperTypeName.contains("VARBINARY") ||
+            upperTypeName.contains("BLOB")) {
             return "0x";
         }
         
