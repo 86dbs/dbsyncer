@@ -1311,16 +1311,21 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
      * SQL Server CT 模式下执行 DDL 后的触发操作（执行 DML 操作以触发 DDL 检测）
      * 这个方法应该在执行 DDL 之后调用，用于触发 DDL 检测
      * 
-     * @param newFieldName 如果是 ADD COLUMN 操作，传入新字段名；否则传入 null
+     * @param newFieldName 如果是 ADD COLUMN 操作，传入新字段名；如果是 DROP COLUMN 操作，传入 null（使用其他字段，避免使用被删除的字段）
      * @return 插入的数据（可用于后续验证）
      */
     private Map<String, Object> triggerDDLDetection(String newFieldName) throws Exception {
         Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put("first_name", "Test");
         
-        // 如果是 ADD COLUMN 操作，添加新字段的值
+        // 如果是 ADD COLUMN 操作，添加基础字段和新字段的值
         if (newFieldName != null && !newFieldName.isEmpty()) {
+            insertedData.put("first_name", "Test");
             addFieldValueForDDLTest(insertedData, newFieldName);
+        } else {
+            // 如果是 DROP COLUMN 操作（newFieldName 为 null），使用其他字段来触发 DDL 检测
+            // 注意：对于 DROP COLUMN 操作，被删除的字段不应该出现在 INSERT 语句中
+            // 使用 last_name 字段（如果表中有的话），或者使用其他存在的字段
+            insertedData.put("last_name", "Test");
         }
         
         insertedData = executeInsertDMLToSourceDatabase("ddlTestEmployee", insertedData, sqlServerConfig);
