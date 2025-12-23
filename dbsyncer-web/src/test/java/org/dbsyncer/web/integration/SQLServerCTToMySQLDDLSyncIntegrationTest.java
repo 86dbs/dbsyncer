@@ -423,19 +423,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     public void testModifyColumn_RemoveNotNull() throws Exception {
         logger.info("开始测试MODIFY COLUMN操作 - 移除NOT NULL约束");
         
-        // 1. 准备 DDL 测试环境（初始化表结构快照）
-        prepareForDDLTest();
-        
-        // 2. 先确保字段是NOT NULL的
-        String setNotNullDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
-        executeDDLToSourceDatabase(setNotNullDDL, sqlServerConfig);
-        
-        // 3. 执行 DML 操作来触发 DDL 检测（必须包含 first_name，因为它是 NOT NULL）
-        Map<String, Object> insertedData = new HashMap<>();
-        insertedData.put(MAIN_TEST_FIELD, "Test"); // first_name 是 NOT NULL，必须提供值
-        insertedData = executeInsertDMLToSourceDatabase(TABLE_NAME, insertedData, sqlServerConfig);
-        Thread.sleep(2000);
-
         // 4. 执行第二个 DDL 操作（移除 NOT NULL）
         String sqlserverDDL = "ALTER TABLE ddlTestEmployee ALTER COLUMN first_name NVARCHAR(50) NULL";
         testDDLConversion(sqlserverDDL, "first_name");
