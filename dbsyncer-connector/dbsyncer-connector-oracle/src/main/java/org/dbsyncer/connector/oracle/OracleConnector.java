@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
+import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -17,6 +18,7 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,8 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
+
+    private final OracleSchemaResolver schemaResolver = new OracleSchemaResolver();
 
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
@@ -203,5 +207,10 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         }
 
         return url.toString();
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 }
