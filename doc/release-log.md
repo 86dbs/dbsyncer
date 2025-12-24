@@ -2,7 +2,8 @@
 
 ## 2.8.0
 
-- 新功能：基于 CT(change tracing) 实现 mssql ddl(DML 驱动)，之所以不用 cdc 主要是 sql server 端的压力，同时消除表结构变化这种自身缺陷影响同步数据正确性问题.
+- 新功能：基于 CT(change tracing) 实现 mssql ddl(DML 驱动)，之所以不用 cdc 主要是 sql server 端的压力，同时消除表结构变化这种自身缺陷影响同步数据正确性问题.(OK)
+- 新功能：对连接器增加“是否支持DDL写入”功能，以忽略 kafka 等非标准数据库的建表检测动作。（OK）
 - 缺陷修复：不同线程之间串数据问题。（command, table）(ok)
 - 缺陷修复：修复无法重建与 kaka 的表映射关系。（OK）
 - 性能优化：使用性能更高的记录数查询机制。(OK)

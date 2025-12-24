@@ -279,4 +279,19 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     default String generateCreateTableDDL(MetaInfo sourceMetaInfo, String targetTableName) {
         throw new UnsupportedOperationException("该连接器不支持自动生成 CREATE TABLE DDL: " + getConnectorType());
     }
+
+    /**
+     * 判断连接器是否支持执行 DDL 操作（如表创建、表结构修改等）
+     * 用于在表缺失检测时判断是否需要检查表是否存在
+     * 
+     * 注意：此方法判断的是连接器是否支持"写入/执行"DDL 操作，
+     * 与 ListenerConfig.enableDDL（控制是否监听 DDL 事件）不同
+     *
+     * @return true 如果连接器支持执行 DDL 操作，false 否则
+     */
+    default boolean supportsDDLWrite() {
+        // 默认返回 true，表示支持执行 DDL 操作
+        // 对于不支持 DDL 操作的连接器（如 Kafka），需要重写此方法返回 false
+        return true;
+    }
 }

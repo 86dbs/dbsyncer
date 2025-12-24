@@ -182,4 +182,10 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         return writer(connectorInstance, context);
     }
 
+    @Override
+    public boolean supportsDDLWrite() {
+        // Kafka 连接器不支持执行 DDL 操作（表创建、表结构修改等）
+        return false;
+    }
+
 }
