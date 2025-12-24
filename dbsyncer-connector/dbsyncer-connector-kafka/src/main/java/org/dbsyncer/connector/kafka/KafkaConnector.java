@@ -86,7 +86,9 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public MetaInfo getMetaInfo(KafkaConnectorInstance connectorInstance, String tableName) {
-        return new MetaInfo();
+        // Kafka 作为目标连接器时，字段结构由源表决定，这里返回空的字段列表
+        // 避免后续使用时出现 NullPointerException
+        return new MetaInfo().setColumn(new ArrayList<>());
     }
 
     @Override
