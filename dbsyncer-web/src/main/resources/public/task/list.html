@@ -37,31 +37,19 @@
             </tr>
             </thead>
             <tbody id="taskTableBody">
-            <!-- 空数据提示 -->
-            <tr th:if="${tasks == null or tasks.isEmpty()}">
-                <td colspan="9" class="text-center">
-                    <i class="fa fa-history empty-icon"></i>
-                    <p class="empty-text">暂无任务</p>
-                    <p class="empty-description">点击"添加"按钮创建第一个任务</p>
-                </td>
-            </tr>
+            <!-- 数据将通过 JavaScript 动态加载 -->
             </tbody>
         </table>
 
         <!-- 分页信息 -->
-        <div class="p-5 border-t border-gray-100 flex items-center justify-between" th:if="${tasks != null and !tasks.isEmpty()}">
-                <p class="text-sm text-gray-500">共 <span id="totalCount" th:text="${tasks.size()}">0</span> 条，第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页</p>
-                <div class="flex items-center gap-2">
-                    <button class="pagination-btn" disabled>
-                        <i class="fa fa-angle-left"></i>
-                    </button>
-                    <button class="pagination-btn active">1</button>
-                    <button class="pagination-btn">2</button>
-                    <button class="pagination-btn">
-                        <i class="fa fa-angle-right"></i>
-                    </button>
-                </div>
+        <div id="taskPagination" class="p-5 border-t border-gray-100 flex items-center justify-between" style="display: none;">
+            <p class="text-sm text-gray-500">
+                共 <span id="totalCount" class="totalCount">0</span> 条，第 <span id="currentPage" class="currentPage">1</span> / <span id="totalPages" class="totalPages">1</span> 页
+            </p>
+            <div class="pagination-bar flex items-center gap-2">
+                <!-- 分页按钮将通过 JavaScript 动态生成 -->
             </div>
+        </div>
     </div>
 </div>
 

@@ -14,7 +14,7 @@ public abstract class BeanUtil {
             Class<?> clazz = instance.getClass();
             for (Map.Entry<String, String> eachMap : map.entrySet()) {
                 String property = eachMap.getKey();
-                String value = eachMap.getValue();
+                Object value = eachMap.getValue();
 
                 String setMethod = "set" + property.substring(0, 1).toUpperCase() + property.substring(1);
                 Field field = getField(property, clazz);
@@ -40,26 +40,28 @@ public abstract class BeanUtil {
         return map;
     }
 
-    private static Object convert(String value, Class<?> fType) {
+    private static Object convert(Object value, Class<?> fType) {
         if (Long.class.getName().equals(fType.getName()) || long.class.getName().equals(fType.getName())) {
-            return Long.parseLong(value);
+            return value;
         }
 
         if (Float.class.getName().equals(fType.getName()) || float.class.getName().equals(fType.getName())) {
-            return Float.parseFloat(value);
+            return value;
         }
 
         if (Double.class.getName().equals(fType.getName()) || double.class.getName().equals(fType.getName())) {
-            return Double.parseDouble(value);
+            return value;
         }
 
         if (Integer.class.getName().equals(fType.getName()) || int.class.getName().equals(fType.getName())) {
-            return Integer.parseInt(value);
+            return value;
         }
 
         if (Boolean.class.getName().equals(fType.getName()) || boolean.class.getName().equals(fType.getName())) {
-            return Boolean.valueOf(value);
+            return value;
         }
+
+
         return value;
     }
 

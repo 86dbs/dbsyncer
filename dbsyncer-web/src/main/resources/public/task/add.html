@@ -293,11 +293,11 @@
 
                 <!-- 第一步操作按钮 -->
                 <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
-                    <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary" id="step1BackBtn">
+                    <button type="button" class="btn btn-secondary" id="step1BackBtn">
                         <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
                         返回
                     </button>
-                    <button type="button" class="dbsyncer-btn dbsyncer-btn-primary" id="step1NextBtn">
+                    <button type="button" class="btn btn-primary" id="step1NextBtn">
                         <span>下一步</span>
                         <i class="fa fa-arrow-right" style="margin-left: 8px;"></i>
                     </button>
@@ -700,11 +700,6 @@
     function saveStep1AndGoNext() {
         console.log('[第一步] 开始验证基础配置');
         
-        // 表单验证
-        const $form = $("#taskAddForm");
-        if (validateForm($form)) {
-            return;
-        }
         
         const config = buildStep1Config();
         
@@ -1131,7 +1126,8 @@
             data: JSON.stringify({
                 name: completeConfig.name,
                 type: completeConfig.type,
-                json: JSON.stringify(completeConfig)
+                json: JSON.stringify(completeConfig),
+                STATUS:"0"
             }),
             success: function (result) {
                 hideLoading();
@@ -1945,7 +1941,7 @@
         $(selectId).html('<option value="">加载中...</option>');
         
         $.ajax({
-            url: $basePath + "/connector/getDatabases",
+            url: $basePath + "/task/getDatabases",
             type: "GET",
             dataType: "json",
             data: { connectorId: connectorId },
