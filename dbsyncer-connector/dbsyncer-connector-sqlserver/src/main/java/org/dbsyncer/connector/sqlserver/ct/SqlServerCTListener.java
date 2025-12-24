@@ -105,9 +105,15 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     "ORDER BY ORDINAL_POSITION";
 
     private static final String GET_TABLE_PRIMARY_KEYS =
-            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME LIKE 'PK%%' " +
-                    "ORDER BY ORDINAL_POSITION";
+            "SELECT kcu.COLUMN_NAME " +
+                    "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
+                    "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu " +
+                    "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
+                    "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
+                    "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
+                    "WHERE tc.TABLE_SCHEMA = ? AND tc.TABLE_NAME = ? " +
+                    "    AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY' " +
+                    "ORDER BY kcu.ORDINAL_POSITION";
 
     // 启用 Change Tracking
     private static final String ENABLE_DB_CHANGE_TRACKING =
