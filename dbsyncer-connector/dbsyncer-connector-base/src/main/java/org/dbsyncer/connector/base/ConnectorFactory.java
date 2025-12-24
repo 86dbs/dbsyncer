@@ -73,26 +73,30 @@ public class ConnectorFactory implements DisposableBean {
     /**
      * 建立连接，返回缓存连接对象
      *
-     * @param instanceId
-     * @param config
-     * @param catalog
-     * @param schema
+     * @param instanceId 实例ID
+     * @param config 连接配置
+     * @param catalog 目录
+     * @param schema 模式
      */
     public ConnectorInstance connect(String instanceId, ConnectorConfig config, String catalog, String schema) {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorService connectorService = getConnectorService(config);
-        ConnectorInstance instance = pool.compute(instanceId, (k, v) -> {
-            if (v == null) {
-                v = connectorService.connect(config, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
-                if (v != null && connectorService.isAlive(v)) {
-                    return v;
-                }
+
+        // 创建新连接
+        ConnectorInstance newInstance = connectorService.connect(config, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
+        if (newInstance == null) {
+            throw new ConnectorException("连接配置异常：无法创建连接实例");
+        }
+        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v) -> {
+            if (v != null) {
+                disconnect(v);
             }
-            return v;
+            return newInstance;
         });
-        Assert.isTrue(instance != null, "连接配置异常");
+
+        // 添加到连接池并返回克隆实例
         try {
-            ConnectorInstance clone = (ConnectorInstance) instance.clone();
+            ConnectorInstance clone = (ConnectorInstance) pooledInstance.clone();
             clone.setConfig(config);
             return clone;
         } catch (CloneNotSupportedException e) {
@@ -127,10 +131,9 @@ public class ConnectorFactory implements DisposableBean {
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");
         Assert.notNull(config, "ConnectorConfig can not be null.");
-        ConnectorService connectorService = getConnectorService(config);
         ConnectorInstance instance = pool.get(instanceId);
         if (instance != null) {
-            return connectorService.isAlive(instance);
+            return getConnectorService(config).isAlive(instance);
         }
         return false;
     }
@@ -261,13 +264,16 @@ public class ConnectorFactory implements DisposableBean {
      * 断开连接
      *
      * @param instanceId
-     * @return
      */
     public void disconnect(String instanceId) {
-        pool.computeIfPresent(instanceId, (k, instance) -> {
-            disconnect(instance);
-            return null;
-        });
+        ConnectorInstance instance = pool.get(instanceId);
+        if (instance == null) {
+            return;
+        }
+        // 原子性地移除实例，但不在回调中执行阻塞操作
+        pool.computeIfPresent(instanceId, (k, v) -> (v == instance) ? null : v);
+        // 在锁外执行断开连接操作，避免阻塞其他线程
+        disconnect(instance);
     }
 
     private void disconnect(ConnectorInstance connectorInstance) {

@@ -150,9 +150,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     public void reConnect(Mapping mapping) {
         String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
-        connectorFactory.disconnect(sourceInstanceId);
-        connectorFactory.disconnect(targetInstanceId);
-
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
         ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
         Assert.notNull(instance, "Source connector instance can not null");
@@ -222,7 +219,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             list.forEach(connector ->
                 generalExecutor.execute(() -> {
                     try {
-                        connectorFactory.disconnect(connector.getId());
                         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
                         logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
                     } catch (Exception e) {
