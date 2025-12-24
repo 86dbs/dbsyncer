@@ -71,22 +71,28 @@ public class PostgreSQLStringType extends StringType {
     @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof String) {
+            String strVal = (String) val;
             TypeEnum typeEnum = TypeEnum.valueOf(field.getTypeName().toUpperCase());
             switch (typeEnum){
                 case UUID:
-                    return UUIDUtil.fromString((String) val);
+                    try {
+                        return UUIDUtil.fromString(strVal);
+                    } catch (IllegalArgumentException e) {
+                        // UUID 格式无效时返回 null，避免抛出异常
+                        return null;
+                    }
                 case JSON:
                 case JSONB:
                     try {
                         PGobject json = new PGobject();
                         json.setType(typeEnum.getValue());
-                        json.setValue((String) val);
+                        json.setValue(strVal);
                         return json;
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
                 case POINT:
-                    return toPoint((String) val);
+                    return toPoint(strVal);
                 default:
                     return val;
             }
