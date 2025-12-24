@@ -41,7 +41,7 @@ public class DatabaseConfig extends ConnectorConfig {
     /**
      * 最大连接数
      */
-    private int maxActive = 128;
+    private int maxActive = 64;
 
     /**
      * 连接有效期(ms)

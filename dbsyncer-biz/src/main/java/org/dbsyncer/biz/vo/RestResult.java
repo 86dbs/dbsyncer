@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.biz.vo;
 
+import org.dbsyncer.common.util.StringUtil;
+
 import java.io.Serializable;
 
 /**
@@ -36,22 +38,23 @@ public class RestResult implements Serializable {
      */
     private int status;
 
-    public RestResult(boolean success, Object data, int status) {
+    public RestResult(boolean success, Object data, String message, int status) {
         this.success = success;
         this.data = data;
+        this.message = message;
         this.status = status;
     }
 
-    public static RestResult restFail(Object msg) {
-        return new RestResult(false, msg, 500);
+    public static RestResult restFail(String message) {
+        return new RestResult(false, null, message, 500);
     }
 
-    public static RestResult restFail(Object msg, int status) {
-        return new RestResult(false, msg, status);
+    public static RestResult restFail(String message, int status) {
+        return new RestResult(false, null, message, status);
     }
 
     public static RestResult restSuccess(Object data) {
-        return new RestResult(true, data, 200);
+        return new RestResult(true, data, StringUtil.EMPTY, 200);
     }
 
     public boolean isSuccess() {
@@ -68,6 +71,14 @@ public class RestResult implements Serializable {
 
     public void setData(Object data) {
         this.data = data;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public int getStatus() {

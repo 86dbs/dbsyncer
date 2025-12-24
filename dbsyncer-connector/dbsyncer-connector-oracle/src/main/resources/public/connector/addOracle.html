@@ -40,7 +40,7 @@
             <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" name="maxActive" type="number" required min="1" max="512"
-                       th:value="${connector?.config?.maxActive}?:128" placeholder="默认128"/>
+                       th:value="${connector?.config?.maxActive}?:64" placeholder="默认64"/>
             </div>
         </div>
 
