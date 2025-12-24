@@ -252,26 +252,33 @@ public class MonitorController extends BaseController {
                     prevTicks[CentralProcessor.TickType.IDLE.getIndex()];
             long total = user + nice + system + idle;
 
-            // 用户态CPU使用率（user + nice）
-            BigDecimal userCpuPercent = BigDecimal.valueOf(user + nice)
-                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .setScale(2, RoundingMode.HALF_UP);
-            cpu.setUserPercent(userCpuPercent);
+            // 防止除零错误：如果 total 为 0，说明 CPU tick 没有变化，使用默认值 0
+            if (total == 0) {
+                cpu.setUserPercent(BigDecimal.ZERO);
+                cpu.setSysPercent(BigDecimal.ZERO);
+                cpu.setTotalPercent(BigDecimal.ZERO);
+            } else {
+                // 用户态CPU使用率（user + nice）
+                BigDecimal userCpuPercent = BigDecimal.valueOf(user + nice)
+                        .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(2, RoundingMode.HALF_UP);
+                cpu.setUserPercent(userCpuPercent);
 
-            // 系统态CPU使用率
-            BigDecimal systemCpuPercent = BigDecimal.valueOf(system)
-                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .setScale(2, RoundingMode.HALF_UP);
-            cpu.setSysPercent(systemCpuPercent);
+                // 系统态CPU使用率
+                BigDecimal systemCpuPercent = BigDecimal.valueOf(system)
+                        .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(2, RoundingMode.HALF_UP);
+                cpu.setSysPercent(systemCpuPercent);
 
-            // 总CPU使用率（非空闲时间）
-            BigDecimal totalCpuPercent = BigDecimal.valueOf(total - idle)
-                    .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100))
-                    .setScale(2, RoundingMode.HALF_UP);
-            cpu.setTotalPercent(totalCpuPercent);
+                // 总CPU使用率（非空闲时间）
+                BigDecimal totalCpuPercent = BigDecimal.valueOf(total - idle)
+                        .divide(BigDecimal.valueOf(total), 6, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(2, RoundingMode.HALF_UP);
+                cpu.setTotalPercent(totalCpuPercent);
+            }
             prevTicks = ticks;
         } else {
             cpu.setUserPercent(BigDecimal.ZERO);

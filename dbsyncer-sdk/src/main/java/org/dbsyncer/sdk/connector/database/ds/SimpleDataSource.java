@@ -125,7 +125,15 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public void close() {
-        pool.forEach(c -> c.close());
+        // 清空连接池并关闭所有连接，避免在遍历时修改集合
+        SimpleConnection connection;
+        while ((connection = pool.poll()) != null) {
+            try {
+                closeQuietly(connection);
+            } catch (Exception e) {
+                // 忽略关闭异常，确保所有连接都能尝试关闭
+            }
+        }
     }
 
     public void close(Connection connection) {

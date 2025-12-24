@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.Types;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,7 +43,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
-    private final Set<String> SYSTEM_DATABASES = Stream.of("postgres", "template0", "template1").collect(Collectors.toSet());
+    private final Set<String> SYSTEM_DATABASES = Stream.of("template0", "template1").collect(Collectors.toSet());
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
