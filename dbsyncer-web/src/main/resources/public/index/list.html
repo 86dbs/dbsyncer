@@ -138,8 +138,12 @@
         };
 
         // 同步趋势图表
-        const trendCtx = document.getElementById('trendChart').getContext('2d');
-        const trendChart = new Chart(trendCtx, {
+        const trendCanvas = document.getElementById('trendChart');
+        if (!trendCanvas) {
+            console.error('trendChart 元素未找到');
+        }
+        const trendCtx = trendCanvas ? trendCanvas.getContext('2d') : null;
+        const trendChart = trendCtx ? new Chart(trendCtx, {
             type: 'line',
             data: {
                 labels: [],
@@ -176,7 +180,7 @@
                     intersect: false,
                 }
             }
-        });
+        }) : null;
         const trendConfig = {
             'data':{},
             'type': '7',
@@ -197,6 +201,7 @@
             }
         };
         function refreshLineChatData(trend) {
+            if (!trendChart) return;
             trendConfig['data'] = trend;
             let strategy = trendConfig[trendConfig.type];
             trendChart.data.labels = strategy(trend.labels);
@@ -315,11 +320,11 @@
                 return `<div class="card flex justify-between border rounded-md mb-3">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center justify-center ml-3">
-                        <img draggable="false" src="/img/${escapeHtml(connector.config?.connectorType || '')}.png" alt="${escapeHtml(connector.config?.connectorType || '')}">
+                        <img draggable="false" src="/img/${escapeHtml((connector.config && connector.config.connectorType) || '')}.png" alt="${escapeHtml((connector.config && connector.config.connectorType) || '')}">
                     </div>
                     <div>
                         <p class="font-medium">${escapeHtml(connector.name)}</p>
-                        <p class="text-xs text-gray-500">${escapeHtml(connector.config?.url || '')}</p>
+                        <p class="text-xs text-gray-500">${escapeHtml((connector.config && connector.config.url) || '')}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 mr-2">
@@ -338,10 +343,10 @@
             renderRow: function(mapping, index) {
                 return `<tr>
                     <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>
-                    <td>${renderModelText(mapping?.model)}</td>
+                    <td>${renderModelText(mapping && mapping.model)}</td>
                     <td>${renderSyncResult(mapping)}</td>
-                    <td>${renderStateText(mapping?.meta?.state || 0)}</td>
-                    <td>${formatRelativeTime(mapping?.meta.updateTime || '')}</td>
+                    <td>${renderStateText((mapping && mapping.meta && mapping.meta.state) || 0)}</td>
+                    <td>${formatRelativeTime((mapping && mapping.meta && mapping.meta.updateTime) || '')}</td>
                 </tr>`;
             },
             emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
