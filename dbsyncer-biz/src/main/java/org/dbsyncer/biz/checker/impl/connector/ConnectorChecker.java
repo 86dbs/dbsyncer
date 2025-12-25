@@ -51,7 +51,8 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setName(name);
         ConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
-
+        // 修改基本配置
+        this.modifyConfigModel(connector, params);
         // 校验并修改配置
         validateAndModifyConfig(config, params);
         // 连接并获取数据库列表
