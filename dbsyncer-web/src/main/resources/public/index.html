@@ -20,8 +20,8 @@
     <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/font-awesome.min.css}"/>
     <!-- 主题样式 -->
     <link type="text/css" rel="stylesheet" th:href="@{/css/dbsyncer-theme.css}">
-    <script th:src="@{/plugins/js/chartjs/chart.umd.min.js}"></script>
     <script th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
+    <script th:src="@{/plugins/js/chartjs/chart.umd.min.js}" onerror="console.error('Chart.js 加载失败，请检查文件是否完整或版本是否兼容');"></script>
 </head>
 <body class="bg-primary overflow-hidden">
     <div class="flex h-screen">
