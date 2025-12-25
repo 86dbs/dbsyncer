@@ -132,17 +132,22 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                 .map(key -> "target." + buildColumn(key) + " = source." + buildColumn(key))
                 .collect(java.util.stream.Collectors.joining(" AND "));
 
-        // 构建 UPDATE SET 子句（非主键字段）
+        // 构建 UPDATE SET 子句（排除主键字段和标识列）
+        // 注意：即使开启了 IDENTITY_INSERT，MERGE 语句的 UPDATE 部分仍然不能更新标识列
+        // 这是 SQL Server 的限制，因此需要在 UPDATE 子句中排除所有标识列
         String updateClause = fields.stream()
-                .filter(field -> !primaryKeys.contains(field.getName()))
+                .filter(field -> !primaryKeys.contains(field.getName()) && !field.isAutoincrement())
                 .map(field -> "target." + buildColumn(field.getName()) + " = source." + buildColumn(field.getName()))
                 .collect(java.util.stream.Collectors.joining(", "));
         
-        // 如果所有字段都是主键，updateClause 为空，需要至少添加一个更新表达式以满足 SQL Server 语法要求
-        // 使用第一个主键字段的虚拟更新（不会实际改变值）
+        // 如果所有字段都是主键或标识列，updateClause 为空，需要至少添加一个更新表达式以满足 SQL Server 语法要求
+        // 使用第一个非标识列字段的虚拟更新（不会实际改变值）
         if (updateClause.isEmpty() && !fields.isEmpty()) {
-            Field firstField = fields.get(0);
-            updateClause = "target." + buildColumn(firstField.getName()) + " = source." + buildColumn(firstField.getName());
+            Field firstNonIdentityField = fields.stream()
+                    .filter(field -> !field.isAutoincrement())
+                    .findFirst()
+                    .orElse(fields.get(0));
+            updateClause = "target." + buildColumn(firstNonIdentityField.getName()) + " = source." + buildColumn(firstNonIdentityField.getName());
         }
 
         // 构建 INSERT VALUES 子句

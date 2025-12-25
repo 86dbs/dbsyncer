@@ -15,38 +15,65 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 /**
- * SQL Server DML 集成测试
- * 专门测试 UPSERT 操作中标识列更新的问题
+ * MySQL 到 SQL Server 的 DML 集成测试
+ * 专门测试 MySQL -> SQL Server 的 DML 操作，包括 UPSERT 等场景
  * 
  * 测试场景：
- * - UPSERT 操作时，标识列不应该在 UPDATE 子句中被更新
- * - 即使开启了 IDENTITY_INSERT，MERGE 语句的 UPDATE 部分仍然不能更新标识列
- * - 验证修复后的代码能够正确处理标识列，避免 "无法更新标识列 'ID'" 错误
+ * - UPSERT 操作（MySQL AUTO_INCREMENT -> SQL Server IDENTITY）
+ * - 类型转换（VARCHAR -> NVARCHAR, INT AUTO_INCREMENT -> INT IDENTITY）
+ * - 数据同步验证
  * 
  * 参考：
  * - BaseDDLIntegrationTest: 提供测试环境初始化和可复用方法
- * - DDLSqlServerCTIntegrationTest: 参考 SQL Server 测试的初始化方式
+ * - DMLSqlServerIntegrationTest: 参考 SQL Server DML 测试的实现
+ * - MySQLToSQLServerDDLSyncIntegrationTest: 参考异构数据库测试的实现
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
+public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
+
+    private static DatabaseConfig mysqlConfig;
+    private static DatabaseConfig sqlServerConfig;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        logger.info("开始初始化SQL Server DML集成测试环境");
+        logger.info("开始初始化MySQL到SQL Server的DML集成测试环境");
 
         // 加载测试配置
         loadTestConfigStatic();
 
+        // 设置基类的sourceConfig和targetConfig
+        sourceConfig = mysqlConfig;
+        targetConfig = sqlServerConfig;
+
         // 创建测试数据库管理器
-        testDatabaseManager = new TestDatabaseManager(sourceConfig, targetConfig);
+        testDatabaseManager = new TestDatabaseManager(mysqlConfig, sqlServerConfig);
 
-        // 初始化测试环境（使用按数据库类型分类的脚本）
-        String initSql = loadSqlScriptByDatabaseTypeStatic("reset-test-table", "sqlserver", DMLSqlServerIntegrationTest.class);
-        testDatabaseManager.initializeTestEnvironment(initSql, initSql);
+        // 初始化测试环境
+        String mysqlInitSql = String.format(
+            "DROP TABLE IF EXISTS ddlTestSource;\n" +
+            "CREATE TABLE ddlTestSource (\n" +
+            "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+            "    UserName VARCHAR(50) NOT NULL,\n" +
+            "    Age INT NOT NULL,\n" +
+            "    Email VARCHAR(100) NULL,\n" +
+            "    PRIMARY KEY (UserName)\n" +
+            ");");
 
-        logger.info("SQL Server DML集成测试环境初始化完成");
+        String sqlServerInitSql = String.format(
+            "IF OBJECT_ID('ddlTestTarget', 'U') IS NOT NULL DROP TABLE ddlTestTarget;\n" +
+            "CREATE TABLE ddlTestTarget (\n" +
+            "    [ID] INT IDENTITY(1,1) NOT NULL,\n" +
+            "    [UserName] NVARCHAR(50) NOT NULL,\n" +
+            "    [Age] INT NOT NULL,\n" +
+            "    [Email] NVARCHAR(100) NULL,\n" +
+            "    PRIMARY KEY ([UserName])\n" +
+            ");");
+
+        testDatabaseManager.initializeTestEnvironment(mysqlInitSql, sqlServerInitSql);
+
+        logger.info("MySQL到SQL Server的DML集成测试环境初始化完成");
     }
 
     /**
@@ -54,41 +81,41 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
      */
     private static void loadTestConfigStatic() throws IOException {
         Properties props = new Properties();
-        try (InputStream input = DMLSqlServerIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
+        try (InputStream input = MySQLToSqlServerDMLIntegrationTest.class.getClassLoader().getResourceAsStream("test.properties")) {
             if (input == null) {
                 logger.warn("未找到test.properties配置文件，使用默认配置");
-                sourceConfig = createDefaultSQLServerConfig();
-                targetConfig = createDefaultSQLServerConfig();
+                mysqlConfig = createDefaultMySQLConfig();
+                sqlServerConfig = createDefaultSQLServerConfig();
                 return;
             }
             props.load(input);
         }
 
-        // 创建源数据库配置(SQL Server)
-        sourceConfig = new DatabaseConfig();
-        sourceConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=source_db;encrypt=false;trustServerCertificate=true"));
-        sourceConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
-        sourceConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
-        sourceConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+        // 创建源数据库配置(MySQL)
+        mysqlConfig = new DatabaseConfig();
+        mysqlConfig.setUrl(props.getProperty("test.db.mysql.url", "jdbc:mysql://127.0.0.1:3306/source_db"));
+        mysqlConfig.setUsername(props.getProperty("test.db.mysql.username", "root"));
+        mysqlConfig.setPassword(props.getProperty("test.db.mysql.password", "123456"));
+        mysqlConfig.setDriverClassName(props.getProperty("test.db.mysql.driver", "com.mysql.cj.jdbc.Driver"));
 
         // 创建目标数据库配置(SQL Server)
-        targetConfig = new DatabaseConfig();
-        targetConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=target_db;encrypt=false;trustServerCertificate=true"));
-        targetConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
-        targetConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
-        targetConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+        sqlServerConfig = new DatabaseConfig();
+        sqlServerConfig.setUrl(props.getProperty("test.db.sqlserver.url", "jdbc:sqlserver://127.0.0.1:1433;DatabaseName=target_db;encrypt=false;trustServerCertificate=true"));
+        sqlServerConfig.setUsername(props.getProperty("test.db.sqlserver.username", "sa"));
+        sqlServerConfig.setPassword(props.getProperty("test.db.sqlserver.password", "123456"));
+        sqlServerConfig.setDriverClassName(props.getProperty("test.db.sqlserver.driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
     }
 
     @AfterClass
     public static void tearDownClass() {
-        logger.info("开始清理SQL Server DML集成测试环境");
+        logger.info("开始清理MySQL到SQL Server的DML集成测试环境");
 
         try {
-            // 清理测试环境（使用按数据库类型分类的脚本）
-            String cleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "sqlserver", DMLSqlServerIntegrationTest.class);
-            testDatabaseManager.cleanupTestEnvironment(cleanupSql, cleanupSql);
+            String sourceCleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "mysql", MySQLToSqlServerDMLIntegrationTest.class);
+            String targetCleanupSql = loadSqlScriptByDatabaseTypeStatic("cleanup-test-data", "sqlserver", MySQLToSqlServerDMLIntegrationTest.class);
+            testDatabaseManager.cleanupTestEnvironment(sourceCleanupSql, targetCleanupSql);
 
-            logger.info("SQL Server DML集成测试环境清理完成");
+            logger.info("MySQL到SQL Server的DML集成测试环境清理完成");
         } catch (Exception e) {
             logger.error("清理测试环境失败", e);
         }
@@ -96,50 +123,46 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
-        // 先清理可能残留的测试 mapping（防止上一个测试清理失败导致残留）
         cleanupResidualTestMappings();
 
         // 创建Connector
         sourceConnectorId = createConnector(getSourceConnectorName(), sourceConfig, true);
         targetConnectorId = createConnector(getTargetConnectorName(), targetConfig, false);
 
-        // 先创建表结构（必须在 createMapping 之前，因为 createMapping 需要表结构来匹配字段映射）
+        // 先创建表结构
         resetDatabaseTableStructure();
 
         // 创建Mapping和TableGroup
         mappingId = createMapping();
         metaId = profileComponent.getMapping(mappingId).getMetaId();
 
-        logger.info("SQL Server DML集成测试用例环境初始化完成");
+        logger.info("MySQL到SQL Server的DML集成测试用例环境初始化完成");
     }
 
     /**
-     * 覆盖 resetDatabaseTableStructure 方法，创建包含 IDENTITY 列的正确表结构
-     * 表结构必须与 getInitialFieldMappings() 返回的字段映射匹配
+     * 覆盖 resetDatabaseTableStructure 方法，创建正确的表结构
      */
     @Override
     protected void resetDatabaseTableStructure() {
-        logger.debug("开始重置测试数据库表结构（使用 IDENTITY 列的表结构）");
+        logger.debug("开始重置测试数据库表结构");
         try {
             String testSourceTable = getSourceTableName();
             String testTargetTable = getTargetTableName();
             
-            // 删除表
-            String dropSourceSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", testSourceTable, testSourceTable);
-            String dropTargetSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", testTargetTable, testTargetTable);
-            executeDDLToSourceDatabase(dropSourceSql, sourceConfig);
-            executeDDLToSourceDatabase(dropTargetSql, targetConfig);
-            
-            // 创建包含 IDENTITY 列的表（字段必须与 getInitialFieldMappings() 匹配）
+            // MySQL 表（AUTO_INCREMENT 列必须是主键或唯一键）
+            String dropSourceSql = String.format("DROP TABLE IF EXISTS %s", testSourceTable);
             String createSourceTableDDL = String.format(
                 "CREATE TABLE %s (\n" +
-                "    [ID] INT IDENTITY(1,1) NOT NULL,\n" +
-                "    [UserName] NVARCHAR(50) NOT NULL,\n" +
-                "    [Age] INT NOT NULL,\n" +
-                "    [Email] NVARCHAR(100) NULL,\n" +
-                "    PRIMARY KEY ([UserName])\n" +
+                "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+                "    UserName VARCHAR(50) NOT NULL,\n" +
+                "    Age INT NOT NULL,\n" +
+                "    Email VARCHAR(100) NULL,\n" +
+                "    PRIMARY KEY (ID),\n" +
+                "    UNIQUE KEY (UserName)\n" +
                 ")", testSourceTable);
             
+            // SQL Server 表
+            String dropTargetSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", testTargetTable, testTargetTable);
             String createTargetTableDDL = String.format(
                 "CREATE TABLE %s (\n" +
                 "    [ID] INT IDENTITY(1,1) NOT NULL,\n" +
@@ -149,10 +172,12 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
                 "    PRIMARY KEY ([UserName])\n" +
                 ")", testTargetTable);
             
+            executeDDLToSourceDatabase(dropSourceSql, sourceConfig);
+            executeDDLToSourceDatabase(dropTargetSql, targetConfig);
             executeDDLToSourceDatabase(createSourceTableDDL, sourceConfig);
             executeDDLToSourceDatabase(createTargetTableDDL, targetConfig);
             
-            logger.debug("测试数据库表结构重置完成（包含 IDENTITY 列）");
+            logger.debug("测试数据库表结构重置完成");
         } catch (Exception e) {
             logger.error("重置测试数据库表结构失败", e);
         }
@@ -160,16 +185,13 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @After
     public void tearDown() {
-        // 停止并清理Mapping（必须先停止，否则Connector无法删除）
         try {
             if (mappingId != null) {
                 try {
                     mappingService.stop(mappingId);
-                    // 等待一下，确保完全停止
                     Thread.sleep(500);
                 } catch (Exception e) {
-                    // 可能已经停止，忽略
-                    logger.debug("停止Mapping时出错（可能已经停止）: {}", e.getMessage());
+                    logger.debug("停止Mapping时出错: {}", e.getMessage());
                 }
                 try {
                     mappingService.remove(mappingId);
@@ -181,7 +203,6 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
             logger.warn("清理Mapping失败", e);
         }
 
-        // 清理Connector（必须在Mapping删除后）
         try {
             if (sourceConnectorId != null) {
                 try {
@@ -205,11 +226,11 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
     // ==================== INSERT 测试场景 ====================
 
     /**
-     * 测试 INSERT 操作 - 全量同步插入数据
+     * 测试 INSERT 操作 - MySQL 到 SQL Server 全量同步插入数据
      */
     @Test
     public void testInsert_FullSync() throws Exception {
-        logger.info("开始测试 INSERT 操作 - 全量同步插入数据");
+        logger.info("开始测试 INSERT 操作 - MySQL 到 SQL Server 全量同步插入数据");
 
         String testSourceTable = getSourceTableName();
         String testTargetTable = getTargetTableName();
@@ -221,7 +242,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         tableGroup.setCursors(null);
         profileComponent.editConfigModel(tableGroup);
 
-        // 2. 配置 Mapping（不启用 forceUpdate，使用普通 INSERT）
+        // 2. 配置 Mapping（不启用 forceUpdate）
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
@@ -241,8 +262,6 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         sourceData.put("Age", 28);
         sourceData.put("Email", "insert@example.com");
         
-        String sourceIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testSourceTable);
-        String sourceIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testSourceTable);
         String insertSourceSql = String.format(
             "INSERT INTO %s (ID, UserName, Age, Email) VALUES (%d, '%s', %d, '%s')",
             testSourceTable, testId, sourceData.get("UserName"), 
@@ -251,12 +270,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance sourceInstance = 
             new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(sourceConfig);
         sourceInstance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sourceIdentityInsertOn);
-            try {
-                databaseTemplate.execute(insertSourceSql);
-            } finally {
-                databaseTemplate.execute(sourceIdentityInsertOff);
-            }
+            databaseTemplate.execute(insertSourceSql);
             return null;
         });
         logger.info("源表已插入数据，ID: {}, UserName: {}", testId, sourceData.get("UserName"));
@@ -272,17 +286,17 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         assertEquals("Age应该同步", sourceData.get("Age"), targetData.get("Age"));
         assertEquals("Email应该同步", sourceData.get("Email"), targetData.get("Email"));
 
-        logger.info("INSERT 全量同步测试通过");
+        logger.info("INSERT MySQL到SQL Server全量同步测试通过");
     }
 
     // ==================== UPDATE 测试场景 ====================
 
     /**
-     * 测试 UPDATE 操作 - 更新已存在的数据
+     * 测试 UPDATE 操作 - MySQL 到 SQL Server 更新已存在的数据
      */
     @Test
     public void testUpdate_ExistingData() throws Exception {
-        logger.info("开始测试 UPDATE 操作 - 更新已存在的数据");
+        logger.info("开始测试 UPDATE 操作 - MySQL 到 SQL Server 更新已存在的数据");
 
         String testSourceTable = getSourceTableName();
         String testTargetTable = getTargetTableName();
@@ -310,9 +324,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         Integer testId = 300;
         String userName = "UpdateUser";
         
-        // 源表插入
-        String sourceIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testSourceTable);
-        String sourceIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testSourceTable);
+        // MySQL 源表插入
         String insertSourceSql = String.format(
             "INSERT INTO %s (ID, UserName, Age, Email) VALUES (%d, '%s', %d, '%s')",
             testSourceTable, testId, userName, 25, "old@example.com");
@@ -320,16 +332,11 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance sourceInstance = 
             new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(sourceConfig);
         sourceInstance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sourceIdentityInsertOn);
-            try {
-                databaseTemplate.execute(insertSourceSql);
-            } finally {
-                databaseTemplate.execute(sourceIdentityInsertOff);
-            }
+            databaseTemplate.execute(insertSourceSql);
             return null;
         });
 
-        // 目标表插入（相同主键）
+        // SQL Server 目标表插入
         String targetIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testTargetTable);
         String targetIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testTargetTable);
         String insertTargetSql = String.format(
@@ -348,7 +355,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
             return null;
         });
 
-        // 4. 启动全量同步（第一次同步，插入数据）
+        // 4. 启动全量同步（第一次同步）
         mappingService.start(mappingId);
         Thread.sleep(2000);
 
@@ -375,17 +382,17 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         assertEquals("Age应该被更新", 35, targetData.get("Age"));
         assertEquals("Email应该被更新", "new@example.com", targetData.get("Email"));
 
-        logger.info("UPDATE 操作测试通过");
+        logger.info("UPDATE MySQL到SQL Server操作测试通过");
     }
 
     // ==================== DELETE 测试场景 ====================
 
     /**
-     * 测试 DELETE 操作 - 删除数据
+     * 测试 DELETE 操作 - MySQL 到 SQL Server 删除数据
      */
     @Test
     public void testDelete_RemoveData() throws Exception {
-        logger.info("开始测试 DELETE 操作 - 删除数据");
+        logger.info("开始测试 DELETE 操作 - MySQL 到 SQL Server 删除数据");
 
         String testSourceTable = getSourceTableName();
         String testTargetTable = getTargetTableName();
@@ -413,8 +420,6 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         Integer testId = 400;
         String userName = "DeleteUser";
         
-        String sourceIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testSourceTable);
-        String sourceIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testSourceTable);
         String insertSourceSql = String.format(
             "INSERT INTO %s (ID, UserName, Age, Email) VALUES (%d, '%s', %d, '%s')",
             testSourceTable, testId, userName, 30, "delete@example.com");
@@ -422,12 +427,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance sourceInstance = 
             new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(sourceConfig);
         sourceInstance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sourceIdentityInsertOn);
-            try {
-                databaseTemplate.execute(insertSourceSql);
-            } finally {
-                databaseTemplate.execute(sourceIdentityInsertOff);
-            }
+            databaseTemplate.execute(insertSourceSql);
             return null;
         });
 
@@ -458,47 +458,29 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         Map<String, Object> targetDataAfterDelete = queryTableDataByPrimaryKey(testTargetTable, "UserName", userName, targetConfig);
         assertNull("目标表中数据应该被删除", targetDataAfterDelete);
 
-        logger.info("DELETE 操作测试通过");
+        logger.info("DELETE MySQL到SQL Server操作测试通过");
     }
 
-    // ==================== UPSERT 标识列更新测试场景 ====================
+    // ==================== UPSERT 测试场景 ====================
 
     /**
-     * 测试 UPSERT 操作 - 标识列不应该在 UPDATE 子句中被更新
-     * 
-     * 测试步骤：
-     * 1. 创建包含 IDENTITY 列的表（ID 为标识列，UserName 为主键）
-     * 2. 创建 Mapping 并启用 forceUpdate（覆盖模式）
-     * 3. 启动同步
-     * 4. 插入第一条数据到源表（会同步到目标表）
-     * 5. 再次插入相同主键的数据到源表（会触发 UPSERT，因为目标表已存在该主键）
-     * 6. 验证：
-     *    - UPSERT 操作成功（不应该抛出 "无法更新标识列 'ID'" 错误）
-     *    - ID 字段没有被更新（标识列不应该被更新）
-     *    - 其他字段正常更新
-     * 
-     * 这是修复的核心验证点：通过实际同步流程触发 UPSERT，测试 buildBatchUpsertSql 方法
-     * 生成的 MERGE 语句的 UPDATE 子句不包含标识列
+     * 测试 UPSERT 操作 - MySQL AUTO_INCREMENT 到 SQL Server IDENTITY
      */
     @Test
-    public void testUpsert_IdentityColumnShouldNotBeUpdated() throws Exception {
-        logger.info("开始测试 UPSERT 操作 - 标识列不应该在 UPDATE 子句中被更新");
+    public void testUpsert_AutoIncrementToIdentity() throws Exception {
+        logger.info("开始测试 UPSERT 操作 - MySQL AUTO_INCREMENT 到 SQL Server IDENTITY");
 
-        // 直接使用默认表名，表结构已在 setUp 中通过 resetDatabaseTableStructure() 创建
-        String testSourceTable = getSourceTableName(); // "ddlTestSource"
-        String testTargetTable = getTargetTableName(); // "ddlTestTarget"
+        String testSourceTable = getSourceTableName();
+        String testTargetTable = getTargetTableName();
 
-        // 1. 重置 TableGroup 完成状态，确保全量同步会处理数据
-        // 注意：字段映射已在 createMapping() 中通过 getInitialFieldMappings() 正确设置
+        // 1. 重置 TableGroup 完成状态
         List<org.dbsyncer.parser.model.TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
         org.dbsyncer.parser.model.TableGroup tableGroup = tableGroups.get(0);
-        
-        // 重置完成状态，确保全量同步会处理数据
         tableGroup.setFullCompleted(false);
         tableGroup.setCursors(null);
         profileComponent.editConfigModel(tableGroup);
 
-        // 4. 启用 forceUpdate（覆盖模式），这样 INSERT 操作会转换为 UPSERT
+        // 2. 启用 forceUpdate
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
@@ -510,20 +492,16 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         editParams.put("enableDelete", "true");
         mappingService.edit(editParams);
 
-        // 5. 在源表和目标表同时插入一条ID相同但数据不同的数据
-        // 关键点：数据中包含 ID 字段，但 buildBatchUpsertSql 生成的 MERGE 语句的 UPDATE 子句不应该包含 ID
-        Integer testId = 100; // 使用一个固定的ID值
+        // 3. 在源表和目标表同时插入数据
+        Integer testId = 100;
         
-        // 在源表插入数据（包含ID字段）
+        // MySQL 源表插入
         Map<String, Object> sourceData = new HashMap<>();
         sourceData.put("ID", testId);
         sourceData.put("UserName", "TestUser1");
         sourceData.put("Age", 25);
         sourceData.put("Email", "source@example.com");
         
-        // 使用 IDENTITY_INSERT 在源表插入数据
-        String sourceIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testSourceTable);
-        String sourceIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testSourceTable);
         String insertSourceSql = String.format(
             "INSERT INTO %s (ID, UserName, Age, Email) VALUES (%d, '%s', %d, '%s')",
             testSourceTable, testId, sourceData.get("UserName"), 
@@ -532,24 +510,18 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance sourceInstance = 
             new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(sourceConfig);
         sourceInstance.execute(databaseTemplate -> {
-            databaseTemplate.execute(sourceIdentityInsertOn);
-            try {
-                databaseTemplate.execute(insertSourceSql);
-            } finally {
-                databaseTemplate.execute(sourceIdentityInsertOff);
-            }
+            databaseTemplate.execute(insertSourceSql);
             return null;
         });
         logger.info("源表已插入数据，ID: {}, Age: {}, Email: {}", testId, sourceData.get("Age"), sourceData.get("Email"));
 
-        // 在目标表插入数据（ID相同，但数据不同）
+        // SQL Server 目标表插入
         Map<String, Object> targetData = new HashMap<>();
-        targetData.put("ID", testId); // 相同的ID
+        targetData.put("ID", testId);
         targetData.put("UserName", "TestUser1");
-        targetData.put("Age", 30); // 不同的年龄
-        targetData.put("Email", "target@example.com"); // 不同的邮箱
+        targetData.put("Age", 30);
+        targetData.put("Email", "target@example.com");
         
-        // 使用 IDENTITY_INSERT 在目标表插入数据
         String targetIdentityInsertOn = String.format("SET IDENTITY_INSERT %s ON", testTargetTable);
         String targetIdentityInsertOff = String.format("SET IDENTITY_INSERT %s OFF", testTargetTable);
         String insertTargetSql = String.format(
@@ -570,56 +542,41 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
         });
         logger.info("目标表已插入数据，ID: {}, Age: {}, Email: {}", testId, targetData.get("Age"), targetData.get("Email"));
 
-        // 6. 启动全量同步（会触发 UPSERT，因为目标表已存在该主键且 forceUpdate=true）
-        // 这会调用 buildBatchUpsertSql 方法生成 MERGE 语句
-        // 修复前：如果 UPDATE 子句包含 ID 字段，会抛出 "无法更新标识列 'ID'" 错误
-        // 修复后：UPDATE 子句不包含 ID 字段，应该成功执行
+        // 4. 启动全量同步
         try {
             mappingService.start(mappingId);
-            
-            // 等待全量同步完成（全量同步完成后 Meta 状态会变为 0，这是正常的）
             Thread.sleep(3000);
         } catch (Exception e) {
-            // 如果抛出 "无法更新标识列 'ID'" 错误，说明修复失败
             String errorMsg = e.getMessage();
             if (errorMsg != null && (errorMsg.contains("无法更新标识列") || errorMsg.contains("Cannot update identity column"))) {
-                fail("UPSERT 操作不应该尝试更新标识列，但抛出了错误: " + errorMsg);
+                fail("UPSERT 操作不应该尝试更新标识列: " + errorMsg);
             }
             throw e;
         }
 
-        // 7. 验证结果
+        // 5. 验证结果
         Map<String, Object> sourceDataAfterSync = queryTableDataByPrimaryKey(testSourceTable, "UserName", "TestUser1", sourceConfig);
         Map<String, Object> targetDataAfterSync = queryTableDataByPrimaryKey(testTargetTable, "UserName", "TestUser1", targetConfig);
 
         assertNotNull("源表中应该找到数据", sourceDataAfterSync);
         assertNotNull("目标表中应该找到数据", targetDataAfterSync);
 
-        // 验证 ID 没有被更新（标识列不应该被更新）
         assertEquals("源表中的ID不应该被更新", testId, sourceDataAfterSync.get("ID"));
         assertEquals("目标表中的ID不应该被更新", testId, targetDataAfterSync.get("ID"));
+        assertEquals("Age字段应该通过UPSERT更新", sourceData.get("Age"), targetDataAfterSync.get("Age"));
+        assertEquals("Email字段应该通过UPSERT更新", sourceData.get("Email"), targetDataAfterSync.get("Email"));
 
-        // 验证其他字段通过 UPSERT 正常更新（目标表应该使用源表的数据）
-        assertEquals("Age字段应该通过UPSERT更新为源表的值", sourceData.get("Age"), targetDataAfterSync.get("Age"));
-        assertEquals("Email字段应该通过UPSERT更新为源表的值", sourceData.get("Email"), targetDataAfterSync.get("Email"));
-
-        logger.info("UPSERT 标识列更新测试通过（标识列没有被更新，其他字段正常更新，符合修复后的逻辑）");
+        logger.info("UPSERT MySQL到SQL Server测试通过");
     }
 
     // ==================== 辅助方法 ====================
 
-    /**
-     * 根据主键查询表数据
-     */
     private Map<String, Object> queryTableDataByPrimaryKey(String tableName, String primaryKeyColumn, Object primaryKeyValue, DatabaseConfig config) throws Exception {
         String whereCondition = primaryKeyColumn + " = " + (primaryKeyValue instanceof String ? "'" + primaryKeyValue + "'" : primaryKeyValue);
         String sql = String.format("SELECT * FROM %s WHERE %s", tableName, whereCondition);
         return queryTableData(sql, config);
     }
 
-    /**
-     * 查询表数据（返回第一行数据）
-     */
     private Map<String, Object> queryTableData(String sql, DatabaseConfig config) throws Exception {
         org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance = 
             new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
@@ -644,22 +601,22 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected Class<?> getTestClass() {
-        return DMLSqlServerIntegrationTest.class;
+        return MySQLToSqlServerDMLIntegrationTest.class;
     }
 
     @Override
     protected String getSourceConnectorName() {
-        return "SQL Server DML源连接器";
+        return "MySQL到SQL Server DML源连接器";
     }
 
     @Override
     protected String getTargetConnectorName() {
-        return "SQL Server DML目标连接器";
+        return "MySQL到SQL Server DML目标连接器";
     }
 
     @Override
     protected String getMappingName() {
-        return "SQL Server DML测试Mapping";
+        return "MySQL到SQL Server DML测试Mapping";
     }
 
     @Override
@@ -674,7 +631,6 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected List<String> getInitialFieldMappings() {
-        // 返回测试所需的字段映射（包含 IDENTITY 列）
         List<String> fieldMappingList = new ArrayList<>();
         fieldMappingList.add("ID|ID");
         fieldMappingList.add("UserName|UserName");
@@ -685,29 +641,21 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected String getConnectorType(DatabaseConfig config, boolean isSource) {
-        return "SqlServer"; // 使用标准 SQL Server 连接器
+        return isSource ? "MySQL" : "SqlServer";
     }
 
     @Override
     protected String getIncrementStrategy() {
-        // 注意：对于 DML 测试，特别是测试 UPSERT，应该使用全量同步模式
-        // 但 BaseDDLIntegrationTest.createMapping() 硬编码了 "increment" 模式
-        // 这里返回一个值，但实际会在 createMapping 中覆盖为全量模式
-        return "Timing"; // 这个值不会被使用，因为我们会重写 createMapping
+        return "Timing";
     }
 
-    /**
-     * 重写 createMapping 方法，使用全量同步模式
-     * 全量模式可以立即同步数据，不需要等待定时任务，更适合 DML 测试
-     */
     @Override
     protected String createMapping() throws Exception {
-        // 先创建Mapping（不包含tableGroups）
         Map<String, String> params = new HashMap<>();
         params.put("name", getMappingName());
         params.put("sourceConnectorId", sourceConnectorId);
         params.put("targetConnectorId", targetConnectorId);
-        params.put("model", "full"); // 使用全量同步模式，可以立即同步数据
+        params.put("model", "full");
         params.put("enableDDL", "true");
         params.put("enableInsert", "true");
         params.put("enableUpdate", "true");
@@ -715,19 +663,16 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
         String mappingId = mappingService.add(params);
 
-        // 创建后需要编辑一次以正确设置配置
-        // 注意：即使使用全量模式，验证逻辑也要求 incrementStrategy，传递一个占位值
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing"); // 全量模式不需要，但验证逻辑要求，传递占位值
+        editParams.put("incrementStrategy", "Timing");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
         editParams.put("enableUpdate", "true");
         editParams.put("enableDelete", "true");
         mappingService.edit(editParams);
 
-        // 然后使用tableGroupService.add()创建TableGroup
         Map<String, String> tableGroupParams = new HashMap<>();
         tableGroupParams.put("mappingId", mappingId);
         tableGroupParams.put("sourceTable", getSourceTableName());
@@ -740,7 +685,7 @@ public class DMLSqlServerIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected String getDatabaseType(boolean isSource) {
-        return "sqlserver"; // SQL Server 数据库类型
+        return isSource ? "mysql" : "sqlserver";
     }
 }
 
