@@ -64,11 +64,12 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
         String mysqlInitSql = String.format(
             "DROP TABLE IF EXISTS ddlTestTarget;\n" +
             "CREATE TABLE ddlTestTarget (\n" +
-            "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+            "    ID INT NOT NULL,\n" +
             "    UserName VARCHAR(50) NOT NULL,\n" +
             "    Age INT NOT NULL,\n" +
             "    Email VARCHAR(100) NULL,\n" +
-            "    PRIMARY KEY (UserName)\n" +
+            "    PRIMARY KEY (UserName),\n" +
+            "    UNIQUE KEY (ID)\n" +
             ");");
 
         testDatabaseManager.initializeTestEnvironment(sqlServerInitSql, mysqlInitSql);
@@ -160,16 +161,17 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
                 "    PRIMARY KEY ([UserName])\n" +
                 ")", testSourceTable);
             
-            // MySQL 表（AUTO_INCREMENT 列必须是主键或唯一键）
+            // MySQL 表（为了支持跨数据库 DELETE，使用 UserName 作为主键，ID 作为唯一键）
+            // 注意：虽然 AUTO_INCREMENT 列通常是主键，但为了测试跨数据库 DELETE，我们使用业务字段作为主键
             String dropTargetSql = String.format("DROP TABLE IF EXISTS %s", testTargetTable);
             String createTargetTableDDL = String.format(
                 "CREATE TABLE %s (\n" +
-                "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+                "    ID INT NOT NULL,\n" +
                 "    UserName VARCHAR(50) NOT NULL,\n" +
                 "    Age INT NOT NULL,\n" +
                 "    Email VARCHAR(100) NULL,\n" +
-                "    PRIMARY KEY (ID),\n" +
-                "    UNIQUE KEY (UserName)\n" +
+                "    PRIMARY KEY (UserName),\n" +
+                "    UNIQUE KEY (ID)\n" +
                 ")", testTargetTable);
             
             executeDDLToSourceDatabase(dropSourceSql, sourceConfig);

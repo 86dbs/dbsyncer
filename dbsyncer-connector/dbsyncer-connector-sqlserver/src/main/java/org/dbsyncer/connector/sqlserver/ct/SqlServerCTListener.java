@@ -344,26 +344,61 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion) throws Exception {
-        // 1. 获取表的主键列
-        List<String> primaryKeys = getPrimaryKeys(tableName);
+        // 1. 获取表的所有列信息（包含主键信息，避免重复查询）
+        MetaInfo metaInfo = queryTableMetaInfo(tableName, new HashMap<>());
+        
+        // 从 MetaInfo 中提取主键列（避免额外的远程查询）
+        List<String> primaryKeys = getPrimaryKeysFromMetaInfo(metaInfo);
         if (primaryKeys.isEmpty()) {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
         }
+        
+        // 获取表的所有列（按顺序）
+        List<String> allColumns = metaInfo.getColumn().stream()
+                .map(Field::getName)
+                .collect(Collectors.toList());
 
         // 2. 构建 JOIN 条件（支持复合主键）
         String joinCondition = primaryKeys.stream()
                 .map(pk -> "CT.[" + pk + "] = T.[" + pk + "]")
                 .collect(Collectors.joining(" AND "));
 
-        // 3. 构建表结构信息子查询（用于附加到结果集中）
+        // 3. 构建 SELECT 列列表（对于 DELETE 操作，使用 CT 的主键值；对于 INSERT/UPDATE，使用 T 的列值）
+        // 对于主键列：使用 COALESCE(CT.[pk], T.[pk])，确保 DELETE 操作时能从 CT 获取主键值
+        // 对于非主键列：使用 T.[col]
+        String selectColumns = allColumns.stream()
+                .map(col -> {
+                    if (primaryKeys.contains(col)) {
+                        // 主键列：优先使用 CT 的值（DELETE 时 T.[pk] 为 NULL，但 CT.[pk] 有值）
+                        return "COALESCE(CT.[" + col + "], T.[" + col + "]) AS [" + col + "]";
+                    } else {
+                        // 非主键列：使用 T 的值
+                        return "T.[" + col + "]";
+                    }
+                })
+                .collect(Collectors.joining(", "));
+
+        // 4. 构建表结构信息子查询（用于附加到结果集中）
         String schemaInfoSubquery = String.format(GET_TABLE_SCHEMA_INFO_SUBQUERY, schema, tableName);
 
-        // 4. 构建查询 SQL（包含表结构信息的 JSON 字段）
-        String sql = String.format(GET_DML_CHANGES,
-                schemaInfoSubquery,  // 表结构信息子查询
-                schema, tableName,  // CHANGETABLE
-                schema, tableName,  // JOIN table
-                joinCondition       // JOIN condition（支持复合主键）
+        // 5. 构建查询 SQL（包含表结构信息的 JSON 字段）
+        // 注意：使用显式的列列表替代 T.*，以便正确处理 DELETE 操作的主键值
+        String sql = String.format(
+                "SELECT " +
+                        "    CT.SYS_CHANGE_VERSION, " +
+                        "    CT.SYS_CHANGE_OPERATION, " +
+                        "    CT.SYS_CHANGE_COLUMNS, " +
+                        "    %s, " +  // 显式的列列表（包含 COALESCE 处理）
+                        "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
+                        "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
+                        "LEFT JOIN [%s].[%s] AS T ON %s " +
+                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
+                        "ORDER BY CT.SYS_CHANGE_VERSION ASC",
+                selectColumns,         // 显式的列列表
+                schemaInfoSubquery,   // 表结构信息子查询
+                schema, tableName,     // CHANGETABLE
+                schema, tableName,     // JOIN table
+                joinCondition          // JOIN condition（支持复合主键）
         );
 
         // 5. 查询变更
@@ -675,7 +710,22 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         }
 
         List<Field> columns = new ArrayList<>();
-        List<String> primaryKeys = getPrimaryKeys(tableName);
+        
+        // 优先从缓存的 MetaInfo 中获取主键信息，避免远程查询
+        List<String> primaryKeys = null;
+        try {
+            MetaInfo cachedMetaInfo = loadTableSchemaSnapshot(tableName);
+            if (cachedMetaInfo != null) {
+                primaryKeys = getPrimaryKeysFromMetaInfo(cachedMetaInfo);
+            }
+        } catch (Exception e) {
+            logger.debug("无法从缓存获取主键信息，将查询数据库: {}", e.getMessage());
+        }
+        
+        // 如果缓存中没有主键信息，则查询数据库
+        if (primaryKeys == null || primaryKeys.isEmpty()) {
+            primaryKeys = getPrimaryKeys(tableName);
+        }
 
         for (Map<String, Object> colJson : columnsJson) {
             String columnName = (String) colJson.get("COLUMN_NAME");

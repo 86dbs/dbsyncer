@@ -54,11 +54,12 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         String mysqlInitSql = String.format(
             "DROP TABLE IF EXISTS ddlTestSource;\n" +
             "CREATE TABLE ddlTestSource (\n" +
-            "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+            "    ID INT NOT NULL,\n" +
             "    UserName VARCHAR(50) NOT NULL,\n" +
             "    Age INT NOT NULL,\n" +
             "    Email VARCHAR(100) NULL,\n" +
-            "    PRIMARY KEY (UserName)\n" +
+            "    PRIMARY KEY (UserName),\n" +
+            "    UNIQUE KEY (ID)\n" +
             ");");
 
         String sqlServerInitSql = String.format(
@@ -149,19 +150,20 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
             String testSourceTable = getSourceTableName();
             String testTargetTable = getTargetTableName();
             
-            // MySQL 表（AUTO_INCREMENT 列必须是主键或唯一键）
+            // MySQL 表（为了支持跨数据库 DELETE，使用 UserName 作为主键，ID 作为唯一键）
+            // 注意：虽然 AUTO_INCREMENT 列通常是主键，但为了测试跨数据库 DELETE，我们使用业务字段作为主键
             String dropSourceSql = String.format("DROP TABLE IF EXISTS %s", testSourceTable);
             String createSourceTableDDL = String.format(
                 "CREATE TABLE %s (\n" +
-                "    ID INT AUTO_INCREMENT NOT NULL,\n" +
+                "    ID INT NOT NULL,\n" +
                 "    UserName VARCHAR(50) NOT NULL,\n" +
                 "    Age INT NOT NULL,\n" +
                 "    Email VARCHAR(100) NULL,\n" +
-                "    PRIMARY KEY (ID),\n" +
-                "    UNIQUE KEY (UserName)\n" +
+                "    PRIMARY KEY (UserName),\n" +
+                "    UNIQUE KEY (ID)\n" +
                 ")", testSourceTable);
             
-            // SQL Server 表
+            // SQL Server 表（主键与源表一致，使用 UserName）
             String dropTargetSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", testTargetTable, testTargetTable);
             String createTargetTableDDL = String.format(
                 "CREATE TABLE %s (\n" +
