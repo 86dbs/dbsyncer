@@ -704,7 +704,161 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         logger.info("RENAME COLUMN重命名并修改类型测试通过（DDL 和 DML 数据绑定验证完成）");
     }
 
+    // ==================== CREATE TABLE 测试场景 ====================
+
+    /**
+     * 测试CREATE TABLE - IDENTITY列重复约束问题
+     * 验证SQL Server到SQL Server同步时，包含IDENTITY列的表创建不会出现重复的IDENTITY约束
+     * 
+     * 问题场景：
+     * - 源表包含IDENTITY列（如：INT IDENTITY(1,1)）
+     * - 生成的CREATE TABLE DDL中可能出现：INT IDENTITY NOT NULL IDENTITY(1,1)
+     * - 导致SQL错误：为表 'TestTableTwo' 的列 'ID' 指定了多个列 IDENTITY 约束
+     * 
+     * 修复验证：
+     * - 生成的DDL应该是：INT NOT NULL IDENTITY(1,1)（没有重复的IDENTITY关键字）
+     * - 表应该能够成功创建（这是核心验证点，如果DDL有重复IDENTITY，创建会失败）
+     * - IDENTITY列属性应该正确设置
+     */
+    @Test
+    public void testCreateTable_WithIdentityColumn_NoDuplicateIdentity() throws Exception {
+        logger.info("开始测试CREATE TABLE - IDENTITY列重复约束问题");
+
+        String testSourceTable = "TestTableOne";
+        String testTargetTable = "TestTableTwo";
+
+        // 准备：确保表不存在（复用MySQLToSQLServerDDLSyncIntegrationTest中的方法）
+        prepareForCreateTableTest(testSourceTable, testTargetTable);
+
+        // 1. 在源库创建包含IDENTITY列的表（模拟用户报告的问题场景）
+        String createSourceTableDDL = String.format(
+            "CREATE TABLE %s (\n" +
+            "    [ID] INT IDENTITY(1,1) NOT NULL,\n" +
+            "    [UserName] NVARCHAR(50) NOT NULL,\n" +
+            "    [Age] INT NOT NULL,\n" +
+            "    [RegisterTime] DATETIME NOT NULL,\n" +
+            "    [Score] DECIMAL(5,2) NOT NULL,\n" +
+            "    [IsActive] BIT NOT NULL,\n" +
+            "    PRIMARY KEY ([UserName])\n" +
+            ")", testSourceTable);
+        
+        executeDDLToSourceDatabase(createSourceTableDDL, sourceConfig);
+
+        // 2. 使用createTargetTableFromSource方法创建目标表
+        // 核心验证：如果DDL包含重复的IDENTITY约束，这里会抛出异常
+        // createTargetTableFromSource内部已经验证了DDL不包含重复的IDENTITY关键字
+        createTargetTableFromSource(testSourceTable, testTargetTable);
+
+        // 3. 核心验证：表能够成功创建即说明没有重复IDENTITY约束
+        // 简化验证：只验证关键点，其他详细验证已在createTargetTableFromSource中完成
+        verifyTableExists(testTargetTable, targetConfig);
+        verifyFieldExistsInTargetDatabase("ID", testTargetTable, targetConfig);
+        verifyFieldNotNull("ID", testTargetTable, targetConfig);
+        verifyTablePrimaryKeys(testTargetTable, targetConfig, Arrays.asList("UserName"));
+
+        // 4. 验证可以正常插入数据（确保表结构正确，没有语法错误）
+        Map<String, Object> testData = new HashMap<>();
+        testData.put("UserName", "TestUser");
+        testData.put("Age", 25);
+        testData.put("RegisterTime", new java.util.Date());
+        testData.put("Score", 95.50);
+        testData.put("IsActive", true);
+        testData = executeInsertDMLToSourceDatabase(testSourceTable, testData, sourceConfig);
+        assertNotNull("插入的数据应该包含生成的ID", testData.get("ID"));
+        
+        logger.info("CREATE TABLE IDENTITY列重复约束问题测试通过（表创建成功，无重复IDENTITY约束）");
+    }
+
     // ==================== 辅助方法 ====================
+
+    /**
+     * 从源表创建目标表（用于CREATE TABLE测试）
+     * 验证generateCreateTableDDL方法生成的DDL是否正确，特别是IDENTITY列不重复的问题
+     * 
+     * 注意：此方法针对SQL Server -> SQL Server同构场景，简化了MySQLToSQLServerDDLSyncIntegrationTest中的逻辑
+     */
+    private void createTargetTableFromSource(String sourceTable, String targetTable) throws Exception {
+        logger.info("开始从源表创建目标表: {} -> {}", sourceTable, targetTable);
+
+        // 确保 connectorType 已设置
+        if (sourceConfig.getConnectorType() == null) {
+            sourceConfig.setConnectorType(getConnectorType(sourceConfig, true));
+        }
+        if (targetConfig.getConnectorType() == null) {
+            targetConfig.setConnectorType(getConnectorType(targetConfig, false));
+        }
+
+        // 1. 连接源和目标数据库
+        org.dbsyncer.sdk.connector.ConnectorInstance sourceConnectorInstance = connectorFactory.connect(sourceConfig);
+        org.dbsyncer.sdk.connector.ConnectorInstance targetConnectorInstance = connectorFactory.connect(targetConfig);
+
+        // 2. 检查目标表是否已存在
+        try {
+            org.dbsyncer.sdk.model.MetaInfo existingTable = connectorFactory.getMetaInfo(targetConnectorInstance, targetTable);
+            if (existingTable != null && existingTable.getColumn() != null && !existingTable.getColumn().isEmpty()) {
+                logger.info("目标表已存在，跳过创建: {}", targetTable);
+                return;
+            }
+        } catch (Exception e) {
+            logger.debug("目标表不存在，开始创建: {}", targetTable);
+        }
+
+        // 3. 获取源表结构
+        org.dbsyncer.sdk.model.MetaInfo sourceMetaInfo = connectorFactory.getMetaInfo(sourceConnectorInstance, sourceTable);
+        assertNotNull("无法获取源表结构: " + sourceTable, sourceMetaInfo);
+        assertFalse("源表没有字段: " + sourceTable, sourceMetaInfo.getColumn() == null || sourceMetaInfo.getColumn().isEmpty());
+
+        // 4. SQL Server -> SQL Server同构场景：直接使用源表结构，无需类型转换
+        org.dbsyncer.sdk.spi.ConnectorService<?, ?> targetConnectorService = connectorFactory.getConnectorService(targetConfig.getConnectorType());
+        
+        // 生成 CREATE TABLE DDL（直接使用源表MetaInfo，因为同构数据库无需类型转换）
+        String createTableDDL = targetConnectorService.generateCreateTableDDL(sourceMetaInfo, targetTable);
+
+        // 5. 核心验证：检查生成的DDL中不包含重复的IDENTITY关键字
+        assertNotNull("无法生成 CREATE TABLE DDL", createTableDDL);
+        assertFalse("生成的 CREATE TABLE DDL 为空", createTableDDL.trim().isEmpty());
+        
+        String upperDDL = createTableDDL.toUpperCase();
+        // 验证：不应该有 "IDENTITY" 后面紧跟着 "NOT NULL" 再跟着 "IDENTITY" 的模式
+        // 这是修复的核心验证点
+        assertFalse("生成的DDL中不应该包含重复的IDENTITY约束（如：IDENTITY NOT NULL IDENTITY(1,1)）",
+                upperDDL.contains("IDENTITY") && upperDDL.contains("NOT NULL") && 
+                upperDDL.indexOf("IDENTITY") < upperDDL.indexOf("NOT NULL") &&
+                upperDDL.indexOf("NOT NULL") < upperDDL.lastIndexOf("IDENTITY"));
+
+        // 6. 执行 CREATE TABLE DDL（如果DDL有重复IDENTITY，这里会失败）
+        org.dbsyncer.sdk.config.DDLConfig ddlConfig = new org.dbsyncer.sdk.config.DDLConfig();
+        ddlConfig.setSql(createTableDDL);
+        org.dbsyncer.common.model.Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+
+        if (result != null && result.error != null && !result.error.trim().isEmpty()) {
+            throw new RuntimeException("创建表失败: " + result.error + "\n生成的DDL: " + createTableDDL);
+        }
+
+        logger.info("成功创建目标表: {}，生成的DDL: {}", targetTable, createTableDDL);
+    }
+
+    /**
+     * 准备建表测试环境（确保表不存在）
+     * 使用基类的通用方法
+     */
+    private void prepareForCreateTableTest(String sourceTable, String targetTable) throws Exception {
+        logger.debug("准备建表测试环境，确保表不存在: sourceTable={}, targetTable={}", sourceTable, targetTable);
+        
+        // SQL Server删除表的语法
+        String dropSourceSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", sourceTable, sourceTable);
+        String dropTargetSql = String.format("IF OBJECT_ID('%s', 'U') IS NOT NULL DROP TABLE %s", targetTable, targetTable);
+        
+        try {
+            executeDDLToSourceDatabase(dropSourceSql, sourceConfig);
+            executeDDLToSourceDatabase(dropTargetSql, targetConfig);
+        } catch (Exception e) {
+            logger.debug("清理测试表时出错（可能表不存在）: {}", e.getMessage());
+        }
+        
+        Thread.sleep(200);
+        logger.debug("建表测试环境准备完成");
+    }
 
     // ==================== 抽象方法实现 ====================
 

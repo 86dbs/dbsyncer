@@ -1424,63 +1424,8 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
     // ==================== 辅助验证方法 ====================
 
     /**
-     * 验证字段类型
-     */
-    private void verifyFieldType(String fieldName, String tableName, DatabaseConfig config, String expectedType) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-            String actualType = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
-            assertNotNull(String.format("未找到字段 %s", fieldName), actualType);
-            assertTrue(String.format("字段 %s 的类型应为 %s，但实际是 %s", fieldName, expectedType, actualType),
-                    expectedType.equalsIgnoreCase(actualType));
-            logger.info("字段类型验证通过: {} 的类型是 {}", fieldName, actualType);
-            return null;
-        });
-    }
-
-    /**
-     * 验证字段长度
-     */
-    private void verifyFieldLength(String fieldName, String tableName, DatabaseConfig config, int expectedLength) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-            Integer actualLength = databaseTemplate.queryForObject(sql, Integer.class, tableName, fieldName);
-            assertNotNull(String.format("未找到字段 %s 或字段没有长度属性", fieldName), actualLength);
-            assertEquals(String.format("字段 %s 的长度应为 %d，但实际是 %d", fieldName, expectedLength, actualLength),
-                    Integer.valueOf(expectedLength), actualLength);
-            logger.info("字段长度验证通过: {} 的长度是 {}", fieldName, actualLength);
-            return null;
-        });
-    }
-
-    /**
-     * 验证字段的COMMENT
-     */
-    private void verifyFieldComment(String fieldName, String tableName, DatabaseConfig config, String expectedComment) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT COLUMN_COMMENT FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-            String actualComment = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
-            // MySQL中，如果没有COMMENT，返回空字符串而不是NULL
-            String normalizedExpected = expectedComment != null ? expectedComment.trim() : "";
-            String normalizedActual = actualComment != null ? actualComment.trim() : "";
-            assertTrue(String.format("字段 %s 的COMMENT应为 '%s'，但实际是 '%s'", fieldName, expectedComment, normalizedActual),
-                    normalizedExpected.equals(normalizedActual));
-            logger.info("字段COMMENT验证通过: {} 的COMMENT是 '{}'", fieldName, normalizedActual);
-            return null;
-        });
-    }
-
-    /**
      * 等待字段变为可空（通过轮询检查字段的 nullable 属性）
+     * 注意：此方法使用基类的 verifyFieldNullable 进行验证
      */
     private void waitForFieldNullable(String fieldName, String tableName, DatabaseConfig config, long timeoutMs) throws Exception {
         long startTime = System.currentTimeMillis();
@@ -1507,84 +1452,6 @@ public class SQLServerCTToMySQLDDLSyncIntegrationTest extends BaseDDLIntegration
         }
 
         logger.warn("等待字段 {} 变为可空超时（{}ms）", fieldName, timeoutMs);
-    }
-
-    /**
-     * 验证字段是否可空（NULL）
-     */
-    private void verifyFieldNullable(String fieldName, String tableName, DatabaseConfig config) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?";
-            String isNullable = databaseTemplate.queryForObject(sql, String.class, tableName, fieldName);
-            assertNotNull(String.format("未找到字段 %s", fieldName), isNullable);
-            assertEquals(String.format("字段 %s 应为NULL（可空），但实际是 %s", fieldName, isNullable),
-                    "YES", isNullable.toUpperCase());
-            logger.info("字段NULL约束验证通过: {} 是可空的", fieldName);
-            return null;
-        });
-    }
-
-    /**
-     * 验证表是否存在
-     */
-    private void verifyTableExists(String tableName, DatabaseConfig config) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?";
-            Integer count = databaseTemplate.queryForObject(sql, Integer.class, tableName);
-            assertTrue(String.format("表 %s 应存在，但未找到", tableName), count != null && count > 0);
-            logger.info("表存在验证通过: {}", tableName);
-            return null;
-        });
-    }
-
-    /**
-     * 验证表的字段数量
-     */
-    private void verifyTableFieldCount(String tableName, DatabaseConfig config, int expectedCount) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?";
-            Integer actualCount = databaseTemplate.queryForObject(sql, Integer.class, tableName);
-            assertNotNull(String.format("未找到表 %s", tableName), actualCount);
-            assertEquals(String.format("表 %s 的字段数量应为 %d，但实际是 %d", tableName, expectedCount, actualCount),
-                    Integer.valueOf(expectedCount), actualCount);
-            logger.info("表字段数量验证通过: {} 有 {} 个字段", tableName, actualCount);
-            return null;
-        });
-    }
-
-    /**
-     * 验证表的主键
-     */
-    private void verifyTablePrimaryKeys(String tableName, DatabaseConfig config, List<String> expectedKeys) throws Exception {
-        org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance instance =
-                new org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance(config);
-        instance.execute(databaseTemplate -> {
-            String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? " +
-                    "AND CONSTRAINT_NAME LIKE 'PRIMARY' " +
-                    "ORDER BY ORDINAL_POSITION";
-            List<String> actualKeys = databaseTemplate.queryForList(sql, String.class, tableName);
-            assertNotNull(String.format("未找到表 %s 的主键信息", tableName), actualKeys);
-            assertEquals(String.format("表 %s 的主键数量应为 %d，但实际是 %d", tableName, expectedKeys.size(), actualKeys.size()),
-                    expectedKeys.size(), actualKeys.size());
-            for (int i = 0; i < expectedKeys.size(); i++) {
-                String expectedKey = expectedKeys.get(i);
-                String actualKey = actualKeys.get(i);
-                assertTrue(String.format("表 %s 的主键第 %d 列应为 %s，但实际是 %s", tableName, i + 1, expectedKey, actualKey),
-                        expectedKey.equalsIgnoreCase(actualKey));
-            }
-            logger.info("表主键验证通过: {} 的主键是 {}", tableName, actualKeys);
-            return null;
-        });
     }
 
     /**

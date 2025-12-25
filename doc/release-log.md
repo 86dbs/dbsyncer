@@ -1,4 +1,8 @@
-发布日志
+# 发布日志
+
+## 2.9.0
+
+性能优化：sql server CT 模式下避免 DML 每次都查主键（getPrimaryKeys）。
 
 ## 2.8.0
 

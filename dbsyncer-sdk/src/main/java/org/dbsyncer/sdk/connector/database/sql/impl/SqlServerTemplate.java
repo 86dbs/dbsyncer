@@ -349,6 +349,13 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         Field targetField = schemaResolver.fromStandardType(column);
         String typeName = targetField.getTypeName();
         
+        // 去除类型名称中的 IDENTITY 关键字（如果存在）
+        // IDENTITY 属性应该通过 field.isAutoincrement() 来判断，而不是从类型名称中获取
+        // 这样可以避免在 buildCreateTableSql 中重复添加 IDENTITY(1,1)
+        if (typeName != null) {
+            typeName = typeName.replaceAll("(?i)\\s+IDENTITY", "").trim();
+        }
+        
         // 获取标准类型名称，用于判断是否需要使用 MAX
         String standardType = column.getTypeName();
         
