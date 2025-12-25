@@ -411,11 +411,12 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
         tableGroup.setCursors(null);
         profileComponent.editConfigModel(tableGroup);
 
-        // 2. 配置 Mapping
+        // 2. 配置 Mapping 为增量同步模式（Log），因为全量同步不会检测 DELETE 操作
+        // Log 模式使用 CT（Change Tracking）实时监听变更，比 Timing 模式更快更准确
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
-        editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing");
+        editParams.put("model", "increment");
+        editParams.put("incrementStrategy", "Log"); // 使用 Log 模式（CT）实时监听 DELETE
         editParams.put("forceUpdate", "false");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
@@ -445,9 +446,9 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
             return null;
         });
 
-        // 4. 启动全量同步（插入数据）
+        // 4. 启动增量同步（插入数据）
         mappingService.start(mappingId);
-        Thread.sleep(2000);
+        Thread.sleep(2000); // 等待增量同步处理 INSERT（Log 模式实时监听，等待时间更短）
 
         // 5. 验证数据已同步到目标表
         Map<String, Object> targetDataBeforeDelete = queryTableDataByPrimaryKey(testTargetTable, "UserName", userName, targetConfig);
@@ -461,16 +462,21 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
         });
         logger.info("源表已删除数据，UserName: {}", userName);
 
-        // 7. 再次启动全量同步（应该触发 DELETE）
-        tableGroup.setFullCompleted(false);
-        tableGroup.setCursors(null);
-        profileComponent.editConfigModel(tableGroup);
-        mappingService.start(mappingId);
-        Thread.sleep(3000);
-
+        // 7. 等待增量同步处理 DELETE（Log 模式实时监听变更，使用轮询方式等待）
+        long startTime = System.currentTimeMillis();
+        long timeoutMs = 10000; // 10秒超时
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            Map<String, Object> checkData = queryTableDataByPrimaryKey(testTargetTable, "UserName", userName, targetConfig);
+            if (checkData.isEmpty()) {
+                logger.info("目标表中数据已被删除，等待时间: {}ms", System.currentTimeMillis() - startTime);
+                break;
+            }
+            Thread.sleep(300); // 每300ms检查一次
+        }
+        
         // 8. 验证删除结果
         Map<String, Object> targetDataAfterDelete = queryTableDataByPrimaryKey(testTargetTable, "UserName", userName, targetConfig);
-        assertNull("目标表中数据应该被删除", targetDataAfterDelete);
+        assertTrue("目标表中数据应该被删除（查询结果应为空）", targetDataAfterDelete.isEmpty());
 
         logger.info("DELETE SQL Server到MySQL操作测试通过");
     }
@@ -655,12 +661,15 @@ public class SqlServerToMySQLDMLIntegrationTest extends BaseDDLIntegrationTest {
 
     @Override
     protected String getConnectorType(DatabaseConfig config, boolean isSource) {
-        return isSource ? "SqlServer" : "MySQL";
+        if (isSource) {
+            return "SqlServerCT"; // 源使用 CT 模式以支持 Log 增量同步（实时监听 DELETE）
+        }
+        return "MySQL"; // 目标是 MySQL
     }
 
     @Override
     protected String getIncrementStrategy() {
-        return "Timing";
+        return "Log"; // Log 模式用于实时监听变更（CT/binlog）
     }
 
     @Override
