@@ -55,6 +55,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     // 特殊列名，用于标识表结构信息的 JSON 字段（不用于数据同步）
     private static final String DDL_SCHEMA_INFO_COLUMN = "__DDL_SCHEMA_INFO__";
+    // CT 主键列别名前缀（使用双下划线前缀避免与用户列名冲突）
+    private static final String CT_PK_COLUMN_PREFIX = "__CT_PK_";
 
     // 获取表结构信息的子查询（用于在 DML 查询中附加表结构信息）
     // 注意：SQL Server 2008 R2 不支持 FOR JSON PATH，使用字符串拼接方式生成 JSON
@@ -151,6 +153,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private Lock lock = new ReentrantLock(true);
     private Condition isFull = lock.newCondition();
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
+    // 主键信息缓存（表名 -> 主键列表）
+    private final Map<String, List<String>> primaryKeysCache = new HashMap<>();
 
     @Override
     public void start() throws Exception {
@@ -326,10 +330,24 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private void pull(Long stopVersion) throws Exception {
-        // 1. 查询 DML 变更
+        // 1. 批量查询所有表的主键信息（一次查询，避免重复）
+        Map<String, List<String>> tablePrimaryKeys = new HashMap<>();
+        for (String table : tables) {
+            List<String> primaryKeys = primaryKeysCache.get(table);
+            if (primaryKeys == null) {
+                primaryKeys = getPrimaryKeys(table);
+                if (primaryKeys.isEmpty()) {
+                    throw new SqlServerException("表 " + table + " 没有主键，无法使用 Change Tracking");
+                }
+                primaryKeysCache.put(table, primaryKeys);
+            }
+            tablePrimaryKeys.put(table, primaryKeys);
+        }
+        
+        // 2. 查询 DML 变更（传入主键信息，避免重复查询）
         List<CTEvent> dmlEvents = new ArrayList<>();
         for (String table : tables) {
-            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion);
+            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion, tablePrimaryKeys.get(table));
             dmlEvents.addAll(tableEvents);
         }
 
@@ -343,47 +361,36 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         parseUnifiedEvents(unifiedEvents, stopVersion);
     }
 
-    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion) throws Exception {
-        // 1. 获取表的所有列信息（包含主键信息，避免重复查询）
-        MetaInfo metaInfo = queryTableMetaInfo(tableName, new HashMap<>());
-        
-        // 从 MetaInfo 中提取主键列（避免额外的远程查询）
-        List<String> primaryKeys = getPrimaryKeysFromMetaInfo(metaInfo);
-        if (primaryKeys.isEmpty()) {
+    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion, List<String> primaryKeys) throws Exception {
+        // 1. 使用调用者传入的主键信息（已在 pull 方法中批量查询并缓存）
+        if (primaryKeys == null || primaryKeys.isEmpty()) {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
         }
-        
-        // 获取表的所有列（按顺序）
-        List<String> allColumns = metaInfo.getColumn().stream()
-                .map(Field::getName)
-                .collect(Collectors.toList());
 
         // 2. 构建 JOIN 条件（支持复合主键）
         String joinCondition = primaryKeys.stream()
                 .map(pk -> "CT.[" + pk + "] = T.[" + pk + "]")
                 .collect(Collectors.joining(" AND "));
 
-        // 3. 构建 SELECT 列列表（对于 DELETE 操作，使用 CT 的主键值；对于 INSERT/UPDATE，使用 T 的列值）
-        // 对于主键列：使用 COALESCE(CT.[pk], T.[pk])，确保 DELETE 操作时能从 CT 获取主键值
-        // 对于非主键列：使用 T.[col]
-        String selectColumns = allColumns.stream()
-                .map(col -> {
-                    if (primaryKeys.contains(col)) {
-                        // 主键列：优先使用 CT 的值（DELETE 时 T.[pk] 为 NULL，但 CT.[pk] 有值）
-                        return "COALESCE(CT.[" + col + "], T.[" + col + "]) AS [" + col + "]";
-                    } else {
-                        // 非主键列：使用 T 的值
-                        return "T.[" + col + "]";
-                    }
-                })
+        // 3. 构建 SELECT 列列表
+        // 将 CT 主键列放在 T.* 前面，简化后续处理（可以通过固定索引直接访问）
+        // 对于主键列：如果 T.[pk] 为 NULL（DELETE 情况），使用 CT.[pk]
+        // 使用双下划线前缀避免与用户列名冲突
+        String redundantPrimaryKeys = primaryKeys.stream()
+                .map(pk -> "CT.[" + pk + "] AS " + CT_PK_COLUMN_PREFIX + pk.replaceAll("[^a-zA-Z0-9_]", "_"))  // 确保别名合法
                 .collect(Collectors.joining(", "));
+        
+        // 将 CT 主键列放在 T.* 前面，这样可以通过固定索引（4 到 4+PK-1）直接访问
+        String selectColumns = (redundantPrimaryKeys.isEmpty() ? "" : redundantPrimaryKeys + ", ") + "T.*";
 
         // 4. 构建表结构信息子查询（用于附加到结果集中）
         String schemaInfoSubquery = String.format(GET_TABLE_SCHEMA_INFO_SUBQUERY, schema, tableName);
 
         // 5. 构建查询 SQL（包含表结构信息的 JSON 字段）
         // 注意：使用显式的列列表替代 T.*，以便正确处理 DELETE 操作的主键值
-        String sql = String.format(
+        // 使用 UNION ALL 确保即使没有 DML 变更，也能返回一行包含表结构信息的记录
+        // 主查询：正常的 DML 变更查询
+        String mainQuery = String.format(
                 "SELECT " +
                         "    CT.SYS_CHANGE_VERSION, " +
                         "    CT.SYS_CHANGE_OPERATION, " +
@@ -392,20 +399,55 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
                         "LEFT JOIN [%s].[%s] AS T ON %s " +
-                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
-                        "ORDER BY CT.SYS_CHANGE_VERSION ASC",
+                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?",
                 selectColumns,         // 显式的列列表
                 schemaInfoSubquery,   // 表结构信息子查询
                 schema, tableName,     // CHANGETABLE
                 schema, tableName,     // JOIN table
                 joinCondition          // JOIN condition（支持复合主键）
         );
+        
+        // 辅助查询：当没有 DML 变更时，返回一行包含表结构信息的虚拟行
+        // 由于使用 T.*，我们需要知道列的数量来构建 NULL 列表
+        // 使用一个足够大的固定值（200）来避免查询 INFORMATION_SCHEMA，对于大多数表来说都是足够的
+        // 如果表的列数超过 200，可以适当增大这个值
+        // 注意：这个值需要 >= 表的实际列数，否则 UNION ALL 会因列数不匹配而失败
+        final int MAX_TABLE_COLUMNS = 200;
+        int tableColumnCount = MAX_TABLE_COLUMNS;
+        
+        // 构建 NULL 列表：3个系统列 + 冗余的 CT 主键列 + T.* 的所有列
+        List<String> nullList = new ArrayList<>();
+        for (int i = 0; i < 3 + primaryKeys.size() + tableColumnCount; i++) {
+            nullList.add("NULL");
+        }
+        String nullColumns = String.join(", ", nullList);
+        
+        String fallbackQuery = String.format(
+                "SELECT " +
+                        "    %s, " +  // NULL 值（对应 SYS_CHANGE_VERSION, SYS_CHANGE_OPERATION, SYS_CHANGE_COLUMNS, T.* 的所有列, 以及冗余的 CT 主键列）
+                        "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
+                        "WHERE NOT EXISTS (" +
+                        "    SELECT 1 FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
+                        "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
+                        ")",
+                nullColumns,
+                schemaInfoSubquery,   // 表结构信息子查询
+                schema, tableName,     // CHANGETABLE
+                schema, tableName      // CHANGETABLE（用于 EXISTS 子查询）
+        );
+        
+        String sql = mainQuery + " UNION ALL " + fallbackQuery + " ORDER BY COALESCE(SYS_CHANGE_VERSION, 0) ASC";
 
         // 5. 查询变更
         return queryAndMapList(sql, statement -> {
+            // 主查询的参数
             statement.setLong(1, startVersion);   // CHANGETABLE 起始版本
             statement.setLong(2, startVersion);   // WHERE 起始版本
             statement.setLong(3, stopVersion);     // WHERE 结束版本
+            // 辅助查询的参数（EXISTS 子查询需要相同的参数）
+            statement.setLong(4, startVersion);   // EXISTS 子查询的 CHANGETABLE 起始版本
+            statement.setLong(5, startVersion);   // EXISTS 子查询的 WHERE 起始版本
+            statement.setLong(6, stopVersion);     // EXISTS 子查询的 WHERE 结束版本
         }, rs -> {
             ResultSetMetaData metaData = rs.getMetaData();
 
@@ -422,6 +464,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             // 在第一次获取结果时检测表结构（DDL 变更）
             // 使用 JSON 字段中的表结构信息进行 DDL 检测
             boolean firstRowProcessed = false;
+            boolean firstRowIsVirtual = false;  // 标记第一行是否为虚拟行（没有 DML 变更时的辅助行）
             try {
                 if (schemaInfoColumnIndex > 0 && rs.next()) {
                     // 获取表结构信息的 JSON（从第一行获取，因为所有行的表结构信息都相同）
@@ -430,27 +473,66 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         detectDDLChangesFromSchemaInfoJson(tableName, schemaInfoJson);
                     }
                     firstRowProcessed = true;
+                    
+                    // 检查第一行是否为虚拟行（SYS_CHANGE_VERSION 为 NULL 表示来自辅助查询）
+                    Object versionObj = rs.getObject(1);
+                    firstRowIsVirtual = (versionObj == null);
                 }
             } catch (Exception e) {
                 logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
             }
 
+            // CT 主键列在固定位置（4 到 4+PK-1），建立主键列名到 CT 主键列索引的映射
+            // 列顺序：SYS_CHANGE_VERSION(1), SYS_CHANGE_OPERATION(2), SYS_CHANGE_COLUMNS(3), 
+            //        __CT_PK_[pk1](4), __CT_PK_[pk2](5), ..., __CT_PK_[pkN](4+PK-1),
+            //        T.* 的所有列(4+PK 到 4+PK+N-1),
+            //        __DDL_SCHEMA_INFO__(最后)
+            Map<String, Integer> primaryKeyToCTIndex = new HashMap<>();
+            int ctPkStartIndex = 4;  // CT 主键列从第 4 列开始
+            for (int i = 0; i < primaryKeys.size(); i++) {
+                String pk = primaryKeys.get(i);
+                primaryKeyToCTIndex.put(pk, ctPkStartIndex + i);
+            }
+            
+            // T.* 的列范围：从 4+PK 开始，到表结构信息列之前
+            int tStarStartIndex = 4 + primaryKeys.size();  // T.* 从 CT 主键列之后开始
+            int tStarEndIndex = schemaInfoColumnIndex > 0 ? schemaInfoColumnIndex - 1 : columnCount - 1;
+            
+            // 需要跳过的列：表结构信息列
+            Set<Integer> columnsToSkip = new HashSet<>();
+            if (schemaInfoColumnIndex > 0) {
+                columnsToSkip.add(schemaInfoColumnIndex);
+            }
+            
             List<CTEvent> events = new ArrayList<>();
             
             // 如果第一行已经读取（用于 DDL 检测），需要处理这一行的数据
-            if (firstRowProcessed) {
+            // 但如果是虚拟行（没有 DML 变更），则跳过，不创建 DML 事件
+            if (firstRowProcessed && !firstRowIsVirtual) {
                 Long version = rs.getLong(1);
                 String operation = rs.getString(2);  // 'I', 'U', 'D'
                 // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
 
-                // 构建行数据（排除表结构信息列）
+                // 构建行数据
                 List<Object> row = new ArrayList<>();
-                for (int i = 4; i <= columnCount; i++) {
-                    // 跳过表结构信息列（不用于数据同步）
-                    if (i == schemaInfoColumnIndex) {
+                for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
+                    if (columnsToSkip.contains(i)) {
                         continue;
                     }
-                    row.add(rs.getObject(i));
+                    
+                    Object value = rs.getObject(i);
+                    
+                    // 如果是主键列且值为 NULL（DELETE 情况），使用冗余的 CT_[pk] 值
+                    // CT 主键列在固定位置（4 到 4+PK-1），可以直接通过映射获取索引
+                    String columnName = metaData.getColumnName(i);
+                    if (primaryKeys.contains(columnName) && value == null) {
+                        Integer ctPkIndex = primaryKeyToCTIndex.get(columnName);
+                        if (ctPkIndex != null) {
+                            value = rs.getObject(ctPkIndex);
+                        }
+                    }
+                    
+                    row.add(value);
                 }
 
                 // 转换操作类型
@@ -465,14 +547,26 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 String operation = rs.getString(2);  // 'I', 'U', 'D'
                 // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
 
-                // 构建行数据（排除表结构信息列）
+                // 构建行数据
                 List<Object> row = new ArrayList<>();
-                for (int i = 4; i <= columnCount; i++) {
-                    // 跳过表结构信息列（不用于数据同步）
-                    if (i == schemaInfoColumnIndex) {
+                for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
+                    if (columnsToSkip.contains(i)) {
                         continue;
                     }
-                    row.add(rs.getObject(i));
+                    
+                    Object value = rs.getObject(i);
+                    
+                    // 如果是主键列且值为 NULL（DELETE 情况），使用冗余的 CT_[pk] 值
+                    // CT 主键列在固定位置（4 到 4+PK-1），可以直接通过映射获取索引
+                    String columnName = metaData.getColumnName(i);
+                    if (primaryKeys.contains(columnName) && value == null) {
+                        Integer ctPkIndex = primaryKeyToCTIndex.get(columnName);
+                        if (ctPkIndex != null) {
+                            value = rs.getObject(ctPkIndex);
+                        }
+                    }
+                    
+                    row.add(value);
                 }
 
                 // 转换操作类型
