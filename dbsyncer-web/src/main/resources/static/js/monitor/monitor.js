@@ -71,13 +71,13 @@ function bindQueryDataEvent() {
 
     function renderDataButton(row) {
         const content = [];
-        content.push(`<button class="table-action-btn view" title="查看数据" onclick="showDataDetail('${row?.id}')">
+        content.push(`<button class="table-action-btn view" title="查看数据" onclick="showDataDetail('${row.id}')">
                     <i class="fa fa-eye"></i>
                 </button>`);
         // 如果失败，显示重试按钮
         if (row.success === 0) {
             let metaId = metaSelect.getValues()[0] || '';
-            content.push(`<button class="table-action-btn play" title="重试" onclick="showRetryDetail('${metaId}','${row?.id}')">
+            content.push(`<button class="table-action-btn play" title="重试" onclick="showRetryDetail('${metaId}','${row.id}')">
                             <i class="fa fa-refresh"></i>
                         </button>`);
         }
@@ -94,13 +94,13 @@ function bindQueryDataEvent() {
             return `
                 <tr>
                     <td>${index}</td>
-                    <td>${d?.targetTableName}</td>
-                    <td>${d?.event}</td>
+                    <td>${d.targetTableName}</td>
+                    <td>${d.event}</td>
                     <td>${renderDataState(d.success)}</td>
                     <td>
-                        <span class="hover-underline cursor-pointer data-error">${d?.error || ''}</span>
+                        <span class="hover-underline cursor-pointer data-error">${d.error || ''}</span>
                     </td>
-                    <td>${formatDate(d?.createTime)}</td>
+                    <td>${formatDate(d.createTime)}</td>
                     <td>
                         <div class="flex items-center gap-1">${renderDataButton(d)}</div>
                         <span id="${d.id}" class="hidden">${escapeHtml(d.json || '')}</span>

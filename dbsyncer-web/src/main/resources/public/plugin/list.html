@@ -164,7 +164,7 @@ public class MyPlugin implements PluginService {
     @Override
     public void postProcessAfter(PluginContext context) {
         // 完成同步后调用该方法
-       logger.info("插件正在处理同步成功的数据，目标源表:{}，事件:{}，条数:{}", context.getTargetTableName(), context.getEvent(), context.getTargetList().size());
+        logger.info("插件正在处理同步成功的数据，目标源表:{}，事件:{}，条数:{}", context.getTargetTableName(), context.getEvent(), context.getTargetList().size());
 
         ConnectorInstance connectorInstance = context.getSourceConnectorInstance();
 
@@ -183,8 +183,8 @@ public class MyPlugin implements PluginService {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                if(connection != null){
-                    connection.close();
+                if (connection != null) {
+                    db.getDataSource().close(connection);
                 }
             }
         }

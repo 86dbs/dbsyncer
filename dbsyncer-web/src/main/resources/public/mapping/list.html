@@ -108,30 +108,30 @@ $(document).ready(function() {
             return `
                 <tr>
                     <td>${index}</td>
-                    <td title="${escapeHtml(mapping?.name)}">
-                        <span>${escapeHtml(mapping?.name)}</span>
+                    <td title="${escapeHtml(mapping.name)}">
+                        <span>${escapeHtml(mapping.name)}</span>
                     </td>
-                    <td title="${escapeHtml(mapping?.sourceConnector?.name || '')} > ${escapeHtml(mapping?.targetConnector?.name || '')}">
+                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} > ${escapeHtml(mapping.targetConnector.name || '')}">
                         <div class="flex items-center">
-                            <img draggable="false" class='mr-3' src="/img/${escapeHtml(mapping?.sourceConnector?.config?.connectorType || '')}.png" style="width: 40px; height: 40px;">
-                            <span>${escapeHtml(mapping?.sourceConnector?.name || '')}</span>
+                            <img draggable="false" class='mr-3' src="/img/${escapeHtml(mapping.sourceConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                            <span>${escapeHtml(mapping.sourceConnector.name || '')}</span>
                         </div>
                         <i class="fa fa-angle-double-down ml-3"></i>
                         <div class="flex items-center">
-                            <img draggable="false" class='mr-3' src="/img/${escapeHtml(mapping?.targetConnector?.config?.connectorType || '')}.png" style="width: 40px; height: 40px;">
-                            <span>${escapeHtml(mapping?.targetConnector?.name || '')}</span>
+                            <img draggable="false" class='mr-3' src="/img/${escapeHtml(mapping.targetConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                            <span>${escapeHtml(mapping.targetConnector.name || '')}</span>
                         </div>
                     </td>
-                    <td>${renderModelText(mapping?.model)}</td>
+                    <td>${renderModelText(mapping.model)}</td>
                     <td>${renderSyncResult(mapping)}</td>
-                    <td>${renderStateText(mapping?.meta?.state || 0)}</td>
-                    <td>${formatDate(mapping?.meta.updateTime || '')}</td>
+                    <td>${renderStateText(mapping.meta.state || 0)}</td>
+                    <td>${formatDate(mapping.meta.updateTime || '')}</td>
                     <td>
                         <div class="flex items-center gap-1">
                             <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            ${renderStateButton(mapping?.meta?.state || 0, mapping.id)}
+                            ${renderStateButton(mapping.meta.state || 0, mapping.id)}
                             <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
                                 <i class="fa fa-copy"></i>
                             </button>

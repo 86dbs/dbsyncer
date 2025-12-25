@@ -587,24 +587,24 @@ function formatPercent(value, maxFractionDigits) {
 
 // 根据同步结果生成内容
 function renderSyncResult(mapping) {
-    const meta = mapping?.meta;
+    const meta = mapping.meta;
     if (!meta) return '';
     const content = [];
     // 全量模式显示总数
-    if (mapping?.model === 'full') {
-        const total = meta?.total || 0;
+    if (mapping.model === 'full') {
+        const total = meta.total || 0;
         content.push(`总数: ${total}`);
-        if (meta?.counting) {
+        if (meta.counting) {
             content.push(`(正在统计中)`);
         }
-        const success = meta?.success || 0;
-        const fail = meta?.fail || 0;
+        const success = meta.success || 0;
+        const fail = meta.fail || 0;
         // 执行中，显示进度
         if (total > 0 && (success + fail) > 0) {
             const progress = (success + fail) / total;
             content.push(`<br />进度: ${formatPercent(progress, 2)}`);
-            const beginTime = meta?.beginTime;
-            const endTime = meta?.endTime;
+            const beginTime = meta.beginTime;
+            const endTime = meta.endTime;
             if (beginTime && endTime) {
                 const seconds = Math.floor((endTime - beginTime) / 1000);
                 if (seconds < 60) {
