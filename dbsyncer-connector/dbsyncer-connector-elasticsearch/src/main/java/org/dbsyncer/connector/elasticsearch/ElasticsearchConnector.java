@@ -36,6 +36,8 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -139,6 +141,20 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ElasticsearchException(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> getDatabases(ESConnectorInstance connectorInstance) {
+        try {
+            RestHighLevelClient client = connectorInstance.getConnection();
+            ClusterHealthRequest request = new ClusterHealthRequest();
+            ClusterHealthResponse response = client.cluster().health(request, RequestOptions.DEFAULT);
+            String clusterName = response.getClusterName();
+            return Collections.singletonList(clusterName);
+        } catch (IOException e) {
+            logger.error("获取ES集群名称失败: {}", e.getMessage());
+            throw new ElasticsearchException("获取ES集群名称失败: " + e.getMessage(), e);
         }
     }
 

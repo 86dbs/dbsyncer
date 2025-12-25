@@ -46,7 +46,7 @@
         <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
         <postgresql.version>42.3.3</postgresql.version>
         <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.11.0.0</kafka.version>
         <fastjson2.version>2.0.22</fastjson2.version>
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>

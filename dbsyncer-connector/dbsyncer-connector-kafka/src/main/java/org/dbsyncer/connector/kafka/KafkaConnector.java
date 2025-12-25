@@ -3,10 +3,13 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -29,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Kafka连接器实现
@@ -71,6 +76,27 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
         return connectorInstance.getConnection().ping();
+    }
+
+    @Override
+    public List<String> getDatabases(KafkaConnectorInstance connectorInstance) {
+        AdminClient adminClient = null;
+        try {
+            KafkaConfig config = connectorInstance.getConfig();
+            Properties props = new Properties();
+            props.put("bootstrap.servers", config.getBootstrapServers());
+            adminClient = AdminClient.create(props);
+            DescribeClusterResult clusterResult = adminClient.describeCluster();
+            String clusterId = clusterResult.clusterId().get();
+            return Collections.singletonList(clusterId);
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("获取Kafka集群ID失败: {}", e.getMessage());
+            throw new KafkaException("获取Kafka集群ID失败: " + e.getMessage(), e);
+        } finally {
+            if (adminClient != null) {
+                adminClient.close();
+            }
+        }
     }
 
     @Override
