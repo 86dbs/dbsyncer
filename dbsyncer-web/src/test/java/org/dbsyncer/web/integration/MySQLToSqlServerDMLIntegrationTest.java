@@ -417,7 +417,11 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         editParams.put("enableDelete", "true");
         mappingService.edit(editParams);
 
-        // 3. 先在源表插入数据
+        // 3. 先启动增量同步（让监听器开始工作，准备捕获后续的 INSERT 和 DELETE 操作）
+        mappingService.start(mappingId);
+        Thread.sleep(2000); // 等待增量同步监听器就绪
+
+        // 4. 在源表插入数据（此时会被实时监听捕获）
         Integer testId = 400;
         String userName = "DeleteUser";
         
@@ -431,9 +435,7 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
             databaseTemplate.execute(insertSourceSql);
             return null;
         });
-
-        // 4. 启动增量同步（插入数据）
-        mappingService.start(mappingId);
+        
         Thread.sleep(2000); // 等待增量同步处理 INSERT（Log 模式实时监听，等待时间更短）
 
         // 5. 验证数据已同步到目标表
