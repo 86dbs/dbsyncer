@@ -99,15 +99,12 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
                     "ORDER BY CT.SYS_CHANGE_VERSION ASC";
 
-    private static final String GET_TABLE_COLUMNS =
-            "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, " +
-                    "NUMERIC_PRECISION, NUMERIC_SCALE, IS_NULLABLE, ORDINAL_POSITION " +
-                    "FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
-                    "ORDER BY ORDINAL_POSITION";
-
-    private static final String GET_TABLE_PRIMARY_KEYS =
-            "SELECT kcu.COLUMN_NAME " +
+    // 合并查询：同时获取主键信息和列数（减少查询次数）
+    private static final String GET_TABLE_PRIMARY_KEYS_AND_COLUMN_COUNT =
+            "SELECT " +
+                    "    kcu.COLUMN_NAME, " +
+                    "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS c " +
+                    "     WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?) AS COLUMN_COUNT " +
                     "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
                     "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu " +
                     "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
@@ -155,6 +152,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
     // 主键信息缓存（表名 -> 主键列表）
     private final Map<String, List<String>> primaryKeysCache = new HashMap<>();
+    // 表列数缓存（表名 -> 列数），避免重复查询 INFORMATION_SCHEMA
+    private final Map<String, Integer> tableColumnCountCache = new HashMap<>();
 
     @Override
     public void start() throws Exception {
@@ -330,24 +329,37 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private void pull(Long stopVersion) throws Exception {
-        // 1. 批量查询所有表的主键信息（一次查询，避免重复）
+        // 1. 批量查询所有表的主键信息和列数（合并查询，减少 IO 开销）
         Map<String, List<String>> tablePrimaryKeys = new HashMap<>();
+        Map<String, Integer> tableColumnCounts = new HashMap<>();
         for (String table : tables) {
             List<String> primaryKeys = primaryKeysCache.get(table);
-            if (primaryKeys == null) {
-                primaryKeys = getPrimaryKeys(table);
-                if (primaryKeys.isEmpty()) {
+            Integer columnCount = tableColumnCountCache.get(table);
+            
+            // 如果主键或列数未缓存，使用合并查询一次性获取
+            if (primaryKeys == null || columnCount == null) {
+                TableMetaInfo metaInfo = getPrimaryKeysAndColumnCount(table);
+                if (metaInfo.primaryKeys.isEmpty()) {
                     throw new SqlServerException("表 " + table + " 没有主键，无法使用 Change Tracking");
                 }
-                primaryKeysCache.put(table, primaryKeys);
+                if (primaryKeys == null) {
+                    primaryKeysCache.put(table, metaInfo.primaryKeys);
+                }
+                if (columnCount == null) {
+                    tableColumnCountCache.put(table, metaInfo.columnCount);
+                }
+                primaryKeys = metaInfo.primaryKeys;
+                columnCount = metaInfo.columnCount;
             }
             tablePrimaryKeys.put(table, primaryKeys);
+            tableColumnCounts.put(table, columnCount);
         }
         
-        // 2. 查询 DML 变更（传入主键信息，避免重复查询）
+        // 2. 查询 DML 变更（传入主键信息和列数，避免重复查询）
         List<CTEvent> dmlEvents = new ArrayList<>();
         for (String table : tables) {
-            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion, tablePrimaryKeys.get(table));
+            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion, 
+                    tablePrimaryKeys.get(table), tableColumnCounts.get(table));
             dmlEvents.addAll(tableEvents);
         }
 
@@ -361,7 +373,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         parseUnifiedEvents(unifiedEvents, stopVersion);
     }
 
-    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion, List<String> primaryKeys) throws Exception {
+    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion, 
+            List<String> primaryKeys, Integer columnCount) throws Exception {
         // 1. 使用调用者传入的主键信息（已在 pull 方法中批量查询并缓存）
         if (primaryKeys == null || primaryKeys.isEmpty()) {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
@@ -386,10 +399,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         // 4. 构建表结构信息子查询（用于附加到结果集中）
         String schemaInfoSubquery = String.format(GET_TABLE_SCHEMA_INFO_SUBQUERY, schema, tableName);
 
-        // 5. 构建查询 SQL（包含表结构信息的 JSON 字段）
+        // 5. 构建主查询 SQL（包含表结构信息的 JSON 字段）
         // 注意：使用显式的列列表替代 T.*，以便正确处理 DELETE 操作的主键值
-        // 使用 UNION ALL 确保即使没有 DML 变更，也能返回一行包含表结构信息的记录
-        // 主查询：正常的 DML 变更查询
         String mainQuery = String.format(
                 "SELECT " +
                         "    CT.SYS_CHANGE_VERSION, " +
@@ -399,7 +410,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
                         "LEFT JOIN [%s].[%s] AS T ON %s " +
-                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?",
+                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
+                        "ORDER BY CT.SYS_CHANGE_VERSION ASC",
                 selectColumns,         // 显式的列列表
                 schemaInfoSubquery,   // 表结构信息子查询
                 schema, tableName,     // CHANGETABLE
@@ -407,54 +419,31 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 joinCondition          // JOIN condition（支持复合主键）
         );
         
-        // 辅助查询：当没有 DML 变更时，返回一行包含表结构信息的虚拟行
-        // 由于使用 T.*，我们需要知道列的数量来构建 NULL 列表
-        // 使用一个足够大的固定值（200）来避免查询 INFORMATION_SCHEMA，对于大多数表来说都是足够的
-        // 如果表的列数超过 200，可以适当增大这个值
-        // 注意：这个值需要 >= 表的实际列数，否则 UNION ALL 会因列数不匹配而失败
-        final int MAX_TABLE_COLUMNS = 200;
-        int tableColumnCount = MAX_TABLE_COLUMNS;
-        
-        // 构建 NULL 列表：3个系统列 + 冗余的 CT 主键列 + T.* 的所有列
-        List<String> nullList = new ArrayList<>();
-        for (int i = 0; i < 3 + primaryKeys.size() + tableColumnCount; i++) {
-            nullList.add("NULL");
-        }
-        String nullColumns = String.join(", ", nullList);
-        
+        // 6. 构建辅助查询 SQL（当没有 DML 变更时，用于获取 DDL 信息）
+        // 注意：不再需要与 mainQuery 的列数匹配，只需要返回 DDL 信息
         String fallbackQuery = String.format(
-                "SELECT " +
-                        "    %s, " +  // NULL 值（对应 SYS_CHANGE_VERSION, SYS_CHANGE_OPERATION, SYS_CHANGE_COLUMNS, T.* 的所有列, 以及冗余的 CT 主键列）
-                        "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
+                "SELECT %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
                         "WHERE NOT EXISTS (" +
                         "    SELECT 1 FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
                         "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
                         ")",
-                nullColumns,
                 schemaInfoSubquery,   // 表结构信息子查询
                 schema, tableName,     // CHANGETABLE
                 schema, tableName      // CHANGETABLE（用于 EXISTS 子查询）
         );
-        
-        String sql = mainQuery + " UNION ALL " + fallbackQuery + " ORDER BY COALESCE(SYS_CHANGE_VERSION, 0) ASC";
 
-        // 5. 查询变更
-        return queryAndMapList(sql, statement -> {
-            // 主查询的参数
+        // 7. 先执行主查询，获取 DML 变更和 DDL 信息
+        List<CTEvent> events = queryAndMapList(mainQuery, statement -> {
             statement.setLong(1, startVersion);   // CHANGETABLE 起始版本
             statement.setLong(2, startVersion);   // WHERE 起始版本
             statement.setLong(3, stopVersion);     // WHERE 结束版本
-            // 辅助查询的参数（EXISTS 子查询需要相同的参数）
-            statement.setLong(4, startVersion);   // EXISTS 子查询的 CHANGETABLE 起始版本
-            statement.setLong(5, startVersion);   // EXISTS 子查询的 WHERE 起始版本
-            statement.setLong(6, stopVersion);     // EXISTS 子查询的 WHERE 结束版本
         }, rs -> {
             ResultSetMetaData metaData = rs.getMetaData();
 
             // 查找表结构信息列的位置（特殊列，不用于数据同步）
             int schemaInfoColumnIndex = -1;
-            int columnCount = metaData.getColumnCount();
-            for (int i = 1; i <= columnCount; i++) {
+            int resultColumnCount = metaData.getColumnCount();
+            for (int i = 1; i <= resultColumnCount; i++) {
                 if (DDL_SCHEMA_INFO_COLUMN.equalsIgnoreCase(metaData.getColumnName(i))) {
                     schemaInfoColumnIndex = i;
                     break;
@@ -463,20 +452,15 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
             // 在第一次获取结果时检测表结构（DDL 变更）
             // 使用 JSON 字段中的表结构信息进行 DDL 检测
-            boolean firstRowProcessed = false;
-            boolean firstRowIsVirtual = false;  // 标记第一行是否为虚拟行（没有 DML 变更时的辅助行）
+            boolean hasData = false;
             try {
                 if (schemaInfoColumnIndex > 0 && rs.next()) {
+                    hasData = true;
                     // 获取表结构信息的 JSON（从第一行获取，因为所有行的表结构信息都相同）
                     String schemaInfoJson = rs.getString(schemaInfoColumnIndex);
                     if (schemaInfoJson != null && !schemaInfoJson.trim().isEmpty()) {
                         detectDDLChangesFromSchemaInfoJson(tableName, schemaInfoJson);
                     }
-                    firstRowProcessed = true;
-                    
-                    // 检查第一行是否为虚拟行（SYS_CHANGE_VERSION 为 NULL 表示来自辅助查询）
-                    Object versionObj = rs.getObject(1);
-                    firstRowIsVirtual = (versionObj == null);
                 }
             } catch (Exception e) {
                 logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
@@ -496,7 +480,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             
             // T.* 的列范围：从 4+PK 开始，到表结构信息列之前
             int tStarStartIndex = 4 + primaryKeys.size();  // T.* 从 CT 主键列之后开始
-            int tStarEndIndex = schemaInfoColumnIndex > 0 ? schemaInfoColumnIndex - 1 : columnCount - 1;
+            int tStarEndIndex = schemaInfoColumnIndex > 0 ? schemaInfoColumnIndex - 1 : resultColumnCount - 1;
             
             // 需要跳过的列：表结构信息列
             Set<Integer> columnsToSkip = new HashSet<>();
@@ -504,11 +488,11 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 columnsToSkip.add(schemaInfoColumnIndex);
             }
             
-            List<CTEvent> events = new ArrayList<>();
+            List<CTEvent> dmlEvents = new ArrayList<>();
             
-            // 如果第一行已经读取（用于 DDL 检测），需要处理这一行的数据
-            // 但如果是虚拟行（没有 DML 变更），则跳过，不创建 DML 事件
-            if (firstRowProcessed && !firstRowIsVirtual) {
+            // 如果第一行已经读取（用于 DDL 检测），需要处理这一行的 DML 数据
+            if (hasData) {
+                // 第一行已经通过 rs.next() 读取，现在处理这一行的 DML 数据
                 Long version = rs.getLong(1);
                 String operation = rs.getString(2);  // 'I', 'U', 'D'
                 // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
@@ -538,7 +522,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 // 转换操作类型
                 String operationCode = convertOperation(operation);
 
-                events.add(new CTEvent(tableName, operationCode, row, version));
+                dmlEvents.add(new CTEvent(tableName, operationCode, row, version));
             }
             
             // 继续处理后续行
@@ -572,10 +556,34 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 // 转换操作类型
                 String operationCode = convertOperation(operation);
 
-                events.add(new CTEvent(tableName, operationCode, row, version));
+                dmlEvents.add(new CTEvent(tableName, operationCode, row, version));
             }
-            return events;
+            return dmlEvents;
         });
+        
+        // 8. 如果主查询没有返回数据，执行辅助查询获取 DDL 信息
+        if (events.isEmpty()) {
+            queryAndMapList(fallbackQuery, statement -> {
+                statement.setLong(1, startVersion);   // EXISTS 子查询的 CHANGETABLE 起始版本
+                statement.setLong(2, startVersion);   // EXISTS 子查询的 WHERE 起始版本
+                statement.setLong(3, stopVersion);     // EXISTS 子查询的 WHERE 结束版本
+            }, rs -> {
+                if (rs.next()) {
+                    // 获取表结构信息的 JSON
+                    String schemaInfoJson = rs.getString(1);
+                    if (schemaInfoJson != null && !schemaInfoJson.trim().isEmpty()) {
+                        try {
+                            detectDDLChangesFromSchemaInfoJson(tableName, schemaInfoJson);
+                        } catch (Exception e) {
+                            logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
+                        }
+                    }
+                }
+                return null;
+            });
+        }
+        
+        return events;
     }
 
     private List<CTDDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
@@ -693,17 +701,64 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         });
     }
 
-    private List<String> getPrimaryKeys(String tableName) throws Exception {
+    /**
+     * 内部类：用于存储表的主键信息和列数
+     */
+    private static class TableMetaInfo {
+        final List<String> primaryKeys;
+        final int columnCount;
+        
+        TableMetaInfo(List<String> primaryKeys, int columnCount) {
+            this.primaryKeys = primaryKeys;
+            this.columnCount = columnCount;
+        }
+    }
+    
+    /**
+     * 合并查询：同时获取主键信息和列数（减少查询次数）
+     */
+    private TableMetaInfo getPrimaryKeysAndColumnCount(String tableName) throws Exception {
         // 使用 READ UNCOMMITTED 隔离级别避免死锁
-        return queryWithReadUncommitted(GET_TABLE_PRIMARY_KEYS, statement -> {
-            statement.setString(1, schema);
-            statement.setString(2, tableName);
+        return queryWithReadUncommitted(GET_TABLE_PRIMARY_KEYS_AND_COLUMN_COUNT, statement -> {
+            statement.setString(1, schema);  // 子查询的 TABLE_SCHEMA
+            statement.setString(2, tableName);  // 子查询的 TABLE_NAME
+            statement.setString(3, schema);  // 主查询的 TABLE_SCHEMA
+            statement.setString(4, tableName);  // 主查询的 TABLE_NAME
         }, rs -> {
             List<String> pks = new ArrayList<>();
+            int columnCount = 0;
+            boolean columnCountSet = false;
+            
             while (rs.next()) {
                 pks.add(rs.getString("COLUMN_NAME"));
+                // 列数在所有行中都相同，只需要读取一次
+                if (!columnCountSet) {
+                    columnCount = rs.getInt("COLUMN_COUNT");
+                    columnCountSet = true;
+                }
             }
-            return pks;
+            
+            // 如果没有主键（pks 为空），仍然需要获取列数
+            // 注意：这种情况不应该发生（因为主键是必需的），但为了健壮性仍然处理
+            if (!columnCountSet) {
+                try {
+                    columnCount = queryAndMapList(
+                            String.format("SELECT COUNT(*) AS col_count FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s'", 
+                                    schema, tableName),
+                            rs2 -> {
+                                if (rs2.next()) {
+                                    return rs2.getInt("col_count");
+                                }
+                                return 0;
+                            }
+                    );
+                } catch (Exception e) {
+                    logger.warn("获取表 {} 的列数失败，使用默认值 0: {}", tableName, e.getMessage());
+                    columnCount = 0;
+                }
+            }
+            
+            return new TableMetaInfo(pks, columnCount);
         });
     }
 
@@ -740,6 +795,16 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             Long currentVersion = getCurrentVersion();
             Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
             saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+            
+            // 首次检测时也更新缓存（如果缓存为空）
+            if (primaryKeysCache.get(tableName) == null || tableColumnCountCache.get(tableName) == null) {
+                MetaInfo currentMetaInfo = parseSchemaInfoJson(tableName, schemaInfoJson);
+                List<String> currentPrimaryKeys = getPrimaryKeysFromMetaInfo(currentMetaInfo);
+                int currentColumnCount = ordinalPositions.size();
+                primaryKeysCache.put(tableName, currentPrimaryKeys);
+                tableColumnCountCache.put(tableName, currentColumnCount);
+                logger.debug("首次检测表 {} 时更新缓存：主键={}, 列数={}", tableName, currentPrimaryKeys, currentColumnCount);
+            }
             return;
         }
 
@@ -780,6 +845,30 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 // 4. 更新表结构快照（直接保存 JSON，避免解析）
                 Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
                 saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+                
+                // 5. 更新缓存：DDL 变更可能影响主键或列数，需要同步更新缓存
+                // 检查是否有影响主键或列数的变更
+                boolean needUpdateCache = false;
+                for (DDLChange change : changes) {
+                    DDLChangeType changeType = change.getChangeType();
+                    // ADD_COLUMN 和 DROP_COLUMN 会影响列数
+                    // ALTER_PRIMARY_KEY 会影响主键
+                    if (changeType == DDLChangeType.ADD_COLUMN || 
+                        changeType == DDLChangeType.DROP_COLUMN || 
+                        changeType == DDLChangeType.ALTER_PRIMARY_KEY) {
+                        needUpdateCache = true;
+                        break;
+                    }
+                }
+                
+                if (needUpdateCache) {
+                    // 使用当前的表结构信息更新缓存
+                    primaryKeysCache.put(tableName, currentPrimaryKeys);
+                    // 列数可以从 schemaInfoJson 中提取（列数 = JSON 数组的长度）
+                    int currentColumnCount = extractOrdinalPositions(schemaInfoJson).size();
+                    tableColumnCountCache.put(tableName, currentColumnCount);
+                    logger.debug("已更新表 {} 的缓存：主键={}, 列数={}", tableName, currentPrimaryKeys, currentColumnCount);
+                }
 
                 logger.info("检测到表 {} 的 DDL 变更，共 {} 个变更", tableName, changes.size());
             } else {
@@ -805,20 +894,19 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
         List<Field> columns = new ArrayList<>();
         
-        // 优先从缓存的 MetaInfo 中获取主键信息，避免远程查询
-        List<String> primaryKeys = null;
-        try {
-            MetaInfo cachedMetaInfo = loadTableSchemaSnapshot(tableName);
-            if (cachedMetaInfo != null) {
-                primaryKeys = getPrimaryKeysFromMetaInfo(cachedMetaInfo);
-            }
-        } catch (Exception e) {
-            logger.debug("无法从缓存获取主键信息，将查询数据库: {}", e.getMessage());
-        }
+        // 从内存缓存中获取主键信息（避免递归调用 loadTableSchemaSnapshot）
+        // 注意：不能调用 loadTableSchemaSnapshot，因为它会调用 parseSchemaInfoJson，导致无限递归
+        List<String> primaryKeys = primaryKeysCache.get(tableName);
         
         // 如果缓存中没有主键信息，则查询数据库
+        // 使用合并查询获取主键和列数（即使这里只需要主键，也使用合并查询保持一致性）
         if (primaryKeys == null || primaryKeys.isEmpty()) {
-            primaryKeys = getPrimaryKeys(tableName);
+            TableMetaInfo metaInfo = getPrimaryKeysAndColumnCount(tableName);
+            primaryKeys = metaInfo.primaryKeys;
+            // 更新缓存
+            primaryKeysCache.put(tableName, primaryKeys);
+            // 同时更新列数缓存（虽然这里不需要，但可以避免后续查询）
+            tableColumnCountCache.put(tableName, metaInfo.columnCount);
         }
 
         for (Map<String, Object> colJson : columnsJson) {
@@ -1257,56 +1345,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         return JsonUtil.jsonToObj(json, Map.class);
     }
 
-    private MetaInfo queryTableMetaInfo(String tableName, Map<String, Integer> ordinalPositions) throws Exception {
-        // 查询列信息（使用 READ UNCOMMITTED 隔离级别避免死锁）
-        List<Field> columns = queryWithReadUncommitted(GET_TABLE_COLUMNS, statement -> {
-            statement.setString(1, schema);
-            statement.setString(2, tableName);
-        }, rs -> {
-            List<Field> cols = new ArrayList<>();
-            while (rs.next()) {
-                String columnName = rs.getString("COLUMN_NAME");
-                String dataType = rs.getString("DATA_TYPE");
-                Integer maxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH") != null
-                        ? rs.getInt("CHARACTER_MAXIMUM_LENGTH") : null;
-                Integer precision = rs.getObject("NUMERIC_PRECISION") != null
-                        ? rs.getInt("NUMERIC_PRECISION") : null;
-                Integer scale = rs.getObject("NUMERIC_SCALE") != null
-                        ? rs.getInt("NUMERIC_SCALE") : null;
-                Boolean nullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
-                Integer ordinalPosition = rs.getInt("ORDINAL_POSITION");
-
-                // 创建 Field 对象
-                Field col = new Field();
-                col.setName(columnName);
-                col.setTypeName(dataType);
-                col.setColumnSize(maxLength != null ? maxLength : (precision != null ? precision : 0));
-                col.setRatio(scale != null ? scale : 0);
-                col.setNullable(nullable);
-
-                // 保存列位置
-                ordinalPositions.put(columnName, ordinalPosition);
-
-                cols.add(col);
-            }
-            return cols;
-        });
-
-        // 查询主键（用于设置 Field.isPk()，使用 READ UNCOMMITTED 隔离级别避免死锁）
-        List<String> primaryKeys = getPrimaryKeys(tableName);
-
-        // 设置主键标识
-        for (Field col : columns) {
-            col.setPk(primaryKeys.contains(col.getName()));
-        }
-
-        // 创建 MetaInfo 对象
-        MetaInfo metaInfo = new MetaInfo();
-        metaInfo.setTableType("TABLE");
-        metaInfo.setColumn(columns);
-
-        return metaInfo;
-    }
 
     // ==================== 查询工具方法 ====================
 
@@ -1481,4 +1519,5 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         }
     }
 }
+
 

@@ -248,7 +248,7 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing");
+        editParams.put("incrementStrategy", "Log");
         editParams.put("forceUpdate", "false");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
@@ -314,7 +314,7 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing");
+        editParams.put("incrementStrategy", "Log");
         editParams.put("forceUpdate", "false");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
@@ -494,7 +494,7 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing");
+        editParams.put("incrementStrategy", "Log");
         editParams.put("forceUpdate", "true");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
@@ -679,7 +679,7 @@ public class MySQLToSqlServerDMLIntegrationTest extends BaseDDLIntegrationTest {
         Map<String, String> editParams = new HashMap<>();
         editParams.put("id", mappingId);
         editParams.put("model", "full");
-        editParams.put("incrementStrategy", "Timing");
+        editParams.put("incrementStrategy", "Log");
         editParams.put("enableDDL", "true");
         editParams.put("enableInsert", "true");
         editParams.put("enableUpdate", "true");
