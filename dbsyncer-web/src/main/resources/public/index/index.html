@@ -35,7 +35,7 @@
                                         style="width: calc(100% - 40px); display: inline-block; float: left; border-top-right-radius: 0; border-bottom-right-radius: 0; padding-left: 30px; position: relative;">
                                         <img th:src="@{/img/File.png}"
                                             style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;" />
-                                        <span style="vertical-align: middle;">&nbsp;★&nbsp;<span
+                                            <span style="vertical-align: middle;">&nbsp;★&nbsp;<span
                                                 th:text="${g?.name}"></span></span>
                                     </button>
                                     <div style="display: inline-block; width: 40px; float: right;">
@@ -360,7 +360,7 @@
                                                         <tbody>
                                                             <tr>
                                                                 <td class="text-left">
-                                                                    <span th:text="${m?.meta?.model eq 'full' ? '全量' : (m?.meta?.model eq 'increment' ? '增量' : '混合')}"></span>同步>总数:[[${m?.meta?.total}]]
+                                                                    <span th:text="${m?.meta?.model eq 'full' ? '全量' : (m?.meta?.model eq 'increment' ? '增量' : (m?.meta?.model eq 'full+increment' ? '混合' : m?.meta?.model))}"></span>同步>总数:[[${m?.meta?.total}]]
                                                                     <span th:if="${m?.meta?.syncPhase.code eq 0}">
                                                                         <span th:if="${m?.meta?.counting}">(正在统计中)</span>
                                                                         <span th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
