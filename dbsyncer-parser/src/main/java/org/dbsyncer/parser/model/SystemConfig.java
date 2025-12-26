@@ -22,7 +22,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * 同步数据过期时间（天）
      */
-    private int expireDataDays = 7;
+    private int expireDataDays = 30;
 
     /**
      * 系统日志过期时间（天）
@@ -42,7 +42,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * 记录同步失败日志最大长度
      */
-    private int maxStorageErrorLength = 2048;
+    private int maxStorageErrorLength = 8192;
 
     /**
      * 是否记录全量数据（false-关闭; true-开启）
