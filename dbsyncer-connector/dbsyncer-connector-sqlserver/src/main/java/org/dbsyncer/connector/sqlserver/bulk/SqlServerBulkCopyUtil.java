@@ -71,7 +71,8 @@ public class SqlServerBulkCopyUtil {
 
         // SQL Server 参数限制：最多 2100 个参数
         // 每个字段一个参数，所以每批最多 2100 / 字段数 条记录
-        int maxParamsPerBatch = 2100;
+        // 注意：为了安全起见，我们使用 2099 而不是 2100，避免边界情况
+        int maxParamsPerBatch = 2099;
         int fieldsCount = fields.size();
         int maxRowsPerBatch = maxParamsPerBatch / fieldsCount;
         
@@ -82,8 +83,8 @@ public class SqlServerBulkCopyUtil {
         int totalProcessed = 0;
         int batchCount = (int) Math.ceil((double) dataList.size() / maxRowsPerBatch);
         
-        logger.info("开始批量{}，总数据量: {}, 字段数: {}, 每批最大行数: {}, 批次数: {}", 
-                   operationName, dataList.size(), fieldsCount, maxRowsPerBatch, batchCount);
+        logger.info("开始批量{}，总数据量: {}, 字段数: {}, 每批最大行数: {}, 批次数: {}, 参数限制: {}", 
+                   operationName, dataList.size(), fieldsCount, maxRowsPerBatch, batchCount, maxParamsPerBatch);
 
         for (int batchIndex = 0; batchIndex < batchCount; batchIndex++) {
             int startIndex = batchIndex * maxRowsPerBatch;
