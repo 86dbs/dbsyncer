@@ -883,8 +883,8 @@
                             class="table-mapping-row"
                             data-source-table="${sourceTableName}" 
                             data-target-table="${targetTableName}"
-                            data-source-pk=""
-                            data-target-pk="">
+                            data-source-isPk=""
+                            data-target-isPk="">
                             <td>${index + 1}</td>
                             <td>${sourceTableName}</td>
                             <td>${targetTableName}</td>
@@ -1069,8 +1069,8 @@
             
             const sourceTableName = $row.find('td:eq(1)').text().trim();
             const targetTableName = $row.find('td:eq(2)').text().trim();
-            const sourcePK = $row.data('source-pk') || '';
-            const targetPK = $row.data('target-pk') || '';
+            const sourcePK = $row.data('source-isPk') || '';
+            const targetPK = $row.data('target-isPk') || '';
             const sourceFields = $row.data('source-fields') || [];
             const targetFields = $row.data('target-fields') || [];
             const fieldMappings = $row.data('field-mappings') || [];
@@ -1084,23 +1084,55 @@
                     };
                 });
                 
+                // 更新源字段的 pk 属性
+                const updatedSourceFields = sourceFields.map(function(field) {
+                    const fieldName = field.name || (typeof field.getName === 'function' ? field.getName() : '');
+                    const mapping = fieldMappings.find(function(fm) {
+                        return fm.source === fieldName;
+                    });
+                    
+                    // 创建字段副本并更新 pk 属性
+                    const updatedField = Object.assign({}, field);
+                    if (mapping) {
+                        updatedField.pk = mapping.sourcePk || false;
+                    }
+                    return updatedField;
+                });
+                
+                // 更新目标字段的 pk 属性
+                const updatedTargetFields = targetFields.map(function(field) {
+                    const fieldName = field.name || (typeof field.getName === 'function' ? field.getName() : '');
+                    const mapping = fieldMappings.find(function(fm) {
+                        return fm.target === fieldName;
+                    });
+                    
+                    // 创建字段副本并更新 pk 属性
+                    const updatedField = Object.assign({}, field);
+                    if (mapping) {
+                        updatedField.pk = mapping.targetPk || false;
+                    }
+                    return updatedField;
+                });
+                
                 const tableMapping = {
                     sourceTable: {
                         name: sourceTableName,
                         schema: step1Data.sourceSchema || 'public',
-                        columns: sourceFields,
+                        columns: updatedSourceFields,
                         primaryKeys: sourcePK ? sourcePK.split(',') : []
                     },
                     targetTable: {
                         name: targetTableName,
                         schema: step1Data.targetSchema || 'public',
-                        columns: targetFields,
+                        columns: updatedTargetFields,
                         primaryKeys: targetPK ? targetPK.split(',') : []
                     },
                     fieldMapping: fieldMappingArray
                 };
                 
                 console.log('[第二步] 表映射:', sourceTableName, '->', targetTableName, '字段映射:', fieldMappingArray.length);
+                console.log('[第二步] 源字段（已更新主键）:', updatedSourceFields);
+                console.log('[第二步] 目标字段（已更新主键）:', updatedTargetFields);
                 tableMappings.push(tableMapping);
             }
         });
@@ -1278,8 +1310,8 @@
                             class="table-mapping-row"
                             data-source-table="${sourceTableName}" 
                             data-target-table="${targetTableName}"
-                            data-source-pk="${sourcePKs}"
-                            data-target-pk="${targetPKs}">
+                            data-source-isPk="${sourcePKs}"
+                            data-target-isPk="${targetPKs}">
                             <td>${index + 1}</td>
                             <td>${sourceTableName}</td>
                             <td>${targetTableName}</td>
@@ -1421,6 +1453,8 @@
         const fieldMappings = [];
         sourceFields.forEach(function(sourceField) {
             const sourceFieldName = sourceField.name || sourceField.getName();
+            const sourcePk = sourceField.pk || (typeof sourceField.isPk === 'function' ? sourceField.isPk() : false);
+            
             // 查找目标表中同名的字段
             const matchingTarget = targetFields.find(function(targetField) {
                 const targetFieldName = targetField.name || targetField.getName();
@@ -1428,9 +1462,13 @@
             });
             
             if (matchingTarget) {
+                const targetPk = matchingTarget.pk || (typeof matchingTarget.isPk === 'function' ? matchingTarget.isPk() : false);
+                
                 fieldMappings.push({
                     source: sourceFieldName,
-                    target: matchingTarget.name || matchingTarget.getName()
+                    target: matchingTarget.name || matchingTarget.getName(),
+                    sourcePk: sourcePk,
+                    targetPk: targetPk
                 });
             }
         });
@@ -1481,11 +1519,18 @@
             
             let rows = '';
             fieldMappings.forEach(function(mapping, index) {
+                // 只有当源字段和目标字段都是主键时才显示为主键
+                const isPk = mapping.sourcePk && mapping.targetPk;
+                const pkClass = isPk ? 'pk-active' : '';
+                const pkIcon = isPk ? '<i class="fa fa-key" style="color: #f59e0b;"></i>' : '<i class="fa fa-circle-o" style="color: #d1d5db;"></i>';
+                
                 rows += `
-                    <tr data-mapping-index="${index}">
+                    <tr data-mapping-index="${index}" class="field-mapping-row" style="cursor: pointer;">
                         <td>${mapping.source}</td>
-                        <td style="text-align: center;"><i class="fa fa-arrow-right" style="color: var(--primary-color);"></i></td>
                         <td>${mapping.target}</td>
+                        <td class="pk-cell ${pkClass}" style="text-align: center;" title="点击设置/取消主键">
+                            ${pkIcon}
+                        </td>
                         <td style="text-align: center;">
                             <button type="button" class="btn btn-sm btn-danger remove-mapping-btn" data-index="${index}">
                                 <i class="fa fa-trash"></i>
@@ -1500,6 +1545,21 @@
         // 创建自定义对话框HTML
         const dialogId = 'fieldMappingDialog_' + Date.now();
         const dialogHtml = `
+            <style>
+                .pk-cell {
+                    transition: all 0.2s ease;
+                }
+                .pk-cell:hover {
+                    background-color: #fef3c7 !important;
+                    cursor: pointer;
+                }
+                .pk-cell.pk-active {
+                    background-color: #fef3c7;
+                }
+                .field-mapping-row:hover {
+                    background-color: #f9fafb;
+                }
+            </style>
             <div class="confirm-overlay" id="${dialogId}" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
                 <div class="confirm-dialog size-max" style="background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); max-width: 90%; max-height: 90%; overflow: hidden; display: flex; flex-direction: column;">
                     <!-- 对话框头部 -->
@@ -1563,8 +1623,10 @@
                                 <thead style="position: sticky; top: 0; background: #f9fafb; z-index: 1;">
                                     <tr>
                                         <th style="width: 40%;">源字段</th>
-                                            <th style="width: 10%; text-align: center;"></th>
                                         <th style="width: 40%;">目标字段</th>
+                                        <th style="width: 10%; text-align: center;">
+                                            <i class="fa fa-key" style="color: var(--warning-color);" title="主键"></i>
+                                        </th>
                                         <th style="width: 10%; text-align: center;">操作</th>
                                         </tr>
                                     </thead>
@@ -1670,12 +1732,20 @@
                     rows = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">暂无字段映射</td></tr>';
                 } else {
                     fieldMappings.forEach(function(mapping, index) {
-                        console.log('[更新映射显示] 映射[' + index + ']:', mapping.source, '->', mapping.target);
+                        console.log('[更新映射显示] 映射[' + index + ']:', mapping.source, '->', mapping.target, 'sourcePk:', mapping.sourcePk, 'targetPk:', mapping.targetPk);
+                        
+                        // 只有当源字段和目标字段都是主键时才显示为主键
+                        const isPk = mapping.sourcePk && mapping.targetPk;
+                        const pkClass = isPk ? 'pk-active' : '';
+                        const pkIcon = isPk ? '<i class="fa fa-key" style="color: #f59e0b;"></i>' : '<i class="fa fa-circle-o" style="color: #d1d5db;"></i>';
+                        
                         rows += `
-                            <tr data-mapping-index="${index}">
+                            <tr data-mapping-index="${index}" class="field-mapping-row" style="cursor: pointer;">
                                 <td>${mapping.source}</td>
-                                <td style="text-align: center;"><i class="fa fa-arrow-right" style="color: var(--primary-color);"></i></td>
                                 <td>${mapping.target}</td>
+                                <td class="pk-cell ${pkClass}" style="text-align: center;" title="点击设置/取消主键">
+                                    ${pkIcon}
+                                </td>
                                 <td style="text-align: center;">
                                     <button type="button" class="btn btn-sm btn-danger remove-mapping-btn" data-index="${index}">
                                         <i class="fa fa-trash"></i>
@@ -1702,6 +1772,33 @@
                     fieldMappings.splice(index, 1);
                     updateMappingDisplay();
                     bootGrowl("已删除字段映射", "info");
+                    
+                    return false;
+                });
+                
+                // 绑定主键单元格点击事件 - 点击一次同时设置源和目标主键
+                $('.pk-cell').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    const $cell = $(this);
+                    const $row = $cell.closest('tr');
+                    const index = $row.data('mapping-index');
+                    
+                    console.log('[切换主键] 行索引:', index);
+                    
+                    // 切换主键状态：如果当前是主键，则取消；如果不是主键，则设置为主键
+                    const currentIsPk = fieldMappings[index].sourcePk && fieldMappings[index].targetPk;
+                    const newPkState = !currentIsPk;
+                    
+                    fieldMappings[index].sourcePk = newPkState;
+                    fieldMappings[index].targetPk = newPkState;
+                    
+                    console.log('[切换主键] 新主键状态:', newPkState);
+                    
+                    // 重新渲染
+                    updateMappingDisplay();
                     
                     return false;
                 });
@@ -1767,7 +1864,9 @@
                 // 添加新映射
                 fieldMappings.push({
                     source: sourceField,
-                    target: targetField
+                    target: targetField,
+                    sourcePk: false,
+                    targetPk: false
                 });
                 
                 console.log('[添加字段映射] 已添加，当前映射数量:', fieldMappings.length);
@@ -1794,15 +1893,21 @@
             const newMappings = [];
             sourceFields.forEach(function(sourceField) {
                 const sourceFieldName = sourceField.name || sourceField.getName();
+                const sourcePk = sourceField.pk || (typeof sourceField.isPk === 'function' ? sourceField.isPk() : false);
+                
                 const matchingTarget = targetFields.find(function(targetField) {
                     const targetFieldName = targetField.name || targetField.getName();
                     return targetFieldName === sourceFieldName;
                 });
                 
                 if (matchingTarget) {
+                    const targetPk = matchingTarget.pk || (typeof matchingTarget.isPk === 'function' ? matchingTarget.isPk() : false);
+                    
                     newMappings.push({
                         source: sourceFieldName,
-                        target: matchingTarget.name || matchingTarget.getName()
+                        target: matchingTarget.name || matchingTarget.getName(),
+                        sourcePk: sourcePk,
+                        targetPk: targetPk
                     });
                 }
             });
