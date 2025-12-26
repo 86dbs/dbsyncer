@@ -6,7 +6,8 @@
 - 新功能：提供任务查询功能。
 - 功能调整：数据源独立管理。
 - 缺陷：修复 sql server CT 模式下无法删除数据问题。
-性能优化：sql server CT 模式下避免 DML 每次都查主键（getPrimaryKeys）。
+- 缺陷：修复 sql server 同构同步自增主键无法建表问题。
+- 性能优化：sql server CT 模式下避免 DML 每次都查主键（getPrimaryKeys）。
 
 ## 2.8.0
 
