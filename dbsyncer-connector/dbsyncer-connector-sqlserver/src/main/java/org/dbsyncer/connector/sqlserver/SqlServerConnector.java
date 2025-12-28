@@ -28,9 +28,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * SqlServer连接器实现
@@ -40,10 +38,11 @@ import java.util.stream.Stream;
  * @Date 2022-05-22 22:56
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
+    private final String QUERY_DATABASE = "SELECT name FROM SYS.DATABASES WHERE database_id > 4 order by name";
+    private final String QUERY_SCHEMA = "SELECT name FROM sys.schemas WHERE name NOT IN ('sys','INFORMATION_SCHEMA','db_owner','db_accessadmin','db_securityadmin','db_ddladmin','db_backupoperator','db_datareader','db_datawriter','db_denydatareader','db_denydatawriter') order by name";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
     private final String SET_TABLE_IDENTITY_ON = "set identity_insert %s.[%s] on;";
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
-    private final Set<String> SYSTEM_DATABASES = Stream.of("master", "tempdb", "model", "msdb").collect(Collectors.toSet());
 
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
 
@@ -70,13 +69,13 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String queryDatabaseSql() {
-        return "SELECT NAME FROM SYS.DATABASES WHERE DATABASE_ID > 4";
+    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
-    public boolean isSystemDatabase(String database) {
-        return SYSTEM_DATABASES.contains(database.toLowerCase());
+    public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override

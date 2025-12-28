@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -117,6 +118,24 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     @Override
     public Connector getConnector(String id) {
         return StringUtil.isNotBlank(id) ? profileComponent.getConnector(id) : null;
+    }
+
+    @Override
+    public List<String> getDatabase(String id) {
+        Connector connector = profileComponent.getConnector(id);
+        return connector != null ? connector.getDatabases() : Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getSchema(String id, String database) {
+        Connector connector = profileComponent.getConnector(id);
+        if (connector != null) {
+            ConnectorConfig config = connector.getConfig();
+            org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
+            return connectorService.getSchemas(connectorInstance, database);
+        }
+        return Collections.emptyList();
     }
 
     @Override

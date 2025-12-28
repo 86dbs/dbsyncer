@@ -55,6 +55,23 @@ public interface ConnectorService {
     Connector getConnector(String id);
 
     /**
+     * 获取数据库信息
+     *
+     * @param id
+     * @return
+     */
+    List<String> getDatabase(String id);
+
+    /**
+     * 获取Schema信息
+     *
+     * @param id
+     * @param catalog
+     * @return
+     */
+    List<String> getSchema(String id, String catalog);
+
+    /**
      * 获取所有连接器
      *
      * @return

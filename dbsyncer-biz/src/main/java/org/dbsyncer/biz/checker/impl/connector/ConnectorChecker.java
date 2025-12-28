@@ -96,8 +96,6 @@ public class ConnectorChecker extends AbstractChecker {
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
         ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
         connector.setDatabases(connectorService.getDatabases(connectorInstance));
-        // TODO
-        connector.setSchemas(null);
     }
 
     private ConnectorConfig getConfig(String connectorType) {

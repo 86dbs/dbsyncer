@@ -12,6 +12,7 @@ import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -26,9 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.Types;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * PostgreSQL连接器实现
@@ -41,9 +39,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private final String QUERY_DATABASE = "SELECT datname FROM pg_database WHERE datistemplate = FALSE order by datname";
+    private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '#' and schema_name NOT LIKE 'pg_%' AND schema_name not in('information_schema') order by schema_name";
+
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
-    private final Set<String> SYSTEM_DATABASES = Stream.of("template0", "template1").collect(Collectors.toSet());
 
     public PostgreSQLConnector() {
         VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
@@ -70,6 +70,16 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             return new PostgreSQLListener();
         }
         return null;
+    }
+
+    @Override
+    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
+    }
+
+    @Override
+    public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
     }
 
     @Override
@@ -160,13 +170,4 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         return url.toString();
     }
 
-    @Override
-    public String queryDatabaseSql() {
-        return "SELECT DATNAME FROM PG_DATABASE WHERE DATISTEMPLATE = FALSE";
-    }
-
-    @Override
-    public boolean isSystemDatabase(String database) {
-        return SYSTEM_DATABASES.contains(database.toLowerCase());
-    }
 }

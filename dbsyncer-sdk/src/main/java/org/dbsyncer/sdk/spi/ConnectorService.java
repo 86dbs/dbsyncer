@@ -21,6 +21,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -84,9 +85,19 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * @param connectorInstance
      * @return
      */
-    default List<String> getDatabases(I connectorInstance){
-        // TODO 所有的连接器都需实现
-        throw new SdkException("Not support method.");
+    default List<String> getDatabases(I connectorInstance) {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 获取指定数据库名的Schema
+     *
+     * @param connectorInstance
+     * @param catalog
+     * @return
+     */
+    default List<String> getSchemas(I connectorInstance, String catalog) {
+        return Collections.emptyList();
     }
 
     /**

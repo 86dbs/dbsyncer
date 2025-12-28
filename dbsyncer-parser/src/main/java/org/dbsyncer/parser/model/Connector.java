@@ -26,11 +26,6 @@ public class Connector extends ConfigModel {
      */
     private List<String> databases;
 
-    /**
-     * Schema列表
-     */
-    private List<String> schemas;
-
     public ConnectorConfig getConfig() {
         return config;
     }
@@ -48,11 +43,4 @@ public class Connector extends ConfigModel {
         this.databases = databases;
     }
 
-    public List<String> getSchemas() {
-        return schemas;
-    }
-
-    public void setSchemas(List<String> schemas) {
-        this.schemas = schemas;
-    }
 }

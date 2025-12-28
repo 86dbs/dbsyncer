@@ -74,7 +74,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
         // TODO 扫描当前路径下的文件名 ls *.db *.sqlite
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 
     @Override

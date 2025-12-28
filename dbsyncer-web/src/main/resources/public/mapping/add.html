@@ -56,11 +56,11 @@
             <div class="grid grid-cols-2 mt-5">
                 <div class="form-item">
                     <label class="form-label">源Schema</label>
-                    <input class="form-control" name="sourceSchema" id="sourceSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
+                    <select name="sourceSchema" id="sourceSchema" class="form-control"></select>
                 </div>
                 <div class="form-item">
                     <label class="form-label">目标Schema</label>
-                    <input class="form-control" name="targetSchema" id="targetSchema" type="text" maxlength="100" placeholder="请输入Schema名称" />
+                    <select name="targetSchema" id="targetSchema" class="form-control"></select>
                 </div>
             </div>
 
@@ -114,57 +114,78 @@
 </div>
 
 <script>
-function onConnectorChange(connectorId, databaseSelect) {
-    doGetter('/connector/getConnectorInfo', { id: connectorId }, function(response){
-        if (response.success && response.data) {
-            // 保存连接器类型
-            // connectorTypes[type] = connector.config.connectorType.toLowerCase();
-            const databases = response.data.databases;
-            if (databases && databases.length > 0) {
-                let db = [];
-                databases.forEach(function(dbName) {
-                    db.push({ label: dbName, value: dbName, disabled: false })
-                });
-                databaseSelect.setData(db);
-            }
-        } else {
-            bootGrowl("获取库列表失败: " + response.message, "danger");
-        }
-    })
-}
-
-function initDBSelect($sourceConnectorId, $sourceDatabase) {
-    const dbSelect = $sourceDatabase.dbSelect({});
-    let connectorSelect = $sourceConnectorId.dbSelect({
-        type: 'single',
-        onSelect: function (connectorId) {
-            onConnectorChange(connectorId[0], dbSelect);
-        }
-    });
-    let selected = connectorSelect.getValues();
-    if (selected.length >= 1) {
-        onConnectorChange(selected[0], dbSelect);
-    }
-}
-
-$(document).ready(function() {
-    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'));
-    initDBSelect($('#targetConnectorId'), $('#targetDatabase'));
-
-    //保存
-    $("#mappingSubmitBtn").click(function () {
-        const $form = $("#mappingAddForm");
-        if (validateForm($form)) {
-            doPoster("/mapping/add", $form.serializeJson(), function (response) {
-                if (response.success === true) {
-                    bootGrowl("新增驱动成功!", "success");
-                    backIndexPage();
-                } else {
-                    bootGrowl(response.message, "danger");
+    function onDBChange(connectorId, schemaSelect) {
+        doGetter('/connector/getSchema', {id: connectorId}, function (response) {
+            if (response.success && response.data) {
+                const schemas = response.data;
+                if (schemas && schemas.length > 0) {
+                    let array = [];
+                    schemas.forEach(function (schema) {
+                        array.push({label: schema, value: schema, disabled: false})
+                    });
+                    schemaSelect.setData(array);
                 }
-            });
+            } else {
+                bootGrowl("获取Schema信息失败: " + response.message, "danger");
+            }
+        })
+    }
+
+    function onConnectorChange(connectorId, databaseSelect, schemaSelect) {
+        doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
+            if (response.success && response.data) {
+                const databases = response.data;
+                if (databases && databases.length > 0) {
+                    let db = [];
+                    databases.forEach(function (dbName) {
+                        db.push({label: dbName, value: dbName, disabled: false})
+                    });
+                    databaseSelect.setData(db);
+                }
+            } else {
+                bootGrowl("获取数据库信息失败: " + response.message, "danger");
+            }
+        })
+    }
+
+    function initDBSelect($connector, $database, $schema) {
+        const schemaSelect = $schema.dbSelect({});
+        const dbSelect = $database.dbSelect({
+            type: 'single',
+            onSelect: function (connectorId) {
+                onDBChange(connectorId[0], dbSelect, schemaSelect);
+            }
+        });
+        let connectorSelect = $connector.dbSelect({
+            type: 'single',
+            onSelect: function (connectorId) {
+                onConnectorChange(connectorId[0], dbSelect, schemaSelect);
+            }
+        });
+        let selected = connectorSelect.getValues();
+        if (selected.length >= 1) {
+            onConnectorChange(selected[0], dbSelect, schemaSelect);
         }
-    });
-})
+    }
+
+    $(document).ready(function() {
+        initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
+        initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
+
+        //保存
+        $("#mappingSubmitBtn").click(function () {
+            const $form = $("#mappingAddForm");
+            if (validateForm($form)) {
+                doPoster("/mapping/add", $form.serializeJson(), function (response) {
+                    if (response.success === true) {
+                        bootGrowl("新增驱动成功!", "success");
+                        backIndexPage();
+                    } else {
+                        bootGrowl(response.message, "danger");
+                    }
+                });
+            }
+        });
+    })
 </script>
 </html>

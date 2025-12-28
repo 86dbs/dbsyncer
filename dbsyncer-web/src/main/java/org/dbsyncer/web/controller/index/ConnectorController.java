@@ -131,15 +131,26 @@ public class ConnectorController extends BaseController {
             }
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail("连接测试失败: " + e.getMessage());
+            return RestResult.restFail(e.getMessage());
         }
     }
 
-    @GetMapping("/getConnectorInfo")
+    @GetMapping("/getDatabase")
     @ResponseBody
-    public RestResult getConnectorInfo(String id) {
+    public RestResult getDatabase(String id) {
         try {
-            return RestResult.restSuccess(connectorService.getConnector(id));
+            return RestResult.restSuccess(connectorService.getDatabase(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getSchema")
+    @ResponseBody
+    public RestResult getSchema(String id, String database) {
+        try {
+            return RestResult.restSuccess(connectorService.getSchema(id, database));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

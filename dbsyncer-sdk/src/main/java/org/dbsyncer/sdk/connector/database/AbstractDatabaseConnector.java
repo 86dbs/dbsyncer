@@ -90,17 +90,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> {
-            List<String> databases = databaseTemplate.queryForList(queryDatabaseSql(), String.class);
-            if (!CollectionUtils.isEmpty(databases)) {
-                return databases.stream().filter(name -> !isSystemDatabase(name)).collect(Collectors.toList());
-            }
-            return Collections.EMPTY_LIST;
-        });
-    }
-
-    @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
         return connectorInstance.execute(databaseTemplate -> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
@@ -399,25 +388,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             sql.insert(0, " WHERE ");
         }
         return sql.toString();
-    }
-
-    /**
-     * 查询所有的数据库名
-     *
-     * @return
-     */
-    protected String queryDatabaseSql(){
-        return "";
-    }
-
-    /**
-     * 是否是系统表
-     *
-     * @param database
-     * @return
-     */
-    protected boolean isSystemDatabase(String database){
-        return false;
     }
 
     /**

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.mysql;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
 import org.dbsyncer.connector.mysql.schema.MySQLDateValueMapper;
@@ -12,6 +13,7 @@ import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.Types;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,13 +76,14 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String queryDatabaseSql() {
-        return "SHOW DATABASES";
-    }
-
-    @Override
-    public boolean isSystemDatabase(String database) {
-        return SYSTEM_DATABASES.contains(database.toLowerCase());
+    public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
+        return connectorInstance.execute(databaseTemplate -> {
+            List<String> databases = databaseTemplate.queryForList("SHOW DATABASES", String.class);
+            if (!CollectionUtils.isEmpty(databases)) {
+                return databases.stream().filter(name -> !SYSTEM_DATABASES.contains(name.toLowerCase())).collect(Collectors.toList());
+            }
+            return Collections.emptyList();
+        });
     }
 
     @Override

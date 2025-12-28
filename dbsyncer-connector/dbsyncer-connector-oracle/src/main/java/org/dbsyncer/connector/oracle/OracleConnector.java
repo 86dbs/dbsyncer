@@ -12,6 +12,7 @@ import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -26,9 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Oracle连接器实现
@@ -40,9 +39,9 @@ import java.util.Set;
 public final class OracleConnector extends AbstractDatabaseConnector {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final String QUERY_SCHEMA = "SELECT USERNAME FROM ALL_USERS where USERNAME not in('ANONYMOUS','APEX_030200','APEX_PUBLIC_USER','APPQOSSYS','BI','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','HR','IX','MDDATA','MDSYS','MGMT_VIEW','OE','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','OWBSYS_AUDIT','PM','SCOTT','SH','SI_INFORMTN_SCHEMA','SPATIAL_CSW_ADMIN_USR','SPATIAL_WFS_ADMIN_USR','SYS','SYSMAN','SYSTEM','WMSYS','XDB','XS$NULL') ORDER BY USERNAME";
 
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
-
     private final OracleSchemaResolver schemaResolver = new OracleSchemaResolver();
 
     public OracleConnector() {
@@ -73,29 +72,8 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String queryDatabaseSql() {
-        return "SELECT USERNAME FROM ALL_USERS ORDER BY USERNAME";
-    }
-
-    @Override
-    public boolean isSystemDatabase(String database) {
-        Set<String> tables = new HashSet<>();
-        // Oracle系统用户
-        tables.add("SYS");
-        tables.add("SYSTEM");
-        tables.add("DBSNMP");
-        tables.add("SYSMAN");
-        tables.add("OUTLN");
-        tables.add("MDSYS");
-        tables.add("ORDSYS");
-        tables.add("EXFSYS");
-        tables.add("CTXSYS");
-        tables.add("XDB");
-        tables.add("ANONYMOUS");
-        tables.add("ORACLE_OCM");
-        tables.add("APPQOSSYS");
-        tables.add("WMSYS");
-        return tables.contains(database.toUpperCase());
+    public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override

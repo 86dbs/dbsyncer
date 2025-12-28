@@ -169,7 +169,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                 // 排除系统索引
                 return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(Table::new).collect(Collectors.toList());
             }
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ElasticsearchException(e);
