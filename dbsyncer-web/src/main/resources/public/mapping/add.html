@@ -114,34 +114,34 @@
 </div>
 
 <script>
-    function onDBChange(connectorId, schemaSelect) {
-        doGetter('/connector/getSchema', {id: connectorId}, function (response) {
+    function onDBChange(connectorId, schemaSelect, dbName) {
+        doGetter('/connector/getSchema', {id: connectorId, database: dbName}, function (response) {
             if (response.success && response.data) {
+                let array = [];
                 const schemas = response.data;
                 if (schemas && schemas.length > 0) {
-                    let array = [];
                     schemas.forEach(function (schema) {
                         array.push({label: schema, value: schema, disabled: false})
                     });
-                    schemaSelect.setData(array);
                 }
+                schemaSelect.setData(array);
             } else {
                 bootGrowl("获取Schema信息失败: " + response.message, "danger");
             }
         })
     }
 
-    function onConnectorChange(connectorId, databaseSelect, schemaSelect) {
+    function onConnectorChange(connectorId, dbSelect) {
         doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
             if (response.success && response.data) {
                 const databases = response.data;
+                let db = [];
                 if (databases && databases.length > 0) {
-                    let db = [];
                     databases.forEach(function (dbName) {
                         db.push({label: dbName, value: dbName, disabled: false})
                     });
-                    databaseSelect.setData(db);
                 }
+                dbSelect.setData(db);
             } else {
                 bootGrowl("获取数据库信息失败: " + response.message, "danger");
             }
@@ -149,22 +149,32 @@
     }
 
     function initDBSelect($connector, $database, $schema) {
+        // 为每个 select 组维护独立的连接器ID，避免上下文串用
+        let currentConnectorId = null;
+        
         const schemaSelect = $schema.dbSelect({});
-        const dbSelect = $database.dbSelect({
-            type: 'single',
-            onSelect: function (connectorId) {
-                onDBChange(connectorId[0], dbSelect, schemaSelect);
-            }
-        });
         let connectorSelect = $connector.dbSelect({
             type: 'single',
             onSelect: function (connectorId) {
-                onConnectorChange(connectorId[0], dbSelect, schemaSelect);
+                // 更新当前组的连接器ID
+                currentConnectorId = connectorId[0];
+                onConnectorChange(currentConnectorId, dbSelect);
             }
         });
+        const dbSelect = $database.dbSelect({
+            type: 'single',
+            onSelect: function (selected) {
+                if (currentConnectorId) {
+                    onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '');
+                }
+            }
+        });
+        
+        // 初始化：如果有默认选中的连接器，设置初始值
         let selected = connectorSelect.getValues();
         if (selected.length >= 1) {
-            onConnectorChange(selected[0], dbSelect, schemaSelect);
+            currentConnectorId = selected[0];
+            onConnectorChange(currentConnectorId, dbSelect);
         }
     }
 
