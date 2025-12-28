@@ -62,25 +62,4 @@ public abstract class DatabaseUtil {
         throw new SdkException("database is invalid");
     }
 
-    public static Properties parseJdbcProperties(String params) {
-        Properties properties = new Properties();
-        if (params == null || params.trim().isEmpty()) {
-            return properties;
-        }
-        // 按&分割参数
-        String[] paramArray = params.split("&");
-        for (String param : paramArray) {
-            // 按=分割键值对
-            String[] keyValue = param.split("=", 2);
-            if (keyValue.length == 2) {
-                String key = keyValue[0].trim();
-                String value = keyValue[1].trim();
-                if (!key.isEmpty()) {
-                    properties.put(key, value);
-                }
-            }
-        }
-        return properties;
-    }
-
 }

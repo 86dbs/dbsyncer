@@ -53,11 +53,6 @@ public class DatabaseConfig extends ConnectorConfig {
      */
     private String serviceName;
 
-    /**
-     * 参数配置
-     */
-    private String properties;
-
     private String url;
 
     public String getDriverClassName() {
@@ -122,14 +117,6 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
-    }
-
-    public String getProperties() {
-        return properties;
-    }
-
-    public void setProperties(String properties) {
-        this.properties = properties;
     }
 
     public String getUrl() {

@@ -9,7 +9,6 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.connector.database.ds.SimpleDataSource;
-import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -33,7 +32,7 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
         this.config = config;
         this.catalog = catalog;
         this.schema = schema;
-        Properties properties = DatabaseUtil.parseJdbcProperties(config.getProperties());
+        Properties properties = config.getProperties();
         if (StringUtil.isNotBlank(config.getUsername())) {
             properties.put("user", config.getUsername());
         }
@@ -82,11 +81,9 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
             try {
                 if (StringUtil.isNotBlank(catalog)) {
                     simpleConnection.setCatalog(catalog);
-                    logger.debug("Set catalog to: {}", catalog);
                 }
                 if (StringUtil.isNotBlank(schema)) {
                     simpleConnection.setSchema(schema);
-                    logger.debug("Set schema to: {}", schema);
                 }
             } catch (SQLException e) {
                 logger.warn("Failed to set catalog/schema: {}", e.getMessage());

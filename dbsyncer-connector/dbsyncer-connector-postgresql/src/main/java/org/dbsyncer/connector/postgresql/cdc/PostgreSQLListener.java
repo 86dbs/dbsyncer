@@ -5,12 +5,13 @@ package org.dbsyncer.connector.postgresql.cdc;
 
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BooleanUtil;
-import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
-import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.connector.postgresql.constant.PostgreSQLConfigConstant;
+import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
@@ -51,9 +52,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private static final String GET_DATABASE = "SELECT current_database()";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
-    private static final String PLUGIN_NAME = "pluginName";
     private static final String LSN_POSITION = "position";
-    private static final String DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
     private DatabaseConfig config;
@@ -97,20 +96,20 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
             }
 
             database = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
-            Properties properties = DatabaseUtil.parseJdbcProperties(config.getProperties());
-            messageDecoder = MessageDecoderEnum.getMessageDecoder(properties.getProperty(PLUGIN_NAME));
+            Properties extInfo = config.getExtInfo();
+            messageDecoder = MessageDecoderEnum.getMessageDecoder(extInfo.getProperty(PostgreSQLConfigConstant.PLUGIN_NAME));
             messageDecoder.setMetaId(metaId);
             messageDecoder.setConfig(config);
             messageDecoder.setDatabase(database);
             messageDecoder.setSchema(schema);
             messageDecoder.postProcessBeforeInitialization(connectorService, instance, database);
-            dropSlotOnClose = BooleanUtil.toBoolean(properties.getProperty(DROP_SLOT_ON_CLOSE, "true"));
+            dropSlotOnClose = BooleanUtil.toBoolean(extInfo.getProperty(PostgreSQLConfigConstant.DROP_SLOT_ON_CLOSE, "true"));
 
             connect();
             connected = true;
 
             worker = new Worker();
-            worker.setName(new StringBuilder("wal-parser-").append(config.getUrl()).append("_").append(worker.hashCode()).toString());
+            worker.setName("wal-parser-" + config.getUrl() + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {

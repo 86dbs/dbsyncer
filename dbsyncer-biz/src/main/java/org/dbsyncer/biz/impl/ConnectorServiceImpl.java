@@ -73,7 +73,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public String copy(String id) {
-        Connector connector = getConnector(id);
+        Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
         Map params = JsonUtil.parseMap(connector.getConfig());
@@ -117,7 +117,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public Connector getConnector(String id) {
-        return StringUtil.isNotBlank(id) ? profileComponent.getConnector(id) : null;
+        return profileComponent.getConnector(id);
     }
 
     @Override

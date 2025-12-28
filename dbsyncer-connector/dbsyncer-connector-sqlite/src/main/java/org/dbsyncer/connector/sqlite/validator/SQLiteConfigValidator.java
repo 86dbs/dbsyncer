@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -32,7 +33,7 @@ public class SQLiteConfigValidator extends AbstractDataBaseConfigValidator {
         Assert.isTrue(keepAlive >= 10000 && keepAlive <= 120000, "有效期只允许输入10000-120000.");
 
         connectorConfig.setServiceName(serviceName);
-        connectorConfig.setProperties(properties);
+        connectorConfig.setProperties(PropertiesUtil.parse(properties));
         connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, serviceName));
         connectorConfig.setDriverClassName(driverClassName);
         connectorConfig.setMaxActive(maxActive);

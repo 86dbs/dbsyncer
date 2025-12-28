@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -45,7 +46,7 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
         connectorConfig.setServiceName(serviceName);
-        connectorConfig.setProperties(properties);
+        connectorConfig.setProperties(PropertiesUtil.parse(properties));
         connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, StringUtil.EMPTY));
         connectorConfig.setDriverClassName(driverClassName);
         connectorConfig.setMaxActive(maxActive);
