@@ -127,6 +127,11 @@ function bindQueryDataEvent() {
             }
         });
     })
+    return {
+        search: function() {
+            pagination.doSearch(params(), pagination.currentPage);
+        }
+    }
 }
 
 // 将 JSON 对象转换为表格 HTML
@@ -199,7 +204,7 @@ function bindQueryLogEvent() {
         }
     });
     // 搜索框输入事件
-    initSearch('searchLog', function (searchKey) {
+    const searchApi = initSearch('searchLog', function (searchKey) {
         pagination.doSearch({'json': searchKey});
     });
 
@@ -220,7 +225,13 @@ function bindQueryLogEvent() {
                 });
             }
         });
-    })
+    });
+
+    return {
+        search: function () {
+            pagination.doSearch({'json': searchApi.getValue()}, pagination.currentPage);
+        }
+    }
 }
 
 // 查看表执行器
@@ -267,6 +278,11 @@ function bindQueryActuatorEvent() {
         },
         emptyHtml: '<td colspan="3" class="text-center"><i class="fa fa-tasks empty-icon"></i><p class="empty-text">暂无数据</p></td>'
     });
+    return {
+        search: function() {
+            pagination.doSearch(params(), pagination.currentPage);
+        }
+    }
 }
 
 $(function () {
@@ -563,14 +579,15 @@ $(function () {
     // 立即执行一次更新
     updateMonitorData();
 
-    bindQueryDataEvent();
-
-    bindQueryLogEvent();
-
-    bindQueryActuatorEvent();
+    const queryData = bindQueryDataEvent();
+    const queryLog = bindQueryLogEvent();
+    const queryActuator = bindQueryActuatorEvent();
 
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
         updateMonitorData();
+        queryData.search();
+        queryLog.search();
+        queryActuator.search();
     });
 });
