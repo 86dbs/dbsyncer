@@ -15,10 +15,10 @@ import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractListener<C extends ConnectorInstance> implements Listener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final int FLUSH_DELAYED_SECONDS = 20;
     protected ConnectorInstance connectorInstance;
     protected ConnectorInstance targetConnectorInstance;
     protected ConnectorService connectorService;
@@ -42,6 +41,8 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
+    // 保存上次持久化的 snapshot，用于判断是否发生变化
+    private Map<String, String> lastFlushedSnapshot;
 
     @Override
     public void register(Watcher watcher) {
@@ -86,13 +87,46 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     @Override
     public void flushEvent() throws Exception {
-        // 20s内更新，执行写入
-        if (watcher.getMetaUpdateTime() > Timestamp.valueOf(LocalDateTime.now().minusSeconds(FLUSH_DELAYED_SECONDS)).getTime()) {
-            if (!CollectionUtils.isEmpty(snapshot)) {
-                logger.info("snapshot：{}", snapshot);
-                watcher.flushEvent(snapshot);
+        if (CollectionUtils.isEmpty(snapshot)) {
+            return;
+        }
+        
+        // 判断 snapshot 是否发生变化，只有变化时才持久化
+        if (hasSnapshotChanged(snapshot, lastFlushedSnapshot)) {
+            logger.info("snapshot changed, flushing: {}", snapshot);
+            watcher.flushEvent(snapshot);
+            // 更新上次持久化的 snapshot（深拷贝）
+            lastFlushedSnapshot = new HashMap<>(snapshot);
+        }
+    }
+    
+    /**
+     * 判断 snapshot 是否发生变化
+     * 
+     * @param current 当前 snapshot
+     * @param last 上次持久化的 snapshot
+     * @return true 如果发生变化，false 如果未变化
+     */
+    private boolean hasSnapshotChanged(Map<String, String> current, Map<String, String> last) {
+        if (last == null || last.isEmpty()) {
+            // 首次持久化：如果当前 snapshot 不为空，则需要持久化
+            return !current.isEmpty();
+        }
+        
+        // 大小不同，肯定有变化
+        if (current.size() != last.size()) {
+            return true;
+        }
+        
+        // 比较所有 key-value
+        for (Map.Entry<String, String> entry : current.entrySet()) {
+            String lastValue = last.get(entry.getKey());
+            if (!Objects.equals(entry.getValue(), lastValue)) {
+                return true;
             }
         }
+        
+        return false;
     }
 
     @Override
@@ -167,6 +201,10 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     public void setSnapshot(Map<String, String> snapshot) {
         this.snapshot = snapshot;
+        // 初始化时，如果 snapshot 不为空，也初始化 lastFlushedSnapshot
+        if (this.lastFlushedSnapshot == null && !CollectionUtils.isEmpty(snapshot)) {
+            this.lastFlushedSnapshot = new HashMap<>(snapshot);
+        }
     }
 
     public void setMetaId(String metaId) {

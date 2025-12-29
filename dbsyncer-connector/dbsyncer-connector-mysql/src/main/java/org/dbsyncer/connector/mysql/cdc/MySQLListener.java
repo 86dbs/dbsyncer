@@ -152,6 +152,8 @@ public class MySQLListener extends AbstractDatabaseListener {
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
         }
+        // 即使没有同步数据，binlog 也在继续前进，需要更新 snapshot 以保持位置同步
+        refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
     }
 
     private void refreshSnapshot(String binlogFilename, long nextPosition) {
