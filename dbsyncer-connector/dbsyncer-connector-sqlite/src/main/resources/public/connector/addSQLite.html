@@ -23,7 +23,7 @@
             <label class="form-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" name="keepAlive" type="number" required min="10000" max="120000"
-                       th:value="${connector?.config?.keepAlive}?:60000" placeholder="默认60000"/>
+                       th:value="${connector?.config?.keepAlive}?:30000" placeholder="默认30000"/>
             </div>
         </div>
 

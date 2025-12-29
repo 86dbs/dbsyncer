@@ -22,8 +22,8 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -37,6 +37,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_VIEW = "SELECT name FROM sqlite_master WHERE type = 'view'";
     private final String QUERY_TABLE = "SELECT name FROM sqlite_master WHERE type='table'";
+    private final String QUERY_DATABASE = "PRAGMA database_list";
 
     private final SQLiteConfigValidator configValidator = new SQLiteConfigValidator();
 
@@ -73,8 +74,14 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        // TODO 扫描当前路径下的文件名 ls *.db *.sqlite
-        return Collections.emptyList();
+        return connectorInstance.execute(databaseTemplate -> {
+            Map<String, Object> result = databaseTemplate.queryForMap(QUERY_DATABASE);
+            List<String> list = new ArrayList<>();
+            if (!CollectionUtils.isEmpty(result)) {
+                list.add(String.valueOf(result.get("name")));
+            }
+            return list;
+        });
     }
 
     @Override

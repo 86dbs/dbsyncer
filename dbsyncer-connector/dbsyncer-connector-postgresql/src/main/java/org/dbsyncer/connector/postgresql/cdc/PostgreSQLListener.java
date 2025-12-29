@@ -49,7 +49,6 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
     private static final String GET_RESTART_LSN = "select restart_lsn from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
     private static final String GET_ROLE = "SELECT r.rolcanlogin AS login, r.rolreplication AS replication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin FROM pg_roles r WHERE r.rolname = current_user";
-    private static final String GET_DATABASE = "SELECT current_database()";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
     private static final String LSN_POSITION = "position";
@@ -63,7 +62,6 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private MessageDecoder messageDecoder;
     private Worker worker;
     private LogSequenceNumber startLsn;
-    private String database;
 
     @Override
     public void start() {
@@ -95,7 +93,6 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                 throw new PostgreSQLException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
             }
 
-            database = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_DATABASE, String.class));
             Properties extInfo = config.getExtInfo();
             messageDecoder = MessageDecoderEnum.getMessageDecoder(extInfo.getProperty(PostgreSQLConfigConstant.PLUGIN_NAME));
             messageDecoder.setMetaId(metaId);

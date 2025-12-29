@@ -32,7 +32,8 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
         this.config = config;
         this.catalog = catalog;
         this.schema = schema;
-        Properties properties = config.getProperties();
+        Properties properties = new Properties();
+        properties.putAll(config.getProperties());
         if (StringUtil.isNotBlank(config.getUsername())) {
             properties.put("user", config.getUsername());
         }
