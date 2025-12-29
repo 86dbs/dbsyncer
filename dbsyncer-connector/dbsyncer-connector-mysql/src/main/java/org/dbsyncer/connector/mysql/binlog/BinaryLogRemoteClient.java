@@ -28,6 +28,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.Arrays;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
@@ -68,6 +69,17 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     // https://dev.mysql.com/doc/internals/en/sending-more-than-16mbyte.html
     private static final int MAX_PACKET_LENGTH = 16777215;
+    
+    // MySQL binlog 事件类型码常量
+    private static final int EVENT_TYPE_ROTATE = 4;
+    private static final int EVENT_TYPE_FORMAT_DESCRIPTION = 15;
+    private static final int EVENT_TYPE_TABLE_MAP = 19;
+    private static final int EVENT_TYPE_WRITE_ROWS = 30;
+    private static final int EVENT_TYPE_UPDATE_ROWS = 31;
+    private static final int EVENT_TYPE_DELETE_ROWS = 32;
+    
+    // ROWS 事件的最小数据长度（事件头19字节 + tableId 6字节 + flags 2字节）
+    private static final int MIN_ROWS_EVENT_DATA_LENGTH = 27;
 
     private final String hostname;
     private final int port;
@@ -269,9 +281,20 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private void listenForEventPackets(final PacketChannel channel) {
         ByteArrayInputStream inputStream = channel.getInputStream();
+        long eventCount = 0;
         try {
             while (inputStream.peek() != -1) {
+                // 记录当前流位置，用于调试
+                int availableBefore = inputStream.available();
                 int packetLength = inputStream.readInteger(3);
+                
+                // 验证 packetLength 的合理性（MySQL packet 最大长度为 16MB-1）
+                if (packetLength < 0 || packetLength > MAX_PACKET_LENGTH) {
+                    logger.error("Invalid packet length detected: packetLength={}, available={}, binlogFilename={}, binlogPosition={}, eventCount={}", 
+                            packetLength, availableBefore, binlogFilename, binlogPosition, eventCount);
+                    throw new IOException("Invalid packet length: " + packetLength + " (expected 0-" + MAX_PACKET_LENGTH + ")");
+                }
+                
                 //noinspection ResultOfMethodCallIgnored
                 // 1 byte for sequence
                 inputStream.skip(1);
@@ -286,8 +309,155 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 if (marker == 0xFE && !blocking) {
                     break;
                 }
-                Event event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ? new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) : inputStream);
+                // 关键修复：确保每个 packet 的数据都被完全隔离，避免流位置错乱
+                // 问题：当 packetLength != MAX_PACKET_LENGTH 时，直接传递共享的 inputStream 给 nextEvent()
+                // 如果 nextEvent() 没有完全消费掉 packetLength - 1 字节，会导致下一个 packet 读取位置错乱
+                // 解决方案：始终使用独立的 ByteArrayInputStream 来隔离每个 packet 的数据
+                int eventDataLength = packetLength - 1; // 减去已读取的 marker 字节
+                byte[] eventData;
+                if (packetLength == MAX_PACKET_LENGTH) {
+                    eventData = readPacketSplitInChunks(inputStream, eventDataLength);
+                } else {
+                    eventData = inputStream.read(eventDataLength);
+                    if (eventData == null || eventData.length != eventDataLength) {
+                        logger.error("Failed to read complete event data: expected length={}, actual length={}, packetLength={}, binlogFilename={}, binlogPosition={}, eventCount={}", 
+                                eventDataLength, (eventData == null ? 0 : eventData.length), packetLength, binlogFilename, binlogPosition, eventCount);
+                        throw new IOException("Failed to read complete event data: expected length=" + eventDataLength + 
+                                ", actual length=" + (eventData == null ? 0 : eventData.length) + ", packetLength=" + packetLength);
+                    }
+                }
+                
+                // 记录事件的详细信息，用于调试
+                int eventTypeByteFromHeader = -1;
+                if (eventData.length >= 19) {
+                    // 读取事件头信息进行验证
+                    int timestamp = (eventData[0] & 0xFF) | ((eventData[1] & 0xFF) << 8) | 
+                                   ((eventData[2] & 0xFF) << 16) | ((eventData[3] & 0xFF) << 24);
+                    eventTypeByteFromHeader = eventData[4] & 0xFF;
+                    int serverId = (eventData[5] & 0xFF) | ((eventData[6] & 0xFF) << 8) | 
+                                  ((eventData[7] & 0xFF) << 16) | ((eventData[8] & 0xFF) << 24);
+                    int eventLength = (eventData[9] & 0xFF) | ((eventData[10] & 0xFF) << 8) | 
+                                     ((eventData[11] & 0xFF) << 16) | ((eventData[12] & 0xFF) << 24);
+                    long nextPosition = ((long)(eventData[13] & 0xFF)) | (((long)(eventData[14] & 0xFF)) << 8) | 
+                                       (((long)(eventData[15] & 0xFF)) << 16) | (((long)(eventData[16] & 0xFF)) << 24);
+                    
+                    // 记录前几个事件的详细信息
+                    if (eventCount < 3) {
+                        logger.info("Reading binlog event #{}: packetLength={}, eventDataLength={}, eventTypeByte={}, serverId={}, eventLength={}, nextPosition={}, " +
+                                "binlogFilename={}, binlogPosition={}, eventData[0-20]={}, tableMapEventByTableId.size()={}", 
+                                eventCount + 1, packetLength, eventDataLength, eventTypeByteFromHeader, serverId, eventLength, nextPosition,
+                                binlogFilename, binlogPosition, 
+                                eventData.length > 20 ? Arrays.toString(Arrays.copyOf(eventData, 20)) : Arrays.toString(eventData),
+                                tableMapEventByTableId != null ? tableMapEventByTableId.size() : 0);
+                    }
+                }
+                
+                Event event = null;
+                try {
+                    event = eventDeserializer.nextEvent(new ByteArrayInputStream(eventData));
+                } catch (Exception e) {
+                    // 捕获反序列化异常，记录详细信息
+                    if (eventData.length >= 19) {
+                        int eventTypeByte = eventData[4] & 0xFF;
+                        String errorMsg = e.getMessage();
+                        
+                        // 检查是否是缺少 TableMapEventData 导致的错误
+                        // 判断条件：
+                        // 1. 是 ROWS 事件类型
+                        // 2. 错误信息包含 TableMapEventData 相关关键词，或者 tableMapEventByTableId 缓存为空
+                        boolean isMissingTableMap = isRowsEventType(eventTypeByte) && 
+                                (isTableMapRelatedError(errorMsg) || 
+                                 (tableMapEventByTableId != null && tableMapEventByTableId.isEmpty()));
+                        
+                        // 尝试从 ROWS 事件中提取 tableId
+                        long extractedTableId = isMissingTableMap ? extractTableIdFromRowsEvent(eventData) : -1;
+                        
+                        if (isMissingTableMap) {
+                            handleMissingTableMapEvent(eventTypeByte, extractedTableId, eventData.length, eventCount);
+                            continue; // 跳过该事件，继续向后处理下一个事件
+                        } else {
+                            logger.error("Failed to deserialize event: eventTypeByte={}, eventDataLength={}, binlogFilename={}, binlogPosition={}, eventCount={}, " +
+                                    "error={}, eventData[0-50]={}, tableMapEventByTableId.size()={}", 
+                                    eventTypeByte, eventData.length, binlogFilename, binlogPosition, eventCount, e.getMessage(),
+                                    eventData.length > 50 ? Arrays.toString(Arrays.copyOf(eventData, 50)) : Arrays.toString(eventData),
+                                    tableMapEventByTableId != null ? tableMapEventByTableId.size() : 0, e);
+                            throw e; // 重新抛出异常
+                        }
+                    } else {
+                        logger.error("Failed to deserialize event: eventDataLength={} (too short), binlogFilename={}, binlogPosition={}, eventCount={}, error={}", 
+                                eventData.length, binlogFilename, binlogPosition, eventCount, e.getMessage(), e);
+                        throw e; // 重新抛出异常
+                    }
+                }
+                
                 if (event != null) {
+                    eventCount++;
+                    EventHeader eventHeader = event.getHeader();
+                    EventType eventType = eventHeader.getEventType();
+                    
+                    // 记录第一个事件的类型，用于调试启动时的问题
+                    if (eventCount == 1) {
+                        long nextPos = eventHeader instanceof EventHeaderV4 ? ((EventHeaderV4) eventHeader).getNextPosition() : 0;
+                        logger.info("First binlog event deserialized: eventType={}, binlogFilename={}, binlogPosition={}, nextPosition={}, headerLength={}, dataLength={}", 
+                                eventType, binlogFilename, binlogPosition, nextPos,
+                                eventHeader instanceof EventHeaderV4 ? ((EventHeaderV4) eventHeader).getHeaderLength() : "N/A",
+                                eventHeader instanceof EventHeaderV4 ? ((EventHeaderV4) eventHeader).getDataLength() : "N/A");
+                        
+                        // 关键检查：对比事件头中的 eventTypeByte 和反序列化后的 eventType
+                        // MySQL binlog 事件类型码：ROTATE=4, WRITE_ROWS=30, UPDATE_ROWS=31, DELETE_ROWS=32, EXT_WRITE_ROWS=30, etc.
+                        if (eventTypeByteFromHeader >= 0) {
+                            // 获取反序列化后的事件类型码（通过 EventType 的 ordinal 或 value）
+                            int deserializedEventTypeByte = -1;
+                            try {
+                                // EventType 是枚举，尝试获取其值
+                                // 常见的 MySQL binlog 事件类型码：
+                                // ROTATE=4, FORMAT_DESCRIPTION=15, TABLE_MAP=19, WRITE_ROWS=30, UPDATE_ROWS=31, DELETE_ROWS=32
+                                // EXT_WRITE_ROWS=30, EXT_UPDATE_ROWS=31, EXT_DELETE_ROWS=32
+                                deserializedEventTypeByte = getEventTypeByte(eventType);
+                                
+                                if (deserializedEventTypeByte >= 0 && eventTypeByteFromHeader != deserializedEventTypeByte) {
+                                    logger.error("CRITICAL: Event type mismatch! Header eventTypeByte={}, but deserialized as {} (eventTypeByte should be {}). " +
+                                            "This indicates event deserialization error or data corruption. " +
+                                            "binlogFilename={}, binlogPosition={}, eventDataLength={}, eventData[0-30]={}", 
+                                            eventTypeByteFromHeader, eventType, deserializedEventTypeByte,
+                                            binlogFilename, binlogPosition, eventData.length,
+                                            eventData.length > 30 ? Arrays.toString(Arrays.copyOf(eventData, 30)) : Arrays.toString(eventData));
+                                } else if (deserializedEventTypeByte >= 0) {
+                                    logger.info("Event type verified: eventTypeByte={} matches deserialized eventType={}", 
+                                            eventTypeByteFromHeader, eventType);
+                                } else {
+                                    logger.info("Event type from header: eventTypeByte={}, deserialized eventType={} (cannot verify type code)", 
+                                            eventTypeByteFromHeader, eventType);
+                                }
+                            } catch (Exception e) {
+                                logger.warn("Failed to verify event type: eventTypeByteFromHeader={}, eventType={}, error={}", 
+                                        eventTypeByteFromHeader, eventType, e.getMessage());
+                            }
+                        }
+                        
+                        // 如果第一个事件是 ROTATE 但 nextPosition 为 0，可能是数据异常
+                        if (eventType == EventType.ROTATE && nextPos == 0) {
+                            logger.warn("First event is ROTATE with nextPosition=0, this may indicate data corruption or incorrect binlog position. " +
+                                    "binlogFilename={}, binlogPosition={}, eventDataLength={}", 
+                                    binlogFilename, binlogPosition, eventData.length);
+                        }
+                    }
+                    
+                    // 如果遇到 TABLE_MAP 事件，记录日志（可能之前有 ROWS 事件因为缺少它而被跳过）
+                    if (eventType == EventType.TABLE_MAP && tableMapEventByTableId != null) {
+                        TableMapEventData tableMapData = (TableMapEventData) EventDeserializer.EventDataWrapper.internal(event.getData());
+                        if (tableMapData != null) {
+                            long tableId = tableMapData.getTableId();
+                            if (!tableMapEventByTableId.containsKey(tableId)) {
+                                logger.info("Found TABLE_MAP event for tableId={}, database={}, table={}. " +
+                                        "Subsequent ROWS events for this table can now be processed. " +
+                                        "binlogFilename={}, binlogPosition={}", 
+                                        tableId, tableMapData.getDatabase(), tableMapData.getTable(),
+                                        binlogFilename, binlogPosition);
+                            }
+                        }
+                    }
+                    
                     updateGtidSet(event);
                     notifyEventListeners(event);
                     updateClientBinlogFilenameAndPosition(event);
@@ -296,6 +466,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 throw new EOFException("event data deserialization exception");
             }
         } catch (Exception e) {
+            logger.error("Error in listenForEventPackets: binlogFilename={}, binlogPosition={}, eventCount={}, error={}", 
+                    binlogFilename, binlogPosition, eventCount, e.getMessage(), e);
             notifyException(e);
         }
     }
@@ -494,8 +666,38 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         EventType eventType = eventHeader.getEventType();
         if (eventType == EventType.ROTATE) {
             RotateEventData rotateEventData = (RotateEventData) EventDeserializer.EventDataWrapper.internal(event.getData());
-            binlogFilename = rotateEventData.getBinlogFilename();
-            binlogPosition = rotateEventData.getBinlogPosition();
+            String newBinlogFilename = rotateEventData.getBinlogFilename();
+            long newBinlogPosition = rotateEventData.getBinlogPosition();
+            
+            // 判断是否是真正的文件切换（而不是启动时的初始 ROTATE 事件）
+            // 启动时的 ROTATE 事件特征：nextPosition=0 或 binlogFilename 没有变化
+            boolean isRealRotation = false;
+            if (eventHeader instanceof EventHeaderV4) {
+                long nextPosition = ((EventHeaderV4) eventHeader).getNextPosition();
+                // 如果 nextPosition > 0 且 binlogFilename 发生变化，说明是真正的文件切换
+                if (nextPosition > 0 && !newBinlogFilename.equals(binlogFilename)) {
+                    isRealRotation = true;
+                }
+            }
+            
+            binlogFilename = newBinlogFilename;
+            binlogPosition = newBinlogPosition;
+            
+            // 只有在真正的文件切换时，才清理 TableMapEventData 缓存
+            // 原因：
+            // 1. 启动时的 ROTATE 事件（nextPosition=0）不应该清空缓存，因为后续的 ROWS 事件还需要表结构信息
+            // 2. 每个 binlog 文件都有自己的 tableId 空间，当文件切换时，新文件中的 tableId 可能会被重新分配
+            // 3. 如果不清理缓存，旧文件的 tableId 映射可能会被误用到新文件中，导致字段类型误判
+            if (isRealRotation && tableMapEventByTableId != null) {
+                tableMapEventByTableId.clear();
+                logger.info("Cleared TableMapEventData cache on binlog rotation: {} -> {} (nextPosition={})", 
+                        binlogFilename, newBinlogFilename, 
+                        eventHeader instanceof EventHeaderV4 ? ((EventHeaderV4) eventHeader).getNextPosition() : "N/A");
+            } else if (tableMapEventByTableId != null) {
+                logger.debug("Skipped clearing TableMapEventData cache for initial ROTATE event: {} -> {} (nextPosition={})", 
+                        binlogFilename, newBinlogFilename,
+                        eventHeader instanceof EventHeaderV4 ? ((EventHeaderV4) eventHeader).getNextPosition() : "N/A");
+            }
         } else
             // do not update binlogPosition on TABLE_MAP so that in case of reconnect (using a different instance of
             // client) table mapping cache could be reconstructed before hitting row mutation event
@@ -813,6 +1015,79 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
      */
     public void setUseBinlogFilenamePositionInGtidMode(boolean useBinlogFilenamePositionInGtidMode) {
         this.useBinlogFilenamePositionInGtidMode = useBinlogFilenamePositionInGtidMode;
+    }
+    
+    /**
+     * 检查是否是 ROWS 事件类型（WRITE_ROWS/UPDATE_ROWS/DELETE_ROWS）
+     */
+    private boolean isRowsEventType(int eventTypeByte) {
+        return eventTypeByte == EVENT_TYPE_WRITE_ROWS || 
+               eventTypeByte == EVENT_TYPE_UPDATE_ROWS || 
+               eventTypeByte == EVENT_TYPE_DELETE_ROWS;
+    }
+    
+    /**
+     * 检查错误信息是否与 TableMapEventData 相关
+     */
+    private boolean isTableMapRelatedError(String errorMsg) {
+        return errorMsg != null && (errorMsg.contains("TableMapEventData") || 
+               errorMsg.contains("tableId") || errorMsg.contains("table map"));
+    }
+    
+    /**
+     * 从 ROWS 事件数据中提取 tableId
+     * ROWS 事件格式：事件头(19字节) + tableId(6字节，64位) + flags(2字节) + ...
+     */
+    private long extractTableIdFromRowsEvent(byte[] eventData) {
+        if (eventData.length < MIN_ROWS_EVENT_DATA_LENGTH) {
+            return -1;
+        }
+        try {
+            // 对于 64 位 tableId，从第 19 字节开始读取 6 字节
+            return ((long)(eventData[19] & 0xFF)) | 
+                   (((long)(eventData[20] & 0xFF)) << 8) | 
+                   (((long)(eventData[21] & 0xFF)) << 16) | 
+                   (((long)(eventData[22] & 0xFF)) << 24) |
+                   (((long)(eventData[23] & 0xFF)) << 32) |
+                   (((long)(eventData[24] & 0xFF)) << 40);
+        } catch (Exception e) {
+            logger.debug("Failed to extract tableId from ROWS event: {}", e.getMessage());
+            return -1;
+        }
+    }
+    
+    /**
+     * 处理缺少 TableMapEventData 的情况
+     */
+    private void handleMissingTableMapEvent(int eventTypeByte, long extractedTableId, int eventDataLength, long eventCount) {
+        logger.warn("Failed to deserialize ROWS event due to missing TableMapEventData. " +
+                "eventTypeByte={} (EXT_WRITE_ROWS={}, EXT_UPDATE_ROWS={}, EXT_DELETE_ROWS={}), " +
+                "extractedTableId={}, eventDataLength={}, binlogFilename={}, binlogPosition={}, eventCount={}, " +
+                "tableMapEventByTableId.size()={}. " +
+                "Will continue reading forward to find TABLE_MAP event. This ROWS event will be skipped and data may be lost.", 
+                eventTypeByte, EVENT_TYPE_WRITE_ROWS, EVENT_TYPE_UPDATE_ROWS, EVENT_TYPE_DELETE_ROWS,
+                extractedTableId, eventDataLength, binlogFilename, binlogPosition, eventCount,
+                tableMapEventByTableId != null ? tableMapEventByTableId.size() : 0);
+    }
+    
+    /**
+     * 获取事件类型对应的类型码
+     */
+    private int getEventTypeByte(EventType eventType) {
+        if (eventType == EventType.ROTATE) {
+            return EVENT_TYPE_ROTATE;
+        } else if (eventType == EventType.WRITE_ROWS || eventType == EventType.EXT_WRITE_ROWS) {
+            return EVENT_TYPE_WRITE_ROWS;
+        } else if (eventType == EventType.UPDATE_ROWS || eventType == EventType.EXT_UPDATE_ROWS) {
+            return EVENT_TYPE_UPDATE_ROWS;
+        } else if (eventType == EventType.DELETE_ROWS || eventType == EventType.EXT_DELETE_ROWS) {
+            return EVENT_TYPE_DELETE_ROWS;
+        } else if (eventType == EventType.FORMAT_DESCRIPTION) {
+            return EVENT_TYPE_FORMAT_DESCRIPTION;
+        } else if (eventType == EventType.TABLE_MAP) {
+            return EVENT_TYPE_TABLE_MAP;
+        }
+        return -1;
     }
 
     public interface EventListener {
