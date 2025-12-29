@@ -71,9 +71,9 @@ function refreshLicenseInfo() {
 
 // 跳转主页
 function backIndexPage(projectGroupId) {
-    // 加载页面
+    // 使用updateHash更新URL哈希，而不是直接调用doLoader
     projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
-    doLoader("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+    updateHash("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
 
      // 设置导航栏活动状态为驱动
     var $menu = $('#menu > li');
@@ -241,8 +241,42 @@ $.fn.serializeJson = function () {
     return o;
 };
 
+// 更新URL哈希值
+function updateHash(url, route) {
+    // 使用更明确的变量名，避免与window.location.hash混淆
+    const hashValue = '#' + url + (route ? '?route=' + route : '');
+    
+    // 检查是否需要更新哈希，避免不必要的hashchange事件
+    if (window.location.hash !== hashValue) {
+        window.location.hash = hashValue;
+    }
+}
+
+// 不更新哈希的页面加载函数
+function doLoaderWithoutHashUpdate(url, route = 0) {
+    // 加载页面
+    const contents = document.querySelectorAll('.contentDiv');
+    contents.forEach(function (content) {
+        content.classList.add('hidden');
+    });
+    const contentToShow = $('#initContainer' + route);
+    if (contentToShow) {
+        contentToShow.removeClass('hidden');
+    }
+    contentToShow.load($basePath + url, function (response, status, xhr) {
+        if (status != 'success') {
+            bootGrowl(response);
+        }
+        watermark();
+        $.loadingT(false);
+    });
+}
+
 // 全局加载页面
 function doLoader(url, route = 0) {
+    // 更新URL哈希
+    updateHash(url, route);
+    
     // 加载页面
     const contents = document.querySelectorAll('.contentDiv');
     contents.forEach(function (content) {

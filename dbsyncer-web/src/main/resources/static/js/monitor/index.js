@@ -50,13 +50,13 @@ function bindQueryDataDetailEvent() {
 }
 
 // 重试同步
-function bindQueryDataRetryEvent(){
+function bindQueryDataRetryEvent(){  
     let $retry = $(".retryData");
     $retry.unbind("click");
     $retry.click(function () {
         let id = $("#searchMetaData").selectpicker("val");
         let messageId = $(this).attr("id");
-        doLoader('/monitor/page/retry?metaId=' + id + '&messageId=' + messageId);
+        updateHash('/monitor/page/retry?metaId=' + id + '&messageId=' + messageId);
     });
 }
 

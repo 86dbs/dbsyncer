@@ -18,7 +18,7 @@ $(function () {
 
     // 修改登录用户
     $("#edit_personal").click(function () {
-        doLoader("/user/page/edit?username=" + $(this).attr("username"));
+        updateHash("/user/page/edit?username=" + $(this).attr("username"));
     });
 
     // 注销
@@ -49,38 +49,81 @@ $(function () {
     // 绑定所有的菜单链接点击事件，根据不同的URL加载页面
     $("#menu li a[url]").click(function () {
         var route = $(this).data('route');
-        // 加载页面
-        doLoader($(this).attr("url"), route);
-        // 加载页面
-        const contents = document.querySelectorAll('.contentDiv');
-        contents.forEach(function (content) {
-            content.classList.add('hidden');
-        });
-        if (route === 1) {
-            if (timer != null) {
-                clearInterval(timer);
-                timer = null;
-            }
-        } else if (route === 2) {
-            if (timer2 != null) {
-                clearInterval(timer2);
-                timer2 = null;
-            }
-        }
-        const contentToShow = $('#initContainer' + route);
-        if (contentToShow) {
-            contentToShow.removeClass('hidden');
-        }
-
-    });
-
-    // 头部导航栏选中切换事件
-    var $menu = $('#menu > li');
-    $menu.click(function () {
+        // 使用updateHash更新URL哈希而不是直接调用doLoader
+        updateHash($(this).attr("url"), route);
+        
+        // 设置活动菜单项
+        const $menu = $("#menu > li");
         $menu.removeClass('active');
-        $(this).addClass('active');
+        
+        // 如果是下拉菜单中的菜单项，给父菜单项添加active类
+        const $parentLi = $(this).parent();
+        if ($parentLi.parents('.dropdown').length > 0) {
+            $parentLi.parents('.dropdown').addClass('active');
+        } else {
+            $parentLi.addClass('active');
+        }
     });
 
-    // 显示主页
-    backIndexPage();
+    // 初始化哈希路由
+    initHashRouter();
+    
+    // 如果没有哈希，则显示主页
+    if (!window.location.hash || window.location.hash === '#') {
+        backIndexPage();
+    }
 });
+
+// 处理哈希变化事件
+function handleHashChange() {
+    // 获取当前哈希值
+    const hashValue = window.location.hash;
+    
+    // 如果哈希为空，则返回主页
+    if (!hashValue || hashValue === '#') {
+        backIndexPage();
+        return;
+    }
+    
+    // 解析哈希值，提取URL和路由参数
+    const hashPath = hashValue.substring(1); // 去掉#号
+    
+    // 解析路由参数
+    let url = hashPath;
+    let route = 0;
+    
+    const routeParamIndex = hashPath.indexOf('?route=');
+    if (routeParamIndex > -1) {
+        url = hashPath.substring(0, routeParamIndex);
+        route = parseInt(hashPath.substring(routeParamIndex + 7));
+    }
+    
+    // 根据URL路径设置导航栏活动状态
+    const $menu = $("#menu > li");
+    $menu.removeClass('active');
+    
+    // 查找匹配的菜单项并设置为活动状态
+    const baseUrl = url.split('?')[0];
+    const matchingMenuItem = $("#menu li a[url^='" + baseUrl + "']").parent();
+    
+    if (matchingMenuItem.length > 0) {
+        // 如果是下拉菜单中的菜单项，也需要给父菜单项添加active类
+        if (matchingMenuItem.parents('.dropdown').length > 0) {
+            matchingMenuItem.parents('.dropdown').addClass('active');
+        } else {
+            matchingMenuItem.addClass('active');
+        }
+    }
+    
+    // 使用不更新哈希的加载函数，避免循环触发hashchange事件
+    doLoaderWithoutHashUpdate(url, route);
+}
+
+// 初始化哈希路由
+function initHashRouter() {
+    // 添加哈希变化事件监听器
+    window.addEventListener('hashchange', handleHashChange, false);
+    
+    // 初始化时检查当前哈希
+    handleHashChange();
+}

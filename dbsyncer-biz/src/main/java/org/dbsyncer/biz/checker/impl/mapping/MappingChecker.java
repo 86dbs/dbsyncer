@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -41,6 +42,9 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private ParserComponent parserComponent;
 
     @Resource
     private Map<String, MappingConfigChecker> map;
@@ -169,7 +173,8 @@ public class MappingChecker extends AbstractChecker {
 
             // 更新 sql 配置
             for (TableGroup g : groupAll) {
-                g.initCommand(mapping, connectorFactory);
+                // 初始化 TableGroup 的运行时组件
+                g.initTableGroup(parserComponent, profileComponent, connectorFactory);
                 profileComponent.editConfigModel(g);
             }
         }

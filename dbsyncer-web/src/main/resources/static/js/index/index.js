@@ -1,7 +1,7 @@
 // 添加分组
 function bindAddProjectGroup() {
     $("#addProjectGroupBtn").click(function () {
-        doLoader("/projectGroup/page/add");
+        updateHash("/projectGroup/page/add");
     });
 }
 
@@ -10,7 +10,7 @@ function doEditProjectGroup(projectGroupId) {
 
     var id = projectGroupId;
     if (!isBlank(id)) {
-        doLoader('/projectGroup/page/edit?id=' + id);
+        updateHash('/projectGroup/page/edit?id=' + id);
         return;
     }
     bootGrowl("请选择分组", "danger");
@@ -32,7 +32,7 @@ function doRemoveProjectGroup(projectGroupId) {
         buttons: [{
             label: "确定",
             action: function (dialog) {
-                doPoster('/projectGroup/remove', { id: $id }, function (data) {
+                doPoster('/projectGroup/remove', { id: id }, function (data) {
                     if (data.success == true) {
                         // 显示主页
                         backIndexPage();
@@ -58,7 +58,7 @@ function bindProjectGroupSelect($projectGroupSelect) {
 
     $projectGroupSelect.on('change', function () {
         $.loadingT(true);
-        doLoader("/index?projectGroupId=" + $(this).val());
+        updateHash("/index?projectGroupId=" + $(this).val(), 1);
     });
 
 }
@@ -67,7 +67,7 @@ function bindProjectGroupSelect($projectGroupSelect) {
 function bindAddConnector() {
     // 绑定添加连接按钮点击事件
     $("#indexAddConnectorBtn").click(function () {
-        doLoader('/connector/page/add');
+        updateHash('/connector/page/add');
     });
 }
 
@@ -75,14 +75,14 @@ function bindAddConnector() {
 function bindEditConnector() {
     $(".connectorList .dbsyncer_block").click(function () {
         var $id = $(this).attr("id");
-        doLoader('/connector/page/edit?id=' + $id);
+        updateHash('/connector/page/edit?id=' + $id);
     });
 }
 
 // 添加任务
 function bindAddMapping() {
     $("#indexAddMappingBtn").click(function () {
-        doLoader('/mapping/pageAdd');
+        updateHash('/mapping/pageAdd');
     });
 }
 
@@ -100,7 +100,7 @@ function bindEditMapping() {
         // 在列表视图下，保持原有功能
         var $id = $(this).attr("id");
         if ($id) {
-            doLoader('/mapping/page/edit?classOn=0&id=' + $id);
+            updateHash('/mapping/page/edit?classOn=0&id=' + $id);
         }
     });
 }
@@ -115,7 +115,7 @@ function bindQueryData() {
         $menu.find("a[url='/monitor']").parent().addClass('active');
 
         var $id = $(this).attr("id");
-        doLoader('/monitor?dataStatus=0&id=' + $id);
+        updateHash('/monitor?dataStatus=0&id=' + $id, 2);
     });
 }
 
@@ -188,16 +188,16 @@ function bindMappingOperationButtons() {
             return;
         }
 
-        // 对于编辑按钮，使用doLoader而不是doPost
+        // 对于编辑按钮，使用updateHash而不是doLoader
         if ($(this).hasClass('fa-pencil') || $(this).find('.fa-pencil').length > 0) {
-            doLoader($url);
+            updateHash($url);
         } else if ($(this).hasClass('queryData') || $(this).hasClass('fa-file-text-o') || $(this).find('.fa-file-text-o').length > 0) {
             // 日志按钮特殊处理
             var $id = $(this).attr("id");
             var $menu = $('#menu > li');
             $menu.removeClass('active');
             $menu.find("a[url='/monitor']").parent().addClass('active');
-            doLoader('/monitor?dataStatus=0&id=' + $id);
+            updateHash('/monitor?dataStatus=0&id=' + $id, 2);
         } else {
             doPost($url);
         }
@@ -212,13 +212,25 @@ function doPost(url) {
             backIndexPage(projectGroup);
             bootGrowl(data.resultValue, "success");
         } else {
-            bootGrowl(data.resultValue, "danger");
+            // 检查是否是停止任务操作并且错误信息是"驱动已停止"
+            if (url.indexOf('/mapping/stop?id=') !== -1 && data.resultValue === '驱动已停止.') {
+                // 即使失败，也需要更新UI状态，因为任务确实已经停止
+                var projectGroup = $("#projectGroup").val() || '';
+                backIndexPage(projectGroup);
+                bootGrowl("任务已停止", "info");
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
         }
     });
 }
 
 // 创建定时器
 function createTimer(projectGroupId) {
+    // 移除旧的定时器机制，避免与refreshMappingList函数的定时器冲突
+    // 统一使用refreshMappingList函数的定时刷新机制
+    return;
+    /*
     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
             // 确保timer2是全局变量
@@ -234,6 +246,7 @@ function createTimer(projectGroupId) {
             bootGrowl(data.resultValue, "danger");
         }
     });
+    */
 }
 
 
@@ -437,12 +450,13 @@ function groupShow(id) {
     timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
     $("#projectGroup").val(projectGroupId);
     
-    // 清除并重新创建定时器
+    // 清除并重新初始化定时刷新机制
     if (window.timer2) {
         clearInterval(window.timer2);
         window.timer2 = null;
     }
-    createTimer(projectGroupId);
+    // 调用refreshMappingList而不是createTimer，确保只使用一种刷新机制
+    refreshMappingList();
 }
 
 function bindMappingSearch() {

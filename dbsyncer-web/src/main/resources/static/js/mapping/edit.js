@@ -24,7 +24,7 @@ function submit(data) {
 //*********************************** 驱动保存 结束位置***********************************//
 // 刷新页面
 function refresh(id,classOn) {
-    doLoader('/mapping/page/edit?id=' + id+"&classOn="+classOn);
+    updateHash('/mapping/page/edit?id=' + id+"&classOn="+classOn);
 }
 
 // 绑定修改驱动同步方式切换事件
@@ -122,7 +122,7 @@ function bindMappingTableGroupListClick() {
         if ($(e.target).hasClass('target-table-rename') || $(e.target).closest('.target-table-rename').length > 0) {
             return;
         }
-        doLoader('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
+        updateHash('/tableGroup/page/editTableGroup?id=' + $(this).attr("id"));
     });
 
     // 绑定表格拖拽事件
@@ -289,8 +289,8 @@ function bindTableSelect() {
 function bindMultipleSelectFilterBtnClick() {
     $(".actions-btn").parent().append('<button type="button" class="actions-btn bs-show-all btn btn-default" title="显示所有表，包含已添加的表">取消过滤</button><button type="button" class="actions-btn bs-exclude-all btn btn-default" title="不显示已添加的表">过滤</button>');
     $(".actions-btn").css('width', '25%');
-    $(".bs-show-all").bind("click", function () {
-        doLoader('/mapping/page/edit?id=' + $("#mappingId").val() + '&exclude=1');
+    $("#bs-show-all").on("click", function () {
+        updateHash('/mapping/page/edit?id=' + $("#mappingId").val() + '&exclude=1');
         bootGrowl("取消过滤成功!", "success");
     });
     $(".bs-exclude-all").bind("click", function () {

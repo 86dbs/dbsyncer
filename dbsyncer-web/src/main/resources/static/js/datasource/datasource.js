@@ -197,7 +197,6 @@ function renderConnectorDetail(connector) {
     detailHtml += '        <div class="form-group">';
     detailHtml += '            <label for="connector-type">数据源类型</label>';
     detailHtml += '            <div id="connector-type" class="form-control" style="background-color: #f8f9fa; cursor: default;">' + escapeHtml(connector.type) + '</div>';
-    detailHtml += '            </select>';
     detailHtml += '        </div>';
     
     // 渲染数据源配置参数
