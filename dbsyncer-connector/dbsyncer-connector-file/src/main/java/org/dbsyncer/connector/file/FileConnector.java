@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -108,7 +109,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public List<Table> getTable(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return connectorInstance.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
+        return connectorInstance.getFileSchemaList().stream().map(fileSchema -> {
+            Table table = new Table();
+            table.setName(fileSchema.getFileName());
+            table.setType(TableTypeEnum.TABLE.getCode());
+            return table;
+        }).collect(Collectors.toList());
     }
 
     @Override

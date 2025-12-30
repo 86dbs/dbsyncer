@@ -182,7 +182,12 @@ public class TableGroupChecker extends AbstractChecker {
                 }
             });
         }
-        return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn(), metaInfo.getSql(), metaInfo.getIndexType());
+        Table table = new Table();
+        table.setName(tableName);
+        table.setType(metaInfo.getTableType());
+        table.setColumn(metaInfo.getColumn());
+        table.setExtInfo(metaInfo.getExtInfo());
+        return table;
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {

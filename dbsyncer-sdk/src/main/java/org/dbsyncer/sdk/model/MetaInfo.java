@@ -1,9 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.model;
 
 import java.util.List;
+import java.util.Properties;
 
 /**
- * 连接器基本信息
+ * 表基本信息
  *
  * @author AE86
  * @ClassName: MetaInfo
@@ -29,14 +33,9 @@ public class MetaInfo {
     private List<Field> column;
 
     /**
-     * sql
+     * 扩展配置
      */
-    private String sql;
-
-    /**
-     * 索引类型（ES）
-     */
-    private String indexType;
+    private Properties extInfo = new Properties();
 
     public String getTable() {
         return table;
@@ -65,26 +64,12 @@ public class MetaInfo {
         return this;
     }
 
-    public String getSql() {
-        return sql;
+    public Properties getExtInfo() {
+        return extInfo;
     }
 
-    public MetaInfo setSql(String sql) {
-        this.sql = sql;
-        return this;
+    public void setExtInfo(Properties extInfo) {
+        this.extInfo = extInfo;
     }
 
-    public String getIndexType() {
-        return indexType;
-    }
-
-    public MetaInfo setIndexType(String indexType) {
-        this.indexType = indexType;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("MetaInfo{").append("tableType=").append(tableType).append(", ").append("column=").append(column).append('}').toString();
-    }
 }

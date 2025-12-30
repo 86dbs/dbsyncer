@@ -476,7 +476,10 @@ public class ConnectionTest {
             while (rs.next()) {
                 final String tableName = rs.getString("TABLE_NAME");
                 final String tableType = rs.getString("TABLE_TYPE");
-                tables.add(new Table(tableName, tableType));
+                Table table = new Table();
+                table.setName(tableName);
+                table.setType(tableType);
+                tables.add(table);
             }
             return tables;
         });

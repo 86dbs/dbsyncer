@@ -16,6 +16,7 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -101,7 +102,10 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<Table> topics = new ArrayList<>();
-        topics.add(new Table(connectorInstance.getConfig().getTopic()));
+        Table table = new Table();
+        table.setName(connectorInstance.getConfig().getTopic());
+        table.setType(TableTypeEnum.TABLE.getCode());
+        topics.add(table);
         return topics;
     }
 

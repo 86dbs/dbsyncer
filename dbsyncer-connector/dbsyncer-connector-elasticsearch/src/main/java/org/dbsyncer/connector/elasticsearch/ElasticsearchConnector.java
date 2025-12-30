@@ -26,6 +26,7 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
@@ -74,6 +75,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -167,7 +170,12 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             Map<String, Set<AliasMetadata>> aliases = indicesAlias.getAliases();
             if (!CollectionUtils.isEmpty(aliases)) {
                 // 排除系统索引
-                return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(Table::new).collect(Collectors.toList());
+                return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(name -> {
+                    Table table = new Table();
+                    table.setName(name);
+                    table.setType(TableTypeEnum.TABLE.getCode());
+                    return table;
+                }).collect(Collectors.toList());
             }
             return Collections.emptyList();
         } catch (IOException e) {
@@ -200,19 +208,30 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                     if (StringUtil.isBlank(indexType)) {
                         throw new ElasticsearchException("索引type为空");
                     }
-                    metaInfos.add(new MetaInfo().setTable(index).setColumn(fields).setIndexType(indexType));
+                    metaInfos.add(buildMetaInfo(index, fields, indexType));
                     continue;
                 }
 
                 // 7.x 版本以上
                 parseProperties(fields, mappingMetaData.sourceAsMap());
-                metaInfos.add(new MetaInfo().setTable(index).setColumn(fields));
+                metaInfos.add(buildMetaInfo(index, fields, null));
             }
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ElasticsearchException(e);
         }
         return metaInfos;
+    }
+
+    private MetaInfo buildMetaInfo(String index, List<Field> fields, String indexType) {
+        MetaInfo metaInfo = new MetaInfo();
+        metaInfo.setTable(index);
+        metaInfo.setColumn(fields);
+        if (StringUtil.isNotBlank(indexType)) {
+            Properties extInfo = metaInfo.getExtInfo();
+            extInfo.put(_TYPE, indexType);
+        }
+        return metaInfo;
     }
 
     @Override
@@ -340,7 +359,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         PrimaryKeyUtil.findTablePrimaryKeys(table);
         Map<String, String> command = new HashMap<>();
         command.put(_TARGET_INDEX, table.getName());
-        command.put(_TYPE, table.getIndexType());
+        command.put(_TYPE, String.valueOf(table.getExtInfo().get(_TYPE)));
         return command;
     }
 

@@ -25,7 +25,17 @@ public enum TableTypeEnum {
     /**
      * 物化视图
      */
-    MATERIALIZED_VIEW("MATERIALIZED VIEW");
+    MATERIALIZED_VIEW("MATERIALIZED VIEW"),
+
+    /**
+     * SQL
+     */
+    SQL("SQL"),
+
+    /**
+     * ‌半结构化(File，Kafka，Redis 等定义JSON数据格式)
+     */
+    SEMI_STRUCTURED("SEMI_STRUCTURED");
 
     private final String code;
 
@@ -34,13 +44,13 @@ public enum TableTypeEnum {
     }
 
     /**
-     * 是否视图类型
+     * 是否表类型
      *
      * @param type
      * @return
      */
-    public static boolean isView(String type) {
-        return VIEW.getCode().equals(type);
+    public static boolean isTable(String type) {
+        return TABLE.getCode().equals(type);
     }
 
     public String getCode() {

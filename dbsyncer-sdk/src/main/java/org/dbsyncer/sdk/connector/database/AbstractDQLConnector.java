@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
@@ -108,7 +109,7 @@ public abstract class AbstractDQLConnector extends AbstractDatabaseConnector {
         }
 
         // 获取查询SQL
-        String querySql = table.getSql();
+        String querySql = String.valueOf(table.getExtInfo().get(TableTypeEnum.SQL.getCode()));
 
         // 存在条件
         if (StringUtil.isNotBlank(queryFilterSql)) {

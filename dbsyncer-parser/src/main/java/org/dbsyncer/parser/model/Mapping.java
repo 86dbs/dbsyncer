@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.config.ListenerConfig;
@@ -32,6 +35,7 @@ public class Mapping extends AbstractConfigModel {
     private String sourceSchema;
 
     // 数据源库表列表
+    @Deprecated
     private List<Table> sourceTable;
 
     // 数据源Sql表
@@ -79,12 +83,6 @@ public class Mapping extends AbstractConfigModel {
 
     // 覆盖写入
     private boolean forceUpdate = true;
-
-    // 数据校验
-    private boolean compareData = true;
-
-    // 数据订正
-    private boolean recoverData = true;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -232,19 +230,4 @@ public class Mapping extends AbstractConfigModel {
         this.forceUpdate = forceUpdate;
     }
 
-    public boolean isCompareData() {
-        return compareData;
-    }
-
-    public void setCompareData(boolean compareData) {
-        this.compareData = compareData;
-    }
-
-    public boolean isRecoverData() {
-        return recoverData;
-    }
-
-    public void setRecoverData(boolean recoverData) {
-        this.recoverData = recoverData;
-    }
 }

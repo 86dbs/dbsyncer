@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.SqlTable;
@@ -103,7 +104,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
         // 清空默认表名
         filterTable.clear();
         for (Table t : sourceTable) {
-            String sql = t.getSql();
+            String sql = String.valueOf(t.getExtInfo().get(TableTypeEnum.SQL.getCode()));
             String sqlName = t.getName();
             SqlTable sqlTable = sqlTableMap.get(sqlName);
             if (sqlTable == null) {

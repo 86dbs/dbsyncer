@@ -3,6 +3,7 @@ package org.dbsyncer.sdk.model;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 
 import java.util.List;
+import java.util.Properties;
 
 /**
  * @author AE86
@@ -28,37 +29,13 @@ public class Table {
      */
     private List<Field> column;
 
-    /**
-     * sql
-     */
-    private String sql;
-
     // 总数
     private long count;
 
     /**
-     * 索引类型（ES）
+     * 扩展配置
      */
-    private String indexType;
-
-    public Table() {
-    }
-
-    public Table(String name) {
-        this(name, TableTypeEnum.TABLE.getCode());
-    }
-
-    public Table(String name, String type) {
-        this(name, type, null, null, null);
-    }
-
-    public Table(String name, String type, List<Field> column, String sql, String indexType) {
-        this.name = name;
-        this.type = type;
-        this.column = column;
-        this.sql = sql;
-        this.indexType = indexType;
-    }
+    private Properties extInfo = new Properties();
 
     public String getName() {
         return name;
@@ -85,14 +62,6 @@ public class Table {
         return this;
     }
 
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql;
-    }
-
     public long getCount() {
         return count;
     }
@@ -101,16 +70,22 @@ public class Table {
         this.count = count;
     }
 
-    public String getIndexType() {
-        return indexType;
+    public Properties getExtInfo() {
+        return extInfo;
     }
 
-    public void setIndexType(String indexType) {
-        this.indexType = indexType;
+    public void setExtInfo(Properties extInfo) {
+        this.extInfo = extInfo;
     }
 
     @Override
     public Table clone() {
-        return new Table(name, type, column, sql, indexType);
+        Table table = new Table();
+        table.setName(name);
+        table.setType(type);
+        table.setColumn(column);
+        table.setCount(count);
+        table.setExtInfo(extInfo);
+        return table;
     }
 }

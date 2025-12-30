@@ -376,8 +376,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 continue;
             }
             targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
-                // 排除目标源表视图
-                if (!TableTypeEnum.isView(targetTable.getType())) {
+                // 仅支持表类型
+                if (TableTypeEnum.isTable(targetTable.getType())) {
                     addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
                 }
                 return targetTable;
