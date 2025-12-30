@@ -1,3 +1,33 @@
+// URL处理：清除哈希参数和多余的历史记录
+(function() {
+    // 1. 检查并清除URL中的哈希参数
+    if (window.location.hash) {
+        // 构建干净的登录页面URL
+        var cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+        // 重定向到干净的URL，替换当前历史记录
+        window.location.replace(cleanUrl);
+        return;
+    }
+    
+    // 2. 清除多余的浏览器历史记录
+    // 当登录页面是浏览器历史记录的最新条目时，清除所有之前的历史记录
+    // 这样用户只能回退到浏览器的初始页面
+    if (window.history && window.history.length > 1) {
+        // 使用replaceState修改当前历史记录条目
+        window.history.replaceState(null, null, window.location.href);
+        // 添加一个新的历史记录条目，与当前URL相同
+        window.history.pushState(null, null, window.location.href);
+        // 监听popstate事件，当用户点击回退按钮时
+        window.addEventListener('popstate', function() {
+            // 检查是否回到了第一个历史记录条目
+            if (window.history.state === null) {
+                // 再次添加一个历史记录条目
+                window.history.pushState(null, null, window.location.href);
+            }
+        });
+    }
+})();
+
 // 获取项目地址
 var $location = (window.location + '').split('/');
 var $path = document.location.pathname;
