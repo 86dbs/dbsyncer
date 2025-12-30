@@ -282,8 +282,9 @@ function bindFieldMappingDelClick(){
 
 $(function() {
     // 定义返回函数，子页面返回
+    let mappingId = $("#mappingId").val();
     window.backIndexPage = function () {
-        doLoader("/mapping/page/edit?id=" + $("#mappingId").val());
+        doLoader("/mapping/page/edit?id=" + mappingId);
     };
 
     // 绑定下拉选择事件自动匹配相似字段事件

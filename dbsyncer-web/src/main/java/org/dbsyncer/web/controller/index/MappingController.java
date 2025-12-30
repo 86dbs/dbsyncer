@@ -65,6 +65,13 @@ public class MappingController extends BaseController {
         return "mapping/" + page;
     }
 
+    @GetMapping("/pageCustomTable")
+    public String page(ModelMap model, @RequestParam(value = "id") String id, String type) {
+        model.put("mapping", mappingService.getMapping(id));
+        model.put("type", type);
+        return "mapping/customTable";
+    }
+
     @PostMapping("/search")
     @ResponseBody
     public RestResult search(HttpServletRequest request) {

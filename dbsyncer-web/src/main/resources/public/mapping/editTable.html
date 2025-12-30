@@ -48,7 +48,10 @@
     </div>
 
     <!-- 操作按钮区域 -->
-    <div class="flex items-center justify-end mt-4">
+    <div class="flex items-center justify-between mt-4">
+        <button id="refreshTableBtn" type="button" class="btn btn-outline" th:title="刷新数据源和目标源表" onclick="bindTableRefresh()">
+            <span class="fa fa-refresh"></span>刷新表
+        </button>
         <div class="form-actions">
             <button id="tableGroupAddBtn" type="button" class="btn btn-info" th:if="${mapping?.meta?.state eq 0}">
                 <i class="fa fa-plus"></i> 添加
@@ -98,7 +101,7 @@
         doLoader(url);
     }
 
-    function bindTableSelect(selector, onChange){
+    function bindTableSelect(selector, type, onChange){
         return selector.dbSelect({
             type: 'multiple',
             onSelect: function (data) {
@@ -116,9 +119,9 @@
                     }
                 },
                 {
-                    text: '刷新表',
+                    text: '自定义表',
                     callback: function(values) {
-                        bindTableRefresh();
+                        doLoader('/mapping/pageCustomTable?id=' + $("#mappingId").val() + '&type=' + type);
                     }
                 }
             ]
@@ -339,8 +342,8 @@
 
     $(document).ready(function() {
         // 绑定下拉选择事件自动匹配相似表事件
-        let targetTableSelect = bindTableSelect($('#target_table_select'));
-        let sourceTableSelect = bindTableSelect($('#source_table_select'), function(data) {
+        let targetTableSelect = bindTableSelect($('#target_table_select'), 'target');
+        let sourceTableSelect = bindTableSelect($('#source_table_select'), 'source' , function(data) {
             targetTableSelect.setValues(data);
         });
         // 绑定多值输入框事件

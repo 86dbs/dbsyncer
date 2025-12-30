@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <form id="mappingModifyForm" method="post">
+        <div class="card-header">
+            <div class="grid grid-cols-6 items-center">
+                <div class="lg:col-span-2"></div>
+                <div class="lg:col-span-2 card-title text-center">
+                    <span class="text-xxl">[[${mapping?.name}]] - 自定义[[${type == 'source' ? '数据源' : '目标源'}]]表</span>
+                    <!-- 隐藏表单值 -->
+                    <div class="hidden">
+                        <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                    </div>
+                </div>
+                <div class="lg:col-span-2"></div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- 自定义模式选择 -->
+            <div class="flex items-center justify-between mt-4">
+                <div id="custom_model" class="radio-group">
+                    <input type="radio" name="model" value="SQL" checked="checked"/>
+                    <label>SQL</label>
+                    <input type="radio" name="model" value="SEMI_STRUCTURED" />
+                    <label>半结构化</label>
+                </div>
+
+                <div class="form-actions">
+                    <span th:if="${mapping?.meta?.state ne 0}">
+                        <button type="button" class="btn btn-info" disabled>
+                            <i class="fa fa-save"></i> 运行中
+                        </button>
+                    </span>
+                    <button th:if="${mapping?.meta?.state eq 0}"
+                            id="mappingSubmitBtn"
+                            type="button"
+                            class="btn btn-primary">
+                        <i class="fa fa-save"></i> 保存
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                        <i class="fa fa-reply"></i> 返回
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+    </form>
+</div>
+
+<script>
+    function showConfig(value) {
+        console.log(value);
+    }
+
+    // 绑定切换事件
+    function bindCustomChange() {
+        const customModel = $('#custom_model').radioGroup({
+            theme: 'info',
+            size: 'md',
+            onChange: function(value, label) {
+                showConfig(value);
+            }
+        });
+        // 渲染选择radio配置
+        showConfig(customModel.getValue());
+    }
+
+    $(function () {
+        // 定义返回函数，子页面返回
+        let mappingId = $("#mappingId").val();
+        window.backIndexPage = function () {
+            doLoader("/mapping/page/edit?id=" + mappingId);
+        };
+
+        bindCustomChange();
+    });
+</script>
+</html>
