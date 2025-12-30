@@ -100,10 +100,6 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
-        // 初始化 TableGroup（设置运行时组件并初始化 command）
-        for (TableGroup tableGroup : list) {
-            tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
-        }
         logger.debug("获取TableGroup列表成功: count={}", list.size());
         
         Meta meta = profileComponent.getMeta(metaId);

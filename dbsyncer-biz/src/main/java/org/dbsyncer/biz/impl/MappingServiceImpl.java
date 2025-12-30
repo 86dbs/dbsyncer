@@ -110,7 +110,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.COPY, newMapping);
 
         // 统计总数
-        resetCount(newMapping);
+        submitMappingCountTask(newMapping);
         return String.format("复制成功[%s]", newMapping.getName());
     }
 
@@ -131,7 +131,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 更新meta
             mapping.updateMata(metaSnapshot);
         }
-        resetCount(mapping);
+        submitMappingCountTask(mapping);
         return id;
     }
 
@@ -187,15 +187,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 message = "以下 " + missingTables.size() + " 个目标表不存在，是否基于源表结构自动创建？";
             }
             throw new TargetTableNotExistsException(message, missingTables);
-        }
-    }
-
-    private void resetCount(Mapping mapping) throws Exception {
-        // 统计总数
-        if (mapping.getModel().equals(ModelEnum.INCREMENT.getCode())) {
-            mapping.getMeta().clear(mapping.getModel());
-        } else {
-            submitMappingCountTask(mapping);
         }
     }
 
@@ -501,7 +492,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
             for (TableGroup tableGroup : tableGroupAll) {
                 tableGroup.clear();
-                tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
                 profileComponent.editConfigModel(tableGroup);
             }
             log(LogType.MappingLog.RESET, mapping);

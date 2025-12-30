@@ -152,6 +152,8 @@ public class MySQLListener extends AbstractDatabaseListener {
         if (0 < nextPosition) {
             client.setBinlogPosition(nextPosition);
         }
+        // 即使没有同步数据，binlog 也在继续前进，需要更新 snapshot 以保持位置同步
+        refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
     }
 
     private void refreshSnapshot(String binlogFilename, long nextPosition) {
@@ -404,7 +406,6 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (columnNames != null && !columnNames.isEmpty()) {
                     // 缓存列名信息
                     tableColumnNames.put(tableId, columnNames);
-                    logger.debug("更新表列名缓存，tableId: {}, tableName: {}, columns: {}", tableId, tableName, columnNames);
                 }
                 return columnNames;
             } catch (Exception e) {
@@ -431,11 +432,6 @@ public class MySQLListener extends AbstractDatabaseListener {
             // 清除缓存
             for (Long tableId : tableIdsToRemove) {
                 tableColumnNames.remove(tableId);
-                logger.debug("清除表列名缓存，tableId: {}, tableName: {}", tableId, tableName);
-            }
-            
-            if (!tableIdsToRemove.isEmpty()) {
-                logger.info("已清除表 [{}] 的列名缓存，涉及 {} 个 tableId", tableName, tableIdsToRemove.size());
             }
         }
 

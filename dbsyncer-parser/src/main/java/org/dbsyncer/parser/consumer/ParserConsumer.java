@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.QuartzListenerContext;
 import org.dbsyncer.sdk.listener.Watcher;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,8 @@ public final class ParserConsumer implements Watcher {
         Meta meta = profileComponent.getMeta(metaId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
+            // 更新 updateTime 以记录持久化时间
+            meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
     }
