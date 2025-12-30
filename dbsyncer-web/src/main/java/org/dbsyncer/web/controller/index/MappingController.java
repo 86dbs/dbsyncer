@@ -61,7 +61,6 @@ public class MappingController extends BaseController {
         MappingVo mapping = mappingService.getMapping(id, exclude);
         model.put("mapping", mapping);
         model.put("tableGroups", tableGroupService.getTableGroupAll(id));
-        model.put("targetTable", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
     }

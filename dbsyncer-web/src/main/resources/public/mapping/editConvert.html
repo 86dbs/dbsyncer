@@ -99,18 +99,18 @@
         // 生成JSON参数
         var row = [];
         var $convertList = $("#convertList");
-        $convertList.find("tr").each(function(k,v){
+        $convertList.find("tr").each(function(k,v) {
             var convert = $(this).find("td:eq(0)");
             var convertCode = convert.attr("value");
-            var convertName = convert.text().replace(/\n/g,'').trim();
-            var tf = $(this).find("td:eq(1)").text();
-            var args = $(this).find("td:eq(2)").text();
+            var convertName = convert.text().trim();
+            var tf = $(this).find("td:eq(1)").text().trim();
+            var args = $(this).find("td:eq(2)").text().trim();
             row.push({
                "name": tf,
                "convertName": convertName,
                "convertCode": convertCode,
                "args": args
-             });
+            });
         });
         var $convertTable = $("#convertTable");
         if (0 >= row.length) {

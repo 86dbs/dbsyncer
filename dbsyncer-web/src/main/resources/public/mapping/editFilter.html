@@ -135,10 +135,10 @@
         const row = [];
         const $conditionList = $("#conditionList");
         $conditionList.find("tr").each(function(k,v){
-            const opt = $(this).find("td:eq(0)").text();
-            const sf = $(this).find("td:eq(1)").text();
-            const filter = $(this).find("td:eq(2)").text();
-            const arg = $(this).find("td:eq(3)").text();
+            const opt = $(this).find("td:eq(0)").text().trim();
+            const sf = $(this).find("td:eq(1)").text().trim();
+            const filter = $(this).find("td:eq(2)").text().trim();
+            const arg = $(this).find("td:eq(3)").text().trim();
             row.push({
                "name": sf,
                "operation": opt,
