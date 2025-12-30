@@ -6,6 +6,7 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -42,7 +43,10 @@ public class ProfileComponentImpl implements ProfileComponent {
     private ConnectorFactory connectorFactory;
 
     @Resource
-    private org.dbsyncer.parser.ParserComponent parserComponent;
+    private ParserComponent parserComponent;
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public Connector parseConnector(String json) {
@@ -148,6 +152,9 @@ public class ProfileComponentImpl implements ProfileComponent {
     public List<TableGroup> getTableGroupAll(String mappingId) throws Exception {
         TableGroup temp = new TableGroup().setMappingId(mappingId);
         List<TableGroup> tableGroups = operationTemplate.queryAll(new QueryConfig<>(temp, GroupStrategyEnum.TABLE));
+        for (TableGroup t : tableGroups){
+            t.initTableGroup(parserComponent, profileComponent, connectorFactory);
+        }
         return tableGroups;
     }
 

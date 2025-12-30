@@ -55,10 +55,6 @@ public final class FullPuller implements org.dbsyncer.manager.Puller, ProcessEve
     public void start(Mapping mapping) throws Exception {
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
         Assert.notEmpty(list, "映射关系不能为空");
-        // 初始化 TableGroup（设置运行时组件并初始化 command）
-        for (TableGroup tableGroup : list) {
-            tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
-        }
         Thread worker = new Thread(() -> {
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());

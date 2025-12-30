@@ -492,7 +492,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
             for (TableGroup tableGroup : tableGroupAll) {
                 tableGroup.clear();
-                tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
                 profileComponent.editConfigModel(tableGroup);
             }
             log(LogType.MappingLog.RESET, mapping);
