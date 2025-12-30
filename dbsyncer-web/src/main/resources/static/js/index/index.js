@@ -101,6 +101,12 @@ function bindEditMapping() {
         var $id = $(this).attr("id");
         if ($id) {
             updateHash('/mapping/page/edit?classOn=0&id=' + $id);
+
+             // 清除定时器，停止定时刷新任务列表
+            if (window.timer2) {
+                clearInterval(window.timer2);
+                window.timer2 = null;
+            }
         }
     });
 }
@@ -225,6 +231,22 @@ function doPost(url) {
     });
 }
 
+// URL参数解析函数 - 更健壮的实现
+function getUrlParam(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\#&]' + name + '=([^&#]*)');
+    var results = regex.exec(window.location.href);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+// 从URL参数中同步projectGroupId到隐藏字段
+function syncProjectGroupIdFromUrl() {
+    var projectGroupId = getUrlParam('projectGroupId');
+    if (projectGroupId) {
+        $('#projectGroup').val(projectGroupId);
+    }
+}
+
 // 创建定时器
 function createTimer(projectGroupId) {
     // 移除旧的定时器机制，避免与refreshMappingList函数的定时器冲突
@@ -252,14 +274,27 @@ function createTimer(projectGroupId) {
 
 function refreshMappingList() {
 
+    // 检查当前是否在任务列表界面
+    if (!window.location.hash.startsWith('#/index?') && !window.location.hash.startsWith('#/index&')) {
+        // 如果不在任务列表界面，不创建定时器
+        return;
+    }
+
     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
             // 确保timer2是全局变量
             if (!window.timer2) {
                 window.timer2 = setInterval(function () {
-                    var projectGroupId = $("#projectGroup").val();
-                    // 加载页面
-                    $.ajax({
+                    // 再次检查当前是否在任务列表界面
+                    if (window.location.hash.startsWith('#/index?') || window.location.hash.startsWith('#/index&')) {
+                        var projectGroupId = $("#projectGroup").val();
+                        // 确保projectGroupId是有效的
+                        if (!projectGroupId || projectGroupId === undefined) {
+                            projectGroupId = '';
+                        }
+                        
+                        // 加载页面
+                        $.ajax({
                         url: '/index/mappingdata?projectGroupId=' + projectGroupId + "&refresh=" + new Date().getTime(), // 假设这是获取任务列表的接口
                         type: 'GET',
                         success: function (data) {
@@ -432,9 +467,10 @@ function refreshMappingList() {
                             }
                         },
                         error: function () {
-                            bootGrowl('刷新失败', "danger");
-                        }
-                    });
+                                bootGrowl('刷新失败', "danger");
+                            }
+                        });
+                    }
                 }, data.resultValue * 1000);
             }
 
@@ -447,7 +483,9 @@ function refreshMappingList() {
 
 function groupShow(id) {
     var projectGroupId = (typeof id === 'string') ? id : '';
-    timerLoad("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+    
+    // 使用updateHash更新URL哈希，而不是直接调用timerLoad
+    updateHash("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
     $("#projectGroup").val(projectGroupId);
     
     // 清除并重新初始化定时刷新机制
@@ -605,6 +643,13 @@ $(function () {
     //initSelectIndex($(".select-control"));
     bindAddProjectGroup();
 
+    
+    // 从URL参数中获取projectGroupId并同步到隐藏字段
+    var projectGroupId = getUrlParam('projectGroupId');
+    if (projectGroupId) {
+        $('#projectGroup').val(projectGroupId);
+    }
+    
     //异步刷新  同步进度 部分HTML
     refreshMappingList();
 

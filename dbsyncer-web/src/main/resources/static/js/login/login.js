@@ -7,7 +7,7 @@ $(document).ready(function () {
     // token过期，跳转默认页面
     var $navbar = $("div[class='navbar-header']");
     if($navbar.length && $navbar.length>0){
-        location.href = $basePath;
+        location.replace($basePath);
         return;
     }
     // 显示登录表单
@@ -56,7 +56,7 @@ function initLoginCopyrightInfo() {
 function showResponse($form, data) {
     $form.find("input").removeAttr('disabled');
     if (data.success == true) {
-        location.href = $basePath;
+        location.replace($basePath);
         return;
     }
     // 请求失败

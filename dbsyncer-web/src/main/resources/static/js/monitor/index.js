@@ -495,13 +495,15 @@ function showChartTable() {
     });
 }
 
-// 创建定时器
+// 创建定时器 - 使用局部变量，避免全局作用域冲突
+var monitorTimer = null;
+
 function createTimer() {
     showChartTable();
     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
         if (data.success == true) {
-            if (timer == null) {
-                timer = setInterval(function () {
+            if (monitorTimer == null) {
+                monitorTimer = setInterval(function () {
                     showChartTable();
                 }, data.resultValue * 1000);
             }
@@ -509,6 +511,14 @@ function createTimer() {
             bootGrowl(data.resultValue, "danger");
         }
     });
+}
+
+// 清除定时器函数
+function clearMonitorTimer() {
+    if (monitorTimer) {
+        clearInterval(monitorTimer);
+        monitorTimer = null;
+    }
 }
 
 $(function () {
@@ -537,6 +547,11 @@ $(function () {
     bindClearEvent($(".clearLogBtn"), "确认清空日志？", "清空日志成功!", "/monitor/clearLog");
 
     createTimer();
+    
+    // 监听页面切换事件，确保离开监控页面时清除定时器
+    $(window).on('beforeunload hashchange', function() {
+        clearMonitorTimer();
+    });
 
     // 绑定回车事件
     $("#searchDataKeyword").keydown(function (e) {

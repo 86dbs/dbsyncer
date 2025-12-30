@@ -33,7 +33,7 @@ $(function () {
                 label: "确定",
                 action: function (dialog) {
                     doPoster("/logout", null, function (data) {
-                        location.href = $basePath;
+                        location.replace($basePath);
                     });
                     dialog.close();
                 }
@@ -92,11 +92,29 @@ function handleHashChange() {
     let url = hashPath;
     let route = 0;
     
-    const routeParamIndex = hashPath.indexOf('?route=');
-    if (routeParamIndex > -1) {
-        url = hashPath.substring(0, routeParamIndex);
-        route = parseInt(hashPath.substring(routeParamIndex + 7));
+    // 兼容的URL参数解析方法
+    const hashParts = hashPath.split('?');
+    const basePath = hashParts[0];
+    let paramsString = hashParts[1] || '';
+    
+    // 解析route参数
+    const routeMatch = paramsString.match(/[?&]route=(\d+)/);
+    if (routeMatch) {
+        route = parseInt(routeMatch[1]);
+        // 移除route参数，保留其他所有参数
+        paramsString = paramsString.replace(/[?&]route=\d+/, '');
     }
+    
+    // 重新构建URL，确保参数分隔符正确
+    if (paramsString) {
+        // 如果paramsString非空，确保以?开头
+        if (paramsString.charAt(0) !== '?') {
+            paramsString = '?' + paramsString;
+        }
+    }
+    
+    // 重新构建URL
+    url = basePath + paramsString;
     
     // 根据URL路径设置导航栏活动状态
     const $menu = $("#menu > li");

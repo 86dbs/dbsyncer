@@ -6,8 +6,8 @@ var $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.subst
 var $initContainer = $(".contentDiv");
 $initContainer.css("min-height", $(window).height() - 125);
 
-// 监控定时器
-var timer = null, timer2 = null;
+// 移除全局定时器变量定义，避免跨页面作用域冲突
+// 每个页面应该使用自己的局部定时器变量
 
 // ******************* 插件封装 ***************************
 // 全局提示框
@@ -71,8 +71,11 @@ function refreshLicenseInfo() {
 
 // 跳转主页
 function backIndexPage(projectGroupId) {
+    // 如果没有传递projectGroupId参数，则从页面的隐藏字段中获取当前分组ID
+    if (typeof projectGroupId !== 'string' || projectGroupId === '') {
+        projectGroupId = $('#projectGroup').val() || '';
+    }
     // 使用updateHash更新URL哈希，而不是直接调用doLoader
-    projectGroupId = (typeof projectGroupId === 'string') ? projectGroupId : '';
     updateHash("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
 
      // 设置导航栏活动状态为驱动
@@ -269,6 +272,23 @@ function doLoaderWithoutHashUpdate(url, route = 0) {
         }
         watermark();
         $.loadingT(false);
+        
+        // 页面加载完成后，先从传递的URL参数中提取projectGroupId
+        var reg = new RegExp('(?:\\?|&)projectGroupId=([^&]*)');
+        var match = url.match(reg);
+        var projectGroupId = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+        
+        // 如果传递的URL参数中没有projectGroupId，则从当前URL中提取
+        if (!projectGroupId) {
+            reg = new RegExp('[\\#&]projectGroupId=([^&#]*)');
+            match = reg.exec(window.location.href);
+            projectGroupId = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+        }
+        
+        // 更新隐藏字段
+        if (projectGroupId) {
+            $('#projectGroup').val(projectGroupId);
+        }
     });
 }
 
@@ -304,6 +324,23 @@ function timerLoad(url, route = 1) {
         }
         watermark();
         $.loadingT(false);
+        
+        // 页面加载完成后，先从传递的URL参数中提取projectGroupId
+        var reg = new RegExp('(?:\?|&)projectGroupId=([^&]*)');
+        var match = url.match(reg);
+        var projectGroupId = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+        
+        // 如果传递的URL参数中没有projectGroupId，则从当前URL中提取
+        if (!projectGroupId) {
+            reg = new RegExp('[\\#&]projectGroupId=([^&#]*)');
+            match = reg.exec(window.location.href);
+            projectGroupId = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+        }
+        
+        // 更新隐藏字段
+        if (projectGroupId) {
+            $('#projectGroup').val(projectGroupId);
+        }
     });
 }
 
@@ -314,7 +351,7 @@ function doRequest(action, data) {
     if (!(data instanceof Object)) {
         bootGrowl("会话过期, 3秒后将访问登录主页...", "danger");
         setTimeout(function () {
-            location.href = $basePath;
+            location.replace($basePath); // 修改为replace
         }, 3000);
     } else {
         action(data);
