@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -120,7 +121,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
-            assertRunning(mapping.getMetaId());
+            // 检查是否禁止编辑
+            mapping.assertDisableEdit();
 
             // 在保存之前，检查所有已存在的表映射关系的目标表是否存在
             checkAllTargetTablesExist(mapping);
@@ -196,7 +198,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String metaId = mapping.getMetaId();
         Meta meta = profileComponent.getMeta(metaId);
         synchronized (LOCK) {
-            assertRunning(metaId);
+            meta.assertRunning();
 
             // 删除数据
             monitorService.clearData(metaId);
@@ -275,10 +277,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     @Override
     public String start(String id) throws Exception {
         Mapping mapping = assertMappingExist(id);
-        final String metaId = mapping.getMetaId();
 
         synchronized (LOCK) {
-            assertRunning(metaId);
+            mapping.getMeta().assertRunning();
 
             // 启动
             managerFactory.start(mapping);
@@ -292,7 +293,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String stop(String id) throws Exception {
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
-            if (!isRunning(mapping.getMetaId())) {
+            if (!mapping.getMeta().isRunning()) {
                 throw new BizException("驱动已停止.");
             }
             managerFactory.close(mapping);
@@ -310,6 +311,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String refreshMappingTables(String id) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
+        
+        // 检查是否禁止编辑
+        mapping.assertDisableEdit();
+
         updateConnectorTables(mapping.getSourceConnectorId());
         updateConnectorTables(mapping.getTargetConnectorId());
         return "刷新驱动表成功";
@@ -494,6 +499,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 tableGroup.clear();
                 profileComponent.editConfigModel(tableGroup);
             }
+            
+            // 重置后允许编辑
+            mapping.setDisableEdit(false);
+            mapping.setUpdateTime(Instant.now().toEpochMilli());
+            profileComponent.editConfigModel(mapping);
+            
             log(LogType.MappingLog.RESET, mapping);
 
             // 发送关闭驱动通知消息

@@ -7,13 +7,10 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 
@@ -32,26 +29,6 @@ public class BaseServiceImpl {
      * 驱动启停锁
      */
     protected final static Object LOCK = new Object();
-
-    protected boolean isRunning(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
-        if (null != meta) {
-            int state = meta.getState();
-            return MetaEnum.isRunning(state);
-        }
-        return false;
-    }
-
-    protected void assertRunning(String metaId) {
-        synchronized (LOCK) {
-            Assert.isTrue(!isRunning(metaId), "驱动正在运行, 请先停止.");
-        }
-    }
-
-    protected void assertRunning(Mapping mapping) {
-        Assert.notNull(mapping, "mapping can not be null.");
-        assertRunning(mapping.getMetaId());
-    }
 
     protected void log(LogType log, ConfigModel model) {
         if (null != model) {

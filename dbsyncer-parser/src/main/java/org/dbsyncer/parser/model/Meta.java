@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.enums.SyncPhaseEnum;
@@ -339,6 +340,18 @@ public class Meta extends ConfigModel {
     @JsonIgnore
     public boolean isRunning() {
         return MetaEnum.isRunning(this.state);
+    }
+
+    /**
+     * 断言当前 Meta 未处于运行状态
+     *
+     * @throws ParserException 如果当前 Meta 正在运行，抛出异常
+     */
+    @JsonIgnore
+    public void assertRunning() {
+        if (this.isRunning()) {
+            throw new ParserException("驱动正在运行, 请先停止.");
+        }
     }
 
     @JsonIgnore

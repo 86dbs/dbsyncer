@@ -37,6 +37,12 @@ public class ManagerFactory {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         meta.setBeginTime(Instant.now().toEpochMilli());
         meta.saveState(MetaEnum.RUNNING);
+        
+        // 任务启动后禁止编辑
+        mapping.setDisableEdit(true);
+        mapping.setUpdateTime(Instant.now().toEpochMilli());
+        profileComponent.editConfigModel(mapping);
+        
         logService.log(LogType.MappingLog.RUNNING, String.format("设置Meta状态为RUNNING: mappingId=%s, metaId=%s", mapping.getId(), mapping.getMetaId()));
 
         try {

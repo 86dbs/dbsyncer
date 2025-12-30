@@ -3,8 +3,8 @@ package org.dbsyncer.parser.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.SyncPhaseEnum;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -69,6 +69,9 @@ public class Mapping extends AbstractConfigModel {
 
     // 数据订正
     private boolean recoverData = true;
+
+    // 禁止编辑（任务启动后设置为 true，重置后设置为 false）
+    private boolean disableEdit = false;
 
     @JsonIgnore
     public ProfileComponent profileComponent;
@@ -180,6 +183,26 @@ public class Mapping extends AbstractConfigModel {
         this.recoverData = recoverData;
     }
 
+    public boolean isDisableEdit() {
+        return disableEdit;
+    }
+
+    public void setDisableEdit(boolean disableEdit) {
+        this.disableEdit = disableEdit;
+    }
+
+    /**
+     * 检查是否禁止编辑
+     *
+     * @throws ParserException 如果 disableEdit = true，抛出异常
+     */
+    @JsonIgnore
+    public void assertDisableEdit() {
+        if (this.disableEdit) {
+            throw new ParserException("任务【启动过】就不允许编辑了。如需编辑请【重置】任务。");
+        }
+    }
+
     @JsonIgnore
     public Meta getMeta() {
         return profileComponent.getMeta(this.metaId);
@@ -208,6 +231,8 @@ public class Mapping extends AbstractConfigModel {
         String newId = String.valueOf(snowflakeIdWorker.nextId());
         newMapping.setId(newId);
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
+        // 新复制的任务默认允许编辑
+        newMapping.setDisableEdit(false);
         // meta
         Meta.create(newMapping, snowflakeIdWorker, profileComponent);
         profileComponent.addConfigModel(newMapping);

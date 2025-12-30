@@ -60,7 +60,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String add(Map<String, String> params) throws Exception {
         String mappingId = params.get("mappingId");
         Mapping mapping = profileComponent.getMapping(mappingId);
-        assertRunning(mapping);
+        // 检查是否禁止编辑
+        mapping.assertDisableEdit();
 
         synchronized (LOCK) {
             // table1, table2
@@ -109,7 +110,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
-        assertRunning(mapping);
+        // 检查是否禁止编辑
+        mapping.assertDisableEdit();
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
@@ -127,6 +129,10 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     public String refreshFields(String id) throws Exception {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
+        
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        // 检查是否禁止编辑
+        mapping.assertDisableEdit();
 
         tableGroupChecker.refreshTableFields(tableGroup);
         return profileComponent.editTableGroup(tableGroup);
@@ -137,7 +143,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
         Mapping mapping = profileComponent.getMapping(mappingId);
-        assertRunning(mapping);
+        // 检查是否禁止编辑
+        mapping.assertDisableEdit();
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
