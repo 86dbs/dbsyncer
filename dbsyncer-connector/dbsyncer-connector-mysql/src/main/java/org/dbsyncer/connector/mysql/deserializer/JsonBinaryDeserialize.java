@@ -37,7 +37,7 @@ public final class JsonBinaryDeserialize {
             throw new IOException("Invalid blobLength for JSON field");
         }
         if (blobLength == 0) {
-            return new byte[0];
+            return "null".getBytes(CHARSET_NAME);
         }
 
         // 检查是否有足够的数据可读
