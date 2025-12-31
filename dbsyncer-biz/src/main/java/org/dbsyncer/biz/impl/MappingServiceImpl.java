@@ -14,10 +14,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
-import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ParserComponent;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.*;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.*;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -79,6 +77,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private ParserComponent parserComponent;
+
+    @Resource
+    private LogService logService;
 
     @Override
     public String add(Map<String, String> params) throws Exception {
@@ -153,9 +154,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         // 检查目标连接器是否支持 DDL
         Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
-        org.dbsyncer.sdk.spi.ConnectorService<?, ?> targetConnectorService = 
+        org.dbsyncer.sdk.spi.ConnectorService<?, ?> targetConnectorService =
                 connectorFactory.getConnectorService(targetConnector.getConfig().getConnectorType());
-        
+
         // 如果目标连接器不支持执行 DDL 操作（如 Kafka），则跳过表存在性检查
         // 注意：这里检查的是连接器能力（supportsDDLWrite），而不是任务配置（enableDDL）
         // 因为表存在性检查的目的是判断是否可以创建表，这是连接器层面的能力
@@ -269,7 +270,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public List<MappingVo> getMappingAll() {
         return profileComponent.getMappingAll()
                 .stream()
-                .map(this::convertMapping2Vo)
+                .map(mapping -> {
+                    try {
+                        return convertMapping2Vo(mapping);
+                    } catch (Exception e) {
+                        // 捕获其他可能的异常（如 Meta 为 null 等）
+                        logger.error("转换 Mapping 失败，mappingId: {}, mappingName: {}",
+                                mapping.getId(), mapping.getName(), e);
+                        logService.log(LogType.MappingLog.CONFIG, String.format("mappingId: %s, msg: %s", mapping.getId(), e.getMessage()));
+                        return createErrorMappingVo(mapping, e.getMessage());
+                    }
+                })
                 .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
                 .collect(Collectors.toList());
     }
@@ -311,7 +322,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String refreshMappingTables(String id) throws Exception {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
-        
+
         // 检查是否禁止编辑
         mapping.assertDisableEdit();
 
@@ -343,10 +354,28 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
+
+        // 获取源连接器，如果为 null 则直接生成异常的 MappingVo
         Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
-        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        if (s == null) {
+            logger.error("源连接器不存在，mappingId: {}, sourceConnectorId: {}",
+                    mapping.getId(), mapping.getSourceConnectorId());
+            logService.log(LogType.MappingLog.CONFIG, String.format("源连接器不存在，mappingId: %s, sourceConnectorId: %s", mapping.getId(), mapping.getSourceConnectorId()));
+            return createErrorMappingVo(mapping,
+                    String.format("源连接器不存在，sourceConnectorId: %s", mapping.getSourceConnectorId()));
+        }
         ConnectorVo sConn = new ConnectorVo(connectorService.isAlive(s.getId()));
         BeanUtils.copyProperties(s, sConn);
+
+        // 获取目标连接器，如果为 null 则直接生成异常的 MappingVo
+        Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
+        if (t == null) {
+            logger.error("目标连接器不存在，mappingId: {}, targetConnectorId: {}",
+                    mapping.getId(), mapping.getTargetConnectorId());
+            logService.log(LogType.MappingLog.CONFIG, String.format("目标连接器不存在，mappingId: %s, targetConnectorId: %s", mapping.getId(), mapping.getSourceConnectorId()));
+            return createErrorMappingVo(mapping,
+                    String.format("目标连接器不存在，targetConnectorId: %s", mapping.getTargetConnectorId()));
+        }
         ConnectorVo tConn = new ConnectorVo(connectorService.isAlive(t.getId()));
         BeanUtils.copyProperties(t, tConn);
 
@@ -359,6 +388,28 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         MappingVo vo = new MappingVo(sConn, tConn, metaVo);
         BeanUtils.copyProperties(mapping, vo);
+        return vo;
+    }
+
+    /**
+     * 创建标记为异常的 MappingVo（用于 getMappingAll 异常处理）
+     *
+     * @param mapping      原始 Mapping 对象
+     * @param errorMessage 错误信息
+     * @return 标记为异常的 MappingVo
+     */
+    private MappingVo createErrorMappingVo(Mapping mapping, String errorMessage) {
+        // 创建默认的异常连接器
+        ConnectorVo errorConn = new ConnectorVo(false);
+        errorConn.setName("连接器异常");
+
+        // 创建默认的 MetaVo
+        MetaVo metaVo = new MetaVo("异常", mapping.getName());
+        metaVo.setState(MetaEnum.ERROR.getCode());
+
+        MappingVo vo = new MappingVo(errorConn, errorConn, metaVo);
+        BeanUtils.copyProperties(mapping, vo);
+        metaVo.setErrorMessage(errorMessage);
         return vo;
     }
 
@@ -499,12 +550,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 tableGroup.clear();
                 profileComponent.editConfigModel(tableGroup);
             }
-            
+
             // 重置后允许编辑
             mapping.setDisableEdit(false);
             mapping.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(mapping);
-            
+
             log(LogType.MappingLog.RESET, mapping);
 
             // 发送关闭驱动通知消息

@@ -116,7 +116,8 @@ public interface LogType {
         STOP("34", "停止"),
         CLEAR_DATA("35", "清空同步数据"),
         COPY("36", "复制"),
-        RESET("37", "重置");
+        RESET("37", "重置"),
+        CONFIG("38","配置");
 
         private String type;
         private String message;
