@@ -310,7 +310,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private MetaVo convertMeta2Vo(Meta meta) {
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        Assert.notNull(mapping, String.format("驱动不存在. metaId:%s, mappingId:%s", meta.getId(), meta.getMappingId()));
+        if (mapping == null) {
+            String msg = String.format("mapping missing, id: %s, metaId: %s", meta.getMappingId(), meta.getId());
+            logger.error(msg);
+            logService.log(LogType.MappingLog.CONFIG, msg);
+            return new MetaVo("异常", msg);
+        }
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
