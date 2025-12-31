@@ -86,8 +86,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         ConfigModel model = mappingChecker.checkAddConfigModel(params);
         log(LogType.MappingLog.INSERT, model);
 
+        // 先保存 Mapping，确保 Mapping 保存成功
         String id = profileComponent.addConfigModel(model);
 
+        // Mapping 保存成功后，再创建并保存 Meta
+        // 这样可以避免出现 Meta 存在但 Mapping 不存在的数据不一致问题
+        Mapping mapping = (Mapping) model;
+        Meta.create(mapping, snowflakeIdWorker, profileComponent);
         // 匹配相似表 on
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
             matchSimilarTableGroups(model);

@@ -364,6 +364,7 @@ public class Meta extends ConfigModel {
         meta.setName(mapping.getId());
         mapping.setMetaId(newId);
         profileComponent.addConfigModel(meta);
+        profileComponent.editConfigModel(mapping);
         return meta;
     }
 }

@@ -233,9 +233,11 @@ public class Mapping extends AbstractConfigModel {
         newMapping.setUpdateTime(Instant.now().toEpochMilli());
         // 新复制的任务默认允许编辑
         newMapping.setDisableEdit(false);
-        // meta
-        Meta.create(newMapping, snowflakeIdWorker, profileComponent);
+        // 先保存 Mapping，确保 Mapping 保存成功后再创建 Meta
+        // 这样可以避免出现 Meta 存在但 Mapping 不存在的数据不一致问题
         profileComponent.addConfigModel(newMapping);
+        // Mapping 保存成功后，再创建并保存 Meta
+        Meta.create(newMapping, snowflakeIdWorker, profileComponent);
 
         // 复制映射表关系
         List<TableGroup> groupList = profileComponent.getTableGroupAll(this.getId());

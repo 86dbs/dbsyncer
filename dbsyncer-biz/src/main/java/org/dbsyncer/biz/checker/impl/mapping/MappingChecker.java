@@ -12,8 +12,8 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -62,6 +62,10 @@ public class MappingChecker extends AbstractChecker {
         Assert.hasText(sourceConnectorId, "数据源不能为空.");
         Assert.hasText(targetConnectorId, "目标源不能为空.");
 
+        // 验证连接器是否存在
+        validateConnectorExists(sourceConnectorId, "源连接器");
+        validateConnectorExists(targetConnectorId, "目标连接器");
+
         Mapping mapping = new Mapping();
         mapping.profileComponent = profileComponent;
         mapping.setName(name);
@@ -74,8 +78,8 @@ public class MappingChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
 
-        // 创建meta
-        Meta.create(mapping, snowflakeIdWorker, profileComponent);
+        // 注意：不再在此处创建 Meta，改为在 MappingServiceImpl.add() 中保存 Mapping 成功后再创建
+        // 这样可以确保先保存 Mapping，避免出现 Meta 存在但 Mapping 不存在的数据不一致问题
 
         return mapping;
     }
@@ -177,6 +181,21 @@ public class MappingChecker extends AbstractChecker {
                 g.initTableGroup(parserComponent, profileComponent, connectorFactory);
                 profileComponent.editConfigModel(g);
             }
+        }
+    }
+
+    /**
+     * 验证连接器是否存在
+     *
+     * @param connectorId 连接器ID
+     * @param connectorType 连接器类型描述（用于错误提示）
+     * @throws org.dbsyncer.parser.ParserException 如果连接器不存在
+     */
+    private void validateConnectorExists(String connectorId, String connectorType) {
+        Connector connector = profileComponent.getConnector(connectorId);
+        if (connector == null) {
+            throw new org.dbsyncer.parser.ParserException(
+                    String.format("%s不存在，connectorId: %s", connectorType, connectorId));
         }
     }
 }

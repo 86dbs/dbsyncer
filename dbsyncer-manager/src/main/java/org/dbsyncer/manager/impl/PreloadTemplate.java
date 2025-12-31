@@ -175,7 +175,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     }
                 }
             });
-            total += paging.getTotal();
+            total += data.size();
             pageNum++;
         }
         logger.info("{}:{}", modelType, total);
