@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.connector;
 
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -12,6 +13,7 @@ import org.springframework.util.Assert;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 
 /**
  * 关系型数据库连接配置校验器
@@ -29,6 +31,7 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         String username = params.get("username");
         String password = params.get("password");
         String properties = params.get("properties");
+        String extInfo = params.get("extInfo");
         String serviceName = params.get("serviceName");
         String driverClassName = params.get("driverClassName");
         int maxActive = NumberUtil.toInt(Objects.toString(params.get("maxActive")), connectorConfig.getMaxActive());
@@ -47,6 +50,7 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         connectorConfig.setPassword(password);
         connectorConfig.setServiceName(serviceName);
         connectorConfig.setProperties(PropertiesUtil.parse(properties));
+        connectorConfig.setExtInfo(JsonUtil.jsonToObj(extInfo, Properties.class));
         connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, StringUtil.EMPTY));
         connectorConfig.setDriverClassName(driverClassName);
         connectorConfig.setMaxActive(maxActive);

@@ -36,8 +36,6 @@
 textarea.form-control { min-height: 80px; line-height: 1.5; }
 
 /* 水平表单的间距与标签风格 */
-.form-horizontal .form-group { margin-bottom: 16px; }
-.control-label { color: var(--text-secondary); font-weight: 500; padding-top: 6px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 .form-control.is-invalid,

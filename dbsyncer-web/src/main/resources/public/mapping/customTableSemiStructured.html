@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content" id="semi_structured_model" class="hidden">
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">
+                Schema<i class="fa fa-question-circle" title="支持10种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
+            </label>
+            <div class="form-control-area">
+                <textarea id="schema" name="schema" class="form-control" maxlength="4096" required rows="20"></textarea>
+            </div>
+        </div>
+    </div>
+</div>

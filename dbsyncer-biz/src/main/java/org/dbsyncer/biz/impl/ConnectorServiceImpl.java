@@ -76,7 +76,10 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
-        Map params = JsonUtil.parseMap(connector.getConfig());
+        ConnectorConfig config = connector.getConfig();
+        Map params = JsonUtil.parseMap(config);
+        params.put("properties", config.getPropertiesText());
+        params.put("extInfo", JsonUtil.objToJson(config.getExtInfo()));
         params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);

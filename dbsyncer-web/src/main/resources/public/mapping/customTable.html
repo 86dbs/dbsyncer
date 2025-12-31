@@ -3,12 +3,12 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div class="form-container">
-    <form id="mappingModifyForm" method="post">
+    <form id="customTableForm" method="post">
         <div class="card-header">
             <div class="grid grid-cols-6 items-center">
                 <div class="lg:col-span-2"></div>
                 <div class="lg:col-span-2 card-title text-center">
-                    <span class="text-xxl">[[${mapping?.name}]] - 自定义[[${type == 'source' ? '数据源' : '目标源'}]]表</span>
+                    <span class="text-xxl">[[${mapping?.name}]] - 自定义表</span>
                     <!-- 隐藏表单值 -->
                     <div class="hidden">
                         <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
@@ -19,7 +19,7 @@
         </div>
         <div class="card-body">
             <!-- 自定义模式选择 -->
-            <div class="flex items-center justify-between mt-4">
+            <div class="flex justify-between mt-4">
                 <div id="custom_model" class="radio-group">
                     <input type="radio" name="model" value="SQL" checked="checked"/>
                     <label>SQL</label>
@@ -45,14 +45,52 @@
                 </div>
             </div>
 
+            <!-- 表选择器 -->
+            <div class="grid grid-cols-2 mt-5">
+                <div class="form-item">
+                    <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
+                    <select id="custom_table_select" class="form-control">
+                        <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+                    </select>
+                </div>
+
+                <div class="form-item justify-between">
+                    <label class="form-label"></label>
+                    <div class="form-actions">
+                        <button id="delSqlTableBtn" type="button" class="btn btn-outline">
+                            <span class="fa fa-remove"></span> 删除
+                        </button>
+                        <button id="editSqlTableBtn" type="button" class="btn btn-outline">
+                            <span class="fa fa-pencil"></span> 修改
+                        </button>
+                        <button id="addSqlTableBtn" type="button" class="btn btn-outline">
+                            <span class="fa fa-plus"></span> 添加
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SQL配置 -->
+            <div th:replace="mapping/customTableSQL :: content"></div>
+
+            <!-- 半结构化配置 -->
+            <div th:replace="mapping/customTableSemiStructured :: content"></div>
 
         </div>
     </form>
 </div>
 
 <script>
-    function showConfig(value) {
-        console.log(value);
+    function showConfig(model) {
+        const sql = $("#sql_model");
+        const semi = $("#semi_structured_model");
+        if ('SQL' === model) {
+            semi.addClass("hidden");
+            sql.removeClass("hidden");
+        } else {
+            sql.addClass("hidden");
+            semi.removeClass("hidden");
+        }
     }
 
     // 绑定切换事件
@@ -74,6 +112,8 @@
         window.backIndexPage = function () {
             doLoader("/mapping/page/edit?id=" + mappingId);
         };
+
+        initSelect($("#custom_table_select"));
 
         bindCustomChange();
     });
