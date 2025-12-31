@@ -36,6 +36,9 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
+import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
 import org.springframework.util.Assert;
 
 import java.sql.Connection;
@@ -136,10 +139,86 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                         fields.add(new Field(columnName, typeName, columnType, primaryKeys.contains(columnName), columnSize, ratio));
                     }
                 }
-                metaInfos.add(new MetaInfo().setTable(tableName).setColumn(fields));
+                MetaInfo metaInfo = new MetaInfo();
+                metaInfo.setTable(tableName);
+                metaInfo.setTableType(TableTypeEnum.TABLE.getCode());
+                metaInfo.setColumn(fields);
+                metaInfos.add(metaInfo);
             }
             return metaInfos;
         });
+    }
+
+    public List<MetaInfo> getMetaInfoWithSQL(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return connectorInstance.execute(databaseTemplate -> {
+            List<MetaInfo> metaInfos = new ArrayList<>();
+            for (Table s : context.getSqlPatterns()) {
+                Object val = s.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL);
+                if (val == null) {
+                    continue;
+                }
+                String originalSql = String.valueOf(val);
+                String sql = originalSql.toUpperCase();
+                sql = sql.replace("\t", " ");
+                sql = sql.replace("\r", " ");
+                sql = sql.replace("\n", " ");
+                String metaSql = StringUtil.contains(sql, " WHERE ") ? originalSql + " AND 1!=1 " : originalSql + " WHERE 1!=1 ";
+                String tableName = s.getName();
+
+                SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+                ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+                SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+                // 查询表字段信息
+                int columnCount = metaData.getColumnCount();
+                if (1 > columnCount) {
+                    throw new SdkException("查询表字段不能为空.");
+                }
+                List<Field> fields = new ArrayList<>(columnCount);
+                Map<String, List<String>> tables = new HashMap<>();
+                try {
+                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                    DatabaseMetaData md = connection.getMetaData();
+                    Connection conn = connection.getConnection();
+                    final String catalog = getCatalog(context.getCatalog(), conn);
+                    final String schema = getSchema(context.getSchema(), conn);
+                    String name = null;
+                    String label = null;
+                    String typeName = null;
+                    String table = null;
+                    int columnType;
+                    boolean pk;
+                    for (int i = 1; i <= columnCount; i++) {
+                        table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                        if (null == tables.get(table)) {
+                            tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
+                        }
+                        name = metaData.getColumnName(i);
+                        label = metaData.getColumnLabel(i);
+                        typeName = metaData.getColumnTypeName(i);
+                        columnType = metaData.getColumnType(i);
+                        pk = isPk(tables, table, name);
+                        fields.add(new Field(label, typeName, columnType, pk));
+                    }
+                } finally {
+                    tables.clear();
+                }
+                MetaInfo metaInfo = new MetaInfo();
+                metaInfo.setTable(tableName);
+                metaInfo.setTableType(TableTypeEnum.SQL.getCode());
+                metaInfo.setColumn(fields);
+                metaInfos.add(metaInfo);
+            }
+            return metaInfos;
+        });
+    }
+
+    private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {
+        List<String> pk = tables.get(tableName);
+        if (CollectionUtils.isEmpty(pk)) {
+            return false;
+        }
+        return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
     }
 
     @Override
@@ -265,6 +344,31 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         // 获取查询总数SQL
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql));
+        return map;
+    }
+
+    public Map<String, String> getSourceCommandWithSQL(CommandConfig commandConfig) {
+        // 获取过滤SQL
+        String queryFilterSql = getQueryFilterSql(commandConfig);
+        Table table = commandConfig.getTable();
+        Map<String, String> map = new HashMap<>();
+        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return map;
+        }
+
+        // 获取查询SQL
+        String querySql = String.valueOf(table.getExtInfo().get(TableTypeEnum.SQL.getCode()));
+
+        // 存在条件
+        if (StringUtil.isNotBlank(queryFilterSql)) {
+            querySql += queryFilterSql;
+        }
+        PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
+        map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
+
+        // 获取查询总数SQL
+        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
         return map;
     }
 

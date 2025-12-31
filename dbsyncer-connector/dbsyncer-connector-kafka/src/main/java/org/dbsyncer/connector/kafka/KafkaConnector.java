@@ -114,7 +114,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         List<MetaInfo> metaInfos = new ArrayList<>();
         KafkaConfig config = connectorInstance.getConfig();
         List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
-        metaInfos.add(new MetaInfo().setColumn(fields));
+        MetaInfo metaInfo = new MetaInfo();
+        metaInfo.setTable(config.getTopic());
+        metaInfo.setTableType(TableTypeEnum.SEMI_STRUCTURED.getCode());
+        metaInfo.setColumn(fields);
+        metaInfos.add(metaInfo);
         return metaInfos;
     }
 

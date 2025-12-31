@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.model;
 
+@Deprecated
 public class SqlTable {
 
     private String sqlName;

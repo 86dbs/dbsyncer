@@ -122,7 +122,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         List<MetaInfo> metaInfos = new ArrayList<>();
         context.getTablePatterns().forEach(tableName -> {
             FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
-            metaInfos.add(new MetaInfo().setTable(tableName).setColumn(fileSchema.getFields()));
+            MetaInfo metaInfo = new MetaInfo();
+            metaInfo.setTable(tableName);
+            metaInfo.setTableType(TableTypeEnum.SEMI_STRUCTURED.getCode());
+            metaInfo.setColumn(fileSchema.getFields());
+            metaInfos.add(metaInfo);
         });
         return metaInfos;
     }

@@ -284,7 +284,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
                     // process decoder
                     RowChangedEvent event = messageDecoder.processMessage(msg);
-                    if (event != null) {
+                    if (event != null && filterTable.contains(event.getSourceTableName())) {
                         event.setPosition(lsn.asString());
                         while (connected){
                             try {

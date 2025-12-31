@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.connector;
 
-import org.dbsyncer.sdk.model.SqlTable;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
      */
     private List<String> tablePatterns;
 
-    private List<SqlTable> sqlTablePatterns;
+    private List<Table> sqlPatterns;
 
     private String mappingId;
     private String connectorId;
@@ -41,13 +41,6 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
         this.schema = schema;
         this.tablePatterns = new ArrayList<>();
         this.tablePatterns.add(tablePattern);
-    }
-
-    public DefaultConnectorServiceContext(String catalog, String schema, SqlTable sqlTable) {
-        this.catalog = catalog;
-        this.schema = schema;
-        this.sqlTablePatterns = new ArrayList<>();
-        this.sqlTablePatterns.add(sqlTable);
     }
 
     @Override
@@ -78,12 +71,12 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
     }
 
     @Override
-    public List<SqlTable> getSqlTablePatterns() {
-        return sqlTablePatterns;
+    public List<Table> getSqlPatterns() {
+        return sqlPatterns;
     }
 
-    public void setSqlTablePatterns(List<SqlTable> sqlTablePatterns) {
-        this.sqlTablePatterns = sqlTablePatterns;
+    public void setSqlPatterns(List<Table> sqlPatterns) {
+        this.sqlPatterns = sqlPatterns;
     }
 
     public String getMappingId() {

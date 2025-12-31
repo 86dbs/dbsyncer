@@ -10,7 +10,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
@@ -42,7 +41,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     protected ListenerConfig listenerConfig;
     protected Set<String> filterTable;
     protected List<Table> sourceTable;
-    protected List<SqlTable> sqlTables;
+    protected List<Table> customTable;
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
@@ -172,14 +171,12 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         this.filterTable = filterTable;
     }
 
-    public AbstractListener setSourceTable(List<Table> sourceTable) {
+    public void setSourceTable(List<Table> sourceTable) {
         this.sourceTable = sourceTable;
-        return this;
     }
 
-    public AbstractListener setSqlTables(List<SqlTable> sqlTables) {
-        this.sqlTables = sqlTables;
-        return this;
+    public void setCustomTable(List<Table> customTable) {
+        this.customTable = customTable;
     }
 
     public void setSnapshot(Map<String, String> snapshot) {

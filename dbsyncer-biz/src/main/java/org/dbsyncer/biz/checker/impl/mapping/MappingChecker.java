@@ -7,7 +7,6 @@ import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
@@ -20,7 +19,6 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.sdk.model.SqlTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -73,7 +71,6 @@ public class MappingChecker extends AbstractChecker {
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setSourceDatabase(sourceDatabase);
         mapping.setSourceSchema(sourceSchema);
-        setSqlTables(mapping, params);
         mapping.setTargetConnectorId(targetConnectorId);
         mapping.setTargetDatabase(targetDatabase);
         mapping.setTargetSchema(targetSchema);
@@ -90,23 +87,6 @@ public class MappingChecker extends AbstractChecker {
         addMeta(mapping);
 
         return mapping;
-    }
-
-    private void setSqlTables(Mapping mapping, Map<String, String> params) {
-        Object sqlTableParams = params.get("sqlTables");
-        if (sqlTableParams == null) {
-            return;
-        }
-        String sqlTables = (sqlTableParams instanceof String) ? (String) sqlTableParams : JsonUtil.objToJson(sqlTableParams);
-        Assert.hasText(sqlTables, "sqlTables is empty.");
-        List<SqlTable> sqlTableArray = JsonUtil.jsonToArray(sqlTables, SqlTable.class);
-        Assert.isTrue(!CollectionUtils.isEmpty(sqlTableArray), "sqlTableArray is empty.");
-        sqlTableArray.forEach(sqlTable -> {
-            Assert.hasText(sqlTable.getSqlName(), "SqlName is empty.");
-            Assert.hasText(sqlTable.getSql(), "Sql is empty.");
-            Assert.hasText(sqlTable.getTable(), "Table is empty.");
-        });
-        mapping.setSourceSqlTables(sqlTableArray);
     }
 
     @Override

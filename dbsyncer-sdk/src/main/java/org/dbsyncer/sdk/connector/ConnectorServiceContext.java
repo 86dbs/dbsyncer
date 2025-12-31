@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.connector;
 
-import org.dbsyncer.sdk.model.SqlTable;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 
@@ -20,5 +20,5 @@ public interface ConnectorServiceContext {
 
     List<String> getTablePatterns();
 
-    List<SqlTable> getSqlTablePatterns();
+    List<Table> getSqlPatterns();
 }

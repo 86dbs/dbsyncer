@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.enums;
 
+import org.dbsyncer.sdk.SdkException;
+
 /**
  * 表类型
  *
@@ -51,6 +53,15 @@ public enum TableTypeEnum {
      */
     public static boolean isTable(String type) {
         return TABLE.getCode().equals(type);
+    }
+
+    public static TableTypeEnum getTableType(String type) throws SdkException {
+        for (TableTypeEnum e : TableTypeEnum.values()) {
+            if (e.getCode().equals(type)) {
+                return e;
+            }
+        }
+        throw new SdkException(String.format("TableTypeEnum type \"%s\" does not exist.", type));
     }
 
     public String getCode() {

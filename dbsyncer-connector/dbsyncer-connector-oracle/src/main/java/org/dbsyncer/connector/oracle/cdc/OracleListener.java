@@ -49,6 +49,7 @@ public class OracleListener extends AbstractDatabaseListener {
 
     @Override
     public void init() {
+        super.init();
         sourceTable.forEach(table -> tableFiledMap.put(table.getName(), table.getColumn()));
     }
 

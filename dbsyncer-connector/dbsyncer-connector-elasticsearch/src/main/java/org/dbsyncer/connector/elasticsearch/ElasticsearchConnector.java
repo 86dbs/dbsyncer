@@ -226,10 +226,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     private MetaInfo buildMetaInfo(String index, List<Field> fields, String indexType) {
         MetaInfo metaInfo = new MetaInfo();
         metaInfo.setTable(index);
+        metaInfo.setTableType(TableTypeEnum.TABLE.getCode());
         metaInfo.setColumn(fields);
         if (StringUtil.isNotBlank(indexType)) {
-            Properties extInfo = metaInfo.getExtInfo();
-            extInfo.put(_TYPE, indexType);
+            metaInfo.getExtInfo().put(_TYPE, indexType);
         }
         return metaInfo;
     }

@@ -41,27 +41,24 @@ public class MetaInfo {
         return table;
     }
 
-    public MetaInfo setTable(String table) {
+    public void setTable(String table) {
         this.table = table;
-        return this;
     }
 
     public String getTableType() {
         return tableType;
     }
 
-    public MetaInfo setTableType(String tableType) {
+    public void setTableType(String tableType) {
         this.tableType = tableType;
-        return this;
     }
 
     public List<Field> getColumn() {
         return column;
     }
 
-    public MetaInfo setColumn(List<Field> column) {
+    public void setColumn(List<Field> column) {
         this.column = column;
-        return this;
     }
 
     public Properties getExtInfo() {

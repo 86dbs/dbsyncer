@@ -5,15 +5,12 @@ package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
-import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.SqlTable;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.springframework.util.Assert;
@@ -38,17 +35,25 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      */
     private final Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
 
+    @Override
+    public void init() {
+        super.init();
+        postProcessDqlBeforeInitialization();
+    }
+
     /**
      * 发送增量事件
      *
      * @param event
      */
     protected void sendChangedEvent(ChangedEvent event) {
+        // TODO 识别sql
         changeEvent(event);
+        sendDqlChangedEvent(event);
     }
 
     /**
-     * 发送DQL增量事件
+     * 发送DQL增量事件 TODO 废弃子类调用，protected -> private
      *
      * @param event
      */
@@ -87,36 +92,30 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     }
 
     /**
-     * 初始化Dql连接配置
+     * 初始化Dql连接配置 TODO 废弃子类调用，protected -> private
      */
     protected void postProcessDqlBeforeInitialization() {
-        if (CollectionUtils.isEmpty(sqlTables)) {
+        if (CollectionUtils.isEmpty(customTable)) {
             return;
         }
-        // <用户表, MY_USER>
-        Map<String, SqlTable> sqlTableMap = new HashMap<>();
-        sqlTables.forEach(s -> sqlTableMap.put(s.getSqlName(), s));
 
         DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
-        AbstractDQLConnector service = (AbstractDQLConnector) connectorService;
+        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
         String quotation = service.buildSqlWithQuotation();
 
-        // 清空默认表名
-        filterTable.clear();
-        for (Table t : sourceTable) {
-            String sql = String.valueOf(t.getExtInfo().get(TableTypeEnum.SQL.getCode()));
-            String sqlName = t.getName();
-            SqlTable sqlTable = sqlTableMap.get(sqlName);
-            if (sqlTable == null) {
+        for (Table t : customTable) {
+            Object mainTable = t.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_MAIN);
+            Object tableSQL = t.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL);
+            if (tableSQL == null || mainTable == null) {
                 continue;
             }
-            String tableName = sqlTable.getTable();
+            String sql = String.valueOf(tableSQL);
+            String tableName = String.valueOf(mainTable);
+            String sqlName = t.getName();
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
 
-            MetaInfo tableMetaInfo = getMetaInfo(service, instance, sqlTable.getTable());
-            Assert.notNull(tableMetaInfo, String.format("The table %s is invalid.", sqlTable.getTable()));
-            List<Field> tableColumns = tableMetaInfo.getColumn();
+            List<Field> tableColumns = t.getColumn();
             Assert.notEmpty(tableColumns, String.format("The column of table name '%s' is empty.", tableName));
             List<Field> primaryFields = PrimaryKeyUtil.findPrimaryKeyFields(tableColumns);
             Assert.notEmpty(primaryFields, String.format("主表 %s 缺少主键.", tableName));
@@ -124,8 +123,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             Map<String, Integer> tablePKIndexMap = new HashMap<>(primaryKeys.size());
             List<Integer> tablePKIndex = getPKIndex(tableColumns, tablePKIndexMap);
 
-            MetaInfo sqlMetaInfo = getMetaInfo(service, instance, sqlTable);
-            Assert.notNull(sqlMetaInfo, "The sql table is not exist.");
+            MetaInfo sqlMetaInfo = getMetaInfo(service, instance, t);
             final List<Field> sqlColumns = sqlMetaInfo.getColumn();
             Assert.notEmpty(sqlColumns, String.format("The column of table name '%s' is empty.", sqlName));
             Map<Integer, Integer> sqlPKIndexMap = getPKIndexMap(sqlColumns, tablePKIndexMap);
@@ -148,20 +146,17 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                 v.add(dqlMapper);
                 return v;
             });
-
-            // 注册监听表名
-            filterTable.add(tableName);
         }
     }
 
-    private MetaInfo getMetaInfo(AbstractDQLConnector service, DatabaseConnectorInstance instance, String tablePattern) {
-        ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tablePattern);
-        return getFirstMetaInfo(service.getTableMetaInfo(instance, context));
-    }
-
-    private MetaInfo getMetaInfo(AbstractDQLConnector service, DatabaseConnectorInstance instance, SqlTable sqlTable) {
-        ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, sqlTable);
-        return getFirstMetaInfo(service.getMetaInfo(instance, context));
+    private MetaInfo getMetaInfo(AbstractDatabaseConnector service, DatabaseConnectorInstance instance, Table table) {
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, null);
+        List<Table> sqlPatterns = new ArrayList<>();
+        sqlPatterns.add(table);
+        context.setSqlPatterns(sqlPatterns);
+        MetaInfo sqlMetaInfo = getFirstMetaInfo(service.getMetaInfoWithSQL(instance, context));
+        Assert.notNull(sqlMetaInfo, "The sql table is not exist.");
+        return sqlMetaInfo;
     }
 
     private MetaInfo getFirstMetaInfo(List<MetaInfo> metaInfos){
