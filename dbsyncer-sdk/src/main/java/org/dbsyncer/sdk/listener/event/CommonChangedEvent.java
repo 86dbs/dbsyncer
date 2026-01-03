@@ -74,4 +74,9 @@ public abstract class CommonChangedEvent implements ChangedEvent {
     public void setPosition(Object position) {
         changedOffset.setPosition(position);
     }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }

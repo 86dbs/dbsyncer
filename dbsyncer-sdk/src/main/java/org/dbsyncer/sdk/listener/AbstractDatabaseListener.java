@@ -38,7 +38,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     @Override
     public void init() {
         super.init();
-        postProcessDqlBeforeInitialization();
+        postProcessSqlBeforeInitialization();
     }
 
     /**
@@ -46,18 +46,12 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      *
      * @param event
      */
-    protected void sendChangedEvent(ChangedEvent event) {
-        // TODO 识别sql
+    protected void sendChangedEvent(ChangedEvent event) throws CloneNotSupportedException {
         changeEvent(event);
-        sendDqlChangedEvent(event);
+        sendSqlChangedEvent(event);
     }
 
-    /**
-     * 发送DQL增量事件 TODO 废弃子类调用，protected -> private
-     *
-     * @param event
-     */
-    protected void sendDqlChangedEvent(ChangedEvent event) {
+    private void sendSqlChangedEvent(ChangedEvent event) throws CloneNotSupportedException {
         if (null == event) {
             return;
         }
@@ -86,15 +80,14 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                 }
                 processed = true;
             }
-            event.setSourceTableName(dqlMapper.sqlName);
-            changeEvent(event);
+
+            ChangedEvent newEvent = (ChangedEvent) event.clone();
+            newEvent.setSourceTableName(dqlMapper.sqlName);
+            changeEvent(newEvent);
         }
     }
 
-    /**
-     * 初始化Dql连接配置 TODO 废弃子类调用，protected -> private
-     */
-    protected void postProcessDqlBeforeInitialization() {
+    private void postProcessSqlBeforeInitialization() {
         if (CollectionUtils.isEmpty(customTable)) {
             return;
         }
