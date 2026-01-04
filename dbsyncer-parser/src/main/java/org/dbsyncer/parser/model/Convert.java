@@ -36,25 +36,6 @@ public class Convert {
      */
     private String args;
 
-    /**
-     * 规则类型
-     * - FUNCTION: 使用 ConvertEnum 的 Handler（默认）
-     * - EXPRESSION: 表达式规则（如：${field1} + ' ' + ${field2}）
-     * - FIXED: 固定值
-     */
-    private String ruleType = "FUNCTION";
-
-    /**
-     * 规则表达式（当 ruleType 为 EXPRESSION 或 FIXED 时使用）
-     * 支持语法：${fieldName} 表示字段值，支持字符串拼接、数学运算等
-     * 示例：
-     * - ${first_name} + ' ' + ${last_name}
-     * - ${price} * 1.1
-     * - 'PREFIX_' + ${id}
-     * - BATCH_001 (固定值)
-     */
-    private String ruleExpression;
-
     public String getName() {
         return name;
     }
@@ -85,21 +66,5 @@ public class Convert {
 
     public void setArgs(String args) {
         this.args = args;
-    }
-
-    public String getRuleType() {
-        return ruleType;
-    }
-
-    public void setRuleType(String ruleType) {
-        this.ruleType = ruleType;
-    }
-
-    public String getRuleExpression() {
-        return ruleExpression;
-    }
-
-    public void setRuleExpression(String ruleExpression) {
-        this.ruleExpression = ruleExpression;
     }
 }
