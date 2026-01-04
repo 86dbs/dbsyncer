@@ -1,9 +1,10 @@
 package org.dbsyncer.parser.convert.handler;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.parser.convert.AbstractHandler;
+import org.dbsyncer.parser.convert.Handler;
 
 import java.sql.Timestamp;
+import java.util.Map;
 
 /**
  * Timestamp转中国标准时间
@@ -12,14 +13,17 @@ import java.sql.Timestamp;
  * @version 1.0.0
  * @date 2021/12/20 23:04
  */
-public class TimestampToChineseStandardTimeHandler extends AbstractHandler {
+public class TimestampToChineseStandardTimeHandler implements Handler {
 
     @Override
-    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+    public Object handle(String args, Object value, Map<String, Object> row) {
         // row 参数未使用
+        if (value == null) {
+            return null;
+        }
         if (value instanceof Timestamp) {
             Timestamp t = (Timestamp) value;
-            value = DateFormatUtil.timestampToString(t);
+            return DateFormatUtil.timestampToString(t);
         }
         return value;
     }

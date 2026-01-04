@@ -1,7 +1,9 @@
 package org.dbsyncer.parser.convert.handler;
 
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.parser.convert.AbstractHandler;
+import org.dbsyncer.parser.convert.Handler;
+
+import java.util.Map;
 
 /**
  * 字符串转Timestamp
@@ -10,11 +12,14 @@ import org.dbsyncer.parser.convert.AbstractHandler;
  * @version 1.0.0
  * @date 2022/7/12 23:04
  */
-public class StringToTimestampHandler extends AbstractHandler {
+public class StringToTimestampHandler implements Handler {
 
     @Override
-    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+    public Object handle(String args, Object value, Map<String, Object> row) {
         // row 参数未使用
+        if (value == null) {
+            return null;
+        }
         if (value instanceof String) {
             String s = (String) value;
             return DateFormatUtil.stringToTimestamp(s);

@@ -1,6 +1,8 @@
 package org.dbsyncer.parser.convert.handler;
 
-import org.dbsyncer.parser.convert.AbstractHandler;
+import org.dbsyncer.parser.convert.Handler;
+
+import java.util.Map;
 
 /**
  * Byte[]转String
@@ -9,14 +11,17 @@ import org.dbsyncer.parser.convert.AbstractHandler;
  * @version 1.0.0
  * @date 2021/12/20 23:04
  */
-public class BytesToStringHandler extends AbstractHandler {
+public class BytesToStringHandler implements Handler {
 
     @Override
-    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+    public Object handle(String args, Object value, Map<String, Object> row) {
         // row 参数未使用
+        if (value == null) {
+            return null;
+        }
         if (value instanceof byte[]) {
             byte[] b = (byte[]) value;
-            value = new String(b);
+            return new String(b);
         }
         return value;
     }

@@ -4,7 +4,10 @@
 package org.dbsyncer.parser.convert.handler;
 
 import org.dbsyncer.common.util.AESUtil;
-import org.dbsyncer.parser.convert.AbstractHandler;
+import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.convert.Handler;
+
+import java.util.Map;
 
 /**
  * AES加密
@@ -13,11 +16,18 @@ import org.dbsyncer.parser.convert.AbstractHandler;
  * @version 1.0.0
  * @date 2019/10/8 23:04
  */
-public class AesEncryptHandler extends AbstractHandler {
+public class AesEncryptHandler implements Handler {
 
     @Override
-    public Object convert(String args, Object value, java.util.Map<String, Object> row) throws Exception {
+    public Object handle(String args, Object value, Map<String, Object> row) {
         // row 参数未使用
-        return AESUtil.encrypt(String.valueOf(value), args);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return AESUtil.encrypt(String.valueOf(value), args);
+        } catch (Exception e) {
+            throw new ParserException(e.getMessage());
+        }
     }
 }
