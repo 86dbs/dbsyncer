@@ -2,7 +2,7 @@ package org.dbsyncer.web.controller;
 
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.ConvertService;
-import org.dbsyncer.biz.PluginService;
+import org.dbsyncer.plugin.PluginFactory;
 import org.springframework.ui.ModelMap;
 
 import javax.annotation.Resource;
@@ -24,7 +24,7 @@ public abstract class BaseController {
     private ConvertService convertService;
 
     @Resource
-    private PluginService pluginService;
+    private PluginFactory pluginFactory;
 
     /**
      * 获取请求参数
@@ -41,12 +41,13 @@ public abstract class BaseController {
 
     /**
      * 初始化: 条件/转换/插件
+     *
      * @param model
      */
     protected void initConfig(ModelMap model) throws Exception {
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
-        model.put("plugin", pluginService.getPluginAll());
+        model.put("plugin", pluginFactory.getPluginAll());
     }
 
 }
