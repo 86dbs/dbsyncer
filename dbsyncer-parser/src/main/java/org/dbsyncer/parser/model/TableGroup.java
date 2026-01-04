@@ -197,10 +197,12 @@ public class TableGroup extends AbstractConfigModel {
         
         // 如果 tableGroup.getFilter()空使用 mapping.getFilter()0
         List<Filter> filters = CollectionUtils.isEmpty(this.getFilter()) ? mapping.getFilter() : this.getFilter();
+        // 初始化命令时不需要验证连接，避免触发 kafka 等连接器的连接检查
+        // 连接验证应该在真正使用连接时进行（如 getTable、getMetaInfo、writeBatch 等）
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable,
-                connectorFactory.connect(sConnConfig), filters);
+                connectorFactory.connect(sConnConfig, false), filters);
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable,
-                connectorFactory.connect(tConnConfig), null);
+                connectorFactory.connect(tConnConfig, false), null);
 
         // 预构建字段列表SQL片段并缓存
         String fieldListSql = this.getCachedFieldListSql();

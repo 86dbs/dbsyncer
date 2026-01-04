@@ -104,7 +104,13 @@ public class PluginServiceImpl implements PluginService {
                 continue;
             }
 
-            List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(m.getId());
+            List<TableGroup> tableGroupAll;
+            try{
+                tableGroupAll = profileComponent.getTableGroupAll(m.getId());
+            }catch (Exception e){
+                putPluginMap(map, "加载异常", m.getName());
+                continue;
+            }
             if (CollectionUtils.isEmpty(tableGroupAll)) {
                 continue;
             }

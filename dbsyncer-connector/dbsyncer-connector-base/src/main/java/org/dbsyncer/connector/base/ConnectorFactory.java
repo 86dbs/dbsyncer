@@ -61,11 +61,21 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 建立连接，返回缓存连接对象
+     * 建立连接，返回缓存连接对象（默认验证连接）
      *
      * @param config
      */
     public ConnectorInstance connect(ConnectorConfig config) throws Exception {
+        return connect(config, true);
+    }
+
+    /**
+     * 建立连接，返回缓存连接对象
+     *
+     * @param config    连接配置
+     * @param checkAlive 是否检查连接是否存活。false 时跳过连接验证，用于初始化场景避免触发连接检查（如 kafka 连接异常）
+     */
+    public ConnectorInstance connect(ConnectorConfig config, boolean checkAlive) throws Exception {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorService connectorService = getConnectorService(config);
         String cacheKey = connectorService.getConnectorInstanceCacheKey(config);
@@ -73,7 +83,10 @@ public class ConnectorFactory implements DisposableBean {
             synchronized (pool) {
                 if (!pool.containsKey(cacheKey)) {
                     ConnectorInstance instance = connectorService.connect(config);
-                    Assert.isTrue(connectorService.isAlive(instance), "连接配置异常");
+                    // 只有在需要检查时才调用 isAlive，避免在初始化时触发连接检查
+                    if (checkAlive) {
+                        Assert.isTrue(connectorService.isAlive(instance), "连接配置异常");
+                    }
                     pool.putIfAbsent(cacheKey, instance);
                 }
             }
