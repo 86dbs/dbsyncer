@@ -13,7 +13,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class Sha1Handler extends AbstractHandler {
 
     @Override
-    protected Object convert(String args, Object value) {
+    protected Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         return SHA1Util.b64_sha1(String.valueOf(value));
     }
 }

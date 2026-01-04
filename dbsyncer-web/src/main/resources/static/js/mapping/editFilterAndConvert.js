@@ -75,12 +75,15 @@ function initConvertParams(){
         var convertName = convert.text().replace(/\n/g,'').trim();
         var tf = $(this).find("td:eq(1)").text();
         var args = $(this).find("td:eq(2)").text();
-        row.push({
+        
+        var convertObj = {
            "name": tf,
            "convertName": convertName,
            "convertCode": convertCode,
            "args": args
-         });
+         };
+        
+        row.push(convertObj);
     });
     var $convertTable = $("#convertTable");
     if (0 >= row.length) {
@@ -164,11 +167,30 @@ function bindConvertAddClick() {
         var $convertOperator = $("#convertOperator");
         var convertOperatorVal = $convertOperator.selectpicker("val");
         var convertOperatorText = $convertOperator.find("option:selected")[0].text;
+        var $selectedOption = $convertOperator.find("option:selected");
+        // Thymeleaf 渲染后，th:argNum 会变成 argNum 属性
+        var argNum = parseInt($selectedOption.attr("argNum") || "0");
         var convertTargetField = $("#convertTargetField").selectpicker("val");
-        var convertArg = $(".convertArg:eq(0)").val();
-        var convertArg1 = $(".convertArg:eq(1)").val();
-        // 多个参数时，英文符号“,”拼接
-        convertArg = convertArg1 !== '' ? convertArg + ','+ convertArg1 : convertArg;
+        
+        // 统一读取参数值到 args（表达式、固定值、普通参数都存储在 args 中）
+        var convertArg = "";
+        if (argNum === -1) {
+            // 表达式/固定值：从 argNum == -1 的 input 读取
+            convertArg = $("[data-arg-num='-1'] .convertParam").val();
+            if (!convertArg || convertArg.trim() === '') {
+                bootGrowl("表达式/固定值不能为空.", "danger");
+                return;
+            }
+        } else if (argNum >= 1) {
+            // 普通参数：从对应 argNum 的 input 读取
+            var params = [];
+            for (var i = 1; i <= argNum; i++) {
+                var val = $("[data-arg-num='" + i + "'] .convertParam").val() || "";
+                params.push(val);
+            }
+            convertArg = params.join(',');
+        }
+        
         // 非空检查
         if(convertTargetField == null || convertTargetField == undefined || convertTargetField == ''){
             bootGrowl("目标源表字段不能空.", "danger");
@@ -198,8 +220,32 @@ function bindConvertAddClick() {
         trHtml += "</tr>";
         $convertList.append(trHtml);
         // 清空参数
-        $(".convertArg").val("");
+        $(".convertParam").val("");
         initConvert();
+    });
+}
+
+// 绑定转换类型选择事件（根据 argNum 动态显示参数输入框）
+function bindConvertOperatorChange() {
+    var $convertOperator = $("#convertOperator");
+    $convertOperator.on('changed.bs.select', function (e) {
+        var $selectedOption = $(this).find("option:selected");
+        // Thymeleaf 渲染后，th:argNum 会变成 argNum 属性
+        var argNum = parseInt($selectedOption.attr("argNum") || "0");
+        
+        // 隐藏所有输入框
+        $("[data-arg-num]").hide();
+        
+        // 根据 argNum 显示对应的输入框
+        if (argNum === -1) {
+            // 显示表达式输入框（全宽）
+            $("[data-arg-num='-1']").show();
+        } else if (argNum >= 1) {
+            // 显示对应数量的参数输入框
+            for (var i = 1; i <= argNum && i <= 2; i++) {
+                $("[data-arg-num='" + i + "']").show();
+            }
+        }
     });
 }
 
@@ -213,4 +259,5 @@ $(function() {
     // 转换配置
     initConvert();
     bindConvertAddClick();
+    bindConvertOperatorChange();
 });

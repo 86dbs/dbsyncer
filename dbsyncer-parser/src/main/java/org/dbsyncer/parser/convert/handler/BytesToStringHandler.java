@@ -12,7 +12,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class BytesToStringHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         if (value instanceof byte[]) {
             byte[] b = (byte[]) value;
             value = new String(b);

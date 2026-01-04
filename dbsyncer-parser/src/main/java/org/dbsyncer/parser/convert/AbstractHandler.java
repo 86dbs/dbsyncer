@@ -5,6 +5,7 @@ import org.dbsyncer.parser.ParserException;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.util.Map;
 
 public abstract class AbstractHandler implements Handler {
 
@@ -13,15 +14,16 @@ public abstract class AbstractHandler implements Handler {
      *
      * @param args  参数
      * @param value 值
+     * @param row   数据行（可为 null，某些 Handler 不需要）
      * @return
      */
-    protected abstract Object convert(String args, Object value) throws Exception;
+    protected abstract Object convert(String args, Object value, Map<String, Object> row) throws Exception;
 
     @Override
-    public Object handle(String args, Object value) {
+    public Object handle(String args, Object value, Map<String, Object> row) {
         if (null != value) {
             try {
-                return convert(args, value);
+                return convert(args, value, row);
             } catch (Exception e) {
                 throw new ParserException(e.getMessage());
             }

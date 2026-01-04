@@ -12,7 +12,8 @@ import org.dbsyncer.parser.convert.Handler;
 public class PrependHandler implements Handler {
 
     @Override
-    public Object handle(String args, Object value) {
+    public Object handle(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         if (null == value) {
             return args;
         }

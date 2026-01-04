@@ -13,7 +13,8 @@ import org.dbsyncer.parser.convert.Handler;
 public class UUIDHandler implements Handler {
 
     @Override
-    public Object handle(String args, Object value) {
+    public Object handle(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         return UUIDUtil.getUUID();
     }
 }

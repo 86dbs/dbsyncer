@@ -16,7 +16,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class AesDecryptHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) throws Exception {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) throws Exception {
+        // row 参数未使用
         return AESUtil.decrypt(String.valueOf(value), args);
     }
 

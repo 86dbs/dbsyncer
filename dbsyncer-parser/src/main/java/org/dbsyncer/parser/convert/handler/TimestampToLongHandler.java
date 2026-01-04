@@ -14,7 +14,8 @@ import java.sql.Timestamp;
 public class TimestampToLongHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         if (value instanceof Timestamp) {
             Timestamp t = (Timestamp) value;
             value = t.getTime();

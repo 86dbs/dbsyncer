@@ -17,7 +17,8 @@ import java.time.format.DateTimeFormatter;
 public class StringToFormatDateHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) throws ParseException {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) throws ParseException {
+        // row 参数未使用
 
         if (value instanceof String) {
             String s = (String) value;

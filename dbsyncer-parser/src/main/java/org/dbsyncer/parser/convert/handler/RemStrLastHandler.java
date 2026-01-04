@@ -13,7 +13,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class RemStrLastHandler extends AbstractHandler {
 
     @Override
-    protected Object convert(String args, Object value) {
+    protected Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         String s = String.valueOf(value);
         return StringUtil.substring(s, 0, s.length() - 1);
     }

@@ -214,8 +214,9 @@ public class ParserComponentImpl implements ParserComponent {
         // 1、映射字段
         List<Map> target = picker.pickTargetData(source);
 
-        // 2、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), target);
+        // 2、参数转换（增强：支持字段值生成和转换）
+        List<org.dbsyncer.sdk.model.Field> targetFields = tableGroup.getTargetTable().getColumn();
+        ConvertUtil.convert(tableGroup.getConvert(), target, targetFields);
 
         // 3、插件转换
         context.setSourceList(source);

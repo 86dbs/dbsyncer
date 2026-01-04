@@ -87,11 +87,25 @@ public abstract class PickerUtil {
             filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields, true));
         }
 
-        // 检查转换配置是否在映射关系中
+        // 检查转换配置是否在映射关系中（增强：支持无源字段）
         List<Convert> convert = group.getConvert();
         if (!CollectionUtils.isEmpty(convert)) {
-            Map<String, Field> fields = convert2Map(group.getTargetTable().getColumn());
-            convert.forEach(c -> addFieldMapping(fieldMapping, c.getName(), fields, false));
+            Map<String, Field> targetFields = convert2Map(group.getTargetTable().getColumn());
+            convert.forEach(c -> {
+                String fieldName = c.getName();
+                Field targetField = targetFields.get(fieldName);
+                if (targetField != null) {
+                    // 检查是否已存在映射关系
+                    boolean exists = fieldMapping.stream()
+                        .anyMatch(fm -> fm.getTarget() != null 
+                            && StringUtil.equals(fm.getTarget().getName(), fieldName));
+                    if (!exists) {
+                        // 添加映射关系（source 为 null，表示无源字段）
+                        // 注意：这只是运行时添加，不会持久化到配置中，不会影响编辑界面
+                        fieldMapping.add(new FieldMapping(null, targetField));
+                    }
+                }
+            });
         }
     }
 

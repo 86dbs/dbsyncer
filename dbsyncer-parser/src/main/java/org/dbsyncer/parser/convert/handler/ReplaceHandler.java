@@ -14,7 +14,8 @@ import org.springframework.util.Assert;
 public class ReplaceHandler extends AbstractHandler {
 
     @Override
-    protected Object convert(String args, Object value) {
+    protected Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         Assert.hasText(args, "缺少替换参数.");
         String[] split = StringUtil.split(args, StringUtil.COMMA);
         String a = split[0];

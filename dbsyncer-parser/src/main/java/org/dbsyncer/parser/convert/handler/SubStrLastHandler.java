@@ -15,7 +15,8 @@ import org.springframework.util.Assert;
 public class SubStrLastHandler extends AbstractHandler {
 
     @Override
-    protected Object convert(String args, Object value) {
+    protected Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         Assert.isTrue(NumberUtil.isCreatable(args), "参数必须为正整数.");
         String s = String.valueOf(value);
         int size = NumberUtil.toInt(args);

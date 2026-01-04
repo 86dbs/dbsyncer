@@ -12,7 +12,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class NumberToStringHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         return String.valueOf(value);
     }
 

@@ -15,7 +15,8 @@ import java.time.LocalDate;
 public class DateHandler implements Handler {
 
     @Override
-    public Object handle(String args, Object value) {
+    public Object handle(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         return Date.valueOf(LocalDate.now());
     }
 }

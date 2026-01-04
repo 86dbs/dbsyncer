@@ -6,17 +6,17 @@ import org.dbsyncer.parser.convert.Handler;
 import java.util.Map;
 
 /**
- * 默认值
+ * 固定值处理器
  *
- * @author AE86
+ * @author DBSyncer
  * @version 1.0.0
- * @date 2019/10/8 23:02
  */
-public class DefaultHandler implements Handler {
+public class FixedHandler implements Handler {
 
     @Override
     public Object handle(String args, Object value, Map<String, Object> row) {
-        // row 参数未使用
-        return null == value || StringUtil.isBlank(String.valueOf(value)) ? args : value;
+        // 固定值：直接返回 args，忽略原值和 row
+        return StringUtil.isBlank(args) ? null : args;
     }
 }
+

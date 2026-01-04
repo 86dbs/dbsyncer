@@ -1,5 +1,7 @@
 package org.dbsyncer.parser.convert;
 
+import java.util.Map;
+
 /**
  * @author AE86
  * @version 1.0.0
@@ -12,7 +14,8 @@ public interface Handler {
      *
      * @param args 参数
      * @param value 值
-     * @return
+     * @param row 数据行（可为 null，某些 Handler 不需要）
+     * @return 转换后的值
      */
-    Object handle(String args, Object value);
+    Object handle(String args, Object value, Map<String, Object> row);
 }

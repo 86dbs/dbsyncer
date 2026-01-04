@@ -13,7 +13,8 @@ import org.dbsyncer.parser.convert.AbstractHandler;
 public class StringToTimestampHandler extends AbstractHandler {
 
     @Override
-    public Object convert(String args, Object value) {
+    public Object convert(String args, Object value, java.util.Map<String, Object> row) {
+        // row 参数未使用
         if (value instanceof String) {
             String s = (String) value;
             return DateFormatUtil.stringToTimestamp(s);
