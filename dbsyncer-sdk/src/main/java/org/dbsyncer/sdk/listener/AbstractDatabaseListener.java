@@ -46,12 +46,12 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      *
      * @param event
      */
-    protected void sendChangedEvent(ChangedEvent event) throws CloneNotSupportedException {
+    protected void sendChangedEvent(ChangedEvent event) {
         changeEvent(event);
         sendSqlChangedEvent(event);
     }
 
-    private void sendSqlChangedEvent(ChangedEvent event) throws CloneNotSupportedException {
+    private void sendSqlChangedEvent(ChangedEvent event) {
         if (null == event) {
             return;
         }
@@ -81,9 +81,13 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                 processed = true;
             }
 
-            ChangedEvent newEvent = (ChangedEvent) event.clone();
-            newEvent.setSourceTableName(dqlMapper.sqlName);
-            changeEvent(newEvent);
+            try {
+                ChangedEvent newEvent = (ChangedEvent) event.clone();
+                newEvent.setSourceTableName(dqlMapper.sqlName);
+                changeEvent(newEvent);
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

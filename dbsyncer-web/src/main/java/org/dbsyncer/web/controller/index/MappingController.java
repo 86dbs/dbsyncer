@@ -66,8 +66,8 @@ public class MappingController extends BaseController {
     }
 
     @GetMapping("/pageCustomTable")
-    public String page(ModelMap model, @RequestParam(value = "id") String id, String type) {
-        model.put("mapping", mappingService.getMapping(id));
+    public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
+        model.put("mapping", mappingService.getMappingCustomTable(id, type));
         model.put("type", type);
         return "mapping/customTable";
     }

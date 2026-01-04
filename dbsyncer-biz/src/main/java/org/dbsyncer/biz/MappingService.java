@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.model.Paging;
 
@@ -51,6 +52,15 @@ public interface MappingService {
      * @return
      */
     MappingVo getMapping(String id);
+
+    /**
+     * 获取驱动自定义表信息
+     *
+     * @param id
+     * @param type
+     * @return
+     */
+    MappingCustomTableVO getMappingCustomTable(String id, String type);
 
     /**
      * 获取驱动

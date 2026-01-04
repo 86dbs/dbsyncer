@@ -12,12 +12,26 @@
                     <!-- 隐藏表单值 -->
                     <div class="hidden">
                         <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                        <input id="customTables" name="customTables" type="text" />
                     </div>
                 </div>
                 <div class="lg:col-span-2"></div>
             </div>
         </div>
         <div class="card-body">
+            <div th:if="${type ne 'source'}">
+                <div class="flex justify-between mt-4">
+                    <div>目标表不支持</div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                            <i class="fa fa-reply"></i> 返回
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${type eq 'source'}">
             <!-- 自定义模式选择 -->
             <div class="flex justify-between mt-4">
                 <div id="custom_model" class="radio-group">
@@ -50,7 +64,7 @@
                 <div class="form-item">
                     <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
                     <select id="custom_table_select" class="form-control">
-                        <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+                        <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
                     </select>
                 </div>
 
@@ -75,7 +89,7 @@
 
             <!-- 半结构化配置 -->
             <div th:replace="mapping/customTableSemiStructured :: content"></div>
-
+            </div>
         </div>
     </form>
 </div>

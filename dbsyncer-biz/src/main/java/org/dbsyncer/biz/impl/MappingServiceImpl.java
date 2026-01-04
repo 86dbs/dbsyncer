@@ -10,6 +10,7 @@ import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
+import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
@@ -45,6 +46,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -208,6 +210,37 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public MappingVo getMapping(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         return convertMapping2Vo(mapping);
+    }
+
+    @Override
+    public MappingCustomTableVO getMappingCustomTable(String id, String type) {
+        Mapping mapping = profileComponent.getMapping(id);
+        MappingCustomTableVO vo = new MappingCustomTableVO();
+        vo.setId(mapping.getId());
+        vo.setName(mapping.getName());
+        List<Table> tables = StringUtil.equals("source", type) ? mapping.getSourceTable() : mapping.getTargetTable();
+        // 只返回自定义表类型
+        if (!CollectionUtils.isEmpty(tables)) {
+            List<Table> mainTables = new ArrayList<>();
+            List<Table> customTables = new ArrayList<>();
+            tables.forEach(t -> {
+                switch (TableTypeEnum.getTableType(t.getType())) {
+                    case SQL:
+                    case SEMI_STRUCTURED:
+                        customTables.add(t);
+                        break;
+                    case TABLE:
+                        mainTables.add(t);
+                    default:
+                        break;
+                }
+            });
+            vo.setCustomTables(customTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
+            vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
+        }
+        // 元信息
+        vo.setMeta(profileComponent.getMeta(mapping.getMetaId()));
+        return vo;
     }
 
     @Override
