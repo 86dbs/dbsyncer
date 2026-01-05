@@ -84,16 +84,30 @@ public final class BufferActuatorRouter implements DisposableBean {
             throw new IllegalArgumentException("ChangedEvent.getChangedOffset() 不能为 null, event=" + event);
         }
         event.getChangedOffset().setMetaId(metaId);
-        
+
         // 获取或创建该 meta 的执行器
         MetaBufferActuator actuator = metaActuatorMap.computeIfAbsent(metaId, k -> {
             MetaBufferActuator newActuator = createMetaActuator(metaId);
             newActuator.buildConfig();
             return newActuator;
         });
-        
+
         // 所有事件都进入该 meta 的队列（offer 方法会自动处理 DDL 阻塞逻辑和 pending 状态）
         actuator.offer(new WriterRequest(event));
+    }
+
+    /**
+     * 直接执行事件（不走队列，用于重试场景，确保处理完成后再删除数据）
+     *
+     * @param metaId 元数据ID
+     * @param event 变更事件
+     * @throws Exception 处理异常
+     */
+    public void executeDirectly(String metaId, ChangedEvent event) throws Exception {
+        event.getChangedOffset().setMetaId(metaId);
+
+        // 直接调用执行器的方法，不走队列
+        generalBufferActuator.executeDirectly(event);
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {
@@ -103,7 +117,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             actuator.buildConfig();
             return actuator;
         });
-        
+
         // 不再需要为每个表创建执行器
         // 所有事件都进入该 meta 的执行器
     }

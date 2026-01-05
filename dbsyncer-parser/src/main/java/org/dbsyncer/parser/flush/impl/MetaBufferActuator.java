@@ -60,7 +60,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
     private DDLParser ddlParser;
     private TableGroupContext tableGroupContext;
     private LogService logService;
-    
+
     /**
      * 是否有待处理的任务（事件进入队列时设置为 true，队列为空时设置为 false）
      */
@@ -198,7 +198,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
                 }
             }
         }
-        
+
         // 普通事件：事件进入队列时，设置 pending 状态
         setPendingTask();
         super.offer(request);
@@ -241,7 +241,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
     protected void afterProcess(WriterResponse lastResponse) {
         if (lastResponse != null && lastResponse.getChangedOffset() != null) {
             ChangedOffset offset = lastResponse.getChangedOffset();
-            
+
             // 直接获取 listener 并刷新偏移量（快照更新）
             Meta meta = profileComponent.getMeta(metaId);
             if (meta != null) {
@@ -259,14 +259,31 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
                 }
             }
         }
-        
+
         // 处理完所有批次后，检查队列是否为空，如果为空则清除 pending 状态
         if (getQueue().isEmpty()) {
             clearPendingTask();
         }
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
+    /**
+     * 直接执行事件（不走队列，用于重试场景）
+     *
+     * @param event 变更事件
+     * @throws Exception 处理异常
+     */
+    public void executeDirectly(ChangedEvent event) throws Exception {
+        WriterRequest request = new WriterRequest(event);
+        WriterResponse response = new WriterResponse();
+
+        // 分区处理
+        partition(request, response);
+
+        // 直接调用pull方法处理
+        pull(response);
+    }
+
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) throws Exception {
         if (response.getColumnNames() == null || response.getColumnNames().isEmpty()) {
             return;
         }

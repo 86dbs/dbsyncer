@@ -168,13 +168,40 @@ public class DataSyncServiceImpl implements DataSyncService {
         Assert.hasText(messageId, "The messageId is null.");
 
         Map row = getData(metaId, messageId);
-        Map binlogData = getBinlogData(row, false);
-        if (CollectionUtils.isEmpty(binlogData)) {
+        if (CollectionUtils.isEmpty(row)) {
+            logger.warn("重试失败：无法从存储中获取数据, metaId={}, messageId={}", metaId, messageId);
             return messageId;
         }
+        
+        Map binlogData = getBinlogData(row, false);
+        if (CollectionUtils.isEmpty(binlogData)) {
+            logger.warn("重试失败：无法解析binlog数据, metaId={}, messageId={}", metaId, messageId);
+            return messageId;
+        }
+        
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        if (StringUtil.isBlank(tableGroupId)) {
+            logger.warn("重试失败：tableGroupId为空, metaId={}, messageId={}", metaId, messageId);
+            return messageId;
+        }
+        
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        if (StringUtil.isBlank(event)) {
+            logger.warn("重试失败：event为空, metaId={}, messageId={}", metaId, messageId);
+            return messageId;
+        }
+        
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        if (tableGroup == null) {
+            logger.warn("重试失败：TableGroup不存在, tableGroupId={}, metaId={}, messageId={}", tableGroupId, metaId, messageId);
+            return messageId;
+        }
+        
+        if (tableGroup.getSourceTable() == null) {
+            logger.warn("重试失败：TableGroup的源表为空, tableGroupId={}, metaId={}, messageId={}", tableGroupId, metaId, messageId);
+            return messageId;
+        }
+        
         String sourceTableName = tableGroup.getSourceTable().getName();
 
         // 判断是否为DDL事件
@@ -207,10 +234,11 @@ public class DataSyncServiceImpl implements DataSyncService {
                 // 设置ChangedOffset的metaId（changedOffset是final的，需要通过getChangedOffset()获取后设置）
                 ddlChangedEvent.getChangedOffset().setMetaId(metaId);
                 
-                // 执行DDL重做（会自动调用parseDDl方法，更新字段映射）
-                bufferActuatorRouter.execute(metaId, ddlChangedEvent);
+                // 直接执行DDL重做（不走队列，同步执行）
+                bufferActuatorRouter.executeDirectly(metaId, ddlChangedEvent);
             } catch (Exception e) {
-                logger.error("DDL重做失败：反序列化DDLConfig异常, messageId={}, error={}", messageId, e.getMessage(), e);
+                logger.error("DDL重做失败, messageId={}, error={}", messageId, e.getMessage(), e);
+                // 执行失败，不删除数据，保留以便后续重试
                 return messageId;
             }
         } else {
@@ -221,21 +249,48 @@ public class DataSyncServiceImpl implements DataSyncService {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
             
+            // 从binlogData的key中提取列名
+            // 注意：由于binlogData是Map，keySet的顺序可能不是原始数据的顺序
+            // 但这是重试场景，列名主要用于字段映射，顺序不是关键
+            List<String> columnNames = new ArrayList<>();
+            if (!CollectionUtils.isEmpty(binlogData)) {
+                columnNames.addAll(binlogData.keySet());
+            }
+            
             // 转换为源字段
             final Picker picker = new Picker(tableGroup);
             List<Object> changedRow = picker.pickSourceData(binlogData);
-            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
             
-            // 执行同步是否成功
-            bufferActuatorRouter.execute(metaId, changedEvent);
+            // 创建RowChangedEvent时传入columnNames，确保重试时能正确处理
+            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null, columnNames);
+            
+            try {
+                // 直接执行数据重做（不走队列，同步执行）
+                bufferActuatorRouter.executeDirectly(metaId, changedEvent);
+            } catch (Exception e) {
+                logger.error("数据重做失败, messageId={}, error={}", messageId, e.getMessage(), e);
+                // 执行失败，不删除数据，保留以便后续重试
+                return messageId;
+            }
         }
-        storageService.remove(StorageEnum.DATA, metaId, messageId);
-        // 更新失败数
-        Meta meta = profileComponent.getMeta(metaId);
-        Assert.notNull(meta, "Meta can not be null.");
-        meta.getFail().decrementAndGet();
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        profileComponent.editConfigModel(meta);
+        
+        // 执行成功后，删除存储中的失败数据并更新统计
+        try {
+            storageService.remove(StorageEnum.DATA, metaId, messageId);
+            // 更新失败数
+            Meta meta = profileComponent.getMeta(metaId);
+            if (meta != null) {
+                meta.getFail().decrementAndGet();
+                meta.setUpdateTime(Instant.now().toEpochMilli());
+                profileComponent.editConfigModel(meta);
+            } else {
+                logger.warn("重试成功但Meta不存在，无法更新统计, metaId={}, messageId={}", metaId, messageId);
+            }
+        } catch (Exception e) {
+            // 删除数据或更新统计失败，记录日志但不影响重试结果
+            logger.error("重试成功但清理数据或更新统计失败, metaId={}, messageId={}, error={}", metaId, messageId, e.getMessage(), e);
+        }
+        
         return messageId;
     }
 
