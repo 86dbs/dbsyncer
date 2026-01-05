@@ -22,7 +22,7 @@
                     <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
                     <div>
                         <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
-                        <p class="text-sm">数据源表：[[${tableGroup?.sourceTable?.name}]]</p>
+                        <p class="text-sm">数据源表：[[${tableGroup?.sourceTable?.name}]] ([[${tableGroup?.sourceTable?.type}]]）</p>
                     </div>
                 </div>
                 <div class="text-info items-center text-center">
@@ -33,7 +33,7 @@
                     <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
                     <div>
                         <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
-                        <p class="text-sm">目标源表：[[${tableGroup?.targetTable?.name}]]</p>
+                        <p class="text-sm">目标源表：[[${tableGroup?.targetTable?.name}]] ([[${tableGroup?.targetTable?.type}]]）</p>
                     </div>
                 </div>
             </div>

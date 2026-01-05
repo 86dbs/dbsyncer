@@ -164,6 +164,8 @@
             m.mappingId = $("#mappingId").val();
             m.sourceTable = sTables.join('|');
             m.targetTable = tTables.join('|');
+            m.sourceType = sourceSelector.getAttribute('type');
+            m.targetType = targetSelector.getAttribute('type');
             m.sourceTablePK = $("#sourceTablePK").val();
             m.targetTablePK = $("#targetTablePK").val();
             doPoster("/tableGroup/add", m, function (data) {

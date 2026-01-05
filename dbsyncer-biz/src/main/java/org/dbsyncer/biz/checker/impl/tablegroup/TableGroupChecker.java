@@ -63,6 +63,8 @@ public class TableGroupChecker extends AbstractChecker {
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");
+        String sourceType = params.get("sourceType");
+        String targetType = params.get("targetType");
         String sourceTablePK = params.get("sourceTablePK");
         String targetTablePK = params.get("targetTablePK");
         String fieldMappings = params.get("fieldMappings");
@@ -79,8 +81,8 @@ public class TableGroupChecker extends AbstractChecker {
         TableGroup tableGroup = new TableGroup();
         tableGroup.setMappingId(mappingId);
         // TODO 兼容自定义表
-        Table source = findTable(mapping.getSourceTable(), sourceTable);
-        Table target = findTable(mapping.getTargetTable(), targetTable);
+        Table source = findTable(mapping.getSourceTable(), sourceTable, sourceType);
+        Table target = findTable(mapping.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
         tableGroup.setTargetTable(updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, targetTablePK, target));
 
@@ -100,9 +102,9 @@ public class TableGroupChecker extends AbstractChecker {
         return tableGroup;
     }
 
-    private Table findTable(List<Table> tables, String tableName) {
+    private Table findTable(List<Table> tables, String tableName, String type) {
         if (!CollectionUtils.isEmpty(tables)) {
-            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName)).findFirst();
+            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
             if (first.isPresent()) {
                 return first.get();
             }

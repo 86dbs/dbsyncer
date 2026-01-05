@@ -74,11 +74,30 @@
         if ($select.is('select') && config.data.length === 0) {
             config.data = [];
             $select.find('option').each(function() {
-                config.data.push({
-                    label: $(this).text(),
-                    value: $(this).val(),
-                    disabled: $(this).prop('disabled')
+                const $option = $(this);
+                const item = {
+                    label: $option.text(),
+                    value: $option.val(),
+                    disabled: $option.prop('disabled')
+                };
+                
+                // 读取所有 data-* 属性
+                const dataAttrs = {};
+                $.each($option[0].attributes, function(i, attr) {
+                    if (attr.name.startsWith('data-')) {
+                        // 将 data-type 转换为 type，data-custom-attr 转换为 customAttr
+                        const key = attr.name.replace(/^data-/, '').replace(/-([a-z])/g, function(g) {
+                            return g[1].toUpperCase();
+                        });
+                        dataAttrs[key] = attr.value;
+                    }
                 });
+                // 如果有 data 属性，则存储
+                if (Object.keys(dataAttrs).length > 0) {
+                    item.data = dataAttrs;
+                }
+                
+                config.data.push(item);
             });
         }
 
@@ -560,6 +579,32 @@
             },
             getData: function() {
                 return config.data;
+            },
+            // 获取选中项的完整信息（包括 data 属性）
+            getSelectedItems: function() {
+                return selectedValues.map(function(value) {
+                    const item = config.data.find(d => d.value === value);
+                    if (item) {
+                        return {
+                            value: item.value,
+                            label: item.label,
+                            data: item.data || {}
+                        };
+                    }
+                    return { value: value, label: value, data: {} };
+                });
+            },
+            // 获取指定选中项的指定属性值
+            getAttribute: function(attributeName, value) {
+                // 如果指定了 value，获取该值的属性；否则获取第一个选中项的属性
+                const targetValue = value !== undefined ? value : (selectedValues[0] || null);
+                if (!targetValue) return null;
+                
+                const item = config.data.find(d => d.value === targetValue);
+                if (item && item.data) {
+                    return item.data[attributeName] || null;
+                }
+                return null;
             },
             clear: function() {
                 selectedValues = [];

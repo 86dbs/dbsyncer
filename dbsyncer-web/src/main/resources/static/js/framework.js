@@ -456,7 +456,7 @@ function initSearch(searchWrapperId, callback) {
 }
 
 function initSelect(selector){
-    selector.dbSelect({
+    return selector.dbSelect({
         type: 'single'
     });
 }
