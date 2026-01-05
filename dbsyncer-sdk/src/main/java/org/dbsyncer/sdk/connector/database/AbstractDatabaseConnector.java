@@ -320,6 +320,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         Table table = commandConfig.getTable();
+        TableTypeEnum tableType = TableTypeEnum.getTableType(table.getType());
+        if (tableType == TableTypeEnum.SQL) {
+            return getSourceCommandWithSQL(commandConfig);
+        }
+
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(table);
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return new HashMap<>();
@@ -351,7 +356,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return map;
     }
 
-    public Map<String, String> getSourceCommandWithSQL(CommandConfig commandConfig) {
+    private Map<String, String> getSourceCommandWithSQL(CommandConfig commandConfig) {
         // 获取过滤SQL
         String queryFilterSql = getQueryFilterSql(commandConfig);
         Table table = commandConfig.getTable();
@@ -362,7 +367,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 获取查询SQL
-        String querySql = String.valueOf(table.getExtInfo().get(TableTypeEnum.SQL.getCode()));
+        String querySql = String.valueOf(table.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL));
 
         // 存在条件
         if (StringUtil.isNotBlank(queryFilterSql)) {
