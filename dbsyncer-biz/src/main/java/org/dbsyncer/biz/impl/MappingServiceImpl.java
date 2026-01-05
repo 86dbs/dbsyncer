@@ -554,6 +554,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     private void saveCustomTable(Mapping mapping, Map<String, String> params) {
         String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+        String operator = params.get("operator");
+        String customTable = params.get("customTable");
         List<Table> tables;
         DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
         context.setMappingId(mapping.getId());
@@ -579,17 +581,28 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         ConfigValidator configValidator = connectorService.getConfigValidator();
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
         Table newTable = configValidator.modifyExtendedTable(connectorService, params);
-        if (newTable == null) {
+        Assert.notNull(newTable, "解析自定义表异常");
+
+        context.addTablePattern(newTable);
+        List<MetaInfo> metaInfos = connectorService.getMetaInfo(connectorInstance, context);
+        Assert.notEmpty(metaInfos, "执行SQL异常");
+        Assert.notEmpty(metaInfos.get(0).getColumn(), "获取字段信息异常");
+
+        // 新增操作
+        if (StringUtil.equals("add", operator)) {
+            tables.add(newTable);
             return;
         }
 
+        // 修改操作
+        Assert.hasText(customTable, "请选择数据源表.");
         for (Table t : tables) {
             switch (TableTypeEnum.getTableType(t.getType())) {
                 case SQL:
                 case SEMI_STRUCTURED:
                     // 已存在则修改
-                    if (StringUtil.equals(t.getName(), newTable.getName())) {
-                        // 仅需替换扩展配置
+                    if (StringUtil.equals(t.getName(), customTable)) {
+                        t.setName(newTable.getName());
                         t.setExtInfo(newTable.getExtInfo());
                         return;
                     }
@@ -599,8 +612,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
         }
 
-        // 新增操作
-        tables.add(newTable);
     }
 
     private void removeCustomTable(Mapping mapping, Map<String, String> params) {

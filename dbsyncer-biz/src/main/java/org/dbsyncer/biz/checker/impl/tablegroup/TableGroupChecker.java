@@ -80,7 +80,6 @@ public class TableGroupChecker extends AbstractChecker {
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
         tableGroup.setMappingId(mappingId);
-        // TODO 兼容自定义表
         Table source = findTable(mapping.getSourceTable(), sourceTable, sourceType);
         Table target = findTable(mapping.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
@@ -100,16 +99,6 @@ public class TableGroupChecker extends AbstractChecker {
         mergeConfig(mapping, tableGroup);
 
         return tableGroup;
-    }
-
-    private Table findTable(List<Table> tables, String tableName, String type) {
-        if (!CollectionUtils.isEmpty(tables)) {
-            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
-            if (first.isPresent()) {
-                return first.get();
-            }
-        }
-        throw new BizException("TableName not found.");
     }
 
     @Override
@@ -137,6 +126,16 @@ public class TableGroupChecker extends AbstractChecker {
         mergeConfig(mapping, tableGroup);
 
         return tableGroup;
+    }
+
+    private Table findTable(List<Table> tables, String tableName, String type) {
+        if (!CollectionUtils.isEmpty(tables)) {
+            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
+            if (first.isPresent()) {
+                return first.get();
+            }
+        }
+        throw new BizException("TableName not found.");
     }
 
     /**
