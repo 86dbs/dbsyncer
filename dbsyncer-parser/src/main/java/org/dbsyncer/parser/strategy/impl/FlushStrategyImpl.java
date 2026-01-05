@@ -121,7 +121,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
-            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), "");
+            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), result.error);
         }
 
         // 是否写成功数据

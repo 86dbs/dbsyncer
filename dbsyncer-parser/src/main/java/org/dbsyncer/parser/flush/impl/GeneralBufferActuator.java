@@ -262,18 +262,28 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         if (mapping.getParams() != null) {
             context.getCommand().putAll(mapping.getParams());
         }
-        pluginFactory.process(context, ProcessEnum.CONVERT);
+        Result result;
+        try {
+            pluginFactory.process(context, ProcessEnum.CONVERT);
 
-        // 4、批量执行同步
-        Result result = connectorFactory.writeBatch(context);
+            // 4、批量执行同步
+            result = connectorFactory.writeBatch(context);
 
-        // 5、持久化同步结果
-        result.setTableGroupId(tableGroup.getId());
-        result.setTargetTableGroupName(context.getTargetTableName());
+            // 5、持久化同步结果
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(context.getTargetTableName());
+
+            // 6、执行后置处理
+            pluginFactory.process(context, ProcessEnum.AFTER);
+        }catch (Exception e){
+            logger.error("process batch data error:",e);
+            result = new Result();
+            result.error = e.getMessage();
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(context.getTargetTableName());
+            result.addFailData(targetDataList);
+        }
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
-
-        // 6、执行后置处理
-        pluginFactory.process(context, ProcessEnum.AFTER);
     }
 
     /**
