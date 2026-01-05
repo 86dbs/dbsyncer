@@ -223,7 +223,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     customTable.add(table);
                     filterTable.add(table.getName());
                     Object mainTable = table.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_MAIN);
-                    if (mainTable != null && mainTable instanceof String) {
+                    if (mainTable instanceof String) {
                         filterTable.add(String.valueOf(mainTable));
                     }
                 }

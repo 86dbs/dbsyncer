@@ -72,6 +72,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
 
     @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SQL;
+    }
+
+    @Override
     public Class<DatabaseConfig> getConfigClass() {
         return DatabaseConfig.class;
     }
@@ -145,72 +150,70 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 metaInfo.setColumn(fields);
                 metaInfos.add(metaInfo);
             }
+            // 合并SQL
+            getMetaInfoWithSQL(databaseTemplate, metaInfos, context);
             return metaInfos;
         });
     }
 
-    public List<MetaInfo> getMetaInfoWithSQL(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return connectorInstance.execute(databaseTemplate -> {
-            List<MetaInfo> metaInfos = new ArrayList<>();
-            for (Table s : context.getSqlPatterns()) {
-                Object val = s.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL);
-                if (val == null) {
-                    continue;
-                }
-                String originalSql = String.valueOf(val);
-                String sql = originalSql.toUpperCase();
-                sql = sql.replace("\t", " ");
-                sql = sql.replace("\r", " ");
-                sql = sql.replace("\n", " ");
-                String metaSql = StringUtil.contains(sql, " WHERE ") ? originalSql + " AND 1!=1 " : originalSql + " WHERE 1!=1 ";
-                String tableName = s.getName();
-
-                SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
-                ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
-                SqlRowSetMetaData metaData = rowSet.getMetaData();
-
-                // 查询表字段信息
-                int columnCount = metaData.getColumnCount();
-                if (1 > columnCount) {
-                    throw new SdkException("查询表字段不能为空.");
-                }
-                List<Field> fields = new ArrayList<>(columnCount);
-                Map<String, List<String>> tables = new HashMap<>();
-                try {
-                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
-                    DatabaseMetaData md = connection.getMetaData();
-                    Connection conn = connection.getConnection();
-                    final String catalog = getCatalog(context.getCatalog(), conn);
-                    final String schema = getSchema(context.getSchema(), conn);
-                    String name = null;
-                    String label = null;
-                    String typeName = null;
-                    String table = null;
-                    int columnType;
-                    boolean pk;
-                    for (int i = 1; i <= columnCount; i++) {
-                        table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
-                        if (null == tables.get(table)) {
-                            tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
-                        }
-                        name = metaData.getColumnName(i);
-                        label = metaData.getColumnLabel(i);
-                        typeName = metaData.getColumnTypeName(i);
-                        columnType = metaData.getColumnType(i);
-                        pk = isPk(tables, table, name);
-                        fields.add(new Field(label, typeName, columnType, pk));
-                    }
-                } finally {
-                    tables.clear();
-                }
-                MetaInfo metaInfo = new MetaInfo();
-                metaInfo.setTable(tableName);
-                metaInfo.setTableType(TableTypeEnum.SQL.getCode());
-                metaInfo.setColumn(fields);
-                metaInfos.add(metaInfo);
+    private void getMetaInfoWithSQL(DatabaseTemplate databaseTemplate, List<MetaInfo> metaInfos, ConnectorServiceContext context) throws SQLException {
+        for (Table s : context.getCustomTablePatterns()) {
+            Object val = s.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL);
+            if (val == null) {
+                continue;
             }
-            return metaInfos;
-        });
+            String originalSql = String.valueOf(val);
+            String sql = originalSql.toUpperCase();
+            sql = sql.replace("\t", " ");
+            sql = sql.replace("\r", " ");
+            sql = sql.replace("\n", " ");
+            String metaSql = StringUtil.contains(sql, " WHERE ") ? originalSql + " AND 1!=1 " : originalSql + " WHERE 1!=1 ";
+            String tableName = s.getName();
+
+            SqlRowSet sqlRowSet = databaseTemplate.queryForRowSet(metaSql);
+            ResultSetWrappingSqlRowSet rowSet = (ResultSetWrappingSqlRowSet) sqlRowSet;
+            SqlRowSetMetaData metaData = rowSet.getMetaData();
+
+            // 查询表字段信息
+            int columnCount = metaData.getColumnCount();
+            if (1 > columnCount) {
+                throw new SdkException("查询表字段不能为空.");
+            }
+            List<Field> fields = new ArrayList<>(columnCount);
+            Map<String, List<String>> tables = new HashMap<>();
+            try {
+                SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                DatabaseMetaData md = connection.getMetaData();
+                Connection conn = connection.getConnection();
+                final String catalog = getCatalog(context.getCatalog(), conn);
+                final String schema = getSchema(context.getSchema(), conn);
+                String name = null;
+                String label = null;
+                String typeName = null;
+                String table = null;
+                int columnType;
+                boolean pk;
+                for (int i = 1; i <= columnCount; i++) {
+                    table = StringUtil.isNotBlank(tableName) ? tableName : metaData.getTableName(i);
+                    if (null == tables.get(table)) {
+                        tables.putIfAbsent(table, findTablePrimaryKeys(md, catalog, schema, table));
+                    }
+                    name = metaData.getColumnName(i);
+                    label = metaData.getColumnLabel(i);
+                    typeName = metaData.getColumnTypeName(i);
+                    columnType = metaData.getColumnType(i);
+                    pk = isPk(tables, table, name);
+                    fields.add(new Field(label, typeName, columnType, pk));
+                }
+            } finally {
+                tables.clear();
+            }
+            MetaInfo metaInfo = new MetaInfo();
+            metaInfo.setTable(tableName);
+            metaInfo.setTableType(TableTypeEnum.SQL.getCode());
+            metaInfo.setColumn(fields);
+            metaInfos.add(metaInfo);
+        }
     }
 
     private boolean isPk(Map<String, List<String>> tables, String tableName, String name) {

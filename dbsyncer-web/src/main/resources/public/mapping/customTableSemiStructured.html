@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content" id="semi_structured_model" class="hidden">
+<div th:fragment="content" th:if="${mapping?.extendedType eq 'SEMI_STRUCTURED'}">
     <div class="grid mt-5">
         <div class="form-item">
             <label class="form-label">

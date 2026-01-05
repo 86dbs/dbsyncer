@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -64,6 +65,11 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         connectorConfig.setAcks(acks);
         connectorConfig.setRetries(retries);
         connectorConfig.setMaxRequestSize(maxRequestSize);
+    }
+
+    @Override
+    public Table modifyExtendedTable(KafkaConnector connectorService, Map<String, String> params) {
+        return null;
     }
 
 }

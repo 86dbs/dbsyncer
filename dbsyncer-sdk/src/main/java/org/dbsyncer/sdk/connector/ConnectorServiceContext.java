@@ -20,5 +20,5 @@ public interface ConnectorServiceContext {
 
     List<String> getTablePatterns();
 
-    List<Table> getSqlPatterns();
+    List<Table> getCustomTablePatterns();
 }

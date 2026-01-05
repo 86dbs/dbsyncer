@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.elasticsearch.ElasticsearchConnector;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -34,5 +35,10 @@ public final class ESConfigValidator implements ConfigValidator<ElasticsearchCon
         connectorConfig.setPassword(password);
         connectorConfig.setUrl(url);
         connectorConfig.setTimeoutSeconds(NumberUtil.toInt(timeoutSeconds));
+    }
+
+    @Override
+    public Table modifyExtendedTable(ElasticsearchConnector connectorService, Map<String, String> params) {
+        return null;
     }
 }

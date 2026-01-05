@@ -30,12 +30,12 @@ public enum TableTypeEnum {
     MATERIALIZED_VIEW("MATERIALIZED VIEW"),
 
     /**
-     * SQL
+     * SQL(扩展类型)
      */
     SQL("SQL"),
 
     /**
-     * ‌半结构化(File，Kafka，Redis 等定义JSON数据格式)
+     * ‌半结构化(扩展类型，如File，Kafka，ES)
      */
     SEMI_STRUCTURED("SEMI_STRUCTURED");
 

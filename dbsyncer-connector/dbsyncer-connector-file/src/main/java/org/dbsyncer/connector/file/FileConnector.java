@@ -70,6 +70,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SEMI_STRUCTURED;
+    }
+
+    @Override
     public Class<FileConfig> getConfigClass() {
         return FileConfig.class;
     }

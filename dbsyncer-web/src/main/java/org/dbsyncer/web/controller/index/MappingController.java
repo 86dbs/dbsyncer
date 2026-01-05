@@ -163,4 +163,28 @@ public class MappingController extends BaseController {
         }
     }
 
+    @PostMapping(value = "/saveCustomTable")
+    @ResponseBody
+    public RestResult saveCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.saveCustomTable(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/removeCustomTable")
+    @ResponseBody
+    public RestResult removeCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.removeCustomTable(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
 }

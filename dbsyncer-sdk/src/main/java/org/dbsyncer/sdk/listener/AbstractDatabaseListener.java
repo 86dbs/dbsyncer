@@ -120,7 +120,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             Map<String, Integer> tablePKIndexMap = new HashMap<>(primaryKeys.size());
             List<Integer> tablePKIndex = getPKIndex(tableColumns, tablePKIndexMap);
 
-            MetaInfo sqlMetaInfo = getMetaInfo(service, instance, t);
+            MetaInfo sqlMetaInfo = getMetaInfo(t);
             final List<Field> sqlColumns = sqlMetaInfo.getColumn();
             Assert.notEmpty(sqlColumns, String.format("The column of table name '%s' is empty.", sqlName));
             Map<Integer, Integer> sqlPKIndexMap = getPKIndexMap(sqlColumns, tablePKIndexMap);
@@ -146,17 +146,17 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
         }
     }
 
-    private MetaInfo getMetaInfo(AbstractDatabaseConnector service, DatabaseConnectorInstance instance, Table table) {
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, null);
+    private MetaInfo getMetaInfo(Table table) {
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
         List<Table> sqlPatterns = new ArrayList<>();
         sqlPatterns.add(table);
-        context.setSqlPatterns(sqlPatterns);
-        MetaInfo sqlMetaInfo = getFirstMetaInfo(service.getMetaInfoWithSQL(instance, context));
+        context.setCustomTablePatterns(sqlPatterns);
+        MetaInfo sqlMetaInfo = getFirstMetaInfo(connectorService.getMetaInfo(connectorInstance, context));
         Assert.notNull(sqlMetaInfo, "The sql table is not exist.");
         return sqlMetaInfo;
     }
 
-    private MetaInfo getFirstMetaInfo(List<MetaInfo> metaInfos){
+    private MetaInfo getFirstMetaInfo(List<MetaInfo> metaInfos) {
         return CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
     }
 

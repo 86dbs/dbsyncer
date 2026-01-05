@@ -33,6 +33,11 @@ public class MappingCustomTableVO {
     private Meta meta;
 
     /**
+     * 可扩展类型 {@link org.dbsyncer.sdk.enums.TableTypeEnum}
+     */
+    private String extendedType;
+
+    /**
      * 主表列表
      */
     private List<Table> mainTables;
@@ -64,6 +69,14 @@ public class MappingCustomTableVO {
 
     public void setMeta(Meta meta) {
         this.meta = meta;
+    }
+
+    public String getExtendedType() {
+        return extendedType;
+    }
+
+    public void setExtendedType(String extendedType) {
+        this.extendedType = extendedType;
     }
 
     public List<Table> getMainTables() {

@@ -8,6 +8,9 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.springframework.util.Assert;
 
@@ -57,4 +60,19 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         connectorConfig.setKeepAlive(keepAlive);
     }
 
+    @Override
+    public Table modifyExtendedTable(AbstractDatabaseConnector connectorService, Map<String, String> params) {
+        Table table = new Table();
+        String tableName = params.get("tableName");
+        String mainTable = params.get("mainTable");
+        String sql = params.get("sql");
+        Assert.hasText(tableName, "TableName is empty.");
+        Assert.hasText(mainTable, "MainTable is empty.");
+        Assert.hasText(sql, "SQL is empty.");
+        table.setName(tableName);
+        table.getExtInfo().put(ConnectorConstant.CUSTOM_TABLE_SQL, sql);
+        table.getExtInfo().put(ConnectorConstant.CUSTOM_TABLE_MAIN, mainTable);
+        table.setType(TableTypeEnum.SQL.getCode());
+        return table;
+    }
 }

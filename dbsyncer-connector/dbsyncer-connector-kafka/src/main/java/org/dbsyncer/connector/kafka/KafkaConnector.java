@@ -54,6 +54,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SEMI_STRUCTURED;
+    }
+
+    @Override
     public Class<KafkaConfig> getConfigClass() {
         return KafkaConfig.class;
     }

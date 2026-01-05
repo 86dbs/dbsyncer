@@ -2,19 +2,52 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content" id="sql_model" class="hidden">
+<div th:fragment="content" th:if="${type eq 'source' and mapping?.extendedType eq 'SQL'}">
 
     <div class="grid grid-cols-2 mt-5">
         <div class="form-item">
-            <label class="form-label">表名</label>
+            <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
+            <select id="custom_table_select" class="form-control" name="customTable">
+                <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+            </select>
+        </div>
+
+        <div class="form-item justify-between">
+            <label class="form-label"></label>
+            <div class="form-actions">
+                <span th:if="${mapping?.meta?.state ne 0}">
+                    <button type="button" class="btn btn-info" disabled>
+                        <i class="fa fa-save"></i> 运行中
+                    </button>
+                </span>
+                <button th:if="${mapping?.meta?.state eq 0}"
+                        id="saveSqlTableBtn"
+                        type="button"
+                        class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存
+                </button>
+                <button id="delSqlTableBtn" type="button" class="btn btn-outline">
+                    <span class="fa fa-remove"></span> 删除
+                </button>
+                <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 mt-5">
+        <div class="form-item">
+            <label class="form-label">表名<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" id="tableName" type="text" maxlength="64" placeholder="ERP用户表"/>
+                <input class="form-control" name="tableName" type="text" maxlength="64" required placeholder="ERP用户表"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">主表<i class="fa fa-question-circle" title="用于增量同步，根据监听的主表获取增量数据"></i></label>
             <div class="form-control-area">
-                <select id="main_table_select" class="form-control">
+                <select id="main_table_select" class="form-control" name="mainTable">
+                    <option value="" selected="selected">无</option>
                     <option th:each="t,s:${mapping?.mainTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
                 </select>
             </div>
@@ -23,10 +56,48 @@
 
     <div class="grid mt-5">
         <div class="form-item">
-            <label class="form-label">SQL</label>
+            <label class="form-label">SQL<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <textarea id="sql" class="form-control" maxlength="8192" rows="10">SELECT T1.* FROM USER T1</textarea>
+                <textarea name="sql" class="form-control" maxlength="8192" rows="10" required>SELECT T1.* FROM USER T1</textarea>
             </div>
         </div>
     </div>
+<script>
+    $(function () {
+        initSelect($("#custom_table_select"));
+        initSelect($("#main_table_select"));
+
+        function handleResponse(response, title) {
+            if (response.success === true) {
+                bootGrowl(title + "成功！", "success");
+                doLoader('/mapping/pageCustomTable?id=' + $("#mappingId").val() + '&type=' + $("#customType").val());
+            } else {
+                bootGrowl(response.message || title + "失败", "danger");
+            }
+        }
+
+        //保存
+        $("#saveSqlTableBtn").on('click', function () {
+            const $form = $("#customTableForm");
+            if (!validateForm($form)) {
+                return;
+            }
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster("/mapping/saveCustomTable", $form.serializeJson(), function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                handleResponse(response, "保存自定义表");
+            });
+        });
+
+        //删除
+        $("#delSqlTableBtn").on('click', function () {
+            const $form = $("#customTableForm");
+            doPoster("/mapping/removeCustomTable", $form.serializeJson(), function (response) {
+                handleResponse(response, "删除自定义表");
+            });
+        });
+    });
+</script>
 </div>

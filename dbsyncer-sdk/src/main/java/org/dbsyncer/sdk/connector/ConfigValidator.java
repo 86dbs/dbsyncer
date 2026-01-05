@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.connector;
 
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 
 import java.util.Map;
@@ -27,4 +28,12 @@ public interface ConfigValidator<S extends ConnectorService, C extends Connector
      */
     void modify(S connectorService, C connectorConfig, Map<String, String> params);
 
+    /**
+     * 修改扩展表配置
+     *
+     * @param connectorService
+     * @param params
+     * @return
+     */
+    Table modifyExtendedTable(S connectorService, Map<String, String> params);
 }

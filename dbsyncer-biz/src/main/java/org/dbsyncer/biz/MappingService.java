@@ -107,4 +107,19 @@ public interface MappingService {
      */
     String refreshMappingTables(String id);
 
+    /**
+     * 保存自定义表
+     *
+     * @param params
+     * @return
+     */
+    String saveCustomTable(Map<String, String> params);
+
+    /**
+     * 删除自定义表
+     *
+     * @param params
+     * @return
+     */
+    String removeCustomTable(Map<String, String> params);
 }

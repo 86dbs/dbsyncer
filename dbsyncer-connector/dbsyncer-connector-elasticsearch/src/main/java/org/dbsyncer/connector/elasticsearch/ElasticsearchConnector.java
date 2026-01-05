@@ -75,8 +75,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -114,6 +112,11 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     @Override
     public String getConnectorType() {
         return "Elasticsearch";
+    }
+
+    @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SEMI_STRUCTURED;
     }
 
     @Override

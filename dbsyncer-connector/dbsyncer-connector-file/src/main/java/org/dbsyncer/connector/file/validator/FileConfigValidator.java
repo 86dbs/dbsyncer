@@ -9,6 +9,7 @@ import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -45,6 +46,11 @@ public class FileConfigValidator implements ConfigValidator<FileConnector, FileC
         fileConfig.setFileDir(fileDir);
         fileConfig.setSeparator(separator.charAt(0));
         fileConfig.setSchema(schema);
+    }
+
+    @Override
+    public Table modifyExtendedTable(FileConnector connectorService, Map<String, String> params) {
+        return null;
     }
 
 }

@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -40,6 +41,13 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 连接器类型
      */
     String getConnectorType();
+
+    /**
+     * 可扩展的表类型
+     *
+     * @return
+     */
+    TableTypeEnum getExtendedTableType();
 
     /**
      * 获取配置对象

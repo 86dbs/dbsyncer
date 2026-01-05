@@ -12,7 +12,7 @@
                     <!-- 隐藏表单值 -->
                     <div class="hidden">
                         <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
-                        <input id="customTables" name="customTables" type="text" />
+                        <input id="customType" name="type" type="text" th:value="${type}"/>
                     </div>
                 </div>
                 <div class="lg:col-span-2"></div>
@@ -31,105 +31,22 @@
                 </div>
             </div>
 
-            <div th:if="${type eq 'source'}">
-            <!-- 自定义模式选择 -->
-            <div class="flex justify-between mt-4">
-                <div id="custom_model" class="radio-group">
-                    <input type="radio" name="model" value="SQL" checked="checked"/>
-                    <label>SQL</label>
-                    <input type="radio" name="model" value="SEMI_STRUCTURED" />
-                    <label>半结构化</label>
-                </div>
-
-                <div class="form-actions">
-                    <span th:if="${mapping?.meta?.state ne 0}">
-                        <button type="button" class="btn btn-info" disabled>
-                            <i class="fa fa-save"></i> 运行中
-                        </button>
-                    </span>
-                    <button th:if="${mapping?.meta?.state eq 0}"
-                            id="mappingSubmitBtn"
-                            type="button"
-                            class="btn btn-primary">
-                        <i class="fa fa-save"></i> 保存
-                    </button>
-                    <button type="button" class="btn btn-outline" onclick="backIndexPage()">
-                        <i class="fa fa-reply"></i> 返回
-                    </button>
-                </div>
-            </div>
-
-            <!-- 表选择器 -->
-            <div class="grid grid-cols-2 mt-5">
-                <div class="form-item">
-                    <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
-                    <select id="custom_table_select" class="form-control">
-                        <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
-                    </select>
-                </div>
-
-                <div class="form-item justify-between">
-                    <label class="form-label"></label>
-                    <div class="form-actions">
-                        <button id="delSqlTableBtn" type="button" class="btn btn-outline">
-                            <span class="fa fa-remove"></span> 删除
-                        </button>
-                        <button id="editSqlTableBtn" type="button" class="btn btn-outline">
-                            <span class="fa fa-pencil"></span> 修改
-                        </button>
-                        <button id="addSqlTableBtn" type="button" class="btn btn-outline">
-                            <span class="fa fa-plus"></span> 添加
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- SQL配置 -->
             <div th:replace="mapping/customTableSQL :: content"></div>
 
             <!-- 半结构化配置 -->
             <div th:replace="mapping/customTableSemiStructured :: content"></div>
-            </div>
         </div>
     </form>
 </div>
 
 <script>
-    function showConfig(model) {
-        const sql = $("#sql_model");
-        const semi = $("#semi_structured_model");
-        if ('SQL' === model) {
-            semi.addClass("hidden");
-            sql.removeClass("hidden");
-        } else {
-            sql.addClass("hidden");
-            semi.removeClass("hidden");
-        }
-    }
-
-    // 绑定切换事件
-    function bindCustomChange() {
-        const customModel = $('#custom_model').radioGroup({
-            theme: 'info',
-            size: 'md',
-            onChange: function(value, label) {
-                showConfig(value);
-            }
-        });
-        // 渲染选择radio配置
-        showConfig(customModel.getValue());
-    }
-
     $(function () {
         // 定义返回函数，子页面返回
         let mappingId = $("#mappingId").val();
         window.backIndexPage = function () {
             doLoader("/mapping/page/edit?id=" + mappingId);
         };
-
-        initSelect($("#custom_table_select"));
-
-        bindCustomChange();
     });
 </script>
 </html>
