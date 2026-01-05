@@ -243,7 +243,9 @@ public class TaskController extends BaseController {
     public RestResult getTables(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema) {
         try {
             ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
-            ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
+            DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+            context.setCatalog(database);
+            context.setSchema(schema);
             return RestResult.restSuccess(connectorFactory.getTables(connectorInstance, context));
         } catch (Exception e) {
             log.error("获取表列表失败", e);
@@ -259,7 +261,10 @@ public class TaskController extends BaseController {
     public RestResult getTableFields(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema, @RequestParam("tableName") String tableName) {
         try {
             ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
-            ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
+            DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+            context.setCatalog(database);
+            context.setSchema(schema);
+            context.addTablePattern(tableName);
             List<MetaInfo> metaInfos = connectorFactory.getMetaInfo(connectorInstance, context);
             MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
             if (metaInfo == null || metaInfo.getColumn() == null) {

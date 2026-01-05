@@ -6,7 +6,6 @@ package org.dbsyncer.connector.base;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -82,8 +81,11 @@ public class ConnectorFactory implements DisposableBean {
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorService connectorService = getConnectorService(config);
 
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        context.setCatalog(catalog);
+        context.setSchema(schema);
         // 创建新连接
-        ConnectorInstance newInstance = connectorService.connect(config, new DefaultConnectorServiceContext(catalog, schema, StringUtil.EMPTY));
+        ConnectorInstance newInstance = connectorService.connect(config, context);
         if (newInstance == null) {
             throw new ConnectorException("连接配置异常：无法创建连接实例");
         }

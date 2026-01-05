@@ -147,10 +147,10 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     }
 
     private MetaInfo getMetaInfo(Table table) {
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, StringUtil.EMPTY);
-        List<Table> sqlPatterns = new ArrayList<>();
-        sqlPatterns.add(table);
-        context.setCustomTablePatterns(sqlPatterns);
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        context.setCatalog(database);
+        context.setSchema(schema);
+        context.addTablePattern(table);
         MetaInfo sqlMetaInfo = getFirstMetaInfo(connectorService.getMetaInfo(connectorInstance, context));
         Assert.notNull(sqlMetaInfo, "The sql table is not exist.");
         return sqlMetaInfo;

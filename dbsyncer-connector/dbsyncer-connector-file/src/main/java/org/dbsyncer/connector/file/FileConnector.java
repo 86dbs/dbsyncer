@@ -125,10 +125,10 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     @Override
     public List<MetaInfo> getMetaInfo(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
-        context.getTablePatterns().forEach(tableName -> {
-            FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
+        context.getTablePatterns().forEach(table -> {
+            FileSchema fileSchema = connectorInstance.getFileSchema(table.getName());
             MetaInfo metaInfo = new MetaInfo();
-            metaInfo.setTable(tableName);
+            metaInfo.setTable(table.getName());
             metaInfo.setTableType(TableTypeEnum.SEMI_STRUCTURED.getCode());
             metaInfo.setColumn(fileSchema.getFields());
             metaInfos.add(metaInfo);

@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -77,18 +78,11 @@ public class TableGroupChecker extends AbstractChecker {
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
         tableGroup.setMappingId(mappingId);
-
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), sourceTable);
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getSourceConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
-        tableGroup.setSourceTable(getTables(context, sourceTablePK));
-
-        context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), targetTable);
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getTargetConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
-        tableGroup.setTargetTable(getTables(context, targetTablePK));
+        // TODO 兼容自定义表
+        Table source = findTable(mapping.getSourceTable(), sourceTable);
+        Table target = findTable(mapping.getTargetTable(), targetTable);
+        tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
+        tableGroup.setTargetTable(updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, targetTablePK, target));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
@@ -104,6 +98,16 @@ public class TableGroupChecker extends AbstractChecker {
         mergeConfig(mapping, tableGroup);
 
         return tableGroup;
+    }
+
+    private Table findTable(List<Table> tables, String tableName) {
+        if (!CollectionUtils.isEmpty(tables)) {
+            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName)).findFirst();
+            if (first.isPresent()) {
+                return first.get();
+            }
+        }
+        throw new BizException("TableName not found.");
     }
 
     @Override
@@ -144,18 +148,8 @@ public class TableGroupChecker extends AbstractChecker {
         Table targetTable = tableGroup.getTargetTable();
         List<String> sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
         List<String> targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
-
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), sourceTable.getName());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getSourceConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
-        tableGroup.setSourceTable(getTables(context, StringUtil.join(sourceTablePks, ",")));
-
-        context = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), targetTable.getName());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getTargetConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
-        tableGroup.setTargetTable(getTables(context, StringUtil.join(targetTablePks, ",")));
+        updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, StringUtil.join(sourceTablePks, ","), sourceTable);
+        updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, StringUtil.join(targetTablePks, ","), targetTable);
     }
 
     public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
@@ -165,11 +159,19 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setCommand(command);
     }
 
-    private Table getTables(DefaultConnectorServiceContext context, String primaryKeyStr) {
+    private Table updateTableColumn(Mapping mapping, String suffix, String primaryKeyStr, Table table) {
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
+        context.setCatalog(isSource ? mapping.getSourceDatabase() : mapping.getTargetDatabase());
+        context.setSchema(isSource ? mapping.getSourceSchema() : mapping.getTargetSchema());
+        context.setMappingId(mapping.getId());
+        context.setConnectorId(isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId());
+        context.setSuffix(suffix);
+        context.addTablePattern(table);
+
         List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
         MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
-        String tableName = context.getTablePatterns().stream().findFirst().orElse(StringUtil.EMPTY);
-        Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
+        Assert.notNull(metaInfo, "无法获取连接器表信息");
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
             String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
@@ -182,11 +184,7 @@ public class TableGroupChecker extends AbstractChecker {
                 }
             });
         }
-        Table table = new Table();
-        table.setName(tableName);
-        table.setType(metaInfo.getTableType());
         table.setColumn(metaInfo.getColumn());
-        table.setExtInfo(metaInfo.getExtInfo());
         return table;
     }
 

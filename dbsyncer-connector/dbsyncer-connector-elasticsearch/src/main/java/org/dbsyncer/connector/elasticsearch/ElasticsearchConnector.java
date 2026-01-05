@@ -191,7 +191,8 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public List<MetaInfo> getMetaInfo(ESConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
         try {
-            for (String index : context.getTablePatterns()){
+            for (Table table : context.getTablePatterns()){
+                String index = table.getName();
                 GetIndexRequest request = new GetIndexRequest(index);
                 GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
                 MappingMetadata mappingMetaData = indexResponse.getMappings().get(index);

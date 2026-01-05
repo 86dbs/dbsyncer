@@ -26,7 +26,7 @@
                         class="btn btn-primary">
                     <i class="fa fa-save"></i> 保存
                 </button>
-                <button id="delSqlTableBtn" type="button" class="btn btn-outline">
+                <button id="delSqlTableBtn" type="button" class="btn btn-outline" th:if="${mapping?.customTables.size gt 0}">
                     <span class="fa fa-remove"></span> 删除
                 </button>
                 <button type="button" class="btn btn-outline" onclick="backIndexPage()">
@@ -61,6 +61,12 @@
                 <textarea name="sql" class="form-control" maxlength="8192" rows="10" required>SELECT T1.* FROM USER T1</textarea>
             </div>
         </div>
+    </div>
+
+    <div class="form-item">
+        <p></p>
+        <p></p>
+        <p></p>
     </div>
 <script>
     $(function () {

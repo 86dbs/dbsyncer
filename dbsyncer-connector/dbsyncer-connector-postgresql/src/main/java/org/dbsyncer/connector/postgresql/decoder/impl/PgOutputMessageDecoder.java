@@ -193,7 +193,10 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     }
 
     private MetaInfo getMetaInfo(String tableName) {
-        ConnectorServiceContext context = new DefaultConnectorServiceContext(database, schema, tableName);
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        context.setCatalog(database);
+        context.setSchema(database);
+        context.addTablePattern(tableName);
         List<MetaInfo> metaInfos = connectorService.getMetaInfo(connectorInstance, context);
         MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
         Assert.isTrue(metaInfo != null, String.format("The table '%s' is not exist.", tableName));

@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.connector;
 
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
@@ -29,21 +29,24 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
     /**
      * must match the table name as it is stored in the database
      */
-    private List<String> tablePatterns;
-
-    private List<Table> customTablePatterns;
+    private List<Table> tablePatterns;
 
     private String mappingId;
     private String connectorId;
     private String suffix;
 
-    public DefaultConnectorServiceContext(String catalog, String schema, String tablePattern) {
-        this.catalog = catalog;
-        this.schema = schema;
-        this.tablePatterns = new ArrayList<>();
-        if (StringUtil.isNotBlank(tablePattern)) {
-            this.tablePatterns.add(tablePattern);
+    public void addTablePattern(String tablePattern) {
+        Table table = new Table();
+        table.setName(tablePattern);
+        table.setType(TableTypeEnum.TABLE.getCode());
+        addTablePattern(table);
+    }
+
+    public void addTablePattern(Table tablePattern) {
+        if (tablePatterns == null) {
+            tablePatterns = new ArrayList<>();
         }
+        tablePatterns.add(tablePattern);
     }
 
     @Override
@@ -65,21 +68,12 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
     }
 
     @Override
-    public List<String> getTablePatterns() {
+    public List<Table> getTablePatterns() {
         return tablePatterns;
     }
 
-    public void setTablePatterns(List<String> tablePatterns) {
+    public void setTablePatterns(List<Table> tablePatterns) {
         this.tablePatterns = tablePatterns;
-    }
-
-    @Override
-    public List<Table> getCustomTablePatterns() {
-        return customTablePatterns;
-    }
-
-    public void setCustomTablePatterns(List<Table> customTablePatterns) {
-        this.customTablePatterns = customTablePatterns;
     }
 
     public String getMappingId() {

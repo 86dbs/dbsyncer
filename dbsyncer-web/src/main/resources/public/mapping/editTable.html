@@ -9,7 +9,7 @@
         <div class="lg:col-span-4 flex items-center gap-3 form-item">
             <label class="form-label">数据源表</label>
             <select id="source_table_select" class="form-control">
-                <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+                <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:data-type="${t?.type}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
             </select>
         </div>
 
@@ -21,7 +21,7 @@
         <div class="lg:col-span-4 flex items-center gap-3 form-item">
             <label class="form-label">目标源表</label>
             <select id="target_table_select" class="form-control">
-                <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+                <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}" th:data-type="${t?.type}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
             </select>
         </div>
     </div>

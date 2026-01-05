@@ -37,6 +37,7 @@ import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -255,23 +256,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             }
 
             // 3.更新表属性字段
-            DefaultConnectorServiceContext sourceContext = new DefaultConnectorServiceContext(mapping.getSourceDatabase(), mapping.getSourceSchema(), tableGroup.getSourceTable().getName());
-            sourceContext.setMappingId(mapping.getId());
-            sourceContext.setConnectorId(mapping.getSourceConnectorId());
-            sourceContext.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
-            List<MetaInfo> sourceMetaInfos = parserComponent.getMetaInfo(sourceContext);
-            MetaInfo sourceMetaInfo = CollectionUtils.isEmpty(sourceMetaInfos) ? null : sourceMetaInfos.get(0);
-            Assert.notNull(sourceMetaInfo, "无法获取连接器表信息:" + tableGroup.getSourceTable().getName());
-
-            DefaultConnectorServiceContext targetContext = new DefaultConnectorServiceContext(mapping.getTargetDatabase(), mapping.getTargetSchema(), tableGroup.getTargetTable().getName());
-            targetContext.setMappingId(mapping.getId());
-            targetContext.setConnectorId(mapping.getTargetConnectorId());
-            targetContext.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
-            List<MetaInfo> targetMetaInfos = parserComponent.getMetaInfo(targetContext);
-            MetaInfo targetMetaInfo = CollectionUtils.isEmpty(targetMetaInfos) ? null : targetMetaInfos.get(0);
-            Assert.notNull(targetMetaInfo, "无法获取连接器表信息:" + tableGroup.getTargetTable().getName());
-            tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
-            tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+            updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, tableGroup.getSourceTable());
+            updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, tableGroup.getTargetTable());
 
             // 4.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
@@ -287,6 +273,22 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    private void updateTableColumn(Mapping mapping, String suffix, Table table) {
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
+        context.setCatalog(isSource ? mapping.getSourceDatabase() : mapping.getTargetDatabase());
+        context.setSchema(isSource ? mapping.getSourceSchema() : mapping.getTargetSchema());
+        context.setMappingId(mapping.getId());
+        context.setConnectorId(isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId());
+        context.setSuffix(suffix);
+        context.addTablePattern(table);
+
+        List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
+        MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
+        Assert.notNull(metaInfo, "无法获取连接器表信息:" + table.getName());
+        table.setColumn(metaInfo.getColumn());
     }
 
     /**

@@ -18,7 +18,5 @@ public interface ConnectorServiceContext {
 
     String getSchema();
 
-    List<String> getTablePatterns();
-
-    List<Table> getCustomTablePatterns();
+    List<Table> getTablePatterns();
 }
