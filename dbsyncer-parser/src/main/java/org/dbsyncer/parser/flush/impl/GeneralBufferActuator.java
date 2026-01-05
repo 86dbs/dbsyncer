@@ -37,9 +37,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -164,7 +162,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 if (logger.isDebugEnabled()) {
                     List<TableGroupPicker> refreshedPickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
                     logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}",
-                        response.getTableName(), refreshedPickers.size());
+                            response.getTableName(), refreshedPickers.size());
                 }
                 break;
             case SCAN:
@@ -209,21 +207,20 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) throws Exception {
+        if (response.getColumnNames() == null || response.getColumnNames().isEmpty()) {
+            return;
+        }
         // 1、映射字段
         // 优先使用事件携带的列名信息，确保字段映射与数据一致
-        List<Field> actualSourceFields = sourceFields;
-        if (response.getColumnNames() != null && !response.getColumnNames().isEmpty()) {
-            // 根据列名从 TableGroup 中查找对应的 Field 信息
-            actualSourceFields = buildFieldsFromColumnNames(
-                response.getColumnNames(),
-                tableGroupPicker.getTableGroup().getSourceTable().getColumn()
-            );
-            // 如果无法构建完整的字段列表，回退到使用传入的 sourceFields
-            if (CollectionUtils.isEmpty(actualSourceFields) || actualSourceFields.size() != response.getColumnNames().size()) {
-                logger.warn("无法根据列名构建完整的字段列表，回退到使用 TableGroup 的字段信息。表名: {}, 列名: {}",
+        List<Field> actualSourceFields;
+        // 根据列名从 TableGroup 中查找对应的 Field 信息
+        actualSourceFields = buildFieldsFromColumnNames(response.getColumnNames(), sourceFields);
+        // 如果无法构建完整的字段列表，回退到使用传入的 sourceFields
+        if (actualSourceFields.size() != sourceFields.size()) {
+            String msg = String.format("无法根据列名构建完整的字段列表，表名: %s, 列名: %s",
                     response.getTableName(), response.getColumnNames());
-                actualSourceFields = sourceFields;
-            }
+            logger.error(msg);
+            throw new RuntimeException(msg);
         }
 
         boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
@@ -283,14 +280,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * 解析DDL
      * 完整的DDL处理流程：解析DDL → 执行DDL（如果启用）→ 刷新表结构 → 更新字段映射
      *
-     * @param response WriterResponse，包含DDL SQL和事件信息
-     * @param mapping Mapping配置，包含源和目标连接器ID
+     * @param response   WriterResponse，包含DDL SQL和事件信息
+     * @param mapping    Mapping配置，包含源和目标连接器ID
      * @param tableGroup TableGroup配置，包含表结构和字段映射
      */
     public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
         try {
             logger.info("开始处理 DDL: mapping={}, table={}, sql={}", mapping.getName(), tableGroup.getTargetTable().getName(), response.getSql());
-            
+
             ListenerConfig listenerConfig = mapping.getListener();
 
             // 注意：全局 DDL 开关检查已在 Listener 和 pull() 方法中完成，此处无需重复检查
@@ -307,7 +304,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             DDLOperationEnum operation = targetDDLConfig.getDdlOperationEnum();
             if (!isDDLOperationAllowed(listenerConfig, operation)) {
                 logger.warn("DDL 操作被配置禁用，跳过执行。操作类型: {}, 表: {}",
-                    operation, tableGroup.getTargetTable().getName());
+                        operation, tableGroup.getTargetTable().getName());
                 // 注意：如果 DDL 被禁用，应该提前返回，不执行后续的字段映射更新
                 // 这样可以避免字段映射与实际表结构不一致的问题
                 return;
@@ -340,7 +337,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
             // 8.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
-            logger.info("字段映射关系已更新: table={}, 映射数量={}", tableGroup.getTargetTable().getName(), 
+            logger.info("字段映射关系已更新: table={}, 映射数量={}", tableGroup.getTargetTable().getName(),
                     tableGroup.getFieldMapping() != null ? tableGroup.getFieldMapping().size() : 0);
 
             // 9.更新执行命令
@@ -354,7 +351,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             bufferActuatorRouter.refreshOffset(response.getChangedOffset());
             logger.info("DDL 处理完成: mapping={}, table={}", mapping.getName(), tableGroup.getTargetTable().getName());
         } catch (Exception e) {
-            logger.error("DDL 处理异常: mapping={}, table={}, error={}", mapping.getName(), 
+            logger.error("DDL 处理异常: mapping={}, table={}, error={}", mapping.getName(),
                     tableGroup.getTargetTable().getName(), e.getMessage(), e);
         }
     }
@@ -385,9 +382,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * 根据列名列表构建字段列表
      * 优先使用事件自带的列名顺序，确保与 CDC 数据顺序一致
      *
-     * @param columnNames CDC 事件中的列名列表（按数据顺序）
+     * @param columnNames  CDC 事件中的列名列表（按数据顺序）
      * @param tableColumns TableGroup 中的源表字段列表
-     * @return 按 columnNames 顺序排列的字段列表
+     * @return 按 columnNames 顺序排列的字段列表（去重，每个字段只出现一次）
      */
     private List<Field> buildFieldsFromColumnNames(List<String> columnNames, List<Field> tableColumns) {
         if (CollectionUtils.isEmpty(columnNames) || CollectionUtils.isEmpty(tableColumns)) {
@@ -399,11 +396,19 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 .collect(Collectors.toMap(Field::getName, field -> field, (k1, k2) -> k1));
 
         // 按照 columnNames 的顺序构建字段列表
+        // 使用 LinkedHashSet 保持顺序并去重，防止重复的列名导致同一个字段被添加多次
         List<Field> fields = new ArrayList<>();
+        Set<String> addedFieldNames = new LinkedHashSet<>();
         for (String columnName : columnNames) {
             Field field = fieldMap.get(columnName);
             if (field != null) {
-                fields.add(field);
+                // 只有当字段名还没有被添加过时，才添加到列表中
+                // 这样可以防止 columnNames 中有重复列名时，同一个字段被添加多次
+                if (addedFieldNames.add(columnName)) {
+                    fields.add(field);
+                } else {
+                    return fields;
+                }
             } else {
                 // 如果找不到对应的字段，记录警告但继续处理
                 logger.warn("CDC 事件中的列名 '{}' 在 TableGroup 中未找到对应的字段信息", columnName);
