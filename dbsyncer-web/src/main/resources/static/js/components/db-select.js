@@ -392,11 +392,23 @@
         // 全选
         function selectAll() {
             if (config.type === 'multiple') {
-                config.data.forEach(function(item) {
-                    if (!item.disabled && selectedValues.indexOf(item.value) === -1) {
-                        selectedValues.push(item.value);
-                    }
-                });
+                const filterText = $searchInput.val().toLowerCase();
+                // 如果有搜索过滤条件，只选中过滤后可见的选项
+                if (filterText) {
+                    config.data.forEach(function(item) {
+                        const matches = item.label.toLowerCase().indexOf(filterText) > -1;
+                        if (matches && !item.disabled && selectedValues.indexOf(item.value) === -1) {
+                            selectedValues.push(item.value);
+                        }
+                    });
+                } else {
+                    // 没有过滤条件时，选中所有选项
+                    config.data.forEach(function(item) {
+                        if (!item.disabled && selectedValues.indexOf(item.value) === -1) {
+                            selectedValues.push(item.value);
+                        }
+                    });
+                }
                 updateDisplay();
                 triggerSelectEvent();
                 renderOptions($searchInput.val());

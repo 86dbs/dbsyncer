@@ -8,6 +8,7 @@ import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Map;
 
 @Controller
@@ -69,6 +71,7 @@ public class MappingController extends BaseController {
     public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
         model.put("mapping", mappingService.getMappingCustomTable(id, type));
         model.put("type", type);
+        model.put("dataType", Arrays.asList(DataTypeEnum.values()));
         return "mapping/customTable";
     }
 

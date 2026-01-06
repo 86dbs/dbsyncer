@@ -48,6 +48,21 @@ tr[draggable="true"]:hover {
   max-width: 260px;
 }
 
+/* 表格单元格中包含 select 或 dbSelect 组件时，允许下拉框显示 */
+.table td:has(select),
+.table td:has(.dbsyncer-select) {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+/* 兼容不支持 :has() 的浏览器 */
+.table td select,
+.table td .dbsyncer-select {
+  position: relative;
+  z-index: 10;
+}
+
 .table tbody tr {
   transition: all var(--transition-fast);
 }

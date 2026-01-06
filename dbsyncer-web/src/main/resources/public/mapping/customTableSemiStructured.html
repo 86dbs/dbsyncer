@@ -4,7 +4,7 @@
 
 <div th:fragment="content" th:if="${mapping?.extendedType eq 'SEMI_STRUCTURED'}">
     <!-- 半结构化配置 -->
-    <div class="grid grid-cols-2 mt-5">
+    <div class="grid grid-cols-2 mt-4">
         <div class="form-item">
             <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
             <select id="custom_table_select" class="form-control" name="customTable">
@@ -34,95 +34,59 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-3 mt-5">
+    <div class="grid grid-cols-2 mt-4">
         <div class="form-item">
             <label class="form-label">表名<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" name="tableName" type="text" maxlength="64" required placeholder="ERP用户表"/>
             </div>
         </div>
-        <div class="form-item">
-            <label class="form-label">字段<strong class="text-primary">*</strong></label>
-            <div class="form-control-area">
-                <input class="form-control" name="fieldName" type="text" maxlength="64" required placeholder="ID"/>
-            </div>
-        </div>
-        <div class="form-item">
-            <label class="form-label">类型<strong class="text-primary">*</strong></label>
-            <div class="form-control-area">
-                <select id="field_select" class="form-control">
-                    <option th:each="t,s:${mapping?.mainTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th></th>
+            <th>字段</th>
+            <th>类型</th>
+            <th>主键</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="fieldList">
+        <tr title='双击设置/取消主键 | 拖动排序'>
+            <td>1</td>
+            <td>id</td>
+            <td>Long</td>
+            <td><i title="主键" class="fa fa-key text-warning"></i></td>
+            <td>
+                <button class="table-action-btn delete fieldDelete" title="删除">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input class="form-control" name="fieldName" type="text" maxlength="64"/></td>
+            <td style="overflow: visible; position: relative;">
+                <select id="type_name_select" class="form-control">
+                    <option th:each="dataTypeItem,s:${dataType}" th:value="${dataTypeItem.name()}" th:text="${dataTypeItem.name()}"/>
                 </select>
-            </div>
-        </div>
-    </div>
+            </td>
+            <td></td>
+            <td>
+                <button class="table-action-btn view fieldAdd" title="删除">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 
-    <div class="grid mt-5">
-        <div class="form-item">
-            <label class="form-label">
-                Schema<i class="fa fa-question-circle" title="支持10种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i>
-            </label>
-            <div class="form-control-area">
-                <textarea id="schema" name="schema" class="form-control" maxlength="4096" required rows="20">
-                    [
-        {
-            "name": "id",
-            "typeName": "String",
-            "type": 12,
-            "pk": true
-        },
-        {
-            "name": "age",
-            "typeName": "Integer",
-            "type": 4
-        },
-        {
-            "name": "count",
-            "typeName": "Long",
-            "type": -5
-        },
-        {
-            "name": "type",
-            "typeName": "Short",
-            "type": 5
-        },
-        {
-            "name": "money",
-            "typeName": "Float",
-            "type": 6
-        },
-        {
-            "name": "score",
-            "typeName": "Double",
-            "type": 8
-        },
-        {
-            "name": "status",
-            "typeName": "Boolean",
-            "type": -7
-        },
-        {
-            "name": "create_date",
-            "typeName": "Date",
-            "type": 91
-        },
-        {
-            "name": "time",
-            "typeName": "Time",
-            "type": 92
-        },
-        {
-            "name": "update_time",
-            "typeName": "Timestamp",
-            "type": 93
-        }
-    ]</textarea>
-            </div>
-        </div>
-    </div>
-
+    <div style="height: 300px; width: 100%"></div>
 <script>
     $(function () {
+        let typeNameSelect = initSelect($("#type_name_select"));
         let customTableSelect = $("#custom_table_select").dbSelect({
             type: 'single',
             onSelect: function () {
@@ -131,11 +95,11 @@
 
         //添加
         $("#addSemiTableBtn").on('click', function () {
-            submit("add", "添加");
+            // submit("add", "添加");
         });
         //修改
         $("#editSemiTableBtn").on('click', function () {
-            submit("edit", "修改");
+            // submit("edit", "修改");
         });
         //删除
         $("#delSemiTableBtn").on('click', function () {
