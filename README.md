@@ -61,7 +61,9 @@ docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 ```shell
 docker run -d \
   -p 18686:18686 \
+  -v ./your_path/config:/app/dbsyncer/config \
   -v ./your_path/data:/app/dbsyncer/data \
+  -v ./your_path/logs:/app/dbsyncer/logs \
   -v ./your_path/plugins:/app/dbsyncer/plugins \
   --restart=unless-stopped \
   -e TZ="Asia/Shanghai" \
@@ -72,7 +74,7 @@ docker run -d \
 docker logs --tail 20 dbsyncer
 
 # 本地日志文件
-ls -la ./logs/
+ls -la ./your_path/logs/
 
 # 实时日志（Ctrl+C退出）
 docker logs -f dbsyncer
