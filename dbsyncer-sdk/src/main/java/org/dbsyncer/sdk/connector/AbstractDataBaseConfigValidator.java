@@ -72,7 +72,7 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         table.setName(tableName);
         table.getExtInfo().put(ConnectorConstant.CUSTOM_TABLE_SQL, sql);
         table.getExtInfo().put(ConnectorConstant.CUSTOM_TABLE_MAIN, mainTable);
-        table.setType(TableTypeEnum.SQL.getCode());
+        table.setType(connectorService.getExtendedTableType().getCode());
         return table;
     }
 }

@@ -180,7 +180,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                     return table;
                 }).collect(Collectors.toList());
             }
-            return Collections.emptyList();
+            return new ArrayList<>();
         } catch (IOException e) {
             logger.error(e.getMessage());
             throw new ElasticsearchException(e);

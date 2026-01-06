@@ -31,6 +31,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
@@ -51,6 +52,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -223,15 +225,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         MappingCustomTableVO vo = new MappingCustomTableVO();
         vo.setId(mapping.getId());
         vo.setName(mapping.getName());
-        List<Table> tables;
-        String connectorId;
-        if (StringUtil.equals("source", type)) {
-            tables = mapping.getSourceTable();
-            connectorId = mapping.getSourceConnectorId();
-        } else {
-            tables = mapping.getTargetTable();
-            connectorId = mapping.getTargetConnectorId();
-        }
+        boolean isSource = StringUtil.equals("source", type);
+        List<Table> tables = isSource ? mapping.getSourceTable() : mapping.getTargetTable();
+        String connectorId = isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
         ConnectorConfig config = profileComponent.getConnector(connectorId).getConfig();
         ConnectorService connectorService = connectorFactory.getConnectorService(config);
         vo.setExtendedType(connectorService.getExtendedTableType().getCode());
@@ -339,24 +335,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String refreshMappingTables(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         Assert.notNull(mapping, "The mapping id is invalid.");
-
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
-        context.setCatalog(mapping.getSourceDatabase());
-        context.setSchema(mapping.getSourceSchema());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getSourceConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
-        // TODO 合并自定义表
-        mapping.setSourceTable(getConnectorTables(context));
-
-        context = new DefaultConnectorServiceContext();
-        context.setCatalog(mapping.getTargetDatabase());
-        context.setSchema(mapping.getTargetSchema());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(mapping.getTargetConnectorId());
-        context.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
-        // TODO 合并自定义表
-        mapping.setTargetTable(getConnectorTables(context));
+        mapping.setSourceTable(updateConnectorTables(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX));
+        mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
         profileComponent.editConfigModel(mapping);
         return "刷新驱动表成功";
     }
@@ -401,10 +381,31 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         dispatchTaskService.execute(task);
     }
 
-    private List<Table> getConnectorTables(DefaultConnectorServiceContext context) {
+    private List<Table> updateConnectorTables(Mapping mapping, String suffix) {
+        boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
+
+        // 合并自定义表
+        List<Table> customTables = new ArrayList<>();
+        List<Table> tables = getMappingTables(mapping, isSource);
+        tables.forEach(t -> {
+            switch (TableTypeEnum.getTableType(t.getType())) {
+                case SQL:
+                case SEMI_STRUCTURED:
+                    customTables.add(t);
+                    break;
+                default:
+                    break;
+            }
+        });
+
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
         ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
-        return connectorFactory.getTables(connectorInstance, context);
+        tables = connectorFactory.getTables(connectorInstance, context);
+        tables.addAll(customTables);
+        // 按升序展示表
+        Collections.sort(tables, Comparator.comparing(Table::getName));
+        return tables;
     }
 
     private MappingVo convertMapping2Vo(Mapping mapping) {
@@ -556,24 +557,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
         String operator = params.get("operator");
         String customTable = params.get("customTable");
-        List<Table> tables;
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
-        context.setMappingId(mapping.getId());
-        if (StringUtil.equals("source", type)) {
-            if (CollectionUtils.isEmpty(mapping.getSourceTable())) {
-                mapping.setSourceTable(new ArrayList<>());
-            }
-            tables = mapping.getSourceTable();
-            context.setConnectorId(mapping.getSourceConnectorId());
-            context.setSuffix(ConnectorInstanceUtil.SOURCE_SUFFIX);
-        } else {
-            if (CollectionUtils.isEmpty(mapping.getTargetTable())) {
-                mapping.setTargetTable(new ArrayList<>());
-            }
-            tables = mapping.getTargetTable();
-            context.setConnectorId(mapping.getTargetConnectorId());
-            context.setSuffix(ConnectorInstanceUtil.TARGET_SUFFIX);
-        }
+        boolean isSource = StringUtil.equals("source", type);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
 
         String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
         ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
@@ -588,14 +573,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notEmpty(metaInfos, "执行SQL异常");
         Assert.notEmpty(metaInfos.get(0).getColumn(), "获取字段信息异常");
 
+        List<Table> tables = getMappingTables(mapping, isSource);
         // 新增操作
         if (StringUtil.equals("add", operator)) {
             tables.add(newTable);
+            // 按升序展示表
+            Collections.sort(tables, Comparator.comparing(Table::getName));
             return;
         }
 
         // 修改操作
         Assert.hasText(customTable, "请选择数据源表.");
+        boolean update = false;
         for (Table t : tables) {
             switch (TableTypeEnum.getTableType(t.getType())) {
                 case SQL:
@@ -604,14 +593,26 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     if (StringUtil.equals(t.getName(), customTable)) {
                         t.setName(newTable.getName());
                         t.setExtInfo(newTable.getExtInfo());
-                        return;
+                        update = true;
                     }
                     break;
                 default:
                     break;
             }
+            if (update) {
+                break;
+            }
         }
+        if (update) {
+            // 按升序展示表
+            Collections.sort(tables, Comparator.comparing(Table::getName));
+        }
+    }
 
+    private List<Table> getMappingTables(Mapping mapping, boolean isSource) {
+        mapping.setSourceTable(!CollectionUtils.isEmpty(mapping.getSourceTable()) ? mapping.getSourceTable() : new ArrayList<>());
+        mapping.setTargetTable(!CollectionUtils.isEmpty(mapping.getTargetTable()) ? mapping.getTargetTable() : new ArrayList<>());
+        return isSource ? mapping.getSourceTable() : mapping.getTargetTable();
     }
 
     private void removeCustomTable(Mapping mapping, Map<String, String> params) {

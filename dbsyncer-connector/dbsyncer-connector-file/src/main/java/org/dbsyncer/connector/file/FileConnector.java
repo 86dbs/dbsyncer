@@ -129,7 +129,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             FileSchema fileSchema = connectorInstance.getFileSchema(table.getName());
             MetaInfo metaInfo = new MetaInfo();
             metaInfo.setTable(table.getName());
-            metaInfo.setTableType(TableTypeEnum.SEMI_STRUCTURED.getCode());
+            metaInfo.setTableType(getExtendedTableType().getCode());
             metaInfo.setColumn(fileSchema.getFields());
             metaInfos.add(metaInfo);
         });

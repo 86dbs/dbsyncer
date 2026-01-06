@@ -26,6 +26,7 @@ import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
@@ -276,13 +277,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void updateTableColumn(Mapping mapping, String suffix, Table table) {
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
         boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
-        context.setCatalog(isSource ? mapping.getSourceDatabase() : mapping.getTargetDatabase());
-        context.setSchema(isSource ? mapping.getSourceSchema() : mapping.getTargetSchema());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId());
-        context.setSuffix(suffix);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
         context.addTablePattern(table);
 
         List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);

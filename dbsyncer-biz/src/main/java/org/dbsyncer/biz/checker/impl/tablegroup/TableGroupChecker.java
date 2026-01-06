@@ -16,6 +16,7 @@ import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -161,13 +162,8 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private Table updateTableColumn(Mapping mapping, String suffix, String primaryKeyStr, Table table) {
-        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
         boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
-        context.setCatalog(isSource ? mapping.getSourceDatabase() : mapping.getTargetDatabase());
-        context.setSchema(isSource ? mapping.getSourceSchema() : mapping.getTargetSchema());
-        context.setMappingId(mapping.getId());
-        context.setConnectorId(isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId());
-        context.setSuffix(suffix);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
         context.addTablePattern(table);
 
         List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
