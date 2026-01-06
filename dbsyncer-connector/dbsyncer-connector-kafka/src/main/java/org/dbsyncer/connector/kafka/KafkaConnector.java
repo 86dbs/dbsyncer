@@ -109,7 +109,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         List<Table> topics = new ArrayList<>();
         Table table = new Table();
         table.setName(connectorInstance.getConfig().getTopic());
-        table.setType(TableTypeEnum.TABLE.getCode());
+        table.setType(getExtendedTableType().getCode());
         topics.add(table);
         return topics;
     }

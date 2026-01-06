@@ -117,7 +117,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         return connectorInstance.getFileSchemaList().stream().map(fileSchema -> {
             Table table = new Table();
             table.setName(fileSchema.getFileName());
-            table.setType(TableTypeEnum.TABLE.getCode());
+            table.setType(getExtendedTableType().getCode());
             return table;
         }).collect(Collectors.toList());
     }

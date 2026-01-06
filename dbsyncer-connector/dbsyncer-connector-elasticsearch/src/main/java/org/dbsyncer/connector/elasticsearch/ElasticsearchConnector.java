@@ -212,13 +212,13 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                     if (StringUtil.isBlank(indexType)) {
                         throw new ElasticsearchException("索引type为空");
                     }
-                    metaInfos.add(buildMetaInfo(index, fields, indexType));
+                    metaInfos.add(buildMetaInfo(table.getType(), index, fields, indexType));
                     continue;
                 }
 
                 // 7.x 版本以上
                 parseProperties(fields, mappingMetaData.sourceAsMap());
-                metaInfos.add(buildMetaInfo(index, fields, null));
+                metaInfos.add(buildMetaInfo(table.getType(), index, fields, null));
             }
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -227,10 +227,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         return metaInfos;
     }
 
-    private MetaInfo buildMetaInfo(String index, List<Field> fields, String indexType) {
+    private MetaInfo buildMetaInfo(String tableType, String index, List<Field> fields, String indexType) {
         MetaInfo metaInfo = new MetaInfo();
         metaInfo.setTable(index);
-        metaInfo.setTableType(TableTypeEnum.TABLE.getCode());
+        metaInfo.setTableType(tableType);
         metaInfo.setColumn(fields);
         if (StringUtil.isNotBlank(indexType)) {
             metaInfo.getExtInfo().put(_TYPE, indexType);

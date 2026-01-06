@@ -19,22 +19,8 @@
             </div>
         </div>
         <div class="card-body">
-            <div th:if="${type ne 'source'}">
-                <div class="flex justify-between mt-4">
-                    <div>目标表不支持</div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" onclick="backIndexPage()">
-                            <i class="fa fa-reply"></i> 返回
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SQL配置 -->
             <div th:replace="mapping/customTableSQL :: content"></div>
 
-            <!-- 半结构化配置 -->
             <div th:replace="mapping/customTableSemiStructured :: content"></div>
         </div>
     </form>

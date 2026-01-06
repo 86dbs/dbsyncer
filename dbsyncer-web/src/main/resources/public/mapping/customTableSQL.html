@@ -4,9 +4,22 @@
 
 <div th:fragment="content" th:if="${type eq 'source' and mapping?.extendedType eq 'SQL'}">
 
+    <div th:if="${type ne 'source'}">
+        <div class="flex justify-between mt-4">
+            <div>目标表不支持</div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL配置 -->
     <div class="grid grid-cols-2 mt-5">
         <div class="form-item">
-            <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
+            <label class="form-label">数据源表</label>
             <select id="custom_table_select" class="form-control" name="customTable">
                 <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'" th:data-sql="${t?.extInfo?.CT_SQL}" th:data-main-table="${t?.extInfo?.CT_MAIN}"/>
             </select>
@@ -180,7 +193,7 @@
         return formattedLines.join('\n').trim();
     }
 
-    $(function () {
+   $(function () {
         function showCustomTableInfo($customSelect, $mainSelect){
             let selected = $customSelect.getValues();
             if (selected.length >= 1) {
