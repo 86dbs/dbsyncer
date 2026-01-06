@@ -630,111 +630,128 @@ function getMappping(id) {
     // 更新当前任务ID
     currentMappingId = id;
 
-     doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
-         if (data.success == true) {
-             // 保存当前闭包中的任务ID
-             var localId = id;
-             // 检查当前任务ID是否与闭包中的任务ID相同，如果不同则不创建定时器
-             if (currentMappingId === localId) {
-                 // 直接创建新定时器，因为已经清除了旧的
-                 timer3 = setInterval(function () {
-                             // 再次检查当前任务ID是否与闭包中的任务ID相同
-                             if (currentMappingId === localId) {
-                         $.ajax({
-                                url: '/mapping/get?id='+ localId + "&refresh=" + new Date().getTime(),
-                                type: 'GET',
-                                success: function(dataJson) {
-                                    // 重新绑定事件处理器（如果需要）
-                                    var success = dataJson.success;
-                                    var m = dataJson.resultValue;
-                                    if(success && m ){
-                                       // 安全访问对象属性
-                                       var mid = m && m.id ? m.id : '';
-                                       var model = m && m.model ? m.model : '';
-                                       var modelname =  '';
-                                       if(model == 'full'){
-                                         modelname= '全量';
-                                       }else if(model == 'increment'){
-                                         modelname= '增量';
-                                       }else if(model == 'fullIncrement'){
+    // 立即加载一次数据，确保页面初始加载时就能显示表数据
+    $.ajax({
+        url: '/mapping/get?id='+ id + "&refresh=" + new Date().getTime(),
+        type: 'GET',
+        success: function(dataJson) {
+            // 重新绑定事件处理器（如果需要）
+            var success = dataJson.success;
+            var m = dataJson.resultValue;
+            if(success && m ){
+                // 安全访问对象属性
+                var mid = m && m.id ? m.id : '';
+                var meta = m && m.meta ? m.meta : {};
+                var total = meta.total || 0;
+                var successCount = meta.success || 0;
+                var failCount = meta.fail || 0;
+
+                // 更新表映射关系数据
+                updateTableGroups(mid, total, successCount, failCount);
+            }
+        },
+        error: function() {
+            // alert('刷新失败');
+        }
+    });
+
+    doGetWithoutLoading("/monitor/getRefreshIntervalSeconds", {}, function (data) {
+        if (data.success == true) {
+            // 保存当前闭包中的任务ID
+            var localId = id;
+            // 检查当前任务ID是否与闭包中的任务ID相同，如果不同则不创建定时器
+            if (currentMappingId === localId) {
+                // 直接创建新定时器，因为已经清除了旧的
+                timer3 = setInterval(function () {
+                    // 再次检查当前任务ID是否与闭包中的任务ID相同
+                    if (currentMappingId === localId) {
+                        $.ajax({
+                            url: '/mapping/get?id='+ localId + "&refresh=" + new Date().getTime(),
+                            type: 'GET',
+                            success: function(dataJson) {
+                                // 重新绑定事件处理器（如果需要）
+                                var success = dataJson.success;
+                                var m = dataJson.resultValue;
+                                if(success && m ){
+                                    // 安全访问对象属性
+                                    var mid = m && m.id ? m.id : '';
+                                    var model = m && m.model ? m.model : '';
+                                    var modelname =  '';
+                                    if(model == 'full'){
+                                        modelname= '全量';
+                                    }else if(model == 'increment'){
+                                        modelname= '增量';
+                                    }else if(model == 'fullIncrement'){
                                         modelname= '混合';
-                                       }
-                                       var meta = m && m.meta ? m.meta : {};
-                                       var total = meta.total || 0;
-                                       var success = meta.success || 0;
-                                       var fail = meta.fail || 0;
-                                       var beginTime = meta.beginTime || 0;
-                                       var updateTime = meta.updateTime || 0;
-                                       var syncPhase = meta.syncPhase || {};
-                                       var syncPhaseCode = syncPhase.code || 0;
-                                       var counting = meta.counting || false;
-                                       var errorMessage = meta.errorMessage || '';
-                                       var id = meta.id || '';
-                                       var state = meta.state || '';
-
-                                        var stateHtmlContent = '<p>任务状态：</p>';
-                                        if(state == 0){
-                                              stateHtmlContent += '<span class="highlight-number total-color">未运行</span>';
-                                        }else if(state == 1){
-                                             stateHtmlContent += '<span class="highlight-number success-color">运行中</span>';
-                                        }else if(state == 2){
-                                             stateHtmlContent += '<span class="highlight-number error-color">停止中</span>';
-                                        }else if(state == 3){
-                                             stateHtmlContent += '<span class="highlight-number error-color">异常</span>';
-                                        }
-                                        $("#mappingState").html(stateHtmlContent);
-
-                                      $("#metaPercent").find("p").text("数据同步进度:");
-                                      if (counting) {
-                                          $("#metaPercent").find(".highlight-number").text("(正在统计中)");
-                                      } else {
-                                           if (total > 0 && (success + fail) > 0) {
-                                              var progress = ((success + fail) / total * 100).toFixed(2);
-                                              $("#metaPercent").find(".highlight-number").text(progress + "%");
-                                              // 同步更新文本标签
-                                              $("#progressText").text(progress + "%");
-                                          } else {
-                                              $("#metaPercent").find(".highlight-number").text("0%");
-                                              $("#progressText").text("0%");
-                                          }
-                                      }
-                                     // 重新绘制环形图
-                                      updateProgressChart(total, success, fail);
-                                        // 计算耗时
-                             //               var seconds = Math.floor((updateTime - beginTime) / 1000);
-                             //               htmlContent += ',耗时:';
-                             //               if (seconds < 60) {
-                             //                   htmlContent += seconds + '秒';
-                             //               } else {
-                             //                   var minutes = Math.floor(seconds / 60);
-                             //                   htmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
-                             //               }
-
-                                       $("#metaModel").html('<p>总数:</p>' + '<span class="highlight-number total-color">'+total+'</span>');
-
-                                       if (success > 0) {
-                                         $("#metaSuccess").html('<p>成功:</p>' +'<span class="highlight-number success-color">'+ success+'</span>');
-                                       }
-                                       if (fail > 0) {
-                                         $("#metaError").html('<p>失败:</p>' +'<span class="highlight-number error-color">'+ fail+'</span>');
-                                       }
-
                                     }
-                                },
-                                error: function() {
-                                   // alert('刷新失败');
+                                    var meta = m && m.meta ? m.meta : {};
+                                    var total = meta.total || 0;
+                                    var successCount = meta.success || 0;
+                                    var failCount = meta.fail || 0;
+                                    var beginTime = meta.beginTime || 0;
+                                    var updateTime = meta.updateTime || 0;
+                                    var syncPhase = meta.syncPhase || {};
+                                    var syncPhaseCode = syncPhase.code || 0;
+                                    var counting = meta.counting || false;
+                                    var errorMessage = meta.errorMessage || '';
+                                    var metaId = meta.id || '';
+                                    var state = meta.state || '';
+
+                                    var stateHtmlContent = '<p>任务状态：</p>';
+                                    if(state == 0){
+                                        stateHtmlContent += '<span class="highlight-number total-color">未运行</span>';
+                                    }else if(state == 1){
+                                        stateHtmlContent += '<span class="highlight-number success-color">运行中</span>';
+                                    }else if(state == 2){
+                                        stateHtmlContent += '<span class="highlight-number error-color">停止中</span>';
+                                    }else if(state == 3){
+                                        stateHtmlContent += '<span class="highlight-number error-color">异常</span>';
+                                    }
+                                    $("#mappingState").html(stateHtmlContent);
+
+                                    $("#metaPercent").find("p").text("数据同步进度:");
+                                    if (counting) {
+                                        $("#metaPercent").find(".highlight-number").text("(正在统计中)");
+                                    } else {
+                                        if (total > 0 && (successCount + failCount) > 0) {
+                                            var progress = ((successCount + failCount) / total * 100).toFixed(2);
+                                            $("#metaPercent").find(".highlight-number").text(progress + "%");
+                                            // 同步更新文本标签
+                                            $("#progressText").text(progress + "%");
+                                        } else {
+                                            $("#metaPercent").find(".highlight-number").text("0%");
+                                            $("#progressText").text("0%");
+                                        }
+                                    }
+                                    // 重新绘制环形图
+                                    updateProgressChart(total, successCount, failCount);
+
+                                    $("#metaModel").html('<p>总数:</p>' + '<span class="highlight-number total-color">'+total+'</span>');
+
+                                    if (successCount > 0) {
+                                        $("#metaSuccess").html('<p>成功:</p>' +'<span class="highlight-number success-color">'+ successCount+'</span>');
+                                    }
+                                    if (failCount > 0) {
+                                        $("#metaError").html('<p>失败:</p>' +'<span class="highlight-number error-color">'+ failCount+'</span>');
+                                    }
+
+                                    // 更新表映射关系数据
+                                    updateTableGroups(mid, total, successCount, failCount);
                                 }
-                            });
-                             }
-                         }, data.resultValue * 1000);
-             }
-         } else {
-             bootGrowl(data.resultValue, "danger");
-         }
-     });
+                            },
+                            error: function() {
+                                // alert('刷新失败');
+                            }
+                        });
+                    }
+                }, data.resultValue * 1000);
+            }
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
     //通过其他方式返回时也需要清除定时器
     bindNavbarEvents();
-
 }
  // 绑定导航栏所有按钮的点击事件，清除timer3
 function bindNavbarEvents() {
@@ -802,7 +819,7 @@ $(function () {
          clearTimer();
          backIndexPage();
     });
-    
+
     // 添加页面卸载事件监听，确保在用户离开页面时清除定时器
     $(window).on('beforeunload pagehide', function() {
         clearTimer();
@@ -811,3 +828,54 @@ $(function () {
     });
 
 })
+
+// 更新表映射关系数据
+function updateTableGroups(mappingId, total, successCount, failCount) {
+    $.ajax({
+        url: '/mapping/getTableGroups?id=' + mappingId,
+        type: 'GET',
+        success: function(dataJson) {
+            var isSuccess = dataJson.success;
+            var tableGroups = dataJson.resultValue;
+            if (isSuccess && tableGroups) {
+                var tbody = $("#tableGroupProgress tbody");
+                tbody.empty();
+
+                if (tableGroups.length > 0) {
+                    $.each(tableGroups, function(index, tableGroup) {
+                        var sourceTableName = tableGroup.sourceTable ? tableGroup.sourceTable.name : '';
+                        var targetTableName = tableGroup.targetTable ? tableGroup.targetTable.name : '';
+
+                        // 计算进度（使用每个表组自己的同步进度数据）
+                        var tableTotal = tableGroup.estimatedTotal || tableGroup.total || 0;
+                        var tableSuccess = tableGroup.success || 0;
+                        var tableFail = tableGroup.fail || 0;
+                        var progress = tableTotal > 0 ? ((tableSuccess + tableFail) / tableTotal * 100).toFixed(2) : 0;
+                        var progressValue = parseFloat(progress);
+
+                        // 创建与图二一致的进度条HTML结构
+                        var progressHtml = '<div style="display: flex; align-items: center; width: 100%;">' +
+                            '<div style="font-weight: bold; margin-right: 8px; min-width: 40px;">' + progress + '%</div>' +
+                            '<div style="flex: 1; height: 10px; background-color: #f0f0f0; border-radius: 5px; overflow: hidden;">' +
+                            '<div style="height: 100%; width: ' + progress + '%; background-color: #4CAF50; border-radius: 5px;"></div>' +
+                            '</div>' +
+                            '</div>';
+
+                        var tr = '<tr>' +
+                            '<td>' + sourceTableName + '</td>' +
+                            '<td>' + targetTableName + '</td>' +
+                            '<td>' + progressHtml + '</td>' +
+                            '</tr>';
+                        tbody.append(tr);
+                    });
+                } else {
+                    var tr = '<tr><td colspan="3" class="text-center">暂无表映射关系</td></tr>';
+                    tbody.append(tr);
+                }
+            }
+        },
+        error: function() {
+            // alert('获取表映射关系失败');
+        }
+    });
+}

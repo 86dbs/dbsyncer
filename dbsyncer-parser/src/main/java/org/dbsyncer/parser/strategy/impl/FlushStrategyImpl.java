@@ -13,6 +13,7 @@ import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -109,9 +110,36 @@ public final class FlushStrategyImpl implements FlushStrategy {
         Assert.hasText(metaId, "Meta id can not be empty.");
         Meta meta = cacheService.get(metaId, Meta.class);
         if (meta != null) {
+            // 更新Meta的总数
             meta.getFail().getAndAdd(writer.getFailData().size());
             meta.getSuccess().getAndAdd(writer.getSuccessData().size());
             meta.setUpdateTime(Instant.now().toEpochMilli());
+            
+            // 更新TableGroup的进度
+            if (writer.getTableGroupId() != null) {
+                try {
+                    TableGroup tableGroup = profileComponent.getTableGroup(writer.getTableGroupId());
+                    if (tableGroup != null) {
+                        tableGroup.setFail(tableGroup.getFail() + writer.getFailData().size());
+                        tableGroup.setSuccess(tableGroup.getSuccess() + writer.getSuccessData().size());
+                        // 动态调整总数
+                        long completed = tableGroup.getSuccess() + tableGroup.getFail();
+                        if (tableGroup.getTotal() < completed) {
+                            tableGroup.setTotal(completed);
+                        }
+                        // 如果estimatedTotal为0，则设置为sourceTable.getCount()（用于首次计算进度）
+                        if (tableGroup.getEstimatedTotal() == 0 && tableGroup.getSourceTable() != null && tableGroup.getSourceTable().getCount() > 0) {
+                            tableGroup.setEstimatedTotal(tableGroup.getSourceTable().getCount());
+                        } else if (tableGroup.getEstimatedTotal() == 0) {
+                            // 如果sourceTable.getCount()为0，则使用total作为estimatedTotal
+                            tableGroup.setEstimatedTotal(tableGroup.getTotal());
+                        }
+                        profileComponent.editConfigModel(tableGroup);
+                    }
+                } catch (Exception e) {
+                    logger.error("更新TableGroup进度失败", e);
+                }
+            }
         }
     }
 

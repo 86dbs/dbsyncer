@@ -195,7 +195,7 @@ function bindMappingOperationButtons() {
         }
 
         // 对于编辑按钮，使用updateHash而不是doLoader
-        if ($(this).hasClass('fa-pencil') || $(this).find('.fa-pencil').length > 0) {
+        if ($(this).hasClass('fa-pencil') || $(this).find('.fa-pencil').length > 0 || $(this).hasClass('fa-eye') || $(this).find('.fa-eye').length > 0) {
             updateHash($url);
         } else if ($(this).hasClass('queryData') || $(this).hasClass('fa-file-text-o') || $(this).find('.fa-file-text-o').length > 0) {
             // 日志按钮特殊处理

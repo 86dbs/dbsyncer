@@ -160,6 +160,11 @@ public class TableGroup extends AbstractConfigModel {
             currentVersion = TableGroup.Version;
             profileComponent.editConfigModel(this);
         }
+        // 如果estimatedTotal为0，则设置为sourceTable.getCount()
+        if (this.estimatedTotal == 0 && this.sourceTable != null && this.sourceTable.getCount() > 0) {
+            this.estimatedTotal = this.sourceTable.getCount();
+            profileComponent.editConfigModel(this);
+        }
         isInit = true;
     }
 
@@ -233,6 +238,12 @@ public class TableGroup extends AbstractConfigModel {
     private Object[] cursors; // 当前TableGroup的cursor
     private boolean fullCompleted; // 流式处理是否完成
     private String errorMessage; // 错误信息
+    
+    // 同步进度相关字段
+    private long success; // 成功计数
+    private long fail; // 失败计数
+    private long total; // 总数
+    private long estimatedTotal; // 预计总数（用于计算进度）
 
     public Object[] getCursors() {
         return cursors;
@@ -258,6 +269,38 @@ public class TableGroup extends AbstractConfigModel {
         this.errorMessage = errorMessage;
     }
 
+    public long getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(long success) {
+        this.success = success;
+    }
+
+    public long getFail() {
+        return fail;
+    }
+
+    public void setFail(long fail) {
+        this.fail = fail;
+    }
+
+    public long getTotal() {
+        return total;
+    }
+
+    public void setTotal(long total) {
+        this.total = total;
+    }
+
+    public long getEstimatedTotal() {
+        return estimatedTotal;
+    }
+
+    public void setEstimatedTotal(long estimatedTotal) {
+        this.estimatedTotal = estimatedTotal;
+    }
+
     @JsonIgnore
     public boolean hasError() {
         return Strings.isNotBlank(errorMessage);
@@ -272,6 +315,11 @@ public class TableGroup extends AbstractConfigModel {
         fullCompleted = false;
         cursors = null;
         this.errorMessage = null;
+        // 重置同步进度
+        this.success = 0;
+        this.fail = 0;
+        this.total = 0;
+        this.estimatedTotal = 0;
     }
 
     @JsonIgnore

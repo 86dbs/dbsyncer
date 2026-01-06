@@ -8,6 +8,7 @@ import org.dbsyncer.biz.vo.MappingJsonVo;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.ProjectGroupVo;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,18 @@ public class MappingController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getTableGroups")
+    @ResponseBody
+    public RestResult getTableGroups(@RequestParam(value = "id") String id) {
+        try {
+            List<TableGroup> tableGroups = tableGroupService.getTableGroupAll(id);
+            return RestResult.restSuccess(tableGroups);
+        } catch (Exception e) {
+            logger.error("获取表映射关系失败", e);
+            return RestResult.restFail("获取表映射关系失败: " + e.getMessage());
         }
     }
 
