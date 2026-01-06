@@ -21,5 +21,5 @@ RUN cd dbsyncer && \
     ./startup.sh
 
 EXPOSE 18686
-VOLUME [ "/app/dbsyncer/conf", "/app/dbsyncer/data" ,"/app/dbsyncer/plugins"]
+VOLUME [ "/app/dbsyncer/conf", "/app/dbsyncer/data", "/app/dbsyncer/logs" ,"/app/dbsyncer/plugins"]
 ENTRYPOINT ["/bin/bash","-c","/app/dbsyncer/bin/startup-docker.sh"]
