@@ -497,8 +497,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 String operation = rs.getString(2);  // 'I', 'U', 'D'
                 // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
 
-                // 构建行数据
+                // 构建行数据和列名列表
                 List<Object> row = new ArrayList<>();
+                List<String> columnNames = new ArrayList<>();
                 for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
                     if (columnsToSkip.contains(i)) {
                         continue;
@@ -517,12 +518,13 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     }
                     
                     row.add(value);
+                    columnNames.add(columnName);
                 }
 
                 // 转换操作类型
                 String operationCode = convertOperation(operation);
 
-                dmlEvents.add(new CTEvent(tableName, operationCode, row, version));
+                dmlEvents.add(new CTEvent(tableName, operationCode, row, version, columnNames));
             }
             
             // 继续处理后续行
@@ -531,8 +533,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 String operation = rs.getString(2);  // 'I', 'U', 'D'
                 // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
 
-                // 构建行数据
+                // 构建行数据和列名列表
                 List<Object> row = new ArrayList<>();
+                List<String> columnNames = new ArrayList<>();
                 for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
                     if (columnsToSkip.contains(i)) {
                         continue;
@@ -551,12 +554,13 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     }
                     
                     row.add(value);
+                    columnNames.add(columnName);
                 }
 
                 // 转换操作类型
                 String operationCode = convertOperation(operation);
 
-                dmlEvents.add(new CTEvent(tableName, operationCode, row, version));
+                dmlEvents.add(new CTEvent(tableName, operationCode, row, version, columnNames));
             }
             return dmlEvents;
         });
@@ -669,7 +673,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                             ctevent.getRow(),
                             null,
                             isEnd ? stopVersion : null,
-                            null  // 列名信息（可选）
+                            ctevent.getColumnNames()  // 使用CTEvent中保存的列名信息
                     );
                     sendChangedEvent(rowEvent);
                 }
