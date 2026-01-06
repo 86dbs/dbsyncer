@@ -59,7 +59,7 @@ docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 
 * 运行命令
 ```shell
-docker run -d -p 18686:18686 -v ./your_path/data:/app/dbsyncer/data -v ./your_path/plugins:/app/dbsyncer/plugins --restart=unless-stopped -e TZ="Asia/Shanghai" --name=dbsyncer registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+docker run -d -p 18686:18686 -v ./your_path/config:/app/dbsyncer/config -v ./your_path/data:/app/dbsyncer/data -v ./your_path/logs:/app/dbsyncer/logs -v ./your_path/plugins:/app/dbsyncer/plugins --restart=unless-stopped -e TZ="Asia/Shanghai" --name=dbsyncer registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
 ```
 
 ## ⚙️手动编译
