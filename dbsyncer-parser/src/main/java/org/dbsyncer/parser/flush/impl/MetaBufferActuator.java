@@ -379,7 +379,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             result.error = e.getMessage();
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(context.getTargetTableName());
-            result.addFailData(targetDataList);
+            result.addFailData(sourceDataList);  // 存储源数据，便于重试时直接使用
         }
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
     }

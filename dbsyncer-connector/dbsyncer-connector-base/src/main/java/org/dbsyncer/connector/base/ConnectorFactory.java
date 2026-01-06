@@ -244,7 +244,7 @@ public class ConnectorFactory implements DisposableBean {
             } catch (Exception e) {
                 Result result = new Result();
                 result.error = e.getMessage();
-                result.addFailData(context.getTargetList());
+                result.addFailData(context.getSourceList());  // 存储源数据，便于重试时直接使用
                 if (context.isEnablePrintTraceInfo()) {
                     logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
                             context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));

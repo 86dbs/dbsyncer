@@ -258,6 +258,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
         Result result = new Result();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        List<Map> sourceList = context.getSourceList();  // 获取源数据列表
         try {
             final BulkRequest request = new BulkRequest();
             final String pk = pkFields.get(0).getName();
@@ -275,14 +276,14 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             for (int i = 0; i < items.length; i++) {
                 r = items[i];
                 if (r.isFailed()) {
-                    result.getFailData().add(data.get(i));
+                    result.getFailData().add(sourceList.get(i));
                     result.error = r.getFailureMessage();
                 }
                 result.getSuccessData().add(data.get(i));
             }
         } catch (Exception e) {
             // 记录错误数据
-            result.addFailData(data);
+            result.addFailData(sourceList);  // 存储源数据，便于重试时直接使用
             result.error = e.getMessage();
             logger.error(e.getMessage());
         }

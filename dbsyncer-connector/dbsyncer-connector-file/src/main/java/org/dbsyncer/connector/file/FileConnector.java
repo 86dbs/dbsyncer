@@ -206,7 +206,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             }).collect(Collectors.toList());
             IOUtils.writeLines(lines, System.lineSeparator(), output, "UTF-8");
         } catch (Exception e) {
-            result.addFailData(data);
+            result.addFailData(context.getSourceList());  // 存储源数据，便于重试时直接使用
             result.error = e.getMessage();
             logger.error(e.getMessage());
         } finally {

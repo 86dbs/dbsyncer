@@ -3,28 +3,23 @@
  */
 package org.dbsyncer.biz.impl;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
 import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.*;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
@@ -38,12 +33,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -131,30 +121,28 @@ public class DataSyncServiceImpl implements DataSyncService {
             return target;
         }
 
-        // 4、反序列
-        final Picker picker = new Picker(tableGroup);
-        final Map<String, Field> fieldMap = picker.getTargetFieldMap();
+        // 4、反序列化
+        // 注意：存储的是源数据（sourceDataList），字段名是源表字段名
+        // 所以需要使用源表字段类型来反序列化，直接使用源数据
+        final Map<String, Field> sourceFieldMap = tableGroup.getSourceTable().getColumn().stream()
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
         message.getRowMap().forEach((k, v) -> {
-            if (fieldMap.containsKey(k)) {
-                try {
-                    Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
-                    // 处理二进制对象显示
-                    if (prettyBytes) {
-                        if (val instanceof byte[]) {
-                            byte[] b = (byte[]) val;
-                            if (b.length > 128) {
-                                target.put(k, String.format("byte[%d]", b.length));
-                                return;
-                            }
-                            target.put(k, Arrays.toString(b));
+            if (sourceFieldMap.containsKey(k)) {
+                Object val = BinlogMessageUtil.deserializeValue(sourceFieldMap.get(k).getType(), v);
+                // 处理二进制对象显示
+                if (prettyBytes) {
+                    if (val instanceof byte[]) {
+                        byte[] b = (byte[]) val;
+                        if (b.length > 128) {
+                            target.put(k, String.format("byte[%d]", b.length));
                             return;
                         }
+                        target.put(k, Arrays.toString(b));
+                        return;
                     }
-                    target.put(k, val);
-                } catch (Exception e) {
-                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(),
-                            (v == null ? null : v.getClass().getName()), v);
                 }
+                target.put(k, val);
             }
         });
         return target;
@@ -172,36 +160,36 @@ public class DataSyncServiceImpl implements DataSyncService {
             logger.warn("重试失败：无法从存储中获取数据, metaId={}, messageId={}", metaId, messageId);
             return messageId;
         }
-        
+
         Map binlogData = getBinlogData(row, false);
         if (CollectionUtils.isEmpty(binlogData)) {
             logger.warn("重试失败：无法解析binlog数据, metaId={}, messageId={}", metaId, messageId);
             return messageId;
         }
-        
+
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         if (StringUtil.isBlank(tableGroupId)) {
             logger.warn("重试失败：tableGroupId为空, metaId={}, messageId={}", metaId, messageId);
             return messageId;
         }
-        
+
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
         if (StringUtil.isBlank(event)) {
             logger.warn("重试失败：event为空, metaId={}, messageId={}", metaId, messageId);
             return messageId;
         }
-        
+
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         if (tableGroup == null) {
             logger.warn("重试失败：TableGroup不存在, tableGroupId={}, metaId={}, messageId={}", tableGroupId, metaId, messageId);
             return messageId;
         }
-        
+
         if (tableGroup.getSourceTable() == null) {
             logger.warn("重试失败：TableGroup的源表为空, tableGroupId={}, metaId={}, messageId={}", tableGroupId, metaId, messageId);
             return messageId;
         }
-        
+
         String sourceTableName = tableGroup.getSourceTable().getName();
 
         // 判断是否为DDL事件
@@ -212,7 +200,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                 logger.warn("DDL重做失败：无法从存储中获取DDLConfig数据, messageId={}", messageId);
                 return messageId;
             }
-            
+
             try {
                 // 反序列化为DDLConfig对象
                 DDLConfig ddlConfig = JsonUtil.jsonToObj(ddlConfigJson, DDLConfig.class);
@@ -220,20 +208,20 @@ public class DataSyncServiceImpl implements DataSyncService {
                     logger.warn("DDL重做失败：DDLConfig数据无效, messageId={}", messageId);
                     return messageId;
                 }
-                
+
                 // 创建DDLChangedEvent，通过BufferActuatorRouter执行，会自动调用parseDDl方法
                 // parseDDl方法会执行DDL、更新表结构、更新字段映射、持久化配置
                 DDLChangedEvent ddlChangedEvent = new DDLChangedEvent(
-                    sourceTableName, 
-                    event, 
-                    ddlConfig.getSql(), 
-                    null, 
-                    null
+                        sourceTableName,
+                        event,
+                        ddlConfig.getSql(),
+                        null,
+                        null
                 );
-                
+
                 // 设置ChangedOffset的metaId（changedOffset是final的，需要通过getChangedOffset()获取后设置）
                 ddlChangedEvent.getChangedOffset().setMetaId(metaId);
-                
+
                 // 直接执行DDL重做（不走队列，同步执行）
                 bufferActuatorRouter.executeDirectly(metaId, ddlChangedEvent);
             } catch (Exception e) {
@@ -248,22 +236,24 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (StringUtil.isNotBlank(retryDataParams)) {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
-            
-            // 从binlogData的key中提取列名
-            // 注意：由于binlogData是Map，keySet的顺序可能不是原始数据的顺序
-            // 但这是重试场景，列名主要用于字段映射，顺序不是关键
+
+            // 从binlogData的key中提取列名（源表字段名）
             List<String> columnNames = new ArrayList<>();
             if (!CollectionUtils.isEmpty(binlogData)) {
                 columnNames.addAll(binlogData.keySet());
             }
-            
-            // 转换为源字段
+
+            // 直接使用源数据，转换为List<Object>格式
             final Picker picker = new Picker(tableGroup);
-            List<Object> changedRow = picker.pickSourceData(binlogData);
-            
+            List<Field> sourceFields = picker.getSourceFields();
+            List<Object> changedRow = new ArrayList<>();
+            for (Field field : sourceFields) {
+                changedRow.add(binlogData.get(field.getName()));
+            }
+
             // 创建RowChangedEvent时传入columnNames，确保重试时能正确处理
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null, columnNames);
-            
+
             try {
                 // 直接执行数据重做（不走队列，同步执行）
                 bufferActuatorRouter.executeDirectly(metaId, changedEvent);
@@ -273,7 +263,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                 return messageId;
             }
         }
-        
+
         // 执行成功后，删除存储中的失败数据并更新统计
         try {
             storageService.remove(StorageEnum.DATA, metaId, messageId);
@@ -290,7 +280,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             // 删除数据或更新统计失败，记录日志但不影响重试结果
             logger.error("重试成功但清理数据或更新统计失败, metaId={}, messageId={}, error={}", metaId, messageId, e.getMessage(), e);
         }
-        
+
         return messageId;
     }
 
