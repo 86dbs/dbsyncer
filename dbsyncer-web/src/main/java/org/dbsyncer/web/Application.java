@@ -13,6 +13,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -24,9 +25,28 @@ import java.util.Properties;
 public class Application {
 
     public static void main(String[] args) throws IOException {
+        // 初始化日志目录，解决Log4j2启动时目录不存在的问题
+        initLogDirectory();
+
         SpringApplication application = new SpringApplication(Application.class);
         setProperties(application);
         application.run(args);
+    }
+
+    /**
+     * 创建日志目录（logs），确保目录存在
+     */
+    private static void initLogDirectory() {
+        // 日志目录路径，与Log4j2配置中的路径保持一致
+        File logDir = new File("logs");
+        if (!logDir.exists()) {
+            boolean created = logDir.mkdirs();
+            if (created) {
+                System.out.println("日志目录 logs 创建成功");
+            } else {
+                System.err.println("日志目录 logs 创建失败，请检查目录权限");
+            }
+        }
     }
 
     private static void setProperties(SpringApplication application) throws IOException {
