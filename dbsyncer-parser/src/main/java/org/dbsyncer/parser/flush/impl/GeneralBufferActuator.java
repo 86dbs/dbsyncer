@@ -11,6 +11,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.LogService;
+import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.ddl.DDLParser;
@@ -84,6 +86,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private TableGroupContext tableGroupContext;
+
+    @Resource
+    private LogService logService;
 
     @PostConstruct
     public void init() {
@@ -217,9 +222,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         actualSourceFields = buildFieldsFromColumnNames(response.getColumnNames(), sourceFields);
         // 如果无法构建完整的字段列表，回退到使用传入的 sourceFields
         if (actualSourceFields.size() != sourceFields.size()) {
-            String msg = String.format("无法根据列名构建完整的字段列表，表名: %s, 列名: %s",
-                    response.getTableName(), response.getColumnNames());
+            String msg = String.format("字段定位错误！mappingId: %s, 表名: %s, 列名: %s",
+                    mapping.getId(), response.getTableName(), response.getColumnNames());
             logger.error(msg);
+            logService.log(LogType.MappingLog.RUNNING, msg);
             throw new RuntimeException(msg);
         }
 
@@ -416,12 +422,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 // 这样可以防止 columnNames 中有重复列名时，同一个字段被添加多次
                 if (addedFieldNames.add(columnName)) {
                     fields.add(field);
-                } else {
+                }
+                if (fields.size() == tableColumns.size()) {
                     return fields;
                 }
             } else {
                 // 如果找不到对应的字段，记录警告但继续处理
-                logger.warn("CDC 事件中的列名 '{}' 在 TableGroup 中未找到对应的字段信息", columnName);
+                logger.warn("事件中的列名 '{}' 在 TableGroup 中未找到对应的字段信息", columnName);
             }
         }
 

@@ -437,21 +437,32 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         /**
          * 从数据库元数据中获取表的列名列表
+         * 使用 INFORMATION_SCHEMA 直接查询，明确指定数据库名和表名，避免查询到其他 schema 的同名表
          */
         private List<String> getTableColumnNames(String tableName) {
             try {
                 return getConnectorInstance().execute(databaseTemplate -> {
                     List<String> columns = new ArrayList<>();
-                    try (java.sql.ResultSet rs = databaseTemplate.getSimpleConnection().getConnection()
-                            .getMetaData().getColumns(null, database, tableName, null)) {
-                        while (rs.next()) {
-                            columns.add(rs.getString("COLUMN_NAME"));
+                    // 使用 INFORMATION_SCHEMA 直接查询，明确指定数据库名和表名
+                    // 这样可以确保只查询指定数据库中的表，避免查询到其他 schema 的同名表
+                    String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                                "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
+                                "ORDER BY ORDINAL_POSITION";
+                    try (java.sql.PreparedStatement ps = databaseTemplate.getSimpleConnection()
+                            .getConnection().prepareStatement(sql)) {
+                        ps.setString(1, database);
+                        ps.setString(2, tableName);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                columns.add(rs.getString("COLUMN_NAME"));
+                            }
                         }
                     }
                     return columns;
                 });
             } catch (Exception e) {
-                logger.error("从数据库元数据获取列名失败，tableName: {}, error: {}", tableName, e.getMessage());
+                logger.error("从数据库元数据获取列名失败，database: {}, tableName: {}, error: {}", 
+                            database, tableName, e.getMessage());
                 return null;
             }
         }
