@@ -60,21 +60,26 @@ docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 * 运行命令
 ```shell
 docker run -d \
-  -p 18686:18686 \
-  -v ./your_path/config:/app/dbsyncer/config \
-  -v ./your_path/data:/app/dbsyncer/data \
-  -v ./your_path/logs:/app/dbsyncer/logs \
-  -v ./your_path/plugins:/app/dbsyncer/plugins \
-  --restart=unless-stopped \
-  -e TZ="Asia/Shanghai" \
   --name=dbsyncer \
+  --restart=unless-stopped \
+  -p 18686:18686 \
+  -e TZ="Asia/Shanghai" \
+  -m 5g \
+  --memory-swap=5g \
+  -v /opt/dbsyncer/conf:/app/dbsyncer/conf \
+  -v /opt/dbsyncer/data:/app/dbsyncer/data \
+  -v /opt/dbsyncer/logs:/app/dbsyncer/logs \
+  -v /opt/dbsyncer/plugins:/app/dbsyncer/plugins \
+  --log-driver json-file \
+  --log-opt max-size=100m \
+  --log-opt max-file=7 \
   registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
 
 # 容器日志
 docker logs --tail 20 dbsyncer
 
 # 本地日志文件
-ls -la ./your_path/logs/
+ls -la /opt/dbsyncer/logs
 
 # 实时日志（Ctrl+C退出）
 docker logs -f dbsyncer
