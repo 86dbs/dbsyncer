@@ -66,7 +66,6 @@ docker run -d \
   -e TZ="Asia/Shanghai" \
   -m 5g \
   --memory-swap=5g \
-  -v /opt/dbsyncer/conf:/app/dbsyncer/conf \
   -v /opt/dbsyncer/data:/app/dbsyncer/data \
   -v /opt/dbsyncer/logs:/app/dbsyncer/logs \
   -v /opt/dbsyncer/plugins:/app/dbsyncer/plugins \
