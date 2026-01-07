@@ -24,6 +24,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -71,7 +74,9 @@ public class MappingController extends BaseController {
     public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
         model.put("mapping", mappingService.getMappingCustomTable(id, type));
         model.put("type", type);
-        model.put("dataType", Arrays.asList(DataTypeEnum.values()));
+        List<DataTypeEnum> dataTypeEnums = Arrays.asList(DataTypeEnum.values());
+        Collections.sort(dataTypeEnums, Comparator.comparing(DataTypeEnum::name));
+        model.put("dataType", dataTypeEnums);
         return "mapping/customTable";
     }
 
@@ -160,6 +165,18 @@ public class MappingController extends BaseController {
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.refreshMappingTables(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/getCustomTable")
+    @ResponseBody
+    public RestResult getCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.getCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

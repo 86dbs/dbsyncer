@@ -6,6 +6,7 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,14 @@ public interface MappingService {
      * @param id
      */
     String refreshMappingTables(String id);
+
+    /**
+     * 获取自定义表
+     *
+     * @param params
+     * @return
+     */
+    Table getCustomTable(Map<String, String> params);
 
     /**
      * 保存自定义表

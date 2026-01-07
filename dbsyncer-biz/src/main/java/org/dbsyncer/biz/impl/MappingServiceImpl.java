@@ -342,6 +342,24 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
+    public Table getCustomTable(Map<String, String> params) {
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        Mapping mapping = assertMappingExist(id);
+        String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+        String customTable = params.get("customTable");
+        boolean isSource = StringUtil.equals("source", type);
+        List<Table> tables = getMappingTables(mapping, isSource);
+        if (!CollectionUtils.isEmpty(tables)) {
+            for (Table t : tables) {
+                if (StringUtil.equals(t.getName(), customTable)) {
+                    return t;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
     public String saveCustomTable(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         Mapping mapping = assertMappingExist(id);
@@ -574,39 +592,41 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notEmpty(metaInfos.get(0).getColumn(), "获取字段信息异常");
 
         List<Table> tables = getMappingTables(mapping, isSource);
+        // 首次添加
+        if (CollectionUtils.isEmpty(tables)) {
+            tables.add(newTable);
+            return;
+        }
+
         // 新增操作
+        Set<String> exist = tables.stream().map(Table::getName).collect(Collectors.toSet());
+        String newTableName = newTable.getName();
         if (StringUtil.equals("add", operator)) {
+            if (exist.contains(newTableName)) {
+                throw new BizException(String.format("%s或自定义表名重复，请更换", isSource ? "数据源" : "目标源"));
+            }
             tables.add(newTable);
             // 按升序展示表
             Collections.sort(tables, Comparator.comparing(Table::getName));
             return;
         }
 
-        // 修改操作
-        Assert.hasText(customTable, "请选择数据源表.");
-        boolean update = false;
-        for (Table t : tables) {
-            switch (TableTypeEnum.getTableType(t.getType())) {
-                case SQL:
-                case SEMI_STRUCTURED:
-                    // 已存在则修改
-                    if (StringUtil.equals(t.getName(), customTable)) {
-                        t.setName(newTable.getName());
-                        t.setExtInfo(newTable.getExtInfo());
-                        update = true;
-                    }
-                    break;
-                default:
-                    break;
+        // 修改操作，更改表名
+        if (!StringUtil.equals(customTable, newTableName)) {
+            if (exist.contains(newTableName)) {
+                throw new BizException(String.format("%s或自定义表名重复，请更换", isSource ? "数据源" : "目标源"));
             }
-            if (update) {
+        }
+        for (Table t : tables) {
+            if (StringUtil.equals(t.getName(), customTable)) {
+                t.setName(newTable.getName());
+                t.setExtInfo(newTable.getExtInfo());
                 break;
             }
         }
-        if (update) {
-            // 按升序展示表
-            Collections.sort(tables, Comparator.comparing(Table::getName));
-        }
+
+        // 按升序展示表
+        Collections.sort(tables, Comparator.comparing(Table::getName));
     }
 
     private List<Table> getMappingTables(Mapping mapping, boolean isSource) {

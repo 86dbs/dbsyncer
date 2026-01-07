@@ -54,17 +54,6 @@
         </tr>
         </thead>
         <tbody id="fieldList">
-        <tr class="field-data-row" title="双击设置/取消主键 | 拖动排序" draggable="true">
-            <td>1</td>
-            <td>id</td>
-            <td>LONG</td>
-            <td><i title="主键" class="fa fa-key text-warning"></i></td>
-            <td>
-                <button class="table-action-btn delete fieldDelete" type="button" title="删除">
-                    <i class="fa fa-trash"></i>
-                </button>
-            </td>
-        </tr>
         <tr class="field-input-row">
             <td></td>
             <td><input class="form-control field-name-input" type="text" maxlength="64" placeholder="请输入字段名"/></td>
@@ -154,7 +143,7 @@
             });
             
             // 绑定双击主键事件
-            $newRow.on('dblclick', function(e) {
+            $newRow.on('dbl click', function(e) {
                 togglePrimaryKey($newRow);
             });
             
@@ -296,7 +285,7 @@
             });
             
             // 绑定双击主键事件
-            $row.on('dblclick', function(e) {
+            $row.on('dbl click', function(e) {
                 togglePrimaryKey($row);
             });
             
@@ -336,6 +325,15 @@
             return fieldData;
         }
 
+        function handleResponse(response, title) {
+            if (response.success === true) {
+                bootGrowl(title + "成功！", "success");
+                doLoader('/mapping/pageCustomTable?id=' + $("#mappingId").val() + '&type=' + $("#customType").val());
+            } else {
+                bootGrowl(response.message || title + "失败", "danger");
+            }
+        }
+
         //添加
         $("#addSemiTableBtn").on('click', function () {
             const fieldData = collectFieldData();
@@ -356,7 +354,7 @@
                     customTable: selected[0]
                 }
                 doPoster("/mapping/removeCustomTable", data, function (response) {
-                    // handleResponse(response, "删除自定义表");
+                    handleResponse(response, "删除自定义表");
                 });
             }
         });
