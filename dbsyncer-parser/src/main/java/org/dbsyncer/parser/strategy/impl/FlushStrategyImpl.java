@@ -82,6 +82,19 @@ public final class FlushStrategyImpl implements FlushStrategy {
         total.getAndAdd(result.getFailData().size());
         total.getAndAdd(result.getSuccessData().size());
 
+        // 更新TableGroup的增量同步数量
+        if (result.getTableGroupId() != null) {
+            try {
+                TableGroup tableGroup = profileComponent.getTableGroup(result.getTableGroupId());
+                if (tableGroup != null) {
+                    tableGroup.setIncrementSuccess(tableGroup.getIncrementSuccess() + result.getSuccessData().size());
+                    profileComponent.editConfigModel(tableGroup);
+                }
+            } catch (Exception e) {
+                logger.error("更新TableGroup增量同步数量失败", e);
+            }
+        }
+
         flush(metaId, result, event);
     }
 
@@ -114,19 +127,24 @@ public final class FlushStrategyImpl implements FlushStrategy {
             meta.getFail().getAndAdd(writer.getFailData().size());
             meta.getSuccess().getAndAdd(writer.getSuccessData().size());
             meta.setUpdateTime(Instant.now().toEpochMilli());
-            
+
             // 更新TableGroup的进度
             if (writer.getTableGroupId() != null) {
                 try {
                     TableGroup tableGroup = profileComponent.getTableGroup(writer.getTableGroupId());
                     if (tableGroup != null) {
-                        tableGroup.setFail(tableGroup.getFail() + writer.getFailData().size());
+                        // 更新全量和增量的成功/失败计数
                         tableGroup.setSuccess(tableGroup.getSuccess() + writer.getSuccessData().size());
-                        // 动态调整总数
-                        long completed = tableGroup.getSuccess() + tableGroup.getFail();
+                        tableGroup.setFail(tableGroup.getFail() + writer.getFailData().size());
+                        tableGroup.setFullSuccess(tableGroup.getFullSuccess() + writer.getSuccessData().size());
+                        tableGroup.setFullFail(tableGroup.getFullFail() + writer.getFailData().size());
+
+                        // 动态调整总数（只调整全量总数）
+                        long completed = tableGroup.getFullSuccess() + tableGroup.getFullFail();
                         if (tableGroup.getTotal() < completed) {
                             tableGroup.setTotal(completed);
                         }
+
                         // 如果estimatedTotal为0，则设置为sourceTable.getCount()（用于首次计算进度）
                         if (tableGroup.getEstimatedTotal() == 0 && tableGroup.getSourceTable() != null && tableGroup.getSourceTable().getCount() > 0) {
                             tableGroup.setEstimatedTotal(tableGroup.getSourceTable().getCount());
@@ -134,6 +152,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
                             // 如果sourceTable.getCount()为0，则使用total作为estimatedTotal
                             tableGroup.setEstimatedTotal(tableGroup.getTotal());
                         }
+
+                        // 更新状态：如果fail > 0，状态为"异常"，否则为"正常"
+                        tableGroup.setStatus(tableGroup.getFail() > 0 ? "异常" : "正常");
                         profileComponent.editConfigModel(tableGroup);
                     }
                 } catch (Exception e) {

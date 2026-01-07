@@ -846,12 +846,23 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         var sourceTableName = tableGroup.sourceTable ? tableGroup.sourceTable.name : '';
                         var targetTableName = tableGroup.targetTable ? tableGroup.targetTable.name : '';
 
-                        // 计算进度（使用每个表组自己的同步进度数据）
+                        // 计算进度（使用全量同步数据，避免增量数据影响进度）
                         var tableTotal = tableGroup.estimatedTotal || tableGroup.total || 0;
-                        var tableSuccess = tableGroup.success || 0;
-                        var tableFail = tableGroup.fail || 0;
-                        var progress = tableTotal > 0 ? ((tableSuccess + tableFail) / tableTotal * 100).toFixed(2) : 0;
+                        var fullSuccess = tableGroup.fullSuccess || 0;
+                        var fullFail = tableGroup.fullFail || 0;
+                        var progress = tableTotal > 0 ? ((fullSuccess + fullFail) / tableTotal * 100).toFixed(2) : 0;
+                        // 限制进度不超过100%
+                        if (progress > 100) {
+                            progress = 100;
+                        }
                         var progressValue = parseFloat(progress);
+
+                        // 获取增量同步数量
+                        var incrementSuccess = tableGroup.incrementSuccess || 0;
+
+                        // 获取状态
+                        var status = tableGroup.status || '正常';
+                        var statusClass = status === '异常' ? 'label-danger' : 'label-success';
 
                         // 创建与图二一致的进度条HTML结构
                         var progressHtml = '<div style="display: flex; align-items: center; width: 100%;">' +
@@ -864,12 +875,14 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         var tr = '<tr>' +
                             '<td>' + sourceTableName + '</td>' +
                             '<td>' + targetTableName + '</td>' +
+                            '<td>' + incrementSuccess + '</td>' +
                             '<td>' + progressHtml + '</td>' +
+                            '<td><span class="label ' + statusClass + '">' + status + '</span></td>' +
                             '</tr>';
                         tbody.append(tr);
                     });
                 } else {
-                    var tr = '<tr><td colspan="3" class="text-center">暂无表映射关系</td></tr>';
+                    var tr = '<tr><td colspan="5" class="text-center">暂无表映射关系</td></tr>';
                     tbody.append(tr);
                 }
             }

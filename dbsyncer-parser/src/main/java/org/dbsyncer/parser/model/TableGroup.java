@@ -240,10 +240,14 @@ public class TableGroup extends AbstractConfigModel {
     private String errorMessage; // 错误信息
     
     // 同步进度相关字段
-    private long success; // 成功计数
-    private long fail; // 失败计数
-    private long total; // 总数
+    private long success; // 成功计数（全量+增量总和，用于兼容）
+    private long fail; // 失败计数（全量+增量总和，用于兼容）
+    private long total; // 总数（全量总数）
     private long estimatedTotal; // 预计总数（用于计算进度）
+    private long incrementSuccess; // 增量同步成功数量
+    private String status; // 同步状态（"正常"/"异常"）
+    private long fullSuccess; // 全量同步成功数量
+    private long fullFail; // 全量同步失败数量
 
     public Object[] getCursors() {
         return cursors;
@@ -301,6 +305,38 @@ public class TableGroup extends AbstractConfigModel {
         this.estimatedTotal = estimatedTotal;
     }
 
+    public long getIncrementSuccess() {
+        return incrementSuccess;
+    }
+
+    public void setIncrementSuccess(long incrementSuccess) {
+        this.incrementSuccess = incrementSuccess;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public long getFullSuccess() {
+        return fullSuccess;
+    }
+
+    public void setFullSuccess(long fullSuccess) {
+        this.fullSuccess = fullSuccess;
+    }
+
+    public long getFullFail() {
+        return fullFail;
+    }
+
+    public void setFullFail(long fullFail) {
+        this.fullFail = fullFail;
+    }
+
     @JsonIgnore
     public boolean hasError() {
         return Strings.isNotBlank(errorMessage);
@@ -320,6 +356,10 @@ public class TableGroup extends AbstractConfigModel {
         this.fail = 0;
         this.total = 0;
         this.estimatedTotal = 0;
+        this.incrementSuccess = 0;
+        this.status = "正常";
+        this.fullSuccess = 0;
+        this.fullFail = 0;
     }
 
     @JsonIgnore
