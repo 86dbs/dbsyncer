@@ -245,6 +245,7 @@ public class TableGroup extends AbstractConfigModel {
     private long total; // 总数（全量总数）
     private long estimatedTotal; // 预计总数（用于计算进度）
     private long incrementSuccess; // 增量同步成功数量
+    private long incrementFail; // 增量同步失败数量
     private String status; // 同步状态（"正常"/"异常"）
     private long fullSuccess; // 全量同步成功数量
     private long fullFail; // 全量同步失败数量
@@ -337,6 +338,14 @@ public class TableGroup extends AbstractConfigModel {
         this.fullFail = fullFail;
     }
 
+    public long getIncrementFail() {
+        return incrementFail;
+    }
+
+    public void setIncrementFail(long incrementFail) {
+        this.incrementFail = incrementFail;
+    }
+
     @JsonIgnore
     public boolean hasError() {
         return Strings.isNotBlank(errorMessage);
@@ -357,6 +366,7 @@ public class TableGroup extends AbstractConfigModel {
         this.total = 0;
         this.estimatedTotal = 0;
         this.incrementSuccess = 0;
+        this.incrementFail = 0;
         this.status = "正常";
         this.fullSuccess = 0;
         this.fullFail = 0;
