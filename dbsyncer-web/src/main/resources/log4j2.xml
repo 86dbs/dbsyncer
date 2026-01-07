@@ -4,6 +4,7 @@
 <configuration status="WARN" monitorInterval="30">
 
     <Properties>
+        <!-- LOG_HOME: Docker环境下必须通过 -DLOG_HOME 系统属性设置绝对路径，否则使用相对路径 logs -->
         <Property name="LOG_HOME">${sys:LOG_HOME:-logs}</Property>
         <!-- 日志输出格式 -->
         <property name="LOG_PATTERN" value="%d{HH:mm:ss:SSS} [%thread] [%p] - %c{1.} %M:%L - %m%n" />
@@ -42,6 +43,7 @@
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="64 MB"/>
             </Policies>
+            <DefaultRolloverStrategy max="24"/>
         </RollingFile>
 
         <!-- Error Log -->
@@ -53,6 +55,7 @@
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="64 MB"/>
             </Policies>
+            <DefaultRolloverStrategy max="24"/>
         </RollingFile>
 
     </appenders>
