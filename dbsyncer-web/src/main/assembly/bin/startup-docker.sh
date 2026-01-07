@@ -2,6 +2,12 @@
 SCRIPT_DIR=$(cd $(dirname $0);pwd)
 DBS_HOME=$(cd $SCRIPT_DIR/..;pwd)
 echo DBS_HOME=$DBS_HOME
+
+# 确保 conf 目录存在
+if [ ! -d "$DBS_HOME/conf" ]; then
+  mkdir -p "$DBS_HOME/conf"
+fi
+
 # application.properties
 CONFIG_PATH=$DBS_HOME'/conf/application.properties'
 if [ ! -f ${CONFIG_PATH} ]; then
