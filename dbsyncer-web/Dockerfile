@@ -20,9 +20,6 @@ RUN cd dbsyncer && \
     cd bin && \
     chmod +x startup.sh startup-docker.sh
 
-# 创建日志目录
-RUN mkdir -p /app/dbsyncer/logs
-
 EXPOSE 18686
 VOLUME [ "/app/dbsyncer/conf", "/app/dbsyncer/data", "/app/dbsyncer/logs" ,"/app/dbsyncer/plugins"]
 ENTRYPOINT ["/bin/bash","-c","/app/dbsyncer/bin/startup-docker.sh"]
