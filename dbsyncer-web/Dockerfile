@@ -15,10 +15,13 @@ RUN unzip dbsyncer-$DBSYNCER_VERSION-bin.zip && \
     rm -rf dbsyncer-$DBSYNCER_VERSION-bin.zip && \
     mv dbsyncer-$DBSYNCER_VERSION dbsyncer
 
+# 只设置权限，不启动服务
 RUN cd dbsyncer && \
     cd bin && \
-    chmod +x startup.sh \
-    ./startup.sh
+    chmod +x startup.sh startup-docker.sh
+
+# 创建日志目录
+RUN mkdir -p /app/dbsyncer/logs
 
 EXPOSE 18686
 VOLUME [ "/app/dbsyncer/conf", "/app/dbsyncer/data", "/app/dbsyncer/logs" ,"/app/dbsyncer/plugins"]
