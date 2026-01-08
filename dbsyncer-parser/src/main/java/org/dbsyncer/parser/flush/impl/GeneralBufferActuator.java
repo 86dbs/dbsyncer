@@ -178,6 +178,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                         throw new RuntimeException(e);
                     }
                 });
+                // 补充 refreshOffset 调用，确保 SCAN 事件后更新快照点
+                bufferActuatorRouter.refreshOffset(response.getChangedOffset());
                 break;
             case ROW:
                 pickers.forEach(picker -> {

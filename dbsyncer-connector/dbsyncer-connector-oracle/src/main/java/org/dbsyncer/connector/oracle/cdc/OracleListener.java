@@ -50,6 +50,7 @@ public class OracleListener extends AbstractDatabaseListener {
 
     @Override
     public void init() {
+        super.init(); // 初始化异步持久化执行器
         sourceTable.forEach(table -> tableFiledMap.put(table.getName(), table.getColumn()));
     }
 

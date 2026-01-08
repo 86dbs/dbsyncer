@@ -291,7 +291,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             }
 
             if (notUniqueCodeEvent && EventType.isUpdate(header.getEventType())) {
-                refresh(header);
+                // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     long tableId = data.getTableId();
@@ -304,7 +304,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 return;
             }
             if (notUniqueCodeEvent && EventType.isWrite(header.getEventType())) {
-                refresh(header);
+                // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     long tableId = data.getTableId();
@@ -317,7 +317,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 return;
             }
             if (notUniqueCodeEvent && EventType.isDelete(header.getEventType())) {
-                refresh(header);
+                // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
                     long tableId = data.getTableId();

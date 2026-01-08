@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerException;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,7 +49,7 @@ import java.util.stream.Collectors;
  * @Date 2020-04-26 15:28
  */
 @Component
-public final class IncrementPuller implements ScheduledTaskJob, Puller {
+public final class IncrementPuller implements Puller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -79,10 +77,6 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
     @Resource
     private TableGroupContext tableGroupContext;
 
-    @PostConstruct
-    private void init() {
-        scheduledTaskService.start(3000, this);
-    }
 
     @Override
     public void start(Mapping mapping) throws Exception {
@@ -158,19 +152,6 @@ public final class IncrementPuller implements ScheduledTaskJob, Puller {
         }
     }
 
-    @Override
-    public void run() {
-        profileComponent.getMetaAll().forEach(meta -> {
-            Listener listener = meta.getListener();
-            if (listener != null) {
-                try {
-                    listener.flushEvent();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-    }
 
     private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) throws Exception {
         ConnectorConfig connectorConfig = connector.getConfig();

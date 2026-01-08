@@ -15,11 +15,14 @@ import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,6 +46,10 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     private Watcher watcher;
     // 保存上次持久化的 snapshot，用于判断是否发生变化
     private Map<String, String> lastFlushedSnapshot;
+    // 待持久化的快照点（异步批量持久化）
+    private volatile Map<String, String> pendingSnapshot = null;
+    // 异步持久化执行器
+    private ScheduledExecutorService flushExecutor;
 
     @Override
     public void register(Watcher watcher) {
@@ -86,48 +93,78 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     }
 
     @Override
+    public void init() {
+        // 初始化异步持久化执行器
+        initFlushExecutor();
+    }
+
+    /**
+     * 初始化异步持久化执行器
+     * 在 Listener 初始化时调用（通过 init() 方法）
+     */
+    private void initFlushExecutor() {
+        if (flushExecutor == null) {
+            flushExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "snapshot-flush-" + metaId);
+                t.setDaemon(true);
+                return t;
+            });
+            // 每 3 秒检查并写入最新快照
+            flushExecutor.scheduleWithFixedDelay(() -> {
+                Map<String, String> snapshot = pendingSnapshot;
+                // 如果 pendingSnapshot 不为空且与上次持久化的不同，则持久化
+                // 使用 Objects.equals 比较，避免重复持久化相同的快照点
+                if (snapshot != null && !Objects.equals(snapshot, lastFlushedSnapshot)) {
+                    try {
+                        logger.info("snapshot changed, flushing: {}", snapshot);
+                        watcher.flushEvent(snapshot);
+                        lastFlushedSnapshot = new HashMap<>(snapshot);
+                        pendingSnapshot = null;
+                    } catch (Exception e) {
+                        logger.error("异步持久化失败", e);
+                    }
+                }
+            }, 3, 3, TimeUnit.SECONDS);
+        }
+    }
+
+    @Override
     public void flushEvent() throws Exception {
         if (CollectionUtils.isEmpty(snapshot)) {
             return;
         }
         
-        // 判断 snapshot 是否发生变化，只有变化时才持久化
-        if (hasSnapshotChanged(snapshot, lastFlushedSnapshot)) {
-            logger.info("snapshot changed, flushing: {}", snapshot);
-            watcher.flushEvent(snapshot);
-            // 更新上次持久化的 snapshot（深拷贝）
-            lastFlushedSnapshot = new HashMap<>(snapshot);
-        }
+        pendingSnapshot = new HashMap<>(snapshot);
     }
     
     /**
-     * 判断 snapshot 是否发生变化
-     * 
-     * @param current 当前 snapshot
-     * @param last 上次持久化的 snapshot
-     * @return true 如果发生变化，false 如果未变化
+     * 系统关闭时立即持久化最新快照点
      */
-    private boolean hasSnapshotChanged(Map<String, String> current, Map<String, String> last) {
-        if (last == null || last.isEmpty()) {
-            // 首次持久化：如果当前 snapshot 不为空，则需要持久化
-            return !current.isEmpty();
-        }
-        
-        // 大小不同，肯定有变化
-        if (current.size() != last.size()) {
-            return true;
-        }
-        
-        // 比较所有 key-value
-        for (Map.Entry<String, String> entry : current.entrySet()) {
-            String lastValue = last.get(entry.getKey());
-            if (!Objects.equals(entry.getValue(), lastValue)) {
-                return true;
+    @PreDestroy
+    public void destroy() {
+        if (flushExecutor != null) {
+            flushExecutor.shutdown();
+            try {
+                // 等待正在执行的任务完成
+                if (!flushExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    flushExecutor.shutdownNow();
+                }
+                // 系统关闭时立即持久化最新快照
+                Map<String, String> snapshot = pendingSnapshot;
+                if (snapshot != null && !Objects.equals(snapshot, lastFlushedSnapshot)) {
+                    try {
+                        watcher.flushEvent(snapshot);
+                    } catch (Exception e) {
+                        logger.error("系统关闭时持久化快照失败", e);
+                    }
+                }
+            } catch (InterruptedException e) {
+                flushExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
-        
-        return false;
     }
+    
 
     @Override
     public void forceFlushEvent() throws Exception {
