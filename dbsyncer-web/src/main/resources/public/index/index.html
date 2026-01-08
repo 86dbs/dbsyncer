@@ -69,13 +69,13 @@
                 <div class="col-md-12">
                     <!-- 任务开始位置 -->
                     <div class="form-group" th:if="${connectorSize gt 0}">
-                        <div class="col-md-12" style="display: flex; align-items: center; gap: 20px;">
+                        <div class="col-md-12">
                             <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
                                 <span class="fa fa-plus"></span>添加任务([[${mappings?.size()} ?: 0]])
                             </button>
                             
                             <!-- 布局切换按钮 -->
-                            <div class="btn-group">
+                            <div class="btn-group" style="margin-left: 10px;">
                                 <button type="button" class="btn btn-default active" id="listViewBtn" title="列表视图">
                                     <i class="fa fa-list"></i>
                                 </button>
@@ -84,41 +84,15 @@
                                 </button>
                             </div>
                             
-                            <!-- 搜索框 -->
-                            <div class="input-group" style="width: 200px;">
-                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="搜索任务..."
+                            <div class="input-group" style="display: inline-flex; width: 300px; margin-left: 20px;">
+                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="按名称搜索任务..."
                                     style="border-radius: 4px 0 0 4px;" />
-                                <span class="input-group-btn">
+                                <span class="input-group-btn" style="display: inline;">
                                     <button class="btn btn-default" id="mappingSearchBtn" type="button"
                                         style="border-radius: 0 4px 4px 0; margin-left: -1px;">
-                                        <i class="fa fa-search"></i>
+                                        <i class="fa fa-search"></i> 搜索
                                     </button>
                                 </span>
-                            </div>
-                            
-                            <!-- 三个下拉框 -->
-                            <div style="display: flex; align-items: center; gap: 15px;">
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span>状态：</span>
-                                    <select class="form-control input-sm" id="filterState" style="width: 80px;">
-                                        <option value="">全部</option>
-                                        <option value="0">未开始</option>
-                                        <option value="1">进行中</option>
-                                        <option value="3">异常</option>
-                                    </select>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span>数据源：</span>
-                                    <select class="form-control input-sm" id="filterSource" style="width: 100px;">
-                                        <option value="">全部</option>
-                                    </select>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <span>目标源：</span>
-                                    <select class="form-control input-sm" id="filterTarget" style="width: 100px;">
-                                        <option value="">全部</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -229,27 +203,6 @@
                                                                 th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
                                                                 class="btn btn-xs btn-primary margin-right-5"><i
                                                                     class="fa fa-pencil"></i> 编辑</a>
-                                                            <a th:attr="data-url='/mapping/copy?id='+${m?.id}"
-                                                                href="javascript:;"
-                                                                class="btn btn-xs btn-info margin-right-5"><i
-                                                                    class="fa fa-copy"></i> 复制</a>
-                                                            <a href="javascript:;"
-                                                                th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
-                                                                class="btn btn-xs btn-primary margin-right-5"><i
-                                                                    class="fa fa-eye"></i> 详情</a>
-                                                            <!-- 未运行 -->
-                                                            <a th:if="${m?.meta?.state ne 1}"
-                                                                th:attr="data-url='/mapping/remove?id='+${m?.id}"
-                                                                href="javascript:;" confirm="true"
-                                                                confirmMessage="确认删除任务?"
-                                                                class="btn btn-xs btn-danger margin-right-5"><i
-                                                                    class="fa fa-trash"></i> 删除</a>
-                                                            <!-- 重置 -->
-                                                            <a th:attr="data-url='/mapping/reset?id='+${m?.id}"
-                                                                href="javascript:;" confirm="true"
-                                                                confirmMessage="确认重置任务?"
-                                                                class="btn btn-xs btn-default margin-right-5"><i
-                                                                    class="fa fa-refresh"></i> 重置</a>
                                                             <!-- 日志 -->
                                                             <a th:if="${m?.meta?.fail gt 0}" th:attr="id=${m?.meta?.id}"
                                                                 href="javascript:;"
@@ -273,73 +226,72 @@
                         <!-- 卡片视图 -->
                         <div id="cardView" class="col-md-12" style="display: none;">
                             <div class="row mappingList">
-                                <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-3 col-sm-6 mb-3">
-                                    <div class="panel panel-default dbsyncer_block" style="height: 280px; display: flex; flex-direction: column; max-width: 260px; cursor: pointer;" th:attr="data-id=${m?.id}">
-                                        <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; font-size: 16px; padding: 10px;">
-                                            <!-- 任务信息头部 -->
-                                            <div class="text-center mb-4">
-                                                <h4 th:text="${m?.name}" class="text-primary" style="margin: 0; font-size: 20px;"></h4>
-                                                <div id="stateId" class="mt-2" style="font-size: 14px;">
-                                                    <span th:if="${m?.meta?.state eq 0}"
-                                                        class="label label-info">未运行</span>
-                                                    <span th:if="${m?.meta?.state eq 1}"
-                                                        class="label label-success">运行中</span>
-                                                    <span th:if="${m?.meta?.state eq 2}"
-                                                        class="label label-warning">停止中</span>
-                                                    <span th:if="${m?.meta?.state eq 3}"
-                                                        class="label label-danger">异常</span>
-                                                    <!-- 任务异常提示 -->
-                                                    <span th:if="${m?.meta?.state eq 3}"
-                                                        th:title="${m?.meta?.errorMessage}"
-                                                        class="mapping-error-sign" data-toggle="tooltip"
-                                                        data-placement="top"><i
-                                                            class="fa fa-exclamation-triangle"></i></span>
+                                <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-5 col-sm-6 mb-3">
+                                    <div class="panel panel-default dbsyncer_block">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <!-- 任务信息头部 -->
+                                                <div class="col-md-12">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <h5 th:text="${m?.name}" class="text-primary" style="margin: 0;"></h5>
+                                                        <div id="stateId">
+                                                            <span th:if="${m?.meta?.state eq 0}"
+                                                                class="label label-info">未运行</span>
+                                                            <span th:if="${m?.meta?.state eq 1}"
+                                                                class="label label-success">运行中</span>
+                                                            <span th:if="${m?.meta?.state eq 2}"
+                                                                class="label label-warning">停止中</span>
+                                                            <span th:if="${m?.meta?.state eq 3}"
+                                                                class="label label-danger">异常</span>
+                                                            <!-- 任务异常提示 -->
+                                                            <span th:if="${m?.meta?.state eq 3}"
+                                                                th:title="${m?.meta?.errorMessage}"
+                                                                class="mapping-error-sign" data-toggle="tooltip"
+                                                                data-placement="top"><i
+                                                                    class="fa fa-exclamation-triangle"></i></span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- 同步类型 -->
+                                                    <div class="mb-2">
+                                                        <span class="text-muted">同步类型：</span>
+                                                        <span th:text="${m?.meta?.model}"></span>
+                                                    </div>
                                                 </div>
-                                            </div>
-
-                                            <!-- 同步类型 -->
-                                            <div class="mb-3 border rounded" style="background-color: #f8f9fa; padding: 8px;">
-                                                <span class="text-muted">同步类型：</span>
-                                                <span th:text="${m?.meta?.model}"></span>
-                                            </div>
-
-                                            <!-- 连接信息 -->
-                                            <div class="mb-4 flex-grow-1">
-                                                <div class="border rounded mb-2" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 8px; white-space: nowrap; overflow: hidden;">
-                                                    <img draggable="false"
-                                                        th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}"
-                                                        style="width: 16px; height: 16px; margin-right: 3px;">
-                                                    <span th:text="${m?.sourceConnector?.name}"
-                                                        th:title="${m?.sourceConnector?.name}" style="margin-right: 3px; overflow: hidden; text-overflow: ellipsis; flex: 1;"></span>
-                                                    <span th:if="${m?.sourceConnector?.running}" th:title="连接正常"
-                                                        style="margin-left: 0;"><i
-                                                            class="fa fa-circle well-sign-green"></i></span>
-                                                    <span th:unless="${m?.sourceConnector?.running}"
-                                                        th:title="连接异常" style="margin-left: 0;"><i
-                                                            class="fa fa-times-circle-o well-sign-red"></i></span>
+                                                
+                                                <!-- 连接信息 -->
+                                                <div class="col-md-12 mb-3">
+                                                    <div class="d-flex align-items-center mb-1">
+                                                        <span class="text-muted mr-2">起始源：</span>
+                                                        <img draggable="false"
+                                                            th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}"
+                                                            style="width: 16px; height: 16px; margin-right: 5px;">
+                                                        <span th:text="${m?.sourceConnector?.name}"
+                                                            th:title="${m?.sourceConnector?.name}"></span>
+                                                        <span th:if="${m?.sourceConnector?.running}" th:title="连接正常"
+                                                            style="margin-left: 5px;"><i
+                                                                class="fa fa-circle well-sign-green"></i></span>
+                                                        <span th:unless="${m?.sourceConnector?.running}"
+                                                            th:title="连接异常" style="margin-left: 5px;"><i
+                                                                class="fa fa-times-circle-o well-sign-red"></i></span>
+                                                    </div>
+                                                    
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="text-muted mr-2">目标源：</span>
+                                                        <img draggable="false"
+                                                            th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}"
+                                                            style="width: 16px; height: 16px; margin-right: 5px;">
+                                                        <span th:text="${m?.targetConnector?.name}"
+                                                            th:title="${m?.targetConnector?.name}"></span>
+                                                        <span th:if="${m?.targetConnector?.running}" th:title="连接正常"
+                                                            style="margin-left: 5px;"><i
+                                                                class="fa fa-circle well-sign-green"></i></span>
+                                                        <span th:unless="${m?.targetConnector?.running}"
+                                                            th:title="连接异常" style="margin-left: 5px;"><i
+                                                                class="fa fa-times-circle-o well-sign-red"></i></span>
+                                                    </div>
                                                 </div>
-
-                                                <div class="p-3 border rounded" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 10px; white-space: nowrap; overflow: hidden;">
-                                                    <span class="text-muted mr-1">目标源：</span>
-
-                                                <div class="text-center my-1">
-                                                    <i class="fa fa-arrow-down text-muted"></i>
-                                                </div>
-
-                                                <div class="border rounded" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 8px; white-space: nowrap; overflow: hidden;">
-                                                    <img draggable="false"
-                                                        th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}"
-                                                        style="width: 16px; height: 16px; margin-right: 3px;">
-                                                    <span th:text="${m?.targetConnector?.name}"
-                                                        th:title="${m?.targetConnector?.name}" style="margin-right: 3px; overflow: hidden; text-overflow: ellipsis; flex: 1;"></span>
-                                                    <span th:if="${m?.targetConnector?.running}" th:title="连接正常"
-                                                        style="margin-left: 0;"><i
-                                                            class="fa fa-circle well-sign-green"></i></span>
-                                                    <span th:unless="${m?.targetConnector?.running}"
-                                                        th:title="连接异常" style="margin-left: 0;"><i
-                                                            class="fa fa-times-circle-o well-sign-red"></i></span>
-                                                </div>
-
+                                                
                                                 <!-- 同步统计信息 -->
                                                 <div class="col-md-12 mb-3">
                                                     <table class="table table-hover table-sm">
@@ -379,7 +331,7 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-
+                                                
                                                 <!-- 操作按钮 -->
                                                 <div class="col-md-12">
                                                     <div class="operation-buttons btn-group btn-group-sm">
@@ -399,51 +351,12 @@
                                                             th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
                                                             class="btn btn-xs btn-primary margin-right-5 mb-1"><i
                                                                 class="fa fa-pencil"></i> 编辑</a>
-                                                        <a th:attr="data-url='/mapping/copy?id='+${m?.id}"
-                                                            href="javascript:;"
-                                                            class="btn btn-xs btn-info margin-right-5 mb-1"><i
-                                                                class="fa fa-copy"></i> 复制</a>
-                                                        <a href="javascript:;"
-                                                            th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
-                                                            class="btn btn-xs btn-primary margin-right-5 mb-1"><i
-                                                                class="fa fa-eye"></i> 详情</a>
-                                                        <!-- 未运行 -->
-                                                        <a th:if="${m?.meta?.state ne 1}"
-                                                            th:attr="data-url='/mapping/remove?id='+${m?.id}"
-                                                            href="javascript:;" confirm="true"
-                                                            confirmMessage="确认删除任务?"
-                                                            class="btn btn-xs btn-danger margin-right-5 mb-1"><i
-                                                                class="fa fa-trash"></i> 删除</a>
-                                                        <!-- 重置 -->
-                                                        <a th:attr="data-url='/mapping/reset?id='+${m?.id}"
-                                                            href="javascript:;" confirm="true"
-                                                            confirmMessage="确认重置任务?"
-                                                            class="btn btn-xs btn-default margin-right-5 mb-1"><i
-                                                                class="fa fa-refresh"></i> 重置</a>
                                                         <!-- 日志 -->
                                                         <a th:if="${m?.meta?.fail gt 0}" th:attr="id=${m?.meta?.id}"
                                                             href="javascript:;"
                                                             class="btn btn-xs btn-default queryData margin-right-5 mb-1"><i
                                                                 class="fa fa-file-text-o"></i> 日志</a>
                                                     </div>
-                                            </div>
-
-                                            <!-- 操作按钮 -->
-                                            <div class="pt-4" style="margin-top: auto;">
-                                                <div class="operation-buttons" style="display: flex; justify-content: center; gap: 15px;">
-                                                    <!-- 未运行 -->
-                                                    <a th:if="${m?.meta?.state ne 1}"
-                                                        th:attr="data-url='/mapping/start?id='+${m?.id}"
-                                                        href="javascript:;"
-                                                        class="btn btn-sm btn-primary" style="min-width: 100px;"><i
-                                                            class="fa fa-check-circle-o"></i> 启动任务</a>
-                                                    <!-- 运行中 -->
-                                                    <a th:if="${m?.meta?.state eq 1}"
-                                                        th:attr="data-url='/mapping/stop?id='+${m?.id}"
-                                                        href="javascript:;"
-                                                        class="btn btn-sm btn-warning" style="min-width: 100px;"><i
-                                                            class="fa fa-times-circle-o"></i> 停止任务</a>
-
                                                 </div>
                                             </div>
                                         </div>
