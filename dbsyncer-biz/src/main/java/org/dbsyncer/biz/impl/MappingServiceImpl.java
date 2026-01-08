@@ -13,6 +13,7 @@ import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVo;
 import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -235,12 +236,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 只返回自定义表类型
         if (!CollectionUtils.isEmpty(tables)) {
             List<Table> mainTables = new ArrayList<>();
-            List<Table> customTables = new ArrayList<>();
+            List<TableVO> customTables = new ArrayList<>();
             tables.forEach(t -> {
                 switch (TableTypeEnum.getTableType(t.getType())) {
                     case SQL:
-                    case SEMI_STRUCTURED:
-                        customTables.add(t);
+                    case SEMI:
+                        TableVO tableVO = new TableVO();
+                        BeanUtils.copyProperties(t, tableVO);
+                        customTables.add(tableVO);
                         break;
                     case TABLE:
                         mainTables.add(t);
@@ -409,7 +412,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         tables.forEach(t -> {
             switch (TableTypeEnum.getTableType(t.getType())) {
                 case SQL:
-                case SEMI_STRUCTURED:
+                case SEMI:
                     customTables.add(t);
                     break;
                 default:
@@ -620,6 +623,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         for (Table t : tables) {
             if (StringUtil.equals(t.getName(), customTable)) {
                 t.setName(newTable.getName());
+                t.setColumn(newTable.getColumn());
                 t.setExtInfo(newTable.getExtInfo());
                 break;
             }
@@ -646,7 +650,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 Table t = iterator.next();
                 switch (TableTypeEnum.getTableType(t.getType())) {
                     case SQL:
-                    case SEMI_STRUCTURED:
+                    case SEMI:
                         if (StringUtil.equals(t.getName(), tableName)) {
                             iterator.remove();
                             return;

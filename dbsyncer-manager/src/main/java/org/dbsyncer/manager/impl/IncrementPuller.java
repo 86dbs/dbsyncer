@@ -218,7 +218,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 }
                 break;
             case SQL:
-            case SEMI_STRUCTURED:
+            case SEMI:
                 if (!filterTable.contains(table.getName())) {
                     customTable.add(table);
                     filterTable.add(table.getName());

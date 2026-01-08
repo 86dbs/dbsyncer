@@ -5,11 +5,9 @@ package org.dbsyncer.connector.file.cdc;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.FileConnectorInstance;
 import org.dbsyncer.connector.file.FileException;
-import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -19,10 +17,8 @@ import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
@@ -76,7 +72,7 @@ public class FileListener extends AbstractListener {
             final FileConfig config = instance.getConfig();
             connected = true;
 
-            separator = config.getSeparator();
+            separator = "|".charAt(0);
             initPipeline(config.getFileDir());
             watchService = FileSystems.getDefault().newWatchService();
             Path p = Paths.get(config.getFileDir());
@@ -111,23 +107,24 @@ public class FileListener extends AbstractListener {
     }
 
     private void initPipeline(String fileDir) throws IOException {
-        for (FileSchema fileSchema : instance.getFileSchemaList()) {
-            String fileName = fileSchema.getFileName();
-            String file = fileDir.concat(fileName);
-            Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
-
-            final RandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
-            final String filePosKey = getFilePosKey(fileName);
-            if (snapshot.containsKey(filePosKey)) {
-                raf.seek(NumberUtil.toLong((String) snapshot.get(filePosKey), 0L));
-            } else {
-                raf.seek(raf.length());
-                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
-                super.forceFlushEvent();
-            }
-
-            pipeline.put(fileName, new PipelineResolver(fileSchema.getFields(), raf));
-        }
+        // TODO
+//        for (Table t : customTable) {
+//            String fileName = t.getName();
+//            String file = fileDir.concat(fileName);
+//            Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
+//
+//            final RandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
+//            final String filePosKey = getFilePosKey(fileName);
+//            if (snapshot.containsKey(filePosKey)) {
+//                raf.seek(NumberUtil.toLong((String) snapshot.get(filePosKey), 0L));
+//            } else {
+//                raf.seek(raf.length());
+//                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
+//                super.forceFlushEvent();
+//            }
+//
+//            pipeline.put(fileName, new PipelineResolver(t.getColumn(), raf));
+//        }
     }
 
     @Override

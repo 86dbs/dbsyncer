@@ -37,7 +37,7 @@ public enum TableTypeEnum {
     /**
      * ‌半结构化(扩展类型，如File，Kafka，ES)
      */
-    SEMI_STRUCTURED("SEMI_STRUCTURED");
+    SEMI("SEMI");
 
     private final String code;
 

@@ -75,6 +75,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -92,7 +93,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     public static final String _SOURCE_INDEX = "_source_index";
     private final String _TARGET_INDEX = "_target_index";
-    private final String _TYPE = "_type";
+    public static final String _TYPE = "_type";
     private final Map<String, FilterMapper> filters = new ConcurrentHashMap<>();
     private final ESConfigValidator configValidator = new ESConfigValidator();
 
@@ -116,7 +117,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
     @Override
     public TableTypeEnum getExtendedTableType() {
-        return TableTypeEnum.SEMI_STRUCTURED;
+        return TableTypeEnum.SEMI;
     }
 
     @Override
@@ -192,6 +193,11 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         List<MetaInfo> metaInfos = new ArrayList<>();
         try {
             for (Table table : context.getTablePatterns()){
+                // 自定义SQL
+                if (TableTypeEnum.getTableType(table.getType()) == getExtendedTableType()) {
+                    getExtendedMetaInfo(connectorInstance, metaInfos, table);
+                    continue;
+                }
                 String index = table.getName();
                 GetIndexRequest request = new GetIndexRequest(index);
                 GetIndexResponse indexResponse = connectorInstance.getConnection().indices().get(request, RequestOptions.DEFAULT);
@@ -225,6 +231,23 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             throw new ElasticsearchException(e);
         }
         return metaInfos;
+    }
+
+    private void getExtendedMetaInfo(ESConnectorInstance connectorInstance, List<MetaInfo> metaInfos, Table table) {
+        MetaInfo metaInfo = new MetaInfo();
+        metaInfo.setTable(table.getName());
+        metaInfo.setTableType(table.getType());
+        metaInfo.setColumn(table.getColumn());
+        Properties extInfo = metaInfo.getExtInfo();
+        extInfo.putAll(table.getExtInfo());
+        // 低于7.x 版本
+        if (EasyVersion.V_7_0_0.after(connectorInstance.getVersion())) {
+            extInfo.put(_TYPE, null);
+        } else {
+            // 设置默认值
+            extInfo.setProperty(_TYPE, extInfo.getProperty(_TYPE, "_doc"));
+        }
+        metaInfos.add(metaInfo);
     }
 
     private MetaInfo buildMetaInfo(String tableType, String index, List<Field> fields, String indexType) {

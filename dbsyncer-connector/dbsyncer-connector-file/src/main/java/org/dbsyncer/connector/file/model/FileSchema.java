@@ -12,6 +12,7 @@ import java.util.List;
  * @Version 1.0.0
  * @Date 2022-05-06 00:04
  */
+@Deprecated
 public class FileSchema {
 
     /**

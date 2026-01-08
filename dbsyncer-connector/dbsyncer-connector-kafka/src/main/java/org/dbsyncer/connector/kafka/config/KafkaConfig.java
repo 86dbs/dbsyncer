@@ -144,4 +144,8 @@ public class KafkaConfig extends ConnectorConfig {
     public void setMaxRequestSize(int maxRequestSize) {
         this.maxRequestSize = maxRequestSize;
     }
+
+    public String getUrl() {
+        return bootstrapServers;
+    }
 }

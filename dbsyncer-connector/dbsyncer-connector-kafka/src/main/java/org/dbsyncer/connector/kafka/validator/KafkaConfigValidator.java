@@ -3,14 +3,17 @@
  */
 package org.dbsyncer.connector.kafka.validator;
 
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -69,7 +72,17 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
 
     @Override
     public Table modifyExtendedTable(KafkaConnector connectorService, Map<String, String> params) {
-        return null;
+        Table table = new Table();
+        String tableName = params.get("tableName");
+        String columnList = params.get("columnList");
+        Assert.hasText(tableName, "TableName is empty.");
+        Assert.hasText(columnList, "ColumnList is empty.");
+        List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
+        Assert.notEmpty(fields, "Fields is empty.");
+        table.setName(tableName);
+        table.setColumn(fields);
+        table.setType(connectorService.getExtendedTableType().getCode());
+        return table;
     }
 
 }

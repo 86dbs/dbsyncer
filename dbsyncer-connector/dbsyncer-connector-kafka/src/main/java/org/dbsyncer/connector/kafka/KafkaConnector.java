@@ -55,7 +55,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public TableTypeEnum getExtendedTableType() {
-        return TableTypeEnum.SEMI_STRUCTURED;
+        return TableTypeEnum.SEMI;
     }
 
     @Override
@@ -106,24 +106,20 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        List<Table> topics = new ArrayList<>();
-        Table table = new Table();
-        table.setName(connectorInstance.getConfig().getTopic());
-        table.setType(getExtendedTableType().getCode());
-        topics.add(table);
-        return topics;
+        return new ArrayList<>();
     }
 
     @Override
     public List<MetaInfo> getMetaInfo(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
-        KafkaConfig config = connectorInstance.getConfig();
-        List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
-        MetaInfo metaInfo = new MetaInfo();
-        metaInfo.setTable(config.getTopic());
-        metaInfo.setTableType(getExtendedTableType().getCode());
-        metaInfo.setColumn(fields);
-        metaInfos.add(metaInfo);
+        for (Table table : context.getTablePatterns()){
+            MetaInfo metaInfo = new MetaInfo();
+            metaInfo.setTable(table.getName());
+            metaInfo.setTableType(getExtendedTableType().getCode());
+            metaInfo.setColumn(table.getColumn());
+            metaInfo.setExtInfo(table.getExtInfo());
+            metaInfos.add(metaInfo);
+        }
         return metaInfos;
     }
 

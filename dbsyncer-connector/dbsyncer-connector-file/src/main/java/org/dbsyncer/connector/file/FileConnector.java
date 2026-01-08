@@ -71,7 +71,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public TableTypeEnum getExtendedTableType() {
-        return TableTypeEnum.SEMI_STRUCTURED;
+        return TableTypeEnum.SEMI;
     }
 
     @Override
@@ -102,37 +102,25 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             logger.warn("can not find fileDir:{}", fileDir);
             return false;
         }
-        for (FileSchema fileSchema : connectorInstance.getFileSchemaList()) {
-            String filePath = connectorInstance.getFilePath(fileSchema.getFileName());
-            if (!new File(filePath).exists()) {
-                logger.warn("can not find file:{}", filePath);
-                alive = false;
-            }
-        }
-        return alive;
+        return true;
     }
 
     @Override
     public List<Table> getTable(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return connectorInstance.getFileSchemaList().stream().map(fileSchema -> {
-            Table table = new Table();
-            table.setName(fileSchema.getFileName());
-            table.setType(getExtendedTableType().getCode());
-            return table;
-        }).collect(Collectors.toList());
+        return new ArrayList<>();
     }
 
     @Override
     public List<MetaInfo> getMetaInfo(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
-        context.getTablePatterns().forEach(table -> {
-            FileSchema fileSchema = connectorInstance.getFileSchema(table.getName());
+        for (Table table : context.getTablePatterns()){
             MetaInfo metaInfo = new MetaInfo();
             metaInfo.setTable(table.getName());
             metaInfo.setTableType(getExtendedTableType().getCode());
-            metaInfo.setColumn(fileSchema.getFields());
+            metaInfo.setColumn(table.getColumn());
+            metaInfo.setExtInfo(table.getExtInfo());
             metaInfos.add(metaInfo);
-        });
+        }
         return metaInfos;
     }
 
@@ -160,13 +148,15 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
-            FileConfig fileConfig = connectorInstance.getConfig();
-            FileSchema fileSchema = connectorInstance.getFileSchema(context.getCommand().get(FILE_NAME));
-            final List<Field> fields = fileSchema.getFields();
+            // TODO
+            final List<Field> fields = null;
             Assert.notEmpty(fields, "The fields of file schema is empty.");
-            final char separator = fileConfig.getSeparator();
+            // TODO
+            final char separator = "|".charAt(0);
 
-            reader = new FileReader(context.getCommand().get(FILE_PATH));
+            String fileDir = connectorInstance.getConfig().getFileDir();
+            final String filePath = fileDir.concat(context.getCommand().get(FILE_NAME));
+            reader = new FileReader(filePath);
             LineIterator lineIterator = IOUtils.lineIterator(reader);
             int from = (context.getPageIndex() - 1) * context.getPageSize();
             int to = from + context.getPageSize();
@@ -198,12 +188,14 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             throw new FileException("writer data can not be empty.");
         }
 
-        final String separator = new String(new char[]{connectorInstance.getConfig().getSeparator()});
+        // TODO
+        final String separator = new String(new char[]{"|".charAt(0)});
 
         Result result = new Result();
         OutputStream output = null;
         try {
-            final String filePath = connectorInstance.getFilePath(context.getCommand().get(FILE_NAME));
+            String fileDir = connectorInstance.getConfig().getFileDir();
+            final String filePath = fileDir.concat(context.getCommand().get(FILE_NAME));
             output = new FileOutputStream(filePath, true);
             List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();

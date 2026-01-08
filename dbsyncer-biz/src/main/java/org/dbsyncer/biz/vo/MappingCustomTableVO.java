@@ -6,6 +6,7 @@ package org.dbsyncer.biz.vo;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.model.Table;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,7 +14,7 @@ import java.util.List;
  *
  * @Author 穿云
  * @Version 1.0.0
- * @Date 2026-1-4 21:41
+ * @Date 2026-01-04 21:41
  */
 public class MappingCustomTableVO {
 
@@ -45,7 +46,7 @@ public class MappingCustomTableVO {
     /**
      * 自定义表列表
      */
-    private List<Table> customTables;
+    private List<TableVO> customTables = new ArrayList<>();
 
     public String getId() {
         return id;
@@ -87,11 +88,11 @@ public class MappingCustomTableVO {
         this.mainTables = mainTables;
     }
 
-    public List<Table> getCustomTables() {
+    public List<TableVO> getCustomTables() {
         return customTables;
     }
 
-    public void setCustomTables(List<Table> customTables) {
+    public void setCustomTables(List<TableVO> customTables) {
         this.customTables = customTables;
     }
 }

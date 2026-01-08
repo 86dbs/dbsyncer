@@ -3,13 +3,16 @@
  */
 package org.dbsyncer.connector.elasticsearch.validator;
 
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.elasticsearch.ElasticsearchConnector;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +42,18 @@ public final class ESConfigValidator implements ConfigValidator<ElasticsearchCon
 
     @Override
     public Table modifyExtendedTable(ElasticsearchConnector connectorService, Map<String, String> params) {
-        return null;
+        Table table = new Table();
+        String tableName = params.get("tableName");
+        String columnList = params.get("columnList");
+        String type = params.get(ElasticsearchConnector._TYPE);
+        Assert.hasText(tableName, "TableName is empty.");
+        Assert.hasText(columnList, "ColumnList is empty.");
+        List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
+        Assert.notEmpty(fields, "Fields is empty.");
+        table.setName(tableName);
+        table.setColumn(fields);
+        table.getExtInfo().put(ElasticsearchConnector._TYPE, type);
+        table.setType(connectorService.getExtendedTableType().getCode());
+        return table;
     }
 }

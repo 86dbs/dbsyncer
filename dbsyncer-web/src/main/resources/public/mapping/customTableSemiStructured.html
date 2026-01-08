@@ -2,13 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content" th:if="${mapping?.extendedType eq 'SEMI_STRUCTURED'}">
+<div th:fragment="content" th:if="${mapping?.extendedType eq 'SEMI'}">
     <!-- 半结构化配置 -->
     <div class="grid grid-cols-2 mt-4">
         <div class="form-item">
             <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
             <select id="custom_table_select" class="form-control" name="customTable">
-                <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'" th:data-sql="${t?.extInfo?.CT_SQL}" th:data-main-table="${t?.extInfo?.CT_MAIN}"/>
+                <option th:each="t,s:${mapping?.customTables}" th:value="${t?.name}" th:text="${t?.name} + ' ('+${t?.type}+')'" th:data-column="${t?.columnJson}" />
             </select>
         </div>
 
@@ -47,8 +47,8 @@
         <thead>
         <tr>
             <th></th>
-            <th>字段</th>
             <th>类型</th>
+            <th>字段</th>
             <th>主键</th>
             <th>操作</th>
         </tr>
@@ -56,12 +56,12 @@
         <tbody id="fieldList">
         <tr class="field-input-row">
             <td></td>
-            <td><input class="form-control field-name-input" type="text" maxlength="64" placeholder="请输入字段名"/></td>
             <td style="overflow: visible; position: relative;">
                 <select class="form-control field-type-select">
-                    <option th:each="dataTypeItem,s:${dataType}" th:value="${dataTypeItem.name()}" th:text="${dataTypeItem.name()}"/>
+                    <option th:each="dataTypeItem,s:${dataType}" th:value="${dataTypeItem.name()}" th:text="${dataTypeItem.name()}" th:selected="${dataTypeItem.name() eq 'STRING'}"/>
                 </select>
             </td>
+            <td><input class="form-control field-name-input" type="text" maxlength="64" placeholder="请输入字段名"/></td>
             <td></td>
             <td>
                 <button class="table-action-btn view fieldAdd" type="button" title="添加">
@@ -76,20 +76,22 @@
 <script>
     $(function () {
         const $fieldList = $("#fieldList");
-        let customTableSelect = $("#custom_table_select").dbSelect({
-            type: 'single',
-            onSelect: function () {
-            }
-        });
-
-        // 初始化现有的字段类型选择器
-        initSelect($('.field-type-select'));
 
         // 更新序号
         function updateRowNumbers() {
             $fieldList.find('tr:not(.field-input-row)').each(function(index) {
                 $(this).find('td:first').text(index + 1);
             });
+        }
+
+        // 切换主键
+        function togglePrimaryKey($row) {
+            const $pkCell = $row.find('td:eq(3)');
+            if ($pkCell.find('.fa-key').length > 0) {
+                $pkCell.empty();
+            } else {
+                $pkCell.html('<i title="主键" class="fa fa-key text-warning"></i>');
+            }
         }
 
         // 获取输入行的值
@@ -107,67 +109,6 @@
         function clearInputRow() {
             const $inputRow = $fieldList.find('.field-input-row');
             $inputRow.find('.field-name-input').val('');
-            const $typeSelect = $inputRow.find('.field-type-select');
-            const typeSelectApi = $typeSelect.data('dbSelect');
-            if (typeSelectApi) {
-                // 如果已初始化 dbSelect，使用 setValues 方法
-                const firstValue = $typeSelect.find('option:first').val();
-                if (firstValue) {
-                    typeSelectApi.setValues(firstValue);
-                }
-            } else {
-                $typeSelect.val($typeSelect.find('option:first').val());
-            }
-        }
-
-        // 添加字段行
-        function addFieldRow(fieldName, fieldType, isPrimaryKey) {
-            // 使用 jQuery 创建元素，避免 XSS
-            const $newRow = $('<tr>')
-                .addClass('field-data-row')
-                .attr('title', '双击设置/取消主键 | 拖动排序')
-                .attr('draggable', 'true')
-                .append($('<td>'))
-                .append($('<td>').text(fieldName))
-                .append($('<td>').text(fieldType))
-                .append($('<td>').html(isPrimaryKey ? '<i title="主键" class="fa fa-key text-warning"></i>' : ''))
-                .append($('<td>').html('<button class="table-action-btn delete fieldDelete" type="button" title="删除"><i class="fa fa-trash"></i></button>'));
-            
-            // 在输入行之前插入
-            $fieldList.find('.field-input-row').before($newRow);
-            
-            // 绑定删除事件
-            $newRow.find('.fieldDelete').on('click', function(e) {
-                e.stopPropagation();
-                deleteFieldRow($newRow);
-            });
-            
-            // 绑定双击主键事件
-            $newRow.on('dbl click', function(e) {
-                togglePrimaryKey($newRow);
-            });
-            
-            // 绑定拖拽事件
-            bindDragEvents($newRow);
-            
-            // 更新序号
-            updateRowNumbers();
-        }
-
-        // 删除字段行
-        function deleteFieldRow($row) {
-            $row.remove();
-            updateRowNumbers();
-        }
-
-        // 切换主键
-        function togglePrimaryKey($row) {
-            const $pkCell = $row.find('td:eq(3)');
-            if ($pkCell.find('.fa-key').length > 0) {
-                $pkCell.empty();
-            } else {
-                $pkCell.html('<i title="主键" class="fa fa-key text-warning"></i>');
-            }
         }
 
         // 绑定拖拽事件
@@ -210,12 +151,11 @@
                 if (e.stopPropagation) {
                     e.stopPropagation();
                 }
-                
                 const $dragging = $fieldList.find('.dragging');
                 if ($dragging.length && $dragging[0] !== this && !$(this).hasClass('field-input-row')) {
                     const draggingIndex = $dragging.index();
                     const targetIndex = $(this).index();
-                    
+
                     if (draggingIndex < targetIndex) {
                         $(this).before($dragging);
                     } else {
@@ -227,99 +167,95 @@
             });
         }
 
+        // 添加字段行
+        function addFieldRow(fieldName, fieldType, isPrimaryKey) {
+            // 使用 jQuery 创建元素，避免 XSS
+            const $newRow = $('<tr>')
+                .addClass('field-data-row')
+                .attr('title', '双击设置/取消主键 | 拖动排序')
+                .attr('draggable', 'true')
+                .append($('<td>'))
+                .append($('<td>').text(fieldType))
+                .append($('<td>').text(fieldName))
+                .append($('<td>').html(isPrimaryKey ? '<i title="主键" class="fa fa-key text-warning"></i>' : ''))
+                .append($('<td>').html('<button class="table-action-btn delete fieldDelete" type="button" title="删除"><i class="fa fa-trash"></i></button>'));
+
+            // 在输入行之前插入
+            $fieldList.find('.field-input-row').before($newRow);
+
+            // 绑定删除事件
+            $newRow.find('.fieldDelete').on('click', function(e) {
+                e.stopPropagation();
+                deleteFieldRow($newRow);
+            });
+
+            // 绑定双击主键事件
+            $newRow.on('dblclick', function(e) {
+                togglePrimaryKey($newRow);
+            });
+
+            // 绑定拖拽事件
+            bindDragEvents($newRow);
+
+            // 更新序号
+            updateRowNumbers();
+        }
+
+        // 删除字段行
+        function deleteFieldRow($row) {
+            $row.remove();
+            updateRowNumbers();
+        }
+
         // 添加字段的通用逻辑（避免重复校验）
         function handleAddField() {
             const values = getInputRowValues();
-            
+
             if (!values.fieldName) {
                 bootGrowl("请输入字段名", "warning");
                 return false;
             }
-            
+
             if (!values.fieldType) {
                 bootGrowl("请选择字段类型", "warning");
                 return false;
             }
-            
+
             // 检查字段名是否重复
             let isDuplicate = false;
             $fieldList.find('.field-data-row').each(function() {
-                if ($(this).find('td:eq(1)').text().trim() === values.fieldName) {
+                const existingField = $(this).find('td:eq(2)').text().trim();
+                if (existingField.toLowerCase() === values.fieldName.toLowerCase()) {
                     isDuplicate = true;
                     return false;
                 }
             });
-            
+
             if (isDuplicate) {
                 bootGrowl("字段名已存在", "warning");
                 return false;
             }
-            
+
             addFieldRow(values.fieldName, values.fieldType, false);
             clearInputRow();
             return true;
         }
 
-        // 添加字段按钮点击事件
-        $(document).on('click', '.fieldAdd', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            handleAddField();
-        });
-
-        // 删除字段按钮点击事件
-        $(document).on('click', '.fieldDelete', function(e) {
-            e.stopPropagation();
-            const $row = $(this).closest('tr');
-            deleteFieldRow($row);
-        });
-
-        // 初始化：为现有数据行绑定事件
-        $fieldList.find('tr.field-data-row').each(function() {
-            const $row = $(this);
-            
-            // 绑定删除事件
-            $row.find('.fieldDelete').on('click', function(e) {
-                e.stopPropagation();
-                deleteFieldRow($row);
-            });
-            
-            // 绑定双击主键事件
-            $row.on('dbl click', function(e) {
-                togglePrimaryKey($row);
-            });
-            
-            // 绑定拖拽事件
-            bindDragEvents($row);
-        });
-        
-        // 初始化序号
-        updateRowNumbers();
-
-        // 输入框回车键添加（直接调用处理函数，避免触发按钮点击事件）
-        $(document).on('keypress', '.field-name-input', function(e) {
-            if (e.which === 13) { // Enter键
-                e.preventDefault();
-                e.stopPropagation();
-                handleAddField();
-            }
-        });
-
         // 收集所有字段数据
-        function collectFieldData() {
+        function collectColumns() {
             const fieldData = [];
             $fieldList.find('tr.field-data-row').each(function() {
                 const $row = $(this);
-                const name = $row.find('td:eq(1)').text().trim();
-                const typeName = $row.find('td:eq(2)').text().trim();
+                const typeName = $row.find('td:eq(1)').text().trim();
+                const name = $row.find('td:eq(2)').text().trim();
                 const pk = $row.find('td:eq(3) .fa-key').length > 0;
-                
+
                 if (name) { // 只收集有字段名的数据
-                    fieldData.push({
-                        name: name,
-                        typeName: typeName,
-                        pk: pk
-                    });
+                    let row = { name: name, typeName: typeName }
+                    if (pk) {
+                        row.pk = pk;
+                    }
+                    fieldData.push(row);
                 }
             });
             return fieldData;
@@ -334,18 +270,56 @@
             }
         }
 
+        function submit(operator, title) {
+            const $form = $("#customTableForm");
+            if (!validateForm($form)) {
+                return;
+            }
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html(`<i class="fa fa-spinner fa-spin"></i> ${title}中...`).prop('disabled', true);
+            let data = $form.serializeJson();
+            data.operator = operator;
+            data.columnList = JSON.stringify(collectColumns());
+            doPoster("/mapping/saveCustomTable", data, function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                handleResponse(response, title + "自定义表");
+            });
+        }
+
+        function showCustomTableInfo($customSelect){
+            let selected = $customSelect.getValues();
+            if (selected.length >= 1) {
+                $(".field-data-row").remove();
+                $("input[name='tableName']").val(selected[0]);
+                let columns = JSON.parse($customSelect.getAttribute('column'));
+                for (let c of columns) {
+                    addFieldRow(c.name, c.typeName, c.pk);
+                }
+            }
+        }
+
+        let customTableSelect = $("#custom_table_select").dbSelect({
+            type: 'single',
+            onSelect: function () {
+                showCustomTableInfo(customTableSelect);
+            }
+        });
+        showCustomTableInfo(customTableSelect);
+
+        // 初始化现有的字段类型选择器
+        initSelect($('.field-type-select'));
+
         //添加
-        $("#addSemiTableBtn").on('click', function () {
-            const fieldData = collectFieldData();
-            console.log('字段数据:', JSON.stringify(fieldData, null, 4));
-            // submit("add", "添加");
+        $("#addSemiTableBtn").off('click').on('click', function () {
+            submit("add", "添加");
         });
         //修改
-        $("#editSemiTableBtn").on('click', function () {
-            // submit("edit", "修改");
+        $("#editSemiTableBtn").off('click').on('click', function () {
+            submit("edit", "修改");
         });
         //删除
-        $("#delSemiTableBtn").on('click', function () {
+        $("#delSemiTableBtn").off('click').on('click', function () {
             let selected = customTableSelect.getValues() || [];
             if (selected.length >= 1) {
                 let data = {
@@ -356,6 +330,20 @@
                 doPoster("/mapping/removeCustomTable", data, function (response) {
                     handleResponse(response, "删除自定义表");
                 });
+            }
+        });
+
+        // 添加字段按钮点击事件
+        $(".fieldAdd").off('click').on('click', function () {
+            handleAddField();
+        });
+
+        // 输入框回车键添加（直接调用处理函数，避免触发按钮点击事件）
+        $(".field-name-input").off('keypress').on('keypress', function (e) {
+            if (e.which === 13) { // Enter键
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddField();
             }
         });
     });
