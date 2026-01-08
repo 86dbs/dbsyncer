@@ -3,63 +3,29 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <!-- 插件配置标题 -->
-    <p><i class="fa fa-plug text-success"></i> 插件配置</p>
-
-    <!-- 插件配置表单 -->
-    <div class="grid grid-cols-3 mt-4">
-        <!-- 插件选择 -->
-        <div class="form-item">
-            <label class="form-label">插件</label>
-            <select id="pluginId" name="pluginId" class="form-control">
-                <option value="" selected="selected">无</option>
-                <option th:value="${p?.className +'_'+ p?.version}"
-                        th:text="${p?.name +'_'+ p?.version}"
-                        th:each="p,state : ${plugin}"
-                        th:selected="${p.className eq (tableGroup?.plugin?.className ?: mapping?.plugin?.className)
+    <div class="form-group">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="col-sm-3 control-label text-right">插件</label>
+                <div class="col-sm-9">
+                    <select id="pluginId" name="pluginId" class="form-control select-control-default">
+                        <option value="" selected="selected">无</option>
+                        <option th:value="${p?.className +'_'+ p?.version}" th:text="${p?.name +'_'+ p?.version}"
+                                th:each="p,state : ${plugin}"
+                                th:selected="${p.className eq (tableGroup?.plugin?.className ?: mapping?.plugin?.className)
                                 and p.version eq (tableGroup?.plugin?.version ?: mapping?.plugin?.version)}">
-                </option>
-            </select>
-        </div>
-
-        <!-- 插件参数 -->
-        <div class="form-item">
-            <label class="form-label pluginExtInfo">参数<i class="fa fa-question-circle text-tertiary" title="用于插件内部使用，推荐填写JSON格式"></i></label>
-            <input name="pluginExtInfo"
-                   class="form-control pluginExtInfo"
-                   type="text"
-                   maxlength="512"
-                   placeholder="请输入插件参数（推荐JSON格式）"
-                   th:value="${tableGroup eq null ? mapping?.pluginExtInfo : tableGroup?.pluginExtInfo}" />
+                    </select>
+                </div>
+            </div>
+            <div id="pluginExtInfo" class="col-md-4 hidden">
+                <label class="col-sm-3 control-label">参数<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="用于插件内部使用，推荐填写JSON格式"></i></label>
+                <div class="col-sm-9">
+                    <input name="pluginExtInfo" class="form-control dbsyncer_textarea_resize_none" maxlength="512" rows="2" th:value="${tableGroup eq null ? mapping?.pluginExtInfo : tableGroup?.pluginExtInfo}" />
+                </div>
+            </div>
+            <div class="col-md-8"></div>
         </div>
     </div>
-
-<script>
-    $(document).ready(function() {
-        const pluginExtInfo = $('.pluginExtInfo');
-        
-        // 显示/隐藏插件参数区域的函数
-        function togglePluginExtInfo(values) {
-            const selectedValue = values && values.length > 0 ? values[0] : '';
-            if (!isBlank(selectedValue)) {
-                pluginExtInfo.removeClass('hidden');
-            } else {
-                pluginExtInfo.addClass('hidden');
-            }
-        }
-        
-        // 初始化 select 组件并获取 API 对象
-        const pluginSelect = $('#pluginId').dbSelect({
-            type: 'single',
-            onSelect: function(values) {
-                togglePluginExtInfo(values);
-            }
-        });
-        
-        // 初始化时检查当前选中值
-        togglePluginExtInfo(pluginSelect.getValues());
-    });
-</script>
 </div>
 
 </html>
