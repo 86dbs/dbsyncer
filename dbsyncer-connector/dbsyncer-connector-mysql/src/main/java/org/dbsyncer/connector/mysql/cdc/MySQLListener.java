@@ -162,22 +162,37 @@ public class MySQLListener extends AbstractDatabaseListener {
     }
 
     private void trySendEvent(ChangedEvent event) {
-        try {
-            // 如果消费事件失败，重试
-            while (client.isConnected()) {
+        // 如果消费事件失败，重试
+        while (client.isConnected()) {
+            try {
+                sendChangedEvent(event);
+                break;
+            } catch (QueueOverflowException e) {
+                logger.warn("队列已满，等待1毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
+                        event.getSourceTableName(), event.getEvent(),
+                        client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
                 try {
-                    sendChangedEvent(event);
-                    break;
-                } catch (QueueOverflowException e) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    } catch (InterruptedException ex) {
-                        logger.error(ex.getMessage(), ex);
-                    }
+                    TimeUnit.MILLISECONDS.sleep(1);
+                } catch (InterruptedException ignored) {
                 }
+            } catch (Exception e) {
+                // 发送事件时发生非队列溢出异常，记录详细错误信息并通过errorEvent传递
+                String errorMsg = String.format("发送事件失败，table: %s, event: %s, binlog: %s:%s, error: %s",
+                        event.getSourceTableName(), event.getEvent(),
+                        client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
+                logger.error(errorMsg, e);
+                errorEvent(new MySQLException(errorMsg, e));
+                // 不再重试，避免无限循环
+                break;
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        }
+        // 如果连接断开，记录警告并通过errorEvent传递
+        if (!client.isConnected()) {
+            String errorMsg = String.format("MySQL连接已断开，事件发送失败，table: %s, event: %s, binlog: %s:%s",
+                    event.getSourceTableName(), event.getEvent(),
+                    client.getBinlogFilename(), client.getBinlogPosition());
+            logger.error(errorMsg);
+            errorEvent(new MySQLException(errorMsg));
         }
     }
 
@@ -224,12 +239,17 @@ public class MySQLListener extends AbstractDatabaseListener {
                     String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
                             client.getWorkerThreadName(),
                             client.getBinlogFilename());
+                    logger.error(log);
                     errorEvent(new MySQLException(log));
                     close();
                     return;
                 }
             }
-            errorEvent(new MySQLException(e.getMessage()));
+            // 记录详细的异常信息，包括binlog位置
+            String errorMsg = String.format("MySQL binlog监听异常，binlog: %s:%s, error: %s",
+                    client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
+            logger.error(errorMsg, e);
+            errorEvent(new MySQLException(errorMsg, e));
         }
 
         @Override
@@ -337,9 +357,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // skip BEGIN
                 if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
                     return CCJSqlParserUtil.parse(sql);
-//                    return SqlParserUtil.parse(sql); 太过于复杂，能能差
                 }
             } catch (JSQLParserException e) {
+                if (sql.startsWith("SAVEPOINT")) {
+                    return null;
+                }
                 logger.warn("不支持的ddl:{}", sql);
             }
             return null;
@@ -381,21 +403,21 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (columnNames != null) {
                 return columnNames;
             }
-            
+
             // 如果缓存中没有，从数据库元数据中获取并缓存
             TableMapEventData tableMap = tables.get(tableId);
             if (tableMap != null) {
                 String tableName = tableMap.getTable();
                 columnNames = updateColumnNamesCache(tableId, tableName);
             }
-            
+
             return columnNames;
         }
 
         /**
          * 更新表的列名缓存
-         * 
-         * @param tableId 表ID
+         *
+         * @param tableId   表ID
          * @param tableName 表名
          * @return 列名列表
          */
@@ -406,17 +428,26 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (columnNames != null && !columnNames.isEmpty()) {
                     // 缓存列名信息
                     tableColumnNames.put(tableId, columnNames);
+                } else {
+                    // 列名为空，记录警告
+                    String errorMsg = String.format("获取表列名为空，tableId: %d, tableName: %s, binlog: %s:%s",
+                            tableId, tableName, client.getBinlogFilename(), client.getBinlogPosition());
+                    logger.warn(errorMsg);
+                    errorEvent(new MySQLException(errorMsg));
                 }
                 return columnNames;
             } catch (Exception e) {
-                logger.warn("更新表列名缓存失败，tableId: {}, tableName: {}, error: {}", tableId, tableName, e.getMessage());
+                String errorMsg = String.format("更新表列名缓存失败，tableId: %d, tableName: %s, binlog: %s:%s, error: %s",
+                        tableId, tableName, client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
+                logger.error(errorMsg, e);
+                errorEvent(new MySQLException(errorMsg, e));
                 return null;
             }
         }
 
         /**
          * 清除表的列名缓存（DDL 事件后调用）
-         * 
+         *
          * @param tableName 表名
          */
         private void clearColumnNamesCache(String tableName) {
@@ -428,7 +459,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                     tableIdsToRemove.add(entry.getKey());
                 }
             }
-            
+
             // 清除缓存
             for (Long tableId : tableIdsToRemove) {
                 tableColumnNames.remove(tableId);
@@ -446,8 +477,8 @@ public class MySQLListener extends AbstractDatabaseListener {
                     // 使用 INFORMATION_SCHEMA 直接查询，明确指定数据库名和表名
                     // 这样可以确保只查询指定数据库中的表，避免查询到其他 schema 的同名表
                     String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                                "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
-                                "ORDER BY ORDINAL_POSITION";
+                            "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
+                            "ORDER BY ORDINAL_POSITION";
                     try (java.sql.PreparedStatement ps = databaseTemplate.getSimpleConnection()
                             .getConnection().prepareStatement(sql)) {
                         ps.setString(1, database);
@@ -461,8 +492,10 @@ public class MySQLListener extends AbstractDatabaseListener {
                     return columns;
                 });
             } catch (Exception e) {
-                logger.error("从数据库元数据获取列名失败，database: {}, tableName: {}, error: {}", 
-                            database, tableName, e.getMessage());
+                String errorMsg = String.format("从数据库元数据获取列名失败，database: %s, tableName: %s, binlog: %s:%s, error: %s",
+                        database, tableName, client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
+                logger.error(errorMsg, e);
+                errorEvent(new MySQLException(errorMsg, e));
                 return null;
             }
         }
