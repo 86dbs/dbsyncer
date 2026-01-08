@@ -84,7 +84,7 @@
                                     <span th:if="${mapping?.meta?.state eq 3}" class="highlight-number error-color">异常</span>
                                 </div>
                             </div>
-                            <div class="col-md-3" id="metaPercent">
+                            <div class="col-md-2" id="metaPercent">
                                 <div class="text-left">
                                     <p>数据同步进度:</p>
                                     <span th:if="${mapping?.meta?.counting}">(正在统计中)</span>
@@ -100,7 +100,21 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <div  class="text-left" id ="metaDuration" style="white-space: nowrap; padding-right: 10px;">
+                                    <p>耗时:</p>
+                                    <span th:if="${beginTime gt 0 and updateTime gt 0}">
+                                        <span th:with="seconds=${(updateTime - beginTime) / 1000}">
+                                            <span th:if="${seconds lt 60}" th:text="${seconds + '秒'}" class="highlight-number"/>
+                                            <span th:if="${seconds ge 60 and seconds lt 3600}" th:with="minutes=${seconds / 60}" th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" class="highlight-number"/>
+                                            <span th:if="${seconds ge 3600}" th:with="hours=${seconds / 3600}, minutes=${(seconds - hours * 3600) / 60}" th:text="${hours + '时' + minutes + '分' + (seconds - hours * 3600 - minutes * 60) + '秒'}" class="highlight-number"/>
+                                        </span>
+                                    </span>
+                                    <span th:unless="${beginTime gt 0 and updateTime gt 0}" class="highlight-number">-</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
                                 <div  class="text-left" id ="metaModel">
 <!--                                    <p>[[${mapping?.meta?.model}]]同步</p>-->
                                     <p>总数:</p>

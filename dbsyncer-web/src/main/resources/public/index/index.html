@@ -116,11 +116,8 @@
                                                     <th>起始源</th>
                                                     <th>目标源</th>
                                                     <th>同步类型</th>
-                                                    <th>总数</th>
-                                                    <th>耗时</th>
-                                                    <th>启动时间</th>
-                                                    <th>创建时间</th>
                                                     <th>操作</th>
+                                                    <th>创建时间</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -187,53 +184,6 @@
                                                     <!-- 同步类型 -->
                                                     <td th:text="${m?.meta?.model}"></td>
 
-                                                    <!-- 总数 -->
-                                                    <td>
-                                                        <span th:text="${m?.meta?.total}"></span>
-                                                        <span th:if="${m?.meta?.syncPhase.code eq 0}">
-                                                            <span th:if="${m?.meta?.counting}">(统计中)</span>
-                                                            <span
-                                                                th:if="${m?.meta?.total gt 0 and (m?.meta?.success + m?.meta?.fail) gt 0}">
-                                                                ,进度:[[${#numbers.formatPercent(((m?.meta?.success +
-                                                                m?.meta?.fail) / m?.meta?.total), 2, 2)}]]
-                                                            </span>
-                                                        </span>
-                                                        <span th:if="${m?.meta?.success gt 0}"
-                                                            style="margin-left: 5px; color: green;">成功:[[${m?.meta?.success}]]</span>
-                                                        <span th:if="${m?.meta?.fail gt 0}"
-                                                            style="margin-left: 5px; color: red;">失败:[[${m?.meta?.fail}]]</span>
-                                                    </td>
-
-                                                    <!-- 耗时 -->
-                                                    <td>
-                                                        <span
-                                                            th:if="${m?.meta?.beginTime gt 0 and m?.meta?.updateTime gt 0}">
-                                                            <span
-                                                                th:with="seconds=${(m?.meta?.updateTime - m?.meta?.beginTime) / 1000}">
-                                                                <span th:if="${seconds lt 60}"
-                                                                    th:text="${seconds + '秒'}" />
-                                                                <span th:if="${seconds ge 60}"
-                                                                    th:with="minutes=${seconds / 60}"
-                                                                    th:text="${minutes + '分' + (seconds - minutes * 60) + '秒'}" />
-                                                            </span>
-                                                        </span>
-                                                        <span
-                                                            th:unless="${m?.meta?.beginTime gt 0 and m?.meta?.updateTime gt 0}">-</span>
-                                                    </td>
-
-                                                    <!-- 启动时间 -->
-                                                    <td>
-                                                        <span
-                                                            th:if="${m?.meta?.beginTime gt 0}">[[${#dates.format(m?.meta?.beginTime,
-                                                            'yyyy-MM-dd HH:mm:ss')}]]</span>
-                                                        <span th:unless="${m?.meta?.beginTime gt 0}">-</span>
-                                                    </td>
-
-                                                    <!-- 创建时间 -->
-                                                    <td
-                                                        th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}">
-                                                    </td>
-
                                                     <!-- 操作 -->
                                                     <td>
                                                         <div class="operation-buttons">
@@ -276,6 +226,11 @@
                                                                 class="btn btn-xs btn-default queryData"><i
                                                                     class="fa fa-file-text-o"></i> 日志</a>
                                                         </div>
+                                                    </td>
+
+                                                    <!-- 创建时间 -->
+                                                    <td
+                                                        th:text="${#dates.format(m?.updateTime, 'yyyy-MM-dd HH:mm:ss')}">
                                                     </td>
                                                 </tr>
                                             </tbody>

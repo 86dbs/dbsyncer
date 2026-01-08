@@ -412,53 +412,19 @@ function refreshMappingList() {
                                             var $statusColumn = $listElement.find('td:nth-child(2)');
                                             $statusColumn.html(stateHtmlContent);
                                             
-                                            // 更新总数列
-                                            var $totalColumn = $listElement.find('td:nth-child(6)');
-                                            var totalHtml = total + '';
-                                            if (syncPhaseCode === 0) {
-                                                if (counting) {
-                                                    totalHtml += '(统计中)';
-                                                }
-                                                if (total > 0 && (success + fail) > 0) {
-                                                    var progress = ((success + fail) / total * 100).toFixed(2);
-                                                    totalHtml += ', 进度:' + progress + '%';
-                                                }
-                                            }
-                                            if (success > 0) {
-                                                totalHtml += '<span style="margin-left: 5px; color: green;">成功:' + success + '</span>';
-                                            }
-                                            if (fail > 0) {
-                                                totalHtml += '<span style="margin-left: 5px; color: red;">失败:' + fail + '</span>';
-                                            }
-                                            $totalColumn.html(totalHtml);
-                                            
-                                            // 更新耗时列
-                                            var $timeColumn = $listElement.find('td:nth-child(7)');
-                                            var timeHtml = '-';
-                                            if (beginTime > 0 && updateTime > 0) {
-                                                var seconds = Math.floor((updateTime - beginTime) / 1000);
-                                                if (seconds < 60) {
-                                                    timeHtml = seconds + '秒';
-                                                } else {
-                                                    var minutes = Math.floor(seconds / 60);
-                                                    timeHtml = minutes + '分' + (seconds - minutes * 60) + '秒';
-                                                }
-                                            }
-                                            $timeColumn.html(timeHtml);
-                                            
-                                            // 更新启动时间列
-                                            var $startTimeColumn = $listElement.find('td:nth-child(8)');
-                                            var startTimeHtml = '-';
-                                            if (beginTime > 0) {
-                                                var date = new Date(beginTime);
-                                                startTimeHtml = date.getFullYear() + '-' +
+                                            // 更新创建时间列
+                                            var $createTimeColumn = $listElement.find('td:nth-child(7)');
+                                            var createTimeHtml = '-';
+                                            if (updateTime > 0) {
+                                                var date = new Date(updateTime);
+                                                createTimeHtml = date.getFullYear() + '-' +
                                                     String(date.getMonth() + 1).padStart(2, '0') + '-' +
                                                     String(date.getDate()).padStart(2, '0') + ' ' +
                                                     String(date.getHours()).padStart(2, '0') + ':' +
                                                     String(date.getMinutes()).padStart(2, '0') + ':' +
                                                     String(date.getSeconds()).padStart(2, '0');
                                             }
-                                            $startTimeColumn.html(startTimeHtml);
+                                            $createTimeColumn.html(createTimeHtml);
                                         }
                                     });
                                 }
