@@ -392,7 +392,8 @@ function bindRefreshTablesClick() {
         doPoster("/mapping/refreshTables", { 'id': id }, function (data) {
             if (data.success == true) {
                 bootGrowl("刷新表成功!", "success");
-                refresh(id,1);
+                // 使用doLoader重新加载页面内容，确保下拉框显示最新数据
+                doLoader('/mapping/page/edit?id=' + id + "&classOn=1");
             } else {
                 bootGrowl(data.resultValue, "danger");
             }
@@ -787,7 +788,7 @@ $(function () {
     initMultipleInputTags();
     // 绑定删除表关系点击事件
     bindMappingTableGroupDelClick();
-    //绑定刷新数据表按钮点击事件
+    //binding刷新数据表按钮点击事件
     bindRefreshTablesClick();
 
     // 初始化select插件
