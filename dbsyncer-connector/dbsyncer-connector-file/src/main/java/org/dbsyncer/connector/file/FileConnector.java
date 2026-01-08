@@ -150,8 +150,8 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         FileReader reader = null;
         try {
             Map<String, String> command = context.getCommand();
-            String fieldNamesJson = command.get(ConnectorConstant.OPERTION_QUERY);
-            final List<Field> fields = JsonUtil.jsonToArray(fieldNamesJson, Field.class);
+            String fieldList = command.get(ConnectorConstant.OPERTION_QUERY);
+            final List<Field> fields = JsonUtil.jsonToArray(fieldList, Field.class);
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             final char separator = command.get(FILE_SEPARATOR).charAt(0);
             reader = new FileReader(command.get(FILE_PATH));
@@ -214,6 +214,14 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        Map<String, String> command = getTargetCommand(commandConfig);
+        String fieldList = JsonUtil.objToJson(commandConfig.getTable().getColumn());
+        command.put(ConnectorConstant.OPERTION_QUERY, fieldList);
+        return command;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> command = new HashMap<>();
         FileConfig fileConfig = (FileConfig) commandConfig.getConnectorConfig();
         final String fileDir = fileConfig.getFileDir();
@@ -227,11 +235,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         command.put(FILE_PATH, file.toString());
         command.put(FILE_SEPARATOR, separator);
         return command;
-    }
-
-    @Override
-    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return getSourceCommand(commandConfig);
     }
 
     @Override
