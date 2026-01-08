@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.file.FileConnectorInstance;
 import org.dbsyncer.connector.file.FileException;
 import org.dbsyncer.connector.file.model.FileResolver;
@@ -122,7 +123,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
                 super.forceFlushEvent();
             }
-            String separator = t.getExtInfo().getProperty("separator", StringUtil.VERTICAL_LINE);
+            String separator = t.getExtInfo().getProperty(FileConnector.FILE_SEPARATOR, StringUtil.VERTICAL_LINE);
             pipeline.put(fileName, new PipelineResolver(t.getColumn(), separator.charAt(0), raf));
         }
     }

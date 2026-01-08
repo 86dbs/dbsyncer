@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -161,12 +162,12 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        return new HashMap<>();
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        return new HashMap<>();
     }
 
     @Override

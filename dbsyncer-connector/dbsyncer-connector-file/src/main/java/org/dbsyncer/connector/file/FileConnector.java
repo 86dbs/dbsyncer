@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
 import org.dbsyncer.connector.file.config.FileConfig;
@@ -17,6 +18,7 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
@@ -54,7 +56,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String FILE_NAME = "fileName";
+    public static final String FILE_SEPARATOR = "separator";
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
     private final FileConfigValidator configValidator = new FileConfigValidator();
@@ -147,15 +149,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
-            // TODO
-            final List<Field> fields = null;
+            Map<String, String> command = context.getCommand();
+            String fieldNamesJson = command.get(ConnectorConstant.OPERTION_QUERY);
+            final List<Field> fields = JsonUtil.jsonToArray(fieldNamesJson, Field.class);
             Assert.notEmpty(fields, "The fields of file schema is empty.");
-            // TODO
-            final char separator = '|';
-
-            String fileDir = connectorInstance.getConfig().getFileDir();
-            final String filePath = fileDir.concat(context.getCommand().get(FILE_NAME));
-            reader = new FileReader(filePath);
+            final char separator = command.get(FILE_SEPARATOR).charAt(0);
+            reader = new FileReader(command.get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
             int from = (context.getPageIndex() - 1) * context.getPageSize();
             int to = from + context.getPageSize();
@@ -187,14 +186,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             throw new FileException("writer data can not be empty.");
         }
 
-        // TODO
-        final String separator = String.valueOf('|');
-
         Result result = new Result();
         OutputStream output = null;
         try {
-            String fileDir = connectorInstance.getConfig().getFileDir();
-            final String filePath = fileDir.concat(context.getCommand().get(FILE_NAME));
+            Map<String, String> command = context.getCommand();
+            final String separator = command.get(FILE_SEPARATOR);
+            final String filePath = command.get(FILE_PATH);
             output = new FileOutputStream(filePath, true);
             List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();
@@ -224,17 +221,17 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         if (!StringUtil.endsWith(fileDir, File.separator)) {
             file.append(File.separator);
         }
-        file.append(commandConfig.getTable().getName());
+        Table table = commandConfig.getTable();
+        file.append(table.getName());
+        String separator = table.getExtInfo().getProperty(FILE_SEPARATOR, StringUtil.VERTICAL_LINE);
         command.put(FILE_PATH, file.toString());
-        command.put(FILE_NAME, commandConfig.getTable().getName());
+        command.put(FILE_SEPARATOR, separator);
         return command;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Map<String, String> command = new HashMap<>();
-        command.put(FILE_NAME, commandConfig.getTable().getName());
-        return command;
+        return getSourceCommand(commandConfig);
     }
 
     @Override
