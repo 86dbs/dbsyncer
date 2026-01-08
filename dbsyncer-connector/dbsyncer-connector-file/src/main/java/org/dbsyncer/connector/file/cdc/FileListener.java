@@ -5,20 +5,23 @@ package org.dbsyncer.connector.file.cdc;
 
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.FileConnectorInstance;
 import org.dbsyncer.connector.file.FileException;
-import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.connector.file.model.FileResolver;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
@@ -44,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Version 1.0.0
  * @Date 2022-05-05 23:19
  */
-public class FileListener extends AbstractListener {
+public class FileListener extends AbstractListener<FileConnectorInstance> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -52,12 +55,11 @@ public class FileListener extends AbstractListener {
     private static final String CHARSET_NAME = "UTF-8";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
-    private FileConnectorInstance instance;
     private WatchService watchService;
     private Worker worker;
-    private Map<String, PipelineResolver> pipeline = new ConcurrentHashMap<>();
+    private final Map<String, PipelineResolver> pipeline = new ConcurrentHashMap<>();
     private final FileResolver fileResolver = new FileResolver();
-    private char separator;
+    private String fileDir;
 
     @Override
     public void start() {
@@ -68,14 +70,13 @@ public class FileListener extends AbstractListener {
                 return;
             }
 
-            instance = (FileConnectorInstance) connectorInstance;
-            final FileConfig config = instance.getConfig();
+            FileConnectorInstance instance = (FileConnectorInstance) connectorInstance;
+            fileDir = instance.getConfig().getFileDir();
             connected = true;
 
-            separator = "|".charAt(0);
-            initPipeline(config.getFileDir());
+            initPipeline();
             watchService = FileSystems.getDefault().newWatchService();
-            Path p = Paths.get(config.getFileDir());
+            Path p = Paths.get(fileDir);
             p.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 
             for (String fileName : pipeline.keySet()) {
@@ -83,7 +84,7 @@ public class FileListener extends AbstractListener {
             }
 
             worker = new Worker();
-            worker.setName("file-parser-" + getConnectorInstanceCacheKey(config) + "_" + worker.hashCode());
+            worker.setName("file-parser-" + getConnectorInstanceCacheKey() + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -95,7 +96,7 @@ public class FileListener extends AbstractListener {
         }
     }
 
-    public String getConnectorInstanceCacheKey(FileConfig config) {
+    public String getConnectorInstanceCacheKey() {
         String localIP;
         try {
             localIP = InetAddress.getLocalHost().getHostAddress();
@@ -103,28 +104,27 @@ public class FileListener extends AbstractListener {
             logger.error(e.getMessage());
             localIP = "127.0.0.1";
         }
-        return String.format("%s-%s", localIP, config.getFileDir());
+        return String.format("%s-%s", localIP, fileDir);
     }
 
-    private void initPipeline(String fileDir) throws IOException {
-        // TODO
-//        for (Table t : customTable) {
-//            String fileName = t.getName();
-//            String file = fileDir.concat(fileName);
-//            Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
-//
-//            final RandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
-//            final String filePosKey = getFilePosKey(fileName);
-//            if (snapshot.containsKey(filePosKey)) {
-//                raf.seek(NumberUtil.toLong((String) snapshot.get(filePosKey), 0L));
-//            } else {
-//                raf.seek(raf.length());
-//                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
-//                super.forceFlushEvent();
-//            }
-//
-//            pipeline.put(fileName, new PipelineResolver(t.getColumn(), raf));
-//        }
+    private void initPipeline() throws IOException {
+        for (Table t : customTable) {
+            String fileName = t.getName();
+            String file = fileDir.concat(fileName);
+            Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
+
+            final RandomAccessFile raf = new BufferedRandomAccessFile(file, "r");
+            final String filePosKey = getFilePosKey(fileName);
+            if (snapshot.containsKey(filePosKey)) {
+                raf.seek(NumberUtil.toLong(snapshot.get(filePosKey), 0L));
+            } else {
+                raf.seek(raf.length());
+                snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
+                super.forceFlushEvent();
+            }
+            String separator = t.getExtInfo().getProperty("separator", StringUtil.VERTICAL_LINE);
+            pipeline.put(fileName, new PipelineResolver(t.getColumn(), separator.charAt(0), raf));
+        }
     }
 
     @Override
@@ -175,7 +175,7 @@ public class FileListener extends AbstractListener {
             String line;
             while (null != (line = pipelineResolver.readLine())) {
                 if (StringUtil.isNotBlank(line)) {
-                    list.add(fileResolver.parseList(pipelineResolver.fields, separator, line));
+                    list.add(fileResolver.parseList(pipelineResolver.fields, pipelineResolver.separator, line));
                 }
             }
 
@@ -193,14 +193,16 @@ public class FileListener extends AbstractListener {
         }
     }
 
-    final class PipelineResolver {
+    static final class PipelineResolver {
         List<Field> fields;
+        char separator;
         RandomAccessFile raf;
         byte[] b;
         long filePointer;
 
-        public PipelineResolver(List<Field> fields, RandomAccessFile raf) {
+        public PipelineResolver(List<Field> fields, char separator, RandomAccessFile raf) {
             this.fields = fields;
+            this.separator = separator;
             this.raf = raf;
         }
 

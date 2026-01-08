@@ -11,7 +11,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
 import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.connector.file.model.FileResolver;
-import org.dbsyncer.connector.file.model.FileSchema;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -152,7 +151,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             final List<Field> fields = null;
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             // TODO
-            final char separator = "|".charAt(0);
+            final char separator = '|';
 
             String fileDir = connectorInstance.getConfig().getFileDir();
             final String filePath = fileDir.concat(context.getCommand().get(FILE_NAME));
@@ -189,7 +188,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         }
 
         // TODO
-        final String separator = new String(new char[]{"|".charAt(0)});
+        final String separator = String.valueOf('|');
 
         Result result = new Result();
         OutputStream output = null;
