@@ -70,6 +70,8 @@ public final class BufferActuatorRouter implements DisposableBean {
                 if (listener != null) {
                     try {
                         listener.refreshEvent(offset);
+                        // 触发异步持久化（统一在基类处理，避免每个子类重复实现）
+                        listener.flushEvent();
                     } catch (Exception e) {
                         logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
                     }

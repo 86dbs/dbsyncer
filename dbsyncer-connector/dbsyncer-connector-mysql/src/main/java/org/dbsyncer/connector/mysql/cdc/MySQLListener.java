@@ -172,7 +172,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                         event.getSourceTableName(), event.getEvent(),
                         client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
                 try {
-                    TimeUnit.MILLISECONDS.sleep(1);
+                    TimeUnit.MILLISECONDS.sleep(100);
                 } catch (InterruptedException ignored) {
                 }
             } catch (Exception e) {
@@ -362,7 +362,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 if (sql.startsWith("SAVEPOINT")) {
                     return null;
                 }
-                logger.warn("不支持的ddl:{}", sql);
+                logger.debug("不支持的ddl:{}", sql);
             }
             return null;
         }
