@@ -10,7 +10,10 @@
                 <div class="col-sm-9">
                     <select id="pluginId" name="pluginId" class="form-control select-control-default">
                         <option value="" selected="selected">无</option>
-                        <option th:value="${p?.className +'_'+ p?.version}" th:text="${p?.name +'_'+ p?.version}" th:each="p,state : ${plugin}" th:selected="${tableGroup eq null and p.className eq mapping?.plugin?.className or p.className eq tableGroup?.plugin?.className}">
+                        <option th:value="${p?.className +'_'+ p?.version}" th:text="${p?.name +'_'+ p?.version}"
+                                th:each="p,state : ${plugin}"
+                                th:selected="${p.className eq (tableGroup?.plugin?.className ?: mapping?.plugin?.className)
+                                and p.version eq (tableGroup?.plugin?.version ?: mapping?.plugin?.version)}">
                     </select>
                 </div>
             </div>
