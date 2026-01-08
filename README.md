@@ -52,9 +52,10 @@
 #### 方式二 🐳 docker
 * 阿里云镜像
 ```shell
+# 社区版
 docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+# 专业版
 docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
-docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
 ```
 
 * 运行命令
@@ -74,14 +75,26 @@ docker run -d \
   --log-opt max-file=7 \
   registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
 
-# 容器日志
-docker logs --tail 20 dbsyncer
-
-# 本地日志文件
+# 本地日志
 ls -la /opt/dbsyncer/logs
 
-# 实时日志（Ctrl+C退出）
+# 容器日志
+docker logs --tail 20 dbsyncer
+# 容器实时日志（Ctrl+C退出）
 docker logs -f dbsyncer
+# 进入容器内部
+docker exec -it dbsyncer /bin/bash
+# 查看容器日志
+ls -la /app/dbsyncer/logs
+
+# 停止容器
+docker stop dbsyncer
+# 启动容器
+docker start dbsyncer
+# 重启容器
+docker restart dbsyncer
+# 删除容器（需先停止）
+docker rm dbsyncer
 ```
 
 ## ⚙️手动编译
