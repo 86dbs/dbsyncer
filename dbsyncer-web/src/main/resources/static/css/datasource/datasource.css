@@ -41,8 +41,8 @@
 .connector-item {
     display: flex;
     align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
+    padding: 10px 15px;
+    margin-bottom: 8px;
     background-color: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
@@ -120,7 +120,6 @@
 .connector-name {
     font-weight: bold;
     font-size: 16px;
-    margin-bottom: 5px;
     color: #333;
 }
 

@@ -64,7 +64,7 @@ function renderConnectorList(connectors) {
         connectorHtml += '    </div>';
         connectorHtml += '    <div class="connector-info">';
         connectorHtml += '        <div class="connector-name">' + escapeHtml(connector.name) + '</div>';
-        connectorHtml += '        <div class="connector-type">' + escapeHtml(connector.type) + '</div>';
+//        connectorHtml += '        <div class="connector-type">' + escapeHtml(connector.type) + '</div>';
         connectorHtml += '    </div>';
         connectorHtml += '    <div class="connector-actions">';
         connectorHtml += '        <div class="dropdown">';
