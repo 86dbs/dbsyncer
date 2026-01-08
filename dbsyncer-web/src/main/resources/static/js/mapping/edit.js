@@ -775,8 +775,68 @@ function bindNavbarEvents() {
 function clearTimer() {
     if (timer3 !== null) {
         clearInterval(timer3);
-        timer3 = null; // 重置全局定时器变量
+        timer3 = null;
     }
+}
+
+// 绑定编辑页面操作按钮事件
+function bindEditPageOperationButtons() {
+    $('.mapping-operation-buttons a').click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $url = $(this).data('url') || $(this).attr("th:url") || $(this).attr("href");
+        $url = $url ? $url.replace('javascript:;', '') : '';
+        var $confirm = $(this).attr("confirm");
+        var $confirmMessage = $(this).attr("confirmMessage");
+
+        if ("true" == $confirm) {
+            BootstrapDialog.show({
+                title: "警告",
+                type: BootstrapDialog.TYPE_DANGER,
+                message: $confirmMessage,
+                size: BootstrapDialog.SIZE_NORMAL,
+                buttons: [{
+                    label: "确定",
+                    action: function (dialog) {
+                        doPostForEditPage($url);
+                        dialog.close();
+                    }
+                }, {
+                    label: "取消",
+                    action: function (dialog) {
+                        dialog.close();
+                    }
+                }]
+            });
+            return;
+        }
+
+        doPostForEditPage($url);
+    });
+}
+
+// 编辑页面专用的POST请求处理
+function doPostForEditPage(url) {
+    doPoster(url, null, function (data) {
+        if (data.success == true) {
+            var projectGroup = $("#projectGroup").val() || '';
+            bootGrowl(data.resultValue, "success");
+            
+            if (url.indexOf('/mapping/remove') !== -1) {
+                // 清除定时器，避免删除后仍尝试获取任务状态
+                clearTimer();
+                backIndexPage(projectGroup);
+            } else {
+                var mappingId = $("#mappingId").val();
+                if (mappingId) {
+                    refresh(mappingId, $("#mappingShow").val());
+                }
+            }
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
 }
 
 $(function () {
@@ -812,6 +872,9 @@ $(function () {
     initSelectIndex($(".select-control-table"), -1);
     // 绑定下拉过滤按钮点击事件
     bindMultipleSelectFilterBtnClick();
+
+    // 绑定编辑页面操作按钮事件
+    bindEditPageOperationButtons();
 
     // 返回
     $("#mappingBackBtn").click(function () {

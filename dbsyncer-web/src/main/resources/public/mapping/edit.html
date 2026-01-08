@@ -20,6 +20,32 @@
                 <h3>
                     <span id="mappingModifyName">[[${mapping?.name}]]</span>&nbsp;
                     <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-edit well-sign-green dbsyncer_pointer"></i>
+                    
+                    <span class="mapping-operation-buttons" style="margin-left: 20px;">
+                        <a th:attr="data-url='/mapping/copy?id='+${mapping?.id}"
+                           href="javascript:;"
+                           class="btn btn-info margin-right-5"
+                           title="复制任务">
+                            <i class="fa fa-copy"></i> 复制
+                        </a>
+                        <a th:if="${mapping?.meta?.state ne 1}"
+                           th:attr="data-url='/mapping/remove?id='+${mapping?.id}"
+                           href="javascript:;"
+                           confirm="true"
+                           confirmMessage="确认删除任务?"
+                           class="btn btn-danger margin-right-5"
+                           title="删除任务">
+                            <i class="fa fa-trash"></i> 删除
+                        </a>
+                        <a th:attr="data-url='/mapping/reset?id='+${mapping?.id}"
+                           href="javascript:;"
+                           confirm="true"
+                           confirmMessage="确认重置任务?"
+                           class="btn btn-default margin-right-5"
+                           title="重置任务">
+                            <i class="fa fa-refresh"></i> 重置
+                        </a>
+                    </span>
                 </h3>
                 <p>[[${mapping?.id}]]</p>
             </div>
