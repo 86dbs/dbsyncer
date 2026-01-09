@@ -23,8 +23,8 @@
     margin-bottom: 15px;
 }
 
-.mappingList .col-md-3 {max-width: 23%;
-    flex: 0 0 23%;
+.mappingList .col-md-3 {max-width: 25%;
+    flex: 0 0 25%;
     padding: 0 7.5px;
     margin-bottom: 15px;
     display: flex;
@@ -53,7 +53,7 @@
     min-height: 220px;
     background-color: #fff;
     width: 100%;
-    max-width: 230px;
+    max-width: 260px;
 }
 
 .mappingList .dbsyncer_block:hover {
