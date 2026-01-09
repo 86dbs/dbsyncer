@@ -69,19 +69,36 @@ function refreshLicenseInfo() {
     });
 }
 
-// 跳转主页
-function backIndexPage(projectGroupId) {
-    // 如果没有传递projectGroupId参数，则从页面的隐藏字段中获取当前分组ID
-    if (typeof projectGroupId !== 'string' || projectGroupId === '') {
-        projectGroupId = $('#projectGroup').val() || '';
-    }
-    // 使用updateHash更新URL哈希，而不是直接调用doLoader
-    updateHash("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
+// 跳转主页或返回上一页
+function backIndexPage(projectGroupId, forceToIndex) {
+    // 如果强制返回主页，则跳转到主页
+    if (forceToIndex === true) {
+        // 如果没有传递projectGroupId参数，则从页面的隐藏字段中获取当前分组ID
+        if (typeof projectGroupId !== 'string' || projectGroupId === '') {
+            projectGroupId = $('#projectGroup').val() || '';
+        }
+        // 使用updateHash更新URL哈希，而不是直接调用doLoader
+        updateHash("/index?projectGroupId=" + projectGroupId + "&refresh=" + new Date().getTime(), 1);
 
-     // 设置导航栏活动状态为驱动
-    var $menu = $('#menu > li');
-    $menu.removeClass('active');
-    $menu.eq(0).addClass('active')
+         // 设置导航栏活动状态为驱动
+        var $menu = $('#menu > li');
+        $menu.removeClass('active');
+        $menu.eq(0).addClass('active');
+        return;
+    }
+    
+    // 尝试从 sessionStorage 获取来源页面
+    const previousPage = sessionStorage.getItem('previousPage');
+    
+    if (previousPage) {
+        // 清除来源页面记录
+        sessionStorage.removeItem('previousPage');
+        // 跳转到来源页面
+        updateHash(previousPage);
+    } else {
+        // 如果没有来源页面，则返回主页
+        backIndexPage(projectGroupId, true);
+    }
 }
 
 // 美化SQL
@@ -248,6 +265,12 @@ $.fn.serializeJson = function () {
 function updateHash(url, route) {
     // 使用更明确的变量名，避免与window.location.hash混淆
     const hashValue = '#' + url + (route ? '?route=' + route : '');
+    
+    // 如果当前URL不是编辑页面，则记录为来源页面
+    const currentHash = window.location.hash.substring(1);
+    if (currentHash && !currentHash.includes('/page/edit') && !currentHash.includes('/pageAdd')) {
+        sessionStorage.setItem('previousPage', currentHash);
+    }
     
     // 检查是否需要更新哈希，避免不必要的hashchange事件
     if (window.location.hash !== hashValue) {
