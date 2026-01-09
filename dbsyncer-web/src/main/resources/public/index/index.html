@@ -248,7 +248,7 @@
                         <div id="cardView" class="col-md-12" style="display: none;">
                             <div class="row mappingList">
                                 <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-3 col-sm-6 mb-3">
-                                    <div class="panel panel-default dbsyncer_block" style="height: 280px; display: flex; flex-direction: column; max-width: 260px;">
+                                    <div class="panel panel-default dbsyncer_block" style="height: 280px; display: flex; flex-direction: column; max-width: 260px; cursor: pointer;" th:attr="data-id=${m?.id}">
                                         <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; font-size: 16px; padding: 10px;">
                                             <!-- 任务信息头部 -->
                                             <div class="text-center mb-4">
@@ -409,18 +409,15 @@
                                                     <a th:if="${m?.meta?.state ne 1}"
                                                         th:attr="data-url='/mapping/start?id='+${m?.id}"
                                                         href="javascript:;"
-                                                        class="btn btn-sm btn-primary"><i
-                                                            class="fa fa-check-circle-o"></i> 启动</a>
+                                                        class="btn btn-sm btn-primary" style="min-width: 100px;"><i
+                                                            class="fa fa-check-circle-o"></i> 启动任务</a>
                                                     <!-- 运行中 -->
                                                     <a th:if="${m?.meta?.state eq 1}"
                                                         th:attr="data-url='/mapping/stop?id='+${m?.id}"
                                                         href="javascript:;"
-                                                        class="btn btn-sm btn-warning"><i
-                                                            class="fa fa-times-circle-o"></i> 停止</a>
-                                                    <a href="javascript:;"
-                                                        th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
-                                                        class="btn btn-sm btn-primary"><i
-                                                            class="fa fa-pencil"></i> 编辑</a>
+                                                        class="btn btn-sm btn-warning" style="min-width: 100px;"><i
+                                                            class="fa fa-times-circle-o"></i> 停止任务</a>
+
                                                 </div>
                                             </div>
                                         </div>

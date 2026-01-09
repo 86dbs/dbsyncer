@@ -89,16 +89,8 @@ function bindAddMapping() {
 // 编辑任务
 function bindEditMapping() {
     $(".mappingList .dbsyncer_block").click(function (e) {
-        // 在卡片视图下，禁用点击功能
-        if ($('#cardView').is(':visible')) {
-            // 阻止事件冒泡和默认行为
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-        
-        // 在列表视图下，保持原有功能
-        var $id = $(this).attr("id");
+        // 获取任务 ID
+        var $id = $(this).attr("data-id") || $(this).attr("id");
         if ($id) {
             updateHash('/mapping/page/edit?classOn=0&id=' + $id);
 
