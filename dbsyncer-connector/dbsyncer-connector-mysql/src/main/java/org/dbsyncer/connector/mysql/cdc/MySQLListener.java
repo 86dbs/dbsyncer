@@ -164,12 +164,15 @@ public class MySQLListener extends AbstractDatabaseListener {
         snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
     }
 
-    private void trySendEvent(ChangedEvent event) {
+    private boolean trySendEvent(ChangedEvent event) {
         // 如果消费事件失败，重试
         while (client.isConnected()) {
             try {
                 sendChangedEvent(event);
-                break;
+                // 所有发送成功的事件都是任务事件（已通过 isFilterTable 过滤）
+                // 发送成功时，增加任务数据计数
+                incrementPendingTaskData();
+                return true;  // 发送成功
             } catch (QueueOverflowException e) {
                 logger.warn("队列已满，等待300毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
                         event.getSourceTableName(), event.getEvent(),
@@ -197,6 +200,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             logger.error(errorMsg);
             errorEvent(new MySQLException(errorMsg));
         }
+        return false;  // 发送失败
     }
 
     static final class Host {
@@ -307,13 +311,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    // 增加任务数据计数
-                    incrementPendingTaskData();
-                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
+                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
                         trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }
@@ -323,13 +325,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    // 增加任务数据计数
-                    incrementPendingTaskData();
-                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
+                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
                         trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }
@@ -339,13 +339,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    // 增加任务数据计数
-                    incrementPendingTaskData();
-                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
+                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
                         trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
                     });
                 }

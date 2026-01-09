@@ -152,9 +152,11 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     
     /**
      * 减少任务数据计数（数据同步完成时调用）
+     * 只有在计数 > 0 时才减少，避免 DDL/SCAN 等非 ROW 事件导致计数变成负数
      */
     public void decrementPendingTaskData() {
-        pendingTaskDataCount.decrementAndGet();
+        // 使用 updateAndGet 确保原子性：只有在计数 > 0 时才减少
+        pendingTaskDataCount.updateAndGet(count -> count > 0 ? count - 1 : 0);
     }
     
     /**
