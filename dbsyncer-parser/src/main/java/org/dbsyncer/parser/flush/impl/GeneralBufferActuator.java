@@ -174,20 +174,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                     break;
                 case SCAN:
                     pickers.forEach(picker -> {
-                        try {
-                            distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false);
                     });
                     break;
                 case ROW:
                     pickers.forEach(picker -> {
-                        try {
-                            distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        distributeTableGroup(response, mapping, picker, picker.getSourceFields(), true);
                     });
                     break;
                 default:
@@ -218,10 +210,14 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         return generalExecutor;
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) throws Exception {
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         if (response.getColumnNames() == null || response.getColumnNames().isEmpty()) {
             return;
         }
+
+        Result result;
+        TableGroup tableGroup = tableGroupPicker.getTableGroup();
+
         // 1、映射字段
         // 优先使用事件携带的列名信息，确保字段映射与数据一致
         List<Field> actualSourceFields;
@@ -233,7 +229,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                     mapping.getId(), response.getTableName(), response.getColumnNames());
             logger.error(msg);
             logService.log(LogType.MappingLog.RUNNING, msg);
-            throw new RuntimeException(msg);
+            result = new Result();
+            result.error = msg;
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+            return;
         }
 
         boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
@@ -248,13 +249,25 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
 
         // 2、参数转换
-        TableGroup tableGroup = tableGroupPicker.getTableGroup();
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
+        try {
+            context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
+            context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
+        } catch (Exception e) {
+            String msg = String.format("获取连接异常！mappingId: %s，msg %s",
+                    mapping.getId(), e.getMessage());
+            logger.error(msg);
+            logService.log(LogType.MappingLog.RUNNING, msg);
+            result = new Result();
+            result.error = msg;
+            result.setTableGroupId(tableGroup.getId());
+            result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+            flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
+            return;
+        }
         context.setSourceTableName(tableGroup.getSourceTable().getName());
         context.setTargetTableName(tableGroup.getTargetTable().getName());
         context.setTraceId(response.getTraceId());
@@ -275,7 +288,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         if (mapping.getParams() != null) {
             context.getCommand().putAll(mapping.getParams());
         }
-        Result result;
         try {
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
