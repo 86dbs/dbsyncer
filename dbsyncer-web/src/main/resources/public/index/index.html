@@ -69,13 +69,13 @@
                 <div class="col-md-12">
                     <!-- 任务开始位置 -->
                     <div class="form-group" th:if="${connectorSize gt 0}">
-                        <div class="col-md-12">
+                        <div class="col-md-12" style="display: flex; align-items: center; gap: 20px;">
                             <button type="button" class="btn btn-primary" id="indexAddMappingBtn">
                                 <span class="fa fa-plus"></span>添加任务([[${mappings?.size()} ?: 0]])
                             </button>
                             
                             <!-- 布局切换按钮 -->
-                            <div class="btn-group" style="margin-left: 10px;">
+                            <div class="btn-group">
                                 <button type="button" class="btn btn-default active" id="listViewBtn" title="列表视图">
                                     <i class="fa fa-list"></i>
                                 </button>
@@ -84,15 +84,41 @@
                                 </button>
                             </div>
                             
-                            <div class="input-group" style="display: inline-flex; width: 300px; margin-left: 20px;">
-                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="按名称搜索任务..."
+                            <!-- 搜索框 -->
+                            <div class="input-group" style="width: 200px;">
+                                <input type="text" class="form-control" id="mappingSearchInput" placeholder="搜索任务..."
                                     style="border-radius: 4px 0 0 4px;" />
-                                <span class="input-group-btn" style="display: inline;">
+                                <span class="input-group-btn">
                                     <button class="btn btn-default" id="mappingSearchBtn" type="button"
                                         style="border-radius: 0 4px 4px 0; margin-left: -1px;">
-                                        <i class="fa fa-search"></i> 搜索
+                                        <i class="fa fa-search"></i>
                                     </button>
                                 </span>
+                            </div>
+                            
+                            <!-- 三个下拉框 -->
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span>状态：</span>
+                                    <select class="form-control input-sm" id="filterState" style="width: 80px;">
+                                        <option value="">全部</option>
+                                        <option value="0">未开始</option>
+                                        <option value="1">进行中</option>
+                                        <option value="3">异常</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span>数据源：</span>
+                                    <select class="form-control input-sm" id="filterSource" style="width: 100px;">
+                                        <option value="">全部</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span>目标源：</span>
+                                    <select class="form-control input-sm" id="filterTarget" style="width: 100px;">
+                                        <option value="">全部</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
