@@ -249,7 +249,7 @@
                             <div class="row mappingList">
                                 <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-3 col-sm-6 mb-3">
                                     <div class="panel panel-default dbsyncer_block" style="height: 280px; display: flex; flex-direction: column; max-width: 260px;">
-                                        <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; font-size: 16px;">
+                                        <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; font-size: 16px; padding: 10px;">
                                             <!-- 任务信息头部 -->
                                             <div class="text-center mb-4">
                                                 <h4 th:text="${m?.name}" class="text-primary" style="margin: 0; font-size: 20px;"></h4>
@@ -272,15 +272,14 @@
                                             </div>
 
                                             <!-- 同步类型 -->
-                                            <div class="mb-4 p-3 border rounded" style="background-color: #f8f9fa; padding: 10px;">
+                                            <div class="mb-3 border rounded" style="background-color: #f8f9fa; padding: 8px;">
                                                 <span class="text-muted">同步类型：</span>
                                                 <span th:text="${m?.meta?.model}"></span>
                                             </div>
 
                                             <!-- 连接信息 -->
                                             <div class="mb-4 flex-grow-1">
-                                                <div class="p-3 border rounded mb-3" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 10px; white-space: nowrap; overflow: hidden;">
-                                                    <span class="text-muted mr-1">起始源：</span>
+                                                <div class="border rounded mb-2" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 8px; white-space: nowrap; overflow: hidden;">
                                                     <img draggable="false"
                                                         th:src="@{'/img/'+ ${m?.sourceConnector?.config?.connectorType} + '.png'}"
                                                         style="width: 16px; height: 16px; margin-right: 3px;">
@@ -296,6 +295,12 @@
 
                                                 <div class="p-3 border rounded" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 10px; white-space: nowrap; overflow: hidden;">
                                                     <span class="text-muted mr-1">目标源：</span>
+
+                                                <div class="text-center my-1">
+                                                    <i class="fa fa-arrow-down text-muted"></i>
+                                                </div>
+
+                                                <div class="border rounded" style="background-color: #f8f9fa; display: flex; align-items: center; padding: 8px; white-space: nowrap; overflow: hidden;">
                                                     <img draggable="false"
                                                         th:src="@{'/img/'+ ${m?.targetConnector?.config?.connectorType} + '.png'}"
                                                         style="width: 16px; height: 16px; margin-right: 3px;">
@@ -308,7 +313,7 @@
                                                         th:title="连接异常" style="margin-left: 0;"><i
                                                             class="fa fa-times-circle-o well-sign-red"></i></span>
                                                 </div>
-                                                
+
                                                 <!-- 同步统计信息 -->
                                                 <div class="col-md-12 mb-3">
                                                     <table class="table table-hover table-sm">
@@ -348,7 +353,7 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                
+
                                                 <!-- 操作按钮 -->
                                                 <div class="col-md-12">
                                                     <div class="operation-buttons btn-group btn-group-sm">
@@ -398,7 +403,7 @@
                                             </div>
 
                                             <!-- 操作按钮 -->
-                                            <div class="mt-auto pt-6">
+                                            <div class="pt-4" style="margin-top: auto;">
                                                 <div class="operation-buttons" style="display: flex; justify-content: center; gap: 15px;">
                                                     <!-- 未运行 -->
                                                     <a th:if="${m?.meta?.state ne 1}"
