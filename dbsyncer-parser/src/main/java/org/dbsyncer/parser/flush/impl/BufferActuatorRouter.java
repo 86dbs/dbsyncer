@@ -12,6 +12,7 @@ import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
@@ -72,8 +73,16 @@ public final class BufferActuatorRouter implements DisposableBean {
                         listener.refreshEvent(offset);
                         // 触发异步持久化（统一在基类处理，避免每个子类重复实现）
                         listener.flushEvent();
+                        // 数据同步完成，减少任务数据计数
+                        if (listener instanceof AbstractListener) {
+                            ((AbstractListener) listener).decrementPendingTaskData();
+                        }
                     } catch (Exception e) {
                         logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
+                        // 异常时也要减少计数，避免计数一直增加
+                        if (listener instanceof AbstractListener) {
+                            ((AbstractListener) listener).decrementPendingTaskData();
+                        }
                     }
                 }
             }

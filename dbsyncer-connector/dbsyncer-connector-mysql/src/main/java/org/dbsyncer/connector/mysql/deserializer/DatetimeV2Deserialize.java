@@ -32,7 +32,7 @@ public final class DatetimeV2Deserialize {
             int second = bitSlice(datetime, 34, 6, 40);
             // 如果所有字段都是 0，说明是零值日期，返回 null
             if (day == 0 && hour == 0 && minute == 0 && second == 0 && fsp == 0) {
-                logger.warn("MySQL zero date (0000-00-00) detected, returning null. bytes={}", bytesToHex(bytes));
+                logger.debug("MySQL zero date (0000-00-00) detected, returning null. bytes={}", bytesToHex(bytes));
                 return null;
             }
         }

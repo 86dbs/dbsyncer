@@ -171,11 +171,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 sendChangedEvent(event);
                 break;
             } catch (QueueOverflowException e) {
-                logger.warn("队列已满，等待1毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
+                logger.warn("队列已满，等待300毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
                         event.getSourceTableName(), event.getEvent(),
                         client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
                 try {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    TimeUnit.MILLISECONDS.sleep(300);
                 } catch (InterruptedException ignored) {
                 }
             } catch (Exception e) {
@@ -273,7 +273,17 @@ public class MySQLListener extends AbstractDatabaseListener {
             // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
             EventHeader header = event.getHeader();
             if (header.getEventType() == EventType.XID) {
-                refresh(header);
+                refresh(header);  // 更新 snapshot（无论任务事件还是非任务事件都需要更新）
+                
+                // 非任务事件：只有在没有任务数据在处理时，才更新 pendingSnapshot
+                // 任务事件的 pendingSnapshot 会在 refreshOffset() 时通过 flushEvent() 更新
+                if (!hasPendingTaskData()) {
+                    try {
+                        flushEvent();  // 更新 pendingSnapshot
+                    } catch (Exception e) {
+                        logger.error("非任务事件 XID 更新 pendingSnapshot 失败", e);
+                    }
+                }
                 return;
             }
 
@@ -297,6 +307,9 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    // 增加任务数据计数
+                    incrementPendingTaskData();
+                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
@@ -310,6 +323,9 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    // 增加任务数据计数
+                    incrementPendingTaskData();
+                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
@@ -323,6 +339,9 @@ public class MySQLListener extends AbstractDatabaseListener {
                 // 移除 refresh(header)：DML 事件不再更新快照点，只在 XID 事件时更新
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
+                    // 增加任务数据计数
+                    incrementPendingTaskData();
+                    
                     long tableId = data.getTableId();
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
