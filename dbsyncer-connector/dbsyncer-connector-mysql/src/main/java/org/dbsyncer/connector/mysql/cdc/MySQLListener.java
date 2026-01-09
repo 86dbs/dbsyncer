@@ -90,7 +90,10 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
-        refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
+        // 不使用 offset.getPosition()，因为它是 ROW 事件的位置（中间位置）
+        // 快照点已经在 XID 事件中通过 refresh() 方法更新为事务提交位置
+        // 这里不需要做任何操作，因为 snapshot 已经在 XID 事件中更新了
+        // 数据同步完成后，只需要触发 flushEvent() 来更新 pendingSnapshot，不需要再次更新 snapshot
     }
 
     private void run() throws Exception {
