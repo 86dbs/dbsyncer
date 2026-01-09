@@ -467,13 +467,55 @@ function bindMappingSearch() {
             performMappingSearch();
         }
     });
+
+    // 初始化筛选下拉框
+    initFilterDropdowns();
+}
+
+function initFilterDropdowns() {
+    // 加载数据源列表
+    $.ajax({
+        url: '/datasource/list',
+        type: 'POST',
+        success: function (data) {
+            if (data.success && data.status === 200) {
+                var connectors = data.resultValue;
+                var $sourceSelect = $('#filterSource');
+                var $targetSelect = $('#filterTarget');
+
+                // 清空现有选项（保留"全部"选项）
+                $sourceSelect.find('option:not(:first)').remove();
+                $targetSelect.find('option:not(:first)').remove();
+
+                // 添加数据源选项
+                if (Array.isArray(connectors)) {
+                    connectors.forEach(function(connector) {
+                        var option = '<option value="' + connector.id + '">' + connector.name + '</option>';
+                        $sourceSelect.append(option);
+                        $targetSelect.append(option);
+                    });
+                }
+            }
+        },
+        error: function () {
+            bootGrowl('加载数据源列表失败', "danger");
+        }
+    });
+
+    // 绑定下拉框change事件
+    $('#filterState, #filterSource, #filterTarget').on('change', function() {
+        performMappingSearch();
+    });
 }
 
 function performMappingSearch() {
     var keyword = $("#mappingSearchInput").val().trim();
+    var state = $("#filterState").val();
+    var sourceConnectorId = $("#filterSource").val();
+    var targetConnectorId = $("#filterTarget").val();
     
-    // 如果关键词为空，显示所有任务并返回
-    if (keyword === '') {
+    // 如果所有筛选条件都为空，显示所有任务并返回
+    if (keyword === '' && state === '' && sourceConnectorId === '' && targetConnectorId === '') {
         var isCardView = $('#cardView').is(':visible');
         if (isCardView) {
             // 卡片视图：显示所有卡片的外层容器
@@ -494,7 +536,10 @@ function performMappingSearch() {
         type: 'GET',
         data: {
             keyword: keyword,
-            projectGroupId: projectGroupId
+            projectGroupId: projectGroupId,
+            state: state,
+            sourceConnectorId: sourceConnectorId,
+            targetConnectorId: targetConnectorId
         },
         success: function (data) {
             if (data.success && data.status === 200) {
