@@ -4,7 +4,6 @@
 package org.dbsyncer.connector.kafka.validator;
 
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -28,46 +27,16 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
 
     @Override
     public void modify(KafkaConnector connectorService, KafkaConfig connectorConfig, Map<String, String> params) {
-        String bootstrapServers = params.get("bootstrapServers");
-        String topic = params.get("topic");
-        String fields = params.get("fields");
-        Assert.hasText(bootstrapServers, "bootstrapServers is empty.");
-        Assert.hasText(topic, "topic is empty.");
-        Assert.hasText(fields, "fields is empty.");
+        String url = params.get("url");
+        String consumerProperties = params.get("consumerProperties");
+        String producerProperties = params.get("producerProperties");
+        Assert.hasText(url, "url is empty.");
+        Assert.hasText(consumerProperties, "consumerProperties is empty.");
+        Assert.hasText(producerProperties, "producerProperties is empty.");
 
-        String groupId = params.get("groupId");
-        String serializer = params.get("serializer");
-        Assert.hasText(groupId, "groupId is empty.");
-        Assert.hasText(serializer, "serializer is empty.");
-        int sessionTimeoutMs = NumberUtil.toInt(params.get("sessionTimeoutMs"));
-        int maxPartitionFetchBytes = NumberUtil.toInt(params.get("maxPartitionFetchBytes"));
-
-        String deserializer = params.get("deserializer");
-        String acks = params.get("acks");
-        Assert.hasText(deserializer, "deserializer is empty.");
-        Assert.hasText(acks, "acks is empty.");
-        int bufferMemory = NumberUtil.toInt(params.get("bufferMemory"));
-        int batchSize = NumberUtil.toInt(params.get("batchSize"));
-        int lingerMs = NumberUtil.toInt(params.get("lingerMs"));
-        int retries = NumberUtil.toInt(params.get("retries"));
-        int maxRequestSize = NumberUtil.toInt(params.get("maxRequestSize"));
-
-        connectorConfig.setBootstrapServers(bootstrapServers);
-        connectorConfig.setTopic(topic);
-        connectorConfig.setFields(fields);
-
-        connectorConfig.setGroupId(groupId);
-        connectorConfig.setSerializer(serializer);
-        connectorConfig.setSessionTimeoutMs(sessionTimeoutMs);
-        connectorConfig.setMaxPartitionFetchBytes(maxPartitionFetchBytes);
-
-        connectorConfig.setDeserializer(deserializer);
-        connectorConfig.setBufferMemory(bufferMemory);
-        connectorConfig.setBatchSize(batchSize);
-        connectorConfig.setLingerMs(lingerMs);
-        connectorConfig.setAcks(acks);
-        connectorConfig.setRetries(retries);
-        connectorConfig.setMaxRequestSize(maxRequestSize);
+        connectorConfig.setUrl(url);
+        connectorConfig.getProperties().put("consumerProperties", consumerProperties);
+        connectorConfig.getProperties().put("producerProperties", producerProperties);
     }
 
     @Override
@@ -75,10 +44,10 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
-        Assert.hasText(tableName, "TableName is empty.");
-        Assert.hasText(columnList, "ColumnList is empty.");
+        Assert.hasText(tableName, "TableName is empty");
+        Assert.hasText(columnList, "ColumnList is empty");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
-        Assert.notEmpty(fields, "Fields is empty.");
+        Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());

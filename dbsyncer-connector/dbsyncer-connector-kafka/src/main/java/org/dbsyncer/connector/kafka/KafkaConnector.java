@@ -47,6 +47,10 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    public static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
+    public static final String TOPIC = "topic";
+    public static final String GROUP_ID = "group.id";
+
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
 
     @Override
@@ -90,7 +94,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         try {
             KafkaConfig config = connectorInstance.getConfig();
             Properties props = new Properties();
-            props.put("bootstrap.servers", config.getBootstrapServers());
+            props.put(BOOTSTRAP_SERVERS, config.getUrl());
             adminClient = AdminClient.create(props);
             DescribeClusterResult clusterResult = adminClient.describeCluster();
             String clusterId = clusterResult.clusterId().get();
@@ -143,10 +147,9 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         }
 
         Result result = new Result();
-        final KafkaConfig cfg = connectorInstance.getConfig();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
-            String topic = cfg.getTopic();
+            String topic = context.getCommand().get(TOPIC);
             // 默认取第一个主键
             final String pk = pkFields.get(0).getName();
             data.forEach(row -> connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row));
@@ -162,12 +165,17 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return new HashMap<>();
+        Map<String, String> cmd = new HashMap<>();
+        cmd.put(TOPIC, commandConfig.getTable().getName());
+        cmd.put(GROUP_ID, String.valueOf(commandConfig.getTable().getExtInfo().get(GROUP_ID)));
+        return cmd;
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return new HashMap<>();
+        Map<String, String> cmd = new HashMap<>();
+        cmd.put(TOPIC, commandConfig.getTable().getName());
+        return cmd;
     }
 
     @Override

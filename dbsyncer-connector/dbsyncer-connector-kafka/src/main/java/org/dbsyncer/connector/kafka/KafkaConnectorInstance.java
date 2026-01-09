@@ -25,7 +25,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
 
     @Override
     public String getServiceUrl() {
-        return config.getBootstrapServers();
+        return config.getUrl();
     }
 
     @Override

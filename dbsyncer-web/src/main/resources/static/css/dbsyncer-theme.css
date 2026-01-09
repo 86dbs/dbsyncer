@@ -545,3 +545,6 @@ select[readonly] {
 .badge-warning { background-color: rgba(250, 140, 22, 0.12); color: var(--warning-color); }
 .badge-error { background-color: rgba(245, 34, 45, 0.12); color: var(--error-color); }
 .badge-info { background-color: rgba(24, 144, 255, 0.12); color: var(--info-color); }
+
+/* 空白块，用于占位页面 */
+.blank-block { height: 220px; width: 100%}

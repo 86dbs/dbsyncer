@@ -37,10 +37,10 @@ public class FileConfigValidator implements ConfigValidator<FileConnector, FileC
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
-        Assert.hasText(tableName, "TableName is empty.");
-        Assert.hasText(columnList, "ColumnList is empty.");
+        Assert.hasText(tableName, "TableName is empty");
+        Assert.hasText(columnList, "ColumnList is empty");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
-        Assert.notEmpty(fields, "Fields is empty.");
+        Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());

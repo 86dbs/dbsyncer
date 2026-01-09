@@ -46,10 +46,10 @@ public final class ESConfigValidator implements ConfigValidator<ElasticsearchCon
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
         String type = params.get(ElasticsearchConnector._TYPE);
-        Assert.hasText(tableName, "TableName is empty.");
-        Assert.hasText(columnList, "ColumnList is empty.");
+        Assert.hasText(tableName, "TableName is empty");
+        Assert.hasText(columnList, "ColumnList is empty");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
-        Assert.notEmpty(fields, "Fields is empty.");
+        Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
         table.setColumn(fields);
         table.getExtInfo().put(ElasticsearchConnector._TYPE, type);

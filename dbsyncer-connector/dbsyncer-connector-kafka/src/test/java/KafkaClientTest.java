@@ -8,8 +8,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaClient;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.enums.KafkaFieldTypeEnum;
-import org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer;
-import org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.junit.After;
@@ -37,23 +35,22 @@ public class KafkaClientTest {
     @Before
     public void init() {
         config = new KafkaConfig();
-        config.setBootstrapServers("127.0.0.1:9092");
-        config.setTopic("mytopic");
-        config.setFields(getFields());
-        config.setDeserializer(JsonToMapDeserializer.class.getName());
-        config.setSerializer(MapToJsonSerializer.class.getName());
-
-        config.setGroupId("test");
-        config.setSessionTimeoutMs(10000);
-        config.setMaxPartitionFetchBytes(1048576);
-
-        config.setBufferMemory(33554432);
-        config.setBatchSize(32768);
-        config.setLingerMs(10);
-        config.setAcks("1");
-        config.setRetries(1);
-        config.setMaxRequestSize(1048576);
-
+        config.setUrl("127.0.0.1:9092");
+        config.getProperties().put("consumerProperties", "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
+                "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
+                "session.timeout.ms=10000\n" +
+                "max.partition.fetch.bytes=1048576\n" +
+                "enable.auto.commit=true\n" +
+                "auto.commit.interval.ms=5000");
+        config.getProperties().put("producerProperties", "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
+                "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" +
+                "buffer.memory=33554432\n" +
+                "batch.size=32768\n" +
+                "linger.ms=10\n" +
+                "acks=1\n" +
+                "retries=1\n" +
+                "max.block.ms=60000\n" +
+                "max.request.size=1048576");
         client = KafkaUtil.getConnection(config);
     }
 
@@ -67,7 +64,7 @@ public class KafkaClientTest {
         logger.info("test begin");
         logger.info("ping {}", client.ping());
 
-        client.subscribe(Arrays.asList(config.getTopic()));
+        client.subscribe(Arrays.asList("my_topic"));
 
         // 模拟生产者
 //        for (int i = 0; i < 5; i++) {

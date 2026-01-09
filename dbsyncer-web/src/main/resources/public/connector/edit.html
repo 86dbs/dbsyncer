@@ -19,17 +19,19 @@
         <form id="connectorModifyForm" class="grid">
             <input type="hidden" name="id" th:value="${connector?.id}" />
 
-            <div class="form-item">
-                <label class="form-label">类型</label>
-                <div class="bg-gray-100">
-                    <input class="form-control" name="connectorType" readonly="readonly" type="text" th:value="${connector?.config?.connectorType}" />
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="bg-gray-100">
+                        <input class="form-control" name="connectorType" readonly="readonly" type="text" th:value="${connector?.config?.connectorType}" />
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-item">
-                <label class="form-label">名称<strong class="text-primary">*</strong></label>
-                <div class="form-control-area">
-                    <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称" th:value="${connector?.name}" />
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称" th:value="${connector?.name}" />
+                    </div>
                 </div>
             </div>
 

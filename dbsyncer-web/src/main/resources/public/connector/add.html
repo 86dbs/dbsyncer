@@ -17,18 +17,20 @@
         </div>
 
         <form id="connectorAddForm" class="grid">
-            <div class="form-item">
-                <label class="form-label">类型</label>
-                <div class="form-control-area">
-                    <select id="connectorType" name="connectorType" class="form-control">
-                        <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}"></option>
-                    </select>
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <select id="connectorType" name="connectorType" class="form-control">
+                            <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}"></option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="form-item">
-                <label class="form-label">名称<strong class="text-primary">*</strong></label>
-                <div class="form-control-area">
-                    <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称"/>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称"/>
+                    </div>
                 </div>
             </div>
             <div id="connectorConfig" class="mb-5"></div>
