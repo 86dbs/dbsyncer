@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.connector.kafka.util;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
@@ -21,18 +19,11 @@ import java.util.Properties;
  */
 public abstract class KafkaUtil {
 
-    public static KafkaProducer createProducer(KafkaConfig config, String properties) {
+    public static KafkaProducer<String, Object> createProducer(KafkaConfig config, String properties) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
         props.putAll(parse(properties));
         return new KafkaProducer<>(props);
-    }
-
-    public static KafkaConsumer createConsumer(KafkaConfig config, String properties) {
-        Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-        props.putAll(parse(properties));
-        return new KafkaConsumer<>(props);
     }
 
     public static Properties parse(String properties) {

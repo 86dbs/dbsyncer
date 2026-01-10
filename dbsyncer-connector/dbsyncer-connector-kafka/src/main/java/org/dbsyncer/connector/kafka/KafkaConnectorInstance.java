@@ -7,6 +7,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -60,6 +61,9 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
 
     @Override
     public void close() {
+        if (!CollectionUtils.isEmpty(producers)) {
+            producers.values().forEach(KafkaProducer::close);
+        }
         if (client != null) {
             client.close();
         }

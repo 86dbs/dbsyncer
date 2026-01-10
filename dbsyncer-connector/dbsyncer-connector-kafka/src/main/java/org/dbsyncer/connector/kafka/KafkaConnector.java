@@ -8,6 +8,7 @@ import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.kafka.cdc.KafkaListener;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -15,6 +16,7 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
@@ -46,9 +48,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static final String TOPIC = "topic";
-    public static final String PRODUCER_PROPERTIES = "producerProperties";
-    public static final String GROUP_ID = "group.id";
+    private final String TOPIC = "topic";
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
 
@@ -85,9 +85,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
         try {
-            connectorInstance.getConnection().describeCluster()
-                    .clusterId()
-                    .get(5, TimeUnit.SECONDS); // 5秒超时
+            connectorInstance.getConnection().describeCluster().clusterId().get(5, TimeUnit.SECONDS); // 5秒超时
             return true;
         } catch (Exception e) {
             throw new KafkaException(e);
@@ -161,7 +159,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             String topic = context.getCommand().get(TOPIC);
-            String producerProperties = context.getCommand().get(PRODUCER_PROPERTIES);
+            String producerProperties = context.getCommand().get("producerProperties");
             connectorInstance.checkProducerConfig(topic, producerProperties);
             String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
             data.forEach(row -> connectorInstance.send(topic, key, row));
@@ -177,10 +175,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        Map<String, String> cmd = new HashMap<>();
-        cmd.put(TOPIC, commandConfig.getTable().getName());
-        cmd.put(GROUP_ID, String.valueOf(commandConfig.getTable().getExtInfo().get(GROUP_ID)));
-        return cmd;
+        return new HashMap<>();
     }
 
     @Override
@@ -192,6 +187,9 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new KafkaListener();
+        }
         return null;
     }
 

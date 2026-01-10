@@ -71,7 +71,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
                 return;
             }
 
-            FileConnectorInstance instance = (FileConnectorInstance) connectorInstance;
+            FileConnectorInstance instance = getConnectorInstance();
             fileDir = instance.getConfig().getFileDir();
             connected = true;
 

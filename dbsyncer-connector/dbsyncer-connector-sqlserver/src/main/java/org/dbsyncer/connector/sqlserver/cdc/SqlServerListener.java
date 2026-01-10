@@ -98,7 +98,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
             readLastLsn();
 
             worker = new Worker();
-            worker.setName(new StringBuilder("cdc-parser-").append(serverName).append("_").append(worker.hashCode()).toString());
+            worker.setName("cdc-parser-" + serverName + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
             LsnPuller.addExtractor(metaId, this);

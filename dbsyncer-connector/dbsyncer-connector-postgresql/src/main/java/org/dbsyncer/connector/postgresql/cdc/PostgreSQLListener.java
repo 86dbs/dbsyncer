@@ -72,7 +72,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                 return;
             }
 
-            instance = (DatabaseConnectorInstance) connectorInstance;
+            instance = getConnectorInstance();
             config = instance.getConfig();
 
             final String walLevel = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));

@@ -96,7 +96,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             return;
         }
 
-        DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
+        DatabaseConnectorInstance instance = getConnectorInstance();
         AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
         String quotation = service.buildSqlWithQuotation();
 
