@@ -30,10 +30,16 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
     public void modify(KafkaConnector connectorService, KafkaConfig connectorConfig, Map<String, String> params) {
         String url = params.get("url");
         String properties = params.get("properties");
+        String producerProperties = params.get(KafkaUtil.PRODUCER_PROPERTIES);
+        String consumerProperties = params.get(KafkaUtil.CONSUMER_PROPERTIES);
         Assert.hasText(url, "url is empty.");
         Assert.hasText(properties, "properties is empty.");
+        Assert.hasText(producerProperties, "生产者参数不能为空");
+        Assert.hasText(consumerProperties, "消费者参数不能为空");
         connectorConfig.setUrl(url);
         connectorConfig.getProperties().putAll(KafkaUtil.parse(properties));
+        connectorConfig.getProperties().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
+        connectorConfig.getProperties().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
     }
 
     @Override

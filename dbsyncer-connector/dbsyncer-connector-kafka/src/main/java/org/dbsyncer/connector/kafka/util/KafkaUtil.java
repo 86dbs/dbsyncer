@@ -22,10 +22,13 @@ import java.util.Properties;
  */
 public abstract class KafkaUtil {
 
+    public static final String PRODUCER_PROPERTIES = "producerProperties";
+    public static final String CONSUMER_PROPERTIES = "consumerProperties";
+
     public static KafkaProducer<String, Object> createProducer(KafkaConfig config) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-        props.putAll(parse(config.getProperties().getProperty("producerProperties")));
+        props.putAll(parse(config.getProperties().getProperty(PRODUCER_PROPERTIES)));
         return new KafkaProducer<>(props);
     }
 
@@ -33,7 +36,7 @@ public abstract class KafkaUtil {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.putAll(parse(config.getProperties().getProperty("consumerProperties")));
+        props.putAll(parse(config.getProperties().getProperty(CONSUMER_PROPERTIES)));
 
         KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));

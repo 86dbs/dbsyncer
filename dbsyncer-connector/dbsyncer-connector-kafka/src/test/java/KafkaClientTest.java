@@ -50,19 +50,27 @@ public class KafkaClientTest {
                 "retry.backoff.ms=100";
         config.getProperties().putAll(KafkaUtil.parse(properties));
 
-        config.getProperties().put("consumerProperties", "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
+        config.getProperties().put(KafkaUtil.CONSUMER_PROPERTIES, "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
                 "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
-                "session.timeout.ms=10000\n" +
+                "auto.offset.reset=latest\n" +
+                "enable.auto.commit=false\n" +
+                "auto.commit.interval.ms=5000\n" +
+                "max.poll.records=500\n" +
+                "max.poll.interval.ms=300000\n" +
                 "max.partition.fetch.bytes=1048576\n" +
-                "enable.auto.commit=true\n" +
-                "auto.commit.interval.ms=5000");
+                "fetch.min.bytes=1\n" +
+                "fetch.max.wait.ms=500\n" +
+                "heartbeat.interval.ms=3000\n" +
+                "session.timeout.ms=10000");
 
-        config.getProperties().put("producerProperties", "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
+        config.getProperties().put(KafkaUtil.PRODUCER_PROPERTIES, "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
                 "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" +
-                "buffer.memory=33554432\n" +
-                "batch.size=32768\n" +
-                "linger.ms=10\n" +
                 "acks=1\n" +
+                "batch.size=32768\n" +
+                "buffer.memory=33554432\n" +
+                "compression.type=snappy\n" +
+                "enable.idempotence=true\n" +
+                "linger.ms=10\n" +
                 "retries=1\n" +
                 "max.block.ms=60000\n" +
                 "max.request.size=1048576");

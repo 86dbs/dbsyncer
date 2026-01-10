@@ -72,9 +72,8 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         } catch (Exception e) {
             logger.error("启动Kafka监听器失败", e);
             errorEvent(e);
-            throw new RuntimeException("启动Kafka监听器失败", e);
-        } finally {
             close();
+            throw new RuntimeException("启动Kafka监听器失败", e);
         }
     }
 
@@ -100,6 +99,10 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         }
     }
 
+    /**
+     * 恢复offset，在分区分配后进行
+     * 注意：Kafka Consumer 的分区分配是异步的，需要在第一次 poll 后才能获取到分区
+     */
     private void seekOffset(KafkaConsumer<String, Object> consumer, String topic) {
         String offsetStr = snapshot.get(OFFSET + topic);
         if (StringUtil.isNotBlank(offsetStr)) {
@@ -194,11 +197,11 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     if (connected && !isInterrupted()) {
                         sleepInMills(10);
                     }
+                } catch (Exception e) {
                     if (Thread.currentThread().isInterrupted()) {
                         logger.info("Kafka监听器Worker线程被中断");
                         break;
                     }
-                } catch (Exception e) {
                     logger.error("Kafka监听器Worker线程发生异常", e);
                     errorEvent(e);
                     sleepInMills(1000);
@@ -209,15 +212,15 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
 
         private void execute(ConsumerInfo consumerInfo) {
             try {
-                long batch = 0;
-                while (connected && batch < fetchSize) {
+                long processedCount = 0;
+                while (connected && processedCount < fetchSize) {
                     ConsumerRecords<String, Object> records = consumerInfo.consumer.poll(100);
                     if (records.isEmpty()) {
                         break;
                     }
                     for (ConsumerRecord<String, Object> record : records) {
                         processRecord(consumerInfo, record);
-                        batch++;
+                        processedCount++;
                     }
                     // 手动提交offset（如果启用了手动提交）
                     consumerInfo.consumer.commitSync();
