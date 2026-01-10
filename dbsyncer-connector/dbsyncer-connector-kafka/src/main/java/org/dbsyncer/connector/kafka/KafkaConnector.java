@@ -3,12 +3,11 @@
  */
 package org.dbsyncer.connector.kafka;
 
-import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -33,8 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka连接器实现
@@ -47,8 +46,8 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
     public static final String TOPIC = "topic";
+    public static final String PRODUCER_PROPERTIES = "producerProperties";
     public static final String GROUP_ID = "group.id";
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
@@ -85,39 +84,51 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
-        return connectorInstance.getConnection().ping();
+        try {
+            connectorInstance.getConnection().describeCluster()
+                    .clusterId()
+                    .get(5, TimeUnit.SECONDS); // 5秒超时
+            return true;
+        } catch (Exception e) {
+            throw new KafkaException(e);
+        }
     }
 
     @Override
     public List<String> getDatabases(KafkaConnectorInstance connectorInstance) {
-        AdminClient adminClient = null;
         try {
-            KafkaConfig config = connectorInstance.getConfig();
-            Properties props = new Properties();
-            props.put(BOOTSTRAP_SERVERS, config.getUrl());
-            adminClient = AdminClient.create(props);
-            DescribeClusterResult clusterResult = adminClient.describeCluster();
+            DescribeClusterResult clusterResult = connectorInstance.getConnection().describeCluster();
             String clusterId = clusterResult.clusterId().get();
             return Collections.singletonList(clusterId);
-        } catch (InterruptedException | ExecutionException e) {
-            logger.error("获取Kafka集群ID失败: {}", e.getMessage());
-            throw new KafkaException("获取Kafka集群ID失败: " + e.getMessage(), e);
-        } finally {
-            if (adminClient != null) {
-                adminClient.close();
-            }
+        } catch (Exception e) {
+            throw new KafkaException(e);
         }
     }
 
     @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return new ArrayList<>();
+        try {
+            List<Table> tables = new ArrayList<>();
+            Set<String> topics = connectorInstance.getConnection().listTopics().names().get();
+            if (!CollectionUtils.isEmpty(topics)) {
+                topics.forEach(topic -> {
+                    Table t = new Table();
+                    t.setName(topic);
+                    t.setType(getExtendedTableType().getCode());
+                    t.setColumn(new ArrayList<>());
+                    tables.add(t);
+                });
+            }
+            return tables;
+        } catch (Exception e) {
+            throw new KafkaException(e);
+        }
     }
 
     @Override
     public List<MetaInfo> getMetaInfo(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
-        for (Table table : context.getTablePatterns()){
+        for (Table table : context.getTablePatterns()) {
             MetaInfo metaInfo = new MetaInfo();
             metaInfo.setTable(table.getName());
             metaInfo.setTableType(getExtendedTableType().getCode());
@@ -135,7 +146,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Result reader(KafkaConnectorInstance connectorInstance, ReaderContext context) {
-        throw new KafkaException("Full synchronization is not supported");
+        throw new KafkaException("Unsupported method");
     }
 
     @Override
@@ -150,9 +161,10 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             String topic = context.getCommand().get(TOPIC);
-            // 默认取第一个主键
-            final String pk = pkFields.get(0).getName();
-            data.forEach(row -> connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+            String producerProperties = context.getCommand().get(PRODUCER_PROPERTIES);
+            connectorInstance.checkProducerConfig(topic, producerProperties);
+            String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
+            data.forEach(row -> connectorInstance.send(topic, key, row));
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据

@@ -6,6 +6,7 @@ package org.dbsyncer.connector.kafka.validator;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
@@ -28,15 +29,11 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
     @Override
     public void modify(KafkaConnector connectorService, KafkaConfig connectorConfig, Map<String, String> params) {
         String url = params.get("url");
-        String consumerProperties = params.get("consumerProperties");
-        String producerProperties = params.get("producerProperties");
+        String properties = params.get("properties");
         Assert.hasText(url, "url is empty.");
-        Assert.hasText(consumerProperties, "consumerProperties is empty.");
-        Assert.hasText(producerProperties, "producerProperties is empty.");
-
+        Assert.hasText(properties, "properties is empty.");
         connectorConfig.setUrl(url);
-        connectorConfig.getProperties().put("consumerProperties", consumerProperties);
-        connectorConfig.getProperties().put("producerProperties", producerProperties);
+        connectorConfig.getProperties().putAll(KafkaUtil.parse(properties));
     }
 
     @Override

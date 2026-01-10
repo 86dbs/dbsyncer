@@ -29,7 +29,7 @@ public abstract class KafkaUtil {
             Properties props = new Properties();
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
             String consumerProperties = config.getProperties().getProperty("consumerProperties");
-            props.putAll(getProperties(consumerProperties));
+            props.putAll(parse(consumerProperties));
             consumer = new KafkaConsumer<>(props);
         }
 
@@ -39,13 +39,27 @@ public abstract class KafkaUtil {
             Properties props = new Properties();
             props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
             String properties = config.getProperties().getProperty("producerProperties");
-            props.putAll(getProperties(properties));
+            props.putAll(parse(properties));
             producer = new KafkaProducer<>(props);
         }
         return new KafkaClient(consumer, producer);
     }
 
-    private static Properties getProperties(String properties) {
+    public static KafkaProducer createProducer(KafkaConfig config, String properties) {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
+        props.putAll(parse(properties));
+        return new KafkaProducer<>(props);
+    }
+
+    public static KafkaConsumer createConsumer(KafkaConfig config, String properties) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
+        props.putAll(parse(properties));
+        return new KafkaConsumer<>(props);
+    }
+
+    public static Properties parse(String properties) {
         return PropertiesUtil.parse(properties.replaceAll("\r\n", "&"));
     }
 

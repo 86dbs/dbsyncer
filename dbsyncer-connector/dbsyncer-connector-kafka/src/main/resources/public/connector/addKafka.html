@@ -17,9 +17,22 @@
 
     <div class="grid mt-4">
         <div class="form-item">
+            <label class="form-label">连接参数</label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="8">
+[[${connector?.config?.propertiesText ?:
+'connections.max.idle.ms=60000
+request.timeout.ms=30000
+retry.backoff.ms=100'}]]</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-4">
+        <div class="form-item">
             <label class="form-label">消费者参数</label>
             <div class="form-control-area">
-                <textarea name="consumerProperties" class="form-control" maxlength="1024" rows="8">
+                <textarea class="form-control" maxlength="1024" rows="8">
 [[${connector?.config?.propertiesText ?:
 'key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
 value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer
@@ -35,7 +48,7 @@ auto.commit.interval.ms=5000'}]]</textarea>
         <div class="form-item">
             <label class="form-label">生产者参数</label>
             <div class="form-control-area">
-                <textarea name="producerProperties" class="form-control" maxlength="1024" rows="8">
+                <textarea class="form-control" maxlength="1024" rows="8">
 [[${connector?.config?.propertiesText ?:
 'key.serializer=org.apache.kafka.common.serialization.StringSerializer
 value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer
