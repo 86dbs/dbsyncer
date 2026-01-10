@@ -43,9 +43,8 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
             client = AdminClient.create(props);
             getClusterId();
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
             close();
+            throw new RuntimeException(e);
         }
     }
 
