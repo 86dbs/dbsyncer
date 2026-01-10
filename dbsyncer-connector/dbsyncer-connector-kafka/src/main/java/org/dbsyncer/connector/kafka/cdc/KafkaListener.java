@@ -9,6 +9,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.dbsyncer.common.QueueOverflowException;
+import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -45,8 +47,10 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     private final List<ConsumerInfo> consumers = new ArrayList<>();
 
     private final int fetchSize = 1000;
+    private final int consumerThreadSize = 5;
     private volatile boolean connected = false;
     private Worker worker;
+    private ExecutorService executor;
 
     @Override
     public void start() {
@@ -55,6 +59,8 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         KafkaConfig config = instance.getConfig();
 
         try {
+            int coreSize = Runtime.getRuntime().availableProcessors();
+            executor = BatchTaskUtil.createExecutor(coreSize, coreSize * 2, 128);
             for (Table table : customTable) {
                 String topic = table.getName();
                 String groupId = table.getExtInfo().getProperty("groupId");
@@ -97,6 +103,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
             // 关闭所有consumer
             consumers.forEach(ConsumerInfo::close);
             consumers.clear();
+            executor.shutdown();
         }
     }
 
@@ -186,37 +193,21 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         trySendEvent(new RowChangedEvent(topic, ConnectorConstant.OPERTION_INSERT, rowData, topic, record.offset()));
     }
 
-    private void doPull() {
-        // TODO 改为并行
-        for (ConsumerInfo consumerInfo : consumers) {
-            try {
-                long total = 0;
-                while (connected && total < fetchSize) {
-                    ConsumerRecords<String, Object> records = consumerInfo.consumer.poll(100);
-                    if (records.isEmpty()) {
-                        break;
-                    }
-                    for (ConsumerRecord<String, Object> record : records) {
-                        processRecord(consumerInfo, record);
-                        total++;
-                    }
-                    // 手动提交offset（如果启用了手动提交）
-                    consumerInfo.consumer.commitSync();
-                }
-            } catch (Exception e) {
-                logger.error("处理topic {} 的消息时出错", consumerInfo.table.getName(), e);
-                errorEvent(e);
-            }
-        }
-    }
-
     final class Worker extends Thread {
+
+        int total = consumers.size();
 
         @Override
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    doPull();
+                    int offset = 0;
+                    do {
+                        List<ConsumerInfo> collect = consumers.stream().skip(offset).limit(consumerThreadSize).collect(Collectors.toList());
+                        BatchTaskUtil.execute(executor, collect, this::execute, logger);
+                        offset = offset + consumerThreadSize;
+                    } while (offset < total);
+
                     if (connected && !isInterrupted()) {
                         sleepInMills(10);
                     }
@@ -231,6 +222,27 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                 }
             }
             logger.info("Kafka监听器Worker线程已退出");
+        }
+
+        private void execute(ConsumerInfo consumerInfo) {
+            try {
+                long batch = 0;
+                while (connected && batch < fetchSize) {
+                    ConsumerRecords<String, Object> records = consumerInfo.consumer.poll(100);
+                    if (records.isEmpty()) {
+                        break;
+                    }
+                    for (ConsumerRecord<String, Object> record : records) {
+                        processRecord(consumerInfo, record);
+                        batch++;
+                    }
+                    // 手动提交offset（如果启用了手动提交）
+                    consumerInfo.consumer.commitSync();
+                }
+            } catch (Exception e) {
+                logger.error("处理topic {} 的消息时出错", consumerInfo.table.getName(), e);
+                errorEvent(e);
+            }
         }
 
     }
