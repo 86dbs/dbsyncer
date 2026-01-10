@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -159,10 +161,9 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             String topic = context.getCommand().get(TOPIC);
-            String producerProperties = context.getCommand().get("producerProperties");
-            connectorInstance.checkProducerConfig(topic, producerProperties);
+            KafkaProducer<String, Object> producer = connectorInstance.getProducer(topic);
             String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
-            data.forEach(row -> connectorInstance.send(topic, key, row));
+            data.forEach(row -> producer.send(new ProducerRecord<>(key, row)));
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据

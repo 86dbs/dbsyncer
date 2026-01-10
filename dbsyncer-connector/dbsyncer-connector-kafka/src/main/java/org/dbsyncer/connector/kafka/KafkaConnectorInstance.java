@@ -5,8 +5,8 @@ package org.dbsyncer.connector.kafka;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
@@ -84,18 +84,15 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
         return super.clone();
     }
 
-    public void send(String topic, String key, Map row) {
-        KafkaProducer<String, Object> producer = producers.get(topic);
-        if (producer != null) {
-            producer.send(new ProducerRecord<>(key, row));
-        }
-    }
-
-    public void checkProducerConfig(String properties, String topic) {
-        producers.putIfAbsent(topic, KafkaUtil.createProducer(config, properties));
-    }
-
     public String getClusterId() throws ExecutionException, InterruptedException, TimeoutException {
         return client.describeCluster().clusterId().get(3, TimeUnit.SECONDS);
+    }
+
+    public KafkaProducer<String, Object> getProducer(String topic) {
+        return producers.putIfAbsent(topic, KafkaUtil.createProducer(config));
+    }
+
+    public KafkaConsumer<String, Object> getConsumer(String topic, String groupId) {
+        return KafkaUtil.createConsumer(config, topic, groupId);
     }
 }

@@ -5,6 +5,8 @@
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
@@ -18,8 +20,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,7 +36,10 @@ public class KafkaClientTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private KafkaConnectorInstance instance;
-    private KafkaConsumer consumer;
+    private KafkaConsumer<String, Object> consumer;
+    private KafkaProducer<String, Object> producer;
+    private final String topic = "my_topic";
+    private final String groupId = "my_group";
 
     @Before
     public void init() {
@@ -41,12 +49,14 @@ public class KafkaClientTest {
                 "request.timeout.ms=30000\n" +
                 "retry.backoff.ms=100";
         config.getProperties().putAll(KafkaUtil.parse(properties));
+
         config.getProperties().put("consumerProperties", "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
                 "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
                 "session.timeout.ms=10000\n" +
                 "max.partition.fetch.bytes=1048576\n" +
                 "enable.auto.commit=true\n" +
                 "auto.commit.interval.ms=5000");
+
         config.getProperties().put("producerProperties", "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
                 "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" +
                 "buffer.memory=33554432\n" +
@@ -58,7 +68,10 @@ public class KafkaClientTest {
                 "max.request.size=1048576");
         instance = new KafkaConnectorInstance(config);
 
-        consumer = KafkaUtil.createConsumer(config, config.getProperties().getProperty("consumerProperties"));
+        // 生产者
+        producer = instance.getProducer(topic);
+        // 消费者
+        consumer = instance.getConsumer(topic, groupId);
     }
 
     @After
@@ -77,16 +90,16 @@ public class KafkaClientTest {
         KafkaConnector connector = new KafkaConnector();
         logger.info("ping {}", connector.isAlive(instance));
 
-//        instance.subscribe(Arrays.asList("my_topic"));
-
         // 模拟生产者
-//        for (int i = 0; i < 5; i++) {
-//            Map<String, Object> map = new HashMap<>();
-//            map.put("id", i);
-//            map.put("name", "张三" + i);
-//            map.put("update_time", new Timestamp(System.currentTimeMillis()));
-//            client.send(config.getTopic(), map.get("id").toString(), map);
-//        }
+        for (int i = 0; i < 5; i++) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", i);
+            map.put("name", "张三" + i);
+            map.put("update_time", new Timestamp(System.currentTimeMillis()));
+
+            String key = String.valueOf(i);
+            producer.send(new ProducerRecord<>(key, map));
+        }
 
         new Consumer().start();
         TimeUnit.SECONDS.sleep(6000);
@@ -127,8 +140,13 @@ public class KafkaClientTest {
         public void run() {
             while (true) {
                 ConsumerRecords<String, Object> records = consumer.poll(100);
-                for (ConsumerRecord record : records) {
+                for (ConsumerRecord<String, Object> record : records) {
                     logger.info("收到消息：offset = {}, key = {}, value = {}", record.offset(), record.key(), record.value());
+                }
+                try {
+                    TimeUnit.MILLISECONDS.sleep(10);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }

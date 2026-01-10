@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.kafka.cdc;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -12,8 +11,6 @@ import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
-import org.dbsyncer.connector.kafka.config.KafkaConfig;
-import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.ChangedEvent;
@@ -25,10 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +41,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
 
     private final List<ConsumerInfo> consumers = new ArrayList<>();
 
+    private static final String OFFSET = "offset_";
     private final int fetchSize = 1000;
     private final int consumerThreadSize = 5;
     private volatile boolean connected = false;
@@ -56,31 +52,21 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     public void start() {
         connected = true;
         KafkaConnectorInstance instance = getConnectorInstance();
-        KafkaConfig config = instance.getConfig();
-
         try {
             int coreSize = Runtime.getRuntime().availableProcessors();
-            executor = BatchTaskUtil.createExecutor(coreSize, coreSize * 2, 128);
+            int queueSize = Math.min(customTable.size(), 128);
+            executor = BatchTaskUtil.createExecutor(coreSize, coreSize * 2, queueSize);
             for (Table table : customTable) {
                 String topic = table.getName();
                 String groupId = table.getExtInfo().getProperty("groupId");
-
-                Properties properties = KafkaUtil.parse(config.getProperties().getProperty("consumerProperties"));
-                Properties props = new Properties();
-                props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-                props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-                props.putAll(properties);
-
-                KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(props);
-                consumer.subscribe(Collections.singletonList(topic));
-                // 恢复offset
-                restoreOffset(consumer, topic);
+                KafkaConsumer<String, Object> consumer = instance.getConsumer(topic, groupId);
+                seekOffset(consumer, topic);
                 consumers.add(new ConsumerInfo(table, consumer));
                 logger.info("Kafka监听器已订阅topic: {}, groupId: {}", topic, groupId);
             }
 
             worker = new Worker();
-            worker.setName("kafka-listener-" + config.getUrl() + "_" + worker.hashCode());
+            worker.setName("kafka-listener-" + instance.getConfig().getUrl() + "_" + worker.hashCode());
             worker.setDaemon(false);
             worker.start();
         } catch (Exception e) {
@@ -110,15 +96,12 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     @Override
     public void refreshEvent(ChangedOffset offset) {
         if (StringUtil.isNotBlank(offset.getNextFileName()) && offset.getPosition() != null) {
-            snapshot.put(offset.getNextFileName(), String.valueOf(offset.getPosition()));
+            snapshot.put(OFFSET + offset.getNextFileName(), String.valueOf(offset.getPosition()));
         }
     }
 
-    /**
-     * 恢复offset
-     */
-    private void restoreOffset(KafkaConsumer<String, Object> consumer, String topic) {
-        String offsetStr = snapshot.get(topic);
+    private void seekOffset(KafkaConsumer<String, Object> consumer, String topic) {
+        String offsetStr = snapshot.get(OFFSET + topic);
         if (StringUtil.isNotBlank(offsetStr)) {
             long offset = Long.parseLong(offsetStr);
             // 获取该topic的所有分区
