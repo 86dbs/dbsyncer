@@ -35,16 +35,18 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
         this.config = config;
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-        props.put(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 30000); // 连接空闲超时
-        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 10000);       // 请求超时
-        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, 100);          // 重试间隔
+        props.put(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 60000); // 连接空闲超时
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);       // 请求超时
+        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, 1000);          // 重试间隔
+        props.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, 300000);        // 元数据最大缓存时间（5分钟）
         props.putAll(config.getProperties());
+        props.remove(KafkaUtil.PRODUCER_PROPERTIES);
+        props.remove(KafkaUtil.CONSUMER_PROPERTIES);
         try {
             client = AdminClient.create(props);
-            getClusterId();
         } catch (Exception e) {
             close();
-            throw new RuntimeException(e);
+            throw new RuntimeException("创建Kafka AdminClient失败，URL: " + config.getUrl() + "，错误: " + e.getMessage(), e);
         }
     }
 
@@ -84,7 +86,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
     }
 
     public String getClusterId() throws ExecutionException, InterruptedException, TimeoutException {
-        return client.describeCluster().clusterId().get(3, TimeUnit.SECONDS);
+        return client.describeCluster().clusterId().get(10, TimeUnit.SECONDS);
     }
 
     public KafkaProducer<String, Object> getProducer(String topic) {

@@ -28,7 +28,7 @@ public abstract class KafkaUtil {
     public static KafkaProducer<String, Object> createProducer(KafkaConfig config) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-        props.putAll(parse(config.getProperties().getProperty(PRODUCER_PROPERTIES)));
+        props.putAll(parse(config.getExtInfo().getProperty(PRODUCER_PROPERTIES)));
         return new KafkaProducer<>(props);
     }
 
@@ -36,7 +36,7 @@ public abstract class KafkaUtil {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.putAll(parse(config.getProperties().getProperty(CONSUMER_PROPERTIES)));
+        props.putAll(parse(config.getExtInfo().getProperty(CONSUMER_PROPERTIES)));
 
         KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
@@ -47,6 +47,12 @@ public abstract class KafkaUtil {
         properties = properties.replaceAll("\r\n", "&");
         properties = properties.replaceAll("\n", "&");
         return PropertiesUtil.parse(properties);
+    }
+
+    public static String toString(Properties properties) {
+        String propertiesText = PropertiesUtil.toString(properties);
+        propertiesText = propertiesText.replaceAll("&","\r\n");
+        return propertiesText;
     }
 
 }

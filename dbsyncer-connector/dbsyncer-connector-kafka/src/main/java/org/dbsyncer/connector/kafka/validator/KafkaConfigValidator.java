@@ -38,8 +38,8 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         Assert.hasText(consumerProperties, "消费者参数不能为空");
         connectorConfig.setUrl(url);
         connectorConfig.getProperties().putAll(KafkaUtil.parse(properties));
-        connectorConfig.getProperties().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
-        connectorConfig.getProperties().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
+        connectorConfig.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
+        connectorConfig.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
     }
 
     @Override

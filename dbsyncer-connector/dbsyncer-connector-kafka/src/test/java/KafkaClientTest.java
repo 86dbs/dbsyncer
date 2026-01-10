@@ -50,7 +50,7 @@ public class KafkaClientTest {
                 "retry.backoff.ms=100";
         config.getProperties().putAll(KafkaUtil.parse(properties));
 
-        config.getProperties().put(KafkaUtil.CONSUMER_PROPERTIES, "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
+        config.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
                 "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
                 "auto.offset.reset=latest\n" +
                 "enable.auto.commit=false\n" +
@@ -63,7 +63,7 @@ public class KafkaClientTest {
                 "heartbeat.interval.ms=3000\n" +
                 "session.timeout.ms=10000");
 
-        config.getProperties().put(KafkaUtil.PRODUCER_PROPERTIES, "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
+        config.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
                 "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" +
                 "acks=1\n" +
                 "batch.size=32768\n" +

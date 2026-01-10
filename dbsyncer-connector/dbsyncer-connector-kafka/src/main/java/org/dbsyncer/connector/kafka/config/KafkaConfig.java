@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.kafka.config;
 
+import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
@@ -22,5 +23,11 @@ public class KafkaConfig extends ConnectorConfig {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    @Override
+    public String getPropertiesText() {
+        // 支持换行显示
+        return KafkaUtil.toString(getProperties());
     }
 }

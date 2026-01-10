@@ -547,4 +547,4 @@ select[readonly] {
 .badge-info { background-color: rgba(24, 144, 255, 0.12); color: var(--info-color); }
 
 /* 空白块，用于占位页面 */
-.blank-block { height: 220px; width: 100%}
+.blank-block { height: 290px; width: 100%}
