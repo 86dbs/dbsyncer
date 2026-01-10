@@ -4,8 +4,10 @@
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.kafka.KafkaClient;
+import org.dbsyncer.connector.kafka.KafkaConnector;
+import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.enums.KafkaFieldTypeEnum;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
@@ -17,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -29,13 +30,17 @@ import java.util.concurrent.TimeUnit;
 public class KafkaClientTest {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private KafkaClient client;
-    private KafkaConfig config;
+    private KafkaConnectorInstance instance;
+    private KafkaConsumer consumer;
 
     @Before
     public void init() {
-        config = new KafkaConfig();
+        KafkaConfig config = new KafkaConfig();
         config.setUrl("127.0.0.1:9092");
+        String properties = "connections.max.idle.ms=60000\n" +
+                "request.timeout.ms=30000\n" +
+                "retry.backoff.ms=100";
+        config.getProperties().putAll(KafkaUtil.parse(properties));
         config.getProperties().put("consumerProperties", "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
                 "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
                 "session.timeout.ms=10000\n" +
@@ -51,20 +56,28 @@ public class KafkaClientTest {
                 "retries=1\n" +
                 "max.block.ms=60000\n" +
                 "max.request.size=1048576");
-        client = KafkaUtil.getConnection(config);
+        instance = new KafkaConnectorInstance(config);
+
+        consumer = KafkaUtil.createConsumer(config, config.getProperties().getProperty("consumerProperties"));
     }
 
     @After
     public void close() {
-        client.close();
+        if (consumer != null) {
+            consumer.close();
+        }
+        if (instance != null) {
+            instance.close();
+        }
     }
 
     @Test
     public void testProducerAndConsumer() throws Exception {
         logger.info("test begin");
-        logger.info("ping {}", client.ping());
+        KafkaConnector connector = new KafkaConnector();
+        logger.info("ping {}", connector.isAlive(instance));
 
-        client.subscribe(Arrays.asList("my_topic"));
+//        instance.subscribe(Arrays.asList("my_topic"));
 
         // 模拟生产者
 //        for (int i = 0; i < 5; i++) {
@@ -76,7 +89,6 @@ public class KafkaClientTest {
 //        }
 
         new Consumer().start();
-        new Heartbeat().start();
         TimeUnit.SECONDS.sleep(6000);
         logger.info("test end");
     }
@@ -114,29 +126,10 @@ public class KafkaClientTest {
         @Override
         public void run() {
             while (true) {
-                ConsumerRecords<String, Object> records = client.poll(100);
+                ConsumerRecords<String, Object> records = consumer.poll(100);
                 for (ConsumerRecord record : records) {
                     logger.info("收到消息：offset = {}, key = {}, value = {}", record.offset(), record.key(), record.value());
                 }
-            }
-        }
-    }
-
-    class Heartbeat extends Thread {
-
-        public Heartbeat() {
-            setName("Heartbeat-thread");
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    TimeUnit.SECONDS.sleep(3L);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                logger.info("ping {}", client.ping());
             }
         }
     }
