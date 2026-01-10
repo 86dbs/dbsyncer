@@ -183,7 +183,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
             if (!CollectionUtils.isEmpty(list)) {
                 int size = list.size();
                 for (int i = 0; i < size; i++) {
-                    RowChangedEvent event = new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, list.get(i));
+                    RowChangedEvent event = new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, list.get(i), null, null);
                     if (i == size - 1) {
                         event.setNextFileName(filePosKey);
                         event.setPosition(raf.getFilePointer());

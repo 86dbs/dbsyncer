@@ -147,7 +147,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
                 case "O":
                     List<Object> data = new ArrayList<>();
                     readTupleData(tableId, buffer, data);
-                    return new RowChangedEvent(tableId.tableName, type.name(), data);
+                    return new RowChangedEvent(tableId.tableName, type.name(), data, null, null);
 
                 default:
                     logger.info("N, K, O not set, got instead {}", newTuple);
