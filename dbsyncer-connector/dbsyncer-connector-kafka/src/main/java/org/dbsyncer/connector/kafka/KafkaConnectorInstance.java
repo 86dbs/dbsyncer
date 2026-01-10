@@ -15,6 +15,9 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Kafka连接器实例
@@ -32,11 +35,18 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
         this.config = config;
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
-        props.put(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 60000); // 连接空闲超时
-        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);       // 请求超时
+        props.put(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 30000); // 连接空闲超时
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 10000);       // 请求超时
         props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, 100);          // 重试间隔
         props.putAll(config.getProperties());
-        client = AdminClient.create(props);
+        try {
+            client = AdminClient.create(props);
+            getClusterId();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            close();
+        }
     }
 
     @Override
@@ -83,5 +93,9 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
 
     public void checkProducerConfig(String properties, String topic) {
         producers.putIfAbsent(topic, KafkaUtil.createProducer(config, properties));
+    }
+
+    public String getClusterId() throws ExecutionException, InterruptedException, TimeoutException {
+        return client.describeCluster().clusterId().get(3, TimeUnit.SECONDS);
     }
 }

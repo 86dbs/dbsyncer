@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.kafka;
 
-import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -30,12 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Kafka连接器实现
@@ -85,7 +82,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
         try {
-            connectorInstance.getConnection().describeCluster().clusterId().get(5, TimeUnit.SECONDS); // 5秒超时
+            connectorInstance.getClusterId();
             return true;
         } catch (Exception e) {
             throw new KafkaException(e);
@@ -95,9 +92,12 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public List<String> getDatabases(KafkaConnectorInstance connectorInstance) {
         try {
-            DescribeClusterResult clusterResult = connectorInstance.getConnection().describeCluster();
-            String clusterId = clusterResult.clusterId().get();
-            return Collections.singletonList(clusterId);
+            List<String> db = new ArrayList<>();
+            String clusterId = connectorInstance.getClusterId();
+            if (StringUtil.isNotBlank(clusterId)) {
+                db.add(clusterId);
+            }
+            return db;
         } catch (Exception e) {
             throw new KafkaException(e);
         }
