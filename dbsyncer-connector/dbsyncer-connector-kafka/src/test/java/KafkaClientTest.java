@@ -95,7 +95,7 @@ public class KafkaClientTest {
     }
 
     @Test
-    public void testProducerAndConsumer() throws ExecutionException, InterruptedException {
+    public void testProducerAndConsumer() {
         logger.info("test begin");
         KafkaConnector connector = new KafkaConnector();
         logger.info("ping {}", connector.isAlive(instance));
@@ -109,9 +109,9 @@ public class KafkaClientTest {
 
             String key = String.valueOf(i);
             String message = JsonUtil.objToJson(map);
-            System.out.println(message);
-            Future<RecordMetadata> send = producer.send(new ProducerRecord<>(key, map));
-            System.out.println(JsonUtil.objToJson(send.get()));
+            System.out.println("发送成功消息: " + message);
+            Future<RecordMetadata> send = producer.send(new ProducerRecord<>(topic, key, map));
+            System.out.println("发送成功: " + JsonUtil.objToJson(send));
         }
 
 //        new Consumer().start();

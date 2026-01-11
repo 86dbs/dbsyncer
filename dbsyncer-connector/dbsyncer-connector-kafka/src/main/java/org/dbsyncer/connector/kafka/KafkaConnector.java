@@ -148,7 +148,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             String topic = context.getCommand().get(TOPIC);
             KafkaProducer<String, Object> producer = connectorInstance.getProducer(topic);
             String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
-            data.forEach(row -> producer.send(new ProducerRecord<>(key, row)));
+            data.forEach(row -> producer.send(new ProducerRecord<>(topic, key, row)));
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据

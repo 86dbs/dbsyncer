@@ -6,7 +6,6 @@ package org.dbsyncer.connector.kafka.cdc;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.TopicPartition;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
@@ -208,8 +207,8 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         // 转换为行数据
         List<Object> rowData = mapToRowList(consumerInfo.table.getColumn(), valueMap);
 
-        // 触发事件
-        trySendEvent(new RowChangedEvent(topic, ConnectorConstant.OPERTION_INSERT, rowData, topic, record.offset()));
+        // 触发事件，使用下一条消息的offset（nextOffset）作为position
+        trySendEvent(new RowChangedEvent(topic, ConnectorConstant.OPERTION_INSERT, rowData, topic, record.offset() + 1));
     }
 
     final class Worker extends Thread {
