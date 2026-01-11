@@ -8,8 +8,8 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.dbsyncer.common.util.JsonUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author AE86
@@ -26,7 +26,7 @@ public class JsonToMapDeserializer implements Deserializer<Map> {
         if (encodingValue == null) {
             encodingValue = configs.get("deserializer.encoding");
         }
-        if (encodingValue != null && encodingValue instanceof String) {
+        if (encodingValue instanceof String) {
             encoding = (String) encodingValue;
         }
     }
@@ -37,7 +37,7 @@ public class JsonToMapDeserializer implements Deserializer<Map> {
             if (data == null) {
                 return null;
             }
-            return JsonUtil.jsonToObj(new String(data, encoding), ConcurrentHashMap.class);
+            return JsonUtil.jsonToObj(new String(data, encoding), HashMap.class);
         } catch (UnsupportedEncodingException e) {
             throw new SerializationException("Error when deserializing byte[] to string due to unsupported encoding " + encoding);
         }

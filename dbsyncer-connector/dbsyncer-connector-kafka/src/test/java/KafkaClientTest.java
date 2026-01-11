@@ -101,13 +101,15 @@ public class KafkaClientTest {
         logger.info("ping {}", connector.isAlive(instance));
 
         // 模拟生产者
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             Map<String, Object> map = new HashMap<>();
             map.put("id", i);
             map.put("name", "张三" + i);
             map.put("create_date", new Timestamp(System.currentTimeMillis()));
 
             String key = String.valueOf(i);
+            String message = JsonUtil.objToJson(map);
+            System.out.println(message);
             Future<RecordMetadata> send = producer.send(new ProducerRecord<>(key, map));
             System.out.println(JsonUtil.objToJson(send.get()));
         }

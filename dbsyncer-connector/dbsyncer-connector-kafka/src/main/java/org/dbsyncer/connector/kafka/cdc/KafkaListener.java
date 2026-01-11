@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -62,7 +61,6 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                 String topic = table.getName();
                 String groupId = table.getExtInfo().getProperty("groupId");
                 KafkaConsumer<String, Object> consumer = instance.getConsumer(topic, groupId);
-                seekOffset(consumer, topic);
                 consumers.add(new ConsumerInfo(table, consumer));
                 logger.info("Kafka监听器已订阅topic: {}, groupId: {}", topic, groupId);
             }
@@ -250,6 +248,28 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
 
         private void execute(ConsumerInfo consumerInfo) {
             try {
+                // 第一次 poll 之前，先进行一次 poll 来触发分区分配
+                // 然后在分区分配之后恢复 offset
+                if (!consumerInfo.offsetRestored) {
+                    // 使用较短的超时时间来触发分区分配
+                    consumerInfo.consumer.poll(100);
+                    Set<TopicPartition> partitions = consumerInfo.consumer.assignment();
+                    logger.info("Consumer分区分配完成，topic: {}, groupId: {}, 分区数量: {}", 
+                        consumerInfo.table.getName(), consumerInfo.table.getExtInfo().getProperty("groupId"), partitions.size());
+                    if (!partitions.isEmpty()) {
+                        for (TopicPartition partition : partitions) {
+                            long position = consumerInfo.consumer.position(partition);
+                            logger.info("已分配分区: {}, 当前offset: {}", partition, position);
+                        }
+                    } else {
+                        logger.warn("Consumer分区分配为空，topic: {}, 可能topic不存在或consumer group有问题", consumerInfo.table.getName());
+                    }
+                    // 现在分区已经分配，可以恢复 offset
+                    seekOffset(consumerInfo.consumer, consumerInfo.table.getName());
+                    consumerInfo.offsetRestored = true;
+                    logger.info("Offset恢复完成，topic: {}", consumerInfo.table.getName());
+                }
+                
                 long processedCount = 0;
                 while (connected && processedCount < fetchSize) {
                     ConsumerRecords<String, Object> records = consumerInfo.consumer.poll(100);
@@ -261,7 +281,9 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                         processedCount++;
                     }
                     // 手动提交offset（如果启用了手动提交）
-                    consumerInfo.consumer.commitSync();
+                    if (processedCount > 0) {
+                        consumerInfo.consumer.commitSync();
+                    }
                 }
             } catch (Exception e) {
                 if (Thread.currentThread().isInterrupted()) {
@@ -280,6 +302,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         Table table;
         KafkaConsumer<String, Object> consumer;
         private final Object closeLock = new Object(); // 用于同步关闭操作
+        private volatile boolean offsetRestored = false; // 标记是否已恢复offset
 
         public ConsumerInfo(Table table, KafkaConsumer<String, Object> consumer) {
             this.table = table;
