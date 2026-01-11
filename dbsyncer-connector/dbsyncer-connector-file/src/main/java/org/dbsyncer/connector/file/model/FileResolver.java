@@ -24,7 +24,11 @@ public class FileResolver {
 
     public Map<String, Object> parseMap(List<Field> fields, char separator, String line) {
         Map<String, Object> row = new ConcurrentHashMap<>();
-        parse(fields, separator, line, row::put);
+        parse(fields, separator, line, (key, value) -> {
+            if (value != null) {
+                row.put(key, value);
+            }
+        });
         return row;
     }
 

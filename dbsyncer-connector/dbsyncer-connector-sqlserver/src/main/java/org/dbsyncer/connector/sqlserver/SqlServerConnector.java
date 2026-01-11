@@ -119,7 +119,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
-            DatabaseConfig config = (DatabaseConfig) commandConfig.getConnectorConfig();
             String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName)
                     + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
                     + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);

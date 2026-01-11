@@ -41,7 +41,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
 
     private final List<ConsumerInfo> consumers = new ArrayList<>();
 
-    private static final String OFFSET = "offset_";
+    private static final String OFFSET = "pos_";
     private final int fetchSize = 1000;
     private final int consumerThreadSize = 5;
     private volatile boolean connected = false;

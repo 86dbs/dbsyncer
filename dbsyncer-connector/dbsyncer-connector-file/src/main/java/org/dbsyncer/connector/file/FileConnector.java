@@ -137,7 +137,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
                 count.addAndGet(1);
             }
         } catch (IOException e) {
-            throw new FileException(e.getCause());
+            throw new FileException(e);
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -150,8 +150,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         FileReader reader = null;
         try {
             Map<String, String> command = context.getCommand();
-            String fieldList = command.get(ConnectorConstant.OPERTION_QUERY);
-            final List<Field> fields = JsonUtil.jsonToArray(fieldList, Field.class);
+            final List<Field> fields = context.getSourceTable().getColumn();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
             final char separator = command.get(FILE_SEPARATOR).charAt(0);
             reader = new FileReader(command.get(FILE_PATH));
@@ -171,7 +170,8 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
                 }
             }
         } catch (IOException e) {
-            throw new FileException(e.getCause());
+            logger.error(e.getMessage());
+            throw new FileException(e);
         } finally {
             IOUtils.closeQuietly(reader);
         }

@@ -52,7 +52,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String POS_PREFIX = "pos_";
+    private static final String OFFSET = "pos_";
     private static final String CHARSET_NAME = "UTF-8";
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
@@ -73,16 +73,15 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
 
             FileConnectorInstance instance = getConnectorInstance();
             fileDir = instance.getConfig().getFileDir();
+            if (!StringUtil.endsWith(fileDir, File.separator)) {
+                fileDir += File.separator;
+            }
             connected = true;
 
             initPipeline();
             watchService = FileSystems.getDefault().newWatchService();
             Path p = Paths.get(fileDir);
             p.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
-
-            for (String fileName : pipeline.keySet()) {
-                parseEvent(fileName);
-            }
 
             worker = new Worker();
             worker.setName("file-parser-" + getConnectorInstanceCacheKey() + "_" + worker.hashCode());
@@ -109,6 +108,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
     }
 
     private void initPipeline() throws IOException {
+        boolean needFlush = false;
         for (Table t : customTable) {
             String fileName = t.getName();
             String file = fileDir.concat(fileName);
@@ -121,10 +121,13 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
             } else {
                 raf.seek(raf.length());
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
-                super.forceFlushEvent();
+                needFlush = true;
             }
             String separator = t.getExtInfo().getProperty(FileConnector.FILE_SEPARATOR, StringUtil.VERTICAL_LINE);
             pipeline.put(fileName, new PipelineResolver(t.getColumn(), separator.charAt(0), raf));
+        }
+        if (needFlush) {
+            super.forceFlushEvent();
         }
     }
 
@@ -163,7 +166,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
     }
 
     private String getFilePosKey(String fileName) {
-        return POS_PREFIX.concat(fileName);
+        return OFFSET.concat(fileName);
     }
 
     private void parseEvent(String fileName) throws IOException {
@@ -183,7 +186,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
             if (!CollectionUtils.isEmpty(list)) {
                 int size = list.size();
                 for (int i = 0; i < size; i++) {
-                    RowChangedEvent event = new RowChangedEvent(fileName, ConnectorConstant.OPERTION_UPDATE, list.get(i), null, null);
+                    RowChangedEvent event = new RowChangedEvent(fileName, ConnectorConstant.OPERTION_INSERT, list.get(i), null, null);
                     if (i == size - 1) {
                         event.setNextFileName(filePosKey);
                         event.setPosition(raf.getFilePointer());
