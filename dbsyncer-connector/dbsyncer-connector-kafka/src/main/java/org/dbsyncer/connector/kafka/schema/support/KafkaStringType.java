@@ -3,9 +3,12 @@
  */
 package org.dbsyncer.connector.kafka.schema.support;
 
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +21,26 @@ public final class KafkaStringType extends StringType {
 
     @Override
     protected String merge(Object val, Field field) {
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
+        }
+
+        if (val instanceof Number) {
+            Number number = (Number) val;
+            return number.toString();
+        }
+
+        if (val instanceof Timestamp) {
+            return DateFormatUtil.timestampToString((Timestamp) val);
+        }
+
+        if (val instanceof Date) {
+            return DateFormatUtil.dateToString((Date) val);
+        }
+
+        if (val instanceof java.util.Date) {
+            return DateFormatUtil.dateToString((java.util.Date) val);
+        }
         return throwUnsupportedException(val, field);
     }
 
