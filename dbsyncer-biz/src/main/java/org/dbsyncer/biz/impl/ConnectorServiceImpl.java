@@ -135,7 +135,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         if (connector != null) {
             ConnectorConfig config = connector.getConfig();
             org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
-            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId());
             return connectorService.getSchemas(connectorInstance, database);
         }
         return Collections.emptyList();

@@ -34,6 +34,11 @@ public class MappingCustomTableVO {
     private Meta meta;
 
     /**
+     * 连接类型
+     */
+    private String connectorType;
+
+    /**
      * 可扩展类型 {@link org.dbsyncer.sdk.enums.TableTypeEnum}
      */
     private String extendedType;
@@ -70,6 +75,14 @@ public class MappingCustomTableVO {
 
     public void setMeta(Meta meta) {
         this.meta = meta;
+    }
+
+    public String getConnectorType() {
+        return connectorType;
+    }
+
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
     }
 
     public String getExtendedType() {

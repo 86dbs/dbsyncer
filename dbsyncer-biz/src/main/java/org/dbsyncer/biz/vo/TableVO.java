@@ -18,4 +18,8 @@ public final class TableVO extends Table {
     public String getColumnJson() {
         return JsonUtil.objToJson(super.getColumn());
     }
+
+    public String getExtInfoJson() {
+        return JsonUtil.objToJson(super.getExtInfo());
+    }
 }

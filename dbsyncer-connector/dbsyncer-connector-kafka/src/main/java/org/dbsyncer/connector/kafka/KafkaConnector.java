@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Kafka连接器实现
@@ -84,9 +83,10 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
         try {
-            connectorInstance.getClusterId();
+            connectorInstance.ping();
             return true;
         } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
             throw new KafkaException(e);
         }
     }
@@ -107,22 +107,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        try {
-            List<Table> tables = new ArrayList<>();
-            Set<String> topics = connectorInstance.getConnection().listTopics().names().get();
-            if (!CollectionUtils.isEmpty(topics)) {
-                topics.forEach(topic -> {
-                    Table t = new Table();
-                    t.setName(topic);
-                    t.setType(getExtendedTableType().getCode());
-                    t.setColumn(new ArrayList<>());
-                    tables.add(t);
-                });
-            }
-            return tables;
-        } catch (Exception e) {
-            throw new KafkaException(e);
-        }
+        return new ArrayList<>();
     }
 
     @Override

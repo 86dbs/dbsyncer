@@ -47,6 +47,7 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
+        String groupId = params.get("groupId");
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
@@ -54,6 +55,7 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
+        table.getExtInfo().put("groupId", groupId);
         return table;
     }
 

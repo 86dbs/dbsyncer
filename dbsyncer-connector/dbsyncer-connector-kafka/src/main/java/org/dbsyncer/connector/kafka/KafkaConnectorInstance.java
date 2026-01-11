@@ -3,15 +3,27 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Node;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +42,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
     private KafkaConfig config;
     private final AdminClient client;
     private final Map<String, KafkaProducer<String, Object>> producers = new ConcurrentHashMap<>();
+    private final List<InetSocketAddress> clusterNodes = new ArrayList<>();
 
     public KafkaConnectorInstance(KafkaConfig config) {
         this.config = config;
@@ -44,6 +57,8 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
         props.remove(KafkaUtil.CONSUMER_PROPERTIES);
         try {
             client = AdminClient.create(props);
+            getClusterNodes();
+            ping();
         } catch (Exception e) {
             close();
             throw new RuntimeException("创建Kafka AdminClient失败，URL: " + config.getUrl() + "，错误: " + e.getMessage(), e);
@@ -68,6 +83,35 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
     @Override
     public AdminClient getConnection() {
         return client;
+    }
+
+    public void ping() {
+        try {
+            getClusterNodes();
+        } catch (Exception e) {
+            // nothing to do
+        }
+        clusterNodes.forEach(node-> {
+            try (Socket socket = new Socket()) {
+                socket.connect(node, 5000);
+                socket.isConnected();
+            } catch (IOException e) {
+                throw new KafkaException(String.format("DNS resolution failed for url in %s %s:%s", CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, node.getHostName(), node.getPort()));
+            }
+        });
+    }
+
+    private void getClusterNodes() throws ExecutionException, InterruptedException {
+        if (client instanceof KafkaAdminClient) {
+            KafkaAdminClient kafkaAdminClient = (KafkaAdminClient) client;
+            DescribeClusterResult describeClusterResult = kafkaAdminClient.describeCluster();
+            KafkaFuture<Collection<Node>> nodes = describeClusterResult.nodes();
+            Collection<Node> nodeList = nodes.get();
+            if (!CollectionUtils.isEmpty(nodeList)) {
+                clusterNodes.clear();
+                nodeList.forEach(node -> clusterNodes.add(new InetSocketAddress(node.host(), node.port())));
+            }
+        }
     }
 
     @Override
