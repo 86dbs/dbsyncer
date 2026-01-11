@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -68,7 +71,6 @@ public class KafkaClientTest {
                 "acks=1\n" +
                 "batch.size=32768\n" +
                 "buffer.memory=33554432\n" +
-                "compression.type=snappy\n" +
                 "enable.idempotence=false\n" +
                 "linger.ms=10\n" +
                 "retries=1\n" +
@@ -93,7 +95,7 @@ public class KafkaClientTest {
     }
 
     @Test
-    public void testProducerAndConsumer() throws Exception {
+    public void testProducerAndConsumer() throws ExecutionException, InterruptedException {
         logger.info("test begin");
         KafkaConnector connector = new KafkaConnector();
         logger.info("ping {}", connector.isAlive(instance));
@@ -106,7 +108,8 @@ public class KafkaClientTest {
             map.put("create_date", new Timestamp(System.currentTimeMillis()));
 
             String key = String.valueOf(i);
-            producer.send(new ProducerRecord<>(key, map));
+            Future<RecordMetadata> send = producer.send(new ProducerRecord<>(key, map));
+            System.out.println(JsonUtil.objToJson(send.get()));
         }
 
 //        new Consumer().start();

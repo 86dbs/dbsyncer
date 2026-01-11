@@ -134,7 +134,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
     }
 
     public KafkaProducer<String, Object> getProducer(String topic) {
-        return producers.putIfAbsent(topic, KafkaUtil.createProducer(config));
+        return producers.computeIfAbsent(topic, k -> KafkaUtil.createProducer(config));
     }
 
     public KafkaConsumer<String, Object> getConsumer(String topic, String groupId) {
