@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.kafka.validator;
 
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
@@ -55,7 +56,10 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
-        table.getExtInfo().put("groupId", groupId);
+        // 消费者配置
+        if (StringUtil.isNotBlank(groupId)) {
+            table.getExtInfo().put("groupId", groupId);
+        }
         return table;
     }
 
