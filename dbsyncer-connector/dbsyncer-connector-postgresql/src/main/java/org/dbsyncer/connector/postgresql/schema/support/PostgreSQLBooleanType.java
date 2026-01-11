@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLBooleanType extends BooleanType {
+public final class PostgreSQLBooleanType extends BooleanType {
     private enum TypeEnum {
         BOOL("bool");
 
@@ -40,15 +40,4 @@ public class PostgreSQLBooleanType extends BooleanType {
         return throwUnsupportedException(val, field);
     }
 
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Boolean) {
-            return val;
-        }
-        if (val instanceof Number) {
-            Number num = (Number) val;
-            return num.intValue() == 1 ? Boolean.TRUE : Boolean.FALSE;
-        }
-        return throwUnsupportedException(val, field);
-    }
 }

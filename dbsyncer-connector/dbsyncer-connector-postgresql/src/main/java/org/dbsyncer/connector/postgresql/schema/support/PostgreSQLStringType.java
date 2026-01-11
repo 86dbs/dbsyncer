@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:04
  */
-public class PostgreSQLStringType extends StringType {
+public final class PostgreSQLStringType extends StringType {
     private enum TypeEnum {
         UUID("uuid"),
         VARCHAR("varchar"),

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLDateType extends DateType {
+public final class PostgreSQLDateType extends DateType {
     private enum TypeEnum {
         DATE("date");
 

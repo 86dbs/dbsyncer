@@ -11,6 +11,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.cdc.KafkaListener;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.schema.KafkaSchemaResolver;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -25,6 +26,7 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -49,6 +51,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     private final String TOPIC = "topic";
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
+    private final KafkaSchemaResolver schemaResolver = new KafkaSchemaResolver();
 
     @Override
     public String getConnectorType() {
@@ -179,4 +182,8 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         return null;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }
