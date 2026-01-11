@@ -36,6 +36,11 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     }
 
     @Override
+    public Byte asByte() {
+        return getValue().byteAt(0);
+    }
+
+    @Override
     public Short asShort() {
         byte[] bytes = asByteArray();
         int expectedLength = BinlogByteEnum.SHORT.getByteLength();

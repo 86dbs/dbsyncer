@@ -91,12 +91,19 @@
                 break;
             case 'File':
                 config.label = '文件名';
+                let separator = extInfo.separator === undefined ? '|' : extInfo.separator;
+                items.push(`<div class="form-item">
+                        <label class="form-label">分割符<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="separator" type="text" maxlength="128" value="${separator}" required/>
+                        </div>
+                    </div>`);
                 break;
             default:
                 config.label = '表名';
                 break;
         }
-        items.push(`<div class="form-item">
+        items.unshift(`<div class="form-item">
             <label class="form-label">${config.label}<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" name="tableName" type="text" maxlength="64" placeholder="请输入${config.label}" value="${tableName}" required />

@@ -11,8 +11,8 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
-import org.dbsyncer.connector.kafka.enums.KafkaFieldTypeEnum;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.junit.After;
 import org.junit.Before;
@@ -116,26 +116,26 @@ public class KafkaClientTest {
 
     private String getFields() {
         List<Field> fields = new ArrayList<>();
-        fields.add(genField("id", KafkaFieldTypeEnum.STRING, true));
-        fields.add(genField("name", KafkaFieldTypeEnum.STRING));
-        fields.add(genField("age", KafkaFieldTypeEnum.INTEGER));
-        fields.add(genField("count", KafkaFieldTypeEnum.LONG));
-        fields.add(genField("type", KafkaFieldTypeEnum.SHORT));
-        fields.add(genField("money", KafkaFieldTypeEnum.FLOAT));
-        fields.add(genField("score", KafkaFieldTypeEnum.DOUBLE));
-        fields.add(genField("status", KafkaFieldTypeEnum.BOOLEAN));
-        fields.add(genField("create_date", KafkaFieldTypeEnum.DATE));
-        fields.add(genField("time", KafkaFieldTypeEnum.TIME));
-        fields.add(genField("update_time", KafkaFieldTypeEnum.TIMESTAMP));
+        fields.add(genField("id", DataTypeEnum.STRING, true));
+        fields.add(genField("name", DataTypeEnum.STRING));
+        fields.add(genField("age", DataTypeEnum.INT));
+        fields.add(genField("count", DataTypeEnum.LONG));
+        fields.add(genField("type", DataTypeEnum.SHORT));
+        fields.add(genField("money", DataTypeEnum.FLOAT));
+        fields.add(genField("score", DataTypeEnum.DOUBLE));
+        fields.add(genField("status", DataTypeEnum.BOOLEAN));
+        fields.add(genField("create_date", DataTypeEnum.DATE));
+        fields.add(genField("time", DataTypeEnum.TIME));
+        fields.add(genField("update_time", DataTypeEnum.TIMESTAMP));
         return JsonUtil.objToJson(fields);
     }
 
-    private Field genField(String name, KafkaFieldTypeEnum typeEnum) {
+    private Field genField(String name, DataTypeEnum typeEnum) {
         return genField(name, typeEnum, false);
     }
 
-    private Field genField(String name, KafkaFieldTypeEnum typeEnum, boolean pk) {
-        return new Field(name, typeEnum.getClazz().getSimpleName(), typeEnum.getType(), pk);
+    private Field genField(String name, DataTypeEnum typeEnum, boolean pk) {
+        return new Field(name, typeEnum.name(), 12, pk);
     }
 
     class Consumer extends Thread {

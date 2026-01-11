@@ -40,13 +40,6 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
         setValue(value);
     }
 
-    /**
-     * 检查值是否为空（null、空字符串或字符串"null"）
-     */
-    private boolean isEmpty(String value) {
-        return value == null || StringUtil.isBlank(value) || "null".equalsIgnoreCase(value);
-    }
-
     @Override
     public String asString() {
         if (isEmpty(getValue())) {
@@ -65,6 +58,11 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
             return new byte[0];
         }
         return StringUtil.hexStringToByteArray(value.substring(2));
+    }
+
+    @Override
+    public Byte asByte() {
+        return 0;
     }
 
     @Override

@@ -4,8 +4,8 @@
 package org.dbsyncer.connector.file.model;
 
 import org.dbsyncer.common.column.Lexer;
-import org.dbsyncer.connector.file.column.ColumnValue;
-import org.dbsyncer.connector.file.column.impl.FileColumnValue;
+import org.dbsyncer.connector.file.column.FileColumnValue;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FileResolver {
 
-    private final ColumnValue value = new FileColumnValue();
+    private final FileColumnValue value = new FileColumnValue();
 
     public Map<String, Object> parseMap(List<Field> fields, char separator, String line) {
         Map<String, Object> row = new ConcurrentHashMap<>();
@@ -35,7 +35,7 @@ public class FileResolver {
     }
 
     /**
-     * Resolve the value of a {@link ColumnValue}.
+     * Resolve the value
      *
      * @param typeName
      * @param columnValue
@@ -47,40 +47,36 @@ public class FileResolver {
         if (value.isNull()) {
             return null;
         }
-
-        switch (typeName) {
-            case "string":
-                return value.asString();
-
-            case "integer":
-                return value.asInteger();
-
-            case "date":
-                return value.asDate();
-
-            case "timestamp":
-                return value.asTimestamp();
-
-            case "boolean":
-                return value.asBoolean();
-
-            case "long":
-                return value.asLong();
-
-            case "float":
-                return value.asFloat();
-
-            case "double":
-                return value.asDouble();
-
-            case "time":
-                return value.asTime();
-
-            case "bytea":
-                return value.asByteArray();
-
-            default:
-                return null;
+        try {
+            DataTypeEnum type = DataTypeEnum.getType(typeName);
+            switch (type) {
+                case STRING:
+                    return value.asString();
+                case INT:
+                    return value.asInteger();
+                case DATE:
+                    return value.asDate();
+                case TIMESTAMP:
+                    return value.asTimestamp();
+                case BOOLEAN:
+                    return value.asBoolean();
+                case LONG:
+                    return value.asLong();
+                case FLOAT:
+                    return value.asFloat();
+                case DOUBLE:
+                    return value.asDouble();
+                case TIME:
+                    return value.asTime();
+                case BYTE:
+                    return value.asByte();
+                case BYTES:
+                    return value.asByteArray();
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            return null;
         }
 
     }

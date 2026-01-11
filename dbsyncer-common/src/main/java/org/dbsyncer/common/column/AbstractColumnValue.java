@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.common.column;
 
+import org.dbsyncer.common.util.StringUtil;
+
 public abstract class AbstractColumnValue<T> implements ColumnValue {
 
     protected Object value;
@@ -18,6 +20,13 @@ public abstract class AbstractColumnValue<T> implements ColumnValue {
     @Override
     public boolean isNull() {
         return value == null;
+    }
+
+    /**
+     * 检查值是否为空（null、空字符串或字符串"null"）
+     */
+    protected boolean isEmpty(String value) {
+        return value == null || StringUtil.isBlank(value) || "null".equalsIgnoreCase(value);
     }
 
 }

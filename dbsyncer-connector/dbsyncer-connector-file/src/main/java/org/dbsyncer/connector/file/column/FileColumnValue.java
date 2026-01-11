@@ -1,14 +1,18 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.connector.file.column.impl;
+package org.dbsyncer.connector.file.column;
 
+import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.file.column.ColumnValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 
 /**
@@ -16,7 +20,8 @@ import java.sql.Timestamp;
  * @Version 1.0.0
  * @Date 2022-05-05 23:19
  */
-public class FileColumnValue implements ColumnValue {
+public class FileColumnValue extends AbstractColumnValue<String> {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String value;
 
@@ -38,6 +43,20 @@ public class FileColumnValue implements ColumnValue {
     @Override
     public Boolean asBoolean() {
         return "true".equalsIgnoreCase(value);
+    }
+
+    @Override
+    public BigDecimal asBigDecimal() {
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse BigDecimal from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
@@ -79,12 +98,44 @@ public class FileColumnValue implements ColumnValue {
     }
 
     @Override
-    public Object asTime() {
-        return asString();
+    public Time asTime() {
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Time.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Failed to parse Time from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public byte[] asByteArray() {
         return StringUtil.hexStringToByteArray(value.substring(2));
+    }
+
+    @Override
+    public Byte asByte() {
+        String value = getValue();
+        if (isEmpty(value)) {
+            return 0;
+        }
+        return Byte.parseByte(value);
+    }
+
+    @Override
+    public Short asShort() {
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Short.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Short from value: {}", value, e);
+            return null;
+        }
     }
 }

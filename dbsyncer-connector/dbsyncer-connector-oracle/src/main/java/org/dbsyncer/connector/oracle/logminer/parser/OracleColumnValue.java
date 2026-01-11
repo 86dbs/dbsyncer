@@ -80,6 +80,11 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     }
 
     @Override
+    public Byte asByte() {
+        return 0;
+    }
+
+    @Override
     public Short asShort() {
         return Short.valueOf(asString());
     }
@@ -136,11 +141,6 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     @Override
     public Time asTime() {
         return null;
-    }
-
-    @Override
-    public BigInteger asBigInteger() {
-        return new BigInteger(asString());
     }
 
     public OffsetDateTime asOffsetDateTime() {
