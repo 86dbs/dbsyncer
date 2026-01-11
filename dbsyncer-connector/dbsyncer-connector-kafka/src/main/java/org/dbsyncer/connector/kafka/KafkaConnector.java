@@ -131,7 +131,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Result reader(KafkaConnectorInstance connectorInstance, ReaderContext context) {
-        throw new KafkaException("Unsupported method");
+        throw new KafkaException("Kafka暂不支持全量读取");
     }
 
     @Override

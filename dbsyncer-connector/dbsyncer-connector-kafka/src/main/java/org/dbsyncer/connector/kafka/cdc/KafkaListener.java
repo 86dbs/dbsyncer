@@ -6,6 +6,7 @@ package org.dbsyncer.connector.kafka.cdc;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.TopicPartition;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -81,14 +83,47 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     public void close() {
         if (connected) {
             connected = false;
+            // 1. 先中断 Worker 线程
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
+            }
+            // 2. 等待 Worker 线程退出（最多等待5秒）
+            if (null != worker) {
+                try {
+                    worker.join(5000); // 等待最多5秒
+                    if (worker.isAlive()) {
+                        logger.warn("Worker线程未在5秒内退出，强制终止");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.warn("等待Worker线程退出时被中断", e);
+                }
                 worker = null;
             }
-            // 关闭所有consumer
+            
+            // 3. 关闭线程池，等待任务完成
+            if (executor != null) {
+                executor.shutdown();
+                try {
+                    // 等待已提交的任务完成，最多等待5秒
+                    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                        logger.warn("线程池未在5秒内关闭，强制关闭");
+                        executor.shutdownNow();
+                        // 再等待2秒
+                        if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                            logger.error("线程池无法正常关闭");
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.warn("等待线程池关闭时被中断", e);
+                    executor.shutdownNow();
+                }
+            }
+            
+            // 4. 最后关闭所有consumer（此时没有线程在使用它们）
             consumers.forEach(ConsumerInfo::close);
             consumers.clear();
-            executor.shutdown();
         }
     }
 
@@ -199,12 +234,15 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     }
                 } catch (Exception e) {
                     if (Thread.currentThread().isInterrupted()) {
-                        logger.info("Kafka监听器Worker线程被中断");
+                        logger.info("Kafka监听器Worker线程被中断，正在退出");
                         break;
                     }
-                    logger.error("Kafka监听器Worker线程发生异常", e);
+                    // 非中断异常才记录错误
+                    logger.error(e.getMessage(), e);
                     errorEvent(e);
-                    sleepInMills(1000);
+                    if (connected && !isInterrupted()) {
+                        sleepInMills(1000);
+                    }
                 }
             }
             logger.info("Kafka监听器Worker线程已退出");
@@ -226,6 +264,11 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     consumerInfo.consumer.commitSync();
                 }
             } catch (Exception e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    logger.info("Consumer线程已停止");
+                    return;
+                }
+                // 非中断异常才记录错误
                 logger.error("处理topic {} 的消息时出错", consumerInfo.table.getName(), e);
                 errorEvent(e);
             }
@@ -236,6 +279,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     static final class ConsumerInfo {
         Table table;
         KafkaConsumer<String, Object> consumer;
+        private final Object closeLock = new Object(); // 用于同步关闭操作
 
         public ConsumerInfo(Table table, KafkaConsumer<String, Object> consumer) {
             this.table = table;
@@ -243,7 +287,19 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         }
 
         void close() {
-            consumer.close();
+            // 使用同步锁确保线程安全关闭
+            synchronized (closeLock) {
+                if (consumer != null) {
+                    try {
+                        // 先唤醒consumer（如果它在poll中阻塞）
+                        consumer.wakeup();
+                        // 然后关闭
+                        consumer.close();
+                    } catch (Exception e) {
+                        // 忽略关闭时的异常
+                    }
+                }
+            }
         }
     }
 }

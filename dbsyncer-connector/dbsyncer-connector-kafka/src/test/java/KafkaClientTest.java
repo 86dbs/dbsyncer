@@ -69,7 +69,7 @@ public class KafkaClientTest {
                 "batch.size=32768\n" +
                 "buffer.memory=33554432\n" +
                 "compression.type=snappy\n" +
-                "enable.idempotence=true\n" +
+                "enable.idempotence=false\n" +
                 "linger.ms=10\n" +
                 "retries=1\n" +
                 "max.block.ms=60000\n" +
@@ -79,7 +79,7 @@ public class KafkaClientTest {
         // 生产者
         producer = instance.getProducer(topic);
         // 消费者
-        consumer = instance.getConsumer(topic, groupId);
+//        consumer = instance.getConsumer(topic, groupId);
     }
 
     @After
@@ -103,14 +103,14 @@ public class KafkaClientTest {
             Map<String, Object> map = new HashMap<>();
             map.put("id", i);
             map.put("name", "张三" + i);
-            map.put("update_time", new Timestamp(System.currentTimeMillis()));
+            map.put("create_date", new Timestamp(System.currentTimeMillis()));
 
             String key = String.valueOf(i);
             producer.send(new ProducerRecord<>(key, map));
         }
 
-        new Consumer().start();
-        TimeUnit.SECONDS.sleep(6000);
+//        new Consumer().start();
+//        TimeUnit.SECONDS.sleep(6000);
         logger.info("test end");
     }
 

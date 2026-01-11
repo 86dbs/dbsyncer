@@ -188,15 +188,26 @@ public abstract class BatchTaskUtil {
             }));
         }
 
-        // 等待所有任务完成
-        for (Future<?> future : futures) {
-            try {
-                future.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            } catch (TimeoutException e) {
-                logger.error("任务执行异常", e);
-            } catch (Exception e) {
-                logger.error("任务执行异常", e);
+        try {
+            // 等待所有任务完成
+            for (Future<?> future : futures) {
+                try {
+                    future.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                } catch (TimeoutException e) {
+                    logger.error("任务执行超时", e);
+                }
             }
+        } catch (InterruptedException e) {
+            // 线程被中断，优雅处理
+            Thread.currentThread().interrupt();
+            // 取消所有未完成的任务
+            for (Future<?> f : futures) {
+                if (!f.isDone()) {
+                    f.cancel(true);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("任务执行异常", e);
         }
     }
 
