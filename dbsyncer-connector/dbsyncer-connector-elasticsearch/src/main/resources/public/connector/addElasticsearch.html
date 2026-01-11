@@ -5,15 +5,15 @@
 <div th:fragment="content">
     <div class="grid grid-cols-2">
         <div class="form-item">
-            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <label class="form-label">用户名</label>
             <div class="form-control-area">
-                <input class="form-control" name="username" type="text" maxlength="32" required placeholder="elastic" th:value="${connector?.config?.username}"/>
+                <input class="form-control" name="username" type="text" maxlength="32" placeholder="elastic" th:value="${connector?.config?.username}"/>
             </div>
         </div>
         <div class="form-item">
-            <label class="form-label">密码<strong class="text-primary">*</strong></label>
+            <label class="form-label">密码</label>
             <div class="form-control-area">
-                <input class="form-control" name="password" type="password" maxlength="64" required placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+                <input class="form-control" name="password" type="password" maxlength="64" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
             </div>
         </div>
         <div class="form-item">

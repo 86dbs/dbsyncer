@@ -30,8 +30,6 @@ public final class ESConfigValidator implements ConfigValidator<ElasticsearchCon
         String password = params.get("password");
         String url = params.get("url");
         String timeoutSeconds = params.get("timeoutSeconds");
-        Assert.hasText(username, "Username is empty.");
-        Assert.hasText(password, "Password is empty.");
         Assert.hasText(url, "Url is empty.");
 
         connectorConfig.setUsername(username);
