@@ -207,6 +207,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除驱动表映射关系
             tableGroupContext.clear(metaId);
 
+            // 释放连接池
+            String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+            String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+            connectorFactory.disconnect(sourceInstanceId);
+            connectorFactory.disconnect(targetInstanceId);
+
             // 删除驱动
             profileComponent.removeConfigModel(id);
             log(LogType.MappingLog.DELETE, mapping);
