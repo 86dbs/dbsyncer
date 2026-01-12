@@ -102,7 +102,6 @@ h1, .h1 {
   font-size: var(--font-size-xxxl);
   font-weight: 600;
   line-height: var(--line-height-sm);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-lg);
 }
 
@@ -110,7 +109,6 @@ h2, .h2 {
   font-size: var(--font-size-xxl);
   font-weight: 600;
   line-height: var(--line-height-sm);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-md);
 }
 
@@ -118,7 +116,6 @@ h3, .h3 {
   font-size: var(--font-size-xl);
   font-weight: 600;
   line-height: var(--line-height-sm);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-md);
 }
 
@@ -126,7 +123,6 @@ h4, .h4 {
   font-size: var(--font-size-lg);
   font-weight: 500;
   line-height: var(--line-height-md);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -134,7 +130,6 @@ h5, .h5 {
   font-size: var(--font-size-md);
   font-weight: 500;
   line-height: var(--line-height-md);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -142,7 +137,6 @@ h6, .h6 {
   font-size: var(--font-size-sm);
   font-weight: 500;
   line-height: var(--line-height-md);
-  color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
 }
 

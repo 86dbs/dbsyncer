@@ -138,7 +138,6 @@ body {
 .outline-none { outline: 2px solid transparent; outline-offset: 2px; }
 
 /* ========== 自定义颜色类 ========== */
-.bg-primary { background-color: var(--color-primary); }
 .bg-danger { background-color: var(--color-danger); }
 .text-primary { color: var(--color-primary); }
 .text-danger { color: var(--color-danger); }
