@@ -45,6 +45,13 @@
                            title="重置任务">
                             <i class="fa fa-refresh"></i> 重置
                         </a>
+                                                <a th:if="${mapping?.meta?.fail gt 0}"
+                           th:attr="id=${mapping?.id}"
+                           href="javascript:;"
+                           class="btn btn-default margin-right-5 queryData"
+                           title="查看日志">
+                            <i class="fa fa-file-text-o"></i> 日志
+                        </a>
                     </span>
                 </h3>
                 <p>[[${mapping?.id}]]</p>

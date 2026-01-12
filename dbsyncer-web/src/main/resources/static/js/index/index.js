@@ -365,7 +365,6 @@ function refreshMappingList() {
                                         }
                                         if (fail > 0) {
                                             cardHtmlContent += ',失败:' + fail;
-                                            cardHtmlContent += ' <a id="' + id + '" href="javascript:;" class="label label-danger queryData">日志</a>';
                                         }
                                         cardHtmlContent += '</td>';
                                         cardHtmlContent += '</tr>';
