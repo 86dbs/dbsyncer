@@ -8,11 +8,9 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.CommonTask;
@@ -85,6 +83,15 @@ public class TaskController extends BaseController {
        model.put("connectors", connectorService.getConnectorAll());
         model.put("taskId", taskId);
         return "task/edit";
+    }
+
+    /**
+     * 任务执行结果页面
+     */
+    @GetMapping("/page/result")
+    public String pageResult(@RequestParam("taskId") String taskId, ModelMap model) {
+        model.put("taskId", taskId);
+        return "task/result";
     }
 
     /**
@@ -208,12 +215,13 @@ public class TaskController extends BaseController {
      */
     @PostMapping("/result")
     @ResponseBody
-    public Paging result(@RequestBody Map<String, String> params) {
+    public RestResult result(HttpServletRequest request) {
         try {
-            return taskService.result(params);
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(taskService.result(params));
         } catch (Exception e) {
             log.error("查询任务结果失败", e);
-            return new Paging(0, 0);
+            return RestResult.restSuccess(new Paging(0, 0));
         }
     }
 

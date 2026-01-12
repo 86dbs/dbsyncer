@@ -125,7 +125,11 @@ function initTaskList() {
                         <input type="checkbox" class="task-checkbox" data-task-id="${task.id || ''}" />
                     </td>
                     <td>
-                        <div class="font-medium">${taskName}</div>
+                        <div class="font-medium">
+                            <a href="javascript:void(0);" class="task-name-link text-primary hover:text-primary-dark" data-task-id="${task.id || ''}" style="cursor: pointer; text-decoration: none;">
+                                ${taskName}
+                            </a>
+                        </div>
                         ${task.id ? '<div class="text-xs text-gray-500">ID: ' + escapeHtml(task.id) + '</div>' : ''}
                     </td>
                     <td>${renderTaskType(taskType)}</td>
@@ -163,6 +167,17 @@ function initTaskList() {
  * 绑定任务操作事件
  */
 function bindTaskEvents() {
+    // 任务名称点击事件 - 查看执行结果
+    $('.task-name-link').off('click').on('click', function() {
+        const taskId = $(this).data('task-id');
+        console.log('[任务列表] 查看任务执行结果:', taskId);
+        if (taskId) {
+            doLoader('/task/page/result?taskId=' + taskId);
+        } else {
+            bootGrowl('任务ID不存在', 'warning');
+        }
+    });
+    
     // 编辑任务
     $('.edit-task-btn').off('click').on('click', function() {
         const taskId = $(this).data('task-id');
