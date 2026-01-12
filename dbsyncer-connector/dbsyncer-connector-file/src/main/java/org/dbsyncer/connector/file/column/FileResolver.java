@@ -1,10 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.connector.file.model;
+package org.dbsyncer.connector.file.column;
 
 import org.dbsyncer.common.column.Lexer;
-import org.dbsyncer.connector.file.column.FileColumnValue;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 

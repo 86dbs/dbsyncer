@@ -10,7 +10,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.file.FileConnectorInstance;
 import org.dbsyncer.connector.file.FileException;
-import org.dbsyncer.connector.file.model.FileResolver;
+import org.dbsyncer.connector.file.column.FileResolver;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;

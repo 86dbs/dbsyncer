@@ -11,7 +11,8 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
 import org.dbsyncer.connector.file.config.FileConfig;
-import org.dbsyncer.connector.file.model.FileResolver;
+import org.dbsyncer.connector.file.column.FileResolver;
+import org.dbsyncer.connector.file.schema.FileSchemaResolver;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -27,6 +28,7 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
     private final FileConfigValidator configValidator = new FileConfigValidator();
+    private final FileSchemaResolver schemaResolver = new FileSchemaResolver();
 
     public FileConnector() {
         VALUE_MAPPERS.put(Types.BIT, new FileBitValueMapper());
@@ -245,4 +248,8 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         return null;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }
