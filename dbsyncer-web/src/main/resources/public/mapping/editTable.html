@@ -63,7 +63,7 @@
     </div>
 
     <!-- 表映射列表 -->
-    <table class="table" th:if="${tableGroups.size() gt 0}">
+    <table class="table">
         <thead>
         <tr>
             <th></th>
@@ -78,16 +78,7 @@
             </th>
         </tr>
         </thead>
-        <tbody id="tableGroupList">
-        <tr th:id="${t?.id}" title='点击编辑 | 拖动排序' th:each="t,s : ${tableGroups}">
-            <td th:text="${s.index + 1}"/>
-            <td th:text="${t?.sourceTable.name}"/>
-            <td th:text="${t?.targetTable.name}"/>
-            <td onclick="event.stopPropagation();">
-                <input th:value="${t?.id}" type="checkbox" class="tableGroupCheckbox" onclick="event.stopPropagation();" />
-            </td>
-        </tr>
-        </tbody>
+        <tbody id="tableGroupList"></tbody>
     </table>
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
 
@@ -352,12 +343,34 @@
         initMultipleInputTags();
         // 绑定添加表映射关系事件
         bindTableGroupAdd(sourceTableSelect, targetTableSelect);
-        // 绑定删除表映射关系事件
-        bindTableGroupRemove();
-        // 绑定复选框多选或单选事件
-        bindTableGroupCheckbox();
-        // 绑定表关系点击事件
-        bindMappingTableGroupListClick();
+
+        // 初始化分页管理器
+        let mappingId = $("#mappingId").val();
+        let searchTableGroup = new PaginationManager({
+            requestUrl: '/tableGroup/search',
+            params: {'mappingId': mappingId},
+            tableBodySelector: '#tableGroupList',
+            pageSize: 5,
+            renderRow: function(t, index) {
+                return `<tr id="${t.id}" title='点击编辑 | 拖动排序'>
+                    <td>${index}</td>
+                    <td>${t.sourceTable.name}</td>
+                    <td>${t.targetTable.name}</td>
+                    <td>
+                        <input value="${t.id}" type="checkbox" class="tableGroupCheckbox" />
+                    </td>
+                </tr>`;
+            },
+            emptyHtml:'<td colspan="4" class="text-center"><p class="empty-text">暂无表映射关系</p></td>',
+            refreshCompleted: function() {
+                // 绑定表关系点击事件
+                bindMappingTableGroupListClick();
+                // 绑定删除表映射关系事件
+                bindTableGroupRemove();
+                // 绑定复选框多选或单选事件
+                bindTableGroupCheckbox();
+            }
+        });
     });
 </script>
 </div>

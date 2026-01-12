@@ -169,7 +169,7 @@
                 const checkboxClass = config.type === 'single' ? 'dbsyncer-select-option-checkbox hidden' : 'dbsyncer-select-option-checkbox';
 
                 const $option = $(`
-                    <label class="dbsyncer-select-option ${matches ? '' : 'hidden'} ${isSelected ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}">
+                    <label class="dbsyncer-select-option ${matches ? '' : 'hidden'} ${isSelected ? 'selected' : ''} ${item.disabled ? 'disabled' : ''}" title="${escapeHtml(item.label)}">
                         <input type="${inputType}" value="${escapeAttr(item.value)}" ${isSelected ? 'checked' : ''} ${item.disabled ? 'disabled' : ''} data-dbselect-internal>
                         <div class="${checkboxClass}"></div>
                         <span class="dbsyncer-select-option-text">${escapeHtml(item.label)}</span>

@@ -13,6 +13,7 @@ import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -100,9 +101,13 @@ public class BaseServiceImpl {
         String searchKey = params.get("searchKey");
         if (StringUtil.isNotBlank(searchKey)) {
             list = list.stream().filter(c -> {
-                if (c instanceof ConfigModel) {
+                if (c instanceof Connector || c instanceof Mapping) {
                     ConfigModel m = (ConfigModel) c;
                     return StringUtil.contains(m.getName(), searchKey);
+                }
+                if (c instanceof TableGroup) {
+                    TableGroup tg = (TableGroup) c;
+                    return StringUtil.contains(tg.getSourceTable().getName(), searchKey) || StringUtil.contains(tg.getTargetTable().getName(), searchKey);
                 }
                 return false;
             }).collect(Collectors.toList());

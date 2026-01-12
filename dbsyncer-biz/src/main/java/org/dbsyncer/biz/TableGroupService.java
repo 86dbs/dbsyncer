@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -61,6 +62,14 @@ public interface TableGroupService {
      * @return
      */
     List<TableGroup> getTableGroupAll(String mappingId);
+
+    /**
+     * 分页搜索
+     *
+     * @param params
+     * @return
+     */
+    Paging<TableGroup> search(Map<String, String> params);
 
     /**
      * 更新元信息

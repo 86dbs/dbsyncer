@@ -5,18 +5,6 @@
 <div th:fragment="content">
     <div class="grid grid-cols-2">
         <div class="form-item">
-            <label class="form-label">用户名</label>
-            <div class="form-control-area">
-                <input class="form-control" name="username" type="text" maxlength="32" placeholder="elastic" th:value="${connector?.config?.username}"/>
-            </div>
-        </div>
-        <div class="form-item">
-            <label class="form-label">密码</label>
-            <div class="form-control-area">
-                <input class="form-control" name="password" type="password" maxlength="64" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
-            </div>
-        </div>
-        <div class="form-item">
             <label class="form-label">
                 URL<i class="fa fa-question-circle" title="多个使用英文逗号，例如：http://192.168.1.100:9200,http://192.168.1.200:9200"></i>
                 <strong class="text-primary">*</strong>
@@ -29,6 +17,18 @@
             <label class="form-label">请求超时(秒)</label>
             <div class="form-control-area">
                 <input class="form-control" name="timeoutSeconds" type="number" required min="1" max="120" placeholder="10" th:value="${connector?.config?.timeoutSeconds}?:10"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">用户名</label>
+            <div class="form-control-area">
+                <input class="form-control" name="username" type="text" maxlength="32" placeholder="elastic" th:value="${connector?.config?.username}"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码</label>
+            <div class="form-control-area">
+                <input class="form-control" name="password" type="password" maxlength="64" placeholder="请输入密码" th:value="${connector?.config?.password}"/>
             </div>
         </div>
 

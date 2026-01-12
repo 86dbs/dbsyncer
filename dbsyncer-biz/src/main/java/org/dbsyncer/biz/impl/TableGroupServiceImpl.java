@@ -7,6 +7,7 @@ import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -150,6 +151,13 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         return profileComponent.getSortedTableGroupAll(mappingId);
+    }
+
+    @Override
+    public Paging<TableGroup> search(Map<String, String> params) {
+        String mappingId = params.get("mappingId");
+        Assert.hasText(mappingId, "Mapping id can not be null");
+        return searchConfigModel(params, getTableGroupAll(mappingId));
     }
 
     @Override
