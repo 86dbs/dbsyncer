@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * ES连接配置校验器实现
@@ -29,7 +30,7 @@ public final class ESConfigValidator implements ConfigValidator<ElasticsearchCon
         String username = params.get("username");
         String password = params.get("password");
         String url = params.get("url");
-        String timeoutSeconds = params.get("timeoutSeconds");
+        String timeoutSeconds = Objects.toString(params.get("timeoutSeconds"));
         Assert.hasText(url, "Url is empty.");
 
         connectorConfig.setUsername(username);

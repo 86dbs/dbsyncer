@@ -16,6 +16,7 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Kafka连接配置校验器实现
@@ -33,14 +34,21 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         String properties = params.get("properties");
         String producerProperties = params.get(KafkaUtil.PRODUCER_PROPERTIES);
         String consumerProperties = params.get(KafkaUtil.CONSUMER_PROPERTIES);
+        if (producerProperties == null && consumerProperties == null) {
+            String extInfo = params.get("extInfo");
+            Assert.hasText(extInfo, "扩展参数不能为空");
+            Properties props = JsonUtil.jsonToObj(extInfo, Properties.class);
+            connectorConfig.getExtInfo().putAll(props);
+        } else {
+            Assert.hasText(producerProperties, "生产者参数不能为空");
+            Assert.hasText(consumerProperties, "消费者参数不能为空");
+            connectorConfig.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
+            connectorConfig.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
+        }
         Assert.hasText(url, "url is empty.");
         Assert.hasText(properties, "properties is empty.");
-        Assert.hasText(producerProperties, "生产者参数不能为空");
-        Assert.hasText(consumerProperties, "消费者参数不能为空");
         connectorConfig.setUrl(url);
         connectorConfig.getProperties().putAll(KafkaUtil.parse(properties));
-        connectorConfig.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
-        connectorConfig.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
     }
 
     @Override
