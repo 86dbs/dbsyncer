@@ -12,7 +12,6 @@ import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.slf4j.Logger;
@@ -59,37 +58,48 @@ public final class BufferActuatorRouter implements DisposableBean {
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
     /**
+     * 标记每个 metaId 是否有任务在处理
+     */
+    private final Map<String, Boolean> pendingTaskMap = new ConcurrentHashMap<>();
+
+    /**
      * 刷新监听器偏移量
      *
      * @param offset 偏移量
      */
     public void refreshOffset(ChangedOffset offset) {
-        if (offset != null) {
-            Meta meta = profileComponent.getMeta(offset.getMetaId());
-            if (meta != null) {
-                Listener listener = meta.getListener();
-                if (listener != null) {
-                    try {
-                        listener.refreshEvent(offset);
-                        // 触发异步持久化（统一在基类处理，避免每个子类重复实现）
-                        listener.flushEvent();
-                        // 数据同步完成，减少任务数据计数
-                        if (listener instanceof AbstractListener) {
-                            ((AbstractListener) listener).decrementPendingTaskData();
-                        }
-                    } catch (Exception e) {
-                        logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
-                        // 异常时也要减少计数，避免计数一直增加
-                        if (listener instanceof AbstractListener) {
-                            ((AbstractListener) listener).decrementPendingTaskData();
-                        }
-                    }
+        if (offset == null) {
+            return;
+        }
+
+        Meta meta = profileComponent.getMeta(offset.getMetaId());
+        assert meta != null;
+
+        Listener listener = meta.getListener();
+        if (listener == null) {
+            return;
+        }
+
+        try {
+            // refreshEvent() 已经直接更新了 pendingSnapshot，不需要再调用 flushEvent()
+            // 原因：任务事件携带的XID快照不应该能够修改，refreshEvent() 直接使用任务携带的位置更新 pendingSnapshot
+            listener.refreshEvent(offset);
+            // 数据同步完成，检查队列是否为空，如果为空则清除 pending 状态
+            long queueSize = getQueueSize().get();
+            if (queueSize == 0) {
+                pendingTaskMap.remove(offset.getMetaId());
+                if (logger.isInfoEnabled()) {
+                    logger.info("---- finished sync, queue is empty, cleared pending task");
                 }
             }
+        } catch (Exception e) {
+            logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
         }
     }
 
     public void execute(String metaId, ChangedEvent event) {
+        // 事件进入队列时，标记为 pending 状态
+        pendingTaskMap.put(metaId, true);
         event.getChangedOffset().setMetaId(metaId);
         router.compute(metaId, (k, processor) -> {
             if (processor == null) {
@@ -140,6 +150,8 @@ public final class BufferActuatorRouter implements DisposableBean {
             processor.values().forEach(TableGroupBufferActuator::stop);
             return null;
         });
+        // 清除 pending 状态
+        pendingTaskMap.remove(metaId);
     }
 
     private void offer(AbstractBufferActuator actuator, ChangedEvent event) {
@@ -181,6 +193,13 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public Map<String, Map<String, TableGroupBufferActuator>> getRouter() {
         return Collections.unmodifiableMap(router);
+    }
+
+    /**
+     * 检查是否有任务在处理
+     */
+    public boolean hasPendingTask(String metaId) {
+        return Boolean.TRUE.equals(pendingTaskMap.get(metaId));
     }
 
 }

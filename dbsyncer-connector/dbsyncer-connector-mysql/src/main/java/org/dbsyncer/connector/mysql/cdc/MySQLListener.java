@@ -90,10 +90,27 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
-        // 不使用 offset.getPosition()，因为它是 ROW 事件的位置（中间位置）
-        // 快照点已经在 XID 事件中通过 refresh() 方法更新为事务提交位置
-        // 这里不需要做任何操作，因为 snapshot 已经在 XID 事件中更新了
-        // 数据同步完成后，只需要触发 flushEvent() 来更新 pendingSnapshot，不需要再次更新 snapshot
+        // ROW 事件已经携带了上一个事务的 XID 位置
+        // 关键：任务事件携带的XID快照不应该能够修改，直接使用任务携带的位置更新 pendingSnapshot
+        // 不更新共享的 snapshot，防止新旧任务相互覆盖
+        if (offset != null && offset.getPosition() != null && offset.getNextFileName() != null) {
+            String newFileName = offset.getNextFileName();
+            Long newPosition = (Long) offset.getPosition();
+
+            // 直接使用任务携带的位置更新 snapshot（用于后续 ROW 事件携带）
+            // 注意：这里仍然需要更新 snapshot，因为后续的 ROW 事件需要携带这个位置
+            refreshSnapshot(newFileName, newPosition);
+
+            // 直接调用 flushEvent() 更新 pendingSnapshot（使用刚更新的 snapshot）
+            // 更简单直接，因为 refreshSnapshot() 和 flushEvent() 在同一个方法中，不会有并发问题
+            try {
+                flushEvent();
+            } catch (Exception e) {
+                logger.warn("任务事件完成时更新 pendingSnapshot 失败", e);
+            }
+        }
+        // 如果没有位置信息，使用当前的 snapshot（降级处理）
+        // 注意：这种情况不应该发生，因为ROW事件应该已经携带了XID位置
     }
 
     private void run() throws Exception {
@@ -143,22 +160,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         return cluster;
     }
 
-    private void refresh(EventHeader header) {
-        EventHeaderV4 eventHeaderV4 = (EventHeaderV4) header;
-        refresh(null, eventHeaderV4.getNextPosition());
-    }
-
-    private void refresh(String binlogFilename, long nextPosition) {
-        if (StringUtil.isNotBlank(binlogFilename)) {
-            client.setBinlogFilename(binlogFilename);
-        }
-        if (0 < nextPosition) {
-            client.setBinlogPosition(nextPosition);
-        }
-        // 即使没有同步数据，binlog 也在继续前进，需要更新 snapshot 以保持位置同步
-        refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
-    }
-
     private void refreshSnapshot(String binlogFilename, long nextPosition) {
         snapshot.put(BINLOG_FILENAME, binlogFilename);
         snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
@@ -169,9 +170,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         while (client.isConnected()) {
             try {
                 sendChangedEvent(event);
-                // 所有发送成功的事件都是任务事件（已通过 isFilterTable 过滤）
-                // 发送成功时，增加任务数据计数
-                incrementPendingTaskData();
                 return true;  // 发送成功
             } catch (QueueOverflowException e) {
                 logger.warn("队列已满，等待300毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
@@ -226,7 +224,7 @@ public class MySQLListener extends AbstractDatabaseListener {
         @Override
         public void onConnect(BinaryLogRemoteClient client) {
             // 记录binlog增量点
-            refresh(client.getBinlogFilename(), client.getBinlogPosition());
+            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
         }
 
         @Override
@@ -272,20 +270,32 @@ public class MySQLListener extends AbstractDatabaseListener {
          */
         private boolean notUniqueCodeEvent = true;
 
+        /**
+         * 上一个事务的 XID 位置（用于 ROW 事件携带）
+         * 单线程消费，不存在并发竞争
+         */
+        private String lastXIDFileName = null;
+        private Long lastXIDPosition = null;
+
         @Override
         public void onEvent(Event event) {
             // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
             EventHeader header = event.getHeader();
             if (header.getEventType() == EventType.XID) {
-                refresh(header);  // 更新 snapshot（无论任务事件还是非任务事件都需要更新）
-                
-                // 非任务事件：只有在没有任务数据在处理时，才更新 pendingSnapshot
-                // 任务事件的 pendingSnapshot 会在 refreshOffset() 时通过 flushEvent() 更新
+                // 记录 XID 位置（用于后续 ROW 事件携带）
+                EventHeaderV4 eventHeaderV4 = (EventHeaderV4) header;
+                if (lastXIDFileName == null) {
+                    lastXIDFileName = client.getBinlogFilename();
+                }
+                lastXIDPosition = eventHeaderV4.getNextPosition();
+
                 if (!hasPendingTaskData()) {
+                    // 没有任务数据在处理：非任务事件的 XID，正常更新 snapshot 和 pendingSnapshot
+                    refreshSnapshot(lastXIDFileName, lastXIDPosition);
                     try {
                         flushEvent();  // 更新 pendingSnapshot
                     } catch (Exception e) {
-                        logger.error("非任务事件 XID 更新 pendingSnapshot 失败", e);
+                        logger.warn("非任务事件 XID 更新 pendingSnapshot 失败", e);
                     }
                 }
                 return;
@@ -315,8 +325,8 @@ public class MySQLListener extends AbstractDatabaseListener {
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
-                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
+                        // ROW 事件发送时，携带上一个事务的 XID 位置（lastXIDPosition）
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_UPDATE, after, lastXIDFileName, lastXIDPosition, columnNames));
                     });
                 }
                 return;
@@ -329,8 +339,8 @@ public class MySQLListener extends AbstractDatabaseListener {
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
-                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
+                        // ROW 事件发送时，携带上一个事务的 XID 位置（lastXIDPosition）
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_INSERT, after, lastXIDFileName, lastXIDPosition, columnNames));
                     });
                 }
                 return;
@@ -343,23 +353,21 @@ public class MySQLListener extends AbstractDatabaseListener {
                     List<String> columnNames = getColumnNames(tableId);
                     data.getRows().forEach(m -> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        // trySendEvent 内部会自动处理计数（ROW 事件发送成功时增加计数）
-                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition(), columnNames));
+                        // ROW 事件发送时，携带上一个事务的 XID 位置（lastXIDPosition）
+                        trySendEvent(new RowChangedEvent(getTableName(tableId), ConnectorConstant.OPERTION_DELETE, before, lastXIDFileName, lastXIDPosition, columnNames));
                     });
                 }
                 return;
             }
 
             if (EventType.QUERY == header.getEventType()) {
-                refresh(header);
                 parseDDL(event.getData());
                 return;
             }
 
-            // 切换binlog
+            // 切换binlog,
             if (header.getEventType() == EventType.ROTATE) {
-                RotateEventData data = event.getData();
-                refresh(data.getBinlogFilename(), data.getBinlogPosition());
+                lastXIDFileName = client.getBinlogFilename();
             }
         }
 
@@ -405,7 +413,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 clearColumnNamesCache(tableName);
                 logger.info("捕获到 DDL 事件: database={}, table={}, sql={}", databaseName, tableName, data.getSql());
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
-                        data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                        data.getSql(), lastXIDFileName, lastXIDPosition));
             }
         }
 

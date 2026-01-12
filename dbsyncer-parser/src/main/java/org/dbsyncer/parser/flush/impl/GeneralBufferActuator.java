@@ -132,7 +132,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
-        // 所有任务事件处理完成后，都需要刷新偏移量，减少任务数据计数
+        // 所有任务事件处理完成后，都需要刷新偏移量
         // 使用 try-finally 确保即使发生异常也能调用 refreshOffset
         try {
             Meta meta = profileComponent.getMeta(response.getChangedOffset().getMetaId());
@@ -183,13 +183,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                     });
                     break;
                 default:
-                    // 非任务事件不需要刷新偏移量
+                    // 未知事件类型
                     return;
             }
         } finally {
-            // 所有任务事件（DDL、ROW、SCAN）处理完成后，都需要刷新偏移量，减少任务数据计数
-            // 即使发生异常，也要确保计数能正确减少
-            // 注意：非任务事件在 default 分支已经 return，不会进入 finally 块
+            // 所有任务事件，都需要刷新偏移量
             bufferActuatorRouter.refreshOffset(response.getChangedOffset());
         }
     }

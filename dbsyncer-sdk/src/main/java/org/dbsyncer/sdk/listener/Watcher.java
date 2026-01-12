@@ -45,4 +45,11 @@ public interface Watcher {
      * @return
      */
     long getMetaUpdateTime();
+
+    /**
+     * 获取是否有任务在处理
+     *
+     * @return true 表示有任务在处理，false 表示没有
+     */
+    boolean hasPendingTask();
 }

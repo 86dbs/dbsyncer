@@ -48,6 +48,8 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public void changeEvent(ChangedEvent event) {
+        // 所有到达 changeEvent 的事件都是任务事件（已通过过滤和配置检查）
+        // execute() 方法会自动设置 pending 状态
         bufferActuatorRouter.execute(metaId, event);
     }
 
@@ -71,5 +73,11 @@ public final class ParserConsumer implements Watcher {
     public long getMetaUpdateTime() {
         Meta meta = profileComponent.getMeta(metaId);
         return meta != null ? meta.getUpdateTime() : 0L;
+    }
+
+    @Override
+    public boolean hasPendingTask() {
+        // 从 BufferActuatorRouter 获取 pending 状态
+        return bufferActuatorRouter.hasPendingTask(metaId);
     }
 }

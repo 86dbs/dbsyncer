@@ -16,11 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PreDestroy;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,9 +46,6 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     private volatile Map<String, String> pendingSnapshot = null;
     // 异步持久化执行器
     private ScheduledExecutorService flushExecutor;
-    // 标记是否有任务数据在处理（从 ROW 事件进入队列到数据同步完成）
-    // 使用 AtomicInteger 计数器，支持多线程并发场景
-    private final java.util.concurrent.atomic.AtomicInteger pendingTaskDataCount = new java.util.concurrent.atomic.AtomicInteger(0);
 
     @Override
     public void register(Watcher watcher) {
@@ -133,41 +126,22 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     @Override
     public void flushEvent() throws Exception {
+        // 直接使用当前的 snapshot 更新 pendingSnapshot
         if (CollectionUtils.isEmpty(snapshot)) {
             return;
         }
-        
-        // 任务事件：直接更新 pendingSnapshot（覆盖旧值，因为这是最新的任务数据快照）
-        // 非任务事件：如果没有任务数据在处理，也直接更新 pendingSnapshot（覆盖旧值，因为这是最新的非任务事件快照）
-        // 注意：非任务事件在 XID 事件处理时已经检查了 hasPendingTaskData，所以这里可以直接更新
         pendingSnapshot = new HashMap<>(snapshot);
     }
-    
+
     /**
-     * 增加任务数据计数（ROW 事件进入队列时调用）
-     */
-    public void incrementPendingTaskData() {
-        pendingTaskDataCount.incrementAndGet();
-    }
-    
-    /**
-     * 减少任务数据计数（数据同步完成时调用）
-     * 只有在计数 > 0 时才减少，避免 DDL/SCAN 等非 ROW 事件导致计数变成负数
-     */
-    public void decrementPendingTaskData() {
-        // 使用 updateAndGet 确保原子性：只有在计数 > 0 时才减少
-        pendingTaskDataCount.updateAndGet(count -> count > 0 ? count - 1 : 0);
-    }
-    
-    /**
-     * 获取是否有任务数据在处理
-     * 
+     * 获取是否有任务数据在处理（通过 Watcher 接口）
+     *
      * @return true 表示有任务数据在处理，false 表示没有
      */
     public boolean hasPendingTaskData() {
-        return pendingTaskDataCount.get() > 0;
+        return watcher != null && watcher.hasPendingTask();
     }
-    
+
     /**
      * 系统关闭时立即持久化最新快照点
      */
@@ -195,7 +169,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
             }
         }
     }
-    
+
 
     @Override
     public void forceFlushEvent() throws Exception {
