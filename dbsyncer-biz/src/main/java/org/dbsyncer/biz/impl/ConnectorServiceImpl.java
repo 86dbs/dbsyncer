@@ -23,8 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -32,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -180,6 +185,146 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());
             return false;
         }
+    }
+
+    @Override
+    public List<Connector> filterConnectors(List<Connector> connectors, String searchType, String keyword) {
+        if (connectors == null || connectors.isEmpty()) {
+            return connectors;
+        }
+        
+        String lowerKeyword = keyword.toLowerCase();
+        
+        List<Connector> filtered = new ArrayList<>();
+        for (Connector connector : connectors) {
+            boolean match = false;
+            switch (searchType) {
+                case "name":
+                    match = connector.getName() != null && 
+                           connector.getName().toLowerCase().contains(lowerKeyword);
+                    break;
+                case "connectorType":
+                    ConnectorConfig config = connector.getConfig();
+                    if (config != null && config.getConnectorType() != null) {
+                        match = config.getConnectorType().toLowerCase().contains(lowerKeyword);
+                    }
+                    break;
+                case "ip":
+                    String extractedIp = extractIpFromConnector(connector);
+                    match = extractedIp.toLowerCase().contains(lowerKeyword);
+                    break;
+                default:
+                    match = true;
+            }
+            if (match) {
+                filtered.add(connector);
+            }
+        }
+        
+        return filtered;
+    }
+
+    /**
+     * 从连接器配置中提取IP地址
+     * @param connector 连接器
+     * @return IP地址或域名
+     */
+    private String extractIpFromConnector(Connector connector) {
+        ConnectorConfig config = connector.getConfig();
+        if (config == null) {
+            return "";
+        }
+
+        // 尝试从多个可能的字段中提取连接地址
+        String[] possibleFields = {"url", "host", "urlAddress"};
+
+        for (String fieldName : possibleFields) {
+            try {
+                java.lang.reflect.Field field = config.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+                String value = (String) field.get(config);
+
+                if (value != null && !value.isEmpty()) {
+                    // 专门处理JDBC URL格式
+                    String ip = extractIpFromJdbcUrl(value);
+                    if (!ip.isEmpty()) {
+                        return ip;
+                    }
+
+                    // 如果是完整URL，解析获取host
+                    if (value.contains("://")) {
+                        try {
+                            URI uri = new URI(value);
+                            String host = uri.getHost();
+                            if (host != null && !host.isEmpty()) {
+                                return host;
+                            }
+                        } catch (URISyntaxException e) {
+                            // 解析失败，继续尝试其他方法
+                        }
+                    } else {
+                        // 如果直接是IP或主机名，直接返回
+                        return value;
+                    }
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                // 字段不存在，继续尝试下一个字段
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * 从JDBC URL中提取IP地址
+     * @param jdbcUrl JDBC URL
+     * @return IP地址或域名
+     */
+    private String extractIpFromJdbcUrl(String jdbcUrl) {
+        // 处理MySQL JDBC URL格式: jdbc:mysql://host:port/database
+        if (jdbcUrl.startsWith("jdbc:mysql://")) {
+            Pattern mysqlPattern = Pattern.compile("jdbc:mysql://([^:]+):\\d+");
+            Matcher matcher = mysqlPattern.matcher(jdbcUrl);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+        
+        // 处理SQL Server JDBC URL格式: jdbc:sqlserver://host:port;DatabaseName=database
+        if (jdbcUrl.startsWith("jdbc:sqlserver://")) {
+            Pattern sqlServerPattern = Pattern.compile("jdbc:sqlserver://([^:]+):\\d+");
+            Matcher matcher = sqlServerPattern.matcher(jdbcUrl);
+            if (matcher.find()) {
+                return matcher.group(1);
+            }
+        }
+        
+        // 处理通用JDBC URL格式
+        Pattern generalPattern = Pattern.compile("jdbc:\\w+://([^:]+):\\d+");
+        Matcher matcher = generalPattern.matcher(jdbcUrl);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        // 使用通用正则方法作为备用方案
+        String ipByRegex = extractIpByRegex(jdbcUrl);
+        if (StringUtils.hasText(ipByRegex)) {
+            return ipByRegex;
+        }
+        return "";
+    }
+
+    /**
+     * 使用正则表达式从URL中提取IP地址或域名
+     * @param url URL字符串
+     * @return IP地址或域名
+     */
+    private String extractIpByRegex(String url) {
+        Pattern pattern = Pattern.compile("://([^:/]+)");
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "";
     }
 
 }
