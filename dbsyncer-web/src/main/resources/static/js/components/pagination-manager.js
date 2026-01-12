@@ -163,7 +163,7 @@
             paginationBtns.remove();
 
             // 上一页按钮
-            const prevBtn = $(`<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>
+            const prevBtn = $(`<button type="button" class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>
                 <i class="fa fa-angle-left"></i>
             </button>`);
             if (currentPage > 1) {
@@ -176,7 +176,7 @@
             const endPage = Math.min(totalPages, startPage + 2);
 
             for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = $(`<button class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
+                const pageBtn = $(`<button type="button" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
                 pageBtn.on('click', () => {
                     if (i !== currentPage) {
                         onPageChange(i);
@@ -186,7 +186,7 @@
             }
 
             // 下一页按钮
-            const nextBtn = $(`<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>
+            const nextBtn = $(`<button type="button" class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>
                 <i class="fa fa-angle-right"></i>
             </button>`);
             if (currentPage < totalPages) {

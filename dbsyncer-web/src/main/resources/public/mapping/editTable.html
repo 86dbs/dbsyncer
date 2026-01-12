@@ -62,6 +62,18 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-6 mt-4">
+        <div class="lg:col-span-2">
+            <div id="searchTableGroup" class="search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索表名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <!-- 表映射列表 -->
     <table class="table">
         <thead>
@@ -196,14 +208,19 @@
     // 绑定复选框多选或单选事件
     function bindTableGroupCheckbox() {
         const $checkboxAll = $('.tableGroupCheckboxAll');
-        const $checkboxes = $('.tableGroupCheckbox');
         const $delBtn = $('#tableGroupDelBtn');
         let isUpdatingSelectAll = false;
+
+        // 动态获取所有单个复选框（每次调用时重新查找）
+        function getCheckboxes() {
+            return $('.tableGroupCheckbox');
+        }
 
         // 更新全选复选框状态
         function updateSelectAllState() {
             if (isUpdatingSelectAll) return;
             isUpdatingSelectAll = true;
+            const $checkboxes = getCheckboxes();
             const $checkedCheckboxes = $checkboxes.filter(':checked');
             const allChecked = $checkboxes.length > 0 && $checkboxes.length === $checkedCheckboxes.length;
             const checkboxAllApi = $checkboxAll.data('checkboxGroup');
@@ -219,33 +236,45 @@
 
         // 更新删除按钮状态
         function updateDeleteButtonState() {
+            const $checkboxes = getCheckboxes();
             $delBtn.prop('disabled', $checkboxes.filter(':checked').length === 0);
         }
 
-        // 初始化全选复选框
-        $checkboxAll.checkboxGroup({
-            theme: 'danger',
-            size: 'md',
-            onChange: function(values) {
-                // 全选/取消全选时，同步所有单个复选框
-                const isChecked = values.length > 0;
-                $checkboxes.each(function() {
-                    const api = $(this).data('checkboxGroup');
-                    if (api) {
-                        api.setValue(isChecked);
-                    }
-                });
-                updateDeleteButtonState();
-            }
-        });
+        // 先移除旧的事件绑定（如果存在）
+        $checkboxAll.off('change');
+        getCheckboxes().off('change');
+
+        // 初始化全选复选框（如果还没有初始化）
+        if (!$checkboxAll.data('checkboxGroupInitialized')) {
+            $checkboxAll.checkboxGroup({
+                theme: 'danger',
+                size: 'md',
+                onChange: function(values) {
+                    // 全选/取消全选时，同步所有单个复选框
+                    const isChecked = values.length > 0;
+                    getCheckboxes().each(function() {
+                        const api = $(this).data('checkboxGroup');
+                        if (api) {
+                            api.setValue(isChecked);
+                        }
+                    });
+                    updateDeleteButtonState();
+                }
+            });
+        }
 
         // 初始化所有单个复选框
-        $checkboxes.checkboxGroup({
-            theme: 'danger',
-            size: 'md',
-            onChange: function(values) {
-                updateSelectAllState();
-                updateDeleteButtonState();
+        getCheckboxes().each(function() {
+            const $checkbox = $(this);
+            if (!$checkbox.data('checkboxGroupInitialized')) {
+                $checkbox.checkboxGroup({
+                    theme: 'danger',
+                    size: 'md',
+                    onChange: function(values) {
+                        updateSelectAllState();
+                        updateDeleteButtonState();
+                    }
+                });
             }
         });
     }
@@ -346,7 +375,7 @@
 
         // 初始化分页管理器
         let mappingId = $("#mappingId").val();
-        let searchTableGroup = new PaginationManager({
+        let pagination = new PaginationManager({
             requestUrl: '/tableGroup/search',
             params: {'mappingId': mappingId},
             tableBodySelector: '#tableGroupList',
@@ -370,6 +399,9 @@
                 // 绑定复选框多选或单选事件
                 bindTableGroupCheckbox();
             }
+        });
+        initSearch('searchTableGroup', function (searchKey) {
+            pagination.doSearch({'searchKey': searchKey, 'mappingId': mappingId});
         });
     });
 </script>

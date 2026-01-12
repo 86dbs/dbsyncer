@@ -40,19 +40,19 @@
                     </div>
                 </td>
                 <td>
-                        <span class="badge"
-                              th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success ' : ''"
-                              th:text="${u?.roleName}"></span>
+                    <span class="badge"
+                          th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success ' : ''"
+                          th:text="${u?.roleName}"></span>
                 </td>
                 <td>
                     <div class="flex flex-wrap gap-1">
-                            <span th:each="m : ${#strings.listSplit(u?.email, ',')}"
-                                  class="badge"
-                                  th:text="${m}"></span>
+                        <span class="badge"
+                              th:each="m : ${#strings.listSplit(u?.email, ',')}"
+                              th:text="${m}"></span>
                     </div>
                 </td>
                 <td>
-                    <span class="text-sm text-secondary" th:text="${u?.phone ?: '-'}"></span>
+                    <span class="text-sm text-secondary" th:text="${u?.phone ?: ''}"></span>
                 </td>
                 <td>
                     <div class="flex items-center gap-1">
