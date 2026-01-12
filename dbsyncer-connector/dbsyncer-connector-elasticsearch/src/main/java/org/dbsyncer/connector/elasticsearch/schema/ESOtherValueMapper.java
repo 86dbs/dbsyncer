@@ -18,6 +18,7 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2023-11-25 23:10
  */
+@Deprecated
 public class ESOtherValueMapper extends AbstractValueMapper<Map> {
 
     @Override

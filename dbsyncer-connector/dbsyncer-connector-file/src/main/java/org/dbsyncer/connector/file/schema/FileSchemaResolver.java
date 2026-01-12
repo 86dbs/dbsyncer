@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2026-01-13 00:08
  */
-public class FileSchemaResolver extends AbstractSchemaResolver {
+public final class FileSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(

@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2026-01-11 22:18
  */
-public class KafkaSchemaResolver extends AbstractSchemaResolver {
+public final class KafkaSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(

@@ -15,6 +15,7 @@ import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.connector.elasticsearch.enums.ESFieldTypeEnum;
 import org.dbsyncer.connector.elasticsearch.schema.ESDateValueMapper;
 import org.dbsyncer.connector.elasticsearch.schema.ESOtherValueMapper;
+import org.dbsyncer.connector.elasticsearch.schema.ElasticsearchSchemaResolver;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -34,6 +35,7 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.elasticsearch.ElasticsearchException;
@@ -96,6 +98,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public static final String _TYPE = "_type";
     private final Map<String, FilterMapper> filters = new ConcurrentHashMap<>();
     private final ESConfigValidator configValidator = new ESConfigValidator();
+    private final ElasticsearchSchemaResolver schemaResolver = new ElasticsearchSchemaResolver();
 
     public ElasticsearchConnector() {
         VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
@@ -396,6 +399,11 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             return new ESQuartzListener();
         }
         return null;
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 
     private void parseProperties(List<Field> fields, Map<String, Object> sourceMap) {

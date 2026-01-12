@@ -18,6 +18,7 @@ import java.sql.Timestamp;
  * @Version 1.0.0
  * @Date 2023-11-25 23:10
  */
+@Deprecated
 public class ESDateValueMapper extends AbstractValueMapper<java.util.Date> {
 
     @Override
