@@ -33,6 +33,15 @@
                 <h2>数据源列表</h2>
                 <button id="add-connector" class="btn btn-primary">添加数据源</button>
             </div>
+            <div class="search-area">
+                <select id="searchType" class="form-control search-type-select">
+                    <option value="name" selected>数据源名称</option>
+                    <option value="connectorType">数据源类型</option>
+                    <option value="ip">IP地址</option>
+                </select>
+                <input type="text" id="searchInput" class="form-control search-input" placeholder="请输入搜索内容">
+                <button id="searchBtn" class="btn btn-primary search-btn">搜索</button>
+            </div>
             <div id="connector-list" class="connector-list-vertical">
                 <!-- 数据源列表将通过JavaScript动态生成 -->
             </div>

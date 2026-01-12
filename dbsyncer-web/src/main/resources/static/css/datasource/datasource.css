@@ -30,6 +30,38 @@
     color: #333;
 }
 
+/* 搜索区域 */
+.search-area {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fff;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#searchType.search-type-select {
+    width: 120px !important;
+    flex-shrink: 0;
+    height: 34px !important;
+    line-height: 1.42857143 !important;
+    padding: 5px 12px !important;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 0;
+    max-width: 180px;
+    height: 34px !important;
+    line-height: 1.42857143 !important;
+    padding: 5px 12px !important;
+}
+
+.search-btn {
+    flex-shrink: 0;
+    padding: 8px 20px;
+}
+
 /* 左侧连接列表 */
 .connector-list-vertical {
     flex: 1;

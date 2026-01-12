@@ -14,7 +14,39 @@ function initPage() {
         $('.dropdown-menu.show').removeClass('show');
     });
     
+    // 绑定搜索相关事件
+    bindConnectorSearch();
+    
     // 加载数据源列表
+    loadConnectorList();
+}
+
+/**
+ * 绑定搜索相关事件
+ */
+function bindConnectorSearch() {
+    // 搜索按钮点击事件
+    $('#searchBtn').click(function() {
+        performConnectorSearch();
+    });
+
+    // 搜索框回车事件
+    $('#searchInput').keypress(function(e) {
+        if (e.which === 13) { // Enter键
+            performConnectorSearch();
+        }
+    });
+
+    // 搜索类型下拉框change事件
+    $('#searchType').change(function() {
+        performConnectorSearch();
+    });
+}
+
+/**
+ * 执行数据源搜索
+ */
+function performConnectorSearch() {
     loadConnectorList();
 }
 
@@ -22,9 +54,16 @@ function initPage() {
  * 加载数据源列表
  */
 function loadConnectorList() {
+    var searchType = $('#searchType').val();
+    var keyword = $('#searchInput').val().trim();
+    
     $.ajax({
         url: '/datasource/list',
         type: 'POST',
+        data: {
+            searchType: searchType,
+            keyword: keyword
+        },
         dataType: 'json',
         success: function(data) {
             if (data.success === true) {

@@ -463,6 +463,7 @@ function bindMappingSearch() {
     // 搜索框回车事件
     $("#mappingSearchInput").keypress(function (e) {
         if (e.which === 13) { // Enter键
+            e.preventDefault(); // 阻止浏览器默认行为，防止页面刷新
             performMappingSearch();
         }
     });

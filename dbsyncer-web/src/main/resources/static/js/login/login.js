@@ -86,6 +86,8 @@ function initLoginCopyrightInfo() {
 function showResponse($form, data) {
     $form.find("input").removeAttr('disabled');
     if (data.success == true) {
+        // 清除之前的页面记录，确保登录后跳转到首页
+        sessionStorage.removeItem('previousPage');
         location.replace($basePath);
         return;
     }
