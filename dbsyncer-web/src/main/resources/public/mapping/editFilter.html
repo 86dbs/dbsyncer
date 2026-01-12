@@ -175,9 +175,18 @@
                 conditionFilter = '';
             }
             // 非空检查
-            else if (isBlank(conditionSourceField)) {
-                bootGrowl("数据源表字段不能空.", "danger");
-                return;
+            else {
+                if (isBlank(conditionSourceField)) {
+                    bootGrowl("数据源表字段不能空.", "danger");
+                    return;
+                }
+                // and or与sql互斥，需要清理sql类型的条件
+                $conditionList.find("tr").each(function() {
+                    const opr = $(this).find("td:eq(0)").text().trim();
+                    if (opr === 'sql') {
+                        $(this).remove();
+                    }
+                });
             }
 
             // 检查重复字段
