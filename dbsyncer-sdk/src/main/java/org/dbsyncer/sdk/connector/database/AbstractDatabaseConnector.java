@@ -273,8 +273,15 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
-        buildSql(map, SqlBuilderEnum.INSERT, config);
-        buildSql(map, SqlBuilderEnum.UPDATE, config);
+        if (commandConfig.isForceUpdate()) {
+            DatabaseConnectorInstance instance = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
+            String upsert = buildUpsertSql(instance, config);
+            map.put(SqlBuilderEnum.INSERT.getName(), upsert);
+            map.put(SqlBuilderEnum.UPDATE.getName(), upsert);
+        } else {
+            map.put(SqlBuilderEnum.INSERT.getName(), buildInsertSql(config));
+            buildSql(map, SqlBuilderEnum.UPDATE, config);
+        }
         buildSql(map, SqlBuilderEnum.DELETE, config);
         buildSql(map, SqlBuilderEnum.QUERY_EXIST, config);
         return map;
@@ -510,7 +517,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * 根据过滤条件获取查询SQL
      *
      * @param fieldMap
-     * @param queryOperator {@link OperationEnum}
+     * @param operator {@link OperationEnum}
      * @param filter
      * @return
      */
@@ -578,6 +585,25 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
         }
         return StringUtil.SINGLE_QUOTATION + value + StringUtil.SINGLE_QUOTATION;
+    }
+
+    /**
+     * 生成upsert
+     *
+     * @param connectorInstance
+     * @param config
+     */
+    protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        throw new SdkException("暂不支持开启upsert");
+    }
+
+    /**
+     * 生成insert
+     *
+     * @param config
+     */
+    protected String buildInsertSql(SqlBuilderConfig config) {
+        return SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
     }
 
     /**

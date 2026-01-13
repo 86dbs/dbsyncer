@@ -110,6 +110,7 @@ public class ParserComponentImpl implements ParserComponent {
         }
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
+        targetConfig.setForceUpdate(mapping.isForceUpdate());
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }
