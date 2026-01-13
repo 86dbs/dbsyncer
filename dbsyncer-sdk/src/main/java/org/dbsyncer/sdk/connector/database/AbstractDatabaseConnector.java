@@ -185,14 +185,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         List<Field> fields = new ArrayList<>(targetFields);
         List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
-        // Update / Delete
-        if (!isInsert(event)) {
+        Set<String> pkSet = pkFields.stream().map(Field::getName).collect(Collectors.toSet());
+        // TODO 临时开关，下个迭代将删除
+        if (context.isUpsert()) {
             if (isDelete(event)) {
                 fields.clear();
-            } else if (isUpdate(event)) {
-                removeFieldWithPk(fields, pkFields);
+                fields.addAll(pkFields);
             }
-            fields.addAll(pkFields);
+        } else {
+            // Update / Delete
+            if (!isInsert(event)) {
+                if (isDelete(event)) {
+                    fields.clear();
+                } else if (isUpdate(event)) {
+                    removeFieldWithPk(fields, pkSet);
+                }
+                fields.addAll(pkFields);
+            }
         }
 
         Result result = new Result();
@@ -201,7 +210,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, row));
+            if (context.isUpsert()) {
+                result.getFailData().addAll(data);
+                result.getError().append(context.getTraceId())
+                        .append(" SQL:").append(executeSql).append(System.lineSeparator())
+                        .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+                return result;
+            }
+            data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, pkSet, row));
         }
 
         if (null != execute) {
@@ -211,7 +227,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                forceUpdate(result, connectorInstance, context, pkFields, data.get(i));
+                if (context.isUpsert()) {
+                    continue;
+                }
+                forceUpdate(result, connectorInstance, context, pkFields, pkSet, data.get(i));
             }
         }
         return result;
@@ -655,7 +674,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return args;
     }
 
-    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields,
+    /**
+     * TODO 下个迭代将废弃
+     */
+    @Deprecated
+    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Set<String> pkSet,
                              Map row) {
         if (isUpdate(context.getEvent()) || isInsert(context.getEvent())) {
             final String queryCount = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
@@ -668,12 +691,12 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             if (existRow(connectorInstance, context, queryCount, args)) {
                 // 覆盖更新
                 if (context.isForceUpdate()) {
-                    writer(result, connectorInstance, context, pkFields, row, ConnectorConstant.OPERTION_UPDATE);
+                    writer(result, connectorInstance, context, pkFields, pkSet, row, ConnectorConstant.OPERTION_UPDATE);
                 }
                 return;
             }
             // 不存在数据
-            writer(result, connectorInstance, context, pkFields, row, ConnectorConstant.OPERTION_INSERT);
+            writer(result, connectorInstance, context, pkFields, pkSet, row, ConnectorConstant.OPERTION_INSERT);
         }
     }
 
@@ -688,7 +711,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         logger.error("{} {}表事件{}, 尝试执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
     }
 
-    private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Map row,
+    /**
+     * TODO 下个迭代将废弃
+     */
+    private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Set<String> pkSet, Map row,
                         String event) {
         // 1、获取 SQL
         String sql = context.getCommand().get(event);
@@ -699,7 +725,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             if (isDelete(event)) {
                 fields.clear();
             } else if (isUpdate(event)) {
-                removeFieldWithPk(fields, pkFields);
+                removeFieldWithPk(fields, pkSet);
             }
             fields.addAll(pkFields);
         }
@@ -740,21 +766,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
     }
 
-    private void removeFieldWithPk(List<Field> fields, List<Field> pkFields) {
-        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkFields)) {
+    private void removeFieldWithPk(List<Field> fields, Set<String> pkSet) {
+        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkSet)) {
             return;
         }
 
-        pkFields.forEach(pkField -> {
-            Iterator<Field> iterator = fields.iterator();
-            while (iterator.hasNext()) {
-                Field next = iterator.next();
-                if (next != null && StringUtil.equals(next.getName(), pkField.getName())) {
-                    iterator.remove();
-                    break;
-                }
+        Iterator<Field> iterator = fields.iterator();
+        while (iterator.hasNext()) {
+            Field next = iterator.next();
+            if (next != null && pkSet.contains(next.getName())) {
+                iterator.remove();
+                break;
             }
-        });
+        }
     }
 
     @Override

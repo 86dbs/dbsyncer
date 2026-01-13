@@ -57,11 +57,8 @@ public class Mapping extends AbstractConfigModel {
     // 覆盖写入
     private boolean forceUpdate = true;
 
-    // 数据校验
-    private boolean compareData = true;
-
-    // 数据订正
-    private boolean recoverData = true;
+    // 支持upsert语句 TODO 临时开关，下个迭代会删除
+    private boolean upsert;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -153,19 +150,11 @@ public class Mapping extends AbstractConfigModel {
         this.forceUpdate = forceUpdate;
     }
 
-    public boolean isCompareData() {
-        return compareData;
+    public boolean isUpsert() {
+        return upsert;
     }
 
-    public void setCompareData(boolean compareData) {
-        this.compareData = compareData;
-    }
-
-    public boolean isRecoverData() {
-        return recoverData;
-    }
-
-    public void setRecoverData(boolean recoverData) {
-        this.recoverData = recoverData;
+    public void setUpsert(boolean upsert) {
+        this.upsert = upsert;
     }
 }

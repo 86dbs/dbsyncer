@@ -132,16 +132,18 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
         List<Field> fields = config.getFields();
-        // 新版本使用别名引用新值
-        String asNew = getVersion(connectorInstance) >= 8019000000L ? " AS new" : "";
+        String quotation = buildSqlWithQuotation();
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> dfs = new ArrayList<>();
         fields.forEach(f -> {
             String name = database.buildFieldName(f);
-            fs.add(name);
+            String quotedName = quotation + name + quotation;
+            fs.add(quotedName);
             vs.add("?");
-            dfs.add(String.format("%s = VALUES(?)", name));
+            if (!f.isPk()) {
+                dfs.add(String.format("%s = VALUES(%s)", quotedName, quotedName));
+            }
         });
 
         String uniqueCode = database.generateUniqueCode();
@@ -150,19 +152,20 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         String values = StringUtil.join(vs, ",");
         String dupNames = StringUtil.join(dfs, ",");
         // 基于主键或唯一索引冲突时更新
-        return String.format("%sINSERT INTO %s (%s) VALUES (%s)%s ON DUPLICATE KEY UPDATE %s",
-                uniqueCode, table, fieldNames, values, asNew, dupNames);
+        return String.format("%sINSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+                uniqueCode, table, fieldNames, values, dupNames);
     }
 
     @Override
     protected String buildInsertSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
+        String quotation = database.buildSqlWithQuotation();
         List<Field> fields = config.getFields();
 
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         fields.forEach(f -> {
-            fs.add(database.buildFieldName(f));
+            fs.add(quotation + database.buildFieldName(f) + quotation);
             vs.add("?");
         });
 
