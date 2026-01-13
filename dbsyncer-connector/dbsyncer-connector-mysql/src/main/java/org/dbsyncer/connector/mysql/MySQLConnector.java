@@ -148,11 +148,11 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
         String uniqueCode = database.generateUniqueCode();
         StringBuilder table = buildTableName(config);
-        String fieldNames = StringUtil.join(fs, ",");
-        String values = StringUtil.join(vs, ",");
-        String dupNames = StringUtil.join(dfs, ",");
+        String fieldNames = StringUtil.join(fs, StringUtil.COMMA);
+        String values = StringUtil.join(vs, StringUtil.COMMA);
+        String dupNames = StringUtil.join(dfs, StringUtil.COMMA);
         // 基于主键或唯一索引冲突时更新
-        return String.format("%sINSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+        return String.format("%sINSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;",
                 uniqueCode, table, fieldNames, values, dupNames);
     }
 
@@ -171,8 +171,8 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
         String uniqueCode = database.generateUniqueCode();
         StringBuilder table = buildTableName(config);
-        String fieldNames = StringUtil.join(fs, ",");
-        String values = StringUtil.join(vs, ",");
+        String fieldNames = StringUtil.join(fs, StringUtil.COMMA);
+        String values = StringUtil.join(vs, StringUtil.COMMA);
 
         // 冲突时忽略插入，不进行任何操作
         return String.format("%sINSERT IGNORE INTO %s (%s) VALUES (%s)", uniqueCode, table, fieldNames, values);
@@ -214,18 +214,4 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         return schemaResolver;
     }
 
-    /**
-     * TODO 性能优化
-     *
-     * @param connectorInstance
-     * @return
-     */
-    private Long getVersion(DatabaseConnectorInstance connectorInstance) {
-        String version = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject("SELECT VERSION()", String.class));
-        version = version.replace(StringUtil.POINT, StringUtil.EMPTY);
-        if (version.contains(StringUtil.HORIZONTAL)) {
-            version = version.split(StringUtil.HORIZONTAL)[0];
-        }
-        return Long.parseLong(String.format("%-10s", version).replace(StringUtil.SPACE, "0"));
-    }
 }
