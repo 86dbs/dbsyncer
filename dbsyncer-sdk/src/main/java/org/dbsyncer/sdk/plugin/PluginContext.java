@@ -77,6 +77,11 @@ public interface PluginContext extends BaseContext {
     boolean isForceUpdate();
 
     /**
+     * TODO 临时配置，下个迭代将删除
+     */
+    boolean isUpsert();
+
+    /**
      * 是否启用字段解析器
      */
     boolean isEnableSchemaResolver();

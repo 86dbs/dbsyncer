@@ -30,6 +30,11 @@ public class CommandConfig {
     private ConnectorInstance connectorInstance;
 
     public CommandConfig(String connectorType, String schema, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
+
+    // 覆盖写入
+    private boolean forceUpdate = true;
+
+    public CommandConfig(String connectorType, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
         this.connectorType = connectorType;
         this.schema = schema;
         this.table = table;
@@ -59,5 +64,13 @@ public class CommandConfig {
 
     public ConnectorInstance getConnectorInstance() {
         return connectorInstance;
+    }
+
+    public boolean isForceUpdate() {
+        return forceUpdate;
+    }
+
+    public void setForceUpdate(boolean forceUpdate) {
+        this.forceUpdate = forceUpdate;
     }
 }

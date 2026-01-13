@@ -11,8 +11,10 @@ import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -125,6 +127,76 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
         return targetCommand;
+    }
+
+    @Override
+    protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        List<Field> fields = config.getFields();
+        
+        List<String> fs = new ArrayList<>();
+        List<String> sfs = new ArrayList<>();
+        List<String> vs = new ArrayList<>();
+        List<String> updateSets = new ArrayList<>();
+        List<String> pkFieldNames = new ArrayList<>();
+        
+        fields.forEach(f -> {
+            String fieldName = database.buildFieldName(f);
+            fs.add(fieldName);
+            sfs.add("s." + fieldName);
+            vs.add("?");
+            if (f.isPk()) {
+                pkFieldNames.add(fieldName);
+            } else {
+                updateSets.add(String.format("%s = s.%s", fieldName, fieldName));
+            }
+        });
+        
+        StringBuilder sql = new StringBuilder(database.generateUniqueCode());
+        sql.append("MERGE ").append(config.getSchema());
+        sql.append(database.buildTableName(config.getTableName())).append(" AS t ");
+        sql.append("USING (VALUES (").append(StringUtil.join(vs, StringUtil.COMMA)).append(")) AS s (");
+        sql.append(StringUtil.join(fs, StringUtil.COMMA)).append(") ");
+        sql.append("ON ");
+        
+        // 构建 ON 条件：t.pk = s.pk AND ...
+        StringBuilder onCondition = new StringBuilder();
+        for (int i = 0; i < pkFieldNames.size(); i++) {
+            if (i > 0) {
+                onCondition.append(" AND ");
+            }
+            String pkFieldName = pkFieldNames.get(i);
+            onCondition.append("t.").append(pkFieldName).append(" = s.").append(pkFieldName);
+        }
+        sql.append(onCondition).append(" ");
+        
+        sql.append("WHEN MATCHED THEN UPDATE SET ");
+        sql.append(StringUtil.join(updateSets, StringUtil.COMMA)).append(" ");
+        sql.append("WHEN NOT MATCHED THEN INSERT (");
+        sql.append(StringUtil.join(fs, StringUtil.COMMA)).append(") VALUES (");
+        sql.append(StringUtil.join(sfs, StringUtil.COMMA)).append(");");
+        
+        return sql.toString();
+    }
+
+    @Override
+    protected String buildInsertSql(SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        List<Field> fields = config.getFields();
+        
+        List<String> fs = new ArrayList<>();
+        List<String> vs = new ArrayList<>();
+        fields.forEach(f -> {
+            fs.add(database.buildFieldName(f));
+            vs.add("?");
+        });
+        
+        String uniqueCode = database.generateUniqueCode();
+        String table = config.getSchema() + database.buildTableName(config.getTableName());
+        String fieldNames = StringUtil.join(fs, StringUtil.COMMA);
+        String values = StringUtil.join(vs, StringUtil.COMMA);
+        
+        return String.format("%sINSERT INTO %s (%s) VALUES (%s)", uniqueCode, table, fieldNames, values);
     }
 
     @Override

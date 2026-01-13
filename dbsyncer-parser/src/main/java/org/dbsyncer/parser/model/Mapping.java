@@ -1,6 +1,3 @@
-/**
- * DBSyncer Copyright 2020-2025 All Rights Reserved.
- */
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.config.ListenerConfig;
@@ -78,6 +75,9 @@ public class Mapping extends AbstractConfigModel {
 
     // 覆盖写入
     private boolean forceUpdate = true;
+
+    // 支持upsert语句 TODO 临时开关，下个迭代会删除
+    private boolean upsert;
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -217,4 +217,11 @@ public class Mapping extends AbstractConfigModel {
         this.forceUpdate = forceUpdate;
     }
 
+    public boolean isUpsert() {
+        return upsert;
+    }
+
+    public void setUpsert(boolean upsert) {
+        this.upsert = upsert;
+    }
 }
