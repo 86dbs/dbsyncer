@@ -211,8 +211,6 @@ public class MySQLListener extends AbstractDatabaseListener {
 
         @Override
         public void onConnect(BinaryLogRemoteClient client) {
-            // 记录binlog增量点
-            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
         }
 
         @Override
