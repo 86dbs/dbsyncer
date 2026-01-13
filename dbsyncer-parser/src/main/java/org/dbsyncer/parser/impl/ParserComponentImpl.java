@@ -110,6 +110,8 @@ public class ParserComponentImpl implements ParserComponent {
         }
         final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
         final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
+        // TODO 下个迭代统一使用ForceUpdate
+        targetConfig.setForceUpdate(mapping.isUpsert());
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
     }
@@ -152,6 +154,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
+        context.setUpsert(mapping.isUpsert());
         context.setSourceTable(sourceTable);
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
