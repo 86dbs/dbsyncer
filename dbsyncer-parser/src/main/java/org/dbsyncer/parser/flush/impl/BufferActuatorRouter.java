@@ -88,8 +88,8 @@ public final class BufferActuatorRouter implements DisposableBean {
             long queueSize = getQueueSize().get();
             if (queueSize == 0) {
                 pendingTaskMap.remove(offset.getMetaId());
-                if (logger.isInfoEnabled()) {
-                    logger.info("---- finished sync, queue is empty, cleared pending task");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("---- finished sync, queue is empty, cleared pending task");
                 }
             }
         } catch (Exception e) {

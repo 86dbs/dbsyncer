@@ -154,15 +154,6 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                 if (!flushExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
                     flushExecutor.shutdownNow();
                 }
-                // 系统关闭时立即持久化最新快照
-                Map<String, String> snapshot = pendingSnapshot;
-                if (snapshot != null && !Objects.equals(snapshot, lastFlushedSnapshot)) {
-                    try {
-                        watcher.flushEvent(snapshot);
-                    } catch (Exception e) {
-                        logger.error("系统关闭时持久化快照失败", e);
-                    }
-                }
             } catch (InterruptedException e) {
                 flushExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
