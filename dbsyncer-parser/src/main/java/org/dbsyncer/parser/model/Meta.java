@@ -186,7 +186,9 @@ public class Meta extends ConfigModel {
     }
 
     public void setSnapshot(Map<String, String> snapshot) {
-        this.snapshot = snapshot;
+        // 创建副本，避免直接赋值引用
+        // 防止外部修改 snapshot 时影响 Meta 对象的 snapshot
+        this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
     }
 
     public void updateSnapshot(String metaSnapshot) throws Exception {
@@ -194,7 +196,8 @@ public class Meta extends ConfigModel {
             @SuppressWarnings("unchecked")
         Map<String, String> snapshot = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(metaSnapshot);
             if (!CollectionUtils.isEmpty(snapshot)) {
-                this.snapshot = snapshot;
+                // 创建副本，避免直接赋值引用
+                this.snapshot = new HashMap<>(snapshot);
                 setUpdateTime(Instant.now().toEpochMilli());
                 profileComponent.editConfigModel(this);
             }
