@@ -816,7 +816,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private void removeFieldWithPk(List<Field> fields, Set<String> pkSet) {
-        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkFields)) {
+        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkSet)) {
             return;
         }
 

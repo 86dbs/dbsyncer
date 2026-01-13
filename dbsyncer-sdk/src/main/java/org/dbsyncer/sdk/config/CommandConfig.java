@@ -29,12 +29,10 @@ public class CommandConfig {
 
     private ConnectorInstance connectorInstance;
 
-    public CommandConfig(String connectorType, String schema, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
-
     // 覆盖写入
-    private boolean forceUpdate = true;
+    private boolean forceUpdate;
 
-    public CommandConfig(String connectorType, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
+    public CommandConfig(String connectorType, String schema, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
         this.connectorType = connectorType;
         this.schema = schema;
         this.table = table;
