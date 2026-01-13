@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -371,19 +372,23 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
                 throw new EOFException("event data deserialization exception");
             }
+        } catch (SocketException e) {
+            logger.warn("socket closed: binlogFilename={}, binlogPosition={}, eventCount={}, error={}",
+                    binlogFilename, binlogPosition, eventCount, e.getMessage());
+            notifyException(e);
         } catch (EOFException e) {
             // 如果是 EOFException 且连接已断开，这是正常的关闭情况，只记录 debug 日志
             if (connected && !Thread.currentThread().isInterrupted()) {
                 // 连接仍然活跃时发生的 EOFException，记录为错误
-                logger.error("EOFException occurred while connected: binlogFilename={}, binlogPosition={}, eventCount={}, error={}",
-                        binlogFilename, binlogPosition, eventCount, e.getMessage(), e);
+                logger.warn("EOFException occurred while connected: binlogFilename={}, binlogPosition={}, eventCount={}, error={}",
+                        binlogFilename, binlogPosition, eventCount, e.getMessage());
                 notifyException(e);
             }
         } catch (Exception e) {
             // 检查是否是连接断开导致的异常
             if (connected && !Thread.currentThread().isInterrupted()) {
-                logger.error("Error in listenForEventPackets: binlogFilename={}, binlogPosition={}, eventCount={}, error={}",
-                        binlogFilename, binlogPosition, eventCount, e.getMessage(), e);
+                logger.warn("Error in listenForEventPackets: binlogFilename={}, binlogPosition={}, eventCount={}, error={}",
+                        binlogFilename, binlogPosition, eventCount, e.getMessage());
                 notifyException(e);
             }
         }

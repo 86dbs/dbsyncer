@@ -115,7 +115,6 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                         logger.info("snapshot changed, flushing: {}", snapshot);
                         watcher.flushEvent(snapshot);
                         lastFlushedSnapshot = new HashMap<>(snapshot);
-                        pendingSnapshot = null;
                     } catch (Exception e) {
                         logger.error("异步持久化失败", e);
                     }
@@ -215,7 +214,8 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     }
 
     public void setSnapshot(Map<String, String> snapshot) {
-        this.snapshot = snapshot;
+        // 创建副本，避免直接修改 Meta 对象的 snapshot（Meta 对象被缓存，直接修改会影响持久化存储）
+        this.snapshot = snapshot != null ? new HashMap<>(snapshot) : new HashMap<>();
         // 初始化时，如果 snapshot 不为空，也初始化 lastFlushedSnapshot
         if (this.lastFlushedSnapshot == null && !CollectionUtils.isEmpty(snapshot)) {
             this.lastFlushedSnapshot = new HashMap<>(snapshot);
