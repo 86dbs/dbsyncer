@@ -148,6 +148,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     public void refreshEvent(ChangedOffset offset) {
         if (offset.getPosition() != null) {
             snapshot.put(LSN_POSITION, offset.getPosition().toString());
+            super.refreshEvent(offset);
         }
     }
 
@@ -176,7 +177,6 @@ public class SqlServerListener extends AbstractDatabaseListener {
             lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
             if (null != lastLsn && lastLsn.isAvailable()) {
                 snapshot.put(LSN_POSITION, lastLsn.toString());
-                super.forceFlushEvent();
                 return;
             }
             // Shouldn't happen if the agent is running, but it is better to guard against such situation

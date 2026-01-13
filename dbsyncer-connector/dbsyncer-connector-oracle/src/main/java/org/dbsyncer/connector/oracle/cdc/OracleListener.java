@@ -171,6 +171,7 @@ public class OracleListener extends AbstractDatabaseListener {
     @Override
     public void refreshEvent(ChangedOffset offset) {
         snapshot.put(REDO_POSITION, String.valueOf(offset.getPosition()));
+        super.refreshEvent(offset);
     }
 
     private String getTableName(Table table) {

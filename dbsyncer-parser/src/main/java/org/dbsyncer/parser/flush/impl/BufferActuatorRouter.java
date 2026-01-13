@@ -84,6 +84,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             // refreshEvent() 已经直接更新了 pendingSnapshot，不需要再调用 flushEvent()
             // 原因：任务事件携带的XID快照不应该能够修改，refreshEvent() 直接使用任务携带的位置更新 pendingSnapshot
             listener.refreshEvent(offset);
+
             // 数据同步完成，检查队列是否为空，如果为空则清除 pending 状态
             long queueSize = getQueueSize().get();
             if (queueSize == 0) {

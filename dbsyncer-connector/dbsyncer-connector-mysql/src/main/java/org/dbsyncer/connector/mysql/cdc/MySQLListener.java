@@ -100,14 +100,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             // 直接使用任务携带的位置更新 snapshot（用于后续 ROW 事件携带）
             // 注意：这里仍然需要更新 snapshot，因为后续的 ROW 事件需要携带这个位置
             refreshSnapshot(newFileName, newPosition);
-
-            // 直接调用 flushEvent() 更新 pendingSnapshot（使用刚更新的 snapshot）
-            // 更简单直接，因为 refreshSnapshot() 和 flushEvent() 在同一个方法中，不会有并发问题
-            try {
-                flushEvent();
-            } catch (Exception e) {
-                logger.warn("任务事件完成时更新 pendingSnapshot 失败", e);
-            }
+            super.refreshEvent(offset);
         }
         // 如果没有位置信息，使用当前的 snapshot（降级处理）
         // 注意：这种情况不应该发生，因为ROW事件应该已经携带了XID位置
@@ -135,11 +128,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         client.registerLifecycleListener(new InnerLifecycleListener());
 
         client.connect();
-
-        if (!containsPos) {
-            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
-            super.forceFlushEvent();
-        }
     }
 
     private List<Host> readNodes(String url) {
@@ -291,12 +279,10 @@ public class MySQLListener extends AbstractDatabaseListener {
 
                 if (!hasPendingTaskData()) {
                     // 没有任务数据在处理：非任务事件的 XID，正常更新 snapshot 和 pendingSnapshot
-                    refreshSnapshot(lastXIDFileName, lastXIDPosition);
-                    try {
-                        flushEvent();  // 更新 pendingSnapshot
-                    } catch (Exception e) {
-                        logger.warn("非任务事件 XID 更新 pendingSnapshot 失败", e);
-                    }
+                    ChangedOffset offset = new ChangedOffset();
+                    offset.setNextFileName(lastXIDFileName);
+                    offset.setPosition(lastXIDPosition);
+                    refreshEvent(offset);
                 }
                 return;
             }

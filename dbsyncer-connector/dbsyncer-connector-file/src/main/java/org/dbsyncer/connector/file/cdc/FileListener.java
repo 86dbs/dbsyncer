@@ -111,7 +111,7 @@ public class FileListener extends AbstractListener {
             } else {
                 raf.seek(raf.length());
                 snapshot.put(filePosKey, String.valueOf(raf.getFilePointer()));
-                super.forceFlushEvent();
+                super.refreshEvent(null);
             }
 
             pipeline.put(fileName, new PipelineResolver(fileSchema.getFields(), raf));
@@ -136,6 +136,7 @@ public class FileListener extends AbstractListener {
     public void refreshEvent(ChangedOffset offset) {
         if (offset.getNextFileName() != null && offset.getPosition() != null) {
             snapshot.put(offset.getNextFileName(), String.valueOf(offset.getPosition()));
+            super.refreshEvent(offset);
         }
     }
 

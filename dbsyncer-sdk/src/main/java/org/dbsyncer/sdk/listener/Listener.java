@@ -58,16 +58,6 @@ public interface Listener {
     void refreshEvent(ChangedOffset offset);
 
     /**
-     * 刷新增量点事件
-     */
-    void flushEvent() throws Exception;
-
-    /**
-     * 强制刷新增量点事件
-     */
-    void forceFlushEvent() throws Exception;
-
-    /**
      * 异常事件
      *
      * @param e

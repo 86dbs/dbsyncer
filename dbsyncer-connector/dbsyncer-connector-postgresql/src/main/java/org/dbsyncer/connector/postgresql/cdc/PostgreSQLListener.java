@@ -139,6 +139,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     @Override
     public void refreshEvent(ChangedOffset offset) {
         snapshot.put(LSN_POSITION, String.valueOf(offset.getPosition()));
+        super.refreshEvent(offset);
     }
 
     private void connect() throws Exception {
@@ -194,7 +195,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                 throw new PostgreSQLException("No maximum LSN recorded in the database");
             }
             snapshot.put(LSN_POSITION, lsn.asString());
-            super.forceFlushEvent();
+            super.refreshEvent(null);
         }
 
         this.startLsn = LogSequenceNumber.valueOf(snapshot.get(LSN_POSITION));

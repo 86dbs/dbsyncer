@@ -85,7 +85,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
-        // nothing to do
+        pendingSnapshot = new HashMap<>(snapshot);
     }
 
     @Override
@@ -124,15 +124,6 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         }
     }
 
-    @Override
-    public void flushEvent() throws Exception {
-        // 直接使用当前的 snapshot 更新 pendingSnapshot
-        if (CollectionUtils.isEmpty(snapshot)) {
-            return;
-        }
-        pendingSnapshot = new HashMap<>(snapshot);
-    }
-
     /**
      * 获取是否有任务数据在处理（通过 Watcher 接口）
      *
@@ -158,15 +149,6 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
                 flushExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-
-    @Override
-    public void forceFlushEvent() throws Exception {
-        if (!CollectionUtils.isEmpty(snapshot)) {
-            logger.info("snapshot：{}", snapshot);
-            watcher.flushEvent(snapshot);
         }
     }
 
