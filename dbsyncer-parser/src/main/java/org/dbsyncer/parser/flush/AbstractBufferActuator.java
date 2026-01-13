@@ -11,6 +11,7 @@ import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -136,15 +137,77 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @param map
      */
     protected void process(Map<String, Response> map) {
-        map.forEach((key, response) -> {
-            long now = Instant.now().toEpochMilli();
-            try {
-                pull(response);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
-        });
+        // 关键修复：按位置顺序处理批次，确保与binlog事件顺序一致
+        // 问题：map.forEach() 的顺序不确定（ConcurrentHashMap迭代顺序不确定），
+        //      可能导致位置靠后的事件先处理完成，更新快照到更大的位置，跳过位置靠前但还没处理的事件
+        // 解决：按位置顺序处理批次，确保不会跳过未处理的事件
+        map.entrySet().stream()
+                .sorted((e1, e2) -> {
+                    Response r1 = e1.getValue();
+                    Response r2 = e2.getValue();
+                    // 检查 Response 是否是 AbstractWriter 的子类（如 WriterResponse）
+                    ChangedOffset o1 = null;
+                    ChangedOffset o2 = null;
+                    if (r1 instanceof org.dbsyncer.parser.model.AbstractWriter) {
+                        o1 = ((org.dbsyncer.parser.model.AbstractWriter) r1).getChangedOffset();
+                    }
+                    if (r2 instanceof org.dbsyncer.parser.model.AbstractWriter) {
+                        o2 = ((org.dbsyncer.parser.model.AbstractWriter) r2).getChangedOffset();
+                    }
+                    
+                    // 如果 ChangedOffset 为 null，放在最后处理
+                    if (o1 == null && o2 == null) {
+                        return 0;
+                    }
+                    if (o1 == null) {
+                        return 1;
+                    }
+                    if (o2 == null) {
+                        return -1;
+                    }
+                    
+                    // 比较文件名
+                    String fileName1 = o1.getNextFileName();
+                    String fileName2 = o2.getNextFileName();
+                    if (fileName1 != null && fileName2 != null) {
+                        int fileNameCompare = fileName1.compareTo(fileName2);
+                        if (fileNameCompare != 0) {
+                            return fileNameCompare;
+                        }
+                    } else if (fileName1 != null) {
+                        return -1;
+                    } else if (fileName2 != null) {
+                        return 1;
+                    }
+                    
+                    // 比较位置
+                    Object pos1 = o1.getPosition();
+                    Object pos2 = o2.getPosition();
+                    if (pos1 instanceof Long && pos2 instanceof Long) {
+                        return Long.compare((Long) pos1, (Long) pos2);
+                    } else if (pos1 instanceof Number && pos2 instanceof Number) {
+                        return Long.compare(((Number) pos1).longValue(), ((Number) pos2).longValue());
+                    } else if (pos1 != null && pos2 != null) {
+                        return pos1.toString().compareTo(pos2.toString());
+                    } else if (pos1 != null) {
+                        return -1;
+                    } else if (pos2 != null) {
+                        return 1;
+                    }
+                    
+                    return 0;
+                })
+                .forEach(entry -> {
+                    String key = entry.getKey();
+                    Response response = entry.getValue();
+                    long now = Instant.now().toEpochMilli();
+                    try {
+                        pull(response);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                    logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+                });
     }
 
     /**
