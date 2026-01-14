@@ -86,13 +86,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         if (!CollectionUtils.isEmpty(request.getRow())) {
             response.addData(request.getRow());
         }
-        // 关键修复：只在第一次设置 ChangedOffset，后续不再覆盖
-        // 问题：批次合并时，每次都会用当前请求的 ChangedOffset 覆盖 response 的 ChangedOffset
-        //      导致批次使用的是最后一个事件的位置，而不是第一个事件的位置
-        //      如果批次2先处理完成，快照更新到事件2000的位置，但批次1还没处理，停止后会丢失批次1
-        // 解决：只在第一次设置 ChangedOffset（第一个事件的位置），后续不再覆盖
-        //      这样批次使用的是第一个事件的位置，确保不会跳过队列中未处理的事件
-        if (request.getChangedOffset() != null && response.getChangedOffset() == null) {
+        if (request.getChangedOffset() != null) {
             response.setChangedOffset(request.getChangedOffset());
         }
         if (!response.isMerged()) {
