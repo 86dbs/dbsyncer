@@ -284,24 +284,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             throw new SdkException("writer data can not be empty.");
         }
         List<Field> fields = new ArrayList<>(targetFields);
-        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields);
-        Set<String> pkSet = pkFields.stream().map(Field::getName).collect(Collectors.toSet());
-        // TODO 临时开关，下个迭代将删除
-        if (context.isUpsert()) {
-            if (isDelete(event)) {
-                fields.clear();
-                fields.addAll(pkFields);
-            }
-        } else {
-            // Update / Delete
-            if (!isInsert(event)) {
-                if (isDelete(event)) {
-                    fields.clear();
-                } else if (isUpdate(event)) {
-                    removeFieldWithPk(fields, pkSet);
-                }
-                fields.addAll(pkFields);
-            }
+        if (isDelete(event)) {
+            fields.clear();
+            fields.addAll(PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields));
         }
 
         Result result = new Result();
@@ -310,14 +295,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             // 2、设置参数
             execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
         } catch (Exception e) {
-            if (context.isUpsert()) {
-                result.getFailData().addAll(data);
-                result.getError().append(context.getTraceId())
-                        .append(" SQL:").append(executeSql).append(System.lineSeparator())
-                        .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            // 包含部分失败，全部重试，并记录每条数据的异常原因
+            if (context.isForceUpdate()) {
+                forceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
                 return result;
             }
-            data.forEach(row -> forceUpdate(result, connectorInstance, context, pkFields, pkSet, row));
+            result.getFailData().addAll(data);
+            result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql).append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
         }
 
         if (null != execute) {
@@ -327,13 +311,30 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
-                if (context.isUpsert()) {
-                    continue;
-                }
-                forceUpdate(result, connectorInstance, context, pkFields, pkSet, data.get(i));
+                result.getFailData().add(data.get(i));
             }
         }
         return result;
+    }
+
+    private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context,
+                           String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
+        data.forEach(row -> {
+            try {
+                List<Object[]> args = new ArrayList<>();
+                args.add(batchRow(fields, row));
+                int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, args));
+                if (execute == 0) {
+                    throw new SdkException(String.format("重试执行[%s]失败", event));
+                }
+                result.getSuccessData().add(row);
+                printTraceLog(context, event, row, Boolean.TRUE, null);
+            } catch (Exception e) {
+                result.getFailData().add(row);
+                result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql).append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+                printTraceLog(context, event, row, Boolean.FALSE, e.getMessage());
+            }
+        });
     }
 
     @Override
@@ -731,103 +732,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return args;
     }
 
-    /**
-     * TODO 下个迭代将废弃
-     */
-    @Deprecated
-    private void forceUpdate(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Set<String> pkSet,
-                             Map row) {
-        if (isUpdate(context.getEvent()) || isInsert(context.getEvent())) {
-            final String queryCount = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_EXIST);
-            int size = pkFields.size();
-            Object[] args = new Object[size];
-            for (int i = 0; i < size; i++) {
-                args[i] = row.get(pkFields.get(i).getName());
-            }
-            // 目标表存在数据
-            if (existRow(connectorInstance, context, queryCount, args)) {
-                // 覆盖更新
-                if (context.isForceUpdate()) {
-                    writer(result, connectorInstance, context, pkFields, pkSet, row, ConnectorConstant.OPERTION_UPDATE);
-                }
-                return;
-            }
-            // 不存在数据
-            writer(result, connectorInstance, context, pkFields, pkSet, row, ConnectorConstant.OPERTION_INSERT);
-        }
-    }
-
     private void printTraceLog(PluginContext context, String event, Map row, boolean success, String message) {
         if (success) {
             // 仅开启traceId时才输出日志
             if (context.isEnablePrintTraceInfo()) {
-                logger.info("{} {}表事件{}, 尝试执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
+                logger.info("{} {}表事件{}, 重试执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
             }
             return;
         }
-        logger.error("{} {}表事件{}, 尝试执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
+        logger.error("{} {}表事件{}, 重试执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
     }
-
-    /**
-     * TODO 下个迭代将废弃
-     */
-    private void writer(Result result, DatabaseConnectorInstance connectorInstance, PluginContext context, List<Field> pkFields, Set<String> pkSet, Map row,
-                        String event) {
-        // 1、获取 SQL
-        String sql = context.getCommand().get(event);
-
-        List<Field> fields = new ArrayList<>(context.getTargetFields());
-        // Update / Delete
-        if (!isInsert(event)) {
-            if (isDelete(event)) {
-                fields.clear();
-            } else if (isUpdate(event)) {
-                removeFieldWithPk(fields, pkSet);
-            }
-            fields.addAll(pkFields);
-        }
-
-        try {
-            // 2、设置参数
-            int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, batchRow(fields, row)));
-            if (execute == 0) {
-                throw new SdkException(String.format("尝试执行[%s]失败", event));
-            }
-            result.getSuccessData().add(row);
-            printTraceLog(context, event, row, Boolean.TRUE, null);
-        } catch (Throwable e) {
-            result.getFailData().add(row);
-            result.getError().append(context.getTraceId())
-                    .append(" SQL:").append(sql).append(System.lineSeparator())
-                    .append("DATA:").append(row).append(System.lineSeparator())
-                    .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
-            printTraceLog(context, event, row, Boolean.FALSE, e.getMessage());
-        }
-    }
-
-    private boolean existRow(DatabaseConnectorInstance connectorInstance, PluginContext context, String sql, Object[] args) {
-        try {
-            int rowNum = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(sql, Integer.class, args));
-            return rowNum > 0;
-        } catch (Throwable e) {
-            logger.error("{} 检查数据行存在异常:{}, SQL:{}, 参数:{}", context.getTraceId(), e.getMessage(), sql, args);
-            return false;
-        }
-    }
-
-    private void removeFieldWithPk(List<Field> fields, Set<String> pkSet) {
-        if (CollectionUtils.isEmpty(fields) || CollectionUtils.isEmpty(pkSet)) {
-            return;
-        }
-
-        Iterator<Field> iterator = fields.iterator();
-        while (iterator.hasNext()) {
-            Field next = iterator.next();
-            if (next != null && pkSet.contains(next.getName())) {
-                iterator.remove();
-                break;
-            }
-        }
-    }
-
 }

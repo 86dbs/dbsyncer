@@ -56,9 +56,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      */
     private boolean forceUpdate;
 
-    // 支持upsert语句 TODO 临时开关，下个迭代会删除
-    private boolean upsert;
-
     /**
      * 是否启用字段解析器
      */
@@ -163,15 +160,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
-    }
-
-    @Override
-    public boolean isUpsert() {
-        return upsert;
-    }
-
-    public void setUpsert(boolean upsert) {
-        this.upsert = upsert;
     }
 
     @Override

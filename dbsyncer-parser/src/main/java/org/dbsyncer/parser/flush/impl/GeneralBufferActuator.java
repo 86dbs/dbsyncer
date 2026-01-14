@@ -218,7 +218,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setUpsert(mapping.isUpsert());
         context.setEnableSchemaResolver(enableSchemaResolver);
         context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));
         pluginFactory.process(context, ProcessEnum.CONVERT);

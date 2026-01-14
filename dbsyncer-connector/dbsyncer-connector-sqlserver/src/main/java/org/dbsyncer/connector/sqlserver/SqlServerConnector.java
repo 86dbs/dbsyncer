@@ -180,26 +180,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String buildInsertSql(SqlBuilderConfig config) {
-        Database database = config.getDatabase();
-        List<Field> fields = config.getFields();
-        
-        List<String> fs = new ArrayList<>();
-        List<String> vs = new ArrayList<>();
-        fields.forEach(f -> {
-            fs.add(database.buildFieldName(f));
-            vs.add("?");
-        });
-        
-        String uniqueCode = database.generateUniqueCode();
-        String table = config.getSchema() + database.buildTableName(config.getTableName());
-        String fieldNames = StringUtil.join(fs, StringUtil.COMMA);
-        String values = StringUtil.join(vs, StringUtil.COMMA);
-        
-        return String.format("%sINSERT INTO %s (%s) VALUES (%s)", uniqueCode, table, fieldNames, values);
-    }
-
-    @Override
     public Object getPosition(DatabaseConnectorInstance connectorInstance) {
         String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
         List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
