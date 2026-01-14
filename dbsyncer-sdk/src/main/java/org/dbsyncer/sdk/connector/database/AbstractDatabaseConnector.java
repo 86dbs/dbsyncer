@@ -333,7 +333,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context,
-                             String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
+                           String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
         data.forEach(row -> {
             try {
                 int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(executeSql, batchRow(fields, row)));
@@ -344,9 +344,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 printTraceLog(context, event, row, Boolean.TRUE, null);
             } catch (Exception e) {
                 result.getFailData().add(row);
-                result.getError().append(context.getTraceId())
-                        .append(" SQL:").append(executeSql).append(System.lineSeparator())
-                        .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+                result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql).append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
                 printTraceLog(context, event, row, Boolean.FALSE, e.getMessage());
             }
         });

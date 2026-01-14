@@ -2,6 +2,7 @@ package org.dbsyncer.common.util;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 public class CheckSumUtil {
 
@@ -18,7 +19,7 @@ public class CheckSumUtil {
             SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA1");
             Mac mac = Mac.getInstance("HmacSHA1");
             mac.init(signingKey);
-            byte[] rawHmac = mac.doFinal(value.getBytes("utf-8"));
+            byte[] rawHmac = mac.doFinal(value.getBytes(StandardCharsets.UTF_8));
             String digest = toHexString(rawHmac);
             return digest;
         } catch (Exception ex) {
@@ -33,8 +34,8 @@ public class CheckSumUtil {
      */
     public static String toHexString(byte[] v) {
         StringBuilder sb = new StringBuilder(v.length * 2);
-        for (int i = 0; i < v.length; i++) {
-            int b = v[i] & 0xFF;
+        for (byte value : v) {
+            int b = value & 0xFF;
             sb.append(HEX_DIGITS.charAt(b >>> 4)).append(HEX_DIGITS.charAt(b & 0xF));
         }
         return sb.toString();

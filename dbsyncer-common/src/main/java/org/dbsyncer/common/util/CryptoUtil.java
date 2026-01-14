@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HashMap;
@@ -83,7 +84,7 @@ public class CryptoUtil {
             Cipher cipher = Cipher.getInstance(AES_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmParameterSpec);
 
-            byte[] encryptedData = cipher.doFinal(data.getBytes("UTF-8"));
+            byte[] encryptedData = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
 
             Map<String, String> result = new HashMap<>();
             result.put("encryptedData", Base64.getEncoder().encodeToString(encryptedData));
@@ -108,7 +109,7 @@ public class CryptoUtil {
             cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmParameterSpec);
 
             byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
-            return new String(decryptedData, "UTF-8");
+            return new String(decryptedData, StandardCharsets.UTF_8);
         } catch (Exception e) {
             logger.error("AES解密数据失败", e);
             throw new RuntimeException("AES解密数据失败", e);
@@ -210,7 +211,7 @@ public class CryptoUtil {
     private static String generateSignature(String data, String publicKey) {
         try {
             // 这里简化实现，实际项目中应使用RSA-SHA256等更安全的签名算法
-            return CheckSumUtil.hmacSha1(data, publicKey.getBytes("UTF-8"));
+            return CheckSumUtil.hmacSha1(data, publicKey.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             logger.error("生成签名失败", e);
             throw new RuntimeException("生成签名失败", e);
