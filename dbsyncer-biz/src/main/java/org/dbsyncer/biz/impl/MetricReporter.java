@@ -60,9 +60,6 @@ public class MetricReporter implements ScheduledTaskJob {
     private ProfileComponent profileComponent;
 
     @Resource
-    private BufferActuator generalBufferActuator;
-
-    @Resource
     private BufferActuator storageBufferActuator;
 
     @Resource
@@ -92,9 +89,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     public List<MetricResponse> getMetricInfo() {
         List<MetricResponseInfo> list = new ArrayList<>();
-        BufferActuatorMetricEnum general = BufferActuatorMetricEnum.GENERAL;
         BufferActuatorMetricEnum storage = BufferActuatorMetricEnum.STORAGE;
-        list.add(collect(generalBufferActuator, general.getCode(), general.getGroup(), general.getMetricName()));
         list.add(collect(storageBufferActuator, storage.getCode(), storage.getGroup(), storage.getMetricName()));
         Map<String, MetaBufferActuator> metaActuatorMap = bufferActuatorRouter.getMetaActuatorMap();
         if (!CollectionUtils.isEmpty(metaActuatorMap)) {
@@ -125,9 +120,9 @@ public class MetricReporter implements ScheduledTaskJob {
         report.setInsert(mappingReportMetric.getInsert());
         report.setUpdate(mappingReportMetric.getUpdate());
         report.setDelete(mappingReportMetric.getDelete());
-        // 堆积任务(通用执行器 + 表执行器)
-        report.setQueueUp(bufferActuatorRouter.getQueueSize().addAndGet(generalBufferActuator.getQueue().size()));
-        report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
+        // 堆积任务(所有 meta 的执行器)
+        report.setQueueUp(bufferActuatorRouter.getQueueSize().get());
+        report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity().get());
         // 持久化任务
         report.setStorageQueueUp(storageBufferActuator.getQueue().size());
         report.setStorageQueueCapacity(storageBufferActuator.getQueueCapacity());

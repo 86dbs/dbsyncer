@@ -74,10 +74,6 @@ public class SystemConfig extends ConfigModel {
      */
     private boolean enableSchemaResolver = true;
 
-    /**
-     * 表执行器上限数
-     */
-    private int maxBufferActuatorSize = 50;
 
     /**
      * 是否打印trace信息（false-关闭; true-开启）
@@ -172,13 +168,6 @@ public class SystemConfig extends ConfigModel {
         this.enableSchemaResolver = enableSchemaResolver;
     }
 
-    public int getMaxBufferActuatorSize() {
-        return maxBufferActuatorSize;
-    }
-
-    public void setMaxBufferActuatorSize(int maxBufferActuatorSize) {
-        this.maxBufferActuatorSize = maxBufferActuatorSize;
-    }
 
     public boolean isEnablePrintTraceInfo() {
         return enablePrintTraceInfo;
