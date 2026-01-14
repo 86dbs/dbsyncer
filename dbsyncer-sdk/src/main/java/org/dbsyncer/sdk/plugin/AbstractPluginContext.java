@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Plugin;
@@ -229,7 +230,7 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     @Override
     public String getTraceId() {
-        return traceId;
+        return traceId == null ? StringUtil.EMPTY : traceId;
     }
 
     public void setTraceId(String traceId) {
