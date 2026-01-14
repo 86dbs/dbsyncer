@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
-import org.dbsyncer.common.config.TableGroupBufferConfig;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Meta;
@@ -44,9 +43,6 @@ public final class BufferActuatorRouter implements DisposableBean {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private TableGroupBufferConfig tableGroupBufferConfig;
-
-    @Resource
     private TableGroupBufferActuatorService tableGroupBufferActuatorService;
 
     @Resource
@@ -58,9 +54,9 @@ public final class BufferActuatorRouter implements DisposableBean {
     private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
 
     /**
-     * 标记每个 metaId 是否有任务在处理
+     * 全局标记是否有任务在处理
      */
-    private final Map<String, Boolean> pendingTaskMap = new ConcurrentHashMap<>();
+    private volatile boolean hasPendingTask = false;
 
     /**
      * 刷新监听器偏移量
@@ -88,7 +84,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             // 数据同步完成，检查队列是否为空，如果为空则清除 pending 状态
             long queueSize = getQueueSize().get();
             if (queueSize == 0) {
-                pendingTaskMap.remove(offset.getMetaId());
+                hasPendingTask = false;
                 if (logger.isDebugEnabled()) {
                     logger.debug("---- finished sync, queue is empty, cleared pending task");
                 }
@@ -100,7 +96,7 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     public void execute(String metaId, ChangedEvent event) {
         // 事件进入队列时，标记为 pending 状态
-        pendingTaskMap.put(metaId, true);
+        hasPendingTask = true;
         event.getChangedOffset().setMetaId(metaId);
         router.compute(metaId, (k, processor) -> {
             if (processor == null) {
@@ -152,7 +148,7 @@ public final class BufferActuatorRouter implements DisposableBean {
             return null;
         });
         // 清除 pending 状态
-        pendingTaskMap.remove(metaId);
+        hasPendingTask = false;
     }
 
     private void offer(AbstractBufferActuator actuator, ChangedEvent event) {
@@ -199,8 +195,8 @@ public final class BufferActuatorRouter implements DisposableBean {
     /**
      * 检查是否有任务在处理
      */
-    public boolean hasPendingTask(String metaId) {
-        return Boolean.TRUE.equals(pendingTaskMap.get(metaId));
+    public boolean hasPendingTask() {
+        return hasPendingTask;
     }
 
 }
