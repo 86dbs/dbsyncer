@@ -10,7 +10,9 @@ import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +21,16 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * 任务缓存执行器
@@ -54,6 +57,10 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Resource
     private TimeRegistry timeRegistry;
+
+    @Resource
+    private BufferActuatorRouter bufferActuatorRouter;
+
 
     public AbstractBufferActuator() {
         int level = 5;
@@ -141,7 +148,9 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         // 问题：map.forEach() 的顺序不确定（ConcurrentHashMap迭代顺序不确定），
         //      可能导致位置靠后的事件先处理完成，更新快照到更大的位置，跳过位置靠前但还没处理的事件
         // 解决：按位置顺序处理批次，确保不会跳过未处理的事件
-        map.entrySet().stream()
+
+        // 为了可维护性，我们将排序后的列表存储起来，以便在处理完所有响应后获取最后一个响应（最大偏移量）
+        List<Map.Entry<String, Response>> sortedEntries = map.entrySet().stream()
                 .sorted((e1, e2) -> {
                     Response r1 = e1.getValue();
                     Response r2 = e2.getValue();
@@ -154,7 +163,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
                     if (r2 instanceof org.dbsyncer.parser.model.AbstractWriter) {
                         o2 = ((org.dbsyncer.parser.model.AbstractWriter) r2).getChangedOffset();
                     }
-                    
+
                     // 如果 ChangedOffset 为 null，放在最后处理
                     if (o1 == null && o2 == null) {
                         return 0;
@@ -165,7 +174,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
                     if (o2 == null) {
                         return -1;
                     }
-                    
+
                     // 比较文件名
                     String fileName1 = o1.getNextFileName();
                     String fileName2 = o2.getNextFileName();
@@ -179,7 +188,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
                     } else if (fileName2 != null) {
                         return 1;
                     }
-                    
+
                     // 比较位置
                     Object pos1 = o1.getPosition();
                     Object pos2 = o2.getPosition();
@@ -194,21 +203,31 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
                     } else if (pos2 != null) {
                         return 1;
                     }
-                    
+
                     return 0;
                 })
-                .forEach(entry -> {
-                    String key = entry.getKey();
-                    Response response = entry.getValue();
-                    long now = Instant.now().toEpochMilli();
-                    try {
-                        pull(response);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                    }
-                    logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
-                });
+                .collect(Collectors.toList());
+
+        // 处理所有排序后的响应
+        for (Map.Entry<String, Response> entry : sortedEntries) {
+            String key = entry.getKey();
+            Response response = entry.getValue();
+            long now = Instant.now().toEpochMilli();
+            try {
+                pull(response);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
+            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+        }
+
+        // 获取最后一个响应（如果有）作为最大偏移量响应，传递给后置处理
+        if (!sortedEntries.isEmpty()) {
+            WriterResponse lastResponse = (WriterResponse) sortedEntries.get(sortedEntries.size() - 1).getValue();
+            bufferActuatorRouter.refreshOffset(lastResponse.getChangedOffset());
+        }
     }
+
 
     /**
      * 提交任务失败
@@ -309,7 +328,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             map.clear();
             meter(timeRegistry, batchCounter.get());
         }
-        
+
         map = null;
         batchCounter = null;
     }
@@ -318,7 +337,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         this.config = config;
     }
 
-    protected int getBufferWriterCount(){
+    protected int getBufferWriterCount() {
         return config.getBufferWriterCount();
     }
 }

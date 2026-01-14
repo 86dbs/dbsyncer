@@ -76,12 +76,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private FlushStrategy flushStrategy;
 
     @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
-
-    // @Resource
-    // private ApplicationContext applicationContext;
-
-    @Resource
     private DDLParser ddlParser;
 
     @Resource
@@ -138,63 +132,54 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
-        // 所有任务事件处理完成后，都需要刷新偏移量
-        // 使用 try-finally 确保即使发生异常也能调用 refreshOffset
-        try {
-            Meta meta = profileComponent.getMeta(response.getChangedOffset().getMetaId());
-            assert meta != null;
-            // 打印trace信息
-            printTraceInfo(response);
-            final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-            List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
+        // 所有任务事件处理完成后，由 process 方法统一刷新偏移量
+        Meta meta = profileComponent.getMeta(response.getChangedOffset().getMetaId());
+        assert meta != null;
+        // 打印trace信息
+        printTraceInfo(response);
+        final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
-            switch (response.getTypeEnum()) {
-                case DDL:
-                    if (!mapping.getListener().isEnableDDL()) {
-                        // DDL 被禁用，直接返回（不需要处理，但需要在 finally 中调用 refreshOffset）
-                        break;
+        switch (response.getTypeEnum()) {
+            case DDL:
+                if (!mapping.getListener().isEnableDDL()) {
+                    // DDL 被禁用，直接返回
+                    break;
+                }
+                // DDL 处理：更新 fieldMapping 并强制刷新缓存
+                // 1. 先处理 DDL，更新 TableGroup 的 fieldMapping
+                List<TableGroup> updatedTableGroups = pickers.stream().map(picker -> {
+                    TableGroup tableGroup = null;
+                    try {
+                        tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                    // DDL 处理：更新 fieldMapping 并强制刷新缓存
-                    // 1. 先处理 DDL，更新 TableGroup 的 fieldMapping
-                    List<TableGroup> updatedTableGroups = pickers.stream().map(picker -> {
-                        TableGroup tableGroup = null;
-                        try {
-                            tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                        parseDDl(response, mapping, tableGroup);
-                        return tableGroup;
-                    }).collect(Collectors.toList());
+                    parseDDl(response, mapping, tableGroup);
+                    return tableGroup;
+                }).collect(Collectors.toList());
 
-                    // 2. 强制刷新缓存，确保后续的 DML 事件使用最新的 fieldMapping
-                    // 注意：这里使用更新后的 TableGroup，确保 fieldMapping 已同步
-                    tableGroupContext.update(mapping, updatedTableGroups);
+                // 2. 强制刷新缓存，确保后续的 DML 事件使用最新的 fieldMapping
+                // 注意：这里使用更新后的 TableGroup，确保 fieldMapping 已同步
+                tableGroupContext.update(mapping, updatedTableGroups);
 
-                    // 3. 验证缓存已更新（可选，用于调试）
-                    if (logger.isDebugEnabled()) {
-                        List<TableGroupPicker> refreshedPickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
-                        logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}",
-                                response.getTableName(), refreshedPickers.size());
-                    }
-                    break;
-                case SCAN:
-                    pickers.forEach(picker -> {
-                        distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false);
-                    });
-                    break;
-                case ROW:
-                    pickers.forEach(picker -> {
-                        distributeTableGroup(response, mapping, picker, picker.getSourceFields(), true);
-                    });
-                    break;
-                default:
-                    // 未知事件类型
-                    return;
-            }
-        } finally {
-            // 所有任务事件，都需要刷新偏移量
-            bufferActuatorRouter.refreshOffset(response.getChangedOffset());
+                // 3. 验证缓存已更新（可选，用于调试）
+                if (logger.isDebugEnabled()) {
+                    List<TableGroupPicker> refreshedPickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
+                    logger.debug("DDL 处理完成，已刷新 TableGroupPicker 缓存。表名: {}, 缓存数量: {}",
+                            response.getTableName(), refreshedPickers.size());
+                }
+                break;
+            case SCAN:
+                pickers.forEach(picker -> {
+                    distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false);
+                });
+                break;
+            case ROW:
+                pickers.forEach(picker -> {
+                    distributeTableGroup(response, mapping, picker, picker.getSourceFields(), true);
+                });
+                break;
         }
     }
 
