@@ -112,6 +112,10 @@ function bindTableFieldSelect(){
     let $sourceSelect = $("#sourceTableField");
     let $targetSelect = $("#targetTableField");
 
+    // 初始化选择器
+    initSelect($sourceSelect);
+    initSelect($targetSelect);
+
     // 绑定数据源下拉切换事件
     $sourceSelect.on('changed.bs.select',function(e){
         $targetSelect.selectpicker('val', $(this).selectpicker('val'));

@@ -29,9 +29,8 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,32 +181,26 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        Map<String, Field> m1 = new HashMap<>();
-        Map<String, Field> m2 = new HashMap<>();
-        Set<String> sourceFieldNames = new LinkedHashSet<>();
-        Set<String> targetFieldNames = new LinkedHashSet<>();
-        shuffleColumn(sCol, sourceFieldNames, m1);
-        shuffleColumn(tCol, targetFieldNames, m2);
+        Map<String, Field> m1 = new LinkedHashMap<>();
+        Map<String, Field> m2 = new LinkedHashMap<>();
+        shuffleColumn(sCol, m1);
+        shuffleColumn(tCol, m2);
 
         // 模糊匹配相似字段
         AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
         AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
-        sourceFieldNames.forEach(s -> {
-            for (String t : targetFieldNames) {
-                if (StringUtil.equalsIgnoreCase(s, t)) {
-                    Field f1 = m1.get(s);
-                    Field f2 = m2.get(t);
-                    tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
-                    if (f1.isPk()) {
-                        existSourcePKFieldMapping.set(true);
-                    }
-                    if (f2.isPk()) {
-                        existTargetPKFieldMapping.set(true);
-                    }
-                    break;
+        m1.forEach((s, f1) ->
+            m2.computeIfPresent(s, (t, f2) -> {
+                tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
+                if (f1.isPk()) {
+                    existSourcePKFieldMapping.set(true);
                 }
-            }
-        });
+                if (f2.isPk()) {
+                    existTargetPKFieldMapping.set(true);
+                }
+                return f2;
+            })
+        );
 
         // 沒有主键映射关系，取第一个主键作为映射关系
         if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
@@ -270,13 +263,8 @@ public class TableGroupChecker extends AbstractChecker {
         exist.clear();
     }
 
-    private void shuffleColumn(List<Field> col, Set<String> key, Map<String, Field> map) {
-        col.forEach(f -> {
-            if (!key.contains(f.getName())) {
-                key.add(f.getName());
-                map.put(f.getName(), f);
-            }
-        });
+    private void shuffleColumn(List<Field> col, Map<String, Field> map) {
+        col.forEach(f -> map.putIfAbsent(f.getName().toUpperCase(), f));
     }
 
     /**
