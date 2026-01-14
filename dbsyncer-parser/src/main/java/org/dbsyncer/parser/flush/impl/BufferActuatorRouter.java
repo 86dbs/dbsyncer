@@ -3,18 +3,19 @@
  */
 package org.dbsyncer.parser.flush.impl;
 
+import org.dbsyncer.common.config.GeneralBufferConfig;
+import org.dbsyncer.common.metric.TimeRegistry;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.flush.AbstractBufferActuator;
-import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.WriterRequest;
-import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -40,163 +41,127 @@ public final class BufferActuatorRouter implements DisposableBean {
     @Autowired
     private ProfileComponent profileComponent;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    @Resource
+    private GeneralBufferConfig generalBufferConfig;
 
     @Resource
-    private TableGroupBufferActuatorService tableGroupBufferActuatorService;
+    private Executor generalExecutor;
 
     @Resource
-    private GeneralBufferActuator generalBufferActuator;
+    private ConnectorFactory connectorFactory;
+
+    @Resource
+    private PluginFactory pluginFactory;
+
+    @Resource
+    private FlushStrategy flushStrategy;
+
+    @Resource
+    private DDLParser ddlParser;
+
+    @Resource
+    private TableGroupContext tableGroupContext;
+
+    @Resource
+    private LogService logService;
+
+    @Resource
+    private ScheduledTaskService scheduledTaskService;
+
+    @Resource
+    private TimeRegistry timeRegistry;
 
     /**
-     * 驱动缓存执行路由列表
+     * 每个 meta 独享的执行器
      */
-    private final Map<String, Map<String, TableGroupBufferActuator>> router = new ConcurrentHashMap<>();
+    private final Map<String, MetaBufferActuator> metaActuatorMap = new ConcurrentHashMap<>();
 
-    /**
-     * 全局标记是否有任务在处理
-     */
-    private volatile boolean hasPendingTask = false;
 
-    /**
-     * 刷新监听器偏移量
-     *
-     * @param offset 偏移量
-     */
-    public void refreshOffset(ChangedOffset offset) {
-        if (offset == null) {
-            return;
-        }
-
-        Meta meta = profileComponent.getMeta(offset.getMetaId());
-        assert meta != null;
-
-        Listener listener = meta.getListener();
-        if (listener == null) {
-            return;
-        }
-
-        try {
-            // refreshEvent() 已经直接更新了 pendingSnapshot，不需要再调用 flushEvent()
-            // 原因：任务事件携带的XID快照不应该能够修改，refreshEvent() 直接使用任务携带的位置更新 pendingSnapshot
-            listener.refreshEvent(offset);
-
-            // 数据同步完成，检查队列是否为空，如果为空则清除 pending 状态
-            long queueSize = getQueueSize().get();
-            if (queueSize == 0) {
-                hasPendingTask = false;
-                if (logger.isDebugEnabled()) {
-                    logger.debug("---- finished sync, queue is empty, cleared pending task");
-                }
-            }
-        } catch (Exception e) {
-            logger.error("刷新监听器偏移量失败: metaId={}, error={}", offset.getMetaId(), e.getMessage(), e);
-        }
-    }
 
     public void execute(String metaId, ChangedEvent event) {
-        // 事件进入队列时，标记为 pending 状态
-        hasPendingTask = true;
         event.getChangedOffset().setMetaId(metaId);
-        router.compute(metaId, (k, processor) -> {
-            if (processor == null) {
-                offer(generalBufferActuator, event);
-                return null;
-            }
-
-            processor.compute(event.getSourceTableName(), (x, actuator) -> {
-                if (actuator == null) {
-                    offer(generalBufferActuator, event);
-                    return null;
-                }
-                offer(actuator, event);
-                return actuator;
-            });
-            return processor;
+        
+        // 获取或创建该 meta 的执行器
+        MetaBufferActuator actuator = metaActuatorMap.computeIfAbsent(metaId, k -> {
+            MetaBufferActuator newActuator = createMetaActuator(metaId);
+            newActuator.buildConfig();
+            return newActuator;
         });
-    }
-
-    public void bind(String metaId, List<TableGroup> tableGroups) {
-        router.computeIfAbsent(metaId, k -> {
-            Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
-            for (TableGroup tableGroup : tableGroups) {
-                // 超过执行器上限
-                if (processor.size() >= profileComponent.getSystemConfig().getMaxBufferActuatorSize()) {
-                    logger.warn("Not allowed more than table processor limited size:{}", profileComponent.getSystemConfig().getMaxBufferActuatorSize());
-                    break;
-                }
-                final String tableName = tableGroup.getSourceTable().getName();
-                processor.computeIfAbsent(tableName, name -> {
-                    TableGroupBufferActuator newBufferActuator = null;
-                    try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
-                        newBufferActuator.setTableName(name);
-                        newBufferActuator.buildConfig();
-                    } catch (CloneNotSupportedException ex) {
-                        logger.error(ex.getMessage(), ex);
-                    }
-                    return newBufferActuator;
-                });
-            }
-            return processor;
-        });
-    }
-
-    public void unbind(String metaId) {
-        router.computeIfPresent(metaId, (k, processor) -> {
-            processor.values().forEach(TableGroupBufferActuator::stop);
-            return null;
-        });
-        // 清除 pending 状态
-        hasPendingTask = false;
-    }
-
-    private void offer(AbstractBufferActuator actuator, ChangedEvent event) {
-        if (ChangedEventTypeEnum.isDDL(event.getType())) {
-            WriterRequest request = new WriterRequest(event);
-            // DDL事件，阻塞等待队列消费完成
-            while (actuator.isRunning(request)) {
-                if (actuator.getQueue().isEmpty()) {
-                    actuator.offer(request);
-                    return;
-                }
-                try {
-                    TimeUnit.MILLISECONDS.sleep(10);
-                } catch (InterruptedException ex) {
-                    logger.error(ex.getMessage(), ex);
-                }
-            }
-        }
+        
+        // 所有事件都进入该 meta 的队列（offer 方法会自动处理 DDL 阻塞逻辑和 pending 状态）
         actuator.offer(new WriterRequest(event));
     }
 
+    public void bind(String metaId, List<TableGroup> tableGroups) {
+        // 创建或获取该 meta 的执行器
+        metaActuatorMap.computeIfAbsent(metaId, k -> {
+            MetaBufferActuator actuator = createMetaActuator(metaId);
+            actuator.buildConfig();
+            return actuator;
+        });
+        
+        // 不再需要为每个表创建执行器
+        // 所有事件都进入该 meta 的执行器
+    }
+
+    public void unbind(String metaId) {
+        metaActuatorMap.computeIfPresent(metaId, (k, actuator) -> {
+            actuator.stop(); // 停止该 meta 的执行器（stop 方法会自动清除 pending 状态）
+            return null; // 从 map 中移除
+        });
+    }
+
+
     @Override
     public void destroy() {
-        router.values().forEach(map -> map.values().forEach(TableGroupBufferActuator::stop));
-        router.clear();
+        metaActuatorMap.values().forEach(MetaBufferActuator::stop); // 停止所有 MetaBufferActuator
+        metaActuatorMap.clear(); // 清理 map
     }
 
     public AtomicLong getQueueSize() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueue().size())));
+        metaActuatorMap.values().forEach(actuator -> total.addAndGet(actuator.getQueue().size()));
         return total;
     }
 
     public AtomicLong getQueueCapacity() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueueCapacity())));
+        metaActuatorMap.values().forEach(actuator -> total.addAndGet(actuator.getQueueCapacity()));
         return total;
     }
 
-    public Map<String, Map<String, TableGroupBufferActuator>> getRouter() {
-        return Collections.unmodifiableMap(router);
+    public Map<String, MetaBufferActuator> getMetaActuatorMap() {
+        return Collections.unmodifiableMap(metaActuatorMap);
     }
 
     /**
-     * 检查是否有任务在处理
+     * 检查指定 meta 是否有任务在处理
      */
-    public boolean hasPendingTask() {
-        return hasPendingTask;
+    public boolean hasPendingTask(String metaId) {
+        MetaBufferActuator actuator = metaActuatorMap.get(metaId);
+        return actuator != null && actuator.hasPendingTask();
+    }
+
+    /**
+     * 创建 MetaBufferActuator 实例（工厂方法）
+     */
+    private MetaBufferActuator createMetaActuator(String metaId) {
+        MetaBufferActuator actuator = new MetaBufferActuator();
+        actuator.setMetaId(metaId);
+        // 手动注入所有依赖
+        actuator.setGeneralBufferConfig(generalBufferConfig);
+        actuator.setGeneralExecutor(generalExecutor);
+        actuator.setConnectorFactory(connectorFactory);
+        actuator.setProfileComponent(profileComponent);
+        actuator.setPluginFactory(pluginFactory);
+        actuator.setFlushStrategy(flushStrategy);
+        actuator.setDdlParser(ddlParser);
+        actuator.setTableGroupContext(tableGroupContext);
+        actuator.setLogService(logService);
+        // 注入 AbstractBufferActuator 需要的依赖
+        actuator.setScheduledTaskService(scheduledTaskService);
+        actuator.setTimeRegistry(timeRegistry);
+        return actuator;
     }
 
 }

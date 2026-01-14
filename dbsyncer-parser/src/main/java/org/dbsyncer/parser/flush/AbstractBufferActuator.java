@@ -7,10 +7,10 @@ import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.sdk.model.ChangedOffset;
@@ -48,6 +48,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private Lock taskLock;
     private BufferActuatorConfig config;
     private BlockingQueue<Request> queue;
+    private String taskKey;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -57,9 +58,6 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     @Resource
     private TimeRegistry timeRegistry;
-
-    @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
 
 
     public AbstractBufferActuator() {
@@ -82,7 +80,11 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     protected void buildConfig() {
         Assert.notNull(config, "请先配置缓存执行器，setConfig(BufferActuatorConfig config)");
         buildQueueConfig();
-        scheduledTaskService.start(config.getBufferPeriodMillisecond(), this);
+        // 生成唯一的 taskKey
+        if (taskKey == null) {
+            taskKey = UUIDUtil.getUUID();
+        }
+        scheduledTaskService.start(taskKey, config.getBufferPeriodMillisecond(), this);
     }
 
     /**
@@ -218,14 +220,26 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-            logger.info("[{}{}]{}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
+            logger.info("[{}{}] {}, {}ms", key, response.getSuffixName(), response.getTaskSize(), (Instant.now().toEpochMilli() - now));
         }
 
         // 获取最后一个响应（如果有）作为最大偏移量响应，传递给后置处理
+        WriterResponse lastResponse = null;
         if (!sortedEntries.isEmpty()) {
-            WriterResponse lastResponse = (WriterResponse) sortedEntries.get(sortedEntries.size() - 1).getValue();
-            bufferActuatorRouter.refreshOffset(lastResponse.getChangedOffset());
+            lastResponse = (WriterResponse) sortedEntries.get(sortedEntries.size() - 1).getValue();
         }
+        
+        // 处理完成后，调用钩子方法（子类可以重写来处理偏移量刷新、pending 状态等）
+        afterProcess(lastResponse);
+    }
+
+    /**
+     * 处理完成后的钩子方法（子类可以重写）
+     * 
+     * @param lastResponse 最后一个响应（可能为 null），包含最大偏移量信息
+     */
+    protected void afterProcess(WriterResponse lastResponse) {
+        // 默认实现为空，子类可以重写
     }
 
 
@@ -339,5 +353,49 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
 
     protected int getBufferWriterCount() {
         return config.getBufferWriterCount();
+    }
+
+    /**
+     * 获取定时任务的 key
+     */
+    public String getTaskKey() {
+        return taskKey;
+    }
+
+    /**
+     * 设置定时任务的 key（用于手动管理定时任务）
+     */
+    public void setTaskKey(String taskKey) {
+        this.taskKey = taskKey;
+    }
+
+    /**
+     * 停止执行器（停止定时任务）
+     */
+    public void stop() {
+        if (taskKey != null && scheduledTaskService != null) {
+            scheduledTaskService.stop(taskKey);
+        }
+    }
+
+    /**
+     * 设置定时任务服务（用于手动注入依赖）
+     */
+    public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
+        this.scheduledTaskService = scheduledTaskService;
+    }
+
+    /**
+     * 设置 ProfileComponent（用于手动注入依赖）
+     */
+    public void setProfileComponent(ProfileComponent profileComponent) {
+        this.profileComponent = profileComponent;
+    }
+
+    /**
+     * 设置 TimeRegistry（用于手动注入依赖）
+     */
+    public void setTimeRegistry(TimeRegistry timeRegistry) {
+        this.timeRegistry = timeRegistry;
     }
 }

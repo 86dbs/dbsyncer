@@ -19,6 +19,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
+import org.dbsyncer.parser.flush.impl.MetaBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -95,17 +96,21 @@ public class MetricReporter implements ScheduledTaskJob {
         BufferActuatorMetricEnum storage = BufferActuatorMetricEnum.STORAGE;
         list.add(collect(generalBufferActuator, general.getCode(), general.getGroup(), general.getMetricName()));
         list.add(collect(storageBufferActuator, storage.getCode(), storage.getGroup(), storage.getMetricName()));
-        if (!CollectionUtils.isEmpty(bufferActuatorRouter.getRouter())) {
-            List<MetricResponseInfo> tableList = new ArrayList<>();
+        Map<String, MetaBufferActuator> metaActuatorMap = bufferActuatorRouter.getMetaActuatorMap();
+        if (!CollectionUtils.isEmpty(metaActuatorMap)) {
+            List<MetricResponseInfo> metaList = new ArrayList<>();
             String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
-            bufferActuatorRouter.getRouter().forEach((metaId, group) -> {
+            metaActuatorMap.forEach((metaId, actuator) -> {
                 Meta meta = profileComponent.getMeta(metaId);
-                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-                group.forEach((k, bufferActuator) ->
-                    tableList.add(collect(bufferActuator, tableGroupCode, mapping.getName(), bufferActuator.getTableName()))
-                );
+                if (meta != null) {
+                    Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+                    if (mapping != null) {
+                        // 使用 mapping 名称作为指标名称（因为一个 meta 对应一个执行器，处理该 mapping 下的所有表）
+                        metaList.add(collect(actuator, tableGroupCode, mapping.getName(), mapping.getName()));
+                    }
+                }
             });
-            list.addAll(tableList.stream()
+            list.addAll(metaList.stream()
                     .sorted(Comparator.comparing(MetricResponseInfo::getQueueUp).reversed())
                     .limit(11)
                     .collect(Collectors.toList()));

@@ -77,7 +77,7 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public boolean hasPendingTask() {
-        // 从 BufferActuatorRouter 获取 pending 状态
-        return bufferActuatorRouter.hasPendingTask();
+        // 查询该 meta 的 pending 状态
+        return bufferActuatorRouter.hasPendingTask(metaId);
     }
 }
