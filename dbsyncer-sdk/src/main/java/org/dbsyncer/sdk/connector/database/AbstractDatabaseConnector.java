@@ -293,7 +293,22 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, batchRows(fields, data)));
+            execute = connectorInstance.execute(databaseTemplate -> {
+                SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                try {
+                    // 手动提交事务
+                    connection.setAutoCommit(false);
+                    int[] r = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+                    connection.commit();
+                    return r;
+                } catch (Exception e) {
+                    // 异常回滚
+                    connection.rollback();
+                    throw e;
+                } finally {
+                    connection.setAutoCommit(true);
+                }
+            });
         } catch (Exception e) {
             // 包含部分失败，全部重试，并记录每条数据的异常原因
             if (context.isForceUpdate()) {
@@ -318,20 +333,20 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context,
-                           String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
+                             String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
         data.forEach(row -> {
             try {
-                List<Object[]> args = new ArrayList<>();
-                args.add(batchRow(fields, row));
-                int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(executeSql, args));
+                int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(executeSql, batchRow(fields, row)));
                 if (execute == 0) {
-                    throw new SdkException(String.format("重试执行[%s]失败", event));
+                    throw new SdkException(String.format("重试[%s]失败", event));
                 }
                 result.getSuccessData().add(row);
                 printTraceLog(context, event, row, Boolean.TRUE, null);
             } catch (Exception e) {
                 result.getFailData().add(row);
-                result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql).append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+                result.getError().append(context.getTraceId())
+                        .append(" SQL:").append(executeSql).append(System.lineSeparator())
+                        .append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
                 printTraceLog(context, event, row, Boolean.FALSE, e.getMessage());
             }
         });
