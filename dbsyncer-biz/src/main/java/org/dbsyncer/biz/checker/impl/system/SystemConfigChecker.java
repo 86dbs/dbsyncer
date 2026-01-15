@@ -58,7 +58,6 @@ public class SystemConfigChecker extends AbstractChecker {
         newParams.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")));
         newParams.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")));
         newParams.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")));
-        newParams.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")));
         newParams.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")));
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {

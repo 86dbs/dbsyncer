@@ -5,8 +5,6 @@ package org.dbsyncer.connector.postgresql;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.cdc.PostgreSQLListener;
-import org.dbsyncer.connector.postgresql.schema.PostgreSQLBitValueMapper;
-import org.dbsyncer.connector.postgresql.schema.PostgreSQLOtherValueMapper;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -25,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.Types;
 import java.util.List;
 
 /**
@@ -44,11 +41,6 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
-
-    public PostgreSQLConnector() {
-        VALUE_MAPPERS.put(Types.BIT, new PostgreSQLBitValueMapper());
-        VALUE_MAPPERS.put(Types.OTHER, new PostgreSQLOtherValueMapper());
-    }
 
     @Override
     public String getConnectorType() {

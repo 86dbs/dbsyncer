@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.sqlite;
 
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.sqlite.schema.SQLiteSchemaResolver;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -19,6 +20,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     private final String QUERY_DATABASE = "PRAGMA database_list";
 
     private final SQLiteConfigValidator configValidator = new SQLiteConfigValidator();
+    private final SQLiteSchemaResolver schemaResolver = new SQLiteSchemaResolver();
 
     @Override
     public String getConnectorType() {
@@ -118,6 +121,11 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
             return primaryKeys;
         }
         return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {

@@ -10,9 +10,10 @@ package org.dbsyncer.sdk.connector;
  * @Version 1.0.0
  * @Date 2024-04-08 23:17
  */
+@Deprecated
 public final class CustomType {
 
-    private Object value;
+    private final Object value;
 
     public CustomType(Object value) {
         this.value = value;

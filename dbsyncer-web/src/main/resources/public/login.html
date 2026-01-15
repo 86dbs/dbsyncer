@@ -265,6 +265,11 @@
     const passwordError = document.getElementById('passwordError');
     const loginError = document.getElementById('loginError');
     const errorMessage = document.getElementById('errorMessage');
+    // token过期，跳转默认页面
+    const navbar = document.querySelector("div.sidebar-item");
+    if (navbar !== null) {
+        window.location.href = $basePath;
+    }
 
     // 切换密码可见性
     togglePassword.addEventListener('click', () => {
@@ -279,7 +284,7 @@
     // 初始化加载版权信息
     window.addEventListener('load', () => {
         // 发送GET请求
-        fetch('/index/version.json').then(response => {
+        fetch($basePath + '/index/version.json').then(response => {
             if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
             return response.json();
         }).then(response => {
@@ -336,7 +341,7 @@
         formData.append('password', password);
 
         try {
-            const response = await fetch('/login', {
+            const response = await fetch($basePath + '/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded', // 显式声明表单格式

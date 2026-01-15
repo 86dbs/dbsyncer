@@ -10,8 +10,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
-import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.connector.file.column.FileResolver;
+import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.connector.file.schema.FileSchemaResolver;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -39,7 +39,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,10 +62,6 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     private final FileResolver fileResolver = new FileResolver();
     private final FileConfigValidator configValidator = new FileConfigValidator();
     private final FileSchemaResolver schemaResolver = new FileSchemaResolver();
-
-    public FileConnector() {
-        VALUE_MAPPERS.put(Types.BIT, new FileBitValueMapper());
-    }
 
     @Override
     public String getConnectorType() {

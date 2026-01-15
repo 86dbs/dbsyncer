@@ -60,7 +60,7 @@ $(document).ready(function() {
                     <td>
                         <span>${escapeHtml(connector.name)}</span>
                     </td>
-                    <td><img draggable="false" src="/img/${escapeHtml(connector.config.connectorType || '')}.png" style="width: 50px; height: 50px;"></td>
+                    <td><img draggable="false" src="${$basePath}/img/${escapeHtml(connector.config.connectorType || '')}.png" style="width: 50px; height: 50px;"></td>
                     <td>${escapeHtml(connector.config.url || '')}</td>
                     <td>${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}</td>
                     <td>

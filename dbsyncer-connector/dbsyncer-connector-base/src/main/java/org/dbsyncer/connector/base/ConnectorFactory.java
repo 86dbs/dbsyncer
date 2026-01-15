@@ -211,12 +211,7 @@ public class ConnectorFactory implements DisposableBean {
         if (targetConnector instanceof AbstractConnector) {
             AbstractConnector conn = (AbstractConnector) targetConnector;
             try {
-                // 支持标准解析器
-                if (context.isEnableSchemaResolver() && targetConnector.getSchemaResolver() != null) {
-                    conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
-                } else {
-                    conn.convertProcessBeforeWriter(context, targetInstance);
-                }
+                conn.convertProcessBeforeWriter(context, targetConnector.getSchemaResolver());
             } catch (Exception e) {
                 Result result = new Result();
                 result.getError().append(e.getMessage());

@@ -57,11 +57,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private boolean forceUpdate;
 
     /**
-     * 是否启用字段解析器
-     */
-    private boolean enableSchemaResolver;
-
-    /**
      * 是否打印trace信息
      */
     private boolean enablePrintTraceInfo;
@@ -160,15 +155,6 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
-    }
-
-    @Override
-    public boolean isEnableSchemaResolver() {
-        return enableSchemaResolver;
-    }
-
-    public void setEnableSchemaResolver(boolean enableSchemaResolver) {
-        this.enableSchemaResolver = enableSchemaResolver;
     }
 
     @Override

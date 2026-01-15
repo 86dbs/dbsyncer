@@ -202,9 +202,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      *
      * @return
      */
-    default SchemaResolver getSchemaResolver() {
-        return null;
-    }
+    SchemaResolver getSchemaResolver();
 
     /**
      * 获取指定时间的位点信息

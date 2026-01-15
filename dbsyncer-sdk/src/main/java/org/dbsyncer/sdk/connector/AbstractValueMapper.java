@@ -10,6 +10,7 @@ import java.lang.reflect.ParameterizedType;
  * @version 1.0.0
  * @date 2022/8/24 23:34
  */
+@Deprecated
 public abstract class AbstractValueMapper<T> implements ValueMapper {
 
     private final Class<T> parameterClazz;

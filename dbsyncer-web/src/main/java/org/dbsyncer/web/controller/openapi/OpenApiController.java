@@ -4,10 +4,8 @@
 package org.dbsyncer.web.controller.openapi;
 
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.spi.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -32,7 +30,11 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -65,27 +67,6 @@ public class OpenApiController implements InitializingBean {
         logger.info("id:{},version:{}", id, version);
         return RestResult.restSuccess(RandomUtil.nextInt(1, 100));
     }
-
-    @Resource
-    TaskService taskService;
-
-    @ResponseBody
-    @RequestMapping("/testAddTask")
-    public RestResult testAddTask() {
-
-        Map<String, String> param = new HashMap<>();
-        param.put("name", "订单数据同步任务");
-        param.put("status", "1");
-        param.put("type", "FULL_SYNC");
-        param.put("json", "{\"sourceConnectorId\":\"conn_mysql_source_001\",\"sourceDatabaseName\":\"order_db\",\"targetConnectorId\":\"conn_postgres_target_001\",\"targetDatabaseName\":\"order_db_copy\",\"trigger\":\"timing\",\"cron\":\"0 0 1 * * ?\",\"autoMatchTable\":false,\"verification\":true,\"correction\":false,\"tableStructure\":true,\"rowData\":true,\"index\":false,\"triggerFlag\":false,\"function\":false,\"storedProcedure\":false,\"tableMappings\":[{\"sourceTable\":{\"name\":\"order_main\",\"schema\":\"public\",\"columns\":[{\"name\":\"id\",\"type\":\"INT\"},{\"name\":\"order_no\",\"type\":\"VARCHAR(50)\"},{\"name\":\"create_time\",\"type\":\"DATETIME\"}]},\"targetTable\":{\"name\":\"order_main_backup\",\"schema\":\"public\",\"columns\":[{\"name\":\"id\",\"type\":\"INT\"},{\"name\":\"order_no\",\"type\":\"VARCHAR(50)\"},{\"name\":\"create_time\",\"type\":\"TIMESTAMP\"}]},\"fieldMapping\":[{\"sourceField\":\"id\",\"targetField\":\"id\",\"typeHandler\":\"DEFAULT\"},{\"sourceField\":\"order_no\",\"targetField\":\"order_no\",\"typeHandler\":\"DEFAULT\"},{\"sourceField\":\"create_time\",\"targetField\":\"create_time\",\"typeHandler\":\"DATETIME_TO_TIMESTAMP\"}]},{\"sourceTable\":{\"name\":\"order_item\",\"schema\":\"public\",\"columns\":[{\"name\":\"id\",\"type\":\"INT\"},{\"name\":\"order_id\",\"type\":\"INT\"},{\"name\":\"product_name\",\"type\":\"VARCHAR(100)\"}]},\"targetTable\":{\"name\":\"order_item_backup\",\"schema\":\"public\",\"columns\":[{\"name\":\"id\",\"type\":\"INT\"},{\"name\":\"order_id\",\"type\":\"INT\"},{\"name\":\"product_name\",\"type\":\"VARCHAR(100)\"}]},\"fieldMapping\":[{\"sourceField\":\"id\",\"targetField\":\"id\",\"typeHandler\":\"DEFAULT\"},{\"sourceField\":\"order_id\",\"targetField\":\"order_id\",\"typeHandler\":\"DEFAULT\"},{\"sourceField\":\"product_name\",\"targetField\":\"product_name\",\"typeHandler\":\"DEFAULT\"}]}]}");
-        param.put("createTime", DateFormatUtil.dateToString(new Date()));
-        param.put("updateTime", DateFormatUtil.dateToString(new Date()));
-        taskService.add(param);
-
-        return RestResult.restSuccess("新增成功");
-    }
-
-
 
     @ResponseBody
     @RequestMapping("/api.json")
@@ -132,15 +113,15 @@ public class OpenApiController implements InitializingBean {
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
         map.forEach((k, v) -> {
             PatternsRequestCondition condition = k.getPatternsCondition();
+            assert condition != null;
             Object[] array = condition.getPatterns().toArray();
-            int length = array.length;
             boolean filter;
             for (Map.Entry<String, String> obj : parsePackage.entrySet()) {
                 filter = false;
                 // 匹配解析包
-                for (int i = 0; i < length; i++) {
-                    if (StringUtil.startsWith((String) array[i], obj.getKey())) {
-                        handlers.compute((String) array[i], (x, y) -> {
+                for (Object o : array) {
+                    if (StringUtil.startsWith((String) o, obj.getKey())) {
+                        handlers.compute((String) o, (x, y) -> {
                             if (y == null) {
                                 Object bean = applicationContext.getBean(v.getBeanType());
                                 InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());

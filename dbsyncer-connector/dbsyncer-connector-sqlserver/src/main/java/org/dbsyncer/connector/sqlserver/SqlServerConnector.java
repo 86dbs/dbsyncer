@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
 import org.dbsyncer.connector.sqlserver.cdc.SqlServerListener;
+import org.dbsyncer.connector.sqlserver.schema.SqlServerSchemaResolver;
 import org.dbsyncer.connector.sqlserver.validator.SqlServerConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -24,6 +25,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
@@ -47,6 +49,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     private final String SET_TABLE_IDENTITY_OFF = ";set identity_insert %s.[%s] off;";
 
     private final SqlServerConfigValidator configValidator = new SqlServerConfigValidator();
+    private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
 
     @Override
     public String getConnectorType() {
@@ -216,5 +219,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             url.append(";databaseName=").append(database);
         }
         return url.toString();
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
     }
 }

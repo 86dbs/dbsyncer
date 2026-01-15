@@ -10,6 +10,7 @@ package org.dbsyncer.sdk.connector;
  * @version 1.0.0
  * @date 2022/8/24 19:16
  */
+@Deprecated
 public interface ValueMapper {
 
     /**

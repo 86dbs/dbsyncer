@@ -148,9 +148,8 @@ public class ParserComponentImpl implements ParserComponent {
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
-        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
-        picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
+        picker.setSourceResolver(sourceConnector.getSchemaResolver());
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
 

@@ -36,6 +36,7 @@ import org.postgresql.util.PGobject;
  * @Version 1.0.0
  * @Date 2022-12-22 22:59
  */
+@Deprecated
 public final class PostgreSQLOtherValueMapper extends AbstractValueMapper<CustomType> {
 
     @Override

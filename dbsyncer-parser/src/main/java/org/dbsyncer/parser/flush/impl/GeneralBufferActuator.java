@@ -185,12 +185,11 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         // 1、映射字段
-        boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
         ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
         List<Map> sourceDataList = new ArrayList<>();
         List<Map> targetDataList = tableGroupPicker.getPicker()
-                .setSourceResolver(enableSchemaResolver ? sourceConnector.getSchemaResolver() : null)
+                .setSourceResolver(sourceConnector.getSchemaResolver())
                 .pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
@@ -218,7 +217,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setEnableSchemaResolver(enableSchemaResolver);
         context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));
         pluginFactory.process(context, ProcessEnum.CONVERT);
 

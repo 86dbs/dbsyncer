@@ -13,8 +13,6 @@ import org.dbsyncer.connector.elasticsearch.api.bulk.BulkResponse;
 import org.dbsyncer.connector.elasticsearch.cdc.ESQuartzListener;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.connector.elasticsearch.enums.ESFieldTypeEnum;
-import org.dbsyncer.connector.elasticsearch.schema.ESDateValueMapper;
-import org.dbsyncer.connector.elasticsearch.schema.ESOtherValueMapper;
 import org.dbsyncer.connector.elasticsearch.schema.ElasticsearchSchemaResolver;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
@@ -70,7 +68,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,9 +98,6 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     private final ElasticsearchSchemaResolver schemaResolver = new ElasticsearchSchemaResolver();
 
     public ElasticsearchConnector() {
-        VALUE_MAPPERS.put(Types.DATE, new ESDateValueMapper());
-        VALUE_MAPPERS.put(Types.OTHER, new ESOtherValueMapper());
-
         filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v) -> builder.must(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v) -> builder.mustNot(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gt(v)));

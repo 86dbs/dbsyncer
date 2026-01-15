@@ -77,11 +77,6 @@ public interface PluginContext extends BaseContext {
     boolean isForceUpdate();
 
     /**
-     * 是否启用字段解析器
-     */
-    boolean isEnableSchemaResolver();
-
-    /**
      * 是否打印trace信息
      */
     boolean isEnablePrintTraceInfo();

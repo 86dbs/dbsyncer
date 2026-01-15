@@ -60,11 +60,6 @@ public class SystemConfig extends ConfigModel {
     private String watermark;
 
     /**
-     * 是否启用字段解析器
-     */
-    private boolean enableSchemaResolver = true;
-
-    /**
      * 表执行器上限数
      */
     private int maxBufferActuatorSize = 50;
@@ -136,14 +131,6 @@ public class SystemConfig extends ConfigModel {
 
     public void setWatermark(String watermark) {
         this.watermark = watermark;
-    }
-
-    public boolean isEnableSchemaResolver() {
-        return enableSchemaResolver;
-    }
-
-    public void setEnableSchemaResolver(boolean enableSchemaResolver) {
-        this.enableSchemaResolver = enableSchemaResolver;
     }
 
     public int getMaxBufferActuatorSize() {

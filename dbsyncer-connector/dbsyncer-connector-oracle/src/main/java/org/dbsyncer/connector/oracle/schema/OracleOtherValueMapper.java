@@ -25,6 +25,7 @@ import java.sql.Struct;
  * @Version 1.0.0
  * @Date 2022-12-22 22:59
  */
+@Deprecated
 public final class OracleOtherValueMapper extends AbstractValueMapper<Struct> {
 
     @Override

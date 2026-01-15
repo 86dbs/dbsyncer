@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
  * @Version 1.0.0
  * @Date 2022-04-10 22:36
  */
+@Deprecated
 public class PostgreSQLBitValueMapper extends AbstractValueMapper<Boolean> {
 
     @Override
