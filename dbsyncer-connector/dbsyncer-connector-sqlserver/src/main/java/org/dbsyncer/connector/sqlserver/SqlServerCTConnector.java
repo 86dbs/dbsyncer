@@ -2,6 +2,7 @@ package org.dbsyncer.connector.sqlserver;
 
 import org.dbsyncer.connector.sqlserver.ct.SqlServerCTListener;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.sql.impl.SqlServerTemplate;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
@@ -27,7 +28,11 @@ public class SqlServerCTConnector extends SqlServerConnector {
         }
 
         if (ListenerTypeEnum.isLog(listenerType)) {
-            return new SqlServerCTListener();  // 使用 CT 监听器
+            // 通过构造函数传入 SqlServerTemplate
+            if (sqlTemplate instanceof SqlServerTemplate) {
+                return new SqlServerCTListener((SqlServerTemplate) sqlTemplate);
+            }
+            throw new RuntimeException("SqlServerCTConnector 的 sqlTemplate 必须是 SqlServerTemplate 实例");
         }
         return null;
     }

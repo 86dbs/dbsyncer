@@ -45,88 +45,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // SQL 常量
-    private static final String STATEMENTS_PLACEHOLDER = "#";
-    private static final String GET_DATABASE_NAME = "SELECT db_name()";
-    private static final String GET_TABLE_LIST = "SELECT name FROM sys.tables WHERE schema_id = schema_id('#') AND is_ms_shipped = 0";
-
-    // Change Tracking 相关 SQL
-    private static final String GET_CURRENT_VERSION = "SELECT CHANGE_TRACKING_CURRENT_VERSION()";
-
-    // 特殊列名，用于标识表结构信息的 JSON 字段（不用于数据同步）
-    private static final String DDL_SCHEMA_INFO_COLUMN = "__DDL_SCHEMA_INFO__";
-    // CT 主键列别名前缀（使用双下划线前缀避免与用户列名冲突）
-    private static final String CT_PK_COLUMN_PREFIX = "__CT_PK_";
-
-    // 获取表结构信息的子查询（用于在 DML 查询中附加表结构信息）
-    // 注意：SQL Server 2008 R2 不支持 FOR JSON PATH，使用字符串拼接方式生成 JSON
-    // 使用 STUFF + FOR XML PATH 来拼接 JSON 数组字符串
-    private static final String GET_TABLE_SCHEMA_INFO_SUBQUERY =
-            "(SELECT " +
-                    "    '[' + STUFF((" +
-                    "        SELECT ',' + " +
-                    "            '{' + " +
-                    "            '\"COLUMN_NAME\":\"' + REPLACE(COLUMN_NAME, '\"', '\\\"') + '\",' + " +
-                    "            '\"DATA_TYPE\":\"' + REPLACE(DATA_TYPE, '\"', '\\\"') + '\",' + " +
-                    "            CASE WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL " +
-                    "                THEN '\"CHARACTER_MAXIMUM_LENGTH\":' + CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR) + ',' " +
-                    "                ELSE '' END + " +
-                    "            CASE WHEN NUMERIC_PRECISION IS NOT NULL " +
-                    "                THEN '\"NUMERIC_PRECISION\":' + CAST(NUMERIC_PRECISION AS VARCHAR) + ',' " +
-                    "                ELSE '' END + " +
-                    "            CASE WHEN NUMERIC_SCALE IS NOT NULL " +
-                    "                THEN '\"NUMERIC_SCALE\":' + CAST(NUMERIC_SCALE AS VARCHAR) + ',' " +
-                    "                ELSE '' END + " +
-                    "            '\"IS_NULLABLE\":\"' + IS_NULLABLE + '\",' + " +
-                    "            '\"ORDINAL_POSITION\":' + CAST(ORDINAL_POSITION AS VARCHAR) + " +
-                    "            '}' " +
-                    "        FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "        WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' " +
-                    "        ORDER BY ORDINAL_POSITION " +
-                    "        FOR XML PATH(''), TYPE " +
-                    "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info " +
-                    " FROM (SELECT 1 AS dummy) AS t)";
-
-    private static final String GET_DML_CHANGES =
-            "SELECT " +
-                    "    CT.SYS_CHANGE_VERSION, " +
-                    "    CT.SYS_CHANGE_OPERATION, " +
-                    "    CT.SYS_CHANGE_COLUMNS, " +
-                    "    T.*, " +
-                    "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
-                    "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
-                    "LEFT JOIN [%s].[%s] AS T ON %s " +
-                    "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
-                    "ORDER BY CT.SYS_CHANGE_VERSION ASC";
-
-    // 合并查询：同时获取主键信息和列数（减少查询次数）
-    private static final String GET_TABLE_PRIMARY_KEYS_AND_COLUMN_COUNT =
-            "SELECT " +
-                    "    kcu.COLUMN_NAME, " +
-                    "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS c " +
-                    "     WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?) AS COLUMN_COUNT " +
-                    "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
-                    "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu " +
-                    "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
-                    "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
-                    "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
-                    "WHERE tc.TABLE_SCHEMA = ? AND tc.TABLE_NAME = ? " +
-                    "    AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY' " +
-                    "ORDER BY kcu.ORDINAL_POSITION";
-
-    // 启用 Change Tracking
-    private static final String ENABLE_DB_CHANGE_TRACKING =
-            "ALTER DATABASE [%s] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)";
-
-    private static final String ENABLE_TABLE_CHANGE_TRACKING =
-            "ALTER TABLE [%s].[%s] ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)";
-
-    private static final String IS_DB_CHANGE_TRACKING_ENABLED =
-            "SELECT COUNT(*) FROM sys.change_tracking_databases WHERE database_id = DB_ID('%s')";
-
-    private static final String IS_TABLE_CHANGE_TRACKING_ENABLED =
-            "SELECT COUNT(*) FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('%s.%s')";
-
     // Snapshot 键名
     private static final String VERSION_POSITION = "version";
     private static final String SCHEMA_SNAPSHOT_PREFIX = "schema_snapshot_";
@@ -134,6 +52,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private static final String SCHEMA_VERSION_PREFIX = "schema_version_";
     private static final String SCHEMA_TIME_PREFIX = "schema_time_";
     private static final String SCHEMA_ORDINAL_PREFIX = "schema_ordinal_";
+
+    private final SqlServerTemplate sqlTemplate;
 
     private final Lock connectLock = new ReentrantLock();
     private volatile boolean connected;
@@ -154,6 +74,15 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private final Map<String, List<String>> primaryKeysCache = new HashMap<>();
     // 表列数缓存（表名 -> 列数），避免重复查询 INFORMATION_SCHEMA
     private final Map<String, Integer> tableColumnCountCache = new HashMap<>();
+
+    /**
+     * 构造函数
+     * 
+     * @param sqlTemplate SQL Server 模板实例，用于构建 SQL 语句
+     */
+    public SqlServerCTListener(SqlServerTemplate sqlTemplate) {
+        this.sqlTemplate = sqlTemplate;
+    }
 
     @Override
     public void start() throws Exception {
@@ -207,7 +136,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     public Long getMaxVersion() throws Exception {
-        return queryAndMap(GET_CURRENT_VERSION, rs -> {
+        return queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
             Long version = rs.getLong(1);
             return rs.wasNull() ? null : version;
         });
@@ -264,7 +193,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private void readTables() throws Exception {
-        tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs -> {
+        String sql = sqlTemplate.buildGetTableListSql(schema);
+        tables = queryAndMapList(sql, rs -> {
             Set<String> tableSet = new LinkedHashSet<>();
             while (rs.next()) {
                 String tableName = rs.getString(1);
@@ -277,10 +207,10 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private void enableDBChangeTracking() throws Exception {
-        realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
-        Integer count = queryAndMap(String.format(IS_DB_CHANGE_TRACKING_ENABLED, realDatabaseName), rs -> rs.getInt(1));
+        realDatabaseName = queryAndMap(sqlTemplate.buildGetDatabaseNameSql(), rs -> rs.getString(1));
+        Integer count = queryAndMap(sqlTemplate.buildIsDatabaseChangeTrackingEnabledSql(realDatabaseName), rs -> rs.getInt(1));
         if (count == null || count == 0) {
-            execute(String.format(ENABLE_DB_CHANGE_TRACKING, realDatabaseName));
+            execute(sqlTemplate.buildEnableDatabaseChangeTrackingSql(realDatabaseName));
             logger.info("已启用数据库 [{}] 的 Change Tracking", realDatabaseName);
         }
     }
@@ -291,7 +221,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         }
         tables.forEach(table -> {
             try {
-                String checkSql = String.format(IS_TABLE_CHANGE_TRACKING_ENABLED, schema, table);
+                String checkSql = sqlTemplate.buildIsTableChangeTrackingEnabledSql(schema, table);
                 Integer count = query(checkSql, null, rs -> {
                     if (rs.next()) {
                         return rs.getInt(1);
@@ -300,7 +230,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 });
                 if (count == null || count == 0) {
                     try {
-                        execute(String.format(ENABLE_TABLE_CHANGE_TRACKING, schema, table));
+                        execute(sqlTemplate.buildEnableTableChangeTrackingSql(schema, table));
                         logger.info("已启用表 [{}].[{}] 的 Change Tracking", schema, table);
                     } catch (UncategorizedSQLException e) {
                         logger.warn("表 [{}] 的 Change Tracking 可能已存在", table);
@@ -380,57 +310,14 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
         }
 
-        // 2. 构建 JOIN 条件（支持复合主键）
-        String joinCondition = primaryKeys.stream()
-                .map(pk -> "CT.[" + pk + "] = T.[" + pk + "]")
-                .collect(Collectors.joining(" AND "));
+        // 2. 构建表结构信息子查询（用于附加到结果集中）
+        String schemaInfoSubquery = sqlTemplate.buildGetTableSchemaInfoSubquery(schema, tableName);
 
-        // 3. 构建 SELECT 列列表
-        // 将 CT 主键列放在 T.* 前面，简化后续处理（可以通过固定索引直接访问）
-        // 对于主键列：如果 T.[pk] 为 NULL（DELETE 情况），使用 CT.[pk]
-        // 使用双下划线前缀避免与用户列名冲突
-        String redundantPrimaryKeys = primaryKeys.stream()
-                .map(pk -> "CT.[" + pk + "] AS " + CT_PK_COLUMN_PREFIX + pk.replaceAll("[^a-zA-Z0-9_]", "_"))  // 确保别名合法
-                .collect(Collectors.joining(", "));
+        // 3. 构建主查询 SQL（包含表结构信息的 JSON 字段）
+        String mainQuery = sqlTemplate.buildChangeTrackingDMLMainQuery(schema, tableName, primaryKeys, schemaInfoSubquery);
 
-        // 将 CT 主键列放在 T.* 前面，这样可以通过固定索引（4 到 4+PK-1）直接访问
-        String selectColumns = (redundantPrimaryKeys.isEmpty() ? "" : redundantPrimaryKeys + ", ") + "T.*";
-
-        // 4. 构建表结构信息子查询（用于附加到结果集中）
-        String schemaInfoSubquery = String.format(GET_TABLE_SCHEMA_INFO_SUBQUERY, schema, tableName);
-
-        // 5. 构建主查询 SQL（包含表结构信息的 JSON 字段）
-        // 注意：使用显式的列列表替代 T.*，以便正确处理 DELETE 操作的主键值
-        String mainQuery = String.format(
-                "SELECT " +
-                        "    CT.SYS_CHANGE_VERSION, " +
-                        "    CT.SYS_CHANGE_OPERATION, " +
-                        "    CT.SYS_CHANGE_COLUMNS, " +
-                        "    %s, " +  // 显式的列列表（包含 COALESCE 处理）
-                        "    %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
-                        "FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
-                        "LEFT JOIN [%s].[%s] AS T ON %s " +
-                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
-                        "ORDER BY CT.SYS_CHANGE_VERSION ASC",
-                selectColumns,         // 显式的列列表
-                schemaInfoSubquery,   // 表结构信息子查询
-                schema, tableName,     // CHANGETABLE
-                schema, tableName,     // JOIN table
-                joinCondition          // JOIN condition（支持复合主键）
-        );
-
-        // 6. 构建辅助查询 SQL（当没有 DML 变更时，用于获取 DDL 信息）
-        // 注意：不再需要与 mainQuery 的列数匹配，只需要返回 DDL 信息
-        String fallbackQuery = String.format(
-                "SELECT %s AS " + DDL_SCHEMA_INFO_COLUMN + " " +
-                        "WHERE NOT EXISTS (" +
-                        "    SELECT 1 FROM CHANGETABLE(CHANGES [%s].[%s], ?) AS CT " +
-                        "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
-                        ")",
-                schemaInfoSubquery,   // 表结构信息子查询
-                schema, tableName,     // CHANGETABLE
-                schema, tableName      // CHANGETABLE（用于 EXISTS 子查询）
-        );
+        // 4. 构建辅助查询 SQL（当没有 DML 变更时，用于获取 DDL 信息）
+        String fallbackQuery = sqlTemplate.buildChangeTrackingDMLFallbackQuery(schema, tableName, schemaInfoSubquery);
 
         // 7. 先执行主查询，获取 DML 变更和 DDL 信息
         List<CTEvent> events = queryAndMapList(mainQuery, statement -> {
@@ -444,7 +331,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             int schemaInfoColumnIndex = -1;
             int resultColumnCount = metaData.getColumnCount();
             for (int i = 1; i <= resultColumnCount; i++) {
-                if (DDL_SCHEMA_INFO_COLUMN.equalsIgnoreCase(metaData.getColumnName(i))) {
+                if (SqlServerTemplate.CT_DDL_SCHEMA_INFO_COLUMN.equalsIgnoreCase(metaData.getColumnName(i))) {
                     schemaInfoColumnIndex = i;
                     break;
                 }
@@ -687,6 +574,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     // ==================== 辅助方法 ====================
 
+
     private String convertOperation(String operation) {
         if ("I".equals(operation)) {
             return ConnectorConstant.OPERTION_INSERT;
@@ -699,7 +587,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private Long getCurrentVersion() throws Exception {
-        return queryAndMap(GET_CURRENT_VERSION, rs -> {
+        return queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
             Long version = rs.getLong(1);
             return rs.wasNull() ? null : version;
         });
@@ -722,8 +610,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
      * 合并查询：同时获取主键信息和列数（减少查询次数）
      */
     private TableMetaInfo getPrimaryKeysAndColumnCount(String tableName) throws Exception {
+        String sql = sqlTemplate.buildGetPrimaryKeysAndColumnCountSql(schema, tableName);
         // 使用 READ UNCOMMITTED 隔离级别避免死锁
-        return queryWithReadUncommitted(GET_TABLE_PRIMARY_KEYS_AND_COLUMN_COUNT, statement -> {
+        return queryWithReadUncommitted(sql, statement -> {
             statement.setString(1, schema);  // 子查询的 TABLE_SCHEMA
             statement.setString(2, tableName);  // 子查询的 TABLE_NAME
             statement.setString(3, schema);  // 主查询的 TABLE_SCHEMA

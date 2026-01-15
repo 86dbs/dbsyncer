@@ -498,26 +498,6 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         );
     }
 
-    /**
-     * 构建添加 DEFAULT 约束的 SQL
-     * 
-     * @param tableName 表名
-     * @param columnName 列名
-     * @param defaultValue 默认值
-     * @return 添加约束的 SQL 语句
-     */
-    public String buildAddDefaultConstraintSql(String tableName, String columnName, String defaultValue) {
-        String quotedTableName = buildQuotedTableName(tableName);
-        String quotedColumnName = buildColumn(columnName);
-        // 约束名格式：DF_表名_列名
-        String constraintName = "DF_" + tableName + "_" + columnName;
-        
-        return String.format(
-            "ALTER TABLE %s ADD CONSTRAINT %s DEFAULT %s FOR %s;",
-            quotedTableName, constraintName, defaultValue, quotedColumnName
-        );
-    }
-
     @Override
     public String buildMetadataCountSql(String schema, String tableName) {
         // 转义单引号防止SQL注入
@@ -531,5 +511,243 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
             escapedTableName,
             schemaName
         );
+    }
+
+    /**
+     * 构建获取数据库名称的 SQL
+     * 
+     * @return SQL 语句
+     */
+    public String buildGetDatabaseNameSql() {
+        return "SELECT db_name()";
+    }
+
+    /**
+     * 构建获取表列表的 SQL
+     * 
+     * @param schema 架构名（如 'dbo'），如果为 null 或空则使用当前架构
+     * @return SQL 语句（包含占位符 '#'，需要调用者替换为实际的 schema）
+     */
+    public String buildGetTableListSql(String schema) {
+        String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
+        return String.format("SELECT name FROM sys.tables WHERE schema_id = schema_id('%s') AND is_ms_shipped = 0", schemaName);
+    }
+
+    /**
+     * 构建获取表主键和列数的合并查询 SQL
+     * 使用合并查询减少 IO 开销，同时获取主键信息和列数
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @return SQL 语句（使用 PreparedStatement 参数，需要设置 4 个参数：schema, tableName, schema, tableName）
+     */
+    public String buildGetPrimaryKeysAndColumnCountSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
+        String escapedTableName = tableName.replace("'", "''");
+        
+        return "SELECT " +
+                "    kcu.COLUMN_NAME, " +
+                "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS c " +
+                "     WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?) AS COLUMN_COUNT " +
+                "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
+                "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu " +
+                "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
+                "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
+                "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
+                String.format("WHERE tc.TABLE_SCHEMA = '%s' AND tc.TABLE_NAME = '%s' ", escapedSchema, escapedTableName) +
+                "    AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY' " +
+                "ORDER BY kcu.ORDINAL_POSITION";
+    }
+
+    // ==================== Change Tracking 相关 SQL 构建方法 ====================
+
+    /**
+     * Change Tracking 特殊列名，用于标识表结构信息的 JSON 字段（不用于数据同步）
+     */
+    public static final String CT_DDL_SCHEMA_INFO_COLUMN = "__DDL_SCHEMA_INFO__";
+
+    /**
+     * CT 主键列别名前缀（使用双下划线前缀避免与用户列名冲突）
+     */
+    public static final String CT_PK_COLUMN_PREFIX = "__CT_PK_";
+
+    /**
+     * 构建获取 Change Tracking 当前版本的 SQL
+     * 
+     * @return SQL 语句
+     */
+    public String buildGetCurrentVersionSql() {
+        return "SELECT CHANGE_TRACKING_CURRENT_VERSION()";
+    }
+
+    /**
+     * 构建获取表结构信息的子查询 SQL
+     * 用于在 DML 查询中附加表结构信息
+     * 注意：SQL Server 2008 R2 不支持 FOR JSON PATH，使用字符串拼接方式生成 JSON
+     * 使用 STUFF + FOR XML PATH 来拼接 JSON 数组字符串
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @return 子查询 SQL
+     */
+    public String buildGetTableSchemaInfoSubquery(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
+        String escapedTableName = tableName.replace("'", "''");
+        
+        return String.format(
+                "(SELECT " +
+                        "    '[' + STUFF((" +
+                        "        SELECT ',' + " +
+                        "            '{' + " +
+                        "            '\"COLUMN_NAME\":\"' + REPLACE(COLUMN_NAME, '\"', '\\\"') + '\",' + " +
+                        "            '\"DATA_TYPE\":\"' + REPLACE(DATA_TYPE, '\"', '\\\"') + '\",' + " +
+                        "            CASE WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL " +
+                        "                THEN '\"CHARACTER_MAXIMUM_LENGTH\":' + CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR) + ',' " +
+                        "                ELSE '' END + " +
+                        "            CASE WHEN NUMERIC_PRECISION IS NOT NULL " +
+                        "                THEN '\"NUMERIC_PRECISION\":' + CAST(NUMERIC_PRECISION AS VARCHAR) + ',' " +
+                        "                ELSE '' END + " +
+                        "            CASE WHEN NUMERIC_SCALE IS NOT NULL " +
+                        "                THEN '\"NUMERIC_SCALE\":' + CAST(NUMERIC_SCALE AS VARCHAR) + ',' " +
+                        "                ELSE '' END + " +
+                        "            '\"IS_NULLABLE\":\"' + IS_NULLABLE + '\",' + " +
+                        "            '\"ORDINAL_POSITION\":' + CAST(ORDINAL_POSITION AS VARCHAR) + " +
+                        "            '}' " +
+                        "        FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "        WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' " +
+                        "        ORDER BY ORDINAL_POSITION " +
+                        "        FOR XML PATH(''), TYPE " +
+                        "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info " +
+                        " FROM (SELECT 1 AS dummy) AS t)",
+                escapedSchema, escapedTableName
+        );
+    }
+
+    /**
+     * 构建 Change Tracking DML 变更查询的主查询 SQL
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @param primaryKeys 主键列表
+     * @param schemaInfoSubquery 表结构信息子查询
+     * @return SQL 语句（使用 PreparedStatement 参数，需要设置 3 个参数：startVersion, startVersion, stopVersion）
+     */
+    public String buildChangeTrackingDMLMainQuery(String schema, String tableName, 
+                                                   List<String> primaryKeys, String schemaInfoSubquery) {
+        // 构建 JOIN 条件（支持复合主键）
+        // buildColumn 已经包含了引号，所以不需要再手动添加
+        String joinCondition = primaryKeys.stream()
+                .map(pk -> "CT." + buildColumn(pk) + " = T." + buildColumn(pk))
+                .collect(java.util.stream.Collectors.joining(" AND "));
+
+        // 构建 SELECT 列列表
+        // 将 CT 主键列放在 T.* 前面，简化后续处理（可以通过固定索引直接访问）
+        // 对于主键列：如果 T.[pk] 为 NULL（DELETE 情况），使用 CT.[pk]
+        // 使用双下划线前缀避免与用户列名冲突
+        String redundantPrimaryKeys = primaryKeys.stream()
+                .map(pk -> "CT." + buildColumn(pk) + " AS " + CT_PK_COLUMN_PREFIX + pk.replaceAll("[^a-zA-Z0-9_]", "_"))
+                .collect(java.util.stream.Collectors.joining(", "));
+
+        // 将 CT 主键列放在 T.* 前面
+        String selectColumns = (redundantPrimaryKeys.isEmpty() ? "" : redundantPrimaryKeys + ", ") + "T.*";
+
+        // 构建表名（带引号）
+        String schemaTable = buildTable(schema, tableName);
+
+        return String.format(
+                "SELECT " +
+                        "    CT.SYS_CHANGE_VERSION, " +
+                        "    CT.SYS_CHANGE_OPERATION, " +
+                        "    CT.SYS_CHANGE_COLUMNS, " +
+                        "    %s, " +  // 显式的列列表
+                        "    %s AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
+                        "FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
+                        "LEFT JOIN %s AS T ON %s " +
+                        "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
+                        "ORDER BY CT.SYS_CHANGE_VERSION ASC",
+                selectColumns,         // 显式的列列表
+                schemaInfoSubquery,   // 表结构信息子查询
+                schemaTable,          // CHANGETABLE
+                schemaTable,          // JOIN table
+                joinCondition         // JOIN condition（支持复合主键）
+        );
+    }
+
+    /**
+     * 构建 Change Tracking DML 变更查询的辅助查询 SQL
+     * 当没有 DML 变更时，用于获取 DDL 信息
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @param schemaInfoSubquery 表结构信息子查询
+     * @return SQL 语句（使用 PreparedStatement 参数，需要设置 3 个参数：startVersion, startVersion, stopVersion）
+     */
+    public String buildChangeTrackingDMLFallbackQuery(String schema, String tableName, String schemaInfoSubquery) {
+        String schemaTable = buildTable(schema, tableName);
+        
+        return String.format(
+                "SELECT %s AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
+                        "WHERE NOT EXISTS (" +
+                        "    SELECT 1 FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
+                        "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
+                        ")",
+                schemaInfoSubquery,   // 表结构信息子查询
+                schemaTable           // CHANGETABLE（用于 EXISTS 子查询）
+        );
+    }
+
+    /**
+     * 构建启用数据库 Change Tracking 的 SQL
+     * 
+     * @param databaseName 数据库名
+     * @return SQL 语句
+     */
+    public String buildEnableDatabaseChangeTrackingSql(String databaseName) {
+        // 转义单引号防止SQL注入
+        String escapedDatabaseName = databaseName.replace("'", "''");
+        return String.format("ALTER DATABASE [%s] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)", 
+                escapedDatabaseName);
+    }
+
+    /**
+     * 构建启用表 Change Tracking 的 SQL
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @return SQL 语句
+     */
+    public String buildEnableTableChangeTrackingSql(String schema, String tableName) {
+        String schemaTable = buildTable(schema, tableName);
+        return String.format("ALTER TABLE %s ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON)", schemaTable);
+    }
+
+    /**
+     * 构建检查数据库 Change Tracking 是否启用的 SQL
+     * 
+     * @param databaseName 数据库名
+     * @return SQL 语句
+     */
+    public String buildIsDatabaseChangeTrackingEnabledSql(String databaseName) {
+        // 转义单引号防止SQL注入
+        String escapedDatabaseName = databaseName.replace("'", "''");
+        return String.format("SELECT COUNT(*) FROM sys.change_tracking_databases WHERE database_id = DB_ID('%s')", 
+                escapedDatabaseName);
+    }
+
+    /**
+     * 构建检查表 Change Tracking 是否启用的 SQL
+     * 
+     * @param schema 架构名
+     * @param tableName 表名
+     * @return SQL 语句
+     */
+    public String buildIsTableChangeTrackingEnabledSql(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
+        String escapedTableName = tableName.replace("'", "''");
+        return String.format("SELECT COUNT(*) FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('%s.%s')", 
+                escapedSchema, escapedTableName);
     }
 }
