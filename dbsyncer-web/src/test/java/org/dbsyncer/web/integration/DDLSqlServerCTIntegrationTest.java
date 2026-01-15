@@ -487,6 +487,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         assertTrue("应找到last_name字段的映射", foundLastNameMapping);
 
+        // 验证目标表结构：字段应为 NOT NULL
+        verifyFieldNotNull("last_name", getTargetTableName(), targetConfig);
+
         // 验证 DML 数据同步
         waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
 
@@ -526,6 +529,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         dataAfterNotNull = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterNotNull, sourceConfig);
         Thread.sleep(2000);
 
+        // 验证目标表结构：设置 NOT NULL 后，字段应为 NOT NULL
+        verifyFieldNotNull("first_name", getTargetTableName(), targetConfig);
+
         // 4. 执行第二个 DDL 操作（移除 NOT NULL）
         String sqlServerDDL = "ALTER TABLE ddlTestSource ALTER COLUMN first_name NVARCHAR(50) NULL";
         executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
@@ -548,6 +554,9 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
                         fm.getTarget() != null && "first_name".equals(fm.getTarget().getName()));
 
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
+
+        // 验证目标表结构：字段应为 NULL（可空）
+        verifyFieldNullable("first_name", getTargetTableName(), targetConfig);
 
         // 验证 DML 数据同步
         waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
