@@ -457,7 +457,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 使用 IF EXISTS 检查并更新/添加 COMMENT
         // 注意：EXEC 语句中不使用分号，因为整个 IF-ELSE 块应该作为一个完整的语句执行
         return String.format(
-            "IF EXISTS (SELECT 1 FROM sys.extended_properties " +
+            "IF EXISTS (SELECT 1 FROM sys.extended_properties WITH (NOLOCK) " +
             "WHERE major_id = OBJECT_ID('%s.%s') " +
             "  AND minor_id = COLUMNPROPERTY(OBJECT_ID('%s.%s'), '%s', 'ColumnId') " +
             "  AND name = 'MS_Description') " +
@@ -489,7 +489,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 这样按分号分割时，整个语句会作为一个完整的批处理执行
         return String.format(
             "DECLARE @constraintName NVARCHAR(200) " +
-            "SELECT @constraintName = name FROM sys.default_constraints " +
+            "SELECT @constraintName = name FROM sys.default_constraints WITH (NOLOCK) " +
             "WHERE parent_object_id = OBJECT_ID('%s') " +
             "  AND parent_column_id = COLUMNPROPERTY(OBJECT_ID('%s'), '%s', 'ColumnId') " +
             "IF @constraintName IS NOT NULL " +
@@ -505,8 +505,8 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
         
         return String.format(
-            "SELECT p.rows FROM sys.tables t " +
-            "INNER JOIN sys.partitions p ON t.object_id = p.object_id " +
+            "SELECT p.rows FROM sys.tables WITH (NOLOCK) t " +
+            "INNER JOIN sys.partitions WITH (NOLOCK) p ON t.object_id = p.object_id " +
             "WHERE t.name = '%s' AND t.schema_id = SCHEMA_ID('%s') AND p.index_id IN (0, 1)",
             escapedTableName,
             schemaName
@@ -530,7 +530,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
      */
     public String buildGetTableListSql(String schema) {
         String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema : "dbo";
-        return String.format("SELECT name FROM sys.tables WHERE schema_id = schema_id('%s') AND is_ms_shipped = 0", schemaName);
+        return String.format("SELECT name FROM sys.tables WITH (NOLOCK) WHERE schema_id = schema_id('%s') AND is_ms_shipped = 0", schemaName);
     }
 
     /**
@@ -548,10 +548,10 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         
         return "SELECT " +
                 "    kcu.COLUMN_NAME, " +
-                "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS c " +
+                "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) c " +
                 "     WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?) AS COLUMN_COUNT " +
-                "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
-                "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu " +
+                "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK) tc " +
+                "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK) kcu " +
                 "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
                 "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
                 "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
@@ -596,6 +596,8 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
         String escapedTableName = tableName.replace("'", "''");
         
+        // 优化：移除外层包装，因为现在在 CROSS APPLY 中使用
+        // CROSS APPLY 需要一个返回单行单列的表值表达式
         return String.format(
                 "(SELECT " +
                         "    '[' + STUFF((" +
@@ -615,12 +617,11 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                         "            '\"IS_NULLABLE\":\"' + IS_NULLABLE + '\",' + " +
                         "            '\"ORDINAL_POSITION\":' + CAST(ORDINAL_POSITION AS VARCHAR) + " +
                         "            '}' " +
-                        "        FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "        FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) " +
                         "        WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' " +
                         "        ORDER BY ORDINAL_POSITION " +
                         "        FOR XML PATH(''), TYPE " +
-                        "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info " +
-                        " FROM (SELECT 1 AS dummy) AS t)",
+                        "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info)",
                 escapedSchema, escapedTableName
         );
     }
@@ -656,22 +657,27 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 构建表名（带引号）
         String schemaTable = buildTable(schema, tableName);
 
+        // 优化：使用 CROSS APPLY 让表结构信息子查询只执行一次，而不是每行都执行
+        // CROSS APPLY 会将子查询结果与主查询结果集进行关联，SQL Server 优化器会识别出
+        // 子查询结果对所有行都相同，从而只执行一次
+        // 注意：CROSS APPLY 从 SQL Server 2005 开始支持，SQL Server 2008 R2 完全支持
         return String.format(
                 "SELECT " +
                         "    CT.SYS_CHANGE_VERSION, " +
                         "    CT.SYS_CHANGE_OPERATION, " +
                         "    CT.SYS_CHANGE_COLUMNS, " +
                         "    %s, " +  // 显式的列列表
-                        "    %s AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
+                        "    SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
                         "LEFT JOIN %s AS T ON %s " +
+                        "CROSS APPLY %s AS SI " +  // 使用 CROSS APPLY，子查询只执行一次
                         "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
                         "ORDER BY CT.SYS_CHANGE_VERSION ASC",
                 selectColumns,         // 显式的列列表
-                schemaInfoSubquery,   // 表结构信息子查询
                 schemaTable,          // CHANGETABLE
                 schemaTable,          // JOIN table
-                joinCondition         // JOIN condition（支持复合主键）
+                joinCondition,        // JOIN condition（支持复合主键）
+                schemaInfoSubquery    // 表结构信息子查询（移到 CROSS APPLY）
         );
     }
 
@@ -687,8 +693,12 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
     public String buildChangeTrackingDMLFallbackQuery(String schema, String tableName, String schemaInfoSubquery) {
         String schemaTable = buildTable(schema, tableName);
         
+        // 优化：使用 CROSS APPLY 让子查询只执行一次
+        // 注意：需要一个 FROM 子句才能使用 CROSS APPLY，使用虚拟表 (SELECT 1 AS dummy) AS t
         return String.format(
-                "SELECT %s AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
+                "SELECT SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
+                        "FROM (SELECT 1 AS dummy) AS t " +
+                        "CROSS APPLY %s AS SI " +  // 使用 CROSS APPLY
                         "WHERE NOT EXISTS (" +
                         "    SELECT 1 FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
                         "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
@@ -732,7 +742,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
     public String buildIsDatabaseChangeTrackingEnabledSql(String databaseName) {
         // 转义单引号防止SQL注入
         String escapedDatabaseName = databaseName.replace("'", "''");
-        return String.format("SELECT COUNT(*) FROM sys.change_tracking_databases WHERE database_id = DB_ID('%s')", 
+        return String.format("SELECT COUNT(*) FROM sys.change_tracking_databases WITH (NOLOCK) WHERE database_id = DB_ID('%s')", 
                 escapedDatabaseName);
     }
 
@@ -747,7 +757,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 转义单引号防止SQL注入
         String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
         String escapedTableName = tableName.replace("'", "''");
-        return String.format("SELECT COUNT(*) FROM sys.change_tracking_tables WHERE object_id = OBJECT_ID('%s.%s')", 
+        return String.format("SELECT COUNT(*) FROM sys.change_tracking_tables WITH (NOLOCK) WHERE object_id = OBJECT_ID('%s.%s')", 
                 escapedSchema, escapedTableName);
     }
 }
