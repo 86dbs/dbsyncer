@@ -241,6 +241,10 @@ function renderConnectorDetail(connector) {
     if (connector.config && typeof connector.config === 'object') {
         for (var key in connector.config) {
             if (connector.config.hasOwnProperty(key)) {
+                // 跳过密码字段，不显示密码这一行
+                if (key === 'password') {
+                    continue;
+                }
                 detailHtml += '        <div class="detail-row">';
                 detailHtml += '            <span class="detail-label">' + getConfigLabel(key) + '</span>';
                 detailHtml += '            <span class="detail-value">' + escapeHtml(connector.config[key]) + '</span>';
