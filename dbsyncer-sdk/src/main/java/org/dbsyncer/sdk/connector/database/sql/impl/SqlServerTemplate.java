@@ -505,8 +505,8 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         String schemaName = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
         
         return String.format(
-            "SELECT p.rows FROM sys.tables WITH (NOLOCK) t " +
-            "INNER JOIN sys.partitions WITH (NOLOCK) p ON t.object_id = p.object_id " +
+            "SELECT p.rows FROM sys.tables t WITH (NOLOCK) " +
+            "INNER JOIN sys.partitions p  WITH (NOLOCK) ON t.object_id = p.object_id " +
             "WHERE t.name = '%s' AND t.schema_id = SCHEMA_ID('%s') AND p.index_id IN (0, 1)",
             escapedTableName,
             schemaName
@@ -552,14 +552,14 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         return "SELECT " +
                 "    kcu.COLUMN_NAME, " +
                 "    cc.COLUMN_COUNT " +
-                "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK) tc " +
-                "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK) kcu " +
+                "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc WITH (NOLOCK) " +
+                "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu WITH (NOLOCK) " +
                 "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
                 "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
                 "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
                 "CROSS APPLY (" +
                 "    SELECT COUNT(*) AS COLUMN_COUNT " +
-                "    FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) c " +
+                "    FROM INFORMATION_SCHEMA.COLUMNS c WITH (NOLOCK) " +
                 "    WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?" +
                 ") AS cc " +
                 String.format("WHERE tc.TABLE_SCHEMA = '%s' AND tc.TABLE_NAME = '%s' ", escapedSchema, escapedTableName) +
@@ -668,6 +668,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // CROSS APPLY 会将子查询结果与主查询结果集进行关联，SQL Server 优化器会识别出
         // 子查询结果对所有行都相同，从而只执行一次
         // 注意：CROSS APPLY 从 SQL Server 2005 开始支持，SQL Server 2008 R2 完全支持
+        // 注意：CROSS APPLY 的别名语法是 "CROSS APPLY (...) alias"，不使用 AS 关键字
         return String.format(
                 "SELECT " +
                         "    CT.SYS_CHANGE_VERSION, " +
@@ -676,8 +677,8 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                         "    %s, " +  // 显式的列列表
                         "    SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
-                        "LEFT JOIN %s WITH (NOLOCK) AS T ON %s " +
-                        "CROSS APPLY %s AS SI " +  // 使用 CROSS APPLY，子查询只执行一次
+                        "LEFT JOIN %s AS T WITH (NOLOCK) ON %s " +
+                        "CROSS APPLY %s SI " +  // 使用 CROSS APPLY，注意：某些 SQL Server 版本不支持 AS 关键字
                         "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
                         "ORDER BY CT.SYS_CHANGE_VERSION ASC",
                 selectColumns,         // 显式的列列表
@@ -702,10 +703,11 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         
         // 优化：使用 CROSS APPLY 让子查询只执行一次
         // 注意：需要一个 FROM 子句才能使用 CROSS APPLY，使用虚拟表 (SELECT 1 AS dummy) AS t
+        // 注意：CROSS APPLY 的别名语法是 "CROSS APPLY (...) alias"，不使用 AS 关键字
         return String.format(
                 "SELECT SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM (SELECT 1 AS dummy) AS t " +
-                        "CROSS APPLY %s AS SI " +  // 使用 CROSS APPLY
+                        "CROSS APPLY %s SI " +  // 使用 CROSS APPLY，注意：某些 SQL Server 版本不支持 AS 关键字
                         "WHERE NOT EXISTS (" +
                         "    SELECT 1 FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
                         "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +

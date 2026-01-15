@@ -77,7 +77,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     /**
      * 构造函数
-     * 
+     *
      * @param sqlTemplate SQL Server 模板实例，用于构建 SQL 语句
      */
     public SqlServerCTListener(SqlServerTemplate sqlTemplate) {
@@ -289,7 +289,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         List<CTEvent> dmlEvents = new ArrayList<>();
         for (String table : tables) {
             List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion,
-                    tablePrimaryKeys.get(table), tableColumnCounts.get(table));
+                    tablePrimaryKeys.get(table));
             dmlEvents.addAll(tableEvents);
         }
 
@@ -304,7 +304,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion,
-                                         List<String> primaryKeys, Integer columnCount) throws Exception {
+                                         List<String> primaryKeys) throws Exception {
         // 1. 使用调用者传入的主键信息（已在 pull 方法中批量查询并缓存）
         if (primaryKeys == null || primaryKeys.isEmpty()) {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
@@ -536,15 +536,15 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     /**
      * 处理单行数据，构建 CTEvent
      * 性能优化：使用预构建的列名列表和映射，避免重复调用 getColumnName
-     * 
-     * @param rs ResultSet（当前行已定位）
-     * @param tableName 表名
-     * @param tStarStartIndex T.* 列的起始索引
-     * @param tStarEndIndex T.* 列的结束索引
-     * @param columnsToSkip 需要跳过的列索引集合
-     * @param columnIndexToName 列索引到列名的映射（预构建）
-     * @param columnNames 预构建的列名列表（所有行的列名都相同）
-     * @param primaryKeySet 主键集合（使用 Set 提高查找效率）
+     *
+     * @param rs                  ResultSet（当前行已定位）
+     * @param tableName           表名
+     * @param tStarStartIndex     T.* 列的起始索引
+     * @param tStarEndIndex       T.* 列的结束索引
+     * @param columnsToSkip       需要跳过的列索引集合
+     * @param columnIndexToName   列索引到列名的映射（预构建）
+     * @param columnNames         预构建的列名列表（所有行的列名都相同）
+     * @param primaryKeySet       主键集合（使用 Set 提高查找效率）
      * @param primaryKeyToCTIndex 主键列名到 CT 主键列索引的映射
      * @return CTEvent 对象，如果处理失败返回 null
      */
@@ -865,23 +865,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         return ordinalPositions;
     }
 
-    private String calculateSchemaHashFromMetaData(ResultSetMetaData metaData) throws SQLException {
-        StringBuilder hashInput = new StringBuilder();
-        int columnCount = metaData.getColumnCount();
-        for (int i = 1; i <= columnCount; i++) {
-            // 跳过 Change Tracking 系统列（SYS_CHANGE_VERSION, SYS_CHANGE_OPERATION, SYS_CHANGE_COLUMNS）
-            if (i <= 3) continue;
-            hashInput.append(metaData.getColumnName(i))
-                    .append("|").append(metaData.getColumnTypeName(i))
-                    .append("|").append(metaData.getColumnDisplaySize(i))
-                    .append("|").append(metaData.getPrecision(i))
-                    .append("|").append(metaData.getScale(i))
-                    .append("|").append(metaData.isNullable(i))
-                    .append("|");
-        }
-        return DigestUtils.md5Hex(hashInput.toString());
-    }
-
     private List<DDLChange> compareTableSchema(String tableName, MetaInfo oldMetaInfo, MetaInfo newMetaInfo,
                                                List<String> oldPrimaryKeys, List<String> newPrimaryKeys,
                                                Map<String, Integer> oldOrdinalPositions, Map<String, Integer> newOrdinalPositions) {
@@ -965,7 +948,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             Field oldCol = oldColumns.get(newCol.getName());
             if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
                 // 列属性变更
-                String ddl = generateAlterColumnDDL(tableName, oldCol, newCol);
+                String ddl = generateAlterColumnDDL(tableName, newCol);
                 changes.add(new DDLChange(DDLChangeType.ALTER_COLUMN, ddl, newCol.getName()));
             }
         }
@@ -1111,7 +1094,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         return ddl.toString();
     }
 
-    private String generateAlterColumnDDL(String tableName, Field oldCol, Field newCol) {
+    private String generateAlterColumnDDL(String tableName, Field newCol) {
         StringBuilder ddl = new StringBuilder();
         // 生成标准格式的 DDL（不带方括号），与 CDC 方式保持一致，便于 JSQLParser 解析
         if (schema != null && !schema.trim().isEmpty()) {
@@ -1254,6 +1237,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
+        // 输出 SQL 语句用于调试
+        logger.debug("执行查询 SQL: {}", preparedQuerySql);
         Object execute = instance.execute(databaseTemplate -> {
             PreparedStatement ps = null;
             ResultSet rs = null;
@@ -1266,7 +1251,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 rs = ps.executeQuery();
                 apply = mapper.apply(rs);
             } catch (Exception e) {
-                logger.error("查询失败: {}", e.getMessage(), e);
+                logger.error("查询失败，SQL: {}, 错误: {}", preparedQuerySql, e.getMessage(), e);
                 throw e;
             } finally {
                 close(rs);
@@ -1333,7 +1318,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     }
                 }
                 // 非死锁错误或重试次数已用完，直接抛出
-                logger.error("查询失败: {}", e.getMessage(), e);
+                logger.error("查询失败: {}, sql: {}", e.getMessage(), preparedQuerySql, e);
                 throw e;
             } catch (Exception e) {
                 logger.error("查询失败: {}", e.getMessage(), e);
