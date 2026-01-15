@@ -119,7 +119,7 @@ select.form-control.is-invalid,
 .form-switch .switch-track {
   position: relative;
   width: 92px;
-  height: 34px;
+  height: 37px;
   background: linear-gradient(135deg, #f1f5ff 0%, #e6ebf7 100%);
   border: 1px solid rgba(22, 93, 255, 0.12);
   border-radius: 999px;

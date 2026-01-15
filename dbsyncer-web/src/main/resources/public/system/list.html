@@ -105,8 +105,8 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">水印内容</label>
-                    <div class="form-control-area">
+                    <label class="form-label watermark hidden">水印内容</label>
+                    <div class="form-control-area watermark hidden">
                         <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
                 </div>
@@ -124,7 +124,7 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label rsa-config hidden">密钥长度<i class="fa fa-question-circle" title="允许输入的范围[1024-8192]"></i></label>
+                    <label class="form-label rsa-config hidden">密钥长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
                     <div class="form-control-area flex gap-2">
                         <input type="number" class="form-control rsa-config hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
                         <button id="generateRSA" type="button" class="btn btn-outline rsa-config hidden">
@@ -138,7 +138,7 @@
                 <div class="form-item">
                     <label class="form-label">RSA公钥</label>
                     <div class="form-control-area">
-                        <textarea name="rsaPublicKey" class="form-control" readonly maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
+                        <textarea name="rsaPublicKey" class="form-control" disabled maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
                         <button type="button" class="btn btn-outline mt-1">
                             <i class="fa fa-copy"></i> 复制
                         </button>
@@ -148,7 +148,7 @@
                 <div class="form-item">
                     <label class="form-label">RSA私钥</label>
                     <div class="form-control-area">
-                        <textarea name="rsaPrivateKey" class="form-control" readonly maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
+                        <textarea name="rsaPrivateKey" class="form-control" disabled maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
                         <button type="button" class="btn btn-outline mt-1">
                             <i class="fa fa-copy"></i> 复制
                         </button>
@@ -163,9 +163,19 @@
 
 <script>
     $(function () {
-        const watermark = $('input[name="watermark"]');
+        const watermark = $('.watermark');
+        const rsaConfig = $(".rsa-config");
+        const rsaKeyLength = $("input[name='rsaKeyLength']");
+        const rsaPublicKey = $("textarea[name='rsaPublicKey']");
+        const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
+        const generateRSABtn = $("#generateRSA");
+
         function toggleWatermark(checked) {
-            watermark.prop('readonly', !checked);
+            if (checked) {
+                watermark.show();
+            } else {
+                watermark.hide();
+            }
         }
         let switchApi = initSwitch($('#enableWatermark'), toggleWatermark);
         toggleWatermark(switchApi.isChecked());
@@ -174,6 +184,9 @@
         $("#updateSystemBtn").click(function () {
             const $form = $("#config-form-edit");
             if (validateForm($form)) {
+                // 允许修改参数
+                rsaPublicKey.prop('disabled', false);
+                rsaPrivateKey.prop('disabled', false);
                 const submitBtn = $(this);
                 const originalText = submitBtn.html();
                 submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
@@ -188,24 +201,6 @@
                 });
             }
         });
-
-        //生成RSA
-        const rsaConfig = $(".rsa-config");
-        const rsaKeyLength = $("input[name='rsaKeyLength']");
-        const rsaPublicKey = $("textarea[name='rsaPublicKey']");
-        const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
-        const generateRSABtn = $("#generateRSA");
-        function toggleRSAConfig(checked) {
-            rsaKeyLength.prop('disabled', !checked);
-            generateRSABtn.prop('disabled', !checked);
-            if (checked) {
-                rsaConfig.show();
-            } else {
-                rsaConfig.hide();
-            }
-        }
-        let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
-        toggleRSAConfig(enableRsaConfigApi.isChecked());
 
         generateRSABtn.click(function () {
             const btn = $(this);
@@ -222,6 +217,22 @@
                 }
             });
         });
+
+        function toggleRSAConfig(checked) {
+            rsaKeyLength.prop('disabled', !checked);
+            generateRSABtn.prop('disabled', !checked);
+            if (checked) {
+                rsaConfig.show();
+                if (isBlank(rsaPublicKey.val()) && isBlank(rsaPrivateKey.val())) {
+                    generateRSABtn.click();
+                }
+                return;
+            }
+            rsaConfig.hide();
+        }
+        let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
+        toggleRSAConfig(enableRsaConfigApi.isChecked());
+
     })
 </script>
 </html>
