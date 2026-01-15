@@ -487,13 +487,25 @@ function initFilterDropdowns() {
                 $sourceSelect.find('option:not(:first)').remove();
                 $targetSelect.find('option:not(:first)').remove();
 
-                // 添加数据源选项
+                // 按connectorType分组
+                var connectorTypes = {};
                 if (Array.isArray(connectors)) {
                     connectors.forEach(function(connector) {
-                        var option = '<option value="' + connector.id + '">' + connector.name + '</option>';
+                        var connectorType = connector.config && connector.config.connectorType ? connector.config.connectorType : 'default';
+                        if (!connectorTypes[connectorType]) {
+                            connectorTypes[connectorType] = [];
+                        }
+                        connectorTypes[connectorType].push(connector);
+                    });
+                }
+
+                // 添加按connectorType分组的选项
+                for (var type in connectorTypes) {
+                    if (connectorTypes.hasOwnProperty(type)) {
+                        var option = '<option value="' + type + '">' + type + '</option>';
                         $sourceSelect.append(option);
                         $targetSelect.append(option);
-                    });
+                    }
                 }
             }
         },
@@ -511,11 +523,11 @@ function initFilterDropdowns() {
 function performMappingSearch() {
     var keyword = $("#mappingSearchInput").val().trim();
     var state = $("#filterState").val();
-    var sourceConnectorId = $("#filterSource").val();
-    var targetConnectorId = $("#filterTarget").val();
+    var sourceConnectorType = $("#filterSource").val();
+    var targetConnectorType = $("#filterTarget").val();
     
     // 如果所有筛选条件都为空，显示所有任务并返回
-    if (keyword === '' && state === '' && sourceConnectorId === '' && targetConnectorId === '') {
+    if (keyword === '' && state === '' && sourceConnectorType === '' && targetConnectorType === '') {
         var isCardView = $('#cardView').is(':visible');
         if (isCardView) {
             // 卡片视图：显示所有卡片的外层容器
@@ -538,8 +550,8 @@ function performMappingSearch() {
             keyword: keyword,
             projectGroupId: projectGroupId,
             state: state,
-            sourceConnectorId: sourceConnectorId,
-            targetConnectorId: targetConnectorId
+            sourceConnectorType: sourceConnectorType,
+            targetConnectorType: targetConnectorType
         },
         success: function (data) {
             if (data.success && data.status === 200) {

@@ -177,27 +177,47 @@
     display: flex;
     flex-direction: column;
     background-color: #fff;
+    overflow: hidden;
 }
 
 /* 右侧内容容器 - 使用flex布局分割上下两部分 */
 .connector-detail {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
-/* 上半部分 - 数据源详情 (40%高度) */
-.detail-section {
     height: 60%;
+    min-height: 200px;
     padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
     overflow-y: auto;
 }
 
-/* 下半部分 - 关联驱动列表 (60%高度) */
+/* 可拖拽分割线 */
+.resizer {
+    height: 6px;
+    background-color: #e0e0e0;
+    cursor: ns-resize;
+    position: relative;
+    transition: background-color 0.3s ease;
+    z-index: 10;
+}
+
+.resizer:hover {
+    background-color: #4CAF50;
+}
+
+.resizer::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 2px;
+}
+
+/* 下半部分 - 关联驱动列表 */
 .drivers-section {
     height: 40%;
+    min-height: 200px;
     padding: 20px;
     overflow-y: auto;
 }
@@ -355,6 +375,69 @@
     padding: 40px 20px;
     color: #999;
     font-size: 16px;
+}
+
+/* 数据源详情信息样式 */
+.connector-details-info {
+    padding: 10px 0;
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: nowrap;
+}
+
+.detail-label {
+    width: 120px;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    flex: 1;
+    color: #666;
+    word-break: break-all;
+    min-width: 0;
+}
+
+/* 任务列表表格样式 */
+.drivers-section .table {
+    margin-bottom: 0;
+}
+
+.drivers-section .table-responsive {
+    overflow-x: auto;
+}
+
+.drivers-section .operation-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.drivers-section .margin-right-5 {
+    margin-right: 5px;
+}
+
+/* 状态标签样式 */
+.well-sign-green {
+    color: #5cb85c;
+    font-size: 10px;
+}
+
+.well-sign-red {
+    color: #d9534f;
+    font-size: 10px;
+}
+
+.mapping-error-sign {
+    color: #f0ad4e;
+    margin-left: 5px;
+    cursor: help;
 }
 
 /* 按钮样式 - 限定在数据源页面容器内 */

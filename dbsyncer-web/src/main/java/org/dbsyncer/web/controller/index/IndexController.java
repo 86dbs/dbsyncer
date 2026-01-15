@@ -96,13 +96,13 @@ public class IndexController {
      * @param keyword 搜索关键词
      * @param projectGroupId 项目组ID
      * @param state 任务状态
-     * @param sourceConnectorId 数据源ID
-     * @param targetConnectorId 目标源ID
+     * @param sourceConnectorType 数据源类型
+     * @param targetConnectorType 目标源类型
      * @return 匹配的驱动列表
      */
     @GetMapping("/searchMapping")
     @ResponseBody
-    public RestResult searchMapping(String keyword, String projectGroupId, String state, String sourceConnectorId, String targetConnectorId) {
+    public RestResult searchMapping(String keyword, String projectGroupId, String state, String sourceConnectorType, String targetConnectorType) {
         try {
             ProjectGroupVo projectGroup = new ProjectGroupVo();
             if ("".equals(projectGroupId)) {
@@ -121,11 +121,13 @@ public class IndexController {
                 boolean matchState = state == null || state.trim().isEmpty() ||
                         (mapping.getMeta() != null && String.valueOf(mapping.getMeta().getState()).equals(state));
                 
-                boolean matchSource = sourceConnectorId == null || sourceConnectorId.trim().isEmpty() ||
-                        (mapping.getSourceConnector() != null && mapping.getSourceConnector().getId().equals(sourceConnectorId));
+                boolean matchSource = sourceConnectorType == null || sourceConnectorType.trim().isEmpty() ||
+                        (mapping.getSourceConnector() != null && mapping.getSourceConnector().getConfig() != null && 
+                         sourceConnectorType.equals(mapping.getSourceConnector().getConfig().getConnectorType()));
                 
-                boolean matchTarget = targetConnectorId == null || targetConnectorId.trim().isEmpty() ||
-                        (mapping.getTargetConnector() != null && mapping.getTargetConnector().getId().equals(targetConnectorId));
+                boolean matchTarget = targetConnectorType == null || targetConnectorType.trim().isEmpty() ||
+                        (mapping.getTargetConnector() != null && mapping.getTargetConnector().getConfig() != null && 
+                         targetConnectorType.equals(mapping.getTargetConnector().getConfig().getConnectorType()));
 
                 if (matchKeyword && matchState && matchSource && matchTarget) {
                     MappingJsonVo mappingJsonVo = new MappingJsonVo();

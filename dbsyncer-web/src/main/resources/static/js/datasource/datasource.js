@@ -220,37 +220,36 @@ function renderConnectorDetail(connector) {
     //detailHtml += '<div class="detail-section">';
     detailHtml += '    <div class="connector-detail-header">';
     detailHtml += '        <h3>数据源详情</h3>';
-    detailHtml += '        <button id="save-connector-detail" class="btn btn-primary">保存</button>';
     detailHtml += '    </div>';
     detailHtml += '    <div class="connector-detail-content">';
     
     // 数据源基本信息表单
-    detailHtml += '    <form id="connector-form">';
+    detailHtml += '    <div class="connector-details-info">';
     detailHtml += '        <input type="hidden" id="connector-id" value="' + connector.id + '">';
     
-    detailHtml += '        <div class="form-group">';
-    detailHtml += '            <label for="connector-name">数据源名称</label>';
-    detailHtml += '            <input type="text" id="connector-name" class="form-control" value="' + escapeHtml(connector.name) + '">';
+    detailHtml += '        <div class="detail-row">';
+    detailHtml += '            <span class="detail-label">数据源名称</span>';
+    detailHtml += '            <span class="detail-value">' + escapeHtml(connector.name) + '</span>';
     detailHtml += '        </div>';
     
-    detailHtml += '        <div class="form-group">';
-    detailHtml += '            <label for="connector-type">数据源类型</label>';
-    detailHtml += '            <div id="connector-type" class="form-control" style="background-color: #f8f9fa; cursor: default;">' + escapeHtml(connector.type) + '</div>';
+    detailHtml += '        <div class="detail-row">';
+    detailHtml += '            <span class="detail-label">数据源类型</span>';
+    detailHtml += '            <span class="detail-value">' + escapeHtml(connector.type) + '</span>';
     detailHtml += '        </div>';
     
     // 渲染数据源配置参数
     if (connector.config && typeof connector.config === 'object') {
         for (var key in connector.config) {
             if (connector.config.hasOwnProperty(key)) {
-                detailHtml += '        <div class="form-group">';
-                detailHtml += '            <label for="config-' + key + '">' + getConfigLabel(key) + '</label>';
-                detailHtml += '            <input type="text" id="config-' + key + '" class="form-control" value="' + escapeHtml(connector.config[key]) + '">';
+                detailHtml += '        <div class="detail-row">';
+                detailHtml += '            <span class="detail-label">' + getConfigLabel(key) + '</span>';
+                detailHtml += '            <span class="detail-value">' + escapeHtml(connector.config[key]) + '</span>';
                 detailHtml += '        </div>';
             }
         }
     }
     
-    detailHtml += '    </form>';
+    detailHtml += '    </div>';
     detailHtml += '    </div>';
     //detailHtml += '</div>';
     
@@ -267,10 +266,7 @@ function renderConnectorDetail(connector) {
     
     $connectorDetail.html(detailHtml);
     
-    // 绑定保存按钮事件
-    $('#save-connector-detail').click(function() {
-        saveConnectorDetail();
-    });
+    // 移除保存按钮事件绑定（因为按钮已移除）
     
     // 加载关联的驱动列表
     loadRelatedDrivers(connector.id);
@@ -290,12 +286,12 @@ function loadRelatedDrivers(connectorId) {
                 renderRelatedDrivers(data.resultValue);
             } else {
                 var errorMsg = typeof data.resultValue === 'string' ? data.resultValue : JSON.stringify(data.resultValue);
-                $('#drivers-list').html('<div class="no-drivers">加载关联驱动失败：' + errorMsg + '</div>');
+                $('#drivers-list').html('<div class="no-drivers">加载关联任务失败：' + errorMsg + '</div>');
                 $('.drivers-count').text('加载失败');
             }
         },
         error: function() {
-            $('#drivers-list').html('<div class="no-drivers">加载关联驱动失败</div>');
+            $('#drivers-list').html('<div class="no-drivers">加载关联任务失败</div>');
             $('.drivers-count').text('加载失败');
         }
     });
@@ -310,45 +306,136 @@ function renderRelatedDrivers(drivers) {
     $driverList.empty();
     
     // 更新驱动数量
-    $('.drivers-count').text('共 ' + (drivers ? drivers.length : 0) + ' 个驱动');
+    $('.drivers-count').text('共 ' + (drivers ? drivers.length : 0) + ' 个任务');
     
     if (!drivers || drivers.length === 0) {
-        $driverList.append('<div class="no-drivers">暂无关联驱动</div>');
+        $driverList.append('<div class="no-drivers">暂无关联任务</div>');
         return;
     }
     
+    // 创建表格结构
+    var tableHtml = '';
+    tableHtml += '<div class="table-responsive">';
+    tableHtml += '    <table class="table table-hover table-striped">';
+    tableHtml += '        <thead>';
+    tableHtml += '            <tr>';
+    tableHtml += '                <th>名称</th>';
+    tableHtml += '                <th>运行状态</th>';
+    tableHtml += '                <th>起始源</th>';
+    tableHtml += '                <th>目标源</th>';
+    tableHtml += '                <th>同步类型</th>';
+    tableHtml += '                <th>操作</th>';
+    tableHtml += '                <th>创建时间</th>';
+    tableHtml += '            </tr>';
+    tableHtml += '        </thead>';
+    tableHtml += '        <tbody>';
+    
     drivers.forEach(function(driver) {
-        var driverHtml = '';
-        driverHtml += '<div class="driver-item" data-id="' + driver.id + '" onclick="viewDriverDetail(this)">';
-        driverHtml += '    <div class="driver-icon">';
-        driverHtml += '        <i class="fa fa-exchange"></i>';
-        driverHtml += '    </div>';
-        driverHtml += '    <div class="driver-info">';
-        driverHtml += '        <div class="driver-name">' + escapeHtml(driver.name) + '</div>';
-        driverHtml += '        <div class="driver-status">';
-        
-        // 根据驱动类型显示不同状态
+        // 处理同步类型显示
+        var syncType = '';
         if (driver.model === 'full') {
-            driverHtml += '全量同步';
+            syncType = '全量';
         } else if (driver.model === 'increment') {
-            driverHtml += '增量同步';
+            syncType = '增量';
         } else if (driver.model === 'fullIncrement') {
-            driverHtml += '全量+增量同步';
+            syncType = '混合';
         } else {
-            driverHtml += '未知类型';
+            syncType = '未知';
         }
         
-        // 如果有状态信息，显示状态
-        if (driver.status) {
-            driverHtml += ' · ' + escapeHtml(driver.status);
+        // 处理状态显示
+        var stateHtml = '';
+        var state = driver.meta ? driver.meta.state : 0;
+        if (state === 0) {
+            stateHtml = '<span class="label label-info">未运行</span>';
+        } else if (state === 1) {
+            stateHtml = '<span class="label label-success">运行中</span>';
+        } else if (state === 2) {
+            stateHtml = '<span class="label label-warning">停止中</span>';
+        } else if (state === 3) {
+            stateHtml = '<span class="label label-danger">异常</span>';
+            if (driver.meta && driver.meta.errorMessage) {
+                stateHtml += '<span title="' + escapeHtml(driver.meta.errorMessage) + '" class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
+            }
         }
         
-        driverHtml += '    </div>';
-        driverHtml += '    </div>';
-        driverHtml += '</div>';
+        // 处理起始源显示
+        var sourceHtml = '';
+        if (driver.sourceConnector) {
+            var sourceType = driver.sourceConnector.config && driver.sourceConnector.config.connectorType ? driver.sourceConnector.config.connectorType : 'default';
+            var sourceImg = '/img/datasource/' + sourceType + '.png';
+            sourceHtml = '<div style="display: flex; align-items: center;">';
+            sourceHtml += '<img draggable="false" src="' + sourceImg + '" style="width: 20px; height: 20px; margin-right: 5px;" />';
+            // 修复：移除数据源名称中的转义字符
+            var sourceName = driver.sourceConnector.name ? driver.sourceConnector.name.replace(/["\\]/g, '') : '';
+            sourceHtml += '<span>' + escapeHtml(sourceName) + '</span>';
+            sourceHtml += '<span style="margin-left: 5px;">';
+            sourceHtml += driver.sourceConnector.running ? '<i class="fa fa-circle well-sign-green"></i>' : '<i class="fa fa-times-circle-o well-sign-red"></i>';
+            sourceHtml += '</span>';
+            sourceHtml += '</div>';
+        } else {
+            sourceHtml = '-';
+        }
         
-        $driverList.append(driverHtml);
+        // 处理目标源显示
+        var targetHtml = '';
+        if (driver.targetConnector) {
+            var targetType = driver.targetConnector.config && driver.targetConnector.config.connectorType ? driver.targetConnector.config.connectorType : 'default';
+            var targetImg = '/img/datasource/' + targetType + '.png';
+            targetHtml = '<div style="display: flex; align-items: center;">';
+            targetHtml += '<img draggable="false" src="' + targetImg + '" style="width: 20px; height: 20px; margin-right: 5px;" />';
+            // 修复：移除数据源名称中的转义字符
+            var targetName = driver.targetConnector.name ? driver.targetConnector.name.replace(/["\\]/g, '') : '';
+            targetHtml += '<span>' + escapeHtml(targetName) + '</span>';
+            targetHtml += '<span style="margin-left: 5px;">';
+            targetHtml += driver.targetConnector.running ? '<i class="fa fa-circle well-sign-green"></i>' : '<i class="fa fa-times-circle-o well-sign-red"></i>';
+            targetHtml += '</span>';
+            targetHtml += '</div>';
+        } else {
+            targetHtml = '-';
+        }
+        
+        // 处理操作按钮
+        var operationHtml = '';
+        operationHtml += '<div class="operation-buttons">';
+        // 只保留详情按钮，并使用内联样式精确控制大小
+        operationHtml += '<a data-url="/mapping/page/edit?classOn=0&id=' + driver.id + '" href="javascript:;" class="btn btn-success" style="padding: 1px 6px; font-size: 10px; height: 20px; line-height: 14px;"><i class="fa fa-eye"></i> 详情</a>';
+        operationHtml += '</div>';
+        
+        // 处理创建时间
+        var timeHtml = '';
+        if (driver.updateTime) {
+            var date = new Date(driver.updateTime);
+            timeHtml = date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                String(date.getDate()).padStart(2, '0') + ' ' +
+                String(date.getHours()).padStart(2, '0') + ':' +
+                String(date.getMinutes()).padStart(2, '0') + ':' +
+                String(date.getSeconds()).padStart(2, '0');
+        } else {
+            timeHtml = '-';
+        }
+        
+        // 添加表格行
+        tableHtml += '<tr id="' + driver.id + '">';
+        tableHtml += '<td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + escapeHtml(driver.name) + '">' + escapeHtml(driver.name) + '</td>';
+        tableHtml += '<td>' + stateHtml + '</td>';
+        tableHtml += '<td>' + sourceHtml + '</td>';
+        tableHtml += '<td>' + targetHtml + '</td>';
+        tableHtml += '<td>' + syncType + '</td>';
+        tableHtml += '<td>' + operationHtml + '</td>';
+        tableHtml += '<td>' + timeHtml + '</td>';
+        tableHtml += '</tr>';
     });
+    
+    tableHtml += '        </tbody>';
+    tableHtml += '    </table>';
+    tableHtml += '</div>';
+    
+    $driverList.html(tableHtml);
+    
+    // 绑定操作按钮事件
+    bindMappingOperationButtons();
 }
 
 /**
@@ -378,6 +465,114 @@ function getConfigLabel(key) {
     };
     return labels[key] || key;
 }
+
+/**
+ * 初始化可拖拽分割线
+ */
+function initResizer() {
+    const resizer = document.getElementById('resizer');
+    const detailSection = document.getElementById('connector-detail');
+    const driversSection = document.getElementById('related-drivers');
+    const rightPanel = document.querySelector('.right-panel');
+    
+    let isResizing = false;
+    
+    // 确保分割线始终可见
+    if (resizer) {
+        resizer.style.position = 'relative';
+        resizer.style.zIndex = '10';
+        resizer.style.height = '6px';
+        resizer.style.backgroundColor = '#e0e0e0';
+        resizer.style.cursor = 'ns-resize';
+        
+        // 鼠标按下事件
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isResizing = true;
+            document.body.style.cursor = 'ns-resize';
+            
+            // 记录初始位置
+            const startY = e.clientY;
+            const startDetailHeight = detailSection.offsetHeight;
+            const rightPanelHeight = rightPanel.offsetHeight;
+            
+            // 鼠标移动事件
+            function handleMouseMove(e) {
+                e.preventDefault();
+                if (!isResizing) return;
+                
+                // 计算高度变化
+                const deltaY = e.clientY - startY;
+                const newDetailHeight = startDetailHeight + deltaY;
+                
+                // 计算百分比
+                const detailPercent = (newDetailHeight / rightPanelHeight) * 100;
+                
+                // 限制最小高度为20%
+                if (detailPercent >= 20 && detailPercent <= 80) {
+                    detailSection.style.height = `${detailPercent}%`;
+                    driversSection.style.height = `${100 - detailPercent}%`;
+                }
+            }
+            
+            // 鼠标释放事件
+            function handleMouseUp() {
+                isResizing = false;
+                document.body.style.cursor = '';
+                
+                // 移除事件监听器
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
+            
+            // 添加事件监听器
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+        
+        // 触摸设备支持
+        resizer.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isResizing = true;
+            document.body.style.cursor = 'ns-resize';
+            
+            const startY = e.touches[0].clientY;
+            const startDetailHeight = detailSection.offsetHeight;
+            const rightPanelHeight = rightPanel.offsetHeight;
+            
+            function handleTouchMove(e) {
+                e.preventDefault();
+                if (!isResizing) return;
+                
+                const deltaY = e.touches[0].clientY - startY;
+                const newDetailHeight = startDetailHeight + deltaY;
+                const detailPercent = (newDetailHeight / rightPanelHeight) * 100;
+                
+                if (detailPercent >= 20 && detailPercent <= 80) {
+                    detailSection.style.height = `${detailPercent}%`;
+                    driversSection.style.height = `${100 - detailPercent}%`;
+                }
+            }
+            
+            function handleTouchEnd() {
+                isResizing = false;
+                document.body.style.cursor = '';
+                
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+            }
+            
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleTouchEnd);
+        });
+    }
+}
+
+// 页面加载完成后初始化
+$(document).ready(function() {
+    // 确保DOM元素已完全加载
+    setTimeout(initResizer, 100);
+});
 
 /**
  * 保存数据源详情
@@ -528,4 +723,53 @@ function showSuccess(message) {
  */
 function showError(message) {
     alert(message || '操作失败');
+}
+
+/**
+ * 给任务操作按钮绑定事件
+ */
+function bindMappingOperationButtons() {
+    // 绑定所有操作按钮的点击事件
+    $('.operation-buttons a').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 优先从data-url获取URL
+        var url = $(this).data('url') || $(this).attr("href");
+        // 移除javascript:;前缀
+        url = url ? url.replace('javascript:;', '') : '';
+
+        if (url) {
+            // 详情按钮直接跳转到页面
+            doLoader(url);
+        }
+    });
+}
+
+/**
+ * 执行POST请求
+ * @param url 请求URL
+ */
+function doPost(url) {
+    $.ajax({
+        url: url,
+        type: 'GET',
+        success: function(data) {
+            if (data.success === true) {
+                // 显示成功消息
+                showSuccess(data.resultValue);
+                // 重新加载当前数据源的关联任务
+                var connectorId = $('#connector-id').val();
+                if (connectorId) {
+                    loadRelatedDrivers(connectorId);
+                }
+            } else {
+                // 显示错误消息
+                showError(data.resultValue);
+            }
+        },
+        error: function() {
+            showError('操作失败');
+        }
+    });
 }
