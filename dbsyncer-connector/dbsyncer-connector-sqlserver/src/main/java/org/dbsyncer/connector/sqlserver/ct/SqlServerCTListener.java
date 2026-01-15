@@ -375,79 +375,37 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 columnsToSkip.add(schemaInfoColumnIndex);
             }
 
+            // 性能优化：预先构建列名列表和列索引映射（列名对所有行都相同，避免重复调用 getColumnName）
+            List<String> columnNames = new ArrayList<>();
+            Map<Integer, String> columnIndexToName = new HashMap<>();
+            Set<String> primaryKeySet = new HashSet<>(primaryKeys);  // 使用 Set 提高查找效率
+            for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
+                if (columnsToSkip.contains(i)) {
+                    continue;
+                }
+                String columnName = metaData.getColumnName(i);
+                columnNames.add(columnName);
+                columnIndexToName.put(i, columnName);
+            }
+
             List<CTEvent> dmlEvents = new ArrayList<>();
 
             // 如果第一行已经读取（用于 DDL 检测），需要处理这一行的 DML 数据
             if (hasData) {
-                // 第一行已经通过 rs.next() 读取，现在处理这一行的 DML 数据
-                Long version = rs.getLong(1);
-                String operation = rs.getString(2);  // 'I', 'U', 'D'
-                // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
-
-                // 构建行数据和列名列表
-                List<Object> row = new ArrayList<>();
-                List<String> columnNames = new ArrayList<>();
-                for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
-                    if (columnsToSkip.contains(i)) {
-                        continue;
-                    }
-
-                    Object value = rs.getObject(i);
-
-                    // 如果是主键列且值为 NULL（DELETE 情况），使用冗余的 CT_[pk] 值
-                    // CT 主键列在固定位置（4 到 4+PK-1），可以直接通过映射获取索引
-                    String columnName = metaData.getColumnName(i);
-                    if (primaryKeys.contains(columnName) && value == null) {
-                        Integer ctPkIndex = primaryKeyToCTIndex.get(columnName);
-                        if (ctPkIndex != null) {
-                            value = rs.getObject(ctPkIndex);
-                        }
-                    }
-
-                    row.add(value);
-                    columnNames.add(columnName);
+                CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
+                        columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
+                if (event != null) {
+                    dmlEvents.add(event);
                 }
-
-                // 转换操作类型
-                String operationCode = convertOperation(operation);
-
-                dmlEvents.add(new CTEvent(tableName, operationCode, row, version, columnNames));
             }
 
             // 继续处理后续行
             while (rs.next()) {
-                Long version = rs.getLong(1);
-                String operation = rs.getString(2);  // 'I', 'U', 'D'
-                // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
-
-                // 构建行数据和列名列表
-                List<Object> row = new ArrayList<>();
-                List<String> columnNames = new ArrayList<>();
-                for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
-                    if (columnsToSkip.contains(i)) {
-                        continue;
-                    }
-
-                    Object value = rs.getObject(i);
-
-                    // 如果是主键列且值为 NULL（DELETE 情况），使用冗余的 CT_[pk] 值
-                    // CT 主键列在固定位置（4 到 4+PK-1），可以直接通过映射获取索引
-                    String columnName = metaData.getColumnName(i);
-                    if (primaryKeys.contains(columnName) && value == null) {
-                        Integer ctPkIndex = primaryKeyToCTIndex.get(columnName);
-                        if (ctPkIndex != null) {
-                            value = rs.getObject(ctPkIndex);
-                        }
-                    }
-
-                    row.add(value);
-                    columnNames.add(columnName);
+                CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
+                        columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
+                if (event != null) {
+                    dmlEvents.add(event);
                 }
-
-                // 转换操作类型
-                String operationCode = convertOperation(operation);
-
-                dmlEvents.add(new CTEvent(tableName, operationCode, row, version, columnNames));
             }
             return dmlEvents;
         });
@@ -574,6 +532,62 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     // ==================== 辅助方法 ====================
 
+
+    /**
+     * 处理单行数据，构建 CTEvent
+     * 性能优化：使用预构建的列名列表和映射，避免重复调用 getColumnName
+     * 
+     * @param rs ResultSet（当前行已定位）
+     * @param tableName 表名
+     * @param tStarStartIndex T.* 列的起始索引
+     * @param tStarEndIndex T.* 列的结束索引
+     * @param columnsToSkip 需要跳过的列索引集合
+     * @param columnIndexToName 列索引到列名的映射（预构建）
+     * @param columnNames 预构建的列名列表（所有行的列名都相同）
+     * @param primaryKeySet 主键集合（使用 Set 提高查找效率）
+     * @param primaryKeyToCTIndex 主键列名到 CT 主键列索引的映射
+     * @return CTEvent 对象，如果处理失败返回 null
+     */
+    private CTEvent processRow(ResultSet rs, String tableName, int tStarStartIndex, int tStarEndIndex,
+                               Set<Integer> columnsToSkip, Map<Integer, String> columnIndexToName,
+                               List<String> columnNames, Set<String> primaryKeySet, Map<String, Integer> primaryKeyToCTIndex) {
+        try {
+            Long version = rs.getLong(1);
+            String operation = rs.getString(2);  // 'I', 'U', 'D'
+            // 跳过 SYS_CHANGE_COLUMNS（第 3 列），不使用
+
+            // 构建行数据（列名列表已预构建，直接使用）
+            List<Object> row = new ArrayList<>();
+            for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
+                if (columnsToSkip.contains(i)) {
+                    continue;
+                }
+
+                Object value = rs.getObject(i);
+                String columnName = columnIndexToName.get(i);
+
+                // 如果是主键列且值为 NULL（DELETE 情况），使用冗余的 CT_[pk] 值
+                // CT 主键列在固定位置（4 到 4+PK-1），可以直接通过映射获取索引
+                if (primaryKeySet.contains(columnName) && value == null) {
+                    Integer ctPkIndex = primaryKeyToCTIndex.get(columnName);
+                    if (ctPkIndex != null) {
+                        value = rs.getObject(ctPkIndex);
+                    }
+                }
+
+                row.add(value);
+            }
+
+            // 转换操作类型
+            String operationCode = convertOperation(operation);
+
+            // 使用预构建的列名列表（所有行的列名都相同）
+            return new CTEvent(tableName, operationCode, row, version, columnNames);
+        } catch (SQLException e) {
+            logger.error("处理行数据失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
 
     private String convertOperation(String operation) {
         if ("I".equals(operation)) {

@@ -669,7 +669,7 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
                         "    %s, " +  // 显式的列列表
                         "    SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
                         "FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
-                        "LEFT JOIN %s AS T ON %s " +
+                        "LEFT JOIN %s WITH (NOLOCK) AS T ON %s " +
                         "CROSS APPLY %s AS SI " +  // 使用 CROSS APPLY，子查询只执行一次
                         "WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ? " +
                         "ORDER BY CT.SYS_CHANGE_VERSION ASC",
