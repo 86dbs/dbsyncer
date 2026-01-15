@@ -52,7 +52,7 @@ public class SystemConfigChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("params:{}", params);
+        printParams(params);
         Assert.notEmpty(params, "Config check params is null.");
         Map<String, Object> newParams = new HashMap<>();
         newParams.putAll(params);

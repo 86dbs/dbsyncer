@@ -71,18 +71,6 @@ public enum ConvertEnum {
      */
     APPEND("APPEND", "后面追加", 1, new AppendHandler()),
     /**
-     * AES加密
-     */
-    AES_ENCRYPT("AES_ENCRYPT", "AES加密", 1, new AesEncryptHandler()),
-    /**
-     * AES解密
-     */
-    AES_DECRYPT("AES_DECRYPT", "AES解密", 1, new AesDecryptHandler()),
-    /**
-     * SHA1加密
-     */
-    SHA1("SHA1", "SHA1加密", 0, new Sha1Handler()),
-    /**
      * UUID
      */
     UUID("UUID", "UUID", 0, new UUIDHandler()),
