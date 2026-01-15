@@ -9,7 +9,9 @@ import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.config.AppConfig;
+import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
@@ -129,5 +131,11 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public String getWatermark(SystemConfig systemConfig) {
         return StringUtil.isNotBlank(systemConfig.getWatermark()) ? systemConfig.getWatermark() : appConfig.getName() + "-${username}<br />" + appConfig.getCompany();
+    }
+
+    @Override
+    public RSAConfig createRSAConfig(int keyLength) {
+        Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
+        return RSAUtil.createKeys(keyLength);
     }
 }

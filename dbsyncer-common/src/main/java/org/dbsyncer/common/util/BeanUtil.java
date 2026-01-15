@@ -18,6 +18,9 @@ public abstract class BeanUtil {
 
                 String setMethod = "set" + property.substring(0, 1).toUpperCase() + property.substring(1);
                 Field field = getField(property, clazz);
+                if (field == null) {
+                    continue;
+                }
                 Class<?> fType = field.getType();
                 Object newValue = convert(value, fType);
                 clazz.getMethod(setMethod, fType).invoke(instance, newValue);

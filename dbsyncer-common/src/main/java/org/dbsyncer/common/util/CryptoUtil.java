@@ -4,17 +4,16 @@ import com.alibaba.fastjson2.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CryptoUtil {
 
@@ -218,10 +217,4 @@ public class CryptoUtil {
         }
     }
 
-    /**
-     * 生成RSA密钥对
-     */
-    public static Map<String, String> generateRSAKeyPair() {
-        return RSAUtil.createKeys(2048);
-    }
 }

@@ -2,7 +2,9 @@ package org.dbsyncer.common.util;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.model.RSAConfig;
 
+import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -14,17 +16,13 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.crypto.Cipher;
 
 public class RSAUtil {
     public static final String CHARSET = "UTF-8";
 
     public static final String RSA_ALGORITHM = "RSA";
 
-    public static Map<String, String> createKeys(int keySize) {
+    public static RSAConfig createKeys(int keySize) {
         //为RSA算法创建一个KeyPairGenerator对象
         KeyPairGenerator kpg;
         try {
@@ -43,10 +41,11 @@ public class RSAUtil {
         //得到私钥
         Key privateKey = keyPair.getPrivate();
         String privateKeyStr = Base64.encodeBase64URLSafeString(privateKey.getEncoded());
-        Map<String, String> keyPairMap = new HashMap<>();
-        keyPairMap.put("publicKey", publicKeyStr);
-        keyPairMap.put("privateKey", privateKeyStr);
-        return keyPairMap;
+        RSAConfig rsaConfig = new RSAConfig();
+        rsaConfig.setKeyLength(keySize);
+        rsaConfig.setPublicKey(publicKeyStr);
+        rsaConfig.setPrivateKey(privateKeyStr);
+        return rsaConfig;
     }
 
     /**

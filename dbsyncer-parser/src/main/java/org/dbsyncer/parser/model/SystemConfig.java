@@ -1,9 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
@@ -68,6 +68,16 @@ public class SystemConfig extends ConfigModel {
      * 是否打印trace信息（false-关闭; true-开启）
      */
     private boolean enablePrintTraceInfo;
+
+    /**
+     * 是否开启RSA配置
+     */
+    private boolean enableRsaConfig;
+
+    /**
+     * RSA配置
+     */
+    private RSAConfig rsaConfig;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -147,5 +157,21 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnablePrintTraceInfo(boolean enablePrintTraceInfo) {
         this.enablePrintTraceInfo = enablePrintTraceInfo;
+    }
+
+    public boolean isEnableRsaConfig() {
+        return enableRsaConfig;
+    }
+
+    public void setEnableRsaConfig(boolean enableRsaConfig) {
+        this.enableRsaConfig = enableRsaConfig;
+    }
+
+    public RSAConfig getRsaConfig() {
+        return rsaConfig;
+    }
+
+    public void setRsaConfig(RSAConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
     }
 }

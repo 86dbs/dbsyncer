@@ -10,7 +10,7 @@
         <form id="config-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
-                <button id="updateSystemBtn" class="btn btn-primary">
+                <button id="updateSystemBtn" type="button" class="btn btn-primary">
                     <span class="fa fa-save"></span> 保存
                 </button>
             </div>
@@ -79,6 +79,19 @@
                     </div>
                 </div>
                 <div class="form-item">
+                    <label class="form-label">打印trace信息<i class="fa fa-question-circle" title="仅用于排查问题，生产环境建议关闭"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
                     <label class="form-label">水印<i class="fa fa-question-circle" title="刷新页面生效"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
@@ -98,10 +111,10 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">打印trace信息<i class="fa fa-question-circle" title="仅用于排查问题，生产环境建议关闭"></i></label>
-                    <div class="form-control-area">
+                    <label class="form-label">开放api<i class="fa fa-question-circle" title="外部业务系统可凭此配置生成token，直接调用DBSyncer的管理接口，也可以同步数据。"></i></label>
+                    <div class="form-control-area flex gap-2">
                         <label class="form-switch">
-                            <input name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
+                            <input name="enableRsaConfig" th:checked="${config?.enableRsaConfig}" type="checkbox" />
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -110,8 +123,41 @@
                         </label>
                     </div>
                 </div>
+                <div class="form-item">
+                    <label class="form-label rsa-config hidden">密钥长度<i class="fa fa-question-circle" title="允许输入的范围[1024-8192]"></i></label>
+                    <div class="form-control-area flex gap-2">
+                        <input type="number" class="form-control rsa-config hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
+                        <button id="generateRSA" type="button" class="btn btn-outline rsa-config hidden">
+                            <span class="fa fa-refresh"></span> 生成RSA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid mt-4 rsa-config hidden">
+                <div class="form-item">
+                    <label class="form-label">RSA公钥</label>
+                    <div class="form-control-area">
+                        <textarea name="rsaPublicKey" class="form-control" readonly maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
+                        <button type="button" class="btn btn-outline mt-1">
+                            <i class="fa fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-item">
+                    <label class="form-label">RSA私钥</label>
+                    <div class="form-control-area">
+                        <textarea name="rsaPrivateKey" class="form-control" readonly maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
+                        <button type="button" class="btn btn-outline mt-1">
+                            <i class="fa fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
+        <div class="blank-block-md"></div>
+
     </div>
 </div>
 
@@ -141,6 +187,40 @@
                     }
                 });
             }
+        });
+
+        //生成RSA
+        const rsaConfig = $(".rsa-config");
+        const rsaKeyLength = $("input[name='rsaKeyLength']");
+        const rsaPublicKey = $("textarea[name='rsaPublicKey']");
+        const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
+        const generateRSABtn = $("#generateRSA");
+        function toggleRSAConfig(checked) {
+            rsaKeyLength.prop('disabled', !checked);
+            generateRSABtn.prop('disabled', !checked);
+            if (checked) {
+                rsaConfig.show();
+            } else {
+                rsaConfig.hide();
+            }
+        }
+        let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
+        toggleRSAConfig(enableRsaConfigApi.isChecked());
+
+        generateRSABtn.click(function () {
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<i class="fa fa-spinner fa-spin"></i> 生成中...').prop('disabled', true);
+            doPoster('/system/generateRSA', {'keyLength' : rsaKeyLength.val()}, function (response) {
+                btn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    rsaPublicKey.text(response.data.publicKey);
+                    rsaPrivateKey.text(response.data.privateKey);
+                    bootGrowl("生成成功!", "success");
+                } else {
+                    bootGrowl(response.message, "danger");
+                }
+            });
         });
     })
 </script>
