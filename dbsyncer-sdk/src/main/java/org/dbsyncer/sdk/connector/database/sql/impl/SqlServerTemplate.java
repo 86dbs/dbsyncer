@@ -546,15 +546,22 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
         String escapedTableName = tableName.replace("'", "''");
         
+        // 优化：使用 CROSS APPLY 替代相关子查询，避免对每一行主键记录都执行一次子查询
+        // CROSS APPLY 会让 SQL Server 优化器识别出列数查询结果对所有行都相同，从而只执行一次
+        // 注意：CROSS APPLY 从 SQL Server 2005 开始支持，SQL Server 2008 R2 完全支持
         return "SELECT " +
                 "    kcu.COLUMN_NAME, " +
-                "    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) c " +
-                "     WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?) AS COLUMN_COUNT " +
+                "    cc.COLUMN_COUNT " +
                 "FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WITH (NOLOCK) tc " +
                 "INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE WITH (NOLOCK) kcu " +
                 "    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME " +
                 "    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA " +
                 "    AND tc.TABLE_NAME = kcu.TABLE_NAME " +
+                "CROSS APPLY (" +
+                "    SELECT COUNT(*) AS COLUMN_COUNT " +
+                "    FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) c " +
+                "    WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?" +
+                ") AS cc " +
                 String.format("WHERE tc.TABLE_SCHEMA = '%s' AND tc.TABLE_NAME = '%s' ", escapedSchema, escapedTableName) +
                 "    AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY' " +
                 "ORDER BY kcu.ORDINAL_POSITION";
