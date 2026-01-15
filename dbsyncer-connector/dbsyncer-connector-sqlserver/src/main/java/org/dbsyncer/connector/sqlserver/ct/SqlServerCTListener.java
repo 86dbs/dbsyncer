@@ -626,11 +626,11 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private TableMetaInfo getPrimaryKeysAndColumnCount(String tableName) throws Exception {
         String sql = sqlTemplate.buildGetPrimaryKeysAndColumnCountSql(schema, tableName);
         // 使用 READ UNCOMMITTED 隔离级别避免死锁
+        // 注意：优化后的 SQL 使用 CROSS APPLY，只有 2 个参数占位符（在 CROSS APPLY 子查询中）
+        // 主查询的 WHERE 条件已通过字符串格式化处理，不再需要参数
         return queryWithReadUncommitted(sql, statement -> {
-            statement.setString(1, schema);  // 子查询的 TABLE_SCHEMA
-            statement.setString(2, tableName);  // 子查询的 TABLE_NAME
-            statement.setString(3, schema);  // 主查询的 TABLE_SCHEMA
-            statement.setString(4, tableName);  // 主查询的 TABLE_NAME
+            statement.setString(1, schema);  // CROSS APPLY 子查询的 TABLE_SCHEMA
+            statement.setString(2, tableName);  // CROSS APPLY 子查询的 TABLE_NAME
         }, rs -> {
             List<String> pks = new ArrayList<>();
             int columnCount = 0;
