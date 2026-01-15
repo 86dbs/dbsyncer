@@ -139,7 +139,7 @@
                     <label class="form-label">RSA公钥</label>
                     <div class="form-control-area">
                         <textarea name="rsaPublicKey" class="form-control" disabled maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
-                        <button type="button" class="btn btn-outline mt-1">
+                        <button type="button" class="btn btn-outline mt-1" id="copyPublicKeyBtn">
                             <i class="fa fa-copy"></i> 复制
                         </button>
                     </div>
@@ -149,7 +149,7 @@
                     <label class="form-label">RSA私钥</label>
                     <div class="form-control-area">
                         <textarea name="rsaPrivateKey" class="form-control" disabled maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
-                        <button type="button" class="btn btn-outline mt-1">
+                        <button type="button" class="btn btn-outline mt-1" id="copyPrivateKeyBtn">
                             <i class="fa fa-copy"></i> 复制
                         </button>
                     </div>
@@ -169,6 +169,8 @@
         const rsaPublicKey = $("textarea[name='rsaPublicKey']");
         const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
         const generateRSABtn = $("#generateRSA");
+        const copyPublicKeyBtn = $("#copyPublicKeyBtn");
+        const copyPrivateKeyBtn = $("#copyPrivateKeyBtn");
 
         function toggleWatermark(checked) {
             if (checked) {
@@ -218,11 +220,52 @@
             });
         });
 
+        // 绑定复制按钮事件（在显示 RSA 配置区域时调用）
+        function bindCopyButtons() {
+            // 先移除旧的事件绑定，避免重复绑定
+            copyPublicKeyBtn.off('click');
+            copyPrivateKeyBtn.off('click');
+            
+            // 复制RSA公钥
+            copyPublicKeyBtn.on('click', function() {
+                const publicKeyText = rsaPublicKey.val();
+                if (isBlank(publicKeyText)) {
+                    bootGrowl("RSA公钥为空，无法复制", "warning");
+                    return;
+                }
+                copyToClipboard(publicKeyText, {
+                    button: $(this),
+                    successMessage: "复制RSA公钥成功！",
+                    originalText: "复制",
+                    originalIcon: "fa-copy"
+                });
+            });
+
+            // 复制RSA私钥
+            copyPrivateKeyBtn.on('click', function() {
+                const privateKeyText = rsaPrivateKey.val();
+                if (isBlank(privateKeyText)) {
+                    bootGrowl("RSA私钥为空，无法复制", "warning");
+                    return;
+                }
+                copyToClipboard(privateKeyText, {
+                    button: $(this),
+                    successMessage: "复制RSA私钥成功！",
+                    originalText: "复制",
+                    originalIcon: "fa-copy"
+                });
+            });
+        }
+
         function toggleRSAConfig(checked) {
             rsaKeyLength.prop('disabled', !checked);
             generateRSABtn.prop('disabled', !checked);
             if (checked) {
                 rsaConfig.show();
+                // 显示区域后，延迟绑定事件，确保 DOM 元素已渲染
+                setTimeout(function() {
+                    bindCopyButtons();
+                }, 100);
                 if (isBlank(rsaPublicKey.val()) && isBlank(rsaPrivateKey.val())) {
                     generateRSABtn.click();
                 }
@@ -231,7 +274,14 @@
             rsaConfig.hide();
         }
         let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
-        toggleRSAConfig(enableRsaConfigApi.isChecked());
+        const isRSAConfigChecked = enableRsaConfigApi.isChecked();
+        toggleRSAConfig(isRSAConfigChecked);
+        // 如果初始状态就是显示 RSA 配置，也需要绑定事件
+        if (isRSAConfigChecked) {
+            setTimeout(function() {
+                bindCopyButtons();
+            }, 100);
+        }
 
     })
 </script>

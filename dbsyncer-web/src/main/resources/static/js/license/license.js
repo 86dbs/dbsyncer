@@ -66,51 +66,13 @@ $(function () {
     $("#copyBtn").on('click', function(){
         const licenseKey = document.getElementById("licenseKey");
         const $btn = $(this);
-        
-        // 使用现代浏览器的 Clipboard API
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(licenseKey.value).then(function() {
-                bootGrowl("复制机器码成功！", "success");
-                $btn.html('<i class="fa fa-check"></i> 已复制');
-                setTimeout(function() {
-                    $btn.html('<i class="fa fa-copy"></i> 复制');
-                }, 2000);
-            }).catch(function(err) {
-                console.error('复制失败', err);
-                fallbackCopyText(licenseKey.value);
-            });
-        } else {
-            // 降级方案
-            fallbackCopyText(licenseKey.value);
-        }
+        copyToClipboard(licenseKey.value, {
+            button: $btn,
+            successMessage: "复制机器码成功！",
+            originalText: "复制",
+            originalIcon: "fa-copy"
+        });
     });
-    
-    // 降级复制方案
-    function fallbackCopyText(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.top = '0';
-        textArea.style.left = '0';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-                bootGrowl("复制机器码成功！", "success");
-                $("#copyBtn").html('<i class="fa fa-check"></i> 已复制');
-                setTimeout(function() {
-                    $("#copyBtn").html('<i class="fa fa-copy"></i> 复制');
-                }, 2000);
-            }
-        } catch (err) {
-            console.error('复制失败', err);
-            bootGrowl("复制失败，请手动复制", "danger");
-        }
-        document.body.removeChild(textArea);
-    }
 
     // 初始化文件上传组件
     initFileUpload('#licenseUploader', {

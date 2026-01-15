@@ -251,6 +251,190 @@ function validateForm($form) {
     return isValid;
 }
 
+// ******************* 复制到剪贴板 ***************************
+/**
+ * 复制文本到剪贴板（公共方法）
+ * @param {string} text - 要复制的文本内容
+ * @param {Object} options - 配置选项
+ * @param {string|jQuery|HTMLElement} options.button - 按钮元素（jQuery对象、选择器或DOM元素），用于显示复制状态反馈
+ * @param {string} options.successMessage - 复制成功提示消息，默认："复制成功！"
+ * @param {string} options.errorMessage - 复制失败提示消息，默认："复制失败，请手动复制"
+ * @param {string} options.successIcon - 复制成功时按钮显示的图标，默认："fa-check"
+ * @param {string} options.originalIcon - 按钮原始图标，默认："fa-copy"
+ * @param {string} options.originalText - 按钮原始文本，默认："复制"
+ * @param {number} options.resetDelay - 按钮状态重置延迟时间（毫秒），默认：2000
+ * @param {string} options.copiedClass - 复制成功时添加到按钮的CSS类，默认："copied"
+ */
+function copyToClipboard(text, options) {
+    if (!text) {
+        const errorMsg = (options && options.errorMessage) || '复制失败，请手动复制';
+        if (typeof bootGrowl === 'function') {
+            bootGrowl(errorMsg, "danger");
+        }
+        return Promise.reject(new Error('文本内容为空'));
+    }
+
+    // 默认配置
+    const config = {
+        successMessage: '复制成功！',
+        errorMessage: '复制失败，请手动复制',
+        successIcon: 'fa-check',
+        originalIcon: 'fa-copy',
+        originalText: '复制',
+        resetDelay: 2000,
+        copiedClass: 'copied',
+        ...options
+    };
+
+    // 获取按钮元素（支持jQuery对象、选择器字符串或DOM元素）
+    let $button = null;
+    if (config.button) {
+        if (typeof config.button === 'string') {
+            $button = $(config.button);
+        } else if (config.button instanceof jQuery) {
+            $button = config.button;
+        } else if (config.button instanceof HTMLElement) {
+            $button = $(config.button);
+        }
+    }
+
+    // 如果按钮存在，检查是否正在复制中（防止快速多次点击）
+    if ($button && $button.length) {
+        const isCopying = $button.data('copying');
+        if (isCopying) {
+            // 如果正在复制中，忽略本次请求
+            return Promise.resolve();
+        }
+        // 清除之前的重置定时器（如果存在）
+        const resetTimerId = $button.data('resetTimerId');
+        if (resetTimerId) {
+            clearTimeout(resetTimerId);
+            $button.removeData('resetTimerId');
+        }
+    }
+
+    // 保存按钮原始内容
+    let originalButtonHtml = '';
+    if ($button && $button.length) {
+        originalButtonHtml = $button.html();
+        // 标记为正在复制中
+        $button.data('copying', true);
+    }
+
+    // 更新按钮状态为"已复制"
+    function updateButtonToCopied() {
+        if ($button && $button.length) {
+            const successText = config.originalText === '复制' ? '已复制' : config.originalText;
+            $button.html(`<i class="fa ${config.successIcon}"></i> ${successText}`);
+            $button.addClass(config.copiedClass);
+        }
+    }
+
+    // 恢复按钮原始状态
+    function resetButton() {
+        if ($button && $button.length) {
+            $button.html(originalButtonHtml || `<i class="fa ${config.originalIcon}"></i> ${config.originalText}`);
+            $button.removeClass(config.copiedClass);
+            // 清除复制中标记和定时器ID
+            $button.removeData('copying');
+            $button.removeData('resetTimerId');
+        }
+    }
+
+    // 使用现代浏览器的 Clipboard API
+    let copyPromise;
+    if (navigator.clipboard && window.isSecureContext) {
+        copyPromise = navigator.clipboard.writeText(text).then(function() {
+            // 复制成功
+            if (typeof bootGrowl === 'function') {
+                bootGrowl(config.successMessage, "success");
+            }
+            updateButtonToCopied();
+            // 保存定时器ID，以便后续清除
+            const resetTimerId = setTimeout(function() {
+                resetButton();
+            }, config.resetDelay);
+            if ($button && $button.length) {
+                $button.data('resetTimerId', resetTimerId);
+            }
+            return Promise.resolve();
+        }).catch(function(err) {
+            console.error('复制失败', err);
+            // 复制失败时也要清除复制中标记
+            if ($button && $button.length) {
+                $button.removeData('copying');
+            }
+            // 降级到传统方法
+            return fallbackCopyText(text, config, updateButtonToCopied, resetButton, $button);
+        });
+    } else {
+        // 降级到传统方法
+        copyPromise = fallbackCopyText(text, config, updateButtonToCopied, resetButton, $button);
+    }
+    copyPromise.catch(function(err) {
+        // 错误已在内部处理（通过 bootGrowl 提示），这里仅用于消除未处理的 Promise rejection 警告
+        console.error('复制操作失败:', err);
+        // 复制失败时也要清除复制中标记
+        if ($button && $button.length) {
+            $button.removeData('copying');
+        }
+    });
+}
+
+/**
+ * 降级复制方案（兼容旧浏览器）
+ * @private
+ */
+function fallbackCopyText(text, config, updateButtonToCopied, resetButton, $button) {
+    return new Promise(function(resolve, reject) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.opacity = '0';
+        textArea.style.pointerEvents = 'none';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+                if (typeof bootGrowl === 'function') {
+                    bootGrowl(config.successMessage, "success");
+                }
+                if (updateButtonToCopied) {
+                    updateButtonToCopied();
+                    // 保存定时器ID，以便后续清除
+                    const resetTimerId = setTimeout(function() {
+                        resetButton();
+                    }, config.resetDelay);
+                    if ($button && $button.length) {
+                        $button.data('resetTimerId', resetTimerId);
+                    }
+                }
+                resolve();
+            } else {
+                throw new Error('execCommand copy failed');
+            }
+        } catch (err) {
+            document.body.removeChild(textArea);
+            console.error('复制失败', err);
+            if (typeof bootGrowl === 'function') {
+                bootGrowl(config.errorMessage, "danger");
+            }
+            // 复制失败时也要清除复制中标记
+            if ($button && $button.length) {
+                $button.removeData('copying');
+            }
+            reject(err);
+        }
+    });
+}
+
 // ******************* 全局定时刷新管理器 ***************************
 /**
  * 全局定时刷新管理器
