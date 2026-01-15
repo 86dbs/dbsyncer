@@ -827,7 +827,11 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             Integer maxLength = maxLengthObj != null ? ((Number) maxLengthObj).intValue() : null;
             Integer precision = precisionObj != null ? ((Number) precisionObj).intValue() : null;
             Integer scale = scaleObj != null ? ((Number) scaleObj).intValue() : null;
-            Boolean nullable = "YES".equalsIgnoreCase(isNullableStr);
+            // 解析可空性：IS_NULLABLE 在 SQL Server 中为 "YES" 或 "NO"
+            // 如果 isNullableStr 为 null，默认设置为 true（可空），避免误判
+            Boolean nullable = (isNullableStr == null || isNullableStr.trim().isEmpty()) 
+                    ? true 
+                    : "YES".equalsIgnoreCase(isNullableStr.trim());
 
             Field col = new Field();
             col.setName(columnName);
@@ -948,7 +952,10 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             Field oldCol = oldColumns.get(newCol.getName());
             if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
                 // 列属性变更
+                logger.debug("检测到列属性变更: 表={}, 列={}, 旧可空性={}, 新可空性={}", 
+                        tableName, newCol.getName(), oldCol.getNullable(), newCol.getNullable());
                 String ddl = generateAlterColumnDDL(tableName, newCol);
+                logger.info("生成 ALTER COLUMN DDL: {}", ddl);
                 changes.add(new DDLChange(DDLChangeType.ALTER_COLUMN, ddl, newCol.getName()));
             }
         }

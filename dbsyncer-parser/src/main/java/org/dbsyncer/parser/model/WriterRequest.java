@@ -3,6 +3,7 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.parser.flush.BufferRequest;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
 
 import java.util.List;
 
@@ -40,7 +41,11 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
 
     @Override
     public String getMetaId() {
-        return getChangedOffset().getMetaId();
+        ChangedOffset offset = getChangedOffset();
+        if (offset == null) {
+            throw new IllegalStateException("WriterRequest.getChangedOffset() 返回 null，无法获取 metaId");
+        }
+        return offset.getMetaId();
     }
 
     public List<Object> getRow() {

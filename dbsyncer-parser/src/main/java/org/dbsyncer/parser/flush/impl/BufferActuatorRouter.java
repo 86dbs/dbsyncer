@@ -79,6 +79,10 @@ public final class BufferActuatorRouter implements DisposableBean {
 
 
     public void execute(String metaId, ChangedEvent event) {
+        // 确保 ChangedOffset 不为 null，并设置 metaId
+        if (event.getChangedOffset() == null) {
+            throw new IllegalArgumentException("ChangedEvent.getChangedOffset() 不能为 null, event=" + event);
+        }
         event.getChangedOffset().setMetaId(metaId);
         
         // 获取或创建该 meta 的执行器
