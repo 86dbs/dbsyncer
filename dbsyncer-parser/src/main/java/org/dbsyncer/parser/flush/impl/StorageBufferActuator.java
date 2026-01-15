@@ -4,7 +4,6 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -12,8 +11,6 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -31,7 +28,6 @@ import java.util.concurrent.Executor;
 @Component
 public final class StorageBufferActuator extends AbstractBufferActuator<StorageRequest, StorageResponse> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private StorageConfig storageConfig;
@@ -41,9 +37,6 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Resource
     private Executor storageExecutor;
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @PostConstruct
     private void init() {

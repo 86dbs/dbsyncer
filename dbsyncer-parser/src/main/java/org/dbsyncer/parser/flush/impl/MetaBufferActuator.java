@@ -12,7 +12,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -34,8 +33,6 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -53,13 +50,11 @@ import java.util.stream.Collectors;
  */
 public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, WriterResponse> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String metaId;
     private GeneralBufferConfig generalBufferConfig;
     private Executor generalExecutor;
     private ConnectorFactory connectorFactory;
-    private ProfileComponent profileComponent;
     private PluginFactory pluginFactory;
     private FlushStrategy flushStrategy;
     private DDLParser ddlParser;
@@ -551,10 +546,6 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
 
     public void setConnectorFactory(ConnectorFactory connectorFactory) {
         this.connectorFactory = connectorFactory;
-    }
-
-    public void setProfileComponent(ProfileComponent profileComponent) {
-        this.profileComponent = profileComponent;
     }
 
     public void setPluginFactory(PluginFactory pluginFactory) {

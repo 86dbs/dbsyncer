@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractBufferActuator<Request extends BufferRequest, Response extends BufferResponse> implements BufferActuator, ScheduledTaskJob {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
     private Class<Response> responseClazz;
     private Lock taskLock;
     private BufferActuatorConfig config;
@@ -54,7 +54,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private ProfileComponent profileComponent;
+    protected ProfileComponent profileComponent;
 
     @Resource
     private TimeRegistry timeRegistry;
