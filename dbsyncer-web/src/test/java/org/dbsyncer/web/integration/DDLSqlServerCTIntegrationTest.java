@@ -505,28 +505,18 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         // 先确保字段是NOT NULL的
         String setNotNullDDL = "ALTER TABLE ddlTestSource ALTER COLUMN first_name NVARCHAR(50) NOT NULL";
+        executeDDLToSourceDatabase(setNotNullDDL, sourceConfig);
+
         mappingService.start(mappingId);
         Thread.sleep(2000);
         waitForMetaRunning(metaId, 10000);
 
         // SQL Server CT 模式下，DDL 检测需要 DML 操作来触发
-        // 1. 先执行一次 DML 操作来初始化表结构快照
-        Map<String, Object> initData = new HashMap<>();
-        initData.put("first_name", "Init");
-        initData.put("last_name", "User");
-        initData.put("department", "IT");
-        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
-        Thread.sleep(500);
-
-        // 2. 执行第一个 DDL 操作（设置 NOT NULL）
-        executeDDLToSourceDatabase(setNotNullDDL, sourceConfig);
-
-        // 3. 执行 DML 操作来触发 DDL 检测
         Map<String, Object> dataAfterNotNull = new HashMap<>();
         dataAfterNotNull.put("first_name", "NotNull");
         dataAfterNotNull.put("last_name", "User");
         dataAfterNotNull.put("department", "IT");
-        dataAfterNotNull = executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterNotNull, sourceConfig);
+        executeInsertDMLToSourceDatabase(getSourceTableName(), dataAfterNotNull, sourceConfig);
         Thread.sleep(2000);
 
         // 验证目标表结构：设置 NOT NULL 后，字段应为 NOT NULL
@@ -542,7 +532,6 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         insertedData.put("last_name", "User");
         insertedData.put("department", "IT");
         insertedData = executeInsertDMLToSourceDatabase(getSourceTableName(), insertedData, sourceConfig);
-
         Thread.sleep(2000);
 
         // 验证 DDL：字段映射
@@ -555,11 +544,11 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
 
         assertTrue("应找到first_name字段的映射", foundFirstNameMapping);
 
-        // 验证目标表结构：字段应为 NULL（可空）
-        verifyFieldNullable("first_name", getTargetTableName(), targetConfig);
-
         // 验证 DML 数据同步
         waitForDataSync(insertedData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
+
+        // 验证目标表结构：字段应为 NULL（可空）
+        verifyFieldNullable("first_name", getTargetTableName(), targetConfig);
 
         logger.info("ALTER COLUMN移除NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }

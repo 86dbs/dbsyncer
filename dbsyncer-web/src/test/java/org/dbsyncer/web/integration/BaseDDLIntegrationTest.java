@@ -326,6 +326,7 @@ public abstract class BaseDDLIntegrationTest {
             databaseTemplate.execute(sql);
             return null;
         });
+        logger.info("在源库执行了sql: {}", sql);
     }
 
     /**

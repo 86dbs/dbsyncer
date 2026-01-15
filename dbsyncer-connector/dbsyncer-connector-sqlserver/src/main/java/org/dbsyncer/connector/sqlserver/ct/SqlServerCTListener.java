@@ -731,9 +731,12 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             Map<String, Integer> currentOrdinalPositions = extractOrdinalPositions(schemaInfoJson);
 
             // 3. 比对差异
+            logger.info("开始比对表 {} 的 DDL 变更: 旧列数={}, 新列数={}", 
+                    tableName, lastMetaInfo.getColumn().size(), currentMetaInfo.getColumn().size());
             List<DDLChange> changes = compareTableSchema(tableName, lastMetaInfo, currentMetaInfo,
                     lastPrimaryKeys, currentPrimaryKeys,
                     lastOrdinalPositions, currentOrdinalPositions);
+            logger.info("比对完成，检测到 {} 个 DDL 变更", changes.size());
 
             // 6. 如果有变更，生成 DDL 事件
             if (!changes.isEmpty()) {
@@ -950,13 +953,21 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         // 5. 检测修改列（类型、长度、精度、可空性）
         for (Field newCol : newMetaInfo.getColumn()) {
             Field oldCol = oldColumns.get(newCol.getName());
-            if (oldCol != null && !isColumnEqual(oldCol, newCol)) {
-                // 列属性变更
-                logger.debug("检测到列属性变更: 表={}, 列={}, 旧可空性={}, 新可空性={}", 
-                        tableName, newCol.getName(), oldCol.getNullable(), newCol.getNullable());
-                String ddl = generateAlterColumnDDL(tableName, newCol);
-                logger.info("生成 ALTER COLUMN DDL: {}", ddl);
-                changes.add(new DDLChange(DDLChangeType.ALTER_COLUMN, ddl, newCol.getName()));
+            if (oldCol != null) {
+                boolean isEqual = isColumnEqual(oldCol, newCol);
+                logger.debug("比对列属性: 表={}, 列={}, 是否相等={}, 旧可空性={}, 新可空性={}, 旧类型={}, 新类型={}, 旧长度={}, 新长度={}", 
+                        tableName, newCol.getName(), isEqual, 
+                        oldCol.getNullable(), newCol.getNullable(),
+                        oldCol.getTypeName(), newCol.getTypeName(),
+                        oldCol.getColumnSize(), newCol.getColumnSize());
+                if (!isEqual) {
+                    // 列属性变更
+                    logger.info("检测到列属性变更: 表={}, 列={}, 旧可空性={}, 新可空性={}", 
+                            tableName, newCol.getName(), oldCol.getNullable(), newCol.getNullable());
+                    String ddl = generateAlterColumnDDL(tableName, newCol);
+                    logger.info("生成 ALTER COLUMN DDL: {}", ddl);
+                    changes.add(new DDLChange(DDLChangeType.ALTER_COLUMN, ddl, newCol.getName()));
+                }
             }
         }
 
