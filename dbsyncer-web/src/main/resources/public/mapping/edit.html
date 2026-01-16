@@ -171,29 +171,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 表同步进度列表 -->
-                <div class="row" style="margin-top: 20px;">
-                    <div class="panel panel-default">
-                        <div class="panel-body">
-                            <h5 style="margin-bottom: 15px;">表同步进度</h5>
-                            <table id="tableGroupProgress" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>数据源表</th>
-                                        <th>目标源表</th>
-                                        <th>增量同步数量</th>
-                                        <th>全量同步进度</th>
-                                        <th>状态</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- 动态填充表数据 -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Tab菜单 -->
@@ -212,6 +189,11 @@
                         <a href="#mappingSuperConfig" aria-controls="mappingSuperConfig" role="tab" data-toggle="tab">
                             高级配置
                             <small class="text-muted" title="该配置使所有映射关系都生效">（全局）</small>
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#mappingSummary" aria-controls="mappingSummary" role="tab" data-toggle="tab">
+                            概括
                         </a>
                     </li>
                 </ul>
@@ -300,6 +282,40 @@
                             <button type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-default">
                                 <span class="fa fa-arrow-left"></span> 上一步
                             </button>
+                            <button type="button"  th:onclick="nextToMapping('mappingSummary')" class="btn btn-primary">
+                                <span class="fa fa-arrow-right"></span> 下一步
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 概括Tab面板 -->
+                    <div role="tabpanel" class="tab-pane" id="mappingSummary">
+                        <!-- 表同步进度列表 -->
+                        <div class="row" style="margin-top: 20px;">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <h5 style="margin-bottom: 15px;">表同步进度</h5>
+                                    <table id="tableGroupProgress" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>数据源表</th>
+                                                <th>目标源表</th>
+                                                <th>增量同步数量</th>
+                                                <th>全量同步进度</th>
+                                                <th>状态</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 动态填充表数据 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text-right">
+                            <button type="button"  th:onclick="nextToMapping('mappingSuperConfig')" class="btn btn-default">
+                                <span class="fa fa-arrow-left"></span> 上一步
+                            </button>
                             <button type="button" th:attr="disabled=${mapping?.meta?.state eq 1}" th:onclick="doMappingSubmit()" class="btn btn-primary">
                                 <span class="fa fa-save"></span>保存
                             </button>
@@ -317,6 +333,3 @@
 <script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
 <script th:src="@{/js/mapping/editIncrement.js}"></script>
 <script th:src="@{/js/mapping/editPlugin.js}"></script>
-
-
-</html>
