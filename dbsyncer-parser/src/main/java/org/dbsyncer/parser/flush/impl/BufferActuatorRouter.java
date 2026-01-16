@@ -105,9 +105,10 @@ public final class BufferActuatorRouter implements DisposableBean {
      */
     public void executeDirectly(String metaId, ChangedEvent event) throws Exception {
         event.getChangedOffset().setMetaId(metaId);
+        MetaBufferActuator metaBufferActuator = metaActuatorMap.get(metaId);
 
         // 直接调用执行器的方法，不走队列
-        generalBufferActuator.executeDirectly(event);
+        metaBufferActuator.executeDirectly(event);
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {

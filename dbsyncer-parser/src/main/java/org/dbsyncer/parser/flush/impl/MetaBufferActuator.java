@@ -27,6 +27,7 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
+import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -283,7 +284,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         pull(response);
     }
 
-    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) throws Exception {
+    private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         if (response.getColumnNames() == null || response.getColumnNames().isEmpty()) {
             return;
         }
