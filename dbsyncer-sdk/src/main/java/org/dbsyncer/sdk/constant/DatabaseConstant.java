@@ -17,12 +17,12 @@ public class DatabaseConstant {
     /**
      * Oracle分页语句开始
      */
-    public static final String ORACLE_PAGE_SQL_START = "SELECT * FROM (SELECT A.*, ROWNUM RN FROM (";
+    public static final String ORACLE_PAGE_SQL_START = "SELECT * FROM (SELECT A.* FROM (";
 
     /**
      * Oracle分页语句结束
      */
-    public static final String ORACLE_PAGE_SQL_END = ")A WHERE ROWNUM <= ?) WHERE RN > ?";
+    public static final String ORACLE_PAGE_SQL_END = ")A WHERE ROWNUM <= ?)";
 
     //*********************************** SqlServer **************************************//
     /**
