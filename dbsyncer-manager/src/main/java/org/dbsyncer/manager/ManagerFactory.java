@@ -38,8 +38,6 @@ public class ManagerFactory {
         meta.setBeginTime(Instant.now().toEpochMilli());
         meta.saveState(MetaEnum.RUNNING);
         
-        // 任务启动后禁止编辑
-        mapping.setDisableEdit(true);
         mapping.setUpdateTime(Instant.now().toEpochMilli());
         profileComponent.editConfigModel(mapping);
         

@@ -194,12 +194,13 @@ public class Mapping extends AbstractConfigModel {
     /**
      * 检查是否禁止编辑
      *
-     * @throws ParserException 如果 disableEdit = true，抛出异常
+     * @throws ParserException 如果任务处于运行中，抛出异常
      */
     @JsonIgnore
     public void assertDisableEdit() {
-        if (this.disableEdit) {
-            throw new ParserException("任务【启动过】就不允许编辑了。如需编辑请【重置】任务。");
+        Meta meta = getMeta();
+        if (meta != null && meta.isRunning()) {
+            throw new ParserException("任务【运行中】就不允许编辑了。如需编辑请【停止】任务。");
         }
     }
 

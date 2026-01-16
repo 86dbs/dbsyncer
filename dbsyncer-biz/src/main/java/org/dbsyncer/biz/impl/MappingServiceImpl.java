@@ -556,8 +556,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 profileComponent.editConfigModel(tableGroup);
             }
 
-            // 重置后允许编辑
-            mapping.setDisableEdit(false);
             mapping.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(mapping);
 
