@@ -940,8 +940,10 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         }
                         var progressValue = parseFloat(progress);
 
-                        // 获取增量同步数量
+                        // 计算总同步数量（包括全量和增量）
+                        var fullSuccess = tableGroup.fullSuccess || 0;
                         var incrementSuccess = tableGroup.incrementSuccess || 0;
+                        var totalSyncCount = fullSuccess + incrementSuccess;
 
                         // 获取状态
                         var status = tableGroup.status || '正常';
@@ -958,7 +960,7 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         var tr = '<tr>' +
                             '<td>' + sourceTableName + '</td>' +
                             '<td>' + targetTableName + '</td>' +
-                            '<td>' + incrementSuccess + '</td>' +
+                            '<td>' + totalSyncCount + '</td>' +
                             '<td>' + progressHtml + '</td>' +
                             '<td><span class="label ' + statusClass + '">' + status + '</span></td>' +
                             '</tr>';
