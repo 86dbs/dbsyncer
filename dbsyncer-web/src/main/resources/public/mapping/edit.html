@@ -65,6 +65,7 @@
                 <input id="failHidden" type="hidden" th:value="${mapping?.meta?.fail}"/>
                 <input name="name" type="text" th:value="${mapping?.name}"/>
                 <input name="state" type="text" th:value="${mapping?.meta?.state}"/>
+                <input name="model" type="hidden" th:value="${mapping?.model}"/>
                 <input type="hidden" id="mappingShow" th:value="${classOn}" />
             </div>
 
@@ -177,9 +178,6 @@
             <div class="row">
                 <ul class="nav nav-tabs" role="tablist">
                     <li role="presentation"  class="active">
-                        <a href="#modelType" aria-controls="modelType" role="tab" data-toggle="tab">同步类型</a>
-                    </li>
-                    <li role="presentation" >
                         <a href="#mappingBaseConfig" aria-controls="mappingBaseConfig" role="tab" data-toggle="tab">
                             映射关系
                             <small class="text-muted" title="该配置使所有映射关系都生效">（全局）</small>
@@ -201,51 +199,12 @@
                 <!-- Tab内容区域 -->
                 <div class="tab-content" style="margin-top: 15px;">
 
-                    <!-- 同步类Tab面板 -->
-                    <div role="tabpanel" class="tab-pane active" id="modelType">
-                        <div class="panel-body">
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div class="form-group" id="mappingModelChange">
-                                        <div class="row">
-                                            <div class="col-sm-4">
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量同步
-                                                </label>
-                                            </div>
-                                            <div class="col-sm-4">
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
-                                                </label>
-                                            </div>
-                                            <div class="col-sm-4">
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="model" value="fullIncrement" th:checked="${'fullIncrement' eq mapping?.model}" /> 全量+增量
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 下一步按钮 -->
-                            <div class="row text-right">
-                                <button id="nextToMappingBtn" type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-primary">
-                                    <span class="fa fa-arrow-right"></span> 下一步
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- 映射关系Tab面板 -->
-                    <div role="tabpanel" class="tab-pane" id="mappingBaseConfig">
+                    <div role="tabpanel" class="tab-pane active" id="mappingBaseConfig">
                         <!-- 表映射 -->
                         <div th:replace="mapping/editTable :: content"></div>
                         <!-- 下一步按钮 -->
                         <div class="row text-right">
-                            <button type="button"  th:onclick="nextToMapping('modelType')" class="btn btn-default">
-                                <span class="fa fa-arrow-left"></span> 上一步
-                            </button>
                             <button type="button"  th:onclick="nextToMapping('mappingSuperConfig')" class="btn btn-primary">
                                 <span class="fa fa-arrow-right"></span> 下一步
                             </button>

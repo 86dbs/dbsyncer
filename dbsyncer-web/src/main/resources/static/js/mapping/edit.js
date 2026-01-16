@@ -852,8 +852,6 @@ $(function () {
         getMappping(mappingId);
     }
 
-    // 绑定同步方式切换事件
-    bindMappingModelChange();
     // 绑定删除表映射事件
     bindMappingTableGroupCheckBoxClick();
 

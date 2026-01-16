@@ -36,8 +36,19 @@ $(function () {
     // 兼容IE PlaceHolder
     $('input[type="text"],input[type="password"],textarea').PlaceHolder();
 
-    // 初始化select插件
-    initSelectIndex($(".select-control"), 1);
+    // 初始化select插件（带搜索功能）
+    initSelectIndex($(".select-control:not(.select-control-no-search)"), 1);
+    
+    // 初始化同步类型下拉框（禁用搜索功能）
+    $(".select-control-no-search").selectpicker({
+        "title": "请选择",
+        "actionsBox": true,
+        "liveSearch": false,
+        "selectAllText": "全选",
+        "deselectAllText": "取消全选",
+        "noneResultsText": "没有找到 {0}",
+        "selectedTextFormat": "count > 10"
+    }).selectpicker('val', 'full'); // 默认选择全量同步
 
     // 绑定匹配相似表复选框事件
     bindToggleSwitch($('#autoMatchTable'), $("#tableGroups"));
