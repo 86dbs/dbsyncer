@@ -6,6 +6,7 @@ package org.dbsyncer.connector.oracle;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
+import org.dbsyncer.connector.oracle.schema.OracleNClobValueMapper;
 import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -39,6 +40,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     public OracleConnector() {
         VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
         VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
+        VALUE_MAPPERS.put(Types.NCLOB, new OracleNClobValueMapper());
     }
 
     @Override
