@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.schema.support;
 
+import microsoft.sql.DateTimeOffset;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -63,6 +64,10 @@ public abstract class TimestampType extends AbstractDataType<Timestamp> {
         if (val instanceof OffsetDateTime) {
             OffsetDateTime date = (OffsetDateTime) val;
             return Timestamp.from(date.toInstant());
+        }
+        if (val instanceof microsoft.sql.DateTimeOffset) {
+            LocalDateTime dateTime = ((DateTimeOffset) val).getOffsetDateTime().toLocalDateTime();
+            return Timestamp.valueOf(dateTime);
         }
         return throwUnsupportedException(val, field);
     }
