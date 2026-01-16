@@ -116,8 +116,29 @@ public final class FlushStrategyImpl implements FlushStrategy {
         try {
             TableGroup tableGroup = profileComponent.getTableGroup(result.getTableGroupId());
             if (tableGroup != null) {
-                tableGroup.setIncrementSuccess(tableGroup.getIncrementSuccess() + result.getSuccessData().size());
-                tableGroup.setIncrementFail(tableGroup.getIncrementFail() + result.getFailData().size());
+                int successSize = result.getSuccessData().size();
+                int failSize = result.getFailData().size();
+                long batchCount = successSize + failSize;
+                
+                tableGroup.setIncrementSuccess(tableGroup.getIncrementSuccess() + successSize);
+                tableGroup.setIncrementFail(tableGroup.getIncrementFail() + failSize);
+                tableGroup.setSuccess(tableGroup.getSuccess() + successSize);
+                tableGroup.setFail(tableGroup.getFail() + failSize);
+                
+                // 计算同步速度
+                long currentTime = System.currentTimeMillis();
+                long lastSyncTime = tableGroup.getLastSyncTime();
+                if (lastSyncTime > 0 && batchCount > 0) {
+                    long timeDiffMs = currentTime - lastSyncTime;
+                    if (timeDiffMs > 0) {
+                        double speed = (double) batchCount / (timeDiffMs / 1000.0);
+                        tableGroup.setCurrentSpeed(speed);
+                    }
+                }
+                
+                tableGroup.setLastSyncTime(currentTime);
+                tableGroup.setLastBatchCount(batchCount);
+                
                 profileComponent.editConfigModel(tableGroup);
             }
         } catch (Exception e) {
@@ -229,11 +250,26 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private void updateTableGroupCounts(TableGroup tableGroup, Result writer) {
         int successSize = writer.getSuccessData().size();
         int failSize = writer.getFailData().size();
+        long batchCount = successSize + failSize;
         
         tableGroup.setSuccess(tableGroup.getSuccess() + successSize);
         tableGroup.setFail(tableGroup.getFail() + failSize);
         tableGroup.setFullSuccess(tableGroup.getFullSuccess() + successSize);
         tableGroup.setFullFail(tableGroup.getFullFail() + failSize);
+        
+        // 计算同步速度
+        long currentTime = System.currentTimeMillis();
+        long lastSyncTime = tableGroup.getLastSyncTime();
+        if (lastSyncTime > 0 && batchCount > 0) {
+            long timeDiffMs = currentTime - lastSyncTime;
+            if (timeDiffMs > 0) {
+                double speed = (double) batchCount / (timeDiffMs / 1000.0);
+                tableGroup.setCurrentSpeed(speed);
+            }
+        }
+        
+        tableGroup.setLastSyncTime(currentTime);
+        tableGroup.setLastBatchCount(batchCount);
     }
 
     /**

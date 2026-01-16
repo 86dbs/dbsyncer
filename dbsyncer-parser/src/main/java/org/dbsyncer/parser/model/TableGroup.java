@@ -249,6 +249,9 @@ public class TableGroup extends AbstractConfigModel {
     private String status; // 同步状态（"正常"/"异常"）
     private long fullSuccess; // 全量同步成功数量
     private long fullFail; // 全量同步失败数量
+    private long lastSyncTime; // 上次同步时间戳
+    private double currentSpeed; // 当前同步速度（条/秒）
+    private long lastBatchCount; // 上次批次处理的记录数
 
     public Object[] getCursors() {
         return cursors;
@@ -346,6 +349,30 @@ public class TableGroup extends AbstractConfigModel {
         this.incrementFail = incrementFail;
     }
 
+    public long getLastSyncTime() {
+        return lastSyncTime;
+    }
+
+    public void setLastSyncTime(long lastSyncTime) {
+        this.lastSyncTime = lastSyncTime;
+    }
+
+    public double getCurrentSpeed() {
+        return currentSpeed;
+    }
+
+    public void setCurrentSpeed(double currentSpeed) {
+        this.currentSpeed = currentSpeed;
+    }
+
+    public long getLastBatchCount() {
+        return lastBatchCount;
+    }
+
+    public void setLastBatchCount(long lastBatchCount) {
+        this.lastBatchCount = lastBatchCount;
+    }
+
     @JsonIgnore
     public boolean hasError() {
         return Strings.isNotBlank(errorMessage);
@@ -370,6 +397,9 @@ public class TableGroup extends AbstractConfigModel {
         this.status = "正常";
         this.fullSuccess = 0;
         this.fullFail = 0;
+        this.lastSyncTime = 0;
+        this.currentSpeed = 0;
+        this.lastBatchCount = 0;
     }
 
     @JsonIgnore

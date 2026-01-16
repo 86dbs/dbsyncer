@@ -314,6 +314,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             }
             managerFactory.close(mapping);
 
+            // 重置所有表组的同步速度为0
+            List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(mapping.getId());
+            for (TableGroup tableGroup : tableGroupAll) {
+                tableGroup.setCurrentSpeed(0);
+                profileComponent.editConfigModel(tableGroup);
+            }
+
             log(LogType.MappingLog.STOP, mapping);
 
             // 发送关闭驱动通知消息

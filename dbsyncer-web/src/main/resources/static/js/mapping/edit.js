@@ -948,6 +948,13 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         // 获取状态
                         var status = tableGroup.status || '正常';
                         var statusClass = status === '异常' ? 'label-danger' : 'label-success';
+                        
+                        // 获取同步速度
+                        var currentSpeed = tableGroup.currentSpeed || 0;
+                        var lastSyncTime = tableGroup.lastSyncTime || 0;
+                        var currentTime = new Date().getTime();
+                        // 如果最后同步时间超过5秒，则显示0条/秒
+                        var speedDisplay = (currentTime - lastSyncTime > 5000) ? "0 条/秒" : (currentSpeed.toFixed(0) + " 条/秒");
 
                         // 创建与图二一致的进度条HTML结构
                         var progressHtml = '<div style="display: flex; align-items: center; width: 100%;">' +
@@ -962,12 +969,13 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                             '<td>' + targetTableName + '</td>' +
                             '<td>' + totalSyncCount + '</td>' +
                             '<td>' + progressHtml + '</td>' +
+                            '<td>' + speedDisplay + '</td>' +
                             '<td><span class="label ' + statusClass + '">' + status + '</span></td>' +
                             '</tr>';
                         tbody.append(tr);
                     });
                 } else {
-                    var tr = '<tr><td colspan="5" class="text-center">暂无表映射关系</td></tr>';
+                    var tr = '<tr><td colspan="6" class="text-center">暂无表映射关系</td></tr>';
                     tbody.append(tr);
                 }
             }
