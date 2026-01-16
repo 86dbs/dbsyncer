@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.AppCredentialConfig;
+import org.dbsyncer.common.model.IpWhitelistConfig;
+import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
@@ -78,6 +81,21 @@ public class SystemConfig extends ConfigModel {
      * RSA配置
      */
     private RSAConfig rsaConfig;
+
+    /**
+     * JWT密钥配置
+     */
+    private JwtSecretConfig jwtSecretConfig;
+
+    /**
+     * 业务系统凭证配置
+     */
+    private AppCredentialConfig appCredentialConfig;
+
+    /**
+     * IP白名单配置
+     */
+    private IpWhitelistConfig ipWhitelistConfig;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -173,5 +191,29 @@ public class SystemConfig extends ConfigModel {
 
     public void setRsaConfig(RSAConfig rsaConfig) {
         this.rsaConfig = rsaConfig;
+    }
+
+    public JwtSecretConfig getJwtSecretConfig() {
+        return jwtSecretConfig;
+    }
+
+    public void setJwtSecretConfig(JwtSecretConfig jwtSecretConfig) {
+        this.jwtSecretConfig = jwtSecretConfig;
+    }
+
+    public AppCredentialConfig getAppCredentialConfig() {
+        return appCredentialConfig;
+    }
+
+    public void setAppCredentialConfig(AppCredentialConfig appCredentialConfig) {
+        this.appCredentialConfig = appCredentialConfig;
+    }
+
+    public IpWhitelistConfig getIpWhitelistConfig() {
+        return ipWhitelistConfig;
+    }
+
+    public void setIpWhitelistConfig(IpWhitelistConfig ipWhitelistConfig) {
+        this.ipWhitelistConfig = ipWhitelistConfig;
     }
 }

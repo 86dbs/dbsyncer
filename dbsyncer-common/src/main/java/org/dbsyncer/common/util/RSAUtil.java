@@ -144,6 +144,78 @@ public class RSAUtil {
         }
     }
 
+    /**
+     * RSA-SHA256签名（使用私钥签名）
+     * 
+     * @param data 要签名的数据
+     * @param privateKey RSA私钥
+     * @return Base64编码的签名
+     */
+    public static String signSHA256(String data, RSAPrivateKey privateKey) {
+        try {
+            java.security.Signature signature = java.security.Signature.getInstance("SHA256withRSA");
+            signature.initSign(privateKey);
+            signature.update(data.getBytes(CHARSET));
+            byte[] signBytes = signature.sign();
+            return Base64.encodeBase64URLSafeString(signBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("RSA-SHA256签名失败", e);
+        }
+    }
+
+    /**
+     * RSA-SHA256签名（使用私钥字符串）
+     * 
+     * @param data 要签名的数据
+     * @param privateKeyStr Base64编码的私钥字符串
+     * @return Base64编码的签名
+     */
+    public static String signSHA256(String data, String privateKeyStr) {
+        try {
+            RSAPrivateKey privateKey = getPrivateKey(privateKeyStr);
+            return signSHA256(data, privateKey);
+        } catch (Exception e) {
+            throw new RuntimeException("RSA-SHA256签名失败", e);
+        }
+    }
+
+    /**
+     * RSA-SHA256验证签名（使用公钥验证）
+     * 
+     * @param data 原始数据
+     * @param signature Base64编码的签名
+     * @param publicKey RSA公钥
+     * @return 验证结果
+     */
+    public static boolean verifySHA256(String data, String signature, RSAPublicKey publicKey) {
+        try {
+            java.security.Signature sig = java.security.Signature.getInstance("SHA256withRSA");
+            sig.initVerify(publicKey);
+            sig.update(data.getBytes(CHARSET));
+            byte[] signBytes = Base64.decodeBase64(signature);
+            return sig.verify(signBytes);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * RSA-SHA256验证签名（使用公钥字符串）
+     * 
+     * @param data 原始数据
+     * @param signature Base64编码的签名
+     * @param publicKeyStr Base64编码的公钥字符串
+     * @return 验证结果
+     */
+    public static boolean verifySHA256(String data, String signature, String publicKeyStr) {
+        try {
+            RSAPublicKey publicKey = getPublicKey(publicKeyStr);
+            return verifySHA256(data, signature, publicKey);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private static byte[] rsaSplitCodec(Cipher cipher, int opmode, byte[] datas, int keySize) {
         int maxBlock = 0;
         if (opmode == Cipher.DECRYPT_MODE) {
