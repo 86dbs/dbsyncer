@@ -1384,6 +1384,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         stopVersion = poll;
                     }
                     if (stopVersion == null || stopVersion <= lastVersion) {
+                        sleepInMills(10L);
                         continue;
                     }
 

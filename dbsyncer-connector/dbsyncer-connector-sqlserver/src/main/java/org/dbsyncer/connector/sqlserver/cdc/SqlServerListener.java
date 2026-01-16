@@ -782,6 +782,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
                         stopLsn = poll;
                     }
                     if (!stopLsn.isAvailable() || stopLsn.compareTo(lastLsn) <= 0) {
+                        sleepInMills(10L);
                         continue;
                     }
 

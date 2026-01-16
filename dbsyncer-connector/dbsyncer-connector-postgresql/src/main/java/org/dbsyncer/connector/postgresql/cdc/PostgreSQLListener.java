@@ -280,6 +280,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
                     LogSequenceNumber lsn = stream.getLastReceiveLSN();
                     if (messageDecoder.skipMessage(msg, startLsn, lsn)) {
+                        sleepInMills(1L);
                         continue;
                     }
 
