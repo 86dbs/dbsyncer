@@ -261,19 +261,11 @@
                         <div id="cardView" class="col-md-12" style="display: none;">
                             <div class="row mappingList">
                                 <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-2 mb-3" style="max-width: 20%; flex: 0 0 20%; padding: 0 2px;">
-                                    <div class="panel panel-default dbsyncer_block" style="height: 280px; display: flex; flex-direction: column; width: 100%; margin: 0; cursor: pointer;" th:attr="data-id=${m?.id}">
+                                    <div class="panel panel-default dbsyncer_block" style="height: 220px; display: flex; flex-direction: column; width: 100%; margin: 0; cursor: pointer;" th:attr="data-id=${m?.id}">
                                         <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; padding: 12px;">
                                             <!-- 顶部：任务名称 -->
-                                            <div style="margin-bottom: 12px;">
+                                            <div style="margin-bottom: 6px;">
                                                 <h4 th:text="${m?.name}" class="text-primary" style="margin: 0; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" th:title="${m?.name}"></h4>
-                                            </div>
-                                            
-                                            <!-- 同步类型 - 突出显示 -->
-                                            <div style="margin-bottom: 12px; padding: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 6px; text-align: center;">
-                                                <span style="color: white; font-weight: bold; font-size: 14px;">
-                                                    <i class="fa fa-sync"></i>
-                                                    <span th:text="${m?.meta?.model}"></span>
-                                                </span>
                                             </div>
                                             
                                             <!-- 连接信息 -->
@@ -296,12 +288,13 @@
                                                     </span>
                                                 </div>
                                                 
-
-                                                <!-- 箭头 -->
-                                                <div style="text-align: left; margin: 4px 0; padding-left: 24px;">
-                                                    <i class="fa fa-arrow-down text-muted" style="font-size: 18px; color: #999;"></i>
+                                                <!-- 箭头和同步类型 -->
+                                                <div style="display: flex; align-items: center; margin: 4px 0; padding-left: 24px;">
+                                                    <i class="fa fa-arrow-down text-muted" style="font-size: 18px; color: #999; margin-right: 8px;"></i>
+                                                    <span style="font-size: 13px; font-weight: bold;" th:style="${m?.meta?.model eq '混合' ? 'color: #000000;' : m?.meta?.model eq '增量' ? 'color: #28a745;' : 'color: #ffc107;'}">
+                                                        <span th:text="${m?.meta?.model}"></span>
+                                                    </span>
                                                 </div>
-
                                                 
                                                 <!-- 目标源 -->
                                                 <div style="display: flex; align-items: center; padding: 8px; background-color: #f8f9fa; border-radius: 4px; overflow: hidden;">
