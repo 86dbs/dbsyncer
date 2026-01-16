@@ -71,7 +71,6 @@ public class MappingChecker extends AbstractChecker {
         mapping.setName(name);
         mapping.setSourceConnectorId(sourceConnectorId);
         mapping.setTargetConnectorId(targetConnectorId);
-        mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
         mapping.setParams(new HashMap<>());
 
@@ -81,6 +80,9 @@ public class MappingChecker extends AbstractChecker {
         // 注意：不再在此处创建 Meta，改为在 MappingServiceImpl.add() 中保存 Mapping 成功后再创建
         // 这样可以确保先保存 Mapping，避免出现 Meta 存在但 Mapping 不存在的数据不一致问题
 
+        // 同步方式
+        String model = params.get("model");
+        mapping.setModel(ModelEnum.getModelEnum(model).getCode());
         return mapping;
     }
 
