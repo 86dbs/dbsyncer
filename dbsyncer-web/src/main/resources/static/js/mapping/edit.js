@@ -340,11 +340,14 @@ function bindMappingTableGroupAddClick($sourceSelect, $targetSelect) {
         doPoster("/tableGroup/add", m, function (data) {
             if (data.success == true) {
                 bootGrowl("新增映射关系成功!", "success");
-                refresh(m.mappingId,1);
+                // 直接重新加载页面内容，确保映射列表更新
+                var url = '/mapping/page/edit?id=' + m.mappingId + "&classOn=1&refresh=" + new Date().getTime();
+                doLoaderWithoutHashUpdate(url, 0);
             } else {
                 bootGrowl(data.resultValue, "danger");
                 if (data.status == 400) {
-                    refresh(m.mappingId,1);
+                    var url = '/mapping/page/edit?id=' + m.mappingId + "&classOn=1&refresh=" + new Date().getTime();
+                    doLoaderWithoutHashUpdate(url, 0);
                 }
             }
         });
@@ -360,7 +363,9 @@ function bindMappingTableGroupDelClick() {
             doPoster("/tableGroup/remove", { "mappingId": $mappingId, "ids": ids.join() }, function (data) {
                 if (data.success == true) {
                     bootGrowl("删除映射关系成功!", "success");
-                    refresh($mappingId,1);
+                    // 直接重新加载页面内容，确保映射列表更新
+                    var url = '/mapping/page/edit?id=' + $mappingId + "&classOn=1&refresh=" + new Date().getTime();
+                    doLoaderWithoutHashUpdate(url, 0);
                 } else {
                     bootGrowl(data.resultValue, "danger");
                 }
@@ -837,6 +842,23 @@ function doPostForEditPage(url) {
             bootGrowl(data.resultValue, "danger");
         }
     });
+}
+
+// 切换到指定的映射关系标签页
+function nextToMapping(str) {
+    // 获取映射关系标签页及对应链接
+    const $baseConfigTab = $('#' + str);
+    const $baseConfigLink = $('a[href="#' + str + '"]');
+
+    if ($baseConfigTab.length && $baseConfigLink.length) {
+        // 移除所有tab-pane的active类，再为目标标签页添加active
+        $('.tab-pane').removeClass('active');
+        $('.nav-tabs li').removeClass('active');
+        $baseConfigTab.addClass('active');
+
+        // 激活对应的tab链接及其父元素（通常是li）
+        $baseConfigLink.addClass('active').parent().addClass('active');
+    }
 }
 
 $(function () {
