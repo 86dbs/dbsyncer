@@ -97,7 +97,15 @@ public abstract class PrimaryKeyUtil {
     }
 
     /**
-     * 游标主键必须为数字类型，否则会导致分页失效
+     * 游标主键必须为可比较类型（数字、字符、日期时间等），否则会导致分页失效
+     * 
+     * <p>支持的类型：
+     * <ul>
+     *   <li>数字类型：NUMERIC, BIGINT, INTEGER, TINYINT, SMALLINT</li>
+     *   <li>字符类型：VARCHAR, CHAR, NCHAR, NVARCHAR, LONGVARCHAR（字典序比较）</li>
+     *   <li>日期时间类型：DATE, TIME, TIMESTAMP（按时间顺序比较）</li>
+     * </ul>
+     * </p>
      *
      * @param fields
      * @return
@@ -123,34 +131,60 @@ public abstract class PrimaryKeyUtil {
     }
 
     /**
-     * 是否支持游标类型(数字)
+     * 是否支持游标类型
+     * 
+     * <p>支持可比较类型，包括：
+     * <ul>
+     *   <li>数字类型：可直接使用 > 比较</li>
+     *   <li>字符类型：使用字典序比较</li>
+     *   <li>日期时间类型：按时间顺序比较</li>
+     * </ul>
+     * </p>
+     * <p>注意：不支持 CLOB/NCLOB/BLOB 等大对象类型作为游标。</p>
      *
-     * @param type
-     * @return
+     * @param type JDBC类型
+     * @return 是否支持
      */
     private static boolean isSupportedCursorType(Integer type) {
-        return type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER || type == Types.TINYINT || type == Types.SMALLINT;
+        // 数字类型（支持直接比较）
+        if (type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER 
+                || type == Types.TINYINT || type == Types.SMALLINT
+                || type == Types.DECIMAL || type == Types.FLOAT || type == Types.DOUBLE 
+                || type == Types.REAL) {
+            return true;
+        }
+        // 字符类型（支持字典序比较）
+        if (type == Types.VARCHAR || type == Types.CHAR || type == Types.NCHAR 
+                || type == Types.NVARCHAR || type == Types.LONGVARCHAR) {
+            return true;
+        }
+        // 日期时间类型（支持时间顺序比较）
+        if (type == Types.DATE || type == Types.TIME || type == Types.TIMESTAMP) {
+            return true;
+        }
+        return false;
     }
 
     /**
      * 获取最新游标值
      *
-     * @param data
-     * @param primaryKeys
-     * @return
+     * @param data 数据列表
+     * @param primaryKeys 主键字段名列表
+     * @return 游标值数组，如果数据为空或主键列表为空则返回null
      */
     public static Object[] getLastCursors(List<Map> data, List<String> primaryKeys) {
-        if (CollectionUtils.isEmpty(data)) {
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(primaryKeys)) {
             return null;
         }
         Map last = data.get(data.size() - 1);
+        if (last == null || last.isEmpty()) {
+            return null;
+        }
+        
         Object[] cursors = new Object[primaryKeys.size()];
-        Iterator<String> iterator = primaryKeys.iterator();
         int i = 0;
-        while (iterator.hasNext()) {
-            String pk = iterator.next();
-            cursors[i] = last.get(pk);
-            i++;
+        for (String pk : primaryKeys) {
+            cursors[i++] = last.get(pk);
         }
         return cursors;
     }
