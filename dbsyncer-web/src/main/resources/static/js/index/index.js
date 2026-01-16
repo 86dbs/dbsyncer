@@ -333,65 +333,11 @@ function refreshMappingList() {
                                             stateHtmlContent += '<span title=" ' + errorMessage + ' " class="mapping-error-sign" data-toggle="tooltip" data-placement="top"><i class="fa fa-exclamation-triangle"></i></span>';
                                         }
 
-                                        // 更新卡片视图
-                                        var cardHtmlContent = '';
-                                        cardHtmlContent += '<tbody>';
-                                        cardHtmlContent += '<tr>';
-                                        cardHtmlContent += '<td class="text-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;  max-width: 0; width: 100%;">';
-                                        cardHtmlContent += modelname + '同步>总数:' + total;
-
-                                        // 检查同步阶段是否为0（正在统计中）
-                                        if (syncPhaseCode === 0) {
-                                            if (counting) {
-                                                cardHtmlContent += '(正在统计中)';
-                                            }
-                                            if (total > 0 && (success + fail) > 0) {
-                                                var progress = ((success + fail) / total * 100).toFixed(2);
-                                                cardHtmlContent += ',进度:' + progress + '%';
-                                            }
-                                            // 计算耗时
-                                            var seconds = Math.floor((updateTime - beginTime) / 1000);
-                                            cardHtmlContent += ',耗时:';
-                                            if (seconds < 60) {
-                                                cardHtmlContent += seconds + '秒';
-                                            } else {
-                                                var minutes = Math.floor(seconds / 60);
-                                                cardHtmlContent += minutes + '分' + (seconds - minutes * 60) + '秒';
-                                            }
-                                        }
-
-                                        if (success > 0) {
-                                            cardHtmlContent += ',成功:' + success;
-                                        }
-                                        if (fail > 0) {
-                                            cardHtmlContent += ',失败:' + fail;
-                                        }
-                                        cardHtmlContent += '</td>';
-                                        cardHtmlContent += '</tr>';
-
-                                        // 启动时间行
-                                        cardHtmlContent += '<tr>';
-                                        cardHtmlContent += '<td class="text-left">';
-                                        cardHtmlContent += '启动时间>';
-                                        if (beginTime > 0) {
-                                            var date = new Date(beginTime);
-                                            cardHtmlContent += date.getFullYear() + '-' +
-                                                String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                                                String(date.getDate()).padStart(2, '0') + ' ' +
-                                                String(date.getHours()).padStart(2, '0') + ':' +
-                                                String(date.getMinutes()).padStart(2, '0') + ':' +
-                                                String(date.getSeconds()).padStart(2, '0');
-                                        }
-                                        cardHtmlContent += '</td>';
-                                        cardHtmlContent += '</tr>';
-                                        cardHtmlContent += '</tbody>';
-                                        
-                                        // 更新卡片视图
+                                        // 更新卡片视图 - 只更新状态标签
                                         var $cardElement = $("#" + mid);
                                         if ($cardElement.length > 0) {
                                             // 只更新可见的卡片内容
                                             if ($cardElement.is(':visible')) {
-                                                $("#" + mid).find(".table-hover").html(cardHtmlContent);
                                                 $("#" + mid).find("#stateId").html(stateHtmlContent);
                                             }
                                         }
@@ -531,7 +477,7 @@ function performMappingSearch() {
         var isCardView = $('#cardView').is(':visible');
         if (isCardView) {
             // 卡片视图：显示所有卡片的外层容器
-            $('#cardView .col-md-4, #cardView .col-sm-6').show();
+            $('#cardView .col-md-4, #cardView .col-sm-6, #cardView .col-md-2').show();
         } else {
             // 列表视图：显示所有行
             $(".table.table-hover tbody tr").show();
@@ -561,7 +507,7 @@ function performMappingSearch() {
                 if (searchResults.length === 0) {
                     if (isCardView) {
                         // 卡片视图：隐藏所有卡片的外层容器
-                        $('#cardView .col-md-4, #cardView .col-sm-6').hide();
+                        $('#cardView .col-md-4, #cardView .col-sm-6, #cardView .col-md-2').hide();
                     } else {
                         // 列表视图：隐藏所有行
                         $(".table.table-hover tbody tr").hide();
@@ -577,12 +523,12 @@ function performMappingSearch() {
                     
                     if (isCardView) {
                         // 卡片视图：先隐藏所有外层容器
-                        $('#cardView .col-md-4, #cardView .col-sm-6').hide();
+                        $('#cardView .col-md-4, #cardView .col-sm-6, #cardView .col-md-2').hide();
                         // 然后显示匹配ID的卡片的外层容器
                         resultIds.forEach(function(id) {
                             var matchedCard = $('#cardView #' + id);
                             if (matchedCard.length > 0) {
-                                matchedCard.closest('.col-md-4, .col-sm-6').show();
+                                matchedCard.closest('.col-md-4, .col-sm-6, .col-md-2').show();
                             }
                         });
                     } else {
