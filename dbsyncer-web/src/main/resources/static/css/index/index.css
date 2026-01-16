@@ -232,3 +232,261 @@
     gap: 5px;
 }
 
+/* 新卡片布局样式 */
+.mappingList .col-md-2 {
+    max-width: 20%;
+    flex: 0 0 20%;
+    padding: 0 7.5px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* 卡片面板样式优化 */
+.mappingList .panel {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.mappingList .panel:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* 卡片主体样式 */
+.mappingList .panel-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 任务名称样式 */
+.mappingList .panel-body h4 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* 状态标签样式 */
+.mappingList .panel-body .label {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+/* 同步类型渐变背景 */
+.mappingList .sync-type-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    overflow: hidden;
+}
+
+.mappingList .sync-type-badge span {
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* 连接信息容器 */
+.mappingList .connection-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 单个连接项样式 */
+.mappingList .connection-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s ease;
+    overflow: hidden;
+}
+
+.mappingList .connection-item:hover {
+    background-color: #e9ecef;
+}
+
+.mappingList .connection-item img {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.mappingList .connection-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #555;
+    min-width: 0;
+}
+
+/* 连接状态指示器 */
+.mappingList .connection-status {
+    margin-left: 5px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.mappingList .connection-status.fa-circle {
+    color: #5cb85c;
+}
+
+.mappingList .connection-status.fa-times-circle {
+    color: #d9534f;
+}
+
+/* 箭头样式 */
+.mappingList .connection-arrow {
+    text-align: center;
+    margin: 4px 0;
+    color: #999;
+    font-size: 12px;
+}
+
+/* 操作按钮区域 */
+.mappingList .operation-section {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.mappingList .operation-section .operation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mappingList .operation-section .btn {
+    flex: 1;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.mappingList .operation-section .btn:hover {
+    transform: scale(1.05);
+}
+
+/* 启动按钮样式 */
+.mappingList .btn-start {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mappingList .btn-start:hover {
+    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+    transform: translateY(-1px);
+}
+
+.mappingList .btn-start:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+/* 停止按钮样式 */
+.mappingList .btn-stop {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mappingList .btn-stop:hover {
+    background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+    transform: translateY(-1px);
+}
+
+.mappingList .btn-stop:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+/* 底部状态和按钮容器 */
+.mappingList .bottom-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.mappingList .bottom-section #stateId {
+    flex-shrink: 0;
+}
+
+.mappingList .bottom-section .operation-buttons {
+    flex: 1;
+    display: flex;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .mappingList .col-md-2 {
+        max-width: 25%;
+        flex: 0 0 25%;
+    }
+}
+
+@media (max-width: 992px) {
+    .mappingList .col-md-2 {
+        max-width: 33.333333%;
+        flex: 0 0 33.333333%;
+    }
+}
+
+@media (max-width: 768px) {
+    .mappingList .col-md-2 {
+        max-width: 50%;
+        flex: 0 0 50%;
+    }
+}
+
+@media (max-width: 480px) {
+    .mappingList .col-md-2 {
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+}
+
