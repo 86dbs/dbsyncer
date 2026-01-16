@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.listener;
 
+import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -11,6 +12,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -18,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -27,19 +31,49 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractDatabaseListener extends AbstractListener<DatabaseConnectorInstance> {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     /**
      * 自定义SQL，支持1对多
      * <p>MY_USER > [用户表1, 用户表2]
      */
     private final Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
 
+
     /**
-     * 发送增量事件
+     * 统一的事件发送方法，带队列满重试机制
+     * 当队列满时，会根据配置的重试间隔进行阻塞重试，确保数据不丢失
      *
-     * @param event
+     * @param event 变更事件
      */
-    protected void sendChangedEvent(ChangedEvent event) {
-        changeEvent(event);
+    protected void trySendEvent(ChangedEvent event) {
+        // 检查连接状态（子类可以重写 isConnected() 方法来自定义连接检查逻辑）
+        while (true) {
+            try {
+                changeEvent(event);
+                return;  // 发送成功
+            } catch (QueueOverflowException e) {
+                // 队列已满，记录警告日志
+                long retryInterval = listenerConfig.getQueueOverflowRetryInterval();
+                logger.warn("队列已满，等待{}毫秒后重试，table: {}, event: {}, error: {}",
+                        retryInterval, event.getSourceTableName(), event.getEvent(), e.getMessage());
+                try {
+                    TimeUnit.MILLISECONDS.sleep(retryInterval);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                    logger.warn("重试等待被中断");
+                    break;
+                }
+            } catch (Exception e) {
+                // 发送事件时发生非队列溢出异常，记录详细错误信息并通过errorEvent传递
+                String errorMsg = String.format("发送事件失败，table: %s, event: %s, error: %s",
+                        event.getSourceTableName(), event.getEvent(), e.getMessage());
+                logger.error(errorMsg, e);
+                errorEvent(e);
+                // 不再重试，避免无限循环
+                break;
+            }
+        }
     }
 
     /**
@@ -118,8 +152,8 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             // 使用SQL模板构建DQL查询
             String querySql = service.sqlTemplate.buildDqlQuerySql(sql, primaryKeys);
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql, sqlColumns, tablePKIndex, sqlPKIndexMap);
-            dqlMap.compute(tableName, (k, v)-> {
-                if(v == null) {
+            dqlMap.compute(tableName, (k, v) -> {
+                if (v == null) {
                     return new ArrayList<>();
                 }
                 return v;

@@ -507,7 +507,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         null,
                         isEnd ? stopVersion : null  // ChangedOffset 支持 Long 类型
                 );
-                sendChangedEvent(ddlEvent);
+                // 使用统一的重试机制，确保队列满时不丢失数据
+                trySendEvent(ddlEvent);
             } else {
                 // 发送 DML 事件
                 CTEvent ctevent = unifiedEvent.getCtevent();
@@ -520,7 +521,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                             isEnd ? stopVersion : null,
                             ctevent.getColumnNames()  // 使用CTEvent中保存的列名信息
                     );
-                    sendChangedEvent(rowEvent);
+                    // 使用统一的重试机制，确保队列满时不丢失数据
+                    trySendEvent(rowEvent);
                 }
             }
         }

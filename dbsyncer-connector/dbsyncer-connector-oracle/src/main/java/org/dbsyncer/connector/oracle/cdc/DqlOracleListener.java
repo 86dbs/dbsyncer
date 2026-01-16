@@ -17,10 +17,4 @@ public class DqlOracleListener extends OracleListener {
         super.postProcessDqlBeforeInitialization();
         super.start();
     }
-
-    @Override
-    public void sendChangedEvent(ChangedEvent event) {
-        super.sendDqlChangedEvent(event);
-    }
-
 }

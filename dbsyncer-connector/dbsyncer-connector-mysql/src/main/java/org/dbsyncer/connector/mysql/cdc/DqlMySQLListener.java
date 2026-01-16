@@ -17,9 +17,4 @@ public class DqlMySQLListener extends MySQLListener {
         super.postProcessDqlBeforeInitialization();
         super.start();
     }
-
-    @Override
-    public void sendChangedEvent(ChangedEvent event) {
-        super.sendDqlChangedEvent(event);
-    }
 }

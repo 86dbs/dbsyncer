@@ -153,42 +153,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
     }
 
-    private boolean trySendEvent(ChangedEvent event) {
-        // 如果消费事件失败，重试
-        while (client.isConnected()) {
-            try {
-                sendChangedEvent(event);
-                return true;  // 发送成功
-            } catch (QueueOverflowException e) {
-                logger.warn("队列已满，等待300毫秒后重试，table: {}, event: {}, binlog: {}:{}, error: {}",
-                        event.getSourceTableName(), event.getEvent(),
-                        client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
-                try {
-                    TimeUnit.MILLISECONDS.sleep(300);
-                } catch (InterruptedException ignored) {
-                }
-            } catch (Exception e) {
-                // 发送事件时发生非队列溢出异常，记录详细错误信息并通过errorEvent传递
-                String errorMsg = String.format("发送事件失败，table: %s, event: %s, binlog: %s:%s, error: %s",
-                        event.getSourceTableName(), event.getEvent(),
-                        client.getBinlogFilename(), client.getBinlogPosition(), e.getMessage());
-                logger.error(errorMsg, e);
-                errorEvent(new MySQLException(errorMsg, e));
-                // 不再重试，避免无限循环
-                break;
-            }
-        }
-        // 如果连接断开，记录警告并通过errorEvent传递
-        if (!client.isConnected()) {
-            String errorMsg = String.format("MySQL连接已断开，事件发送失败，table: %s, event: %s, binlog: %s:%s",
-                    event.getSourceTableName(), event.getEvent(),
-                    client.getBinlogFilename(), client.getBinlogPosition());
-            logger.error(errorMsg);
-            errorEvent(new MySQLException(errorMsg));
-        }
-        return false;  // 发送失败
-    }
-
     static final class Host {
         private final String ip;
         private final int port;

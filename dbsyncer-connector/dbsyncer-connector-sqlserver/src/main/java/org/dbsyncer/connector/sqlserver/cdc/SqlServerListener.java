@@ -8,7 +8,6 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
-import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -245,12 +244,10 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 try {
                     // 启用表的 CDC
                     execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                }
-                catch (UncategorizedSQLException e){
+                } catch (UncategorizedSQLException e) {
                     logger.warn("表 [{}] 的 CDC 捕获实例已存在", table);
                     return;
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     // 如果启用失败，检查是否是捕获实例已存在的错误
                     logger.error("启用表 [{}] 的 CDC 失败！", table);
                     throw new RuntimeException("启用表 [" + table + "] 的 CDC 失败！");
@@ -310,7 +307,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
                     while (rs.next()) {
                         // 提取 LSN（第 1 列是 __$start_lsn）
                         Lsn eventLsn = new Lsn(rs.getBytes(1));
-                        
+
                         // 应用层过滤：跳过所有等于 lastLsn 的数据（避免重复处理）
                         // 由于数据按 LSN 排序，等于 lastLsn 的数据通常集中在首尾，可以高效过滤
                         if (eventLsn.compareTo(lastLsn) == 0) {
@@ -356,26 +353,11 @@ public class SqlServerListener extends AbstractDatabaseListener {
         parseUnifiedEvents(unifiedEvents, stopLsn);
     }
 
-    public void trySendEvent(RowChangedEvent event) {
-        while (connected) {
-            try {
-                sendChangedEvent(event);
-                break;
-            } catch (QueueOverflowException ex) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(1);
-                } catch (InterruptedException exe) {
-                    logger.error(exe.getMessage(), exe);
-                }
-            }
-        }
-    }
-
     /**
      * 查询 DDL 变更（使用统一的 LSN）
-     * 
+     *
      * @param startLsn 起始 LSN（应该是 lastLsn，不包括等于该值的 DDL）
-     * @param stopLsn 结束 LSN（包括等于该值的 DDL）
+     * @param stopLsn  结束 LSN（包括等于该值的 DDL）
      */
     private List<DDLEvent> pullDDLChanges(Lsn startLsn, Lsn stopLsn) throws Exception {
         logger.debug("查询 DDL 变更，startLsn: {}, stopLsn: {}", startLsn, stopLsn);
@@ -540,25 +522,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 null,
                 position
         );
-
-        while (connected) {
-            try {
-                sendChangedEvent(ddlEvent);
-
-                // 如果 DDL 操作会影响列结构（增删改列），需要重新启用表的 CDC
-                if (isColumnStructureChangedDDL(ddlCommand)) {
-                    reEnableTableCDC(tableName);
-                }
-
-                break;
-            } catch (QueueOverflowException ex) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(1);
-                } catch (InterruptedException exe) {
-                    logger.error(exe.getMessage(), exe);
-                }
-            }
-        }
+        trySendEvent(ddlEvent);
     }
 
     /**

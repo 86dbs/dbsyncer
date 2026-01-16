@@ -3,14 +3,13 @@
  */
 package org.dbsyncer.connector.postgresql.cdc;
 
-import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BooleanUtil;
-import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
-import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
@@ -288,18 +287,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                     RowChangedEvent event = messageDecoder.processMessage(msg);
                     if (event != null) {
                         event.setPosition(lsn.asString());
-                        while (connected){
-                            try {
-                                sendChangedEvent(event);
-                                break;
-                            } catch (QueueOverflowException ex) {
-                                try {
-                                    TimeUnit.MILLISECONDS.sleep(1);
-                                } catch (InterruptedException exe) {
-                                    logger.error(exe.getMessage(), exe);
-                                }
-                            }
-                        }
+                        trySendEvent(event);
                     }
 
                     // feedback

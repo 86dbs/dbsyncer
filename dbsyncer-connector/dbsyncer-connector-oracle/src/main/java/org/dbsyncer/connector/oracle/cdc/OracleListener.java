@@ -82,26 +82,6 @@ public class OracleListener extends AbstractDatabaseListener {
         }
     }
 
-    private void trySendEvent(ChangedEvent event) {
-        try {
-            // 如果消费事件失败，重试
-            while (logMiner.isConnected()) {
-                try {
-                    sendChangedEvent(event);
-                    break;
-                } catch (QueueOverflowException e) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    } catch (InterruptedException ex) {
-                        logger.error(ex.getMessage(), ex);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
     /**
      * 解析事件
      *

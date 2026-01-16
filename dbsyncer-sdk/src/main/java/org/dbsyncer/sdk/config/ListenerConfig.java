@@ -80,6 +80,15 @@ public class ListenerConfig {
      */
     private boolean allowModifyColumn = true;
 
+    // ========== 队列满重试配置 ==========
+
+    /**
+     * 队列满时重试间隔（毫秒）
+     * 当事件队列已满时，等待指定时间后重试
+     * 缺省值：300毫秒
+     */
+    private long queueOverflowRetryInterval = 300;
+
     public ListenerConfig() {
     }
 
@@ -189,5 +198,13 @@ public class ListenerConfig {
 
     public void setAllowModifyColumn(boolean allowModifyColumn) {
         this.allowModifyColumn = allowModifyColumn;
+    }
+
+    public long getQueueOverflowRetryInterval() {
+        return queueOverflowRetryInterval;
+    }
+
+    public void setQueueOverflowRetryInterval(long queueOverflowRetryInterval) {
+        this.queueOverflowRetryInterval = queueOverflowRetryInterval;
     }
 }
