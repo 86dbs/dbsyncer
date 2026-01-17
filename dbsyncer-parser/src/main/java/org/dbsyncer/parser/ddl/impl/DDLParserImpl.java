@@ -65,9 +65,9 @@ public class DDLParserImpl implements DDLParser {
         if (statement instanceof Alter && connectorService instanceof Database) {
             Alter alter = (Alter) statement;
             Database database = (Database) connectorService;
-            String quotation = database.buildSqlWithQuotation();
             // 替换成目标表名
-            alter.getTable().setName(quotation + tableGroup.getTargetTable().getName() + quotation);
+            String newTableName = database.buildWithQuotation(tableGroup.getTargetTable().getName());
+            alter.getTable().setName(newTableName);
             ddlConfig.setSql(alter.toString());
             for (AlterExpression expression : alter.getAlterExpressions()) {
                 STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {

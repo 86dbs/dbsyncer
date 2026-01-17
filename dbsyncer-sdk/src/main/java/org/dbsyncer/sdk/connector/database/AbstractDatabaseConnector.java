@@ -49,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -250,14 +249,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
-        // 1、获取select SQL
-        boolean supportedCursor = enableCursor() && context.isSupportedCursor() && null != context.getCursors();
-        String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
+        // 1、获取查询SQL
+        String queryKey = context.isSupportedCursor() ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
         final String querySql = context.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
+        Collections.addAll(context.getArgs(), context.isSupportedCursor() ? getPageCursorArgs(context) : getPageArgs(context));
 
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
@@ -372,18 +370,20 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 架构名
         String schema = getSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
-        List<Field> column = filterColumn(table.getColumn());
+        List<Field> columns = filterColumn(table.getColumn());
         // 获取过滤SQL
         final String queryFilterSql = getQueryFilterSql(commandConfig);
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, queryFilterSql);
 
-        // 获取查询SQL
+        // 获取分页SQL
         Map<String, String> map = new HashMap<>();
-        buildSql(map, SqlBuilderEnum.QUERY, config);
-        // 是否支持游标
-        if (enableCursor()) {
-            buildSql(map, SqlBuilderEnum.QUERY_CURSOR, config);
-        }
+        SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, columns, queryFilterSql);
+        buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
+
+        // 构建游标分页SQL
+        String querySql = map.get(SqlBuilderEnum.QUERY.getName());
+        PageSql pageSql = new PageSql(querySql, queryFilterSql, primaryKeys, columns);
+        map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, getPageCursorSql(pageSql));
+
         // 获取查询总数SQL
         map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql));
         return map;
@@ -446,7 +446,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             buildSql(map, SqlBuilderEnum.UPDATE, config);
         }
         buildSql(map, SqlBuilderEnum.DELETE, config);
-        buildSql(map, SqlBuilderEnum.QUERY_EXIST, config);
         return map;
     }
 
@@ -474,31 +473,163 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     /**
      * 获取架构名
-     *
-     * @param schema
-     * @return
      */
     protected String getSchemaWithQuotation(String schema) {
         StringBuilder s = new StringBuilder();
         if (StringUtil.isNotBlank(schema)) {
-            String quotation = buildSqlWithQuotation();
-            s.append(quotation).append(schema).append(quotation).append(".").toString();
+            s.append(buildWithQuotation(schema)).append(".");
         }
         return s.toString();
     }
 
     /**
-     * 满足游标查询条件，追加主键排序（单个主键才做排序）
-     *
-     * @param config
-     * @param sql
+     * 构建复合键的游标分页条件（支持任意数量的主键）
+     * 
+     * <p>对于单字段主键 (pk1)：生成条件：pk1 > ?</p>
+     * <p>对于2字段主键 (pk1, pk2)：生成条件：(pk1 > ?) OR (pk1 = ? AND pk2 > ?)</p>
+     * <p>对于3字段主键 (pk1, pk2, pk3)：生成条件：(pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?)</p>
+     * <p>对于n字段主键：依此类推...</p>
+     * 
+     * <p>原理：对于复合键 (pk1, pk2, ..., pkn)，要查询所有大于 (v1, v2, ..., vn) 的记录，
+     * 需要满足：(pk1 > v1) OR (pk1 = v1 AND pk2 > v2) OR ... OR (pk1 = v1 AND pk2 = v2 AND ... AND pkn > vn)</p>
+     * 
+     * @param sql SQL构建器
+     * @param primaryKeys 主键列表（支持任意长度）
+     * @param noCondition 无过滤条件
      */
-    protected void appendOrderByPk(PageSql config, StringBuilder sql) {
-        if (!CollectionUtils.isEmpty(config.getPrimaryKeys()) && config.getPrimaryKeys().size() == 1) {
-            sql.append(" ORDER BY ");
-            final String quotation = buildSqlWithQuotation();
-            PrimaryKeyUtil.buildSql(sql, config.getPrimaryKeys(), quotation, ",", "", true);
+    private void buildCursorCondition(StringBuilder sql, List<String> primaryKeys, boolean noCondition) {
+        if (primaryKeys.isEmpty()) {
+            return;
         }
+        
+        // 单字段主键：直接使用 pk > ?
+        if (primaryKeys.size() == 1) {
+            if (!noCondition) {
+                sql.append(" AND ");
+            }
+            sql.append(primaryKeys.get(0)).append(" > ? ");
+            return;
+        }
+        
+        // 复合键：构建 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
+        if (!noCondition) {
+            sql.append(" AND ");
+        }
+        sql.append("(");
+        
+        for (int i = 0; i < primaryKeys.size(); i++) {
+            if (i > 0) {
+                sql.append(" OR ");
+            }
+            sql.append("(");
+            
+            // 前面的字段都是等号
+            for (int j = 0; j < i; j++) {
+                if (j > 0) {
+                    sql.append(" AND ");
+                }
+                sql.append(primaryKeys.get(j)).append(" = ? ");
+            }
+            
+            // 最后一个字段使用大于号
+            if (i > 0) {
+                sql.append(" AND ");
+            }
+            sql.append(primaryKeys.get(i)).append(" > ? ");
+            sql.append(")");
+        }
+        
+        sql.append(") ");
+    }
+
+    /**
+     * 构建游标分页的WHERE条件和ORDER BY子句（不包含LIMIT/ROWNUM等分页限制）
+     *
+     * <p>用于在子类的getPageCursorSql方法中构建游标分页SQL的公共部分</p>
+     *
+     * @param sql    SQL构建器
+     * @param config PageSql配置
+     */
+    protected void buildCursorConditionAndOrderBy(StringBuilder sql, PageSql config) {
+        boolean noCondition = false;
+        // 没有过滤条件
+        if (StringUtil.isBlank(config.getQueryFilter())) {
+            noCondition = true;
+            sql.append(" WHERE ");
+        }
+        
+        // 使用buildPrimaryKeys处理主键
+        List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
+        
+        // 构建复合键的游标分页条件: (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
+        buildCursorCondition(sql, primaryKeys, noCondition);
+        
+        // 添加 ORDER BY - 必须按主键排序以保证游标分页的稳定性
+        sql.append(" ORDER BY ").append(StringUtil.join(primaryKeys, StringUtil.COMMA));
+    }
+
+    /**
+     * 为分页查询添加ORDER BY子句（按主键排序）
+     *
+     * <p>用于在getPageSql方法中为非游标分页查询添加ORDER BY子句，确保分页结果的一致性</p>
+     * <p>注意：非游标分页场景也必须添加ORDER BY，否则会导致数据重复或遗漏</p>
+     *
+     * @param sql SQL构建器
+     * @param config PageSql配置
+     */
+    protected void appendOrderByPrimaryKeys(StringBuilder sql, PageSql config) {
+        // 使用buildPrimaryKeys处理主键
+        final List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
+        // 添加 ORDER BY - 必须按主键排序以保证游标分页的稳定性
+        sql.append(" ORDER BY ").append(StringUtil.join(primaryKeys, StringUtil.COMMA));
+    }
+
+    /**
+     * 构建游标分页的参数数组核心逻辑（不包括数据库特定的OFFSET等参数）
+     * 
+     * <p>返回游标条件参数，不包含pageSize等分页参数</p>
+     * 
+     * @param cursors 当前游标值数组
+     * @return 游标条件参数数组，如果无游标则返回null
+     */
+    protected Object[] buildCursorArgs(Object[] cursors) {
+        if (null == cursors || cursors.length == 0) {
+            return null;
+        }
+        // 单字段主键：只需要 pk > ?，参数为 [last_pk]
+        int pkCount = cursors.length;
+        if (pkCount == 1) {
+            return new Object[]{cursors[0]};
+        }
+        
+        // 复合键（支持任意数量的主键）
+        // WHERE 条件为 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?) OR ...
+        // 
+        // 参数数量计算：等差数列求和
+        // - 1个主键：1个参数 (pk1 > ?)
+        // - 2个主键：1+2=3个参数 (pk1 > ?) OR (pk1 = ? AND pk2 > ?)
+        // - 3个主键：1+2+3=6个参数 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?)
+        // - n个主键：1+2+...+n = n*(n+1)/2 个参数
+        //
+        // 参数顺序示例（2个主键，cursors=[v1, v2]）：
+        //   [v1, v1, v2] 对应条件 (pk1 > v1) OR (pk1 = v1 AND pk2 > v2)
+        // 参数顺序示例（3个主键，cursors=[v1, v2, v3]）：
+        //   [v1, v1, v2, v1, v2, v3] 对应条件 (pk1 > v1) OR (pk1 = v1 AND pk2 > v2) OR (pk1 = v1 AND pk2 = v2 AND pk3 > v3)
+        int paramCount = pkCount * (pkCount + 1) / 2;
+        Object[] cursorArgs = new Object[paramCount];
+        
+        int index = 0;
+        // 遍历每个主键字段，生成对应的参数
+        for (int i = 0; i < pkCount; i++) {
+            // 对于第 i 个主键，前面的所有主键都需要等号条件
+            for (int j = 0; j < i; j++) {
+                cursorArgs[index++] = cursors[j];
+            }
+            // 第 i 个主键使用大于号条件
+            cursorArgs[index++] = cursors[i];
+        }
+        
+        return cursorArgs;
     }
 
     /**
@@ -598,20 +729,18 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return "";
         }
 
+        // TODO 优化
         int size = list.size();
         int end = size - 1;
         StringBuilder sql = new StringBuilder();
         sql.append("(");
         Filter c = null;
-        String quotation = buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             c = list.get(i);
             Field field = fieldMap.get(c.getName());
             Assert.notNull(field, "条件字段无效.");
             // "USER" = 'zhangsan'
-            sql.append(quotation);
-            sql.append(buildFieldName(field));
-            sql.append(quotation);
+            sql.append(buildWithQuotation(field.getName()));
             // 如果使用了函数则不加引号
             FilterEnum filterEnum = FilterEnum.getFilterEnum(c.getFilter());
             switch (filterEnum) {

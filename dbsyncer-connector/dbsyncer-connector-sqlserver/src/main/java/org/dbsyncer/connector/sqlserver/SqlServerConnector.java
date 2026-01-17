@@ -26,13 +26,13 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * SqlServer连接器实现
@@ -84,6 +84,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildWithQuotation(String key) {
+        return "[" + key + "]";
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
         String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
@@ -98,21 +103,38 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildTableName(String tableName) {
-        return convertKey(tableName);
-    }
-
-    @Override
-    public String buildFieldName(Field field) {
-        return convertKey(field.getName());
-    }
-
-    @Override
-    public List<String> buildPrimaryKeys(List<String> primaryKeys) {
-        if (CollectionUtils.isEmpty(primaryKeys)) {
-            return primaryKeys;
+    public String getPageCursorSql(PageSql config) {
+        // 不支持游标查询
+        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
+            return StringUtil.EMPTY;
         }
-        return primaryKeys.stream().map(this::convertKey).collect(Collectors.toList());
+
+        StringBuilder sql = new StringBuilder(config.getQuerySql());
+        // 使用基类的公共方法构建WHERE条件和ORDER BY
+        buildCursorConditionAndOrderBy(sql, config);
+        sql.append(DatabaseConstant.SQLSERVER_CURSOR_SQL);
+        return sql.toString();
+    }
+
+    @Override
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
+        if (null == cursors || cursors.length == 0) {
+            return new Object[]{0, pageSize};
+        }
+        // 使用基类的公共方法构建游标条件参数
+        Object[] cursorArgs = buildCursorArgs(cursors);
+        if (cursorArgs == null) {
+            return new Object[]{0, pageSize};
+        }
+        
+        // SQL Server使用 OFFSET ? ROWS FETCH NEXT ? ROWS ONLY，参数顺序为 [游标参数..., 0, pageSize]
+        Object[] newCursors = new Object[cursorArgs.length + 2];
+        System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
+        newCursors[cursorArgs.length] = 0;  // OFFSET
+        newCursors[cursorArgs.length + 1] = pageSize;  // FETCH NEXT
+        return newCursors;
     }
 
     @Override
@@ -144,7 +166,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         List<String> pkFieldNames = new ArrayList<>();
         
         fields.forEach(f -> {
-            String fieldName = database.buildFieldName(f);
+            String fieldName = database.buildWithQuotation(f.getName());
             fs.add(fieldName);
             sfs.add("s." + fieldName);
             vs.add("?");
@@ -157,7 +179,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         
         StringBuilder sql = new StringBuilder(database.generateUniqueCode());
         sql.append("MERGE ").append(config.getSchema());
-        sql.append(database.buildTableName(config.getTableName())).append(" AS t ");
+        sql.append(database.buildWithQuotation(config.getTableName())).append(" AS t ");
         sql.append("USING (VALUES (").append(StringUtil.join(vs, StringUtil.COMMA)).append(")) AS s (");
         sql.append(StringUtil.join(fs, StringUtil.COMMA)).append(") ");
         sql.append("ON ");
@@ -204,10 +226,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     protected String getSchema(String schema, Connection connection) {
         return StringUtil.isNotBlank(schema) ? schema : "dbo";
-    }
-
-    private String convertKey(String key) {
-        return "[" + key + "]";
     }
 
     @Override

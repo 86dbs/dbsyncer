@@ -17,12 +17,22 @@ public class DatabaseConstant {
     /**
      * Oracle分页语句开始
      */
-    public static final String ORACLE_PAGE_SQL_START = "SELECT * FROM (SELECT A.* FROM (";
+    public static final String ORACLE_PAGE_SQL_START = "SELECT * FROM (SELECT A.*, ROWNUM RN FROM (";
 
     /**
-     * Oracle分页语句结束
+     * Oracle分页语句开始
      */
-    public static final String ORACLE_PAGE_SQL_END = ")A WHERE ROWNUM <= ?)";
+    public static final String ORACLE_PAGE_SQL_END = ") A WHERE ROWNUM <= ?) WHERE RN > ?";
+
+    /**
+     * Oracle游标分页语句开始
+     */
+    public static final String ORACLE_PAGE_CURSOR_SQL_START = "SELECT * FROM (SELECT A.* FROM (";
+
+    /**
+     * Oracle游标分页语句结束
+     */
+    public static final String ORACLE_PAGE_CURSOR_SQL_END = ")A WHERE ROWNUM <= ?)";
 
     //*********************************** SqlServer **************************************//
     /**
@@ -34,6 +44,11 @@ public class DatabaseConstant {
      * </pre>
      */
     public static final String SQLSERVER_PAGE_SQL = "SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY %s) AS SQLSERVER_ROW_ID, * FROM (%s) S) A WHERE A.SQLSERVER_ROW_ID BETWEEN ? AND ?";
+
+    /**
+     * SqlServer游标语句
+     */
+    public static final String SQLSERVER_CURSOR_SQL = " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 
     //*********************************** PostgreSQL **************************************//
     /**

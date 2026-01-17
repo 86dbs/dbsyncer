@@ -13,7 +13,6 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
-import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -26,12 +25,10 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,8 +42,6 @@ import java.util.stream.Stream;
  * @Date 2021-11-22 23:55
  */
 public final class MySQLConnector extends AbstractDatabaseConnector {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();
@@ -102,35 +97,9 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
         StringBuilder sql = new StringBuilder(config.getQuerySql());
-        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            appendOrderByPk(config, sql);
-        }
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
-        return sql.toString();
-    }
-
-    @Override
-    public String getPageCursorSql(PageSql config) {
-        // 不支持游标查询
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            logger.debug("不支持游标查询，主键包含非数字类型");
-            return StringUtil.EMPTY;
-        }
-
-        // select * from test.`my_user` where `id` > ? and `uid` > ? order by `id`,`uid` limit ?,?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        boolean skipFirst = false;
-        // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            skipFirst = true;
-            sql.append(" WHERE ");
-        }
-        final String quotation = buildSqlWithQuotation();
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPk(config, sql);
+        // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）
+        appendOrderByPrimaryKeys(sql, config);
         sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
         return sql.toString();
     }
@@ -143,20 +112,51 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String getPageCursorSql(PageSql config) {
+        // 不支持游标查询
+        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
+            return StringUtil.EMPTY;
+        }
+        StringBuilder sql = new StringBuilder(config.getQuerySql());
+        // 使用基类的公共方法构建WHERE条件和ORDER BY
+        buildCursorConditionAndOrderBy(sql, config);
+        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
+        return sql.toString();
+    }
+
+    @Override
+    public Object[] getPageCursorArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        Object[] cursors = context.getCursors();
+        if (null == cursors || cursors.length == 0) {
+            return new Object[]{0, pageSize};
+        }
+        // 使用基类的公共方法构建游标条件参数
+        Object[] cursorArgs = buildCursorArgs(cursors);
+        if (cursorArgs == null) {
+            return new Object[]{0, pageSize};
+        }
+        // MySQL需要OFFSET=0和LIMIT=pageSize参数
+        Object[] newCursors = new Object[cursorArgs.length + 2];
+        System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
+        newCursors[cursorArgs.length] = 0;  // OFFSET
+        newCursors[cursorArgs.length + 1] = pageSize;  // LIMIT
+        return newCursors;
+    }
+
+    @Override
     protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
         List<Field> fields = config.getFields();
-        String quotation = buildSqlWithQuotation();
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> dfs = new ArrayList<>();
         fields.forEach(f -> {
-            String name = database.buildFieldName(f);
-            String quotedName = quotation + name + quotation;
-            fs.add(quotedName);
+            String name = database.buildWithQuotation(f.getName());
+            fs.add(name);
             vs.add("?");
             if (!f.isPk()) {
-                dfs.add(String.format("%s = VALUES(%s)", quotedName, quotedName));
+                dfs.add(String.format("%s = VALUES(%s)", name, name));
             }
         });
 
@@ -173,13 +173,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     protected String buildInsertSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
         List<Field> fields = config.getFields();
 
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         fields.forEach(f -> {
-            fs.add(quotation + database.buildFieldName(f) + quotation);
+            fs.add(database.buildWithQuotation(f.getName()));
             vs.add("?");
         });
 
@@ -194,33 +193,10 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     private StringBuilder buildTableName(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
         StringBuilder table = new StringBuilder();
         table.append(config.getSchema());
-        table.append(quotation);
-        table.append(database.buildTableName(config.getTableName()));
-        table.append(quotation);
+        table.append(database.buildWithQuotation(config.getTableName()));
         return table;
-    }
-
-    @Override
-    public Object[] getPageCursorArgs(ReaderContext context) {
-        int pageSize = context.getPageSize();
-        Object[] cursors = context.getCursors();
-        if (null == cursors) {
-            return new Object[]{0, pageSize};
-        }
-        int cursorsLen = cursors.length;
-        Object[] newCursors = new Object[cursorsLen + 2];
-        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
-        newCursors[cursorsLen] = 0;
-        newCursors[cursorsLen + 1] = pageSize;
-        return newCursors;
-    }
-
-    @Override
-    public boolean enableCursor() {
-        return true;
     }
 
     @Override

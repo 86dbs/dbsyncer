@@ -9,8 +9,6 @@ import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderDelete;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderInsert;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQuery;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCount;
-import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryExist;
-import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCursor;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderUpdate;
 
 /**
@@ -37,17 +35,9 @@ public enum SqlBuilderEnum {
      */
     QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
     /**
-     * 查询游标SQL生成器
-     */
-    QUERY_CURSOR(ConnectorConstant.OPERTION_QUERY_CURSOR, new SqlBuilderQueryCursor()),
-    /**
      * 查询总数
      */
-    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount()),
-    /**
-     * 查询行数据是否存在
-     */
-    QUERY_EXIST(ConnectorConstant.OPERTION_QUERY_EXIST, new SqlBuilderQueryExist());
+    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount());
 
     /**
      * SQL构造器名称

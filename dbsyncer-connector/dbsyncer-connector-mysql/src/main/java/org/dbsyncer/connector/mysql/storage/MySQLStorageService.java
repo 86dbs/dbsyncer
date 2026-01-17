@@ -277,7 +277,6 @@ public class MySQLStorageService extends AbstractStorageService {
         // 过滤值
         int size = filters.size();
 
-        String quotation = connector.buildSqlWithQuotation();
         for (int i = 0; i < size; i++) {
             AbstractFilter p = filters.get(i);
 
@@ -287,6 +286,8 @@ public class MySQLStorageService extends AbstractStorageService {
 
             FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
             String name = UnderlineToCamelUtils.camelToUnderline(p.getName());
+            sql.append(connector.buildWithQuotation(name));
+            sql.append(String.format(" %s ?", filterEnum.getName()));
             switch (filterEnum) {
                 case EQUAL:
                 case NOT_EQUAL:
@@ -294,20 +295,16 @@ public class MySQLStorageService extends AbstractStorageService {
                 case LT_AND_EQUAL:
                 case GT:
                 case GT_AND_EQUAL:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(p.getValue());
                     break;
                 case LIKE:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(new StringBuilder("%").append(p.getValue()).append("%"));
                     break;
                 case IN:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ?", filterEnum.getName()));
                     args.add(new StringBuilder("(").append(p.getValue()).append(")"));
                     break;
                 case IS_NULL:
                 case IS_NOT_NULL:
-                    sql.append(quotation).append(name).append(quotation).append(String.format(" %s ", filterEnum.getName()));
                     break;
                 default:
                     throw new MySQLException("Unsupported filter type: " + filterEnum.getName());

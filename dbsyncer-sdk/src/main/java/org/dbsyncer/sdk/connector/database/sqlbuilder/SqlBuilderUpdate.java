@@ -8,8 +8,8 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.database.AbstractSqlBuilder;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,40 +22,21 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
     @Override
     public String buildSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        String quotation = database.buildSqlWithQuotation();
-        List<Field> fields = config.getFields();
 
         StringBuilder sql = new StringBuilder(database.generateUniqueCode());
         sql.append("UPDATE ").append(config.getSchema());
-        sql.append(quotation);
-        sql.append(database.buildTableName(config.getTableName()));
-        sql.append(quotation).append(" SET ");
-        int size = fields.size();
-        for (int i = 0; i < size; i++) {
-            // skip pk
-            if (fields.get(i).isPk()) {
-                continue;
-            }
+        sql.append(database.buildWithQuotation(config.getTableName()));
+        sql.append(" SET ");
 
-            // "USERNAME"=?
-            sql.append(quotation);
-            sql.append(database.buildFieldName(fields.get(i)));
-            sql.append(quotation).append("=?");
-            if (i < size - 1) {
-                sql.append(StringUtil.COMMA);
-            }
+        List<String> fs = new ArrayList<>();
+        for (Field f : config.getFields()) {
+            fs.add(database.buildWithQuotation(f.getName()) + "=?");
         }
-
-        // 删除多余的符号
-        int last = sql.length() - 1;
-        if(StringUtil.equals(",", sql.substring(last))){
-            sql.deleteCharAt(last);
-        }
+        sql.append(StringUtil.join(fs, StringUtil.COMMA));
 
         // UPDATE "USER" SET "USERNAME"=?,"AGE"=? WHERE "ID"=? AND "UID" = ?
         sql.append(" WHERE ");
-        List<String> primaryKeys = database.buildPrimaryKeys(config.getPrimaryKeys());
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " = ? ", true);
+        database.appendPrimaryKeys(sql, config.getPrimaryKeys());
         return sql.toString();
     }
 

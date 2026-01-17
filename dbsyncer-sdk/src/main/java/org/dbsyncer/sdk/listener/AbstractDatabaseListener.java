@@ -6,7 +6,7 @@ package org.dbsyncer.sdk.listener;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
-import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -97,8 +97,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
         }
 
         DatabaseConnectorInstance instance = getConnectorInstance();
-        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
-        String quotation = service.buildSqlWithQuotation();
+        Database service = (Database) connectorService;
 
         for (Table t : customTable) {
             Object mainTable = t.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_MAIN);
@@ -131,10 +130,9 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             sql = sql.replace("\n", " ");
 
             StringBuilder querySql = new StringBuilder(sql);
-            String temp = sql.toUpperCase();
-            boolean notContainsWhere = !StringUtil.contains(temp, " WHERE ");
-            querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
-            PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
+            querySql.append(!StringUtil.contains(sql.toUpperCase(), " WHERE ") ? " WHERE " : " AND ");
+            service.appendPrimaryKeys(querySql, primaryKeys);
+
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
             dqlMap.compute(tableName, (k, v) -> {
                 if (v == null) {

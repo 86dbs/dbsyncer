@@ -81,64 +81,53 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageSql(PageSql config) {
-        // select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid" limit ? OFFSET ?
         StringBuilder sql = new StringBuilder(config.getQuerySql());
-        if (PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            appendOrderByPk(config, sql);
-        }
-        sql.append(DatabaseConstant.POSTGRESQL_PAGE_SQL);
-        return sql.toString();
-    }
-
-    @Override
-    public String getPageCursorSql(PageSql config) {
-        // 不支持游标查询
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            logger.debug("不支持游标查询，主键包含非数字类型");
-            return StringUtil.EMPTY;
-        }
-
-        // select * from test."my_user" where "id" > ? and "uid" > ? order by "id","uid" limit ? OFFSET ?
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        boolean skipFirst = false;
-        // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            skipFirst = true;
-            sql.append(" WHERE ");
-        }
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        final String quotation = buildSqlWithQuotation();
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, " AND ", " > ? ", skipFirst);
-        appendOrderByPk(config, sql);
+        // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）
+        appendOrderByPrimaryKeys(sql, config);
         sql.append(DatabaseConstant.POSTGRESQL_PAGE_SQL);
         return sql.toString();
     }
 
     @Override
     public Object[] getPageArgs(ReaderContext context) {
-        int pageIndex = context.getPageIndex();
         int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
         return new Object[]{pageSize, (pageIndex - 1) * pageSize};
+    }
+
+    @Override
+    public String getPageCursorSql(PageSql config) {
+        // 不支持游标查询
+        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
+            return StringUtil.EMPTY;
+        }
+
+        StringBuilder sql = new StringBuilder(config.getQuerySql());
+        // 使用基类的公共方法构建WHERE条件和ORDER BY
+        buildCursorConditionAndOrderBy(sql, config);
+        sql.append(DatabaseConstant.POSTGRESQL_PAGE_SQL);
+        return sql.toString();
     }
 
     @Override
     public Object[] getPageCursorArgs(ReaderContext context) {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();
-        if (null == cursors) {
+        if (null == cursors || cursors.length == 0) {
             return new Object[]{pageSize, 0};
         }
-        int cursorsLen = cursors.length;
-        Object[] newCursors = new Object[cursorsLen + 2];
-        System.arraycopy(cursors, 0, newCursors, 0, cursorsLen);
-        newCursors[cursorsLen] = pageSize;
-        newCursors[cursorsLen + 1] = 0;
+        // 使用基类的公共方法构建游标条件参数
+        Object[] cursorArgs = buildCursorArgs(cursors);
+        if (cursorArgs == null) {
+            return new Object[]{pageSize, 0};
+        }
+        
+        // PostgreSQL使用 LIMIT ? OFFSET ?，参数顺序为 [游标参数..., pageSize, 0]
+        Object[] newCursors = new Object[cursorArgs.length + 2];
+        System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
+        newCursors[cursorArgs.length] = pageSize;  // LIMIT
+        newCursors[cursorArgs.length + 1] = 0;  // OFFSET
         return newCursors;
-    }
-
-    @Override
-    public boolean enableCursor() {
-        return true;
     }
 
     @Override

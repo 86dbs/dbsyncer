@@ -3,13 +3,13 @@
  */
 package org.dbsyncer.sdk.connector.database;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Database {
 
@@ -23,32 +23,17 @@ public interface Database {
     }
 
     /**
-     * 查询语句表名和字段带上引号（默认不加）
-     *
-     * @return
+     * 获取引号（默认不加）
      */
     default String buildSqlWithQuotation() {
         return StringUtil.EMPTY;
     }
 
     /**
-     * 获取表名称(可自定义处理系统关键字，函数名)
-     *
-     * @param tableName
-     * @return
+     * 返回带引号的名称
      */
-    default String buildTableName(String tableName) {
-        return tableName;
-    }
-
-    /**
-     * 获取字段名称(可自定义处理系统关键字，函数名)
-     *
-     * @param field
-     * @return
-     */
-    default String buildFieldName(Field field) {
-        return field.getName();
+    default String buildWithQuotation(String name) {
+        return buildSqlWithQuotation() + name + buildSqlWithQuotation();
     }
 
     /**
@@ -58,7 +43,24 @@ public interface Database {
      * @return
      */
     default List<String> buildPrimaryKeys(List<String> primaryKeys) {
-        return primaryKeys;
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return primaryKeys;
+        }
+        return primaryKeys.stream().map(this::buildWithQuotation).collect(Collectors.toList());
+    }
+
+    /**
+     * 追加主键和参数占位符
+     *
+     * @param sql
+     * @param primaryKeys
+     */
+    default void appendPrimaryKeys(StringBuilder sql, List<String> primaryKeys) {
+        if (CollectionUtils.isEmpty(primaryKeys)) {
+            return;
+        }
+        List<String> pks = primaryKeys.stream().map(name -> buildWithQuotation(name) + "=?").collect(Collectors.toList());
+        sql.append(StringUtil.join(pks, " AND "));
     }
 
     /**
@@ -70,16 +72,6 @@ public interface Database {
     String getPageSql(PageSql config);
 
     /**
-     * 获取分页游标SQL
-     *
-     * @param pageSql
-     * @return
-     */
-    default String getPageCursorSql(PageSql pageSql) {
-        return "";
-    }
-
-    /**
      * 获取分页参数
      *
      * @param context
@@ -88,14 +80,20 @@ public interface Database {
     Object[] getPageArgs(ReaderContext context);
 
     /**
+     * 获取游标分页SQL
+     *
+     * @param pageSql
+     * @return
+     */
+    String getPageCursorSql(PageSql pageSql);
+
+    /**
      * 获取游标分页参数
      *
      * @param context
      * @return
      */
-    default Object[] getPageCursorArgs(ReaderContext context) {
-        throw new SdkException("Unsupported override method getPageCursorArgs:" + getClass().getName());
-    }
+    Object[] getPageCursorArgs(ReaderContext context);
 
     /**
      * 健康检查
@@ -104,15 +102,6 @@ public interface Database {
      */
     default String getValidationQuery() {
         return "select 1";
-    }
-
-    /**
-     * 是否使用游标查询
-     *
-     * @return
-     */
-    default boolean enableCursor() {
-        return false;
     }
 
 }
