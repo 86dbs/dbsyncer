@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 public final class SqlServerTimestampType extends TimestampType {
 
     private enum TypeEnum {
-        DATETIME("datetime");
+        DATETIME("datetime"),
+        DATETIME2("datetime2");
 
         private final String value;
 
