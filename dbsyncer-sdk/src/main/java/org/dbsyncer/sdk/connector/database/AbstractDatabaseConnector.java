@@ -250,12 +250,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
         // 1、获取查询SQL
-        String queryKey = context.isSupportedCursor() ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
+        boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
+        String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
         final String querySql = context.getCommand().get(queryKey);
         Assert.hasText(querySql, "查询语句不能为空.");
 
         // 2、设置参数
-        Collections.addAll(context.getArgs(), context.isSupportedCursor() ? getPageCursorArgs(context) : getPageArgs(context));
+        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
 
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
@@ -285,8 +286,16 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             executeSql = context.getCommand().get(event);
             fields.clear();
             fields.addAll(PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields));
+        } else if(context.isForceUpdate()){
+            // 开启覆盖
+            executeSql = context.getCommand().get(ConnectorConstant.OPERTION_UPSERT);
+        } else if(isUpdate(event)) {
+            // 修改操作
+            fields.addAll(PrimaryKeyUtil.findPrimaryKeyFields(fields));
+            executeSql = context.getCommand().get(event);
         } else {
-            executeSql = context.getCommand().get(context.isForceUpdate() ? ConnectorConstant.OPERTION_UPSERT : event);
+            // 新增操作
+            executeSql = context.getCommand().get(event);
         }
         if (StringUtil.isBlank(executeSql)) {
             logger.error("事件:{}, 执行SQL不能为空", event);
@@ -314,13 +323,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 }
             });
         } catch (Exception e) {
-            // 包含部分失败，全部重试，并记录每条数据的异常原因
-            if (context.isForceUpdate()) {
-                forceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
-                return result;
-            }
-            result.getFailData().addAll(data);
-            result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql).append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            // 出现失败时，服务降级为逐条处理
+            forceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
         }
 
         if (null != execute) {
@@ -342,7 +346,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             try {
                 int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(executeSql, batchRow(fields, row)));
                 if (execute == 0) {
-                    throw new SdkException(String.format("重试[%s]失败", event));
+                    throw new SdkException("数据不存在或执行异常");
                 }
                 result.getSuccessData().add(row);
                 printTraceLog(context, event, row, Boolean.TRUE, null);
@@ -844,10 +848,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (success) {
             // 仅开启traceId时才输出日志
             if (context.isEnablePrintTraceInfo()) {
-                logger.info("{} {}表事件{}, 重试执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
+                logger.info("{} {}表事件{}, 执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
             }
             return;
         }
-        logger.error("{} {}表事件{}, 重试执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
+        logger.error("{} {}表事件{}, 执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
     }
 }
