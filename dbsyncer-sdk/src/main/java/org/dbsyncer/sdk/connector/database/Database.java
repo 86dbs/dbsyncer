@@ -5,6 +5,9 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
+import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
@@ -102,6 +105,27 @@ public interface Database {
      */
     default String getValidationQuery() {
         return "select 1";
+    }
+
+    /**
+     * 获取查询总数SQL
+     */
+    default String getQueryCountSql(SqlBuilderConfig sqlConfig) {
+        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(sqlConfig);
+    }
+
+    /**
+     * 生成upsert
+     */
+    default String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        throw new SdkException("暂不支持开启upsert");
+    }
+
+    /**
+     * 生成insert
+     */
+    default String buildInsertSql(SqlBuilderConfig config) {
+        return SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
     }
 
 }

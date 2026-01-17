@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.enums;
 
+import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCursor;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilder;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderDelete;
@@ -34,6 +35,10 @@ public enum SqlBuilderEnum {
      * 查询SQL生成器
      */
     QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
+    /**
+     * 查询游标SQL生成器
+     */
+    QUERY_CURSOR(ConnectorConstant.OPERTION_QUERY_CURSOR, new SqlBuilderQueryCursor()),
     /**
      * 查询总数
      */

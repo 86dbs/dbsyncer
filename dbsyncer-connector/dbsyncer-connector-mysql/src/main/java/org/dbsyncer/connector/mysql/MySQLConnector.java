@@ -145,7 +145,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+    public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
         List<Field> fields = config.getFields();
         List<String> fs = new ArrayList<>();
@@ -171,7 +171,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String buildInsertSql(SqlBuilderConfig config) {
+    public String buildInsertSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         List<Field> fields = config.getFields();
 

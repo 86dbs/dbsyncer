@@ -17,7 +17,7 @@ public class SqlBuilderQueryCount extends SqlBuilderQuery {
     public String buildSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         String queryFilter = config.getQueryFilter();
-        return String.format("SELECT COUNT(*) FROM %s%s %s",
+        return String.format("SELECT COUNT(*) FROM %s%s%s",
                 config.getSchema(),
                 database.buildWithQuotation(config.getTableName()),
                 queryFilter);

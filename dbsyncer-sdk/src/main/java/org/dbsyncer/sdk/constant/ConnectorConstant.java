@@ -18,6 +18,11 @@ public class ConnectorConstant {
     public static final String OPERTION_UPDATE = "UPDATE";
 
     /**
+     * 覆盖更新
+     */
+    public static final String OPERTION_UPSERT = "UPSERT";
+
+    /**
      * 删除
      */
     public static final String OPERTION_DELETE = "DELETE";

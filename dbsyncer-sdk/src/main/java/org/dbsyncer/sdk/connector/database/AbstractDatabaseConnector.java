@@ -270,9 +270,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         List<Map> data = context.getTargetList();
         List<Field> targetFields = context.getTargetFields();
 
-        // 1、获取SQL
-        String executeSql = context.getCommand().get(event);
-        Assert.hasText(executeSql, "执行SQL语句不能为空.");
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
             throw new SdkException("writer fields can not be empty.");
@@ -281,10 +278,19 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             logger.error("writer data can not be empty.");
             throw new SdkException("writer data can not be empty.");
         }
+        // 1、获取SQL
         List<Field> fields = new ArrayList<>(targetFields);
+        String executeSql;
         if (isDelete(event)) {
+            executeSql = context.getCommand().get(event);
             fields.clear();
             fields.addAll(PrimaryKeyUtil.findExistPrimaryKeyFields(targetFields));
+        } else {
+            executeSql = context.getCommand().get(context.isForceUpdate() ? ConnectorConstant.OPERTION_UPSERT : event);
+        }
+        if (StringUtil.isBlank(executeSql)) {
+            logger.error("事件:{}, 执行SQL不能为空", event);
+            throw new SdkException("执行SQL不能为空");
         }
 
         Result result = new Result();
@@ -368,7 +374,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation(commandConfig.getSchema());
+        String schema = buildSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> columns = filterColumn(table.getColumn());
         // 获取过滤SQL
@@ -380,12 +386,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
 
         // 构建游标分页SQL
-        String querySql = map.get(SqlBuilderEnum.QUERY.getName());
-        PageSql pageSql = new PageSql(querySql, queryFilterSql, primaryKeys, columns);
-        map.put(ConnectorConstant.OPERTION_QUERY_CURSOR, getPageCursorSql(pageSql));
+        buildSql(map, SqlBuilderEnum.QUERY_CURSOR, buildSqlConfig);
 
         // 获取查询总数SQL
-        map.put(ConnectorConstant.OPERTION_QUERY_COUNT, getQueryCountSql(commandConfig, primaryKeys, schema, queryFilterSql));
+        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), getQueryCountSql(buildSqlConfig));
         return map;
     }
 
@@ -410,7 +414,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
 
         // 获取查询总数SQL
-        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(1) FROM (" + querySql + ") DBS_T");
+        map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(*) FROM (" + querySql + ") DBS_T");
         return map;
     }
 
@@ -429,7 +433,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         // 架构名
-        String schema = getSchemaWithQuotation(commandConfig.getSchema());
+        String schema = buildSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
         SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
@@ -438,9 +442,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Map<String, String> map = new HashMap<>();
         if (commandConfig.isForceUpdate()) {
             DatabaseConnectorInstance instance = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
-            String upsert = buildUpsertSql(instance, config);
-            map.put(SqlBuilderEnum.INSERT.getName(), upsert);
-            map.put(SqlBuilderEnum.UPDATE.getName(), upsert);
+            map.put(ConnectorConstant.OPERTION_UPSERT, buildUpsertSql(instance, config));
         } else {
             map.put(SqlBuilderEnum.INSERT.getName(), buildInsertSql(config));
             buildSql(map, SqlBuilderEnum.UPDATE, config);
@@ -474,7 +476,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 获取架构名
      */
-    protected String getSchemaWithQuotation(String schema) {
+    private String buildSchemaWithQuotation(String schema) {
         StringBuilder s = new StringBuilder();
         if (StringUtil.isNotBlank(schema)) {
             s.append(buildWithQuotation(schema)).append(".");
@@ -638,7 +640,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param commandConfig
      * @return
      */
-    protected String getQueryFilterSql(CommandConfig commandConfig) {
+    private String getQueryFilterSql(CommandConfig commandConfig) {
         List<Filter> filter = commandConfig.getFilter();
         if (CollectionUtils.isEmpty(filter)) {
             return "";
@@ -678,22 +680,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 获取查询总数SQL
-     *
-     * @param commandConfig
-     * @param primaryKeys
-     * @param schema
-     * @param queryFilterSql
-     * @return
-     */
-    private String getQueryCountSql(CommandConfig commandConfig, List<String> primaryKeys, String schema, String queryFilterSql) {
-        Table table = commandConfig.getTable();
-        String tableName = table.getName();
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, table.getColumn(), queryFilterSql);
-        return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(config);
-    }
-
-    /**
      * 去重列名
      *
      * @param column
@@ -729,7 +715,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return "";
         }
 
-        // TODO 优化
         int size = list.size();
         int end = size - 1;
         StringBuilder sql = new StringBuilder();
@@ -788,25 +773,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 生成upsert
-     *
-     * @param connectorInstance
-     * @param config
-     */
-    protected String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
-        throw new SdkException("暂不支持开启upsert");
-    }
-
-    /**
-     * 生成insert
-     *
-     * @param config
-     */
-    protected String buildInsertSql(SqlBuilderConfig config) {
-        return SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
-    }
-
-    /**
      * 生成SQL
      *
      * @param map
@@ -827,7 +793,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @return
      * @throws SQLException
      */
-    protected List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
+    private List<String> findTablePrimaryKeys(DatabaseMetaData md, String catalog, String schema, String tableName) throws SQLException {
         //根据表名获得主键结果集
         ResultSet rs = null;
         List<String> primaryKeys = new ArrayList<>();
