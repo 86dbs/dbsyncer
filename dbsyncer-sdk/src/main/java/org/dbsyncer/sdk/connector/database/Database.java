@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
@@ -18,8 +19,6 @@ public interface Database {
 
     /**
      * 获取dbs唯一标识码
-     *
-     * @return
      */
     default String generateUniqueCode() {
         return StringUtil.EMPTY;
@@ -40,10 +39,7 @@ public interface Database {
     }
 
     /**
-     * 获取主键字段名称(可自定义处理系统关键字，函数名)
-     *
-     * @param primaryKeys
-     * @return
+     * 获取主键字段名称
      */
     default List<String> buildPrimaryKeys(List<String> primaryKeys) {
         if (CollectionUtils.isEmpty(primaryKeys)) {
@@ -128,4 +124,11 @@ public interface Database {
         return SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
     }
 
+    default boolean buildCustom(List<String> fs, Field field) {
+        return false;
+    }
+
+    default boolean buildCustomValue(List<String> fs, Field field) {
+        return false;
+    }
 }

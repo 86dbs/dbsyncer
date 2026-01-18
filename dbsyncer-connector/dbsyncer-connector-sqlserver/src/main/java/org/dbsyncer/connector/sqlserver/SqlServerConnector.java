@@ -157,19 +157,21 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        List<Field> fields = config.getFields();
         
         List<String> fs = new ArrayList<>();
         List<String> sfs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> updateSets = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();
-        
-        fields.forEach(f -> {
+
+        config.getFields().forEach(f -> {
             String fieldName = database.buildWithQuotation(f.getName());
             fs.add(fieldName);
             sfs.add("s." + fieldName);
-            vs.add("?");
+            // 处理特殊类型
+            if (!database.buildCustomValue(vs, f)) {
+                vs.add("?");
+            }
             if (f.isPk()) {
                 pkFieldNames.add(fieldName);
             } else {
@@ -242,5 +244,50 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    public boolean buildCustom(List<String> fs, Field field) {
+        switch (field.getTypeName()) {
+            /**
+             * SRID	    名称	                    用途	                        单位
+             * 0	    未定义/本地坐标系	        SQL Server geometry 默认	    任意单位
+             * 4326	    WGS84	                GPS、全球坐标系	            度（经纬度）
+             * 3857	    Web Mercator	        Google Maps、OpenStreetMap	米
+             * 4490	    CGCS2000	            中国2000坐标系	            度
+             * 4547	    CGCS2000/Gauss-Kruger	中国投影坐标系	            米
+             * 26910	NAD83/UTM zone 10N	    北美坐标系	                米
+             * 32610	WGS84/UTM zone 10N	    全球UTM投影	                米
+             */
+            case "geometry":
+            case "geography":
+                // 使用 STAsText() 获取 WKT 格式，同时包含 SRID 信息，格式：POINT (...) | 4326
+                fs.add(String.format("CAST([%s].STAsText() AS NVARCHAR(MAX)) + ' | ' + CAST([%s].STSrid AS NVARCHAR(10)) AS [%s]",
+                    field.getName(), field.getName(), field.getName()));
+                return true;
+            default:
+                break;
+        }
+        return super.buildCustom(fs, field);
+    }
+
+    @Override
+    public boolean buildCustomValue(List<String> fs, Field field) {
+        switch (field.getTypeName()) {
+            case "geometry":
+                // POINT (133.4 38.5) | 4326
+                // 处理 NULL 值：如果第一个参数（WKT）为 NULL，则返回 NULL，否则调用 STGeomFromText
+                // 注意：第一个 ? 用于 NULL 检查，第二个和第三个 ? 是 WKT 和 SRID 参数
+                fs.add("CASE WHEN ? IS NULL THEN CAST(NULL AS geometry) ELSE geometry::STGeomFromText(?, ?) END");
+                return true;
+            case "geography":
+                // POINT (133.4 38.5) | 4326
+                // 处理 NULL 值：如果第一个参数（WKT）为 NULL，则返回 NULL，否则调用 STGeomFromText
+                fs.add("CASE WHEN ? IS NULL THEN CAST(NULL AS geography) ELSE geography::STGeomFromText(?, ?) END");
+                return true;
+            default:
+                break;
+        }
+        return super.buildCustomValue(fs, field);
     }
 }

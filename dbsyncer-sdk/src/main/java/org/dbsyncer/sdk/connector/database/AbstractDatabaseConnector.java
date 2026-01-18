@@ -14,6 +14,7 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.schema.CustomData;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -836,12 +837,17 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private Object[] batchRow(List<Field> fields, Map row) {
-        final int size = fields.size();
-        Object[] args = new Object[size];
-        for (int i = 0; i < size; i++) {
-            args[i] = row.get(fields.get(i).getName());
+        List<Object> args = new ArrayList<>();
+        for (Field f : fields) {
+            Object val = row.get(f.getName());
+            if (val instanceof CustomData) {
+                CustomData cd = (CustomData) val;
+                args.addAll(cd.apply());
+                continue;
+            }
+            args.add(val);
         }
-        return args;
+        return args.toArray();
     }
 
     private void printTraceLog(PluginContext context, String event, Map row, boolean success, String message) {

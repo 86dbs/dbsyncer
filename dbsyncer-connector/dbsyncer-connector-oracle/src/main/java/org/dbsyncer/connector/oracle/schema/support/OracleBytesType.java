@@ -44,7 +44,7 @@ public final class OracleBytesType extends BytesType {
     }
 
     @Override
-    protected byte[] getDefaultMergedVal() {
+    protected byte[] getDefaultMergedVal(Field field) {
         return new byte[0];
     }
 

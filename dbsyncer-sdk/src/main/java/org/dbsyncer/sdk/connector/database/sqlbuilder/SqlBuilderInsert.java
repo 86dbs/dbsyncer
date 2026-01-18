@@ -26,6 +26,10 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         for (Field f : config.getFields()) {
+            // 处理特殊类型
+            if (database.buildCustomValue(fs, f)) {
+                continue;
+            }
             fs.add(database.buildWithQuotation(f.getName()));
             vs.add("?");
         }

@@ -3,14 +3,14 @@
  */
 package org.dbsyncer.connector.postgresql.schema.support;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKTReader;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PGobject;
 

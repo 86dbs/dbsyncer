@@ -35,7 +35,7 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected T getDefaultMergedVal() {
+    protected T getDefaultMergedVal(Field field) {
         return null;
     }
 
@@ -53,14 +53,14 @@ public abstract class AbstractDataType<T> implements DataType {
      *
      * @return
      */
-    protected Object getDefaultConvertedVal() {
+    protected Object getDefaultConvertedVal(Field field) {
         return null;
     }
 
     @Override
     public Object mergeValue(Object val, Field field) {
         if (val == null) {
-            return getDefaultMergedVal();
+            return getDefaultMergedVal(field);
         }
         // 数据类型匹配
         if (val.getClass().equals(parameterClazz)) {
@@ -73,7 +73,7 @@ public abstract class AbstractDataType<T> implements DataType {
     @Override
     public Object convertValue(Object val, Field field) {
         if (val == null) {
-            return getDefaultConvertedVal();
+            return getDefaultConvertedVal(field);
         }
         // 异构数据类型转换
         return convert(val, field);

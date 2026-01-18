@@ -40,6 +40,10 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
                 fs.add(database.buildWithQuotation(f.getName()) + " AS " + f.getLabelName());
                 continue;
             }
+            // 处理特殊类型
+            if (database.buildCustom(fs, f)) {
+                continue;
+            }
             fs.add(database.buildWithQuotation(f.getName()));
         }
 

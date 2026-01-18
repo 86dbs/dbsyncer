@@ -41,7 +41,7 @@
         <ojdbc8.version>21.6.0.0</ojdbc8.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
-        <jts.version>1.13</jts.version>
+        <jts-core.version>1.19.0</jts-core.version>
         <mysql-binlog.version>0.30.1</mysql-binlog.version>
         <mssql-jdbc.version>8.4.1.jre8</mssql-jdbc.version>
         <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
@@ -147,9 +147,9 @@
                 <version>${mysql.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.vividsolutions</groupId>
-                <artifactId>jts</artifactId>
-                <version>${jts.version}</version>
+                <groupId>org.locationtech.jts</groupId>
+                <artifactId>jts-core</artifactId>
+                <version>${jts-core.version}</version>
             </dependency>
 
             <!-- oracle-driver -->
