@@ -22,9 +22,8 @@ public class Field {
     private String typeName;
 
     /**
-     * 类型编码，4，TODO 统一使用typeName
+     * 类型编码
      */
-    @Deprecated
     private int type;
 
     /**
