@@ -37,6 +37,11 @@ public final class SqlServerBytesType extends BytesType {
     }
 
     @Override
+    protected byte[] getDefaultMergedVal(Field field) {
+        return new byte[0];
+    }
+
+    @Override
     protected byte[] merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }

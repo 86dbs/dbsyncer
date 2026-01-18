@@ -32,7 +32,6 @@ public class SqlServerGeometryData extends CustomData {
         // 参数1: WKT（NULLIF 的第一个参数）
         // 参数2: SRID
         if (value == null || value.toString().trim().isEmpty()) {
-            // 空值：传入空字符串和 null
             args.add("");
             args.add(0);
             return args;

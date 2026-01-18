@@ -4,11 +4,17 @@
 package org.dbsyncer.connector.sqlserver.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeographyData;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeometryData;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -58,6 +64,16 @@ public final class SqlServerStringType extends StringType {
     @Override
     protected String merge(Object val, Field field) {
         if (val instanceof byte[]) {
+            TypeEnum type = TypeEnum.getType(field.getTypeName());
+            if (type != null) {
+                switch (type) {
+                    case GEOMETRY:
+                    case GEOGRAPHY:
+                        return parseToWKTWithSRID((byte[]) val);
+                    default:
+                        break;
+                }
+            }
             return new String((byte[]) val);
         }
 
@@ -114,4 +130,57 @@ public final class SqlServerStringType extends StringType {
         return super.convert(val, field);
     }
 
+    /**
+     * 将 SQL Server CDC Geometry 转换为标准 WKB
+     * 步骤: 提取坐标 -> 创建标准 WKB -> 使用 WKBReader 解析
+     */
+    public static String parseToWKTWithSRID(byte[] bytes) {
+        try {
+            if (bytes == null || bytes.length < 22) {
+                return null;
+            }
+
+            // 解析 SRID
+            int srid = ((bytes[1] & 0xFF) << 8) | (bytes[0] & 0xFF);
+
+            // 解析坐标
+            ByteBuffer buffer = ByteBuffer.wrap(bytes, 6, 16);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            double x = buffer.getDouble();
+            double y = buffer.getDouble();
+
+            // 使用 EWKB 创建 Geometry
+            byte[] ewkb = createEWKBPoint(x, y, srid);
+            WKBReader reader = new WKBReader();
+            Geometry geometry = reader.read(ewkb);
+
+            return "SRID=" + srid + ";" + geometry.toText();
+        } catch (ParseException e) {
+            throw new SqlServerException(e);
+        }
+    }
+
+    /**
+     * 创建 EWKB Point
+     */
+    private static byte[] createEWKBPoint(double x, double y, int srid) {
+        // EWKB 结构: 字节顺序(1) + 类型(4) + SRID(4) + 坐标(16)
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4 + 8 + 8); // 25字节
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        // 字节顺序标记
+        buffer.put((byte) 1);
+
+        // 几何类型: Point with SRID flag (0x20000000)
+        buffer.putInt(1 | 0x20000000);
+
+        // SRID
+        buffer.putInt(srid);
+
+        // 坐标
+        buffer.putDouble(x);
+        buffer.putDouble(y);
+
+        return buffer.array();
+    }
 }

@@ -9,6 +9,8 @@ import org.dbsyncer.sdk.filter.CompareFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 public class Picker {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Field> sourceFields = new ArrayList<>();
     private final List<Field> targetFields = new ArrayList<>();
     private final int sFieldSize;
@@ -67,6 +70,7 @@ public class Picker {
         for (List<Object> row : rows) {
             // 排除下标不一致的数据
             if (row.size() != sourceOriginalFields.size()) {
+                logger.warn("源表结构发生变化，与当前表字段映射关系不一致，请检查重新配置");
                 continue;
             }
             source = new HashMap<>();
