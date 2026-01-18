@@ -276,15 +276,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         switch (field.getTypeName()) {
             case "geometry":
                 // POINT (133.4 38.5) | 4326
-                // STGeomFromText 的第二个参数（SRID）不能为 NULL，所以需要检查 WKT 是否为 NULL
-                // 使用 NULLIF 将空字符串转换为 NULL，然后检查是否为 NULL
-                // 参数顺序：[wkt_for_check, wkt_for_function, srid]
-                fs.add("CASE WHEN NULLIF(?, '') IS NULL THEN CAST(NULL AS geometry) ELSE geometry::STGeomFromText(?, ?) END");
+                fs.add("geometry::STGeomFromText(NULLIF(NULLIF(?, ''), 'NULL'),?)");
                 return true;
             case "geography":
-                // POINT (133.4 38.5) | 4326
-                // STGeomFromText 的第二个参数（SRID）不能为 NULL，所以需要检查 WKT 是否为 NULL
-                fs.add("CASE WHEN NULLIF(?, '') IS NULL THEN CAST(NULL AS geography) ELSE geography::STGeomFromText(?, ?) END");
+                fs.add("geography::STGeomFromText(NULLIF(NULLIF(?, ''), 'NULL'),?)");
                 return true;
             default:
                 break;
