@@ -331,7 +331,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (null != execute) {
             int batchSize = execute.length;
             for (int i = 0; i < batchSize; i++) {
-                if (execute[i] == 1 || execute[i] == -2) {
+                /**
+                 * MySQL返回结果：
+                 * With ON DUPLICATE KEY UPDATE, the affected-rows value per row is 1 if the row is inserted as a new row, 2 if an existing row is updated, and 0 if an existing row is set to its current values.
+                 */
+                if (execute[i] == 1 || execute[i] == 2 || execute[i] == -2) {
                     result.getSuccessData().add(data.get(i));
                     continue;
                 }
