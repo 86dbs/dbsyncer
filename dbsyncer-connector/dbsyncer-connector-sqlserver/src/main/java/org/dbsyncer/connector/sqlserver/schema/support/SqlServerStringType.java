@@ -93,7 +93,7 @@ public final class SqlServerStringType extends StringType {
                     break;
             }
         }
-        return super.getDefaultMergedVal(field);
+        return super.getDefaultConvertedVal(field);
     }
 
     @Override

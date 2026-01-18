@@ -6,6 +6,7 @@ import oracle.sql.CLOB;
 import oracle.sql.STRUCT;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.sdk.schema.CustomData;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
@@ -72,6 +73,12 @@ public abstract class BinlogMessageUtil {
     }
 
     public static ByteString serializeValue(Object v) {
+        // 自定义数据类型
+        if (v instanceof CustomData) {
+            CustomData cd = (CustomData) v;
+            return ByteString.copyFromUtf8(cd.toString());
+        }
+
         String type = v.getClass().getName();
         switch (type) {
             // 字节

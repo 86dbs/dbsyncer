@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.schema;
 
+import org.dbsyncer.common.util.StringUtil;
+
 import java.util.Collection;
 
 /**
@@ -23,4 +25,9 @@ public abstract class CustomData {
     }
 
     public abstract Collection<?> apply();
+
+    @Override
+    public String toString() {
+        return value == null ? StringUtil.EMPTY : String.valueOf(value);
+    }
 }

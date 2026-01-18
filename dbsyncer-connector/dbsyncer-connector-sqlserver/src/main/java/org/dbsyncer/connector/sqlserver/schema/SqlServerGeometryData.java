@@ -27,22 +27,31 @@ public class SqlServerGeometryData extends CustomData {
     public Collection<?> apply() {
         List<Object> args = new ArrayList<>();
         // POINT (133.4 38.5) | 4326
-        // SQL: CASE WHEN ? IS NULL THEN CAST(NULL AS geometry) ELSE geometry::STGeomFromText(?, ?) END
-        // 参数顺序：[wkt_for_null_check, wkt_for_function, srid]
-        String valueStr = (String) getValue();
-        if (StringUtil.isBlank(valueStr)) {
-            // 空字符串也当作 NULL 处理
-            args.add(null);
-            args.add(null);
-            args.add(null);
+        // SQL: CASE WHEN NULLIF(?, '') IS NULL THEN CAST(NULL AS geometry) ELSE geometry::STGeomFromText(?, ?) END
+        // 参数顺序：[wkt_for_check, wkt_for_function, srid]
+        // 注意：SRID 不能为 NULL，所以当 WKT 为 NULL 时，必须在 CASE 表达式中处理
+        Object value = getValue();
+        if (value == null) {
+            // NULL 值处理：第一个参数用于 NULLIF 检查，第二个和第三个用于函数（但不会被调用）
+            args.add(null);  // 第一个 WKT（用于 NULLIF(?, '') 检查）
+            args.add(null);  // 第二个 WKT（用于函数调用，但不会执行）
+            args.add(0);     // SRID（默认值，不会执行）
             return args;
         }
+        
+        String valueStr = value instanceof String ? (String) value : String.valueOf(value);
         GeometryData data = parse(valueStr);
-        // 第一个参数用于 NULL 检查（如果 WKT 为空或 null，则整个表达式返回 NULL）
-        boolean blankWKT = StringUtil.isBlank(data.wkt);
-        args.add(blankWKT ? null : data.wkt);
-        args.add(blankWKT ? null : data.wkt);  // WKT 参数
-        args.add(blankWKT ? null : data.srid); // SRID 参数
+        if (StringUtil.isBlank(data.wkt)) {
+            // WKT 为空，传入空字符串让 NULLIF 处理
+            args.add("");
+            args.add(null);
+            args.add(0);
+        } else {
+            // WKT 有效
+            args.add(data.wkt);  // 第一个 WKT（用于 NULLIF 检查）
+            args.add(data.wkt);  // 第二个 WKT（用于函数调用）
+            args.add(data.srid); // SRID
+        }
         return args;
     }
 
