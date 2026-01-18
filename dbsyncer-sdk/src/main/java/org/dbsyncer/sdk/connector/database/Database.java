@@ -5,7 +5,6 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -113,9 +112,7 @@ public interface Database {
     /**
      * 生成upsert
      */
-    default String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
-        throw new SdkException("暂不支持开启upsert");
-    }
+    String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config);
 
     /**
      * 生成insert

@@ -8,9 +8,11 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.sqlite.schema.SQLiteSchemaResolver;
 import org.dbsyncer.connector.sqlite.validator.SQLiteConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -146,6 +148,95 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    public String buildInsertSql(SqlBuilderConfig config) {
+        // SQLite 使用 INSERT OR IGNORE 实现 INSERT IGNORE 效果
+        UpsertContext context = buildUpsertContext(config);
+
+        // 构建 INSERT OR IGNORE INTO ... VALUES (...)
+        return config.getDatabase().generateUniqueCode() + "INSERT OR IGNORE INTO " + config.getSchema() +
+                config.getDatabase().buildWithQuotation(config.getTableName()) +
+                "(" + StringUtil.join(context.fieldNames, StringUtil.COMMA) + ") " +
+                "VALUES (" + StringUtil.join(context.valuePlaceholders, StringUtil.COMMA) + ")";
+    }
+
+    @Override
+    public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        // SQLite 3.24.0+ 支持 ON CONFLICT DO UPDATE 语法
+        UpsertContext context = buildUpsertContext(config);
+        StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
+        
+        // 构建 INSERT INTO ... VALUES (...)
+        buildInsertIntoClause(sql, config, context);
+        
+        // 构建 ON CONFLICT (...) DO UPDATE SET
+        buildOnConflictClause(sql, context);
+        sql.append(" DO UPDATE SET ");
+        sql.append(StringUtil.join(context.updateSets, StringUtil.COMMA));
+        
+        return sql.toString();
+    }
+
+    /**
+     * 构建 INSERT INTO ... VALUES (...) 子句
+     */
+    private void buildInsertIntoClause(StringBuilder sql, SqlBuilderConfig config, UpsertContext context) {
+        sql.append("INSERT INTO ").append(config.getSchema());
+        sql.append(config.getDatabase().buildWithQuotation(config.getTableName()));
+        sql.append("(").append(StringUtil.join(context.fieldNames, StringUtil.COMMA)).append(") ");
+        sql.append("VALUES (").append(StringUtil.join(context.valuePlaceholders, StringUtil.COMMA)).append(")");
+    }
+
+    /**
+     * 构建 ON CONFLICT (...) 子句
+     */
+    private void buildOnConflictClause(StringBuilder sql, UpsertContext context) {
+        sql.append(" ON CONFLICT (");
+        sql.append(StringUtil.join(context.pkFieldNames, StringUtil.COMMA));
+        sql.append(")");
+    }
+
+    /**
+     * 构建 UPSERT 上下文（字段、主键等信息）
+     */
+    private UpsertContext buildUpsertContext(SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        UpsertContext context = new UpsertContext();
+        
+        config.getFields().forEach(f -> {
+            String fieldName = database.buildWithQuotation(f.getName());
+            context.fieldNames.add(fieldName);
+            
+            // 构建 VALUES 占位符
+            List<String> fieldVs = new ArrayList<>();
+            if (database.buildCustomValue(fieldVs, f)) {
+                // 自定义值表达式（如特殊类型）
+                context.valuePlaceholders.add(fieldVs.get(0));
+            } else {
+                context.valuePlaceholders.add("?");
+            }
+            
+            if (f.isPk()) {
+                context.pkFieldNames.add(fieldName);
+            } else {
+                // UPDATE SET fieldName = excluded.fieldName
+                context.updateSets.add(String.format("%s = excluded.%s", fieldName, fieldName));
+            }
+        });
+        
+        return context;
+    }
+
+    /**
+     * UPSERT 语句构建上下文
+     */
+    private static class UpsertContext {
+        List<String> fieldNames = new ArrayList<>();
+        List<String> valuePlaceholders = new ArrayList<>();
+        List<String> pkFieldNames = new ArrayList<>();
+        List<String> updateSets = new ArrayList<>();
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
