@@ -128,7 +128,19 @@ public interface Database {
         return false;
     }
 
-    default boolean buildCustomValue(List<String> fs, Field field) {
+    /**
+     * 为特殊字段类型构建自定义的值表达式
+     * 
+     * <p>用于 INSERT/UPDATE 语句的 VALUES 部分，允许数据库连接器为特定字段类型（如 geometry、geography）
+     * 提供自定义的 SQL 表达式，而不是简单的占位符 ?</p>
+     * 
+     * <p>例如 SQL Server 的 geometry 类型需要使用 geometry::STGeomFromText(?, ?) 来转换</p>
+     * 
+     * @param vs 值表达式列表（VALUES 部分）
+     * @param field 字段信息
+     * @return true 表示已添加自定义值表达式，false 表示使用默认的 ? 占位符
+     */
+    default boolean buildCustomValue(List<String> vs, Field field) {
         return false;
     }
 }

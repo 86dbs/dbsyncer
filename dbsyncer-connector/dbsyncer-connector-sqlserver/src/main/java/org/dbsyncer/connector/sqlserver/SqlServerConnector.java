@@ -109,11 +109,15 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             return StringUtil.EMPTY;
         }
 
-        StringBuilder sql = new StringBuilder(config.getQuerySql());
-        // 使用基类的公共方法构建WHERE条件和ORDER BY
-        buildCursorConditionAndOrderBy(sql, config);
-        sql.append(DatabaseConstant.SQLSERVER_CURSOR_SQL);
-        return sql.toString();
+        // 构建带游标条件的查询SQL（只添加WHERE条件，不添加ORDER BY）
+        StringBuilder innerSql = new StringBuilder(config.getQuerySql());
+        buildCursorConditionOnly(innerSql, config);
+        
+        // 使用 ROW_NUMBER() 方式分页（兼容 SQL Server 2008+）
+        // 外层的 ORDER BY 已经在 ROW_NUMBER() OVER(ORDER BY ...) 中处理
+        List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
+        String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
+        return String.format(DatabaseConstant.SQLSERVER_PAGE_SQL, orderBy, innerSql);
     }
 
     @Override
@@ -121,19 +125,20 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();
         if (null == cursors || cursors.length == 0) {
-            return new Object[]{0, pageSize};
+            // 第一页：BETWEEN 1 AND pageSize
+            return new Object[]{1, pageSize};
         }
         // 使用基类的公共方法构建游标条件参数
         Object[] cursorArgs = buildCursorArgs(cursors);
         if (cursorArgs == null) {
-            return new Object[]{0, pageSize};
+            return new Object[]{1, pageSize};
         }
         
-        // SQL Server使用 OFFSET ? ROWS FETCH NEXT ? ROWS ONLY，参数顺序为 [游标参数..., 0, pageSize]
+        // SQL Server使用 ROW_NUMBER() 方式：[游标参数..., 1, pageSize]
         Object[] newCursors = new Object[cursorArgs.length + 2];
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
-        newCursors[cursorArgs.length] = 0;  // OFFSET
-        newCursors[cursorArgs.length + 1] = pageSize;  // FETCH NEXT
+        newCursors[cursorArgs.length] = 1;  // BETWEEN 起始
+        newCursors[cursorArgs.length + 1] = pageSize;  // BETWEEN 结束
         return newCursors;
     }
 

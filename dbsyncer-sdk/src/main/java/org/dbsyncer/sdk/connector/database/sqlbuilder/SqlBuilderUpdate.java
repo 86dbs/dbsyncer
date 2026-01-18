@@ -30,7 +30,17 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
 
         List<String> fs = new ArrayList<>();
         for (Field f : config.getFields()) {
-            fs.add(database.buildWithQuotation(f.getName()) + "=?");
+            String fieldName = database.buildWithQuotation(f.getName());
+            
+            // 处理特殊类型的值表达式
+            List<String> vs = new ArrayList<>();
+            if (database.buildCustomValue(vs, f)) {
+                // 使用自定义值表达式
+                fs.add(fieldName + "=" + vs.get(0));
+            } else {
+                // 使用默认的 ? 占位符
+                fs.add(fieldName + "=?");
+            }
         }
         sql.append(StringUtil.join(fs, StringUtil.COMMA));
 

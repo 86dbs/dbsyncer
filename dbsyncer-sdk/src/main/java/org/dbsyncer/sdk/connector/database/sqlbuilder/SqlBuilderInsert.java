@@ -26,11 +26,13 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         for (Field f : config.getFields()) {
-            // 处理特殊类型
-            if (database.buildCustomValue(fs, f)) {
+            // 添加字段名
+            fs.add(database.buildWithQuotation(f.getName()));
+            
+            // 处理特殊类型的值表达式
+            if (database.buildCustomValue(vs, f)) {
                 continue;
             }
-            fs.add(database.buildWithQuotation(f.getName()));
             vs.add("?");
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)

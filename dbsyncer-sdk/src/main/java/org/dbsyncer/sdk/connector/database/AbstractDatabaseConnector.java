@@ -564,15 +564,38 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             noCondition = true;
             sql.append(" WHERE ");
         }
-        
+
         // 使用buildPrimaryKeys处理主键
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
-        
+
         // 构建复合键的游标分页条件: (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
         buildCursorCondition(sql, primaryKeys, noCondition);
-        
+
         // 添加 ORDER BY - 必须按主键排序以保证游标分页的稳定性
         sql.append(" ORDER BY ").append(StringUtil.join(primaryKeys, StringUtil.COMMA));
+    }
+
+    /**
+     * 仅构建游标分页的WHERE条件（不包含ORDER BY）
+     *
+     * <p>用于SQL Server等需要外层排序的场景，避免内外层重复ORDER BY</p>
+     *
+     * @param sql    SQL构建器
+     * @param config PageSql配置
+     */
+    protected void buildCursorConditionOnly(StringBuilder sql, PageSql config) {
+        boolean noCondition = false;
+        // 没有过滤条件
+        if (StringUtil.isBlank(config.getQueryFilter())) {
+            noCondition = true;
+            sql.append(" WHERE ");
+        }
+
+        // 使用buildPrimaryKeys处理主键
+        List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
+
+        // 构建复合键的游标分页条件: (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
+        buildCursorCondition(sql, primaryKeys, noCondition);
     }
 
     /**
