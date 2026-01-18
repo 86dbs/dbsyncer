@@ -195,12 +195,16 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private MetaInfo getMetaInfo(String tableName) {
         DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
         context.setCatalog(database);
-        context.setSchema(database);
+        context.setSchema(schema);
         context.addTablePattern(tableName);
         List<MetaInfo> metaInfos = connectorService.getMetaInfo(connectorInstance, context);
         MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
-        Assert.isTrue(metaInfo != null, String.format("The table '%s' is not exist.", tableName));
-        Assert.notEmpty(metaInfo.getColumn(), String.format("The table column for '%s' must not be empty.", tableName));
+        Assert.isTrue(metaInfo != null, String.format("The table '%s' is not exist in schema '%s'.", tableName, schema));
+        // 添加详细日志，方便诊断问题
+        if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
+            logger.error("Table '{}.{}' has no columns. This may be caused by unsupported column types. ", schema, tableName);
+            throw new IllegalArgumentException(String.format("The table column for '%s.%s' must not be empty. Please check table structure and ensure all column types are supported.", schema, tableName));
+        }
         return metaInfo;
     }
 

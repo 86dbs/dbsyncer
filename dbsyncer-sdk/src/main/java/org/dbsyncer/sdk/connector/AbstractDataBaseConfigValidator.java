@@ -53,7 +53,8 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         connectorConfig.setPassword(password);
         connectorConfig.setServiceName(serviceName);
         connectorConfig.setProperties(PropertiesUtil.parse(properties));
-        connectorConfig.setExtInfo(JsonUtil.jsonToObj(extInfo, Properties.class));
+        Properties extInfoObj = JsonUtil.jsonToObj(extInfo, Properties.class);
+        connectorConfig.setExtInfo(extInfoObj != null ? extInfoObj : new Properties());
         connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, StringUtil.EMPTY));
         connectorConfig.setDriverClassName(driverClassName);
         connectorConfig.setMaxActive(maxActive);

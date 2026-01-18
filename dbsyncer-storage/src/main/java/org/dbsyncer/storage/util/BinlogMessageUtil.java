@@ -11,6 +11,7 @@ import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.enums.BinlogByteEnum;
+import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.BitSet;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
@@ -92,7 +95,10 @@ public abstract class BinlogMessageUtil {
                 return ByteString.copyFromUtf8((String) v);
             case "org.postgresql.util.PGobject":
                 PGobject pgObject = (PGobject) v;
-                return ByteString.copyFromUtf8(pgObject.getValue());
+                return ByteString.copyFromUtf8(Objects.requireNonNull(pgObject.getValue()));
+            case "org.postgresql.geometric.PGpoint":
+                PGpoint pgpoint = (PGpoint) v;
+                return ByteString.copyFromUtf8(Objects.requireNonNull(pgpoint.getValue()));
 
             // 时间
             case "java.sql.Timestamp":
@@ -136,6 +142,9 @@ public abstract class BinlogMessageUtil {
             case "java.util.BitSet":
                 BitSet bitSet = (BitSet) v;
                 return ByteString.copyFrom(bitSet.toByteArray());
+            case "java.util.UUID":
+                UUID uuid = (UUID) v;
+                return ByteString.copyFromUtf8(uuid.toString());
 
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":
