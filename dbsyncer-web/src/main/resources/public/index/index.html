@@ -33,7 +33,7 @@
                                     th:classappend="${#strings.isEmpty(projectGroupId)} ? 'active-group-item'">
                                     <img th:src="@{/img/File.png}"
                                         style="width: 16px; height: 16px; margin-right: 10px;" />
-                                    <span style="vertical-align: middle;">&nbsp;★&nbsp;未分配</span>
+                                    <span style="vertical-align: middle;">&nbsp;未分配</span>
                                     <button type="button" class="btn btn-default btn-block text-left"
                                         th:onclick="groupShow('')" 
                                         style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
@@ -43,7 +43,7 @@
                                     th:classappend="${g?.id eq projectGroupId} ? 'active-group-item'">
                                     <img th:src="@{/img/File.png}"
                                         style="width: 16px; height: 16px; margin-right: 10px;" />
-                                    <span style="vertical-align: middle;">&nbsp;★&nbsp;<span
+                                    <span style="vertical-align: middle;">&nbsp;<span
                                         th:text="${g?.name}"></span></span>
                                     <button type="button" 
                                         th:attr="onclick='groupShow(\'' + ${g?.id} + '\')'"

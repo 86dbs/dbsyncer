@@ -929,17 +929,6 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         var sourceTableName = tableGroup.sourceTable ? tableGroup.sourceTable.name : '';
                         var targetTableName = tableGroup.targetTable ? tableGroup.targetTable.name : '';
 
-                        // 计算进度（使用全量同步数据，避免增量数据影响进度）
-                        var tableTotal = tableGroup.estimatedTotal || tableGroup.total || 0;
-                        var fullSuccess = tableGroup.fullSuccess || 0;
-                        var fullFail = tableGroup.fullFail || 0;
-                        var progress = tableTotal > 0 ? ((fullSuccess + fullFail) / tableTotal * 100).toFixed(2) : 0;
-                        // 限制进度不超过100%
-                        if (progress > 100) {
-                            progress = 100;
-                        }
-                        var progressValue = parseFloat(progress);
-
                         // 计算总同步数量（包括全量和增量）
                         var fullSuccess = tableGroup.fullSuccess || 0;
                         var incrementSuccess = tableGroup.incrementSuccess || 0;
@@ -956,20 +945,29 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                         // 如果最后同步时间超过5秒，则显示0条/秒
                         var speedDisplay = (currentTime - lastSyncTime > 5000) ? "0 条/秒" : (currentSpeed.toFixed(0) + " 条/秒");
 
-                        // 创建与图二一致的进度条HTML结构
-                        var progressHtml = '<div style="display: flex; align-items: center; width: 100%;">' +
-                            '<div style="font-weight: bold; margin-right: 8px; min-width: 40px;">' + progress + '%</div>' +
-                            '<div style="flex: 1; height: 10px; background-color: #f0f0f0; border-radius: 5px; overflow: hidden;">' +
-                            '<div style="height: 100%; width: ' + progress + '%; background-color: #4CAF50; border-radius: 5px;"></div>' +
-                            '</div>' +
-                            '</div>';
+                        // 计算同步状态
+                        var syncStatus = "未开始";
+                        var syncSortValue = 0; // 排序值
+                        if (lastSyncTime > 0) {
+                            var timeDiff = currentTime - lastSyncTime;
+                            if (timeDiff < 5000) {
+                                // 5秒内有同步记录，显示进行中
+                                syncStatus = "进行中";
+                                syncSortValue = 1;
+                            } else {
+                                // 计算分钟数
+                                var minutes = Math.floor(timeDiff / (1000 * 60));
+                                syncStatus = "已同步" + minutes + "分钟前的数据";
+                                syncSortValue = 2 + (minutes / 10000); // 加上分钟数的小数值，确保时间顺序
+                            }
+                        }
 
                         var tr = '<tr>' +
                             '<td>' + sourceTableName + '</td>' +
                             '<td>' + targetTableName + '</td>' +
-                            '<td>' + totalSyncCount + '</td>' +
-                            '<td>' + progressHtml + '</td>' +
-                            '<td>' + speedDisplay + '</td>' +
+                            '<td data-sort="' + totalSyncCount + '">' + totalSyncCount + '</td>' +
+                            '<td data-sort="' + syncSortValue + '">' + syncStatus + '</td>' +
+                            '<td data-sort="' + currentSpeed + '">' + speedDisplay + '</td>' +
                             '<td><span class="label ' + statusClass + '">' + status + '</span></td>' +
                             '</tr>';
                         tbody.append(tr);
@@ -979,9 +977,82 @@ function updateTableGroups(mappingId, total, successCount, failCount) {
                     tbody.append(tr);
                 }
             }
+            
+            // 添加表格排序功能
+            addTableSorting();
         },
         error: function() {
             // alert('获取表映射关系失败');
         }
+    });
+}
+
+// 添加表格排序功能
+function addTableSorting() {
+    var table = $('#tableGroupProgress');
+    var headers = table.find('thead th');
+    
+    // 为表头添加排序功能
+    headers.each(function(index) {
+        // 只为需要排序的列添加排序功能
+        if (index === 2 || index === 3 || index === 4) { // 同步数量、同步状态、同步速度
+            var header = $(this);
+            header.css('cursor', 'pointer');
+            header.addClass('sortable');
+            
+            // 添加排序图标
+            if (!header.find('.sort-icon').length) {
+                header.append('<span class="sort-icon" style="margin-left: 5px; font-size: 12px;">↕</span>');
+            }
+            
+            // 绑定点击事件
+            header.off('click').on('click', function() {
+                var currentSort = header.data('sort') || 'asc';
+                var newSort = currentSort === 'asc' ? 'desc' : 'asc';
+                
+                // 更新排序状态
+                headers.each(function() {
+                    $(this).data('sort', '');
+                    $(this).find('.sort-icon').text('↕');
+                });
+                header.data('sort', newSort);
+                header.find('.sort-icon').text(newSort === 'asc' ? '↑' : '↓');
+                
+                // 排序表格
+                sortTable(table, index, newSort);
+            });
+        }
+    });
+}
+
+// 排序表格
+function sortTable(table, columnIndex, direction) {
+    var tbody = table.find('tbody');
+    var rows = tbody.find('tr').toArray();
+    
+    // 排序行
+    rows.sort(function(a, b) {
+        var aVal = $(a).find('td').eq(columnIndex).data('sort') || $(a).find('td').eq(columnIndex).text();
+        var bVal = $(b).find('td').eq(columnIndex).data('sort') || $(b).find('td').eq(columnIndex).text();
+        
+        // 转换为数字进行比较
+        if (!isNaN(aVal) && !isNaN(bVal)) {
+            aVal = parseFloat(aVal);
+            bVal = parseFloat(bVal);
+        }
+        
+        if (aVal < bVal) {
+            return direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+    
+    // 重新添加行
+    tbody.empty();
+    $.each(rows, function(index, row) {
+        tbody.append(row);
     });
 }
