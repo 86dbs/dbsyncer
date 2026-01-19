@@ -25,9 +25,9 @@
         <div class="card px-6" id="allData"></div>
     </div>
 
-    <div class="grid grid-cols-2 mb-5">
+    <div class="grid grid-cols-6 mb-5">
         <!-- 同步趋势图表 -->
-        <div class="form-container px-5">
+        <div class="form-container lg:col-span-4 px-5">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg">同步趋势</h3>
                 <div>
@@ -39,7 +39,8 @@
             <canvas id="trendChart"></canvas>
         </div>
 
-        <div class="form-container p-5">
+        <!-- 统计卡片 -->
+        <div class="form-container lg:col-span-2 p-5 flex flex-col justify-between">
             <div class="mini-stats-grid">
                 <div class="mini-stat-card mini-stat-card--success">
                     <div class="mini-stat-info">
@@ -89,6 +90,11 @@
                         <span class="mini-stat-number text-violet" id="ddl"></span>
                     </div>
                 </div>
+            </div>
+
+            <!-- 任务状态分布柱状图 -->
+            <div class="form-container mt-4">
+                <canvas id="statusDoughnutChart"></canvas>
             </div>
         </div>
     </div>
@@ -178,6 +184,56 @@
                 interaction: {
                     mode: 'index',
                     intersect: false,
+                }
+            }
+        }) : null;
+
+        // 任务状态分布柱状图
+        const statusDoughnutCanvas = document.getElementById('statusDoughnutChart');
+        const statusDoughnutCtx = statusDoughnutCanvas ? statusDoughnutCanvas.getContext('2d') : null;
+        const statusDoughnutChart = statusDoughnutCtx ? new Chart(statusDoughnutCtx, {
+            type: 'bar',
+            data: {
+                labels: ['运行中', '暂停中', '已失败'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        '#52c41a',
+                        '#faad14',
+                        '#ff4d4f'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.x;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
                 }
             }
         }) : null;
@@ -306,6 +362,16 @@
                     $("#delete").text(r.delete);
                     $("#ddl").text(r.ddl);
                     refreshLineChatData(r.trend);
+                    
+                    // 更新柱状图数据
+                    if (statusDoughnutChart) {
+                        statusDoughnutChart.data.datasets[0].data = [
+                            r.runningMeta || 0,
+                            (r.totalMeta - r.runningMeta - r.failMeta) || 0,
+                            r.failMeta || 0
+                        ];
+                        statusDoughnutChart.update('none');
+                    }
                 }
             });
         }
