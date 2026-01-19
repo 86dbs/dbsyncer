@@ -3,13 +3,19 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +29,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public final class TableGroupContextImpl implements TableGroupContext {
 
+    private static final Logger logger = LoggerFactory.getLogger(TableGroupContextImpl.class);
+
     /**
      * 驱动表映射关系
      */
     private final Map<String, InnerMapping> tableGroupMap = new ConcurrentHashMap<>();
+
+    @Resource
+    private ProfileComponent profileComponent;
 
     @Override
     public void put(Mapping mapping, List<TableGroup> tableGroups) {
@@ -66,6 +77,37 @@ public final class TableGroupContextImpl implements TableGroupContext {
             });
             return innerMapping;
         });
+
+        // 如果缓存未命中，尝试从持久化存储加载（Read-Through 模式）
+        if (CollectionUtils.isEmpty(list)) {
+            // 从 Meta 获取 mappingId
+            Meta meta = profileComponent.getMeta(metaId);
+            assert meta != null;
+            // 获取 Mapping 和 TableGroup 列表
+            Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+            assert mapping != null;
+            List<TableGroup> tableGroups = null;
+            try {
+                tableGroups = profileComponent.getSortedTableGroupAll(meta.getMappingId());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            if (!CollectionUtils.isEmpty(tableGroups)) {
+                // 先清理可能存在的空缓存（因为 put() 使用 computeIfAbsent，如果 metaId 已存在不会更新）
+                clear(metaId);
+                // 填充缓存
+                put(mapping, tableGroups);
+                // 从缓存中重新获取（避免递归调用）
+                tableGroupMap.computeIfPresent(metaId, (k, innerMapping) -> {
+                    innerMapping.pickerMap.computeIfPresent(tableName, (x, pickers) -> {
+                        list.addAll(pickers);
+                        return pickers;
+                    });
+                    return innerMapping;
+                });
+            }
+        }
+
         return list;
     }
 

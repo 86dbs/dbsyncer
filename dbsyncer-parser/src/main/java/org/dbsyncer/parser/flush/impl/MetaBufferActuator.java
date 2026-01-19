@@ -115,7 +115,6 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         printTraceInfo(response);
         final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
-
         switch (response.getTypeEnum()) {
             case DDL:
                 if (!mapping.getListener().isEnableDDL()) {
@@ -307,6 +306,7 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             result.error = msg;
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
+            result.addFailData(response.getDataList());
             flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
             return;
         }
@@ -374,6 +374,8 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
 
             // 6、执行后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
+            // 生产不使用下面的代码，用于生成错误数据
+//            throw new RuntimeException("just test");
         } catch (Exception e) {
             logger.error("process batch data error:", e);
             result = new Result();

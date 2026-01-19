@@ -257,6 +257,9 @@ public class DataSyncServiceImpl implements DataSyncService {
             // 创建RowChangedEvent时传入columnNames，确保重试时能正确处理
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null, columnNames);
 
+            // 设置ChangedOffset的metaId（changedOffset是final的，需要通过getChangedOffset()获取后设置）
+            changedEvent.getChangedOffset().setMetaId(metaId);
+
             try {
                 // 直接执行数据重做（不走队列，同步执行）
                 MetaBufferActuator actuator = bufferActuatorRouter.getOrCreateActuator(metaId);
