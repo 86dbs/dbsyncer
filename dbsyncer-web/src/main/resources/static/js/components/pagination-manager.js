@@ -99,7 +99,7 @@
                 }
                 
                 // 创建分页按钮容器
-                $pagination.append('<div class="pagination-bar flex items-center gap-2"></div>');
+                $pagination.append('<div class="pagination-bar flex items-center"></div>');
             }
         };
 

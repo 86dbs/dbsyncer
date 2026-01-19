@@ -51,10 +51,12 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
   min-width: 0;
   min-height: 21px;
   flex-wrap: wrap;
+}
+.dbsyncer-select-trigger-content > *:not(:first-child) {
+  margin-left: var(--spacing-xs);
 }
 
 .dbsyncer-select-trigger-text {
@@ -65,16 +67,19 @@
 .dbsyncer-select-trigger-tags {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
   flex-wrap: wrap;
   min-width: 0;
+  margin: -2px;
+}
+
+.dbsyncer-select-trigger-tags > * {
+  margin: 2px;
 }
 
 /* 标签 */
 .dbsyncer-select-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   padding: 2px 8px;
   background-color: var(--info-color);
   color: var(--bg-primary);
@@ -83,6 +88,7 @@
   white-space: nowrap;
   animation: tag-enter 0.2s ease;
 }
+.dbsyncer-select-tag > *:not(:first-child) { margin-left: 4px; }
 
 .dbsyncer-select-tag .dbsyncer-select-tag-remove {
   cursor: pointer;
@@ -164,11 +170,13 @@
 .dbsyncer-select-search {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
   background-color: var(--bg-secondary);
   transition: all var(--transition-fast);
+}
+.dbsyncer-select-search > *:not(:first-child) {
+  margin-left: var(--spacing-xs);
 }
 
 .dbsyncer-select-search:focus-within {
@@ -215,7 +223,12 @@
   border-bottom: 1px solid var(--border-primary);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  align-items: stretch;
+  min-height: 36px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  background-color: var(--bg-primary);
 }
 
 /* 隐藏空的操作按钮容器（单选时） */
@@ -226,16 +239,24 @@
 }
 
 .dbsyncer-select-action-btn {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 6px var(--spacing-sm);
   font-size: var(--font-size-xs);
+  line-height: 1.5;
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm);
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  flex: 1;
-  min-width: 60px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dbsyncer-select-action-btn:not(:first-child) {
+  margin-left: var(--spacing-sm);
 }
 
 .dbsyncer-select-action-btn:hover {
@@ -259,10 +280,12 @@
   padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
   border-left: 3px solid transparent;
+}
+.dbsyncer-select-option > *:not(:first-child) {
+  margin-left: var(--spacing-sm);
 }
 
 .dbsyncer-select-option:hover {
@@ -393,7 +416,7 @@
   }
 
   .dbsyncer-select-action-btn {
-    min-width: 50px;
+    flex: 1 1 0%;
     padding: var(--spacing-xs) var(--spacing-xs);
     font-size: var(--font-size-xs);
   }

@@ -86,9 +86,6 @@ body {
 .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
 .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
 
-/* ========== 间隙（gap）工具类 ========== */
-.gap-8 { gap: 2rem; }
-
 /* ========== 文字工具类 ========== */
 .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
 .text-2xl { font-size: 1.5rem; line-height: 2rem; }

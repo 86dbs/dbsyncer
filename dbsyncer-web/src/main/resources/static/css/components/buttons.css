@@ -7,7 +7,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -21,6 +20,13 @@
   user-select: none;
   white-space: nowrap;
   min-height: 32px;
+}
+
+/* 按钮内图标间距 - 兼容旧版本浏览器 */
+.btn > i,
+.btn > .fa,
+.btn > span.fa {
+  margin-right: var(--spacing-xs);
 }
 .btn:focus {
   outline: none;

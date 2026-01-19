@@ -767,7 +767,7 @@
         const fieldMappingHtml = `
             <div class="field-mapping-item" data-field-index="${fieldIndex}"
                 style="background: #f9fafb; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="display: grid; grid-template-columns: 3fr 40px 3fr 2.5fr 80px; align-items: center; gap: 12px;">
+                <div style="display: grid; grid-template-columns: 3fr 40px 3fr 2.5fr 80px; align-items: center;">
                     <select class="form-control source-field-select select-control"
                         name="tableMappings[${tableIndex}].fieldMapping[${fieldIndex}].sourceField"
                         data-table-index="${tableIndex}" data-field-index="${fieldIndex}" data-type="source">
@@ -1149,7 +1149,7 @@
                     <div style="padding: 20px; flex: 1; overflow-y: auto;">
                         <!-- 手动添加映射区域 -->
                         <div style="background: #f9fafb; padding: 12px; border-radius: 4px; margin-bottom: 12px;">
-                            <div style="display: grid; grid-template-columns: 2fr 80px 2fr 100px; gap: 8px; align-items: end;">
+                            <div style="display: grid; grid-template-columns: 2fr 80px 2fr 100px; align-items: end;">
                                 <div>
                                     <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">源字段</label>
                                     <select id="sourceFieldSelect" class="form-control select-control" style="width: 100%;">
@@ -1207,7 +1207,7 @@
                             </div>
 
                     <!-- 对话框底部按钮 -->
-                    <div style="padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                    <div style="padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
                         <button type="button" class="btn btn-outline" id="cancelMappingBtn">
                             <i class="fa fa-times"></i> 取消
                         </button>

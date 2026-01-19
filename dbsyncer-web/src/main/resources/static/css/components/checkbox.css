@@ -185,10 +185,12 @@
 /* 全选/取消全选按钮区域 */
 .checkbox-group-actions {
     display: flex;
-    gap: var(--spacing-sm, 8px);
     padding: var(--spacing-sm, 8px) 0;
     border-bottom: 1px solid var(--border-primary, #d9d9d9);
     margin-bottom: var(--spacing-sm, 8px);
+}
+.checkbox-group-actions > *:not(:first-child) {
+    margin-left: var(--spacing-sm, 8px);
 }
 
 .checkbox-group-actions:empty {

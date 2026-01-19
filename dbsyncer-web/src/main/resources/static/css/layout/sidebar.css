@@ -19,7 +19,6 @@
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 12px 16px;
   color: var(--text-secondary);
   border-radius: var(--radius-lg);
@@ -28,6 +27,7 @@
   margin-bottom: 4px;
   user-select: none;
 }
+.sidebar-item > *:not(:first-child) { margin-left: 12px; }
 
 .sidebar-item:hover {
   background-color: rgba(22, 93, 255, 0.05);

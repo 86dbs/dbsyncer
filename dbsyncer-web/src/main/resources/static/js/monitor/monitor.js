@@ -102,7 +102,7 @@ function bindQueryDataEvent() {
                     </td>
                     <td>${formatDate(d.createTime)}</td>
                     <td>
-                        <div class="flex items-center gap-1">${renderDataButton(d)}</div>
+                        <div class="flex items-center">${renderDataButton(d)}</div>
                         <span id="${d.id}" class="hidden">${escapeHtml(d.json || '')}</span>
                     </td>
                 </tr>`;

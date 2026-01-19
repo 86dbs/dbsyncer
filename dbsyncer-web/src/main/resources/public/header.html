@@ -4,9 +4,9 @@
 
 <!-- 顶部导航栏 -->
 <header th:fragment="header" class="h-14 border-b border-gray-200 flex items-center justify-end">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center">
         <div id="licenseInfo" class="hidden">
-            <div class="flex items-center gap-1 text-gray-500 text-sm">
+            <div class="flex items-center text-gray-500 text-sm">
                 <span class="items-center">专业版</span>
                 <img id="licenseCheck" class="hidden items-center" draggable="false" title="已激活" width="18" height="18" th:src="@{'/img/license/check.png'}">
                 <img id="licenseRemind" class="hidden items-center" draggable="false" title="即将过期, 请联系星河同步官方续期" width="18" height="18" th:src="@{'/img/license/remind.png'}">
@@ -17,7 +17,7 @@
         <div class="dropdown flex items-center mr-3">
             <button class="flex items-center text-gray-500" data-toggle>
                 <i class="fa fa-user-circle user-avatar badge-primary"></i>
-                <span id="currentUser" class="md:inline font-medium"></span>
+                <span id="currentUser" class="md:inline font-medium ml-2"></span>
                 <i class="fa fa-angle-down"></i>
             </button>
             <!-- 用户下拉菜单 -->

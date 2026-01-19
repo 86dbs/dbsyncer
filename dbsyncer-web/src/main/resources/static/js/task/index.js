@@ -139,7 +139,7 @@ function initTaskList() {
                     </td>
                     <td>${updateTime}</td>
                     <td>
-                        <div class="flex items-center gap-1">
+                        <div class="flex items-center">
                             ${renderTaskActions(task)}
                         </div>
                     </td>

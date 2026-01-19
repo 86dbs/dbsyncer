@@ -164,14 +164,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.mini-stat-card > *:not(:first-child) {
+  margin-left: var(--spacing-md);
 }
 
 .mini-stat-card::after {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   opacity: 0.18;
   pointer-events: none;
   transition: opacity var(--transition-fast);
@@ -203,10 +208,10 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
   position: relative;
   z-index: 1;
 }
+.mini-stat-value > *:not(:first-child) { margin-top: 4px; }
 
 .mini-stat-number {
   font-size: 24px;

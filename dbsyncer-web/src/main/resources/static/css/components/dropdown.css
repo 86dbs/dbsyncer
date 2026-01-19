@@ -60,7 +60,6 @@
 .dbsyncer-multi-select-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 6px 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
@@ -69,6 +68,7 @@
   transition: all var(--transition-fast);
   min-height: 36px;
 }
+.dbsyncer-multi-select-trigger > *:not(:first-child) { margin-left: 8px; }
 
 .dbsyncer-multi-select-trigger:hover {
   border-color: var(--primary-color);
@@ -134,11 +134,11 @@
 /* 操作按钮区域 */
 .dbsyncer-multi-select-actions {
   display: flex;
-  gap: 8px;
   padding: 8px;
   border-bottom: 1px solid var(--border-secondary);
   background: var(--bg-secondary);
 }
+.dbsyncer-multi-select-actions > *:not(:first-child) { margin-left: 8px; }
 
 /* 操作按钮样式 */
 .dbsyncer-multi-select-action-btn {
@@ -194,7 +194,6 @@
 .dbsyncer-multi-select-option {
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -202,6 +201,7 @@
   margin: 2px 0;
   user-select: none;
 }
+.dbsyncer-multi-select-option > *:not(:first-child) { margin-left: 8px; }
 
 .dbsyncer-multi-select-option:hover {
   background: rgba(24, 144, 255, 0.06);
@@ -244,16 +244,15 @@
 .dbsyncer-multi-select-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
   flex: 1;
   min-width: 0;
 }
+.dbsyncer-multi-select-tags > *:not(:first-child) { margin-left: 4px; }
 
 /* 已选标签样式 */
 .dbsyncer-multi-select-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   padding: 2px 8px;
   background: rgba(24, 144, 255, 0.1);
   color: var(--primary-color);
@@ -261,6 +260,7 @@
   font-size: var(--font-size-xs);
   max-width: 150px;
 }
+.dbsyncer-multi-select-tag > *:not(:first-child) { margin-left: 4px; }
 
 .dbsyncer-multi-select-tag span {
   overflow: hidden;

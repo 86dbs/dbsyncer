@@ -29,11 +29,11 @@
             </tr>
             <tr th:each="u : ${users}">
                 <td>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center">
                         <div class="user-avatar badge-primary" th:if="${u?.roleCode eq 'admin'}" >
                             <i class="fa fa-user-circle"></i>
                         </div>
-                        <div>
+                        <div class="ml-2">
                             <div class="font-medium text-primary" th:text="${u?.username}"></div>
                             <div class="text-xs text-tertiary" th:text="${u?.nickname}"></div>
                         </div>
@@ -45,7 +45,7 @@
                           th:text="${u?.roleName}"></span>
                 </td>
                 <td>
-                    <div class="flex flex-wrap gap-1">
+                    <div class="flex flex-wrap">
                         <span class="badge"
                               th:each="m : ${#strings.listSplit(u?.email, ',')}"
                               th:text="${m}"></span>
@@ -55,7 +55,7 @@
                     <span class="text-sm text-secondary" th:text="${u?.phone ?: ''}"></span>
                 </td>
                 <td>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center">
                         <!-- 管理员或本人可以修改 -->
                         <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
                             <i class="fa fa-edit"></i>

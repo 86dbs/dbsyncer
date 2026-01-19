@@ -18,9 +18,9 @@
         <div class="card-body">
             <!-- 驱动同步关系 -->
             <div class="grid grid-cols-3">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center">
                     <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
-                    <div>
+                    <div class="ml-2">
                         <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
                         <p class="text-sm">数据源表：[[${tableGroup?.sourceTable?.name}]] ([[${tableGroup?.sourceTable?.type}]]）</p>
                     </div>
@@ -29,9 +29,9 @@
                     <p></p>
                     <i class="fa fa-arrow-right fa-3x"></i>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center">
                     <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
-                    <div>
+                    <div class="ml-2">
                         <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
                         <p class="text-sm">目标源表：[[${tableGroup?.targetTable?.name}]] ([[${tableGroup?.targetTable?.type}]]）</p>
                     </div>
@@ -61,7 +61,7 @@
             <h3><i class="fa fa-list-alt text-info"></i> 字段映射</h3>
             <div class="grid grid-cols-9 items-center mt-4">
                 <!-- 数据源表选择器 -->
-                <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                <div class="lg:col-span-4 flex items-center form-item">
                     <label class="form-label">数据源字段</label>
                     <select id="source_table_field" class="form-control">
                         <option value="" selected="selected">无</option>
@@ -74,7 +74,7 @@
                 </div>
 
                 <!-- 目标源表选择器 -->
-                <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                <div class="lg:col-span-4 flex items-center form-item">
                     <label class="form-label">目标源字段</label>
                     <select id="target_table_field" class="form-control">
                         <option value="" selected="selected">无</option>

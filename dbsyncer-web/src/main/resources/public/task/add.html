@@ -58,7 +58,7 @@
                     <div class="dbsyncer-card-body">
                         <!-- 任务名称 -->
                         <div class="form-group" style="margin-bottom: 24px;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-tag" style="color: var(--primary-color); margin-right: 4px;"></i>
                                     任务名称<strong class="text-primary">*</strong>
@@ -88,7 +88,7 @@
                     <div class="dbsyncer-card-body">
                         <!-- 源连接器 和 源数据库名称 -->
                         <div class="form-group" style="margin-bottom: 24px;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 4px;"></i>
                                     源连接器<strong class="text-primary">*</strong>
@@ -114,7 +114,7 @@
 
                         <!-- 目标连接器 和 目标数据库名称 -->
                         <div class="form-group" style="margin-bottom: 24px;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-plug" style="color: var(--success-color); margin-right: 4px;"></i>
                                     目标连接器<strong class="text-primary">*</strong>
@@ -140,7 +140,7 @@
 
                         <!-- Schema 配置 (条件显示) -->
                         <div class="form-group" id="sourceSchemaGroup" style="display: none;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-sitemap" style="color: var(--primary-color); margin-right: 4px;"></i>
                                     源Schema
@@ -173,7 +173,7 @@
                     <div class="dbsyncer-card-body">
                         <!-- 触发方式 -->
                         <div class="form-group" style="margin-bottom: 24px;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 4px;"></i>
                                     触发方式<strong class="text-primary">*</strong>
@@ -195,7 +195,7 @@
 
                         <!-- Cron 表达式 (条件显示) -->
                         <div class="form-group" id="cronGroup" style="display: none;">
-                            <div style="display: grid; grid-template-columns: 120px 1fr 100px; align-items: center; gap: 16px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 100px; align-items: center;">
                                 <label class="form-label">
                                     <i class="fa fa-calendar" style="color: var(--warning-color); margin-right: 4px;"></i>
                                     Cron表达式<strong class="text-primary">*</strong>
@@ -225,9 +225,9 @@
                         </h3>
                     </div>
                     <div class="dbsyncer-card-body">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr;">
                             <!-- 左列 -->
-                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; flex-direction: column;">
                                 <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" name="autoMatchTable" value="true"
                                            style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
@@ -261,7 +261,7 @@
                             </div>
 
                             <!-- 右列 -->
-                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div style="display: flex; flex-direction: column;">
                                 <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" name="index" value="true"
                                            style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
@@ -292,7 +292,7 @@
                 </div>
 
                 <!-- 第一步操作按钮 -->
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                <div style="display: flex; justify-content: flex-end; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
                     <button type="button" class="btn btn-secondary" id="step1BackBtn">
                         <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
                         返回
@@ -322,7 +322,7 @@
                         <!-- 添加映射表区域 -->
                         <div class="grid grid-cols-9 items-center mt-4">
                             <!-- 数据源表选择器 -->
-                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                            <div class="lg:col-span-4 flex items-center form-item">
                                 <label class="form-label">数据源表</label>
                                 <div class="form-control-area">
                                     <select id="step2SourceTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
@@ -336,7 +336,7 @@
                             </div>
 
                             <!-- 目标源表选择器 -->
-                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                            <div class="lg:col-span-4 flex items-center form-item">
                                 <label class="form-label">目标源表</label>
                                 <div class="form-control-area">
                                     <select id="step2TargetTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
@@ -349,7 +349,7 @@
                         <!-- 标记主键区域 -->
                         <div class="grid grid-cols-9 items-center mt-4">
                             <!-- 数据源主键 -->
-                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                            <div class="lg:col-span-4 flex items-center form-item">
                                 <label class="form-label">标记主键<i class="fa fa-question-circle" title="数据源表/视图没有主键，自定义一个或多个主键"></i></label>
                                 <div class="form-control-area">
                                     <input id="step2SourceTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
@@ -361,7 +361,7 @@
                             </div>
 
                             <!-- 目标源主键 -->
-                            <div class="lg:col-span-4 flex items-center gap-3 form-item">
+                            <div class="lg:col-span-4 flex items-center form-item">
                                 <label class="form-label">标记主键<i class="fa fa-question-circle" title="目标源表/视图没有主键，自定义一个或多个主键"></i></label>
                                 <div class="form-control-area">
                                     <input id="step2TargetTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
@@ -410,12 +410,12 @@
                 </div>
 
                 <!-- 第二步操作按钮 -->
-                <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                <div style="display: flex; justify-content: space-between; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
                     <button type="button" class="btn btn-secondary" id="step2PrevBtn">
                         <i class="fa fa-arrow-left btn-icon-left"></i>
                         上一步
                     </button>
-                    <div style="display: flex; gap: 12px;">
+                    <div style="display: flex;">
                         <button type="button" class="btn btn-secondary" id="step2BackBtn">
                             <i class="fa fa-reply btn-icon-left"></i>
                             返回列表

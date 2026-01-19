@@ -258,7 +258,6 @@ select[readonly] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
   min-height: 40px;
   padding: 0 5px;
   border: 1px solid var(--border-primary);
@@ -267,6 +266,7 @@ select[readonly] {
   cursor: text;
   transition: border-color var(--transition-fast);
 }
+.tagsinput > *:not(:first-child) { margin-left: 8px; }
 
 .tagsinput:focus-within {
   border-color: var(--primary-color);
@@ -276,13 +276,12 @@ select[readonly] {
 .tagsinput-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
 }
+.tagsinput-tags > *:not(:first-child) { margin-left: 6px; }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   padding: 4px 8px;
   background: #1890ff;
   color: #fff;
@@ -290,6 +289,7 @@ select[readonly] {
   font-size: 13px;
   transition: all 0.2s ease;
 }
+.tag > *:not(:first-child) { margin-left: 4px; }
 
 .tag:hover {
   background: #40a9ff;
@@ -415,8 +415,8 @@ select[readonly] {
 /* 按钮组 */
 .btn-group-sm {
   display: inline-flex;
-  gap: 8px;
 }
+.btn-group-sm > *:not(:first-child) { margin-left: 8px; }
 .btn-group-sm .btn {
   padding: 4px 12px;
   font-size: 13px;
@@ -472,9 +472,9 @@ select[readonly] {
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 4px;
   z-index: 10;
 }
+.code-copy-btn > *:not(:first-child) { margin-left: 4px; }
 .code-copy-btn:hover {
   background-color: var(--bg-tertiary);
   color: var(--text-primary);

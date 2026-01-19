@@ -17,7 +17,7 @@
                 </span>
             </div>
             <div class="lg:col-span-2"></div>
-            <div class="lg:col-span-2 flex items-center justify-end gap-4">
+            <div class="lg:col-span-2 flex items-center justify-end">
                 <button class="btn btn-primary" id="addMappingBtn" onclick="doLoader('/mapping/pageAdd')">
                     <i class="fa fa-plus"></i> 添加
                 </button>
@@ -127,7 +127,7 @@ $(document).ready(function() {
                     <td>${renderStateText(mapping.meta.state || 0)}</td>
                     <td>${formatDate(mapping.meta.updateTime || '')}</td>
                     <td>
-                        <div class="flex items-center gap-1">
+                        <div class="flex items-center">
                             <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>

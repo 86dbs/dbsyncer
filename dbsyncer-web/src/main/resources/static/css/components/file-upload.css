@@ -107,14 +107,13 @@
   margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
+.upload-list > *:not(:first-child) { margin-top: 8px; }
 
 /* 文件项 */
 .upload-item {
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 12px 16px;
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
@@ -122,6 +121,7 @@
   transition: all var(--transition-fast);
   animation: slideInUp 0.3s ease-out;
 }
+.upload-item > *:not(:first-child) { margin-left: 12px; }
 
 .upload-item:hover {
   border-color: var(--border-primary);
@@ -159,8 +159,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
+.upload-item-info > *:not(:first-child) { margin-top: 4px; }
 
 .upload-item-name {
   color: var(--text-primary);
@@ -197,9 +197,9 @@
 .upload-item-status {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-shrink: 0;
 }
+.upload-item-status > *:not(:first-child) { margin-left: 8px; }
 
 .upload-item.uploading .upload-item-icon {
   background: linear-gradient(135deg, #fff4e6 0%, #ffe7cc 100%);
@@ -271,9 +271,9 @@
 /* 批量操作按钮 */
 .upload-actions {
   display: flex;
-  gap: 8px;
   margin-top: 12px;
 }
+.upload-actions > *:not(:first-child) { margin-left: 8px; }
 
 /* 淡出动画 */
 @keyframes fadeOut {

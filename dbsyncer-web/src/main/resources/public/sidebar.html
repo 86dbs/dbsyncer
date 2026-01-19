@@ -5,9 +5,9 @@
 <!-- 左侧边栏 -->
 <aside th:fragment="nav" class="border-r border-gray-200 flex-shrink-0 md:flex flex-col">
     <!-- 品牌标识 -->
-    <div class="flex items-center gap-3 px-3 mt-3">
+    <div class="flex items-center px-3 mt-3">
         <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">
-        <span class="text-xl font-bold text-dark">DBSyncer</span>
+        <span class="text-xl font-bold text-dark ml-2">DBSyncer</span>
     </div>
 
     <!-- 导航菜单 -->
@@ -58,7 +58,7 @@
 
     <!-- 版权信息 -->
     <div class="p-4 border-t border-gray-200">
-        <div class="flex items-center text-sm gap-3">
+        <div class="flex items-center text-sm">
             <div>
                 <p id="copyRight"></p>
             </div>

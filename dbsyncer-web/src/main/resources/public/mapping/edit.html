@@ -23,9 +23,9 @@
     <div class="card-body">
         <!-- 驱动同步关系 -->
         <div class="grid grid-cols-3">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center">
                 <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
-                <div>
+                <div class="ml-2">
                     <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
                     <p class="text-sm">
                         源库：[[${mapping?.sourceDatabase}]]
@@ -39,9 +39,9 @@
                 <p></p>
                 <i class="fa fa-arrow-right fa-3x"></i>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center">
                 <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
-                <div>
+                <div class="ml-2">
                     <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
                     <p class="text-sm">
                         目标库：[[${mapping?.targetDatabase}]]

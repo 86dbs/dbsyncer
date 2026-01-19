@@ -44,11 +44,11 @@ function renderResultContent(content) {
                 return '<span class="badge badge-success"><i class="fa fa-check"></i> 校验通过</span>';
             } else {
                 return `
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center">
                         <span class="badge badge-warning">
                             <i class="fa fa-exclamation-triangle"></i> 发现 ${count} 个差异
                         </span>
-                        <button class="btn btn-sm btn-primary view-detail-btn" title="查看详情">
+                        <button class="btn btn-sm btn-primary view-detail-btn ml-2" title="查看详情">
                             <i class="fa fa-eye"></i> 查看详情
                         </button>
                     </div>

@@ -8,8 +8,10 @@
 .radio-group {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-lg, 24px);
     align-items: center;
+}
+.radio-group > *:not(:first-child) {
+    margin-left: var(--spacing-lg, 24px);
 }
 
 /* 单个选项容器 */

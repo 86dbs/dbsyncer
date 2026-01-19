@@ -165,8 +165,8 @@ tr[draggable="true"]:hover {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
 }
+.pagination > *:not(:first-child) { margin-left: var(--spacing-md); }
 
 .pagination-info {
   font-size: var(--font-size-sm);
@@ -176,8 +176,8 @@ tr[draggable="true"]:hover {
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
 }
+.pagination-controls > *:not(:first-child) { margin-left: var(--spacing-sm); }
 
 .pagination-btn {
   display: flex;
@@ -228,8 +228,8 @@ tr[draggable="true"]:hover {
 .pagination-page {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
 }
+.pagination-page > *:not(:first-child) { margin-left: var(--spacing-xs); }
 
 .pagination-page-btn {
   display: flex;
@@ -268,4 +268,13 @@ tr[draggable="true"]:hover {
   background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%);
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
+}
+
+/* 分页栏容器 */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+}
+.pagination-bar > *:not(:first-child) {
+  margin-left: var(--spacing-sm);
 }

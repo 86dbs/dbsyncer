@@ -36,7 +36,8 @@
 textarea.form-control { min-height: 80px; line-height: 1.5; }
 
 /* 水平表单的间距与标签风格 */
-.form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.form-actions { display: flex; justify-content: flex-end; }
+.form-actions > *:not(:first-child) { margin-left: 8px; }
 
 .form-control.is-invalid,
 textarea.form-control.is-invalid,
@@ -52,9 +53,9 @@ select.form-control.is-invalid,
   font-size: var(--font-size-xs);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   animation: shake 0.3s ease-in-out;
 }
+.form-error-msg > *:not(:first-child) { margin-left: 4px; }
 
 .form-error-msg i { font-size: 12px; }
 

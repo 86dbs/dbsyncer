@@ -16,7 +16,7 @@
                     <i class="fa fa-exclamation-triangle"></i>
                 </div>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end">
                 <span class="text-xxl font-bold" id="failMeta"></span>
             </div>
             <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
@@ -30,10 +30,10 @@
         <div class="form-container px-5">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg">同步趋势</h3>
-                <div class="flex gap-2">
+                <div>
                     <button class="btn btn-outline text-sm trend-item text-primary" data-key="7">一周</button>
-                    <button class="btn btn-outline text-sm trend-item" data-key="15">半个月</button>
-                    <button class="btn btn-outline text-sm trend-item" data-key="30">一个月</button>
+                    <button class="btn btn-outline text-sm trend-item ml-2" data-key="15">半个月</button>
+                    <button class="btn btn-outline text-sm trend-item ml-2" data-key="30">一个月</button>
                 </div>
             </div>
             <canvas id="trendChart"></canvas>
@@ -235,9 +235,9 @@
                     <i class="fa fa-tasks"></i>
                 </div>
             </div>
-            <div class="flex items-end gap-2 success">
+            <div class="flex items-end success">
                 <span class="text-xxl font-bold">${r.totalMeta}</span>
-                <span class="${config.colorClass} text-sm mb-1 flex items-center">
+                <span class="${config.colorClass} text-sm mb-1 flex items-center ml-2">
                     <i class="fa ${config.class} mr-1"></i> ${diff} 个
                 </span>
             </div>
@@ -252,9 +252,9 @@
                     <i class="fa fa-play"></i>
                 </div>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end">
                 <span class="text-xxl font-bold">${r.runningMeta}</span>
-                <span class="text-success text-sm mb-1 flex items-center">
+                <span class="text-success text-sm mb-1 flex items-center ml-2">
                         <i class="fa fa-check mr-1"></i> 正常
                     </span>
             </div>
@@ -281,9 +281,9 @@
                     <i class="fa fa-database"></i>
                 </div>
             </div>
-            <div class="flex items-end gap-2 success">
+            <div class="flex items-end success">
                 <span class="text-xxl font-bold">${total}</span>
-                <span class="${config.colorClass} text-sm mb-1 flex items-center">
+                <span class="${config.colorClass} text-sm mb-1 flex items-center ml-2">
                     <i class="fa ${config.class} mr-1"></i> ${percent.toFixed(2)}%
                 </span>
             </div>
@@ -318,16 +318,16 @@
             pageSize: 3,
             renderRow: function(connector, index) {
                 return `<div class="card flex justify-between border rounded-md mb-3">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center">
                     <div class="flex items-center justify-center ml-3">
                         <img draggable="false" src="${$basePath}/img/${escapeHtml((connector.config && connector.config.connectorType) || '')}.png" alt="${escapeHtml((connector.config && connector.config.connectorType) || '')}">
                     </div>
-                    <div>
+                    <div class="ml-3">
                         <p class="font-medium">${escapeHtml(connector.name)}</p>
                         <p class="text-xs text-gray-500" title="${escapeHtml((connector.config && connector.config.url) || '')}">${escapeHtml((connector.config && connector.config.url) || '')}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 mr-2">
+                <div class="flex items-center mr-2">
                     ${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
                 </div>
             </div>`;
