@@ -422,24 +422,24 @@
 
 /* 停止按钮样式 */
 .mappingList .btn-stop {
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
     color: white;
     border: none;
     border-radius: 6px;
     font-weight: 600;
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(248, 113, 113, 0.3);
     transition: all 0.3s ease;
 }
 
 .mappingList .btn-stop:hover {
-    background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
-    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.4);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 8px rgba(248, 113, 113, 0.4);
     transform: translateY(-1px);
 }
 
 .mappingList .btn-stop:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(248, 113, 113, 0.3);
 }
 
 /* 底部状态和按钮容器 */

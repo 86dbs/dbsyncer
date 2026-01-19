@@ -236,7 +236,7 @@
                                                             <a th:if="${m?.meta?.state eq 1}"
                                                                 th:attr="data-url='/mapping/stop?id='+${m?.id}"
                                                                 href="javascript:;"
-                                                                class="btn btn-xs btn-warning margin-right-5"><i
+                                                                class="btn btn-xs btn-danger margin-right-5"><i
                                                                     class="fa fa-times-circle-o"></i> 停止</a>
                                                             <a href="javascript:;"
                                                                 th:attr="data-url='/mapping/page/edit?classOn=0&id='+${m?.id}"
@@ -262,11 +262,14 @@
                             <div class="row mappingList">
                                 <div th:each="m,state : ${mappings}" th:id="${m?.id}" class="col-md-2 mb-3" style="max-width: 20%; flex: 0 0 20%; padding: 0 2px;">
                                     <div class="panel panel-default dbsyncer_block" style="height: 220px; display: flex; flex-direction: column; width: 100%; margin: 0; cursor: pointer;" th:attr="data-id=${m?.id}">
-                                        <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; padding: 12px;">
+                                        <div class="panel-body" style="flex: 1; display: flex; flex-direction: column; padding: 6px;">
                                             <!-- 顶部：任务名称 -->
                                             <div style="margin-bottom: 6px;">
-                                                <h4 th:text="${m?.name}" class="text-primary" style="margin: 0; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" th:title="${m?.name}"></h4>
+                                                <h4 th:text="${m?.name}" style="margin: 0; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #000000;" th:title="${m?.name}"></h4>
                                             </div>
+                                            
+                                            <!-- 分割线 -->
+                                            <div style="margin: 6px 0; padding-top: 1px; border-top: 1px solid #e0e0e0;"></div>
                                             
                                             <!-- 连接信息 -->
                                             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
@@ -277,7 +280,7 @@
                                                         style="width: 18px; height: 18px; margin-right: 6px; flex-shrink: 0;">
                                                     <span th:text="${m?.sourceConnector?.name}"
                                                         th:title="${m?.sourceConnector?.name}" 
-                                                        style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #555; min-width: 0;"></span>
+                                                        style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: #555; min-width: 0;"></span>
                                                     <span th:if="${m?.sourceConnector?.running}" th:title="连接正常"
                                                         style="margin-left: 5px; color: #5cb85c; font-size: 12px; flex-shrink: 0;">
                                                         <i class="fa fa-circle"></i>
@@ -289,9 +292,9 @@
                                                 </div>
                                                 
                                                 <!-- 箭头和同步类型 -->
-                                                <div style="display: flex; align-items: center; margin: 4px 0; padding-left: 24px;">
-                                                    <i class="fa fa-arrow-down text-muted" style="font-size: 18px; color: #999; margin-right: 8px;"></i>
-                                                    <span style="font-size: 13px; font-weight: bold;" th:style="${m?.meta?.model eq '混合' ? 'color: #000000;' : m?.meta?.model eq '增量' ? 'color: #28a745;' : 'color: #ffc107;'}">
+                                                <div style="display: flex; align-items: center; margin: 4px 0; padding-left: 14px;">
+                                                    <img src="/img/Arrow.png" style="width: 24px; height: 24px; margin-right: 8px; opacity: 0.6;" alt="箭头">
+                                                    <span style="font-size: 13px; font-weight: bold; color: #000000;">
                                                         <span th:text="${m?.meta?.model}"></span>
                                                     </span>
                                                 </div>
@@ -303,7 +306,7 @@
                                                         style="width: 18px; height: 18px; margin-right: 6px; flex-shrink: 0;">
                                                     <span th:text="${m?.targetConnector?.name}"
                                                         th:title="${m?.targetConnector?.name}" 
-                                                        style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #555; min-width: 0;"></span>
+                                                        style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: #555; min-width: 0;"></span>
                                                     <span th:if="${m?.targetConnector?.running}" th:title="连接正常"
                                                         style="margin-left: 5px; color: #5cb85c; font-size: 12px; flex-shrink: 0;">
                                                         <i class="fa fa-circle"></i>
@@ -317,7 +320,7 @@
                                             
                                             <!-- 底部：运行状态和操作按钮 -->
                                             <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
-                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between;">
                                                     <!-- 运行状态 -->
                                                     <div id="stateId" style="flex-shrink: 0;">
                                                         <span th:if="${m?.meta?.state eq 0}"
@@ -336,19 +339,19 @@
                                                     </div>
                                                     
                                                     <!-- 操作按钮 -->
-                                                    <div class="operation-buttons" style="flex: 1; display: flex;">
+                                                    <div class="operation-buttons">
                                                         <!-- 未运行 -->
                                                         <a th:if="${m?.meta?.state ne 1}"
                                                             th:attr="data-url='/mapping/start?id='+${m?.id}"
                                                             href="javascript:;"
-                                                            class="btn btn-sm btn-start" style="flex: 1; font-size: 13px; padding: 6px 12px;">
+                                                            class="btn btn-xs btn-start" style="font-size: 11px; padding: 2px 6px;">
                                                             <i class="fa fa-play"></i> 启动
                                                         </a>
                                                         <!-- 运行中 -->
                                                         <a th:if="${m?.meta?.state eq 1}"
                                                             th:attr="data-url='/mapping/stop?id='+${m?.id}"
                                                             href="javascript:;"
-                                                            class="btn btn-sm btn-stop" style="flex: 1; font-size: 13px; padding: 6px 12px;">
+                                                            class="btn btn-xs btn-danger btn-stop" style="font-size: 11px; padding: 2px 6px;">
                                                             <i class="fa fa-stop"></i> 停止
                                                         </a>
                                                     </div>
