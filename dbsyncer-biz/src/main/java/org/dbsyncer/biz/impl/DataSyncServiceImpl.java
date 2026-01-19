@@ -11,6 +11,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.*;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
+import org.dbsyncer.parser.flush.impl.MetaBufferActuator;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -222,8 +223,10 @@ public class DataSyncServiceImpl implements DataSyncService {
                 // 设置ChangedOffset的metaId（changedOffset是final的，需要通过getChangedOffset()获取后设置）
                 ddlChangedEvent.getChangedOffset().setMetaId(metaId);
 
-                // 直接执行DDL重做（不走队列，同步执行）
-                bufferActuatorRouter.executeDirectly(metaId, ddlChangedEvent);
+                // 直接调用执行器的方法，不走队列
+                MetaBufferActuator actuator = bufferActuatorRouter.getOrCreateActuator(metaId);
+                actuator.executeDirectly(ddlChangedEvent);
+
             } catch (Exception e) {
                 logger.error("DDL重做失败, messageId={}, error={}", messageId, e.getMessage(), e);
                 // 执行失败，不删除数据，保留以便后续重试
@@ -256,7 +259,9 @@ public class DataSyncServiceImpl implements DataSyncService {
 
             try {
                 // 直接执行数据重做（不走队列，同步执行）
-                bufferActuatorRouter.executeDirectly(metaId, changedEvent);
+                MetaBufferActuator actuator = bufferActuatorRouter.getOrCreateActuator(metaId);
+                actuator.executeDirectly(changedEvent);
+
             } catch (Exception e) {
                 logger.error("数据重做失败, messageId={}, error={}", messageId, e.getMessage(), e);
                 // 执行失败，不删除数据，保留以便后续重试

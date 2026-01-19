@@ -86,41 +86,10 @@ public final class BufferActuatorRouter implements DisposableBean {
         event.getChangedOffset().setMetaId(metaId);
 
         // 获取或创建该 meta 的执行器
-        MetaBufferActuator actuator = metaActuatorMap.computeIfAbsent(metaId, k -> {
-            MetaBufferActuator newActuator = createMetaActuator(metaId);
-            newActuator.buildConfig();
-            return newActuator;
-        });
+        MetaBufferActuator actuator = getOrCreateActuator(metaId);
 
         // 所有事件都进入该 meta 的队列（offer 方法会自动处理 DDL 阻塞逻辑和 pending 状态）
         actuator.offer(new WriterRequest(event));
-    }
-
-    /**
-     * 直接执行事件（不走队列，用于重试场景，确保处理完成后再删除数据）
-     *
-     * @param metaId 元数据ID
-     * @param event 变更事件
-     * @throws Exception 处理异常
-     */
-    public void executeDirectly(String metaId, ChangedEvent event) throws Exception {
-        event.getChangedOffset().setMetaId(metaId);
-        MetaBufferActuator metaBufferActuator = metaActuatorMap.get(metaId);
-
-        // 直接调用执行器的方法，不走队列
-        metaBufferActuator.executeDirectly(event);
-    }
-
-    public void bind(String metaId, List<TableGroup> tableGroups) {
-        // 创建或获取该 meta 的执行器
-        metaActuatorMap.computeIfAbsent(metaId, k -> {
-            MetaBufferActuator actuator = createMetaActuator(metaId);
-            actuator.buildConfig();
-            return actuator;
-        });
-
-        // 不再需要为每个表创建执行器
-        // 所有事件都进入该 meta 的执行器
     }
 
     public void unbind(String metaId) {
@@ -159,6 +128,20 @@ public final class BufferActuatorRouter implements DisposableBean {
     public boolean hasPendingTask(String metaId) {
         MetaBufferActuator actuator = metaActuatorMap.get(metaId);
         return actuator != null && actuator.hasPendingTask();
+    }
+
+    /**
+     * 获取或创建该 meta 的执行器
+     *
+     * @param metaId 元数据ID
+     * @return MetaBufferActuator 实例
+     */
+    public MetaBufferActuator getOrCreateActuator(String metaId) {
+        return metaActuatorMap.computeIfAbsent(metaId, k -> {
+            MetaBufferActuator newActuator = createMetaActuator(metaId);
+            newActuator.buildConfig();
+            return newActuator;
+        });
     }
 
     /**
