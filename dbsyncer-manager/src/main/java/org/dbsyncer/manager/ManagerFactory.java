@@ -41,11 +41,8 @@ public class ManagerFactory {
         mapping.setUpdateTime(Instant.now().toEpochMilli());
         profileComponent.editConfigModel(mapping);
         
-        logService.log(LogType.MappingLog.RUNNING, String.format("设置Meta状态为RUNNING: mappingId=%s, metaId=%s", mapping.getId(), mapping.getMetaId()));
-
         try {
             puller.start(mapping);
-            logService.log(LogType.MappingLog.RUNNING, String.format("Puller启动成功: mappingId=%s, metaId=%s", mapping.getId(), mapping.getMetaId()));
         } catch (Exception e) {
             // 记录异常状态和异常信息到Meta对象，使用统一方法
             meta.saveState(MetaEnum.ERROR, e.getMessage());
