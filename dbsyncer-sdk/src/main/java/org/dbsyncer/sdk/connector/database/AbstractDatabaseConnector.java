@@ -562,10 +562,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @param config PageSql配置
      */
     protected void buildCursorConditionAndOrderBy(StringBuilder sql, PageSql config) {
-        boolean noCondition = false;
+        boolean noCondition = StringUtil.isBlank(config.getQueryFilter());
         // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            noCondition = true;
+        if (noCondition) {
             sql.append(" WHERE ");
         }
 
@@ -586,12 +585,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      *
      * @param sql    SQL构建器
      * @param config PageSql配置
-     */
+w     */
     protected void buildCursorConditionOnly(StringBuilder sql, PageSql config) {
-        boolean noCondition = false;
+        boolean noCondition = StringUtil.isBlank(config.getQueryFilter());
         // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            noCondition = true;
+        if (noCondition) {
             sql.append(" WHERE ");
         }
 

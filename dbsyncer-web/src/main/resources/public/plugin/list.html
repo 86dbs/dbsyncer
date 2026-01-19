@@ -33,7 +33,7 @@
                     </div>
                 </td>
                 <td th:text="${p?.mappingName}"/>
-                <td th:text="${p?.className}"/>
+                <td th:text="${p?.className}" th:title="${p?.className}"/>
                 <td>
                     <span class="badge badge-success" th:text="${p?.version}"></span>
                 </td>

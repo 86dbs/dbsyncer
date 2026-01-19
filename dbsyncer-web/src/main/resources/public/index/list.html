@@ -324,7 +324,7 @@
                     </div>
                     <div>
                         <p class="font-medium">${escapeHtml(connector.name)}</p>
-                        <p class="text-xs text-gray-500">${escapeHtml((connector.config && connector.config.url) || '')}</p>
+                        <p class="text-xs text-gray-500" title="${escapeHtml((connector.config && connector.config.url) || '')}">${escapeHtml((connector.config && connector.config.url) || '')}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 mr-2">
