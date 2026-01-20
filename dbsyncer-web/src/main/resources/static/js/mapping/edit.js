@@ -29,29 +29,37 @@ function refresh(id,classOn) {
 
 // 绑定修改驱动同步方式切换事件
 function bindMappingModelChange() {
-    var $mappingModelChange = $("#mappingModelChange");
-    var $radio = $mappingModelChange.find('input:radio[type="radio"]');
-    // 初始化icheck插件
-    $radio.iCheck({
-        labelHover: false,
-        cursor: true,
-        radioClass: 'iradio_flat-blue',
-    }).on('ifChecked', function (event) {
-        var $form = $("#mappingModifyForm");
-        if ($form.formValidate() == true) {
-            var data = $form.serializeJson();
-            doPoster("/mapping/edit", data, function (response) {
-                if (response.success == true) {
-                    refresh($("#mappingId").val(),0);
-                } else {
-                    bootGrowl(response.resultValue, "danger");
-                }
-            });
-        }
-    });
+    // 尝试从隐藏字段获取同步类型
+    var $modelInput = $('input[name="model"]');
+    var $value = $modelInput.val();
+    
+    // 如果隐藏字段不存在或值为空，尝试从radio按钮获取
+    if (!$value) {
+        var $mappingModelChange = $("#mappingModelChange");
+        var $radio = $mappingModelChange.find('input:radio[type="radio"]');
+        // 初始化icheck插件
+        $radio.iCheck({
+            labelHover: false,
+            cursor: true,
+            radioClass: 'iradio_flat-blue',
+        }).on('ifChecked', function (event) {
+            var $form = $("#mappingModifyForm");
+            if ($form.formValidate() == true) {
+                var data = $form.serializeJson();
+                doPoster("/mapping/edit", data, function (response) {
+                    if (response.success == true) {
+                        refresh($("#mappingId").val(),0);
+                    } else {
+                        bootGrowl(response.resultValue, "danger");
+                    }
+                });
+            }
+        });
 
-    // 渲染选择radio配置
-    var $value = $mappingModelChange.find('input[type="radio"]:checked').val();
+        // 渲染选择radio配置
+        $value = $mappingModelChange.find('input[type="radio"]:checked').val();
+    }
+    
     // 显示驱动编辑配置（全量/增量）
     var $full = $("#mappingFullConfig");
     var $increment = $("#mappingIncrementConfig");
@@ -873,6 +881,9 @@ $(function () {
     if(mappingId){
         getMappping(mappingId);
     }
+
+    // 绑定修改驱动同步方式切换事件
+    bindMappingModelChange();
 
     // 绑定删除表映射事件
     bindMappingTableGroupCheckBoxClick();

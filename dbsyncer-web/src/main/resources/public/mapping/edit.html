@@ -216,16 +216,6 @@
                         <!-- 通用配置 -->
                         <div th:replace="mapping/editCommon :: content"></div>
 
-                        <!-- 全量配置 -->
-                        <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
-                            <div th:replace="mapping/editFull :: content"></div>
-                        </div>
-
-                        <!-- 增量配置 -->
-                        <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
-                            <div th:replace="mapping/editIncrement :: content"></div>
-                        </div>
-
                         <!-- 过滤条件 -->
                         <div th:replace="mapping/editFilter :: content"></div>
 
@@ -237,6 +227,16 @@
 
                         <!-- 插件配置 -->
                         <div th:replace="mapping/editPlugin :: content"></div>
+
+                        <!-- 全量配置 -->
+                        <div th:id="mappingFullConfig" class="hidden">
+                            <div th:replace="mapping/editFull :: content"></div>
+                        </div>
+
+                        <!-- 增量配置 -->
+                        <div th:id="mappingIncrementConfig" class="hidden">
+                            <div th:replace="mapping/editIncrement :: content"></div>
+                        </div>
                         <div class="row text-right">
                             <button type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-default">
                                 <span class="fa fa-arrow-left"></span> 上一步

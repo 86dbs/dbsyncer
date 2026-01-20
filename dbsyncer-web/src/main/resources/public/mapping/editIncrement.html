@@ -37,7 +37,7 @@
                     <tbody id="mappingMetaSnapshotConfig">
                     <tr th:each="item,entry:${mapping?.meta?.snapshot}">
                         <td th:text="${entry.current.key}"></td>
-                        <td th:text="${entry.current.value}"></td>
+                        <td th:text="${entry.current.value}" style="word-wrap: break-word; white-space: normal; max-width: 600px;"></td>
                         <td><i th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer metaSnapshotModify"></i></td>
                     </tr>
                     </tbody>
