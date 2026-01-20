@@ -152,32 +152,92 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         String error = params.get(ConfigConstant.DATA_ERROR);
         String dataStatus = params.get("dataStatus");
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, dataStatus);
-        List<Map> data = (List<Map>) paging.getData();
-        List<DataVo> list = new ArrayList<>();
-        for (Map row : data) {
+        // 如果id是mappingId，通过mappingId获取对应的metaId
+        List<String> metaIds = new ArrayList<>();
+        if (StringUtil.isNotBlank(id)) {
+            // 尝试通过id获取mapping，捕获可能的类型转换异常
             try {
-                DataVo dataVo = convert2Vo(row, DataVo.class);
-                Map binlogData = dataSyncService.getBinlogData(row, true);
-                dataVo.setJson(JsonUtil.objToJson(binlogData));
-                list.add(dataVo);
+                Mapping mapping = profileComponent.getMapping(id);
+                if (mapping != null) {
+                    // 如果是mappingId，获取对应的metaId
+                    String metaId = mapping.getMetaId();
+                    if (StringUtil.isNotBlank(metaId)) {
+                        metaIds.add(metaId);
+                    }
+                } else {
+                    // 如果不是mappingId，直接作为metaId
+                    metaIds.add(id);
+                }
             } catch (Exception e) {
-                logger.error(e.getLocalizedMessage(), e);
+                // 捕获类型转换异常，说明id是metaId
+                metaIds.add(id);
             }
         }
-        paging.setData(list);
+
+        // 如果没有metaIds，使用默认的metaId
+        if (CollectionUtils.isEmpty(metaIds)) {
+            // 调用String参数的重载方法，获取默认metaId
+            String defaultMetaId = getDefaultMetaId((String) null);
+            if (StringUtil.isNotBlank(defaultMetaId)) {
+                metaIds.add(defaultMetaId);
+            } else {
+                return new Paging(pageNum, pageSize);
+            }
+        }
+
+        // 查询所有匹配的metaId的数据
+        Paging paging = new Paging(pageNum, pageSize);
+        List<DataVo> allData = new ArrayList<>();
+        int total = 0;
+        
+        for (String metaId : metaIds) {
+            Paging tempPaging = queryData(metaId, pageNum, pageSize, error, dataStatus);
+            List<Map> data = (List<Map>) tempPaging.getData();
+            total += tempPaging.getTotal();
+            
+            for (Map row : data) {
+                try {
+                    DataVo dataVo = convert2Vo(row, DataVo.class);
+                    Map binlogData = dataSyncService.getBinlogData(row, true);
+                    dataVo.setJson(JsonUtil.objToJson(binlogData));
+                    allData.add(dataVo);
+                } catch (Exception e) {
+                    logger.error(e.getLocalizedMessage(), e);
+                }
+            }
+        }
+        
+        paging.setData(allData);
+        paging.setTotal(total);
         return paging;
     }
 
     @Override
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
-        Meta meta = profileComponent.getMeta(id);
+        
+        // 如果id是mappingId，通过mappingId获取对应的metaId
+        String metaId = id;
+        try {
+            Mapping mappingObj = profileComponent.getMapping(id);
+            if (mappingObj != null) {
+                // 如果是mappingId，获取对应的metaId
+                String tempMetaId = mappingObj.getMetaId();
+                if (StringUtil.isNotBlank(tempMetaId)) {
+                    metaId = tempMetaId;
+                }
+            }
+        } catch (Exception e) {
+            // 捕获类型转换异常，说明id是metaId
+            metaId = id;
+        }
+        
+        Meta meta = profileComponent.getMeta(metaId);
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.DATA, id);
+        storageService.clear(StorageEnum.DATA, metaId);
         return "清空同步数据成功";
     }
 

@@ -194,6 +194,11 @@
                             概括
                         </a>
                     </li>
+                    <li role="presentation">
+                        <a href="#mappingErrorQueue" aria-controls="mappingErrorQueue" role="tab" data-toggle="tab">
+                            错误队列
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Tab内容区域 -->
@@ -279,6 +284,54 @@
                             <button type="button" th:attr="disabled=${mapping?.meta?.state eq 1}" th:onclick="doMappingSubmit()" class="btn btn-primary">
                                 <span class="fa fa-save"></span>保存
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- 错误队列Tab面板 -->
+                    <div role="tabpanel" class="tab-pane" id="mappingErrorQueue">
+                        <!-- 查询数据 -->
+                        <div class="form-group">
+                            <div class="col-md-3">
+                                <!-- 数据状态 -->
+                                <select id="errorQueueDataStatus" class="form-control select-control">
+                                    <option value="" selected="selected">无</option>
+                                    <option value="0">失败</option>
+                                    <option value="1">成功</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-4">
+                                <input id="errorQueueKeyword" class="form-control" type="text" maxlength="32" placeholder="请输入异常关键字(最多32个字)." />
+                            </div>
+                            <div class="col-md-1">
+                                <button id="errorQueueQueryBtn" type="button" class="btn btn-primary">查询数据</button>
+                            </div>
+                            <div class="col-md-3 text-right">
+                                <button th:id="${mapping?.id}" type="button" class="btn btn-default clearDataBtn">清空数据</button>
+                            </div>
+                        </div>
+
+                        <table class="table table-hover metaDataList">
+                            <thead>
+                            <tr>
+                                <th style="width:3%;"></th>
+                                <th style="width:5%;">目标表</th>
+                                <th style="width:5%;">事件</th>
+                                <th style="width:5%;">结果</th>
+                                <th style="width:55%;">异常</th>
+                                <th style="width:17%;">时间</th>
+                                <th style="width:10%;">详情</th>
+                            </tr>
+                            </thead>
+                            <tbody id="errorQueueDataList">
+                            <!-- 动态填充数据 -->
+                            </tbody>
+                        </table>
+
+                        <div class="form-group">
+                            <div class="col-md-5">共计: <span id="errorQueueDataTotal">0</span>条</div>
+                            <div class="col-md-7">
+                                <a href="javascript:void(0);" id="errorQueueQueryMore" num="1">显示更多<i class="fa fa-angle-double-down" aria-hidden="true"></i></a>
+                            </div>
                         </div>
                     </div>
                 </div>

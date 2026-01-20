@@ -1067,3 +1067,245 @@ function sortTable(table, columnIndex, direction) {
         tbody.append(row);
     });
 }
+
+//*********************************** 错误队列 开始位置***********************************//
+// 格式化日期
+function formatErrorQueueDate(time) {
+    var date = new Date(time);
+    var YY = date.getFullYear() + '-';
+    var MM = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1) + '-';
+    var DD = (date.getDate() < 10 ? '0' + (date.getDate()) : date.getDate());
+    var hh = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours()) + ':';
+    var mm = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes()) + ':';
+    var ss = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds());
+    return YY + MM + DD + " " + hh + mm + ss;
+}
+
+// 查看错误队列详细数据
+function bindErrorQueueQueryDataDetailEvent() {
+    let $queryData = $("#mappingErrorQueue .queryData");
+    $queryData.unbind("click");
+    $queryData.click(function () {
+        let json = $(this).parent().find("div").text();
+        BootstrapDialog.show({
+            size: BootstrapDialog.SIZE_WIDE,
+            title: "注意信息安全",
+            type: BootstrapDialog.TYPE_INFO,
+            message: function (dialog) {
+                let $content = '<table class="table table-hover">';
+                $content += '<thead><tr><th></th><th>字段</th><th>值</th></tr></thead>';
+                $content += '<tbody id="dataDetail" tableGroupId="">';
+
+                let jsonObj = $.parseJSON(json);
+                let index = 1;
+                $.each(jsonObj, function(name, value) {
+                    $content += '<tr>';
+                    $content += '<td>' + index + '</td>';
+                    $content += '<td>' + name + '</td>';
+                    $content += '<td class="driver_break_word">' + value + '</td>';
+                    $content += '</tr>';
+                    index++;
+                });
+
+                $content += '</tbody>';
+                $content += '</table>';
+                return $content;
+            },
+            buttons: [{
+                label: "关闭",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
+// 错误队列重试同步
+function bindErrorQueueQueryDataRetryEvent() {
+    let $retry = $("#mappingErrorQueue .retryData");
+    $retry.unbind("click");
+    $retry.click(function () {
+        let id = $("#mappingId").val();
+        let messageId = $(this).attr("id");
+        updateHash('/monitor/page/retry?metaId=' + id + '&messageId=' + messageId);
+    });
+}
+
+// 查看错误队列异常详情
+function bindErrorQueueQueryErrorDetailEvent() {
+    var $queryData = $("#mappingErrorQueue .queryError");
+    $queryData.unbind("click");
+    $queryData.click(function () {
+        var json = $(this).text();
+        var html = '<div class="row driver_break_word">' + json + '</div>';
+        BootstrapDialog.show({
+            title: "异常详细",
+            size: BootstrapDialog.SIZE_WIDE,
+            message: html,
+            type: BootstrapDialog.TYPE_WARNING,
+            buttons: [{
+                label: "关闭",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
+// 错误队列显示更多
+function errorQueueShowMore($this, $url, $params, $call) {
+    $params.pageNum = parseInt($this.attr("num")) + 1;
+    $params.pageSize = 10;
+    doGetter($url, $params, function (data) {
+        if (data.success == true) {
+            if (data.resultValue.data.length > 0) {
+                $this.attr("num", $params.pageNum);
+            }
+            $call(data.resultValue);
+        } else {
+            bootGrowl(data.resultValue, "danger");
+        }
+    });
+}
+
+// 错误队列显示数据
+function errorQueueShowData($dataList, arr, append) {
+    var html = '';
+    var size = arr.length;
+    if (size > 0) {
+        var start = append ? $dataList.find("tr").size() : 0;
+        for (i = 0; i < size; i++) {
+            html += '<tr>';
+            html += '<td>' + (start + i + 1) + '</td>';
+            html += '<td>' + arr[i].targetTableName + '</td>';
+            html += '<td>' + arr[i].event + '</td>';
+            html += '<td>' + (arr[i].success ? '<span class="label label-success">成功</span>' : '<span class="label label-warning">失败</span>') + '</td>';
+            html += '<td style="max-width:100px;" class="dbsyncer_over_hidden"><a href="javascript:;" class="dbsyncer_pointer queryError">' + arr[i].error + '</a></td>';
+            html += '<td>' + formatErrorQueueDate(arr[i].createTime) + '</td>';
+            html += '<td><div class="hidden">' + arr[i].json + '</div><a href="javascript:;" class="label label-info queryData">查看数据</a>&nbsp;';
+            html += (arr[i].success ? '' : '<a id="' + arr[i].id + '" href="javascript:;" class="label label-warning retryData">重试</a>');
+            html += '</td>';
+            html += '</tr>';
+        }
+    }
+    return html;
+}
+
+// 错误队列刷新数据列表
+function errorQueueRefreshDataList(resultValue, append) {
+    var $dataList = $("#errorQueueDataList");
+    var $dataTotal = $("#errorQueueDataTotal");
+    var html = errorQueueShowData($dataList, resultValue.data, append);
+    if (append) {
+        $dataList.append(html);
+    } else {
+        $dataList.html(html);
+        $("#errorQueueQueryMore").attr("num", 1);
+    }
+    $dataTotal.html(resultValue.total);
+    bindErrorQueueQueryDataDetailEvent();
+    bindErrorQueueQueryDataRetryEvent();
+    bindErrorQueueQueryErrorDetailEvent();
+}
+
+// 错误队列查询数据
+function bindErrorQueueQueryDataEvent() {
+    $("#errorQueueQueryBtn").click(function () {
+        var keyword = $("#errorQueueKeyword").val();
+        var id = $("#mappingId").val();
+        var dataStatus = $("#errorQueueDataStatus").val();
+        doGetter('/monitor/queryData', {
+            "error": keyword,
+            "dataStatus": dataStatus,
+            "id": id,
+            "pageNum": 1,
+            "pageSize": 10
+        }, function (data) {
+            if (data.success == true) {
+                errorQueueRefreshDataList(data.resultValue);
+            } else {
+                bootGrowl(data.resultValue, "danger");
+            }
+        });
+    });
+}
+
+// 错误队列显示更多
+function bindErrorQueueQueryDataMoreEvent() {
+    $("#errorQueueQueryMore").click(function () {
+        var keyword = $("#errorQueueKeyword").val();
+        var id = $("#mappingId").val();
+        var dataStatus = $("#errorQueueDataStatus").val();
+        errorQueueShowMore($(this), '/monitor/queryData', {
+            "error": keyword,
+            "dataStatus": dataStatus,
+            "id": id
+        }, function (resultValue) {
+            errorQueueRefreshDataList(resultValue, true)
+        });
+    });
+}
+
+// 错误队列清空数据
+function bindErrorQueueClearDataEvent() {
+    var $clearDataBtn = $("#mappingErrorQueue .clearDataBtn");
+    $clearDataBtn.click(function () {
+        var $id = $("#mappingId").val();
+        var data = {"id": $id};
+        BootstrapDialog.show({
+            title: "警告",
+            type: BootstrapDialog.TYPE_DANGER,
+            message: "确认清空该任务的错误数据?",
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "确定",
+                action: function (dialog) {
+                    doPoster('/monitor/clearData', data, function (data) {
+                        if (data.success == true) {
+                            bootGrowl("清空数据成功!", "success");
+                            // 重新查询数据
+                            $("#errorQueueQueryBtn").click();
+                        } else {
+                            bootGrowl(data.resultValue, "danger");
+                        }
+                    });
+                    dialog.close();
+                }
+            }, {
+                label: "取消",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
+// 初始化错误队列
+function initErrorQueue() {
+    // 绑定查询数据事件
+    bindErrorQueueQueryDataEvent();
+    // 绑定显示更多事件
+    bindErrorQueueQueryDataMoreEvent();
+    // 绑定清空数据事件
+    bindErrorQueueClearDataEvent();
+    // 绑定数据状态切换事件
+    $("#errorQueueDataStatus").change(function () {
+        $("#errorQueueQueryBtn").click();
+    });
+    // 默认查询数据
+    $("#errorQueueQueryBtn").click();
+}
+
+// 监听标签页切换事件，当切换到错误队列标签时初始化数据
+$(function() {
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        var target = $(e.target).attr('href');
+        if (target === '#mappingErrorQueue') {
+            initErrorQueue();
+        }
+    });
+});
+//*********************************** 错误队列 结束位置***********************************//
