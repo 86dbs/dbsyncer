@@ -49,11 +49,14 @@
 
     <!-- 操作按钮区域 -->
     <div class="flex items-center justify-between mt-4">
-        <button id="refreshTableBtn" type="button" class="btn btn-outline" th:title="刷新数据源和目标源表" onclick="bindTableRefresh()">
-            <span class="fa fa-refresh"></span>刷新表
-        </button>
         <div class="form-actions">
             <div id="searchTableGroup"></div>
+        </div>
+
+        <div class="form-actions">
+            <button id="refreshTableBtn" type="button" class="btn btn-outline" th:title="刷新数据源和目标源表" onclick="bindTableRefresh()">
+                <span class="fa fa-refresh"></span>刷新表
+            </button>
             <button id="tableGroupAddBtn" type="button" class="btn btn-info">
                 <i class="fa fa-plus"></i> 添加
             </button>
