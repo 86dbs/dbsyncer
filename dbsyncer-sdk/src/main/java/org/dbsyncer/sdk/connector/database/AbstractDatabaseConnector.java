@@ -804,14 +804,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return;
         }
 
-        Iterator<Field> iterator = fields.iterator();
-        while (iterator.hasNext()) {
-            Field next = iterator.next();
-            if (next != null && pkSet.contains(next.getName())) {
-                iterator.remove();
-                break;
-            }
-        }
+        fields.removeIf(next -> next != null && pkSet.contains(next.getName()));
     }
 
     @Override
