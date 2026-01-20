@@ -25,28 +25,26 @@
         <div class="card px-6" id="allData"></div>
     </div>
 
-    <div class="grid grid-cols-3 mb-5">
+    <div class="grid grid-cols-1 lg:grid-cols-3 mb-5">
         <!-- 同步趋势图表 -->
-        <div class="form-container lg:col-span-2 px-5">
-            <div class="flex items-center justify-between">
+        <div class="form-container lg:col-span-2 px-3">
+            <div class="flex items-center justify-between mt-2">
                 <h3 class="font-bold text-lg">同步趋势</h3>
                 <div>
-                    <button class="btn btn-outline text-sm trend-item text-primary" data-key="7">一周</button>
-                    <button class="btn btn-outline text-sm trend-item ml-2" data-key="15">半个月</button>
-                    <button class="btn btn-outline text-sm trend-item ml-2" data-key="30">一个月</button>
+                    <button class="btn btn-outline text-sm trend-item mr-1 text-primary" data-key="7">一周</button>
+                    <button class="btn btn-outline text-sm trend-item mr-1" data-key="15">半个月</button>
+                    <button class="btn btn-outline text-sm trend-item mr-3" data-key="30">一个月</button>
                 </div>
             </div>
             <canvas id="trendChart"></canvas>
         </div>
 
         <!-- 统计卡片 -->
-        <div class="form-container lg:col-span-1 p-5 flex flex-col justify-between">
-            <div id="statistic" class="mini-stats-grid"></div>
+        <div class="form-container lg:col-span-1 p-5">
+            <div id="statistic" class="mini-stats-grid mb-3"></div>
 
             <!-- 任务状态分布柱状图 -->
-            <div class="form-container mt-4">
-                <canvas id="statusDoughnutChart"></canvas>
-            </div>
+            <canvas id="statusDoughnutChart"></canvas>
         </div>
     </div>
 
@@ -127,6 +125,8 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2.1,
                 plugins: {
                     legend: {
                         position: 'bottom',
@@ -161,6 +161,7 @@
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: true,
+                aspectRatio: 1.9,
                 plugins: {
                     legend: {
                         display: false
@@ -312,8 +313,8 @@
                     <div class="mini-stat-info">
                         <p class="mini-stat-title">${item.title}</p>
                     </div>
-                    <span class="mini-stat-number text-${item.bgColor}" title="${r?.[item.key] || 0}">
-                        ${r?.[item.key] || 0}
+                    <span class="mini-stat-number text-${item.bgColor}" title="${r[item.key] || 0}">
+                        ${r[item.key] || 0}
                     </span>
                 </div>
             `).join('');

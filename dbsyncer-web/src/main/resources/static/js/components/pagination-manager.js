@@ -35,7 +35,7 @@
             emptyHtml: options.emptyHtml || '',
             params: options.params || {},
             pageIndex: options.pageIndex || 1,
-            pageSize: options.pageSize || 10,
+            pageSize: options.pageSize || 5,
             refreshCompleted: options.refreshCompleted || function() {}
         };
 
