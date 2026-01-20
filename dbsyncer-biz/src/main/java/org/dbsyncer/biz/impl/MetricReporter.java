@@ -204,12 +204,13 @@ public class MetricReporter implements ScheduledTaskJob {
                 if (meta.getCreateTime() <= lastWeekTime) {
                     lastWeek.incrementAndGet();
                 }
-                // 统计运行中和失败数
+                // 统计运行中
                 if (MetaEnum.isRunning(meta.getState())) {
                     running.incrementAndGet();
-                    if (meta.getFail().get() > 0) {
-                        fail.incrementAndGet();
-                    }
+                }
+                // 统计失败数
+                if (meta.getFail().get() > 0) {
+                    fail.incrementAndGet();
                 }
             });
             dashboardMetric.setTotalMeta(metaAll.size());

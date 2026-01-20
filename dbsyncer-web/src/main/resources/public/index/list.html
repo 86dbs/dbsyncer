@@ -25,9 +25,9 @@
         <div class="card px-6" id="allData"></div>
     </div>
 
-    <div class="grid grid-cols-6 mb-5">
+    <div class="grid grid-cols-3 mb-5">
         <!-- 同步趋势图表 -->
-        <div class="form-container lg:col-span-4 px-5">
+        <div class="form-container lg:col-span-2 px-5">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg">同步趋势</h3>
                 <div>
@@ -40,57 +40,8 @@
         </div>
 
         <!-- 统计卡片 -->
-        <div class="form-container lg:col-span-2 p-5 flex flex-col justify-between">
-            <div class="mini-stats-grid">
-                <div class="mini-stat-card mini-stat-card--success">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">成功</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-success" id="success"></span>
-                    </div>
-                </div>
-                <div class="mini-stat-card mini-stat-card--error">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">失败</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-error" id="fail"></span>
-                    </div>
-                </div>
-                <div class="mini-stat-card mini-stat-card--primary">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">新增</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-primary" id="insert"></span>
-                    </div>
-                </div>
-                <div class="mini-stat-card mini-stat-card--info">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">修改</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-info" id="update"></span>
-                    </div>
-                </div>
-                <div class="mini-stat-card mini-stat-card--warning">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">删除</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-warning" id="delete"></span>
-                    </div>
-                </div>
-                <div class="mini-stat-card mini-stat-card--violet">
-                    <div class="mini-stat-info">
-                        <p class="mini-stat-title">DDL</p>
-                    </div>
-                    <div class="mini-stat-value">
-                        <span class="mini-stat-number text-violet" id="ddl"></span>
-                    </div>
-                </div>
-            </div>
+        <div class="form-container lg:col-span-1 p-5 flex flex-col justify-between">
+            <div id="statistic" class="mini-stats-grid"></div>
 
             <!-- 任务状态分布柱状图 -->
             <div class="form-container mt-4">
@@ -194,13 +145,13 @@
         const statusDoughnutChart = statusDoughnutCtx ? new Chart(statusDoughnutCtx, {
             type: 'bar',
             data: {
-                labels: ['运行中', '暂停中', '已失败'],
+                labels: ['总任务', '运行中', '已失败'],
                 datasets: [{
                     data: [0, 0, 0],
                     backgroundColor: [
-                        '#52c41a',
-                        '#faad14',
-                        '#ff4d4f'
+                        'rgba(24, 144, 255, 0.45)',   // #1890ff
+                        'rgba(82, 196, 26, 0.45)',   // #52c41a
+                        'rgba(245, 34, 45, 0.45)'   // #f5222d
                     ],
                     borderWidth: 0,
                     borderRadius: 4
@@ -346,6 +297,30 @@
             <p class="text-xs text-gray-500 mt-1">较昨日${config.text}</p>`;
         }
 
+        function renderStatistic(r) {
+            const statistic = [
+                { key: 'success', title: '成功', bgColor: 'success' },
+                { key: 'fail', title: '失败', bgColor: 'error' },
+                { key: 'insert', title: '新增', bgColor: 'primary' },
+                { key: 'update', title: '修改', bgColor: 'info' },
+                { key: 'delete', title: '删除', bgColor: 'warning' },
+                { key: 'ddl', title: 'DDL', bgColor: 'violet' }
+            ];
+
+            const html = statistic.map(item => `
+                <div class="mini-stat-card mini-stat-card--${item.bgColor}">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">${item.title}</p>
+                    </div>
+                    <span class="mini-stat-number text-${item.bgColor}" title="${r?.[item.key] || 0}">
+                        ${r?.[item.key] || 0}
+                    </span>
+                </div>
+            `).join('');
+
+            $("#statistic").html(html);
+        }
+
         // 刷新仪表板数据
         function refreshDashboardData() {
             doGetter("/monitor/dashboard", {}, function (response) {
@@ -355,19 +330,15 @@
                     $("#runningMeta").html(renderRunningMeta(r));
                     $("#failMeta").text(r.failMeta);
                     $("#allData").html(renderAllData(r));
-                    $("#success").text(r.success);
-                    $("#fail").text(r.fail);
-                    $("#insert").text(r.insert);
-                    $("#update").text(r.update);
-                    $("#delete").text(r.delete);
-                    $("#ddl").text(r.ddl);
+                    // 生成迷你卡片
+                    renderStatistic(r);
                     refreshLineChatData(r.trend);
                     
                     // 更新柱状图数据
                     if (statusDoughnutChart) {
                         statusDoughnutChart.data.datasets[0].data = [
+                            r.totalMeta || 0,
                             r.runningMeta || 0,
-                            (r.totalMeta - r.runningMeta - r.failMeta) || 0,
                             r.failMeta || 0
                         ];
                         statusDoughnutChart.update('none');

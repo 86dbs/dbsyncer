@@ -63,19 +63,11 @@
     </div>
 
     <div class="grid grid-cols-6 mt-4">
-        <div class="lg:col-span-2">
-            <div id="searchTableGroup" class="search-wrapper">
-                <i class="fa fa-search search-icon"></i>
-                <input class="search-input" type="text" maxlength="32" placeholder="搜索表名称">
-                <span class="search-clear" title="清除">
-                    <i class="fa fa-times"></i>
-                </span>
-            </div>
-        </div>
+        <div class="lg:col-span-2" id="searchTableGroup"></div>
     </div>
 
     <!-- 表映射列表 -->
-    <table class="table">
+    <table class="table search-table-group-list hidden">
         <thead>
         <tr>
             <th></th>
@@ -372,8 +364,25 @@
         initMultipleInputTags();
         // 绑定添加表映射关系事件
         bindTableGroupAdd(sourceTableSelect, targetTableSelect);
+        // 渲染搜索输入框和表格
+        function renderSearchTable(pagination, mappingId){
+            if (pagination.total > 0) {
+                $("#searchTableGroup").html(`<div class="search-wrapper">
+                    <i class="fa fa-search search-icon"></i>
+                    <input class="search-input" type="text" maxlength="32" placeholder="搜索表名称">
+                    <span class="search-clear" title="清除">
+                        <i class="fa fa-times"></i>
+                    </span>
+                </div>`);
+                initSearch('searchTableGroup', function (searchKey) {
+                    pagination.doSearch({'searchKey': searchKey, 'mappingId': mappingId});
+                });
+            }
+            $(".search-table-group-list").toggleClass("hidden", pagination.total <= 0);
+        }
 
         // 初始化分页管理器
+        let initCompleted = false;
         let mappingId = $("#mappingId").val();
         let pagination = new PaginationManager({
             requestUrl: '/tableGroup/search',
@@ -392,6 +401,10 @@
             },
             emptyHtml:'<td colspan="4" class="text-center"><p class="empty-text">暂无映射关系</p></td>',
             refreshCompleted: function() {
+                if (!initCompleted) {
+                    renderSearchTable(pagination, mappingId);
+                    initCompleted = true;
+                }
                 // 绑定表关系点击事件
                 bindMappingTableGroupListClick();
                 // 绑定删除表映射关系事件
@@ -399,9 +412,6 @@
                 // 绑定复选框多选或单选事件
                 bindTableGroupCheckbox();
             }
-        });
-        initSearch('searchTableGroup', function (searchKey) {
-            pagination.doSearch({'searchKey': searchKey, 'mappingId': mappingId});
         });
     });
 </script>

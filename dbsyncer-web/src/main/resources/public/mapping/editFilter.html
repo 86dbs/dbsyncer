@@ -146,12 +146,7 @@
                "value": arg
              });
         });
-        const $conditionTable = $("#conditionTable");
-        if (0 >= row.length) {
-            $conditionTable.addClass("hidden");
-        } else {
-            $conditionTable.removeClass("hidden");
-        }
+        $("#conditionTable").toggleClass("hidden", row.length <= 0);
         $("#filter").val(JSON.stringify(row));
     }
 

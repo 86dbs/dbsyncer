@@ -123,6 +123,7 @@
             const pageNum = result.pageNum || config.pageIndex;
             // 更新分页管理器状态
             this.currentPage = pageNum;
+            this.total = total;
             // 渲染表格
             this.renderTable(items);
             // 更新分页信息
@@ -211,6 +212,7 @@
 
         // 初始化状态
         this.currentPage = config.pageIndex;
+        this.total = 0;
         
         // 初始化分页结构
         this.initPaginationStructure();
