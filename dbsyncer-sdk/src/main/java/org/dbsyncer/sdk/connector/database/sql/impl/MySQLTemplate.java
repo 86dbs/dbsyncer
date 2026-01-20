@@ -211,6 +211,20 @@ public class MySQLTemplate extends AbstractSqlTemplate {
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
             case "VARCHAR":
                 if (column.getColumnSize() > 0) {
+                    // MySQL VARCHAR 最大长度限制：对于 utf8mb4 字符集，最大字符数约为 16383
+                    // 如果 columnSize 超过限制，应该使用 TEXT 类型
+                    long columnSize = column.getColumnSize();
+                    if (columnSize > 16383) {
+                        // 超过 VARCHAR 限制，转换为 TEXT 类型
+                        // 根据 columnSize 判断使用哪种 TEXT 类型
+                        if (columnSize <= 65535L) {
+                            return "TEXT";
+                        } else if (columnSize <= 16777215L) {
+                            return "MEDIUMTEXT";
+                        } else {
+                            return "LONGTEXT";
+                        }
+                    }
                     return typeName + "(" + column.getColumnSize() + ")";
                 }
                 throw new IllegalArgumentException("should give size for column: " + column.getTypeName());
