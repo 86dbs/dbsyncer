@@ -77,45 +77,6 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     }
 
     /**
-     * 发送DQL增量事件
-     *
-     * @param event
-     */
-    protected void sendDqlChangedEvent(ChangedEvent event) {
-        if (null == event) {
-            return;
-        }
-        List<DqlMapper> dqlMappers = dqlMap.get(event.getSourceTableName());
-        if (CollectionUtils.isEmpty(dqlMappers)) {
-            return;
-        }
-
-        boolean processed = false;
-        for (DqlMapper dqlMapper : dqlMappers) {
-            if (!processed) {
-                switch (event.getEvent()) {
-                    case ConnectorConstant.OPERTION_UPDATE:
-                    case ConnectorConstant.OPERTION_INSERT:
-                        try {
-                            queryDqlData(dqlMapper, event.getChangedRow());
-                        } catch (Exception e) {
-                            return;
-                        }
-                        break;
-                    case ConnectorConstant.OPERTION_DELETE:
-                        getPKData(dqlMapper, event.getChangedRow());
-                        break;
-                    default:
-                        break;
-                }
-                processed = true;
-            }
-            event.setSourceTableName(dqlMapper.sqlName);
-            changeEvent(event);
-        }
-    }
-
-    /**
      * 初始化Dql连接配置
      */
     protected void postProcessDqlBeforeInitialization() throws Exception {

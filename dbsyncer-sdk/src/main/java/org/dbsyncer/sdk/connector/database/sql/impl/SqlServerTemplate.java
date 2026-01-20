@@ -1,5 +1,6 @@
 package org.dbsyncer.sdk.connector.database.sql.impl;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.database.sql.context.SqlBuildContext;
 import org.dbsyncer.sdk.model.Field;
@@ -606,31 +607,45 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         // 优化：移除外层包装，因为现在在 CROSS APPLY 中使用
         // CROSS APPLY 需要一个返回单行单列的表值表达式
         return String.format(
-                "(SELECT " +
-                        "    '[' + STUFF((" +
-                        "        SELECT ',' + " +
-                        "            '{' + " +
-                        "            '\"COLUMN_NAME\":\"' + REPLACE(COLUMN_NAME, '\"', '\\\"') + '\",' + " +
-                        "            '\"DATA_TYPE\":\"' + REPLACE(DATA_TYPE, '\"', '\\\"') + '\",' + " +
-                        "            CASE WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL " +
-                        "                THEN '\"CHARACTER_MAXIMUM_LENGTH\":' + CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR) + ',' " +
-                        "                ELSE '' END + " +
-                        "            CASE WHEN NUMERIC_PRECISION IS NOT NULL " +
-                        "                THEN '\"NUMERIC_PRECISION\":' + CAST(NUMERIC_PRECISION AS VARCHAR) + ',' " +
-                        "                ELSE '' END + " +
-                        "            CASE WHEN NUMERIC_SCALE IS NOT NULL " +
-                        "                THEN '\"NUMERIC_SCALE\":' + CAST(NUMERIC_SCALE AS VARCHAR) + ',' " +
-                        "                ELSE '' END + " +
-                        "            '\"IS_NULLABLE\":\"' + IS_NULLABLE + '\",' + " +
-                        "            '\"ORDINAL_POSITION\":' + CAST(ORDINAL_POSITION AS VARCHAR) + " +
-                        "            '}' " +
-                        "        FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) " +
-                        "        WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' " +
-                        "        ORDER BY ORDINAL_POSITION " +
-                        "        FOR XML PATH(''), TYPE " +
-                        "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info)",
+                "(" + schemaSql() + ")",
                 escapedSchema, escapedTableName
         );
+    }
+
+    public String buildSchemeOnly(String schema, String tableName) {
+        // 转义单引号防止SQL注入
+        String escapedSchema = (schema != null && !schema.trim().isEmpty()) ? schema.replace("'", "''") : "dbo";
+        String escapedTableName = tableName.replace("'", "''");
+
+        // 优化：移除外层包装，因为现在在 CROSS APPLY 中使用
+        // CROSS APPLY 需要一个返回单行单列的表值表达式
+        return String.format(schemaSql(), escapedSchema, escapedTableName);
+    }
+
+    private static @NonNull String schemaSql() {
+        return "SELECT " +
+                "    '[' + STUFF((" +
+                "        SELECT ',' + " +
+                "            '{' + " +
+                "            '\"COLUMN_NAME\":\"' + REPLACE(COLUMN_NAME, '\"', '\\\"') + '\",' + " +
+                "            '\"DATA_TYPE\":\"' + REPLACE(DATA_TYPE, '\"', '\\\"') + '\",' + " +
+                "            CASE WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL " +
+                "                THEN '\"CHARACTER_MAXIMUM_LENGTH\":' + CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR) + ',' " +
+                "                ELSE '' END + " +
+                "            CASE WHEN NUMERIC_PRECISION IS NOT NULL " +
+                "                THEN '\"NUMERIC_PRECISION\":' + CAST(NUMERIC_PRECISION AS VARCHAR) + ',' " +
+                "                ELSE '' END + " +
+                "            CASE WHEN NUMERIC_SCALE IS NOT NULL " +
+                "                THEN '\"NUMERIC_SCALE\":' + CAST(NUMERIC_SCALE AS VARCHAR) + ',' " +
+                "                ELSE '' END + " +
+                "            '\"IS_NULLABLE\":\"' + IS_NULLABLE + '\",' + " +
+                "            '\"ORDINAL_POSITION\":' + CAST(ORDINAL_POSITION AS VARCHAR) + " +
+                "            '}' " +
+                "        FROM INFORMATION_SCHEMA.COLUMNS WITH (NOLOCK) " +
+                "        WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' " +
+                "        ORDER BY ORDINAL_POSITION " +
+                "        FOR XML PATH(''), TYPE " +
+                "    ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') + ']' AS schema_info";
     }
 
     /**
