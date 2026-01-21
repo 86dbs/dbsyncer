@@ -75,9 +75,12 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getQueryCountSql(SqlBuilderConfig config) {
-        String query = "SELECT SUM(cnt) AS exact_total_rows FROM (SELECT DBMS_ROWID.ROWID_BLOCK_NUMBER(t.ROWID) AS block_id, COUNT(*) AS cnt FROM %s%s t %s GROUP BY DBMS_ROWID.ROWID_BLOCK_NUMBER(t.ROWID));";
         Database database = config.getDatabase();
         String queryFilter = config.getQueryFilter();
+        // PARALLEL hint 利用多核 CPU 并行处理，提升性能但不影响准确性
+        // 让 Oracle 优化器自动选择最佳访问路径（索引扫描或全表扫描）
+        String query = "SELECT /*+ PARALLEL(t, 8) */ COUNT(*) FROM %s%s t %s";
+        
         return String.format(query,
                 config.getSchema(),
                 database.buildWithQuotation(config.getTableName()),
