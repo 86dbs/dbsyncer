@@ -74,6 +74,17 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String getQueryCountSql(SqlBuilderConfig config) {
+        String query = "SELECT SUM(cnt) AS exact_total_rows FROM (SELECT DBMS_ROWID.ROWID_BLOCK_NUMBER(t.ROWID) AS block_id, COUNT(*) AS cnt FROM %s%s t %s GROUP BY DBMS_ROWID.ROWID_BLOCK_NUMBER(t.ROWID));";
+        Database database = config.getDatabase();
+        String queryFilter = config.getQueryFilter();
+        return String.format(query,
+                config.getSchema(),
+                database.buildWithQuotation(config.getTableName()),
+                queryFilter);
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         // 使用三层嵌套查询：SELECT * FROM (SELECT A.*, ROWNUM RN FROM (...) A WHERE ROWNUM <= ?) WHERE RN > ?
         StringBuilder sql = new StringBuilder();
