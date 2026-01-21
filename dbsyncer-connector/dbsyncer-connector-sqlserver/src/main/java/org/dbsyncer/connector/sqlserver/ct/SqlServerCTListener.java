@@ -24,14 +24,9 @@ import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.util.Assert;
 
 import java.sql.*;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -61,11 +56,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private String serverName;
     private String schema;
     private String realDatabaseName;
-    private final int BUFFER_CAPACITY = 256;
-    private BlockingQueue<Long> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
-    private Lock lock = new ReentrantLock(true);
-    private Condition isFull = lock.newCondition();
-    private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
+    // 版本号轮询间隔（毫秒）
+    private static final long POLL_INTERVAL_MILLIS = 100;
     // 主键信息缓存（表名 -> 主键列表）
     private final Map<String, List<String>> primaryKeysCache = new HashMap<>();
     // 表列数缓存（表名 -> 列数），避免重复查询 INFORMATION_SCHEMA
@@ -110,7 +102,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             worker.setName(new StringBuilder("ct-parser-").append(serverName).append("_").append(worker.hashCode()).toString());
             worker.setDaemon(false);
             worker.start();
-            VersionPuller.addExtractor(metaId, this);
         } catch (Exception e) {
             close();
             logger.error("启动失败: {}", e.getMessage(), e);
@@ -123,7 +114,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     @Override
     public void close() {
         if (connected) {
-            VersionPuller.removeExtractor(metaId);
             if (null != worker && !worker.isInterrupted()) {
                 worker.interrupt();
                 worker = null;
@@ -151,26 +141,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         return lastVersion;
     }
 
-    public void pushStopVersion(Long version) {
-        if (buffer.contains(version)) {
-            return;
-        }
-        if (!buffer.offer(version)) {
-            try {
-                lock.lock();
-                while (!buffer.offer(version) && connected) {
-                    logger.warn("[{}] 缓存队列容量已达上限[{}], 正在阻塞重试.", this.getClass().getSimpleName(), BUFFER_CAPACITY);
-                    try {
-                        this.isFull.await(pollInterval.toMillis(), TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            } finally {
-                lock.unlock();
-            }
-        }
-    }
 
     private void connect() throws Exception {
         instance = (DatabaseConnectorInstance) connectorInstance;
@@ -1321,24 +1291,19 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    Long stopVersion = buffer.take();
-                    Long poll;
-                    while ((poll = buffer.poll()) != null) {
-                        stopVersion = poll;
+                    // 直接获取最新版本号
+                    Long maxVersion = getMaxVersion();
+                    if (maxVersion != null && maxVersion > lastVersion) {
+                        pull(lastVersion, maxVersion);
+                    } else {
+                        // 没有新版本，等待一段时间后继续轮询
+                        sleepInMills(POLL_INTERVAL_MILLIS);
                     }
-                    if (stopVersion == null || stopVersion <= lastVersion) {
-                        sleepInMills(10L);
-                        continue;
-                    }
-
-                    pull(lastVersion, stopVersion);
-
-                    // 版本号已在 processDMLChangesWithStreaming() 中统一更新，这里不需要重复更新
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
                     if (connected) {
-                        logger.error(e.getMessage(), e);
+                        logger.error("轮询版本号失败: {}", e.getMessage(), e);
                         sleepInMills(1000L);
                     }
                 }
