@@ -256,8 +256,13 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     startVersion);
         }
 
-        // 注意：版本号的持久化通过每个事件的 refreshEvent 完成，使用 startVersion
-        // 这里只更新内存中的 lastVersion，用于下次查询的起始版本号
+        // 更新快照：使用 startVersion 确保数据安全（即使处理失败也不会丢失数据）
+        // 注意：所有事件都携带 startVersion，所以这里统一更新快照为 startVersion
+        ChangedOffset offset = new ChangedOffset();
+        offset.setPosition(startVersion);
+        refreshEvent(offset);
+
+        // 更新内存中的 lastVersion，用于下次查询的起始版本号
         lastVersion = stopVersion;
     }
 

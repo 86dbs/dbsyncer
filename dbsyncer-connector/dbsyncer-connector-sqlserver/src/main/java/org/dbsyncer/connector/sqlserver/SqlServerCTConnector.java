@@ -48,7 +48,7 @@ public class SqlServerCTConnector extends SqlServerConnector {
         }
 
         Map<String, String> position = new HashMap<>();
-        position.put("position", String.valueOf(currentVersion));
+        position.put("version", String.valueOf(currentVersion));
         return position;
     }
 }
