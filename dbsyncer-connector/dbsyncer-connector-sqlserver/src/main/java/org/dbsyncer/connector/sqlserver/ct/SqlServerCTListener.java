@@ -23,7 +23,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.util.Assert;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +54,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private volatile boolean connected;
     private Set<String> tables;
     private DatabaseConnectorInstance instance;
+    private SqlServerCTQueryUtil queryUtil;
     private Worker worker;
     private Long lastVersion;
     private String serverName;
@@ -131,7 +135,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     public Long getMaxVersion() throws Exception {
-        return queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
+        return queryUtil.queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
             Long version = rs.getLong(1);
             return rs.wasNull() ? null : version;
         });
@@ -152,6 +156,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             if (schema == null || schema.isEmpty()) {
                 schema = "dbo";
             }
+            // 初始化查询工具类
+            queryUtil = new SqlServerCTQueryUtil(instance);
         }
     }
 
@@ -169,7 +175,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
     private void readTables() throws Exception {
         String sql = sqlTemplate.buildGetTableListSql(schema);
-        tables = queryAndMapList(sql, rs -> {
+        tables = queryUtil.queryAndMapList(sql, rs -> {
             Set<String> tableSet = new LinkedHashSet<>();
             while (rs.next()) {
                 String tableName = rs.getString(1);
@@ -182,8 +188,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private void enableDBChangeTracking() throws Exception {
-        realDatabaseName = queryAndMap(sqlTemplate.buildGetDatabaseNameSql(), rs -> rs.getString(1));
-        Integer count = queryAndMap(sqlTemplate.buildIsDatabaseChangeTrackingEnabledSql(realDatabaseName), rs -> rs.getInt(1));
+        realDatabaseName = queryUtil.queryAndMap(sqlTemplate.buildGetDatabaseNameSql(), rs -> rs.getString(1));
+        Integer count = queryUtil.queryAndMap(sqlTemplate.buildIsDatabaseChangeTrackingEnabledSql(realDatabaseName), rs -> rs.getInt(1));
         if (count == null || count == 0) {
             execute(sqlTemplate.buildEnableDatabaseChangeTrackingSql(realDatabaseName));
             logger.info("已启用数据库 [{}] 的 Change Tracking", realDatabaseName);
@@ -197,7 +203,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         tables.forEach(table -> {
             try {
                 String checkSql = sqlTemplate.buildIsTableChangeTrackingEnabledSql(schema, table);
-                Integer count = query(checkSql, null, rs -> {
+                Integer count = queryUtil.query(checkSql, null, rs -> {
                     if (rs.next()) {
                         return rs.getInt(1);
                     }
@@ -303,8 +309,8 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 logger.error("流式查询 DML 变更失败，表: {}, SQL: {}, 错误: {}", tableName, mainQuery, e.getMessage(), e);
                 throw e;
             } finally {
-                close(rs);
-                close(ps);
+                rs.close();
+                ps.close();
             }
         });
     }
@@ -399,7 +405,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
         // 如果没有 DML 数据，执行辅助查询检测 DDL
         if (processedCount == 0) {
-            queryAndMapList(fallbackQuery, rs2 -> {
+            queryUtil.queryAndMapList(fallbackQuery, rs2 -> {
                 if (rs2.next()) {
                     String schemaInfoJson = rs2.getString("schema_info");
                     try {
@@ -507,7 +513,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     private Long getCurrentVersion() throws Exception {
-        return queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
+        return queryUtil.queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
             Long version = rs.getLong(1);
             return rs.wasNull() ? null : version;
         });
@@ -534,7 +540,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         // 使用 READ UNCOMMITTED 隔离级别避免死锁
         // 注意：优化后的 SQL 使用 CROSS APPLY，只有 2 个参数占位符（在 CROSS APPLY 子查询中）
         // 主查询的 WHERE 条件已通过字符串格式化处理，不再需要参数
-        return queryWithReadUncommitted(sql, statement -> {
+        return queryUtil.queryWithReadUncommitted(sql, statement -> {
             statement.setString(1, schema);  // CROSS APPLY 子查询的 TABLE_SCHEMA
             statement.setString(2, tableName);  // CROSS APPLY 子查询的 TABLE_NAME
         }, rs -> {
@@ -555,7 +561,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             // 注意：这种情况不应该发生（因为主键是必需的），但为了健壮性仍然处理
             if (!columnCountSet) {
                 try {
-                    columnCount = queryAndMapList(
+                    columnCount = queryUtil.queryAndMapList(
                             String.format("SELECT COUNT(*) AS col_count FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s'",
                                     schema, tableName),
                             rs2 -> {
@@ -1112,7 +1118,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         for (String tableName : tables) {
             String querySql = sqlTemplate.buildSchemeOnly(schema, tableName);
 
-            String schemaInfoJson = queryAndMap(querySql, rs -> {
+            String schemaInfoJson = queryUtil.queryAndMap(querySql, rs -> {
                 String value = rs.getString("schema_info");
                 return rs.wasNull() ? null : value;
             });
@@ -1137,142 +1143,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             tableColumnCountCache.put(tableName, columnCount);
 
             logger.debug("表 {} 的 schema 缓存初始化成功", tableName);
-        }
-    }
-
-    // ==================== 查询工具方法 ====================
-
-    private interface ResultSetMapper<T> {
-        T apply(ResultSet rs) throws SQLException;
-    }
-
-    private interface StatementPreparer {
-        void accept(PreparedStatement statement) throws SQLException;
-    }
-
-    private <T> T queryAndMap(String sql, ResultSetMapper<T> mapper) throws Exception {
-        return queryAndMap(sql, null, mapper);
-    }
-
-    private <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
-        return query(sql, statementPreparer, (rs) -> {
-            rs.next();
-            return mapper.apply(rs);
-        });
-    }
-
-    private <T> T queryAndMapList(String sql, ResultSetMapper<T> mapper) throws Exception {
-        return queryAndMapList(sql, null, mapper);
-    }
-
-    private <T> T queryAndMapList(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
-        return query(sql, statementPreparer, mapper);
-    }
-
-    private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
-        // 输出 SQL 语句用于调试
-        logger.debug("执行查询 SQL: {}", preparedQuerySql);
-        Object execute = instance.execute(databaseTemplate -> {
-            PreparedStatement ps = null;
-            ResultSet rs = null;
-            T apply = null;
-            try {
-                ps = databaseTemplate.getSimpleConnection().prepareStatement(preparedQuerySql);
-                if (null != statementPreparer) {
-                    statementPreparer.accept(ps);
-                }
-                rs = ps.executeQuery();
-                apply = mapper.apply(rs);
-            } catch (Exception e) {
-                logger.error("查询失败，SQL: {}, 错误: {}", preparedQuerySql, e.getMessage(), e);
-                throw e;
-            } finally {
-                close(rs);
-                close(ps);
-            }
-            return apply;
-        });
-        return (T) execute;
-    }
-
-    /**
-     * 使用 READ UNCOMMITTED 隔离级别查询表元信息，避免死锁
-     * 当执行 DDL 操作时，查询 INFORMATION_SCHEMA 可能会与 DDL 操作产生死锁
-     * 使用 READ UNCOMMITTED 隔离级别可以避免等待锁，减少死锁概率
-     */
-    private <T> T queryWithReadUncommitted(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) throws Exception {
-        final int maxRetries = 3;
-        final long retryDelayMs = 100;
-        Exception lastException = null;
-
-        for (int attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                Object execute = instance.execute(databaseTemplate -> {
-                    Connection conn = databaseTemplate.getSimpleConnection();
-                    int originalIsolation = conn.getTransactionIsolation();
-                    PreparedStatement ps = null;
-                    ResultSet rs = null;
-                    T apply = null;
-                    try {
-                        // 设置 READ UNCOMMITTED 隔离级别，避免等待锁
-                        conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-                        ps = conn.prepareStatement(preparedQuerySql);
-                        if (null != statementPreparer) {
-                            statementPreparer.accept(ps);
-                        }
-                        rs = ps.executeQuery();
-                        apply = mapper.apply(rs);
-                    } finally {
-                        // 恢复原始隔离级别
-                        try {
-                            conn.setTransactionIsolation(originalIsolation);
-                        } catch (SQLException e) {
-                            logger.warn("恢复事务隔离级别失败: {}", e.getMessage());
-                        }
-                        close(rs);
-                        close(ps);
-                    }
-                    return apply;
-                });
-                return (T) execute;
-            } catch (SQLException e) {
-                // 检查是否是死锁错误（错误代码 1205）
-                if (e.getErrorCode() == 1205 || e.getMessage().contains("死锁") || e.getMessage().contains("deadlock")) {
-                    lastException = e;
-                    if (attempt < maxRetries - 1) {
-                        logger.warn("查询时发生死锁，重试 {}/{}: {}", attempt + 1, maxRetries, e.getMessage());
-                        try {
-                            Thread.sleep(retryDelayMs * (attempt + 1)); // 递增延迟
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            throw new SQLException("重试被中断", ie);
-                        }
-                        continue;
-                    }
-                }
-                // 非死锁错误或重试次数已用完，直接抛出
-                logger.error("查询失败: {}, sql: {}", e.getMessage(), preparedQuerySql, e);
-                throw e;
-            } catch (Exception e) {
-                logger.error("查询失败: {}", e.getMessage(), e);
-                throw e;
-            }
-        }
-
-        // 所有重试都失败
-        if (lastException != null) {
-            throw lastException;
-        }
-        throw new SQLException("查询失败：未知错误");
-    }
-
-    private void close(AutoCloseable closeable) {
-        if (null != closeable) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-            }
         }
     }
 
