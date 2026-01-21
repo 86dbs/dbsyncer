@@ -4,7 +4,9 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
-import org.dbsyncer.connector.sqlserver.ct.model.*;
+import org.dbsyncer.connector.sqlserver.ct.model.CTEvent;
+import org.dbsyncer.connector.sqlserver.ct.model.DDLChange;
+import org.dbsyncer.connector.sqlserver.ct.model.DDLChangeType;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -25,7 +27,6 @@ import java.sql.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,6 +47,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     // Snapshot 键名
     private static final String VERSION_POSITION = "version";
 
+    // 流式查询的 fetchSize，控制每次从数据库获取的记录数
+    private static final int STREAMING_FETCH_SIZE = 5000;
+
     private final SqlServerTemplate sqlTemplate;
 
     private final Lock connectLock = new ReentrantLock();
@@ -59,7 +63,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     private String realDatabaseName;
     private final int BUFFER_CAPACITY = 256;
     private BlockingQueue<Long> buffer = new LinkedBlockingQueue<>(BUFFER_CAPACITY);
-    private final BlockingQueue<CTDDLEvent> ddlEventQueue = new LinkedBlockingQueue<>();
     private Lock lock = new ReentrantLock(true);
     private Condition isFull = lock.newCondition();
     private final Duration pollInterval = Duration.of(500, ChronoUnit.MILLIS);
@@ -260,279 +263,208 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
         });
     }
 
-    private void pull(Long stopVersion) throws Exception {
-        // 1. 批量查询所有表的主键信息和列数（合并查询，减少 IO 开销）
-        Map<String, List<String>> tablePrimaryKeys = new HashMap<>();
-        Map<String, Integer> tableColumnCounts = new HashMap<>();
+    /**
+     * 流式处理 DML 变更，边查询边发送事件，避免内存溢出
+     * DDL 变更在查询 DML 时检测到后立即发送
+     * 所有事件都携带 startVersion，确保数据安全（即使处理失败也不会丢失数据）
+     *
+     * @param startVersion 起始版本号
+     * @param stopVersion  结束版本号
+     */
+    private void pull(Long startVersion, Long stopVersion) throws Exception {
+        // 流式处理每个表的 DML 变更，直接发送，不需要队列
+        // 所有事件都携带 startVersion，确保快照持久化使用 startVersion，避免数据丢失
         for (String table : tables) {
-            List<String> primaryKeys = primaryKeysCache.get(table);
-            Integer columnCount = tableColumnCountCache.get(table);
-
-            // 如果主键或列数未缓存，使用合并查询一次性获取
-            if (primaryKeys == null || columnCount == null) {
-                TableMetaInfo metaInfo = getPrimaryKeysAndColumnCount(table);
-                if (metaInfo.primaryKeys.isEmpty()) {
-                    throw new SqlServerException("表 " + table + " 没有主键，无法使用 Change Tracking");
-                }
-                if (primaryKeys == null) {
-                    primaryKeysCache.put(table, metaInfo.primaryKeys);
-                }
-                if (columnCount == null) {
-                    tableColumnCountCache.put(table, metaInfo.columnCount);
-                }
-                primaryKeys = metaInfo.primaryKeys;
-                columnCount = metaInfo.columnCount;
-            }
-            tablePrimaryKeys.put(table, primaryKeys);
-            tableColumnCounts.put(table, columnCount);
+            queryDMLChangesWithStreamingAndSend(
+                    table, startVersion, stopVersion, primaryKeysCache.get(table),
+                    startVersion);
         }
 
-        // 2. 查询 DML 变更（传入主键信息和列数，避免重复查询）
-        List<CTEvent> dmlEvents = new ArrayList<>();
-        for (String table : tables) {
-            List<CTEvent> tableEvents = pullDMLChanges(table, lastVersion, stopVersion,
-                    tablePrimaryKeys.get(table));
-            dmlEvents.addAll(tableEvents);
-        }
-
-        // 2. 查询 DDL 变更
-        List<CTDDLEvent> ddlEvents = pullDDLChanges(lastVersion, stopVersion);
-
-        // 3. 合并并按版本号排序
-        List<CTUnifiedChangeEvent> unifiedEvents = mergeAndSortEvents(ddlEvents, dmlEvents);
-
-        // 4. 按顺序解析和发送
-        parseUnifiedEvents(unifiedEvents, stopVersion);
+        // 注意：版本号的持久化通过每个事件的 refreshEvent 完成，使用 startVersion
+        // 这里只更新内存中的 lastVersion，用于下次查询的起始版本号
+        lastVersion = stopVersion;
     }
 
-    private List<CTEvent> pullDMLChanges(String tableName, Long startVersion, Long stopVersion,
-                                         List<String> primaryKeys) throws Exception {
-        // 1. 使用调用者传入的主键信息（已在 pull 方法中批量查询并缓存）
+    /**
+     * 流式查询 DML 变更并立即发送事件（真正的流式处理）
+     * 所有事件都携带 startVersion，确保数据安全
+     *
+     * @param tableName    表名
+     * @param startVersion 起始版本号
+     * @param stopVersion  结束版本号
+     * @param primaryKeys  主键列表
+     * @param eventVersion 事件版本号（所有事件都使用 startVersion）
+     * @return 处理的记录数
+     */
+    private int queryDMLChangesWithStreamingAndSend(String tableName, Long startVersion, Long stopVersion,
+                                                    List<String> primaryKeys,
+                                                    Long eventVersion) throws Exception {
+        // 验证主键
         if (primaryKeys == null || primaryKeys.isEmpty()) {
             throw new SqlServerException("表 " + tableName + " 没有主键，无法使用 Change Tracking");
         }
 
-        // 2. 构建表结构信息子查询（用于附加到结果集中）
+        // 构建查询 SQL
         String schemaInfoSubquery = sqlTemplate.buildGetTableSchemaInfoSubquery(schema, tableName);
-
-        // 3. 构建主查询 SQL（包含表结构信息的 JSON 字段）
         String mainQuery = sqlTemplate.buildChangeTrackingDMLMainQuery(schema, tableName, primaryKeys, schemaInfoSubquery);
+        String fallbackQuery = sqlTemplate.buildSchemeOnly(schema, tableName);
 
-        // 4. 构建辅助查询 SQL（当没有 DML 变更时，用于获取 DDL 信息）
-        String fallbackQuery = sqlTemplate.buildChangeTrackingDMLFallbackQuery(schema, tableName, schemaInfoSubquery);
-
-        // 7. 先执行主查询，获取 DML 变更和 DDL 信息
-        List<CTEvent> events = queryAndMapList(mainQuery, statement -> {
-            statement.setLong(1, startVersion);   // CHANGETABLE 起始版本
-            statement.setLong(2, startVersion);   // WHERE 起始版本
-            statement.setLong(3, stopVersion);     // WHERE 结束版本
-        }, rs -> {
-            ResultSetMetaData metaData = rs.getMetaData();
-
-            // 查找表结构信息列的位置（特殊列，不用于数据同步）
-            int schemaInfoColumnIndex = -1;
-            int resultColumnCount = metaData.getColumnCount();
-            for (int i = 1; i <= resultColumnCount; i++) {
-                if (SqlServerTemplate.CT_DDL_SCHEMA_INFO_COLUMN.equalsIgnoreCase(metaData.getColumnName(i))) {
-                    schemaInfoColumnIndex = i;
-                    break;
-                }
-            }
-
-            // 在第一次获取结果时检测表结构（DDL 变更）
-            // 使用 JSON 字段中的表结构信息进行 DDL 检测
-            boolean hasData = false;
+        // 使用流式查询，边查询边发送
+        return instance.execute(databaseTemplate -> {
+            PreparedStatement ps = null;
+            ResultSet rs = null;
             try {
-                if (schemaInfoColumnIndex > 0 && rs.next()) {
-                    hasData = true;
-                    // 获取表结构信息的 JSON（从第一行获取，因为所有行的表结构信息都相同）
-                    String schemaInfoJson = rs.getString(schemaInfoColumnIndex);
-                    if (schemaInfoJson != null && !schemaInfoJson.trim().isEmpty()) {
-                        detectDDLChangesFromSchemaInfoJson(tableName, schemaInfoJson);
-                    }
-                }
+                // 使用流式结果集
+                ps = databaseTemplate.getSimpleConnection().prepareStatement(
+                        mainQuery,
+                        ResultSet.TYPE_FORWARD_ONLY,
+                        ResultSet.CONCUR_READ_ONLY
+                );
+                ps.setFetchSize(STREAMING_FETCH_SIZE);
+                ps.setLong(1, startVersion);
+                ps.setLong(2, startVersion);
+                ps.setLong(3, stopVersion);
+
+                rs = ps.executeQuery();
+
+                // 处理查询结果
+                return processDMLResultSet(rs, tableName, primaryKeys, eventVersion, startVersion, stopVersion, fallbackQuery);
             } catch (Exception e) {
-                logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
+                logger.error("流式查询 DML 变更失败，表: {}, SQL: {}, 错误: {}", tableName, mainQuery, e.getMessage(), e);
+                throw e;
+            } finally {
+                close(rs);
+                close(ps);
             }
-
-            // CT 主键列在固定位置（4 到 4+PK-1），建立主键列名到 CT 主键列索引的映射
-            // 列顺序：SYS_CHANGE_VERSION(1), SYS_CHANGE_OPERATION(2), SYS_CHANGE_COLUMNS(3), 
-            //        __CT_PK_[pk1](4), __CT_PK_[pk2](5), ..., __CT_PK_[pkN](4+PK-1),
-            //        T.* 的所有列(4+PK 到 4+PK+N-1),
-            //        __DDL_SCHEMA_INFO__(最后)
-            Map<String, Integer> primaryKeyToCTIndex = new HashMap<>();
-            int ctPkStartIndex = 4;  // CT 主键列从第 4 列开始
-            for (int i = 0; i < primaryKeys.size(); i++) {
-                String pk = primaryKeys.get(i);
-                primaryKeyToCTIndex.put(pk, ctPkStartIndex + i);
-            }
-
-            // T.* 的列范围：从 4+PK 开始，到表结构信息列之前
-            int tStarStartIndex = 4 + primaryKeys.size();  // T.* 从 CT 主键列之后开始
-            int tStarEndIndex = schemaInfoColumnIndex > 0 ? schemaInfoColumnIndex - 1 : resultColumnCount - 1;
-
-            // 需要跳过的列：表结构信息列
-            Set<Integer> columnsToSkip = new HashSet<>();
-            if (schemaInfoColumnIndex > 0) {
-                columnsToSkip.add(schemaInfoColumnIndex);
-            }
-
-            // 性能优化：预先构建列名列表和列索引映射（列名对所有行都相同，避免重复调用 getColumnName）
-            List<String> columnNames = new ArrayList<>();
-            Map<Integer, String> columnIndexToName = new HashMap<>();
-            Set<String> primaryKeySet = new HashSet<>(primaryKeys);  // 使用 Set 提高查找效率
-            for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
-                if (columnsToSkip.contains(i)) {
-                    continue;
-                }
-                String columnName = metaData.getColumnName(i);
-                columnNames.add(columnName);
-                columnIndexToName.put(i, columnName);
-            }
-
-            List<CTEvent> dmlEvents = new ArrayList<>();
-
-            // 如果第一行已经读取（用于 DDL 检测），需要处理这一行的 DML 数据
-            if (hasData) {
-                CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
-                        columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
-                if (event != null) {
-                    dmlEvents.add(event);
-                }
-            }
-
-            // 继续处理后续行
-            while (rs.next()) {
-                CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
-                        columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
-                if (event != null) {
-                    dmlEvents.add(event);
-                }
-            }
-            return dmlEvents;
         });
+    }
 
-        // 8. 如果主查询没有返回数据，执行辅助查询获取 DDL 信息
-        if (events.isEmpty()) {
-            queryAndMapList(fallbackQuery, statement -> {
-                statement.setLong(1, startVersion);   // EXISTS 子查询的 CHANGETABLE 起始版本
-                statement.setLong(2, startVersion);   // EXISTS 子查询的 WHERE 起始版本
-                statement.setLong(3, stopVersion);     // EXISTS 子查询的 WHERE 结束版本
-            }, rs -> {
-                if (rs.next()) {
-                    // 获取表结构信息的 JSON
-                    String schemaInfoJson = rs.getString(1);
-                    if (schemaInfoJson != null && !schemaInfoJson.trim().isEmpty()) {
-                        try {
-                            detectDDLChangesFromSchemaInfoJson(tableName, schemaInfoJson);
-                        } catch (Exception e) {
-                            logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
-                        }
+    /**
+     * 处理 DML 查询结果集，流式处理并发送事件
+     *
+     * @param rs            结果集
+     * @param tableName     表名
+     * @param primaryKeys   主键列表
+     * @param eventVersion  事件版本号（所有事件都使用 startVersion）
+     * @param startVersion  起始版本号
+     * @param stopVersion   结束版本号
+     * @param fallbackQuery 辅助查询 SQL（用于检测 DDL）
+     * @return 处理的记录数
+     * @throws Exception 处理异常
+     */
+    private int processDMLResultSet(ResultSet rs, String tableName, List<String> primaryKeys,
+                                    Long eventVersion, Long startVersion, Long stopVersion,
+                                    String fallbackQuery) throws Exception {
+        ResultSetMetaData metaData = rs.getMetaData();
+
+        // 查找表结构信息列的位置
+        int schemaInfoColumnIndex = -1;
+        int resultColumnCount = metaData.getColumnCount();
+        for (int i = 1; i <= resultColumnCount; i++) {
+            if (SqlServerTemplate.CT_DDL_SCHEMA_INFO_COLUMN.equalsIgnoreCase(metaData.getColumnName(i))) {
+                schemaInfoColumnIndex = i;
+                break;
+            }
+        }
+
+        // 检测 DDL 变更（从第一行获取）
+        // 注意：DDL 检测是在处理 DML 查询的第一行时进行的，此时还没有处理任何 DML 事件
+        // 所以可以立即发送 DDL，然后再处理 DML，保证 DDL 在使用新结构的 DML 之前处理
+        boolean hasData = false;
+        if (schemaInfoColumnIndex > 0 && rs.next()) {
+            hasData = true;
+            String schemaInfoJson = rs.getString(schemaInfoColumnIndex);
+            // 检测到 DDL 时立即发送，不使用版本号（因为 DDL 是检测生成的，没有实际版本号）
+            detectDDLChangesFromSchemaInfoJsonAndSendImmediately(tableName, schemaInfoJson, String.valueOf(startVersion));
+        }
+
+        // 构建列映射
+        Map<String, Integer> primaryKeyToCTIndex = new HashMap<>();
+        int ctPkStartIndex = 4;
+        for (int i = 0; i < primaryKeys.size(); i++) {
+            primaryKeyToCTIndex.put(primaryKeys.get(i), ctPkStartIndex + i);
+        }
+
+        int tStarStartIndex = 4 + primaryKeys.size();
+        int tStarEndIndex = schemaInfoColumnIndex > 0 ? schemaInfoColumnIndex - 1 : resultColumnCount - 1;
+
+        Set<Integer> columnsToSkip = new HashSet<>();
+        if (schemaInfoColumnIndex > 0) {
+            columnsToSkip.add(schemaInfoColumnIndex);
+        }
+
+        List<String> columnNames = new ArrayList<>();
+        Map<Integer, String> columnIndexToName = new HashMap<>();
+        Set<String> primaryKeySet = new HashSet<>(primaryKeys);
+        for (int i = tStarStartIndex; i <= tStarEndIndex; i++) {
+            if (columnsToSkip.contains(i)) {
+                continue;
+            }
+            String columnName = metaData.getColumnName(i);
+            columnNames.add(columnName);
+            columnIndexToName.put(i, columnName);
+        }
+
+        int processedCount = 0;
+
+        // 处理第一行（如果已读取）
+        if (hasData) {
+            CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
+                    columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
+            if (event != null) {
+                sendDMLEvent(event, eventVersion);
+                processedCount++;
+            }
+        }
+
+        // 流式处理后续行：边查询边发送
+        while (rs.next()) {
+            CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
+                    columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
+            if (event != null) {
+                sendDMLEvent(event, eventVersion);
+                processedCount++;
+            }
+        }
+
+        // 如果没有 DML 数据，执行辅助查询检测 DDL
+        if (processedCount == 0) {
+            queryAndMapList(fallbackQuery, rs2 -> {
+                if (rs2.next()) {
+                    String schemaInfoJson = rs2.getString("schema_info");
+                    try {
+                        // 检测到 DDL 时立即发送，不使用版本号
+                        detectDDLChangesFromSchemaInfoJsonAndSendImmediately(tableName, schemaInfoJson, String.valueOf(startVersion));
+                    } catch (Exception e) {
+                        logger.error("检测 DDL 变更失败: {}", e.getMessage(), e);
                     }
                 }
                 return null;
             });
         }
 
-        return events;
+        return processedCount;
     }
 
-    private List<CTDDLEvent> pullDDLChanges(Long startVersion, Long stopVersion) throws Exception {
-        List<CTDDLEvent> events = new ArrayList<>();
-
-        // 从队列中取出所有在版本范围内的 DDL 事件
-        CTDDLEvent ddlEvent;
-        while ((ddlEvent = ddlEventQueue.poll()) != null) {
-            if (ddlEvent.getVersion() > startVersion && ddlEvent.getVersion() <= stopVersion) {
-                // 检查表名是否匹配
-                if (filterTable.contains(ddlEvent.getTableName())) {
-                    events.add(ddlEvent);
-                }
-            } else if (ddlEvent.getVersion() > stopVersion) {
-                // 版本号超过范围，放回队列
-                ddlEventQueue.offer(ddlEvent);
-                break;
-            }
-            // 版本号小于等于 startVersion 的事件直接丢弃（已处理过）
-        }
-
-        // 按版本号排序
-        events.sort(Comparator.comparing(CTDDLEvent::getVersion));
-
-        return events;
+    /**
+     * 发送 DML 事件
+     * 所有事件都携带 startVersion，确保快照持久化使用 startVersion，避免数据丢失
+     *
+     * @param event        DML 事件
+     * @param eventVersion 事件版本号（所有事件都使用 startVersion）
+     */
+    private void sendDMLEvent(CTEvent event, Long eventVersion) {
+        RowChangedEvent rowEvent = new RowChangedEvent(
+                event.getTableName(),
+                event.getCode(),
+                event.getRow(),
+                null,
+                eventVersion,  // 所有事件都使用 startVersion
+                event.getColumnNames()
+        );
+        trySendEvent(rowEvent);
     }
 
-    private List<CTUnifiedChangeEvent> mergeAndSortEvents(
-            List<CTDDLEvent> ddlEvents,
-            List<CTEvent> dmlEvents) {
-        List<CTUnifiedChangeEvent> unifiedEvents = new ArrayList<>();
-
-        // 添加 DDL 事件
-        for (CTDDLEvent ddlEvent : ddlEvents) {
-            unifiedEvents.add(new CTUnifiedChangeEvent(
-                    "DDL",
-                    ddlEvent.getTableName(),
-                    ddlEvent.getDdlCommand(),
-                    null,
-                    ddlEvent.getVersion()
-            ));
-        }
-
-        // 添加 DML 事件
-        for (CTEvent dmlEvent : dmlEvents) {
-            unifiedEvents.add(new CTUnifiedChangeEvent(
-                    "DML",
-                    dmlEvent.getTableName(),
-                    null,
-                    dmlEvent,
-                    dmlEvent.getVersion()
-            ));
-        }
-
-        // 按版本号排序
-        unifiedEvents.sort(CTUnifiedChangeEvent.versionComparator());
-
-        return unifiedEvents;
-    }
-
-    private void parseUnifiedEvents(List<CTUnifiedChangeEvent> events, Long stopVersion) {
-        for (int i = 0; i < events.size(); i++) {
-            boolean isEnd = i == events.size() - 1;
-            CTUnifiedChangeEvent unifiedEvent = events.get(i);
-
-            if ("DDL".equals(unifiedEvent.getEventType())) {
-                // 发送 DDL 事件
-                DDLChangedEvent ddlEvent = new DDLChangedEvent(
-                        unifiedEvent.getTableName(),
-                        ConnectorConstant.OPERTION_ALTER,
-                        unifiedEvent.getDdlCommand(),
-                        null,
-                        isEnd ? stopVersion : null  // ChangedOffset 支持 Long 类型
-                );
-                // 使用统一的重试机制，确保队列满时不丢失数据
-                trySendEvent(ddlEvent);
-            } else {
-                // 发送 DML 事件
-                CTEvent ctevent = unifiedEvent.getCtevent();
-                if (ctevent != null) {
-                    RowChangedEvent rowEvent = new RowChangedEvent(
-                            ctevent.getTableName(),
-                            ctevent.getCode(),
-                            ctevent.getRow(),
-                            null,
-                            isEnd ? stopVersion : null,
-                            ctevent.getColumnNames()  // 使用CTEvent中保存的列名信息
-                    );
-                    // 使用统一的重试机制，确保队列满时不丢失数据
-                    trySendEvent(rowEvent);
-                }
-            }
-        }
-
-        // 统一更新版本号（DDL 和 DML 共享同一个版本号）
-        lastVersion = stopVersion;
-        snapshot.put(VERSION_POSITION, String.valueOf(lastVersion));
-    }
 
     // ==================== 辅助方法 ====================
 
@@ -686,12 +618,14 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     // ==================== DDL 检测相关方法 ====================
 
     /**
-     * 从 JSON 字段中的表结构信息检测 DDL 变更（优先使用，更准确）
+     * 从 JSON 字段中的表结构信息检测 DDL 变更并立即发送
+     * DDL 事件不使用版本号，因为 DDL 是检测生成的，没有实际版本号意义
+     * 检测到 DDL 时立即发送，保证在使用新结构的 DML 之前处理
      *
      * @param tableName      表名
      * @param schemaInfoJson 表结构信息的 JSON 字符串（来自 INFORMATION_SCHEMA.COLUMNS）
      */
-    private void detectDDLChangesFromSchemaInfoJson(String tableName, String schemaInfoJson) throws Exception {
+    private void detectDDLChangesFromSchemaInfoJsonAndSendImmediately(String tableName, String schemaInfoJson, String version) throws Exception {
         if (schemaInfoJson == null || schemaInfoJson.trim().isEmpty()) {
             logger.warn("表 {} 的表结构信息 JSON 为空，跳过 DDL 检测", tableName);
             return;
@@ -705,9 +639,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             // 首次检测（内存缓存中没有旧的哈希值），直接更新内存缓存，不进行 DDL 变更检测
             // 因为无法知道是否有变更（没有旧的 schema 信息进行比对）
             // 注意：正常情况下不会发生，因为启动时已初始化；但如果初始化失败或缓存丢失，这里会重新初始化
-            Long currentVersion = getCurrentVersion();
+            Long detectedVersion = getCurrentVersion();
             Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
-            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, detectedVersion, currentHash, ordinalPositions);
 
             // 首次检测时也更新缓存（如果缓存为空）
             if (primaryKeysCache.get(tableName) == null || tableColumnCountCache.get(tableName) == null) {
@@ -727,16 +661,16 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
         // 2. 哈希值变化，解析 JSON 构建 MetaInfo 进行详细比对
         MetaInfo currentMetaInfo = parseSchemaInfoJson(tableName, schemaInfoJson);
-        Long currentVersion = getCurrentVersion();
         MetaInfo lastMetaInfo = schemaCache.get(tableName);
 
         if (lastMetaInfo == null) {
             // 内存缓存中没有旧的 schema（正常情况下不会发生，因为启动时已初始化）
             logger.warn("表 {} 的 DDL 变更检测：内存缓存中没有旧的 schema，无法进行详细比对，直接更新内存缓存", tableName);
 
-            // 更新内存缓存
+            // 更新内存缓存（使用检测时的版本号）
+            Long detectedVersion = getCurrentVersion();
             Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
-            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, detectedVersion, currentHash, ordinalPositions);
             return;
         }
 
@@ -753,30 +687,34 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 lastOrdinalPositions, currentOrdinalPositions);
         logger.info("比对完成，检测到 {} 个 DDL 变更", changes.size());
 
-        // 6. 如果有变更，生成 DDL 事件
+        // 4. 如果有变更，立即发送 DDL 事件（不使用版本号）
         if (changes.isEmpty()) {
             // 即使没有检测到变更，也更新内存缓存（可能是精度/尺寸变化导致哈希变化但无法检测）
+            Long detectedVersion = getCurrentVersion();
             Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
-            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+            saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, detectedVersion, currentHash, ordinalPositions);
             return;
         }
 
-        // 将 ddl 压入队列
+        // 立即发送 DDL 事件（不使用版本号，因为 DDL 是检测生成的，没有实际版本号意义）
+        // DDL 检测是在处理 DML 查询的第一行时进行的，此时还没有处理任何 DML 事件
+        // 所以可以立即发送 DDL，然后再处理 DML，保证 DDL 在使用新结构的 DML 之前处理
         for (DDLChange change : changes) {
-            CTDDLEvent ddlEvent = new CTDDLEvent(
+            DDLChangedEvent ddlEvent = new DDLChangedEvent(
                     tableName,
+                    ConnectorConstant.OPERTION_ALTER,
                     change.getDdlCommand(),
-                    currentVersion,  // 使用当前 Change Tracking 版本号
-                    new Date()
+                    version,
+                    null  // DDL 事件不使用版本号，因为 DDL 是检测生成的，没有实际版本号意义
             );
-
-            // 将 DDL 事件加入待处理队列（与 DML 事件合并处理）
-            ddlEventQueue.offer(ddlEvent);
+            trySendEvent(ddlEvent);
+            logger.info("检测到表 {} 的 DDL 变更并立即发送: {}", tableName, change.getDdlCommand());
         }
 
-        // 4. 更新表结构快照（直接保存 JSON，避免解析）
+        // 5. 更新表结构快照（直接保存 JSON，避免解析）
+        Long detectedVersion = getCurrentVersion();
         Map<String, Integer> ordinalPositions = extractOrdinalPositions(schemaInfoJson);
-        saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, currentVersion, currentHash, ordinalPositions);
+        saveTableSchemaSnapshotFromJson(tableName, schemaInfoJson, detectedVersion, currentHash, ordinalPositions);
 
         // 更新主键和字段
         primaryKeysCache.put(tableName, currentPrimaryKeys);
@@ -1393,9 +1331,9 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                         continue;
                     }
 
-                    pull(stopVersion);
+                    pull(lastVersion, stopVersion);
 
-                    // 版本号已在 parseUnifiedEvents() 中统一更新，这里不需要重复更新
+                    // 版本号已在 processDMLChangesWithStreaming() 中统一更新，这里不需要重复更新
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {

@@ -704,33 +704,6 @@ public class SqlServerTemplate extends AbstractSqlTemplate {
         );
     }
 
-    /**
-     * 构建 Change Tracking DML 变更查询的辅助查询 SQL
-     * 当没有 DML 变更时，用于获取 DDL 信息
-     * 
-     * @param schema 架构名
-     * @param tableName 表名
-     * @param schemaInfoSubquery 表结构信息子查询
-     * @return SQL 语句（使用 PreparedStatement 参数，需要设置 3 个参数：startVersion, startVersion, stopVersion）
-     */
-    public String buildChangeTrackingDMLFallbackQuery(String schema, String tableName, String schemaInfoSubquery) {
-        String schemaTable = buildTable(schema, tableName);
-        
-        // 优化：使用 CROSS APPLY 让子查询只执行一次
-        // 注意：需要一个 FROM 子句才能使用 CROSS APPLY，使用虚拟表 (SELECT 1 AS dummy) AS t
-        // 注意：CROSS APPLY 的别名语法是 "CROSS APPLY (...) alias"，不使用 AS 关键字
-        return String.format(
-                "SELECT SI.schema_info AS " + CT_DDL_SCHEMA_INFO_COLUMN + " " +
-                        "FROM (SELECT 1 AS dummy) AS t " +
-                        "CROSS APPLY %s SI " +  // 使用 CROSS APPLY，注意：某些 SQL Server 版本不支持 AS 关键字
-                        "WHERE NOT EXISTS (" +
-                        "    SELECT 1 FROM CHANGETABLE(CHANGES %s, ?) AS CT " +
-                        "    WHERE CT.SYS_CHANGE_VERSION > ? AND CT.SYS_CHANGE_VERSION <= ?" +
-                        ")",
-                schemaInfoSubquery,   // 表结构信息子查询
-                schemaTable           // CHANGETABLE（用于 EXISTS 子查询）
-        );
-    }
 
     /**
      * 构建启用数据库 Change Tracking 的 SQL
