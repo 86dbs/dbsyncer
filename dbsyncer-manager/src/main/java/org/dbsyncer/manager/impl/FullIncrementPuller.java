@@ -50,9 +50,6 @@ public final class FullIncrementPuller implements Puller {
     @Resource
     private ConnectorFactory connectorFactory;
 
-    // 简化的受保护字段名常量
-    private static final String PROTECTED_INCREMENT_INFO = "_protected_increment_info";
-
     @Override
     public void start(Mapping mapping) {
         final String metaId = mapping.getMetaId();
@@ -153,9 +150,7 @@ public final class FullIncrementPuller implements Puller {
     }
 
     private void startIncrementSync(Mapping mapping, Meta meta) throws Exception {
-        // 关键：恢复受保护的增量起始点到正常字段
-        meta.restoreProtectedIncrementStartPoint();
-
+        // 增量起始点已直接保存在 snapshot 中，无需恢复
         // 直接使用原始Mapping启动增量同步
         incrementPuller.start(mapping);
 

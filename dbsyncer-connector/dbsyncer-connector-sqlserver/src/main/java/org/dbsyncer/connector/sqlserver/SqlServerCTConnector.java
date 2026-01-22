@@ -40,8 +40,11 @@ public class SqlServerCTConnector extends SqlServerConnector {
     @Override
     public Map<String, String> getPosition(DatabaseConnectorInstance connectorInstance) throws Exception {
         // CT 模式使用版本号，而不是 LSN
-        Long currentVersion = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.queryForObject("SELECT CHANGE_TRACKING_CURRENT_VERSION()", Long.class));
+        // 使用 SqlServerTemplate 的 buildGetCurrentVersionSql() 方法，避免硬编码 SQL
+        Long currentVersion = connectorInstance.execute(databaseTemplate -> {
+            assert sqlTemplate instanceof SqlServerTemplate;
+            return databaseTemplate.queryForObject(((SqlServerTemplate) sqlTemplate).buildGetCurrentVersionSql(), Long.class);
+        });
 
         if (currentVersion == null) {
             throw new RuntimeException("获取 SQL Server Change Tracking 当前版本号失败");

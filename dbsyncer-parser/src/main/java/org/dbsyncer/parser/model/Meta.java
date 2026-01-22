@@ -59,9 +59,6 @@ public class Meta extends ConfigModel {
     // 混合同步阶段
     private SyncPhaseEnum syncPhase = SyncPhaseEnum.FULL;
 
-    // 简化的受保护字段名常量
-    @JsonIgnore
-    private static final String PROTECTED_INCREMENT_INFO = "_protected_increment_info";
 
     // 回调函数支持
     @JsonIgnore
@@ -194,7 +191,7 @@ public class Meta extends ConfigModel {
     public void updateSnapshot(String metaSnapshot) throws Exception {
         if (StringUtil.isNotBlank(metaSnapshot)) {
             @SuppressWarnings("unchecked")
-        Map<String, String> snapshot = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(metaSnapshot);
+            Map<String, String> snapshot = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(metaSnapshot);
             if (!CollectionUtils.isEmpty(snapshot)) {
                 // 创建副本，避免直接赋值引用
                 this.snapshot = new HashMap<>(snapshot);
@@ -266,33 +263,15 @@ public class Meta extends ConfigModel {
     // 检查是否已记录增量起始点
     @JsonIgnore
     public boolean isIncrementStartPointRecorded() {
-        return this.snapshot.containsKey(PROTECTED_INCREMENT_INFO);
+        return !this.snapshot.isEmpty();
     }
 
-    // 记录增量起始点到受保护字段
+    // 记录增量起始点（直接保存到 snapshot，不需要受保护字段）
     public void recordIncrementStartPoint(Map<String, String> position) throws Exception {
-        // 使用JsonUtil序列化position
-        String incrementInfoJson = JsonUtil.objToJson(position);
-        this.snapshot.put(PROTECTED_INCREMENT_INFO, incrementInfoJson);
+        // 直接合并到 snapshot，增量同步启动时可以直接读取
+        this.snapshot.putAll(position);
 
         // 保存到持久化存储
-        this.profileComponent.editConfigModel(this);
-    }
-
-    // 恢复受保护的增量起始点到正常字段
-    public void restoreProtectedIncrementStartPoint() throws Exception {
-        String incrementInfoJson = this.snapshot.get(PROTECTED_INCREMENT_INFO);
-        if (StringUtil.isBlank(incrementInfoJson)) {
-            // 已经开始了增量同步
-            return;
-        }
-        this.snapshot.remove(PROTECTED_INCREMENT_INFO);
-
-        // 将 incrementInfoJson 反序列化为 Map<String, String>
-        @SuppressWarnings("unchecked")
-        Map<String, String> incrementInfo = (Map<String, String>) (Map<?, ?>) JsonUtil.parseMap(incrementInfoJson);
-        this.snapshot.putAll(incrementInfo);
-
         this.profileComponent.editConfigModel(this);
     }
 

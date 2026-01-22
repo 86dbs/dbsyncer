@@ -3,6 +3,7 @@ package org.dbsyncer.connector.sqlserver.ct;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.connector.sqlserver.SqlServerCTConnector;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.ct.model.CTEvent;
 import org.dbsyncer.connector.sqlserver.ct.model.DDLChange;
@@ -135,10 +136,13 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
     }
 
     public Long getMaxVersion() throws Exception {
-        return queryUtil.queryAndMap(sqlTemplate.buildGetCurrentVersionSql(), rs -> {
-            Long version = rs.getLong(1);
-            return rs.wasNull() ? null : version;
-        });
+        // 复用 SqlServerCTConnector.getPosition() 方法，避免重复代码
+        AbstractDatabaseConnector service = (AbstractDatabaseConnector) connectorService;
+        assert service instanceof SqlServerCTConnector;
+
+        Map<String, String> position = service.getPosition(instance);
+        String versionStr = position.get(VERSION_POSITION);
+        return versionStr != null ? Long.valueOf(versionStr) : null;
     }
 
     public Long getLastVersion() {
