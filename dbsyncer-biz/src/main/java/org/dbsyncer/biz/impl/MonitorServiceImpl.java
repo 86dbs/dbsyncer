@@ -158,18 +158,16 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             // 尝试通过id获取mapping，捕获可能的类型转换异常
             try {
                 Mapping mapping = profileComponent.getMapping(id);
-                if (mapping != null) {
+                if (mapping != null && StringUtil.isNotBlank(mapping.getMetaId())) {
                     // 如果是mappingId，获取对应的metaId
-                    String metaId = mapping.getMetaId();
-                    if (StringUtil.isNotBlank(metaId)) {
-                        metaIds.add(metaId);
-                    }
+                    metaIds.add(mapping.getMetaId());
                 } else {
                     // 如果不是mappingId，直接作为metaId
                     metaIds.add(id);
                 }
             } catch (Exception e) {
                 // 捕获类型转换异常，说明id是metaId
+                logger.debug("未能通过 id 映射，将 id 视为 metaId：{}", id, e);
                 metaIds.add(id);
             }
         }
@@ -220,15 +218,13 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         String metaId = id;
         try {
             Mapping mappingObj = profileComponent.getMapping(id);
-            if (mappingObj != null) {
+            if (mappingObj != null && StringUtil.isNotBlank(mappingObj.getMetaId())) {
                 // 如果是mappingId，获取对应的metaId
-                String tempMetaId = mappingObj.getMetaId();
-                if (StringUtil.isNotBlank(tempMetaId)) {
-                    metaId = tempMetaId;
-                }
+                metaId = mappingObj.getMetaId();
             }
         } catch (Exception e) {
             // 捕获类型转换异常，说明id是metaId
+            logger.debug("未能通过 id 映射，将 id 视为 metaId：{}", id, e);
             metaId = id;
         }
         
