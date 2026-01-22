@@ -15,8 +15,6 @@ import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchIntType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchLongType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchShortType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchStringType;
-import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchTimeType;
-import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchTimestampType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -24,6 +22,9 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
+ * Elasticsearch 异构数据类型解析器
+ * 支持 ES 所有标准数据类型的映射和转换
+ *
  * @Author 穿云
  * @Version 1.0.0
  * @Date 2026-01-13 00:16
@@ -31,7 +32,6 @@ import java.util.stream.Stream;
 public final class ElasticsearchSchemaResolver extends AbstractSchemaResolver {
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        // TODO 实现异构数据类型
         Stream.of(
                 new ElasticsearchStringType(),
                 new ElasticsearchIntType(),
@@ -41,8 +41,6 @@ public final class ElasticsearchSchemaResolver extends AbstractSchemaResolver {
                 new ElasticsearchFloatType(),
                 new ElasticsearchDoubleType(),
                 new ElasticsearchDateType(),
-                new ElasticsearchTimestampType(),
-                new ElasticsearchTimeType(),
                 new ElasticsearchBooleanType(),
                 new ElasticsearchBytesType(),
                 new ElasticsearchByteType()

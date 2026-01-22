@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
  * @Date 2026-01-11 22:21
  */
 public final class SQLiteIntType extends IntType {
-
     private enum TypeEnum {
         INTEGER("INTEGER");
 
