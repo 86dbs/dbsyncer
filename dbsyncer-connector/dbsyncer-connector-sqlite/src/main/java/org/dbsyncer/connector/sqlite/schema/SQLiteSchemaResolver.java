@@ -4,19 +4,10 @@
 package org.dbsyncer.connector.sqlite.schema;
 
 import org.dbsyncer.connector.sqlite.SQLiteException;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteBooleanType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteByteType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteBytesType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteDateType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteDecimalType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteDoubleType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteFloatType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteIntType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteLongType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteShortType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteStringType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteTimeType;
-import org.dbsyncer.connector.sqlite.schema.support.SQLiteTimestampType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -34,17 +25,8 @@ public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
         Stream.of(
                 new SQLiteStringType(),
                 new SQLiteIntType(),
-                new SQLiteShortType(),
-                new SQLiteLongType(),
-                new SQLiteDecimalType(),
-                new SQLiteFloatType(),
                 new SQLiteDoubleType(),
-                new SQLiteDateType(),
-                new SQLiteTimestampType(),
-                new SQLiteTimeType(),
-                new SQLiteBooleanType(),
-                new SQLiteBytesType(),
-                new SQLiteByteType()
+                new SQLiteBytesType()
         ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
             if (mapping.containsKey(typeName)) {
                 throw new SQLiteException("Duplicate type name: " + typeName);
