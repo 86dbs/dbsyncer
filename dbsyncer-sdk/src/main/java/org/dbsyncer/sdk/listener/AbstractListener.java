@@ -103,6 +103,7 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
             flushExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "snapshot-flush-" + metaId);
                 t.setDaemon(true);
+                logger.info("snapshot flusher created for: metaId {},", metaId);
                 return t;
             });
             // 每 3 秒检查并写入最新快照

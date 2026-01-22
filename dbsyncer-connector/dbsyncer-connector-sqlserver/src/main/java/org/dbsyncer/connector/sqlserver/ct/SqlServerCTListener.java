@@ -261,12 +261,6 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     startVersion);
         }
 
-        // 更新快照：使用 startVersion 确保数据安全（即使处理失败也不会丢失数据）
-        // 注意：所有事件都携带 startVersion，所以这里统一更新快照为 startVersion
-        ChangedOffset offset = new ChangedOffset();
-        offset.setPosition(startVersion);
-        refreshEvent(offset);
-
         // 更新内存中的 lastVersion，用于下次查询的起始版本号
         lastVersion = stopVersion;
     }
@@ -1176,6 +1170,14 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                     if (maxVersion != null && maxVersion > lastVersion) {
                         pull(lastVersion, maxVersion);
                     } else {
+                        // 更新快照：使用 startVersion 确保数据安全（即使处理失败也不会丢失数据）
+                        // 注意：所有事件都携带 startVersion，所以这里统一更新快照为 startVersion
+                        if (!hasPendingTaskData()) {
+                            ChangedOffset offset = new ChangedOffset();
+                            offset.setPosition(lastVersion);
+                            refreshEvent(offset);
+                        }
+
                         // 没有新版本，等待一段时间后继续轮询
                         sleepInMills(POLL_INTERVAL_MILLIS);
                     }
