@@ -175,6 +175,7 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
             throw new SqlServerException("No Change Tracking version available");
         }
         lastVersion = Long.valueOf(snapshot.get(VERSION_POSITION));
+        logger.info("---- Last Version: {}", lastVersion);
     }
 
     private void readTables() throws Exception {
