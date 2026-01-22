@@ -4,7 +4,9 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +58,11 @@ import java.util.stream.Stream;
 public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 版本信息
+     */
+    public static final String DBS_VERSION_INFO = "versionInfo";
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -113,6 +121,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (CollectionUtils.isEmpty(map)) {
             return;
         }
+        // 版本信息检查
+        Map versionInfo = map.get(DBS_VERSION_INFO);
+        Assert.isTrue(versionInfo!= null, "不支持导入低版本或配置不完整");
+        VersionInfo info = JsonUtil.jsonToObj(versionInfo.toString(), VersionInfo.class);
+        logger.info("upload config: appName={}, version={}, createTime={}", info.getAppName(), info.getVersion(), DateFormatUtil.timestampToString(new Timestamp(info.getCreateTime())));
 
         // Load configModels
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,

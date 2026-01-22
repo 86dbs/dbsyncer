@@ -4,12 +4,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.model.VersionInfo;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.web.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -26,6 +29,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/config")
@@ -92,7 +98,7 @@ public class ConfigController {
         OutputStream outputStream = null;
         try {
             outputStream = response.getOutputStream();
-            String cache = JsonUtil.objToJson(cacheService.getAll());
+            String cache = JsonUtil.objToJson(getConfig());
             byte[] bytes = cache.getBytes(Charset.defaultCharset());
             int length = bytes.length;
             String msg = String.format("导出配置文件%s，大小%dKB", fileName, (length / 1024));
@@ -105,6 +111,17 @@ public class ConfigController {
         } finally {
             IOUtils.closeQuietly(outputStream);
         }
+    }
+
+    private Map<String, Object> getConfig() {
+        Map<String, Object> map = new HashMap<>();
+        VersionInfo info = new VersionInfo();
+        info.setVersion(Version.CURRENT.getVersion());
+        info.setAppName(appConfig.getName());
+        info.setCreateTime(Instant.now().toEpochMilli());
+        map.put(PreloadTemplate.DBS_VERSION_INFO, info);
+        map.putAll(cacheService.getAll());
+        return map;
     }
 
 }
