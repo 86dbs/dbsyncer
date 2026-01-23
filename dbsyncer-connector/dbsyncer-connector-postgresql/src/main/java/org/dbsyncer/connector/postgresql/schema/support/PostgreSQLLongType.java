@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLLongType extends LongType {
+public final class PostgreSQLLongType extends LongType {
     private enum TypeEnum {
         INT8("int8"),
         BIG_SERIAL("bigserial");

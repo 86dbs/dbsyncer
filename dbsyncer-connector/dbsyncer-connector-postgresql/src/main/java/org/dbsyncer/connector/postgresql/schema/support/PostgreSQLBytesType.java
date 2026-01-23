@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-10-22 01:27
  */
-public class PostgreSQLBytesType extends BytesType {
+public final class PostgreSQLBytesType extends BytesType {
 
     private enum TypeEnum {
         BYTEA("bytea");

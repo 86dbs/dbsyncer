@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLDoubleType extends DoubleType {
+public final class PostgreSQLDoubleType extends DoubleType {
     private enum TypeEnum {
         FLOAT8("float8");
 

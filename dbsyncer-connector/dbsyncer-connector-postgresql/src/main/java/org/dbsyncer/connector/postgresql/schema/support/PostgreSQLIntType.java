@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLIntType extends IntType {
+public final class PostgreSQLIntType extends IntType {
     private enum TypeEnum {
         INT2("int2"),
         INT4("int4"),

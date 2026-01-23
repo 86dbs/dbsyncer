@@ -3,15 +3,15 @@
  */
 package org.dbsyncer.connector.mysql.schema.support;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.ByteOrderValues;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKBReader;
-import com.vividsolutions.jts.io.WKBWriter;
-import com.vividsolutions.jts.io.WKTReader;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ByteOrderValues;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
+import org.locationtech.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKTReader;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
