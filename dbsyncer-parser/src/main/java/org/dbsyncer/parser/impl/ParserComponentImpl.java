@@ -66,6 +66,9 @@ public class ParserComponentImpl implements ParserComponent {
     @Resource
     private ProcessEvent fullProcessEvent;
 
+    // 保存间隔（毫秒）
+    private static final long SAVE_INTERVAL_MS = 3000L;
+
     @Override
     public MetaInfo getMetaInfo(String connectorId, String tableName) throws Exception {
         Connector connector = profileComponent.getConnector(connectorId);
@@ -163,6 +166,9 @@ public class ParserComponentImpl implements ParserComponent {
         Integer fetchSize = db.getStreamingFetchSize(context);
         databaseTemplate.setFetchSize(fetchSize);
 
+        // 上次保存时间（局域化，仅在当前任务执行期间有效）
+        long[] lastSaveTime = {0L};
+
         try (Stream<Map<String, Object>> stream = databaseTemplate.queryForStream(querySql,
                 new ArgumentPreparedStatementSetter(tableGroup.getCursors()),
                 new ColumnMapRowMapper())) {
@@ -182,15 +188,15 @@ public class ParserComponentImpl implements ParserComponent {
 
                 // 达到批次大小时处理数据
                 if (batch.size() >= context.getBatchSize()) {
-                    processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys);
+                    processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys, lastSaveTime);
                     batch = new ArrayList<>();
                 }
             }
             // 处理最后一批数据
             if (!batch.isEmpty()) {
-                processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys);
+                processTableGroupDataBatch(metaId, batch, tableGroup, context, picker, primaryKeys, lastSaveTime);
             }
-            // 标记流式处理完成
+            // 标记流式处理完成，强制保存一次
             tableGroup.setFullCompleted(true);
             profileComponent.editConfigModel(tableGroup);
         } catch (Exception e) {
@@ -203,7 +209,8 @@ public class ParserComponentImpl implements ParserComponent {
      * TableGroup专用的数据处理逻辑
      */
     private void processTableGroupDataBatch(String metaId, List<Map> source, TableGroup tableGroup,
-                                            AbstractPluginContext context, Picker picker, List<String> primaryKeys) throws Exception {
+                                            AbstractPluginContext context, Picker picker, List<String> primaryKeys,
+                                            long[] lastSaveTime) throws Exception {
         // 1、映射字段
         List<Map> target = picker.pickTargetData(source);
 
@@ -216,23 +223,21 @@ public class ParserComponentImpl implements ParserComponent {
         pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、写入目标源
-        if (!CollectionUtils.isEmpty(target)) {
-            Result result = connectorFactory.writeBatch(context);
+        Result result = connectorFactory.writeBatch(context);
 
-            // 5、更新Meta统计信息
-            if (result != null) {
-                result.setTargetTableGroupName(tableGroup.getName());
-                result.setTableGroupId(tableGroup.getId());
-                flushStrategy.flushFullData(metaId, result, ConnectorConstant.OPERTION_INSERT);
-            }
+        // 5、更新Meta统计信息
+        if (result != null) {
+            result.setTargetTableGroupName(tableGroup.getName());
+            result.setTableGroupId(tableGroup.getId());
+            flushStrategy.flushFullData(metaId, result, ConnectorConstant.OPERTION_INSERT);
         }
 
-        // 6、更新TableGroup的cursor并持久化
+        // 更新TableGroup的cursor并持久化（每3秒保存一次）
         Object[] newCursors = PrimaryKeyUtil.getLastCursors(source, primaryKeys);
         tableGroup.setCursors(newCursors);
-        profileComponent.editConfigModel(tableGroup);
+        saveTableGroupIfNeeded(tableGroup, lastSaveTime);
 
-        // 7、同步完成后通知插件做后置处理
+        // 同步完成后通知插件做后置处理
         pluginFactory.process(context, ProcessEnum.AFTER);
     }
 
@@ -246,5 +251,25 @@ public class ParserComponentImpl implements ParserComponent {
         return profileComponent.getConnector(connectorId).getConfig();
     }
 
+    /**
+     * 检查并保存 TableGroup（每3秒保存一次，减少频繁IO）
+     *
+     * @param tableGroup   TableGroup 对象
+     * @param lastSaveTime 上次保存时间（使用数组以便修改）
+     */
+    private void saveTableGroupIfNeeded(TableGroup tableGroup, long[] lastSaveTime) {
+        long currentTime = System.currentTimeMillis();
+        long lastSave = lastSaveTime[0];
 
+        // 如果距离上次保存超过3秒，则执行保存
+        if (currentTime - lastSave >= SAVE_INTERVAL_MS) {
+            try {
+                profileComponent.editConfigModel(tableGroup);
+                logger.info("保存表 {} 全量同步", tableGroup.getName());
+                lastSaveTime[0] = currentTime;
+            } catch (Exception e) {
+                logger.error("保存 TableGroup [{}] 失败: {}", tableGroup.getId(), e.getMessage(), e);
+            }
+        }
+    }
 }

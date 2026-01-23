@@ -175,8 +175,15 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private void refreshTotal(String metaId, Result writer) {
         Assert.hasText(metaId, "Meta id can not be empty.");
         Meta meta = cacheService.get(metaId, Meta.class);
-        if (meta == null) {
-            return;
+
+        // 记录写入日志
+        if (writer != null) {
+            int successCount = writer.getSuccessData().size();
+            int failCount = writer.getFailData().size();
+            int totalCount = successCount + failCount;
+            String targetTableName = writer.getTargetTableGroupName();
+            logger.info("tableGroupName: {} 写入 {} 条, 失败 {} 条, 总计 {} 条",
+                    targetTableName, successCount, failCount, totalCount);
         }
 
         // 更新Meta的总数

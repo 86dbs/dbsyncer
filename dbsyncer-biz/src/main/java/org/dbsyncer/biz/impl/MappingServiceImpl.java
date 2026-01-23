@@ -208,11 +208,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
             // 删除数据
             monitorService.clearData(metaId);
-            log(LogType.MetaLog.CLEAR, meta);
 
             // 删除meta
             profileComponent.removeConfigModel(metaId);
-            log(LogType.MetaLog.DELETE, meta);
 
             // 删除tableGroup
             List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
