@@ -403,6 +403,12 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
 
         // 流式处理后续行：边查询边发送
         while (rs.next()) {
+            // 响应前端停止信号
+            if (!connected) {
+                logger.info("检测到停止信号，停止处理表 {} 的 DML 变更", tableName);
+                break;
+            }
+            
             CTEvent event = processRow(rs, tableName, tStarStartIndex, tStarEndIndex, columnsToSkip,
                     columnIndexToName, columnNames, primaryKeySet, primaryKeyToCTIndex);
             if (event != null) {
