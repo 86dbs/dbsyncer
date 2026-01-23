@@ -207,14 +207,14 @@ function doPost(url) {
         if (data.success == true) {
             // 显示主页
             var projectGroup = $("#projectGroup").val() || '';
-            backIndexPage(projectGroup);
+            backIndexPage(projectGroup, true); // 传递true作为第二个参数，强制返回主页
             bootGrowl(data.resultValue, "success");
         } else {
             // 检查是否是停止任务操作并且错误信息是"驱动已停止"
             if (url.indexOf('/mapping/stop?id=') !== -1 && data.resultValue === '驱动已停止.') {
                 // 即使失败，也需要更新UI状态，因为任务确实已经停止
                 var projectGroup = $("#projectGroup").val() || '';
-                backIndexPage(projectGroup);
+                backIndexPage(projectGroup, true); // 传递true作为第二个参数，强制返回主页
                 bootGrowl("任务已停止", "info");
             } else {
                 bootGrowl(data.resultValue, "danger");
