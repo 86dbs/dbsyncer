@@ -96,7 +96,22 @@ public final class PostgreSQLStringType extends StringType {
             PGobject pgObject = (PGobject) val;
             return pgObject.getValue();
         }
+        if (val instanceof Boolean) {
+            return ((Boolean) val) ? "1" : "0";
+        }
         return throwUnsupportedException(val, field);
+    }
+
+    @Override
+    public Object getDefaultConvertedVal(Field field) {
+        try {
+            PGobject pgObject = new PGobject();
+            pgObject.setType(field.getTypeName());
+            pgObject.setValue(null);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
