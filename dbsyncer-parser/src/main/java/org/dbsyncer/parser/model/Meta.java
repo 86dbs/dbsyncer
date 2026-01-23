@@ -14,9 +14,12 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -63,6 +66,10 @@ public class Meta extends ConfigModel {
     // 回调函数支持
     @JsonIgnore
     private transient Runnable phaseHandler;
+
+    // 增量同步时发生计数变化的 TableGroup ID 集合（线程安全）
+    @JsonIgnore
+    private transient Set<String> changedTableGroupIds = ConcurrentHashMap.newKeySet();
 
     public Meta() {
         super.setType(ConfigConstant.META);
@@ -334,6 +341,31 @@ public class Meta extends ConfigModel {
         if (this.isRunning()) {
             throw new ParserException("驱动正在运行, 请先停止.");
         }
+    }
+
+    /**
+     * 标记 TableGroup 计数发生变化（增量场景）
+     *
+     * @param tableGroupId 表组ID
+     */
+    public void markTableGroupChanged(String tableGroupId) {
+        changedTableGroupIds.add(tableGroupId);
+    }
+
+    /**
+     * 获取发生计数变化的 TableGroup ID 集合
+     *
+     * @return TableGroup ID 集合
+     */
+    public Set<String> getChangedTableGroupIds() {
+        return changedTableGroupIds;
+    }
+
+    /**
+     * 清空发生计数变化的 TableGroup ID 集合
+     */
+    public void clearChangedTableGroupIds() {
+        changedTableGroupIds.clear();
     }
 
     @JsonIgnore

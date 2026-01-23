@@ -15,9 +15,13 @@ import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.QuartzListenerContext;
 import org.dbsyncer.sdk.listener.Watcher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @Version 1.0.0
@@ -25,6 +29,8 @@ import java.util.Map;
  * @Date 2023-11-12 01:32
  */
 public final class ParserConsumer implements Watcher {
+    private static final Logger logger = LoggerFactory.getLogger(ParserConsumer.class);
+    
     private final BufferActuatorRouter bufferActuatorRouter;
     private final ProfileComponent profileComponent;
     private final PluginFactory pluginFactory;
@@ -61,6 +67,24 @@ public final class ParserConsumer implements Watcher {
             // 更新 updateTime 以记录持久化时间
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
+            
+            // 持久化发生变化的 TableGroup（增量场景）
+            // 由于在 Meta 中记录变化的表已经非常准确，无需额外的计数比较
+            Set<String> changedTableGroupIds = meta.getChangedTableGroupIds();
+            if (!changedTableGroupIds.isEmpty()) {
+                for (String tableGroupId : changedTableGroupIds) {
+                    try {
+                        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+                        if (tableGroup != null) {
+                            profileComponent.editConfigModel(tableGroup);
+                        }
+                    } catch (Exception e) {
+                        logger.error("持久化 TableGroup 失败: tableGroupId={}", tableGroupId, e);
+                    }
+                }
+                // 持久化完成后清空标记
+                meta.clearChangedTableGroupIds();
+            }
         }
     }
 

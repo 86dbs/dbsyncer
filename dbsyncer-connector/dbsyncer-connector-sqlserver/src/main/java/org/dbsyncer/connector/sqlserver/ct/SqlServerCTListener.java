@@ -313,8 +313,12 @@ public class SqlServerCTListener extends AbstractDatabaseListener {
                 logger.error("流式查询 DML 变更失败，表: {}, SQL: {}, 错误: {}", tableName, mainQuery, e.getMessage(), e);
                 throw e;
             } finally {
-                rs.close();
-                ps.close();
+                if (rs != null) {
+                    rs.close();
+                }
+                if (ps != null) {
+                    ps.close();
+                }
             }
         });
     }

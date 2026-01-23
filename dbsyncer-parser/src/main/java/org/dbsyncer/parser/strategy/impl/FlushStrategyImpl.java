@@ -84,7 +84,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             total.getAndAdd(result.getSuccessData().size());
 
             // 更新TableGroup的增量同步数量
-            updateTableGroupIncrementProgress(result);
+            updateTableGroupIncrementProgress(metaId, result);
             
             // 更新Meta的同步计数
             updateMetaCounts(meta, result);
@@ -106,9 +106,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
     /**
      * 更新TableGroup的增量同步进度
      *
+     * @param metaId Meta ID
      * @param result 同步结果，包含成功和失败的数据
      */
-    private void updateTableGroupIncrementProgress(Result result) {
+    private void updateTableGroupIncrementProgress(String metaId, Result result) {
         if (result.getTableGroupId() == null) {
             return;
         }
@@ -139,7 +140,11 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 tableGroup.setLastSyncTime(currentTime);
                 tableGroup.setLastBatchCount(batchCount);
                 
-                profileComponent.editConfigModel(tableGroup);
+                // 标记 TableGroup 计数发生变化（将在 Meta 持久化时统一持久化）
+                Meta meta = cacheService.get(metaId, Meta.class);
+                if (meta != null) {
+                    meta.markTableGroupChanged(result.getTableGroupId());
+                }
             }
         } catch (Exception e) {
             logger.error("更新TableGroup增量同步数量失败", e);
@@ -220,7 +225,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             // 更新状态
             updateTableGroupStatus(tableGroup);
             
-            profileComponent.editConfigModel(tableGroup);
+//            profileComponent.editConfigModel(tableGroup);
         } catch (Exception e) {
             logger.error("更新TableGroup进度失败", e);
         }
