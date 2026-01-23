@@ -1,9 +1,13 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.*;
 import org.junit.Test;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ByteOrderValues;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
+import org.locationtech.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
