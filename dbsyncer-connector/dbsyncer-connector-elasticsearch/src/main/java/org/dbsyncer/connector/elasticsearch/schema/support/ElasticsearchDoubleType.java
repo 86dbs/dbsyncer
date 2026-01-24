@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 /**
  * ES 双精度浮点类型
- * 支持: double, double_range
+ * 支持: double
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchDoubleType extends DoubleType {
 
     private enum TypeEnum {
-        DOUBLE("double"),
-        DOUBLE_RANGE("double_range");
+        DOUBLE("double");
 
         private final String value;
 

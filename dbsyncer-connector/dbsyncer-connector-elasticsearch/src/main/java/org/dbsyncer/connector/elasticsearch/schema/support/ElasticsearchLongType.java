@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * ES 长整数类型
- * 支持: long, long_range, token_count
+ * 支持: long, token_count
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -24,7 +24,6 @@ public final class ElasticsearchLongType extends LongType {
 
     private enum TypeEnum {
         LONG("long"),
-        LONG_RANGE("long_range"),
         TOKEN_COUNT("token_count");
 
         private final String value;

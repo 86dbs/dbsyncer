@@ -6,6 +6,7 @@ import oracle.sql.CLOB;
 import oracle.sql.STRUCT;
 import oracle.sql.TIMESTAMP;
 import org.apache.commons.io.IOUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.schema.CustomData;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
@@ -28,6 +29,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -80,6 +82,10 @@ public abstract class BinlogMessageUtil {
         if (v instanceof CustomData) {
             CustomData cd = (CustomData) v;
             return ByteString.copyFromUtf8(cd.toString());
+        }
+        // Map、List 及其实现（LinkedHashMap、TreeMap、ArrayList 等）统一按 JSON 存储，避免落 default 不序列化
+        if (v instanceof Map || v instanceof List) {
+            return ByteString.copyFromUtf8(JsonUtil.objToJsonSafe(v));
         }
 
         String type = v.getClass().getName();
@@ -190,27 +196,27 @@ public abstract class BinlogMessageUtil {
             case Types.CHAR:
                 return value.asString();
 
-            // 时间
+            // 时间：仅当为 8 字节时按 LONG 解析，否则按字符串（如 date_range 的 JSON、日期格式串）
             case Types.TIMESTAMP:
-                return value.asTimestamp();
+                return isStoredAsLong(v) ? value.asTimestamp() : value.asString();
             case Types.TIME:
-                return value.asTime();
+                return isStoredAsLong(v) ? value.asTime() : value.asString();
             case Types.DATE:
-                return value.asDate();
+                return isStoredAsLong(v) ? value.asDate() : value.asString();
 
-            // 数字
+            // 数字：仅当字节长度与类型匹配时按二进制解析，否则按字符串（如 *_range 的 JSON）
             case Types.INTEGER:
             case Types.TINYINT:
-                return value.asInteger();
+                return isStoredAsFixed(v, BinlogByteEnum.INTEGER.getByteLength()) ? value.asInteger() : value.asString();
             case Types.SMALLINT:
-                return value.asShort();
+                return isStoredAsFixed(v, BinlogByteEnum.SHORT.getByteLength()) ? value.asShort() : value.asString();
             case Types.BIGINT:
-                return value.asLong();
+                return isStoredAsLong(v) ? value.asLong() : value.asString();
             case Types.FLOAT:
             case Types.REAL:
-                return value.asFloat();
+                return isStoredAsFixed(v, BinlogByteEnum.FLOAT.getByteLength()) ? value.asFloat() : value.asString();
             case Types.DOUBLE:
-                return value.asDouble();
+                return isStoredAsFixed(v, BinlogByteEnum.DOUBLE.getByteLength()) ? value.asDouble() : value.asString();
             case Types.DECIMAL:
             case Types.NUMERIC:
                 return value.asBigDecimal();
@@ -237,6 +243,18 @@ public abstract class BinlogMessageUtil {
             default:
                 return null;
         }
+    }
+
+    /**
+     * 判断 ByteString 是否按定长二进制存储。若为 JSON 串等（如 date_range、*_range 的 Map），
+     * 应按 asString 反序列化，否则按 LONG/INT 等会误读前 N 字节导致日期或数字乱码。
+     */
+    private static boolean isStoredAsFixed(ByteString v, int expectedBytes) {
+        return v != null && v.size() == expectedBytes;
+    }
+
+    private static boolean isStoredAsLong(ByteString v) {
+        return isStoredAsFixed(v, BinlogByteEnum.LONG.getByteLength());
     }
 
     private static ByteString allocateByteBufferToByteString(BinlogByteEnum byteType, ByteStringMapper mapper) {

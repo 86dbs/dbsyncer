@@ -7,7 +7,7 @@ import org.dbsyncer.connector.elasticsearch.ElasticsearchException;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchBooleanType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchByteType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchBytesType;
-import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchDateType;
+import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchTimestampType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchDecimalType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchDoubleType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchFloatType;
@@ -40,7 +40,7 @@ public final class ElasticsearchSchemaResolver extends AbstractSchemaResolver {
                 new ElasticsearchDecimalType(),
                 new ElasticsearchFloatType(),
                 new ElasticsearchDoubleType(),
-                new ElasticsearchDateType(),
+                new ElasticsearchTimestampType(),
                 new ElasticsearchBooleanType(),
                 new ElasticsearchBytesType(),
                 new ElasticsearchByteType()

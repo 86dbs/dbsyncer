@@ -345,6 +345,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                             .append("]: index [").append(r.getIndex()).append("], type [")
                             .append(r.getType()).append("], id [").append(r.getId())
                             .append("], message [").append(r.getFailureMessage()).append("]");
+                    continue;
                 }
                 result.getSuccessData().add(data.get(i));
             }
@@ -411,10 +412,18 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         properties.forEach((fieldName, c) -> {
             Map fieldDesc = (Map) c;
             String columnType = (String) fieldDesc.get("type");
+            // dynamic => object
+            if (columnType == null) {
+                columnType = ESFieldTypeEnum.OBJECT.getCode();
+            }
+
             // 如果时间类型做了format, 按字符串类型处理
             if (StringUtil.equals(ESFieldTypeEnum.DATE.getCode(), columnType)) {
-                if (fieldDesc.containsKey("format")) {
-                    fields.add(new Field(fieldName, columnType, ESFieldTypeEnum.KEYWORD.getType()));
+                Object format = fieldDesc.get("format");
+                if (format != null) {
+                    Field dateField = new Field(fieldName, columnType, ESFieldTypeEnum.KEYWORD.getType());
+                    dateField.getExtInfo().put("format", format);
+                    fields.add(dateField);
                     return;
                 }
             }

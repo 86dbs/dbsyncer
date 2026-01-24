@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 /**
  * ES 浮点类型
- * 支持: float, half_float, float_range
+ * 支持: float, half_float
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -22,8 +22,7 @@ public final class ElasticsearchFloatType extends FloatType {
 
     private enum TypeEnum {
         FLOAT("float"),
-        HALF_FLOAT("half_float"),
-        FLOAT_RANGE("float_range");
+        HALF_FLOAT("half_float");
 
         private final String value;
 

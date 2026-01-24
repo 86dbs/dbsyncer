@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 /**
  * ES 整数类型
- * 支持: integer, integer_range
+ * 支持: integer
  *
  * @Author 穿云
  * @Version 1.0.0
@@ -22,7 +22,7 @@ public final class ElasticsearchIntType extends IntType {
 
     private enum TypeEnum {
         INTEGER("integer"),
-        INTEGER_RANGE("integer_range");
+        VERSION("version"); /* 专门用于存储文档版本号,乐观锁,防止并发更新时的数据冲突 */
 
         private final String value;
 

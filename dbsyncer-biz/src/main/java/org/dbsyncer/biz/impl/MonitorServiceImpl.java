@@ -159,7 +159,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             try {
                 DataVo dataVo = convert2Vo(row, DataVo.class);
                 Map binlogData = dataSyncService.getBinlogData(row, true);
-                dataVo.setJson(JsonUtil.objToJson(binlogData));
+                dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
                 list.add(dataVo);
             } catch (Exception e) {
                 logger.error(e.getLocalizedMessage(), e);
