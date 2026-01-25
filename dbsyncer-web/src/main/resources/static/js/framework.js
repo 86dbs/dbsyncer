@@ -842,11 +842,21 @@ function renderStateButton(state, mappingId) {
     const config = stateConfig[state] || stateConfig[0];
     const disabledAttr = config.disabled ? ' disabled' : '';
     const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
-    return `
+    const stateBtn = [];
+    stateBtn.push(`
         <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
             <i class="fa ${config.icon}"></i>
         </button>
-    `;
+    `);
+    // 未运行才显示删除按钮
+    if (state === 0) {
+        stateBtn.push(`
+            <button class="table-action-btn delete" title="删除" onclick="deleteMapping('${mappingId}')">
+                <i class="fa fa-trash"></i>
+            </button>
+        `);
+    }
+    return stateBtn.join('');
 }
 
 $(function () {
