@@ -13,7 +13,6 @@ import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchDoubleTy
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchFloatType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchIntType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchLongType;
-import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchShortType;
 import org.dbsyncer.connector.elasticsearch.schema.support.ElasticsearchStringType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
@@ -35,7 +34,6 @@ public final class ElasticsearchSchemaResolver extends AbstractSchemaResolver {
         Stream.of(
                 new ElasticsearchStringType(),
                 new ElasticsearchIntType(),
-                new ElasticsearchShortType(),
                 new ElasticsearchLongType(),
                 new ElasticsearchDecimalType(),
                 new ElasticsearchFloatType(),

@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchIntType extends IntType {
 
     private enum TypeEnum {
+        SHORT("short"),
         INTEGER("integer"),
         VERSION("version"); /* 专门用于存储文档版本号,乐观锁,防止并发更新时的数据冲突 */
 
