@@ -5,14 +5,12 @@ package org.dbsyncer.web.controller.openapi;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.vo.ConnectorVo;
-import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.biz.impl.AppCredentialManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
+import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.web.model.OpenApiResponse;
 import org.dbsyncer.web.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +19,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.support.HandlerMethodArgumentResolverComposite;
@@ -249,158 +251,6 @@ public class OpenApiController implements InitializingBean {
     }
 
     /**
-     * 获取连接器列表
-     * GET /openapi/connector/list
-     * 
-     * @param request 请求对象
-     * @return 连接器列表
-     */
-    @GetMapping("/connector/list")
-    public OpenApiResponse<List<ConnectorVo>> getConnectorList(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            logger.info("业务系统 {} 获取连接器列表", appId);
-            
-            // 获取所有连接器
-            List<ConnectorVo> connectors = connectorService.getConnectorAll();
-            
-            return OpenApiResponse.success(connectors);
-        } catch (Exception e) {
-            logger.error("获取连接器列表失败", e);
-            return OpenApiResponse.fail(500, "获取连接器列表失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 获取连接器详情
-     * GET /openapi/connector/{id}
-     * 
-     * @param id 连接器ID
-     * @param request 请求对象
-     * @return 连接器详情
-     */
-    @GetMapping("/connector/{id}")
-    public OpenApiResponse<Connector> getConnector(@PathVariable String id, HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            logger.info("业务系统 {} 获取连接器详情: {}", appId, id);
-            
-            Connector connector = connectorService.getConnector(id);
-            if (connector == null) {
-                return OpenApiResponse.fail(404, "连接器不存在");
-            }
-            
-            return OpenApiResponse.success(connector);
-        } catch (Exception e) {
-            logger.error("获取连接器详情失败", e);
-            return OpenApiResponse.fail(500, "获取连接器详情失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 创建连接器
-     * POST /openapi/connector/create
-     * 
-     * @param request 请求对象（拦截器已解密数据）
-     * @return 创建结果
-     */
-    @PostMapping("/connector/create")
-    public OpenApiResponse<Map<String, String>> createConnector(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            String decryptedData = (String) request.getAttribute("decryptedData");
-            
-            if (StringUtil.isBlank(decryptedData)) {
-                return OpenApiResponse.fail(400, "请求数据不能为空");
-            }
-            
-            // 解析连接器配置
-            @SuppressWarnings("unchecked")
-            Map<String, String> params = (Map<String, String>) JsonUtil.jsonToObj(decryptedData, Map.class);
-            
-            // 创建连接器
-            String connectorId = connectorService.add(params);
-            
-            Map<String, String> data = new HashMap<>();
-            data.put("connectorId", connectorId);
-            
-            logger.info("业务系统 {} 创建连接器成功: {}", appId, connectorId);
-            return OpenApiResponse.success("创建连接器成功", data);
-        } catch (Exception e) {
-            logger.error("创建连接器失败", e);
-            return OpenApiResponse.fail(500, "创建连接器失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 更新连接器
-     * POST /openapi/connector/update
-     * 
-     * @param request 请求对象（拦截器已解密数据）
-     * @return 更新结果
-     */
-    @PostMapping("/connector/update")
-    public OpenApiResponse<String> updateConnector(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            String decryptedData = (String) request.getAttribute("decryptedData");
-            
-            if (StringUtil.isBlank(decryptedData)) {
-                return OpenApiResponse.fail(400, "请求数据不能为空");
-            }
-            
-            // 解析连接器配置
-            @SuppressWarnings("unchecked")
-            Map<String, String> params = (Map<String, String>) JsonUtil.jsonToObj(decryptedData, Map.class);
-            
-            // 更新连接器
-            String result = connectorService.edit(params);
-            
-            logger.info("业务系统 {} 更新连接器成功: {}", appId, result);
-            return OpenApiResponse.success(result);
-        } catch (Exception e) {
-            logger.error("更新连接器失败", e);
-            return OpenApiResponse.fail(500, "更新连接器失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 删除连接器
-     * POST /openapi/connector/delete
-     * 
-     * @param request 请求对象（拦截器已解密数据）
-     * @return 删除结果
-     */
-    @PostMapping("/connector/delete")
-    public OpenApiResponse<String> deleteConnector(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            String decryptedData = (String) request.getAttribute("decryptedData");
-            
-            if (StringUtil.isBlank(decryptedData)) {
-                return OpenApiResponse.fail(400, "请求数据不能为空");
-            }
-            
-            // 解析连接器ID
-            Map<String, String> params = JsonUtil.jsonToObj(decryptedData, Map.class);
-            String connectorId = params.get("id");
-            
-            if (StringUtil.isBlank(connectorId)) {
-                return OpenApiResponse.fail(400, "连接器ID不能为空");
-            }
-            
-            // 删除连接器
-            String result = connectorService.remove(connectorId);
-            
-            logger.info("业务系统 {} 删除连接器成功: {}", appId, connectorId);
-            return OpenApiResponse.success(result);
-        } catch (Exception e) {
-            logger.error("删除连接器失败", e);
-            return OpenApiResponse.fail(500, "删除连接器失败: " + e.getMessage());
-        }
-    }
-
-    /**
      * 数据同步接口 - 业务系统同步数据到DBSyncer
      * POST /openapi/data/sync
      * 
@@ -436,39 +286,6 @@ public class OpenApiController implements InitializingBean {
         } catch (Exception e) {
             logger.error("数据同步失败", e);
             return OpenApiResponse.fail(500, "数据同步失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 获取数据接口 - DBSyncer调用业务系统获取数据
-     * POST /openapi/data/fetch
-     * 
-     * @param request 请求对象（拦截器已解密数据）
-     * @return 获取的数据
-     */
-    @PostMapping("/data/fetch")
-    public OpenApiResponse<Object> fetchData(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            String decryptedData = (String) request.getAttribute("decryptedData");
-            
-            if (StringUtil.isBlank(decryptedData)) {
-                return OpenApiResponse.fail(400, "请求参数不能为空");
-            }
-            
-            // 解析请求参数
-            @SuppressWarnings("unchecked")
-            Map<String, Object> params = (Map<String, Object>) JsonUtil.jsonToObj(decryptedData, Map.class);
-            
-            // TODO: 实现数据获取逻辑
-            // 这里需要根据业务需求实现具体的数据获取处理
-            // 例如：根据连接器ID、表名等条件获取数据
-            
-            logger.info("业务系统 {} 获取数据", appId);
-            return OpenApiResponse.success("数据获取成功", params);
-        } catch (Exception e) {
-            logger.error("获取数据失败", e);
-            return OpenApiResponse.fail(500, "获取数据失败: " + e.getMessage());
         }
     }
 

@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -173,6 +174,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
         Meta meta = profileComponent.getMeta(id);
+        meta.getFail().getAndSet(0);
+        // 让定时任务触发更新meta
+        meta.setUpdateTime(Instant.now().toEpochMilli());
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
