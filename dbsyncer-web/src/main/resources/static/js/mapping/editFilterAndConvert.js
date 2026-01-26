@@ -225,6 +225,29 @@ function bindConvertAddClick() {
     });
 }
 
+// 根据 argNum 更新参数输入框的显示状态
+function updateConvertParamsVisibility(argNum) {
+    // 隐藏所有输入框
+    $("[data-arg-num]").hide();
+    
+    // 根据 argNum 显示对应的输入框，并控制整个参数组的显示
+    var $paramsGroup = $("#convertParamsGroup");
+    if (argNum === -1) {
+        // 显示表达式输入框（全宽）
+        $("[data-arg-num='-1']").show();
+        $paramsGroup.show();
+    } else if (argNum >= 1) {
+        // 显示对应数量的参数输入框
+        for (var i = 1; i <= argNum && i <= 2; i++) {
+            $("[data-arg-num='" + i + "']").show();
+        }
+        $paramsGroup.show();
+    } else {
+        // argNum 为 0 或无效时，隐藏整个参数组
+        $paramsGroup.hide();
+    }
+}
+
 // 绑定转换类型选择事件（根据 argNum 动态显示参数输入框）
 function bindConvertOperatorChange() {
     var $convertOperator = $("#convertOperator");
@@ -232,21 +255,29 @@ function bindConvertOperatorChange() {
         var $selectedOption = $(this).find("option:selected");
         // Thymeleaf 渲染后，th:argNum 会变成 argNum 属性
         var argNum = parseInt($selectedOption.attr("argNum") || "0");
-        
-        // 隐藏所有输入框
-        $("[data-arg-num]").hide();
-        
-        // 根据 argNum 显示对应的输入框
-        if (argNum === -1) {
-            // 显示表达式输入框（全宽）
-            $("[data-arg-num='-1']").show();
-        } else if (argNum >= 1) {
-            // 显示对应数量的参数输入框
-            for (var i = 1; i <= argNum && i <= 2; i++) {
-                $("[data-arg-num='" + i + "']").show();
-            }
-        }
+        updateConvertParamsVisibility(argNum);
     });
+}
+
+// 初始化转换类型参数显示（页面加载时调用）
+function initConvertParamsVisibility() {
+    var $convertOperator = $("#convertOperator");
+    if ($convertOperator.length > 0) {
+        // 从原始 select 元素中获取选中的 option（不依赖 selectpicker UI）
+        var selectedValue = $convertOperator.selectpicker('val');
+        var $selectedOption = $convertOperator.find("option[value='" + selectedValue + "']");
+        // 如果找不到，则使用第一个选中的 option
+        if ($selectedOption.length === 0) {
+            $selectedOption = $convertOperator.find("option:selected");
+        }
+        // 如果还是找不到，则使用第一个 option
+        if ($selectedOption.length === 0) {
+            $selectedOption = $convertOperator.find("option").first();
+        }
+        // Thymeleaf 渲染后，th:argNum 会变成 argNum 属性
+        var argNum = parseInt($selectedOption.attr("argNum") || "0");
+        updateConvertParamsVisibility(argNum);
+    }
 }
 
 // 显示转换配置帮助弹窗
@@ -351,4 +382,9 @@ $(function() {
     bindConvertAddClick();
     bindConvertOperatorChange();
     bindConvertHelpIconClick();
+    // 初始化转换类型参数显示（需要在 selectpicker 初始化后调用）
+    // 使用 setTimeout 确保 selectpicker 完全初始化完成
+    setTimeout(function() {
+        initConvertParamsVisibility();
+    }, 200);
 });
