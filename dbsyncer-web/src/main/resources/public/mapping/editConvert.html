@@ -62,7 +62,7 @@
                         <option th:value="${c?.code}" 
                                 th:text="${c?.name}" 
                                 th:argNum="${c?.argNum}"
-                                th:title="${c?.name}：${c?.description}"
+                                th:title="${c?.name + '：' + c?.description}"
                                 th:each="c,state : ${convert}"/>
                     </select>
                 </div>
