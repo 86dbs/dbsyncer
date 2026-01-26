@@ -109,6 +109,9 @@ public abstract class DocumentUtil {
 
         // 同步数据
         byte[] bytes = (byte[]) params.get(ConfigConstant.BINLOG_DATA);
+        if (bytes == null) {
+            bytes = new byte[0];
+        }
         doc.add(new BinaryDocValuesField(ConfigConstant.BINLOG_DATA, new BytesRef(bytes)));
         doc.add(new StoredField(ConfigConstant.BINLOG_DATA, bytes));
 

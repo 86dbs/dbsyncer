@@ -29,10 +29,9 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.BitSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.Objects;
 
 /**
  * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
@@ -105,6 +104,10 @@ public abstract class BinlogMessageUtil {
             case "org.postgresql.geometric.PGpoint":
                 PGpoint pgpoint = (PGpoint) v;
                 return ByteString.copyFromUtf8(Objects.requireNonNull(pgpoint.getValue()));
+                return ByteString.copyFromUtf8(pgObject.getValue());
+            case "java.util.UUID":
+                UUID uuid = (UUID) v;
+                return ByteString.copyFromUtf8(uuid.toString());
 
             // 时间
             case "java.sql.Timestamp":
