@@ -363,6 +363,7 @@ public class TableGroupChecker extends AbstractChecker {
         SchemaResolver targetSchemaResolver = targetConnectorService.getSchemaResolver();
 
         // 基于源表所有字段构建 fieldMapping，依据源表字段构建 target 字段
+        ArrayList<Field> targetColumns = new ArrayList<>();
         List<FieldMapping> fieldMappingList = new ArrayList<>();
         for (Field sourceField : sCol) {
             Field targetField = null;
@@ -385,9 +386,10 @@ public class TableGroupChecker extends AbstractChecker {
                 targetField = sourceField;
             }
 
-            tableGroup.getTargetTable().getColumn().add(targetField);
+            targetColumns.add(targetField);
             fieldMappingList.add(new FieldMapping(sourceField, targetField));
         }
+        tableGroup.getTargetTable().setColumn(targetColumns);
 
         tableGroup.setFieldMapping(fieldMappingList);
     }
