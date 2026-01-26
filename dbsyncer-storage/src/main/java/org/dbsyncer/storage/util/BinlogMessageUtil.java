@@ -29,6 +29,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Objects;
@@ -104,7 +105,6 @@ public abstract class BinlogMessageUtil {
             case "org.postgresql.geometric.PGpoint":
                 PGpoint pgpoint = (PGpoint) v;
                 return ByteString.copyFromUtf8(Objects.requireNonNull(pgpoint.getValue()));
-                return ByteString.copyFromUtf8(pgObject.getValue());
             case "java.util.UUID":
                 UUID uuid = (UUID) v;
                 return ByteString.copyFromUtf8(uuid.toString());
@@ -151,9 +151,6 @@ public abstract class BinlogMessageUtil {
             case "java.util.BitSet":
                 BitSet bitSet = (BitSet) v;
                 return ByteString.copyFrom(bitSet.toByteArray());
-            case "java.util.UUID":
-                UUID uuid = (UUID) v;
-                return ByteString.copyFromUtf8(uuid.toString());
 
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":
