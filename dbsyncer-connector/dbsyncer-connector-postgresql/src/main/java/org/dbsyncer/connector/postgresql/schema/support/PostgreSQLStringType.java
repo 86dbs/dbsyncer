@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.connector.postgresql.schema.support;
 
+import org.dbsyncer.common.util.BooleanUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.model.Field;
@@ -158,7 +160,6 @@ public final class PostgreSQLStringType extends StringType {
                 case INT4RANGE:
                 case INT8RANGE:
                 case NUMRANGE:
-                case BIT:
                 case BIT_VARYING:
                 case VARBIT:
                 case PG_LSN:
@@ -171,11 +172,28 @@ public final class PostgreSQLStringType extends StringType {
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
+                case BIT:
+                    return toBit(typeEnum, field, strVal);
                 default:
                     return val;
             }
         }
         return super.convert(val, field);
+    }
+
+    private Object toBit(TypeEnum typeEnum, Field field, String val) {
+        try {
+            // bit(1) 低精度按布尔处理
+            if (field.getRatio() <= 1) {
+                return StringUtil.equals(val, "1");
+            }
+            PGobject pgObject = new PGobject();
+            pgObject.setType(typeEnum.getValue());
+            pgObject.setValue(val);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Object toPoint(String val) {
