@@ -119,7 +119,7 @@ public class ConnectionTest {
 
     @Test
     @Ignore
-    public void testByte() {
+    public void testByte() throws Exception {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createOracleConfig());
 
         String executeSql = "UPDATE \"my_user\" SET \"name\"=?,\"clo\"=? WHERE \"id\"=?";
@@ -198,7 +198,7 @@ public class ConnectionTest {
 
     @Test
     @Ignore
-    public void testQuery() {
+    public void testQuery() throws Exception {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
         // 3、执行SQL
         String querySql = "SELECT * from test_schema where id = ?";
@@ -359,7 +359,7 @@ public class ConnectionTest {
         logger.info("总数：{}, 耗时：{}秒", (threadSize * num), (Instant.now().toEpochMilli() - begin) / 1000);
     }
 
-    private void mockData(DatabaseConnectorInstance connectorInstance, int num, int offset, String insert, String update, String delete) {
+    private void mockData(DatabaseConnectorInstance connectorInstance, int num, int offset, String insert, String update, String delete) throws Exception {
         int start = offset * num;
         logger.info("{}-offset:{}, start:{}", Thread.currentThread().getName(), offset, start);
         List<Object[]> insertData = new ArrayList<>();
@@ -435,7 +435,7 @@ public class ConnectionTest {
 
     @Test
     @Ignore
-    public void testReadSchema() {
+    public void testReadSchema() throws Exception {
         getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
         getTables(createOracleConfig(), "test", "AE86", null);
 
@@ -451,7 +451,7 @@ public class ConnectionTest {
 
     @Test
     @Ignore
-    public void testGetColumnsDetails() {
+    public void testGetColumnsDetails() throws Exception {
         final String schema = "root";
         final String tableNamePattern = "sw_test";
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
@@ -473,7 +473,7 @@ public class ConnectionTest {
         });
     }
 
-    private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {
+    private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) throws Exception {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(config);
         List<Table> tables = new ArrayList<>();
         connectorInstance.execute(databaseTemplate -> {

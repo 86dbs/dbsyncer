@@ -265,6 +265,116 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         logger.info("ADD COLUMN带NOT NULL约束测试通过（DDL 和 DML 数据绑定验证完成）");
     }
 
+    /**
+     * 测试通过fallbackQuery检测DDL（processedCount == 0场景）
+     * 
+     * 场景说明：
+     * - 执行DDL操作后，在测试表上不执行任何DML操作
+     * - 但在其他表上执行DML操作来增加Change Tracking版本号，触发Worker轮询
+     * - 当Worker检测到版本号变化时，会调用pull方法查询所有表
+     * - 对于测试表，Change Tracking查询返回0条DML记录（processedCount == 0）
+     * - 系统通过fallbackQuery（buildSchemeOnly）检测DDL变更
+     * - 验证DDL能够被正确检测并同步
+     * 
+     * 这是对SqlServerCTListener.processDMLResultSet方法中420-435行逻辑的测试。
+     * 注意：此测试的重点是验证fallbackQuery机制本身，而不是验证具体的DDL类型。
+     * 各种DDL类型（ADD/DROP/ALTER COLUMN等）的正常流程（有DML触发的情况）已在其他测试中覆盖。
+     * 这里使用ADD COLUMN作为示例，因为最容易验证（检查字段是否存在）。
+     * 
+     * 关键点：
+     * - Change Tracking的版本号只有在有DML操作时才会增加
+     * - Worker只有在maxVersion > lastVersion时才会调用pull方法
+     * - 如果版本号不增加，系统不会触发pull，也就不会执行fallbackQuery
+     * - 因此需要在其他表上执行DML来增加版本号，触发pull方法
+     */
+    @Test
+    public void testAddColumn_DetectedByFallbackQuery_NoDMLAfterDDL() throws Exception {
+        logger.info("开始测试通过fallbackQuery检测DDL（processedCount == 0场景）");
+
+        String sqlServerDDL = "ALTER TABLE ddlTestSource ADD remark NVARCHAR(200)";
+
+        mappingService.start(mappingId);
+        Thread.sleep(2000);
+
+        // 验证meta状态为running后再执行DDL，确保 Listener 已完全启动
+        waitForMetaRunning(metaId, 10000);
+
+        // SQL Server CT 模式下，DDL 检测需要先初始化表结构快照
+        // 1. 先执行一次 DML 操作来初始化表结构快照（插入基础数据并验证同步）
+        Map<String, Object> initData = new HashMap<>();
+        initData.put("first_name", "Init");
+        initData.put("last_name", "User");
+        initData.put("department", "IT");
+        initData = executeInsertDMLToSourceDatabase(getSourceTableName(), initData, sourceConfig);
+        waitForDataSync(initData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证初始化数据同步
+
+        Thread.sleep(500); // 等待版本号更新
+
+        // 2. 执行 DDL 操作
+        executeDDLToSourceDatabase(sqlServerDDL, sourceConfig);
+
+        // 3. 关键：在其他表执行 DML 操作来增加 Change Tracking 版本号
+        // 注意：必须在非测试表上执行 DML，因为：
+        // - Change Tracking 的版本号只有在有 DML 操作时才会增加
+        // - Worker 只有在 maxVersion > lastVersion 时才会调用 pull 方法
+        // - 如果版本号不增加，系统不会触发 pull，也就不会执行 fallbackQuery
+        // - 在测试表上不执行 DML，这样测试表的 Change Tracking 查询会返回 0 条记录（processedCount == 0）
+        // - 当 processedCount == 0 时，系统会通过 fallbackQuery 检测 DDL 变更
+        
+        // 创建一个临时表用于触发版本号变化（需要启用 Change Tracking）
+        String triggerTableName = "ddlTestTriggerTable";
+        String createTriggerTableDDL = String.format(
+            "IF OBJECT_ID('%s', 'U') IS NULL BEGIN " +
+            "CREATE TABLE %s (id INT IDENTITY(1,1) PRIMARY KEY, trigger_col NVARCHAR(50)); " +
+            "ALTER TABLE %s ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON); " +
+            "END",
+            triggerTableName, triggerTableName, triggerTableName);
+        executeDDLToSourceDatabase(createTriggerTableDDL, sourceConfig);
+        
+        // 在临时表上执行 INSERT 操作来触发 Change Tracking 版本号增加
+        // 然后立即删除，确保不影响测试环境
+        String insertTriggerDML = String.format("INSERT INTO %s (trigger_col) VALUES ('trigger')", triggerTableName);
+        executeDDLToSourceDatabase(insertTriggerDML, sourceConfig);
+        String deleteTriggerDML = String.format("DELETE FROM %s WHERE trigger_col = 'trigger'", triggerTableName);
+        executeDDLToSourceDatabase(deleteTriggerDML, sourceConfig);
+        
+        // 这样 Worker 会检测到版本号变化，调用 pull 方法
+        // 在 pull 方法中，对于测试表（ddlTestSource），由于没有实际的 DML 变更，processedCount == 0
+        // 系统会执行 fallbackQuery 检测 DDL 变更
+
+        // 4. 等待系统下一次轮询并检测到 DDL 变更
+        // 注意：需要等待足够的时间让系统完成 Change Tracking 轮询
+        // 轮询间隔通常是几秒，所以等待时间应该足够长
+        Thread.sleep(3000); // 等待系统完成 Change Tracking 轮询
+
+        // 5. 等待DDL处理完成（通过fallbackQuery检测）
+        waitForDDLProcessingComplete("remark", 15000);
+
+        // 6. 验证 DDL：字段映射和表结构
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(mappingId);
+        assertNotNull("应找到TableGroup列表", tableGroups);
+        assertFalse("TableGroup列表不应为空", tableGroups.isEmpty());
+        TableGroup tableGroup = tableGroups.get(0);
+
+        boolean foundRemarkMapping = tableGroup.getFieldMapping().stream()
+                .anyMatch(fm -> fm.getSource() != null && "remark".equals(fm.getSource().getName()) &&
+                        fm.getTarget() != null && "remark".equals(fm.getTarget().getName()));
+
+        assertTrue("应找到remark字段的映射（通过fallbackQuery检测）", foundRemarkMapping);
+        verifyFieldExistsInTargetDatabase("remark", getTargetTableName(), targetConfig);
+
+        // 7. 验证可以正常插入包含新字段的数据（确保DDL同步成功）
+        Map<String, Object> testData = new HashMap<>();
+        testData.put("first_name", "Test");
+        testData.put("last_name", "User");
+        testData.put("department", "IT");
+        testData.put("remark", "Test remark field"); // DDL 新增的字段
+        testData = executeInsertDMLToSourceDatabase(getSourceTableName(), testData, sourceConfig);
+        waitForDataSync(testData, getTargetTableName(), "id", targetConfig, 10000); // 等待并验证数据同步
+
+        logger.info("通过fallbackQuery检测DDL测试通过（processedCount == 0场景验证完成）");
+    }
+
     // ==================== DROP COLUMN 测试场景 ====================
 
     /**
