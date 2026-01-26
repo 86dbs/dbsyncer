@@ -655,9 +655,13 @@ function getMappping(id) {
                 // 安全访问对象属性
                 var mid = m && m.id ? m.id : '';
                 var meta = m && m.meta ? m.meta : {};
+                var metaId = meta.id || '';
                 var total = meta.total || 0;
                 var successCount = meta.success || 0;
                 var failCount = meta.fail || 0;
+                
+                // 更新 metaId 隐藏字段
+                $("#metaId").val(metaId);
 
                 // 更新表映射关系数据
                 updateTableGroups(mid, total, successCount, failCount);
@@ -709,6 +713,9 @@ function getMappping(id) {
                                     var errorMessage = meta.errorMessage || '';
                                     var metaId = meta.id || '';
                                     var state = meta.state || '';
+                                    
+                                    // 更新 metaId 隐藏字段
+                                    $("#metaId").val(metaId);
 
                                     var stateHtmlContent = '<p>任务状态：</p>';
                                     if(state == 0){
@@ -1126,9 +1133,9 @@ function bindErrorQueueQueryDataRetryEvent() {
     let $retry = $("#mappingErrorQueue .retryData");
     $retry.unbind("click");
     $retry.click(function () {
-        let id = $("#mappingId").val();
+        let metaId = $("#metaId").val();
         let messageId = $(this).attr("id");
-        updateHash('/monitor/page/retry?metaId=' + id + '&messageId=' + messageId);
+        updateHash('/monitor/page/retry?metaId=' + metaId + '&messageId=' + messageId);
     });
 }
 
