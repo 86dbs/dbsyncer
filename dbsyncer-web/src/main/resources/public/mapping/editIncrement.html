@@ -19,32 +19,7 @@
         </div>
     </div>
 
-    <!-- 增量点配置 -->
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-1">
-                <input id="metaSnapshot" name="metaSnapshot" class="form-control hidden" type="text"/>
-            </div>
-            <div class="col-md-11">
-                <table th:if="${mapping?.meta?.snapshot?.size() gt 0}" class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th>Key</th>
-                        <th>Value</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody id="mappingMetaSnapshotConfig">
-                    <tr th:each="item,entry:${mapping?.meta?.snapshot}">
-                        <td th:text="${entry.current.key}"></td>
-                        <td th:text="${entry.current.value}" style="word-wrap: break-word; white-space: normal; max-width: 600px;"></td>
-                        <td><i th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer metaSnapshotModify"></i></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+
 
     <!-- 增量事件配置 -->
     <div class="form-group">

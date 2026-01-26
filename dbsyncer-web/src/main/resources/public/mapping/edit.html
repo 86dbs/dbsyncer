@@ -242,6 +242,9 @@
                         <div th:id="mappingIncrementConfig" class="hidden">
                             <div th:replace="mapping/editIncrement :: content"></div>
                         </div>
+
+                        <!-- 快照信息 -->
+                        <div th:replace="mapping/editSnapshot :: content"></div>
                         <div class="row text-right">
                             <button type="button"  th:onclick="nextToMapping('mappingBaseConfig')" class="btn btn-default">
                                 <span class="fa fa-arrow-left"></span> 上一步
