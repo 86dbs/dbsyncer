@@ -60,28 +60,28 @@ public class DataSyncServiceImpl implements DataSyncService {
     private StorageService storageService;
 
     @Override
-    public MessageVo getMessageVo(String metaId, String messageId) {
+    public MessageVo getMessageVo(String metaId, String messageId) throws Exception {
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
         MessageVo messageVo = new MessageVo();
-        try {
-            Map row = getData(metaId, messageId);
-            Map binlogData = getBinlogData(row, true);
-            String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
-            messageVo.setSourceTableName(tableGroup.getSourceTable().getName());
-            messageVo.setTargetTableName(tableGroup.getTargetTable().getName());
-            messageVo.setId(messageId);
+        Map row = getData(metaId, messageId);
+        Map binlogData = getBinlogData(row, true);
+        String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        if (tableGroup == null) {
+            String msg = String.format("table group id: %s,  is not exist. meta id: %s, ", tableGroupId, metaId);
+            throw new RuntimeException(msg);
+        }
+        messageVo.setSourceTableName(tableGroup.getSourceTable().getName());
+        messageVo.setTargetTableName(tableGroup.getTargetTable().getName());
+        messageVo.setId(messageId);
 
-            if (!CollectionUtils.isEmpty(binlogData)) {
-                Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
-                List<BinlogColumnVo> columns = new ArrayList<>();
-                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVo((String) k, v, columnMap.get(k))));
-                messageVo.setColumns(columns);
-            }
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage());
+        if (!CollectionUtils.isEmpty(binlogData)) {
+            Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
+            List<BinlogColumnVo> columns = new ArrayList<>();
+            binlogData.forEach((k, v) -> columns.add(new BinlogColumnVo((String) k, v, columnMap.get(k))));
+            messageVo.setColumns(columns);
         }
         return messageVo;
     }

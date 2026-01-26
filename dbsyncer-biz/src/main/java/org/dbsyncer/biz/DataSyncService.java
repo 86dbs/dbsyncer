@@ -17,7 +17,7 @@ public interface DataSyncService {
      * @param messageId
      * @return
      */
-    MessageVo getMessageVo(String metaId, String messageId);
+    MessageVo getMessageVo(String metaId, String messageId) throws Exception;
 
     /**
      * 获取Binlog

@@ -93,7 +93,7 @@ public class MonitorController extends BaseController {
     }
 
     @GetMapping("/page/retry")
-    public String page(ModelMap model, String metaId, String messageId) {
+    public String page(ModelMap model, String metaId, String messageId) throws Exception {
         model.put("meta", monitorService.getMetaVo(metaId));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
