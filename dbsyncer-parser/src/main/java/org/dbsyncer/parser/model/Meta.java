@@ -163,7 +163,7 @@ public class Meta extends ConfigModel {
                 count.getAndAdd(g.getSourceTable().getCount());
             }
         }
-        total = count;
+        total.set(count.get());
         setUpdateTime(Instant.now().toEpochMilli());
         profileComponent.editConfigModel(this);
     }
