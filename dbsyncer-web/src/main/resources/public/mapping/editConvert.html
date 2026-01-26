@@ -3,55 +3,23 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <p class="text-muted">转换配置</p>
-    
     <p class="text-muted">
-        转换配置：为目标字段指定转换规则
-        <br>
-        <small class="text-info">
-            • 字段有值：对已有字段值进行转换（如：AES 加密、类型转换）
-            <br>
-            • 字段无值：生成新字段值（如：固定值、默认值）
-            <br>
-            • 支持选择任何目标表字段，包括无源字段映射的字段
-        </small>
+        转换配置
+        <i class="fa fa-question-circle" id="convertHelpIcon" style="cursor: pointer; margin-left: 5px; color: #5bc0de;" title="点击查看帮助"></i>
     </p>
 
-    <!-- 转换类型说明（可折叠，动态读取 ConvertEnum 的说明和示例） -->
-    <div class="panel panel-default" style="margin-top: 10px;">
-        <div class="panel-heading">
-            <h4 class="panel-title">
-                <a data-toggle="collapse" href="#convertHelp">
-                    <i class="fa fa-question-circle"></i> 转换类型说明及示例
-                </a>
-            </h4>
-        </div>
-        <div id="convertHelp" class="panel-collapse collapse">
-            <div class="panel-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-condensed">
-                        <thead>
-                            <tr>
-                                <th style="width: 20%;">转换类型</th>
-                                <th style="width: 15%;">参数个数</th>
-                                <th style="width: 30%;">说明</th>
-                                <th style="width: 35%;">示例</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- 动态读取 ConvertEnum 的说明和示例（包括 EXPRESSION 和 FIXED） -->
-                            <tr th:each="c : ${convert}">
-                                <td><strong th:text="${c?.name}"></strong></td>
-                                <td th:text="${c?.argNum == -1 ? '-' : c?.argNum}"></td>
-                                <td th:text="${c?.description}"></td>
-                                <td th:utext="${c?.example}"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 隐藏的转换类型数据容器（供 JavaScript 使用） -->
+    <table id="convertHelpData" class="hidden">
+        <tbody>
+            <tr th:each="c : ${convert}">
+                <td class="convert-code" th:text="${c?.code}"></td>
+                <td class="convert-name" th:text="${c?.name}"></td>
+                <td class="convert-argNum" th:text="${c?.argNum == -1 ? '-' : c?.argNum}"></td>
+                <td class="convert-description" th:text="${c?.description}"></td>
+                <td class="convert-example" th:utext="${c?.example}"></td>
+            </tr>
+        </tbody>
+    </table>
 
     <div class="form-group">
         <div class="row">

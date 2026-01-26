@@ -249,6 +249,96 @@ function bindConvertOperatorChange() {
     });
 }
 
+// 显示转换配置帮助弹窗
+function showConvertHelpDialog() {
+    // 从隐藏表格中读取转换类型数据
+    var convertData = [];
+    $("#convertHelpData tbody tr").each(function() {
+        var $row = $(this);
+        convertData.push({
+            code: $row.find(".convert-code").text(),
+            name: $row.find(".convert-name").text(),
+            argNum: $row.find(".convert-argNum").text(),
+            description: $row.find(".convert-description").text(),
+            example: $row.find(".convert-example").html()
+        });
+    });
+    
+    // 构建描述文字部分
+    var descriptionHtml = '<div style="padding: 10px 0;">' +
+        '<p><strong>转换配置：为目标字段指定转换规则</strong></p>' +
+        '<p class="text-info" style="margin: 10px 0;">' +
+        '• 字段有值：对已有字段值进行转换（如：AES 加密、类型转换）<br>' +
+        '• 字段无值：生成新字段值（如：固定值、默认值）<br>' +
+        '• 支持选择任何目标表字段，包括无源字段映射的字段' +
+        '</p>' +
+        '</div>';
+    
+    // 构建转换类型说明表格
+    var tableHtml = '<div class="table-responsive" style="margin-top: 15px;">' +
+        '<table class="table table-bordered table-condensed">' +
+        '<thead>' +
+        '<tr>' +
+        '<th style="width: 20%;">转换类型</th>' +
+        '<th style="width: 15%;">参数个数</th>' +
+        '<th style="width: 30%;">说明</th>' +
+        '<th style="width: 35%;">示例</th>' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>';
+    
+    // 添加表格行
+    for (var i = 0; i < convertData.length; i++) {
+        var c = convertData[i];
+        tableHtml += '<tr>' +
+            '<td><strong>' + escapeHtml(c.name) + '</strong></td>' +
+            '<td>' + escapeHtml(c.argNum) + '</td>' +
+            '<td>' + escapeHtml(c.description) + '</td>' +
+            '<td>' + c.example + '</td>' +
+            '</tr>';
+    }
+    
+    tableHtml += '</tbody></table></div>';
+    
+    // 组合完整内容
+    var contentHtml = descriptionHtml + tableHtml;
+    
+    // 显示弹窗
+    BootstrapDialog.show({
+        title: "转换配置说明",
+        type: BootstrapDialog.TYPE_INFO,
+        message: contentHtml,
+        size: BootstrapDialog.SIZE_WIDE,
+        buttons: [{
+            label: "关闭",
+            cssClass: "btn-default",
+            action: function (dialog) {
+                dialog.close();
+            }
+        }]
+    });
+}
+
+// HTML 转义函数
+function escapeHtml(text) {
+    var map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
+}
+
+// 绑定转换配置帮助图标点击事件
+function bindConvertHelpIconClick() {
+    $("#convertHelpIcon").unbind("click");
+    $("#convertHelpIcon").bind('click', function () {
+        showConvertHelpDialog();
+    });
+}
+
 $(function() {
     initSelectIndex($(".select-control"), 1);
     initConditionOperation();
@@ -260,4 +350,5 @@ $(function() {
     initConvert();
     bindConvertAddClick();
     bindConvertOperatorChange();
+    bindConvertHelpIconClick();
 });
