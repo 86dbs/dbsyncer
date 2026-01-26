@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.connector.postgresql.schema.support;
 
-import org.dbsyncer.common.util.BooleanUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.model.Field;
@@ -118,12 +116,16 @@ public final class PostgreSQLStringType extends StringType {
 
     @Override
     protected Object convert(Object val, Field field) {
+        // 将类型名转大写并替换空格为下划线，以匹配 TypeEnum
+        String enumName = field.getTypeName().toUpperCase().replace(" ", "_");
+        TypeEnum typeEnum = TypeEnum.valueOf(enumName);
+        // BIT 类型需要特殊处理：支持 Integer、Boolean、Number、String 等多种输入
+        if (typeEnum == TypeEnum.BIT) {
+            return convertToBit(val);
+        }
+
         if (val instanceof String) {
             String strVal = (String) val;
-            // 将类型名转大写并替换空格为下划线，以匹配 TypeEnum
-            String enumName = field.getTypeName().toUpperCase().replace(" ", "_");
-            TypeEnum typeEnum = TypeEnum.valueOf(enumName);
-
             switch (typeEnum){
                 case UUID:
                     try {
@@ -172,8 +174,6 @@ public final class PostgreSQLStringType extends StringType {
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
-                case BIT:
-                    return toBit(typeEnum, field, strVal);
                 default:
                     return val;
             }
@@ -181,15 +181,32 @@ public final class PostgreSQLStringType extends StringType {
         return super.convert(val, field);
     }
 
-    private Object toBit(TypeEnum typeEnum, Field field, String val) {
-        try {
-            // bit(1) 低精度按布尔处理
-            if (field.getRatio() <= 1) {
-                return StringUtil.equals(val, "1");
+    /**
+     * 将值转换为 PostgreSQL bit 类型（PGobject 包装）。
+     * 支持 Integer、Boolean、Number、String 等输入，统一转换为 bit 字符串。
+     */
+    private Object convertToBit(Object val) {
+        String bitStr;
+        if (val instanceof Boolean) {
+            bitStr = ((Boolean) val) ? "1" : "0";
+        } else if (val instanceof Number) {
+            // Integer、Short、Long 等：非 0 为 "1"，0 为 "0"
+            bitStr = ((Number) val).intValue() != 0 ? "1" : "0";
+        } else if (val instanceof String) {
+            String s = (String) val;
+            // 字符串 "true"/"1" 等转为 "1"，其他转为 "0"
+            if ("true".equalsIgnoreCase(s) || "1".equals(s) || "t".equalsIgnoreCase(s)) {
+                bitStr = "1";
+            } else {
+                bitStr = "0";
             }
+        } else {
+            throw new PostgreSQLException(String.format("Cannot convert %s to bit type, val [%s]", val.getClass(), val));
+        }
+        try {
             PGobject pgObject = new PGobject();
-            pgObject.setType(typeEnum.getValue());
-            pgObject.setValue(val);
+            pgObject.setType(TypeEnum.BIT.getValue());
+            pgObject.setValue(bitStr);
             return pgObject;
         } catch (SQLException e) {
             throw new RuntimeException(e);
