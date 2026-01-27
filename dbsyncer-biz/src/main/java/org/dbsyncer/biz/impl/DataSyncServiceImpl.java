@@ -240,18 +240,15 @@ public class DataSyncServiceImpl implements DataSyncService {
                 JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
             }
 
-            // 从binlogData的key中提取列名（源表字段名）
-            List<String> columnNames = new ArrayList<>();
-            if (!CollectionUtils.isEmpty(binlogData)) {
-                columnNames.addAll(binlogData.keySet());
-            }
-
             // 直接使用源数据，转换为List<Object>格式
             final Picker picker = new Picker(tableGroup);
             List<Field> sourceFields = picker.getSourceFields();
             List<Object> changedRow = new ArrayList<>();
+            // 按照 sourceFields 的顺序构建 columnNames，确保与 changedRow 的顺序和数量一致
+            List<String> columnNames = new ArrayList<>();
             for (Field field : sourceFields) {
                 changedRow.add(binlogData.get(field.getName()));
+                columnNames.add(field.getName());
             }
 
             // 创建RowChangedEvent时传入columnNames，确保重试时能正确处理

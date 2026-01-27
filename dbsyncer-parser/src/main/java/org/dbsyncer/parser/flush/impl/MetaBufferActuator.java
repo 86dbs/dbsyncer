@@ -330,13 +330,14 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
             context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
         } catch (Exception e) {
-            String msg = String.format("获取连接异常！mappingId: %s，msg %s",
+            String msg = String.format("异常！mappingId: %s，msg %s",
                     mapping.getId(), e.getMessage());
             logger.error(msg);
             logService.log(LogType.MappingLog.RUNNING, msg);
             result = new Result();
             result.error = msg;
             result.setTableGroupId(tableGroup.getId());
+            result.addFailData(response.getDataList());
             result.setTargetTableGroupName(tableGroup.getTargetTable().getName());
             flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
             return;
