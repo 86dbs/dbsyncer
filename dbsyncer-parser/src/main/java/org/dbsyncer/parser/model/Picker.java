@@ -57,7 +57,24 @@ public class Picker {
         return targetMapList;
     }
 
-    public List<Map> pickTargetData(List<Field> sourceOriginalFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) {
+    /**
+     * 从原始行数据中提取并转换为目标数据
+     * <p>
+     * 工作机制：
+     * 1. 遍历原始行数据（List<List<Object>>），将每行数据转换为Map格式（字段名->值）
+     * 2. 根据字段映射关系（sourceFields -> targetFields），通过exchange方法将源字段值映射到目标字段
+     * 3. 如果启用过滤（enableFilter=true），使用filter方法根据配置的过滤条件（AND/OR）过滤数据
+     * 4. 只保留通过过滤条件的数据，将源数据添加到sourceMapList，目标数据添加到返回列表
+     * 5. 如果最终没有数据通过过滤，抛出异常
+     *
+     * @param sourceOriginalFields 源表的原始字段列表
+     * @param enableFilter         是否启用过滤条件
+     * @param rows                 原始数据行（每行是一个List<Object>，按字段顺序存储值）
+     * @param sourceMapList        用于存储源数据的Map列表（作为输出参数，方法会向其中添加数据）
+     * @return 转换后的目标数据列表（Map格式，key为目标字段名，value为字段值）
+     * @throws Exception 当没有数据通过过滤时抛出异常
+     */
+    public List<Map> pickTargetData(List<Field> sourceOriginalFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) throws Exception {
         List<Map> targetMapList = new ArrayList<>();
         if (CollectionUtils.isEmpty(rows)) {
             return targetMapList;
@@ -65,10 +82,7 @@ public class Picker {
         Map<String, Object> source = null;
         Map<String, Object> target = null;
         for (List<Object> row : rows) {
-            // 排除下标不一致的数据
-            if (row.size() != sourceOriginalFields.size()) {
-                continue;
-            }
+            assert row.size() == sourceOriginalFields.size();
             source = new HashMap<>();
             for (int j = 0; j < sourceOriginalFields.size(); j++) {
                 source.put(sourceOriginalFields.get(j).getName(), row.get(j));
@@ -81,6 +95,9 @@ public class Picker {
             }
             sourceMapList.add(source);
             targetMapList.add(target);
+        }
+        if (targetMapList.isEmpty()) {
+            throw new Exception("数据提取失败");
         }
         return targetMapList;
     }

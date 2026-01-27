@@ -314,20 +314,19 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
         ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
+        IncrementPluginContext context;
         List<Map> sourceDataList = new ArrayList<>();
-        List<Map> targetDataList = tableGroupPicker.getPicker()
-                .setSourceResolver(enableSchemaResolver ? sourceConnector.getSchemaResolver() : null)
-                .pickTargetData(actualSourceFields, enableFilter, response.getDataList(), sourceDataList);
-        if (CollectionUtils.isEmpty(targetDataList)) {
-            return;
-        }
-
-        // 2、参数转换
-        ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
-
-        // 3、插件转换
-        final IncrementPluginContext context = new IncrementPluginContext();
         try {
+            List<Map> targetDataList = tableGroupPicker.getPicker()
+                    .setSourceResolver(enableSchemaResolver ? sourceConnector.getSchemaResolver() : null)
+                    .pickTargetData(actualSourceFields, enableFilter, response.getDataList(), sourceDataList);
+
+            // 2、参数转换
+            ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
+
+            // 3、插件转换
+            context = new IncrementPluginContext();
+            context.setTargetList(targetDataList);
             context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
             context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
         } catch (Exception e) {
@@ -352,7 +351,6 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         context.setCommand(tableGroup.getCommand());
         context.setBatchSize(getBufferWriterCount());
         context.setSourceList(sourceDataList);
-        context.setTargetList(targetDataList);
         context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
