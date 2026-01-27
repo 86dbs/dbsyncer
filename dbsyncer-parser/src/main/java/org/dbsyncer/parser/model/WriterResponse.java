@@ -17,6 +17,11 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
     private List<String> columnNames;  // CDC 捕获的列名列表（按数据顺序）
 
     private transient boolean isMerged;
+    
+    /**
+     * 是否为重试操作（用于防止重试失败时再次写入错误队列）
+     */
+    private transient boolean isRetry = false;
 
     @Override
     public int getTaskSize() {
@@ -58,5 +63,19 @@ public class WriterResponse extends AbstractWriter implements BufferResponse {
      */
     public void setColumnNames(List<String> columnNames) {
         this.columnNames = columnNames;
+    }
+
+    /**
+     * 是否为重试操作
+     */
+    public boolean isRetry() {
+        return isRetry;
+    }
+
+    /**
+     * 设置是否为重试操作
+     */
+    public void setRetry(boolean retry) {
+        isRetry = retry;
     }
 }

@@ -276,11 +276,15 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
         WriterRequest request = new WriterRequest(event);
         WriterResponse response = new WriterResponse();
 
+        // 标记为重试操作，防止重试失败时再次写入错误队列
+        response.setRetry(true);
+
         // 分区处理
         partition(request, response);
 
         // 直接调用pull方法处理
         pull(response);
+        // 如果 pull() 中 distributeTableGroup() 失败，会在重试场景下抛出异常
     }
 
     private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
@@ -302,6 +306,10 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
                     mapping.getId(), response.getTableName(), response.getColumnNames());
             logger.error(msg);
             logService.log(LogType.MappingLog.RUNNING, msg);
+            // 重试场景下，如果有失败数据，先抛出异常，避免调用 flushIncrementData 写入错误数据
+            if (response.isRetry()) {
+                throw new RuntimeException("重试失败: " + msg);
+            }
             result = new Result();
             result.error = msg;
             result.setTableGroupId(tableGroup.getId());
@@ -334,6 +342,10 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
                     mapping.getId(), e.getMessage());
             logger.error(msg);
             logService.log(LogType.MappingLog.RUNNING, msg);
+            // 只在重试场景下设置重试标识
+            if (response.isRetry()) {
+                throw new RuntimeException("重试失败: " + msg);
+            }
             result = new Result();
             result.error = msg;
             result.setTableGroupId(tableGroup.getId());
@@ -377,6 +389,10 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
 //            throw new RuntimeException("just test");
         } catch (Exception e) {
             logger.error("process batch data error:", e);
+            // 只在重试场景下设置重试标识
+            if (response.isRetry()) {
+                throw new RuntimeException("重试失败: " + e.getMessage());
+            }
             result = new Result();
             result.error = e.getMessage();
             result.setTableGroupId(tableGroup.getId());

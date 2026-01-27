@@ -5,7 +5,9 @@ package org.dbsyncer.biz.impl;
 
 import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
+import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.vo.BinlogColumnVo;
+import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.MessageVo;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.*;
@@ -58,6 +60,9 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private MonitorService monitorService;
 
     @Override
     public MessageVo getMessageVo(String metaId, String messageId) throws Exception {
@@ -270,13 +275,24 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 执行成功后，删除存储中的失败数据并更新统计
+        // 注意：如果 executeDirectly() 抛出异常，说明重试失败，不会执行到这里
         try {
             storageService.remove(StorageEnum.DATA, metaId, messageId);
-            // 更新失败数
+            // 更新统计数据：减少失败数，增加成功数
             Meta meta = profileComponent.getMeta(metaId);
             if (meta != null) {
                 meta.getFail().decrementAndGet();
+                meta.getSuccess().incrementAndGet();
                 meta.setUpdateTime(Instant.now().toEpochMilli());
+                
+                    // 减少失败数，增加成功数
+                    tableGroup.setFail(Math.max(0, tableGroup.getFail() - 1));
+                    tableGroup.setSuccess(tableGroup.getSuccess() + 1);
+                    // 更新同步状态：根据失败计数判断（有失败记录则为"异常"，否则为"正常"）
+                    tableGroup.setStatus(tableGroup.getFail() > 0 ? "异常" : "正常");
+                    // 标记 TableGroup 计数发生变化
+                    meta.markTableGroupChanged(tableGroupId);
+                
                 profileComponent.editConfigModel(meta);
             } else {
                 logger.warn("重试成功但Meta不存在，无法更新统计, metaId={}, messageId={}", metaId, messageId);
@@ -354,6 +370,74 @@ public class DataSyncServiceImpl implements DataSyncService {
             }
         }
         return b;
+    }
+
+    @Override
+    public Map<String, Object> retryAll(String metaId) throws Exception {
+        Assert.hasText(metaId, "The metaId is null.");
+
+        int totalCount = 0;
+        int successCount = 0;
+        int failCount = 0;
+        int pageSize = 100; // 每页查询100条
+        int pageNum = 1;
+
+        // 分页查询失败数据，直到没有更多数据
+        while (true) {
+            Map<String, String> params = new HashMap<>();
+            params.put(ConfigConstant.CONFIG_MODEL_ID, metaId);
+            params.put("dataStatus", "0"); // 失败状态
+            params.put("pageNum", String.valueOf(pageNum));
+            params.put("pageSize", String.valueOf(pageSize));
+
+            Paging paging = monitorService.queryData(params);
+            List<DataVo> dataList = (List<DataVo>) paging.getData();
+
+            if (CollectionUtils.isEmpty(dataList)) {
+                break; // 没有更多数据
+            }
+
+            // 逐个重试
+            for (DataVo dataVo : dataList) {
+                totalCount++;
+                String messageId = dataVo.getId();
+                if (StringUtil.isBlank(messageId)) {
+                    logger.warn("重试失败：messageId为空, metaId={}", metaId);
+                    failCount++;
+                    continue;
+                }
+
+                try {
+                    Map<String, String> syncParams = new HashMap<>();
+                    syncParams.put("metaId", metaId);
+                    syncParams.put("messageId", messageId);
+                    String result = sync(syncParams);
+                    
+                    // 如果返回的messageId与传入的相同，说明重试失败（sync方法失败时返回原messageId）
+                    if (messageId.equals(result)) {
+                        failCount++;
+                    } else {
+                        successCount++;
+                    }
+                } catch (Exception e) {
+                    logger.error("批量重试失败, metaId={}, messageId={}, error={}", metaId, messageId, e.getMessage(), e);
+                    failCount++;
+                }
+            }
+
+            // 如果当前页数据少于pageSize，说明已经是最后一页
+            if (dataList.size() < pageSize) {
+                break;
+            }
+
+            pageNum++;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", totalCount);
+        result.put("success", successCount);
+        result.put("fail", failCount);
+        return result;
     }
 
 }

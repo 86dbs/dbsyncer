@@ -1290,6 +1290,59 @@ function bindErrorQueueClearDataEvent() {
     });
 }
 
+// 错误队列全部重做
+function bindErrorQueueRetryAllEvent() {
+    var $retryAllBtn = $("#errorQueueRetryAllBtn");
+    $retryAllBtn.click(function () {
+        var metaId = $("#metaId").val();
+        if (!metaId) {
+            bootGrowl("metaId为空，无法执行全部重做", "danger");
+            return;
+        }
+
+        // 显示确认对话框，总数以后端处理为准
+        BootstrapDialog.show({
+            title: "确认全部重做",
+            type: BootstrapDialog.TYPE_WARNING,
+            message: "确认要重试所有失败数据吗？",
+            size: BootstrapDialog.SIZE_NORMAL,
+            buttons: [{
+                label: "确定",
+                cssClass: "btn-primary",
+                action: function (dialog) {
+                    var $btn = $(this);
+                    $btn.prop('disabled', true);
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i> 处理中...');
+
+                    // 调用后端接口
+                    doPoster('/monitor/retryAll', {"metaId": metaId}, function (result) {
+                        $btn.prop('disabled', false);
+                        $btn.html("确定");
+                        dialog.close();
+
+                        if (result.success == true) {
+                            var retryResult = result.resultValue;
+                            var message = "全部重做完成！总数: " + retryResult.total + 
+                                          ", 成功: " + retryResult.success + 
+                                          ", 失败: " + retryResult.fail;
+                            bootGrowl(message, "success");
+                            // 重新查询数据
+                            $("#errorQueueQueryBtn").click();
+                        } else {
+                            bootGrowl(result.resultValue || "全部重做失败", "danger");
+                        }
+                    });
+                }
+            }, {
+                label: "取消",
+                action: function (dialog) {
+                    dialog.close();
+                }
+            }]
+        });
+    });
+}
+
 // 初始化错误队列
 function initErrorQueue() {
     // 绑定查询数据事件
@@ -1298,6 +1351,8 @@ function initErrorQueue() {
     bindErrorQueueQueryDataMoreEvent();
     // 绑定清空数据事件
     bindErrorQueueClearDataEvent();
+    // 绑定全部重做事件
+    bindErrorQueueRetryAllEvent();
     // 绑定数据状态切换事件
     $("#errorQueueDataStatus").change(function () {
         $("#errorQueueQueryBtn").click();

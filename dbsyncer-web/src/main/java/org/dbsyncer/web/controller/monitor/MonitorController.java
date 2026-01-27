@@ -155,6 +155,18 @@ public class MonitorController extends BaseController {
         }
     }
 
+    @PostMapping("/retryAll")
+    @ResponseBody
+    public RestResult retryAll(String metaId) {
+        try {
+            Map<String, Object> result = dataSyncService.retryAll(metaId);
+            return RestResult.restSuccess(result);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/clearData")
     @ResponseBody
     public RestResult clearData(String id) {

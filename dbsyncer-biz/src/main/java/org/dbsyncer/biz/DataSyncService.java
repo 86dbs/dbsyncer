@@ -37,4 +37,13 @@ public interface DataSyncService {
      */
     String sync(Map<String, String> params) throws Exception;
 
+    /**
+     * 批量重试所有失败数据
+     *
+     * @param metaId 元数据ID
+     * @return 包含总数、成功数、失败数的Map
+     * @throws Exception
+     */
+    Map<String, Object> retryAll(String metaId) throws Exception;
+
 }
