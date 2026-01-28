@@ -8,6 +8,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.model.KafkaMessage;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
@@ -207,12 +208,12 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             String sourceDBName = kafkaConvertor.getSourceDBNameFromSource(context);
 
             // 格式化DDL消息
-            Map<String, Object> ddlMessage = kafkaConvertor.formatDDLMessage(
-                    ddlConfig, tableName, sourceConnectorType, sourceAddress, sourceDBName);
+            KafkaMessage message = KafkaMessage.createDDLMessage(
+                ddlConfig, tableName, sourceConnectorType, sourceAddress, sourceDBName);
 
             // 发送到Kafka（使用表名作为Key，确保同一表的DDL和DML消息有序）
             KafkaClient kafkaClient = connectorInstance.getConnection();
-            kafkaClient.send(topic, tableName, ddlMessage);
+            kafkaClient.send(topic, tableName, message.toMap());
             kafkaClient.producer.flush();
 
             logger.info("DDL 消息发送成功: topic={}, table={}, operation={}",
