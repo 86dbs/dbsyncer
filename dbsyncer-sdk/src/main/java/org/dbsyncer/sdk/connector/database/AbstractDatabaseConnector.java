@@ -764,7 +764,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
+    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config, org.dbsyncer.sdk.plugin.PluginContext context) {
         Result result = new Result<DDLConfig>();
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");

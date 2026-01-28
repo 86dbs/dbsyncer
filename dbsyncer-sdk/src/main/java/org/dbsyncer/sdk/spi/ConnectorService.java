@@ -190,11 +190,12 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     /**
      * 执行DDL命令
      *
-     * @param connectorInstance
-     * @param ddlConfig
+     * @param connectorInstance 连接器实例
+     * @param ddlConfig DDL配置
+     * @param context 插件上下文，包含源连接器信息（可为null，数据库连接器不需要）
      * @return
      */
-    default Result writerDDL(I connectorInstance, DDLConfig ddlConfig) {
+    default Result writerDDL(I connectorInstance, DDLConfig ddlConfig, org.dbsyncer.sdk.plugin.PluginContext context) {
         throw new SdkException("Unsupported method.");
     }
 

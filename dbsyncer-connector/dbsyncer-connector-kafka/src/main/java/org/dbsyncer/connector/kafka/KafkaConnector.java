@@ -6,9 +6,11 @@ package org.dbsyncer.connector.kafka;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
+import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -23,10 +25,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Kafka连接器实现
@@ -183,9 +182,59 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public boolean supportsDDLWrite() {
-        // Kafka 连接器不支持执行 DDL 操作（表创建、表结构修改等）
-        return false;
+    public Result writerDDL(KafkaConnectorInstance connectorInstance, DDLConfig ddlConfig, org.dbsyncer.sdk.plugin.PluginContext context) {
+        Result result = new Result();
+        try {
+            String ddlSql = ddlConfig.getSql();
+            assert ddlConfig != null && !StringUtil.isBlank(ddlSql);
+
+            logger.info("准备发送 DDL 消息到 Kafka: sql={}", ddlSql);
+
+            // 从context中获取表名（与DML处理方式一致）
+            assert context != null;
+            String tableName = context.getSourceTableName();
+
+            // 获取Topic名称（使用配置中的topic）
+            KafkaConfig config = connectorInstance.getConfig();
+            String topic = config.getTopic();
+            if (StringUtil.isBlank(topic)) {
+                throw new KafkaException("Topic配置不能为空");
+            }
+
+            // 从context中获取源连接器信息（类似DML处理方式）
+            String sourceConnectorType = context.getSourceConnectorInstance().getConfig().getConnectorType();
+            String sourceAddress = kafkaConvertor.getSourceAddressFromSource(context);
+            String sourceDBName = kafkaConvertor.getSourceDBNameFromSource(context);
+
+            // 格式化DDL消息
+            Map<String, Object> ddlMessage = kafkaConvertor.formatDDLMessage(
+                    ddlConfig, tableName, sourceConnectorType, sourceAddress, sourceDBName);
+
+            // 发送到Kafka（使用表名作为Key，确保同一表的DDL和DML消息有序）
+            KafkaClient kafkaClient = connectorInstance.getConnection();
+            kafkaClient.send(topic, tableName, ddlMessage);
+            kafkaClient.producer.flush();
+
+            logger.info("DDL 消息发送成功: topic={}, table={}, operation={}",
+                    topic, tableName, ddlConfig.getDdlOperationEnum());
+
+            // 返回成功结果
+            Map<String, String> successMap = new HashMap<>();
+            successMap.put("ddlSql", ddlSql);
+            result.addSuccessData(Collections.singletonList(successMap));
+        } catch (Exception e) {
+            logger.error("发送DDL消息到Kafka失败: sql={}, error={}",
+                    ddlConfig != null ? ddlConfig.getSql() : "null", e.getMessage(), e);
+            // 返回失败结果
+            Map<String, Object> failMap = new HashMap<>();
+            if (ddlConfig != null) {
+                failMap.put("ddlSql", ddlConfig.getSql());
+            }
+            result.addFailData(Collections.singletonList(failMap));
+            result.error = String.format("发送DDL消息失败: %s", e.getMessage());
+        }
+        return result;
     }
+
 
 }

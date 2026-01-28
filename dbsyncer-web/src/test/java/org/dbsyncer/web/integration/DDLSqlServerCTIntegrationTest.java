@@ -937,7 +937,7 @@ public class DDLSqlServerCTIntegrationTest extends BaseDDLIntegrationTest {
         // 6. 执行 CREATE TABLE DDL（如果DDL有重复IDENTITY，这里会失败）
         org.dbsyncer.sdk.config.DDLConfig ddlConfig = new org.dbsyncer.sdk.config.DDLConfig();
         ddlConfig.setSql(createTableDDL);
-        org.dbsyncer.common.model.Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+        org.dbsyncer.common.model.Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig, null);
 
         if (result != null && result.error != null && !result.error.trim().isEmpty()) {
             throw new RuntimeException("创建表失败: " + result.error + "\n生成的DDL: " + createTableDDL);

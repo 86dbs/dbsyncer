@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.dbsyncer.sdk.config.DDLConfig;
+import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -58,7 +60,7 @@ public class KafkaConvertor {
     /**
      * 从源连接器配置中提取源地址
      */
-    private String getSourceAddressFromSource(PluginContext context) {
+    public String getSourceAddressFromSource(PluginContext context) {
         try {
             ConnectorInstance sourceConnectorInstance = context.getSourceConnectorInstance();
             if (sourceConnectorInstance != null) {
@@ -99,7 +101,7 @@ public class KafkaConvertor {
     /**
      * 从源连接器配置中提取数据库名
      */
-    private String getSourceDBNameFromSource(PluginContext context) {
+    public String getSourceDBNameFromSource(PluginContext context) {
         try {
             ConnectorInstance sourceConnectorInstance = context.getSourceConnectorInstance();
             if (sourceConnectorInstance != null) {
@@ -179,6 +181,53 @@ public class KafkaConvertor {
             primaryKeys.put(field.getName(), data.get(field.getName()));
         }
         message.put("primaryKeys", primaryKeys);
+
+        return message;
+    }
+
+    /**
+     * 格式化DDL消息为标准格式
+     *
+     * @param ddlConfig      DDL配置信息
+     * @param tableName      表名
+     * @param sourceConnectorType 源连接器类型
+     * @param sourceAddress  源地址
+     * @param sourceDBName   源数据库名
+     * @return 格式化后的DDL消息
+     */
+    public Map<String, Object> formatDDLMessage(DDLConfig ddlConfig, String tableName,
+                                                String sourceConnectorType, String sourceAddress, String sourceDBName) {
+        Map<String, Object> message = new LinkedHashMap<>();
+        long timestamp = System.currentTimeMillis();
+
+        // 添加元数据信息
+        message.put("dataSourceType", sourceConnectorType);
+        message.put("sourceAddress", sourceAddress);
+        message.put("sourceDBName", sourceDBName);
+        message.put("tableName", tableName);
+        message.put("type", "DDL");
+        
+        // 设置subType为DDL操作类型
+        DDLOperationEnum operation = ddlConfig.getDdlOperationEnum();
+        if (operation != null) {
+            message.put("subType", operation.name());
+        } else {
+            message.put("subType", "UNKNOWN");
+        }
+        
+        // 添加DDL SQL
+        message.put("ddlSql", ddlConfig.getSql());
+        message.put("operation", operation != null ? operation.name() : "UNKNOWN");
+        
+        // 添加字段变更信息
+        message.put("addedFieldNames", ddlConfig.getAddedFieldNames() != null ? ddlConfig.getAddedFieldNames() : new ArrayList<>());
+        message.put("modifiedFieldNames", ddlConfig.getModifiedFieldNames() != null ? ddlConfig.getModifiedFieldNames() : new ArrayList<>());
+        message.put("droppedFieldNames", ddlConfig.getDroppedFieldNames() != null ? ddlConfig.getDroppedFieldNames() : new ArrayList<>());
+        message.put("changedFieldNames", ddlConfig.getChangedFieldNames() != null ? ddlConfig.getChangedFieldNames() : new LinkedHashMap<>());
+        
+        // 添加时间戳
+        message.put("eventTimestamp", timestamp);
+        message.put("collectTimestamp", timestamp);
 
         return message;
     }

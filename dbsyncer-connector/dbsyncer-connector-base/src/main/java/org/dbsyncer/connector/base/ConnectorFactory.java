@@ -270,9 +270,9 @@ public class ConnectorFactory implements DisposableBean {
         Result execute(ConnectorService connector, ConnectorInstance instance, PluginContext context);
     }
 
-    public Result writerDDL(ConnectorInstance connectorInstance, DDLConfig ddlConfig) {
+    public Result writerDDL(ConnectorInstance connectorInstance, DDLConfig ddlConfig, org.dbsyncer.sdk.plugin.PluginContext context) {
         Assert.notNull(connectorInstance, "ConnectorInstance can not null");
-        Result result = getConnectorService(connectorInstance.getConfig()).writerDDL(connectorInstance, ddlConfig);
+        Result result = getConnectorService(connectorInstance.getConfig()).writerDDL(connectorInstance, ddlConfig, context);
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
     }

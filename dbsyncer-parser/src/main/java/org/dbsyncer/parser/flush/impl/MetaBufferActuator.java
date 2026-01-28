@@ -437,10 +437,20 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
                 return;
             }
 
-            // 4. 生成目标表执行SQL(支持异构数据库)
+            // 4. 创建PluginContext（类似DML处理方式，用于传递源连接器信息）
+            IncrementPluginContext context = new IncrementPluginContext();
+            ConnectorConfig sConnConfig = getConnectorConfig(mapping.getSourceConnectorId());
+            context.setSourceConnectorInstance(connectorFactory.connect(sConnConfig));
+            context.setTargetConnectorInstance(connectorFactory.connect(tConnConfig));
+            context.setSourceTableName(tableGroup.getSourceTable().getName());
+            context.setTargetTableName(tableGroup.getTargetTable().getName());
+            context.setEvent(response.getEvent());
+            context.setTraceId(response.getTraceId());
+
+            // 5. 生成目标表执行SQL(支持异构数据库)
             logger.info("准备执行目标 DDL: table={}, sql={}", tableGroup.getTargetTable().getName(), targetDDLConfig.getSql());
             ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
-            Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
+            Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig, context);
             if (StringUtil.isBlank(result.error)) {
                 logger.info("目标 DDL 执行成功: table={}", tableGroup.getTargetTable().getName());
             } else {
@@ -462,6 +472,12 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             MetaInfo targetMetaInfo = connectorFactory.getMetaInfo(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())), tableGroup.getTargetTable().getName());
             tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
             tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+
+            // 7.1 如果目标表字段列表为空（如Kafka连接器），使用源表字段
+            if (CollectionUtils.isEmpty(tableGroup.getTargetTable().getColumn())) {
+                tableGroup.getTargetTable().setColumn(new ArrayList<>(tableGroup.getSourceTable().getColumn()));
+                logger.debug("目标表字段列表为空，使用源表字段列表: table={}", tableGroup.getTargetTable().getName());
+            }
 
             // 8.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);

@@ -224,7 +224,7 @@ public class TableGroupController extends BaseController {
                 // 执行 CREATE TABLE DDL
                 DDLConfig ddlConfig = new DDLConfig();
                 ddlConfig.setSql(createTableDDL);
-                Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig);
+                Result result = connectorFactory.writerDDL(targetConnectorInstance, ddlConfig, null);
 
                 if (StringUtil.isNotBlank(result.error)) {
                     logger.error("创建表失败: {}", result.error);
