@@ -24,6 +24,8 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,5 +118,12 @@ public class MySQLConnector extends AbstractDatabaseConnector {
         // 调用 SqlTemplate 的 buildCreateTableSql 方法进行 SQL 模板组装
         // SqlTemplate 负责 SQL 语法和模板组装，Connector 只负责参数加工
         return sqlTemplate.buildCreateTableSql(null, targetTableName, fields, primaryKeys);
+    }
+
+    @Override
+    protected CatalogAndSchema resolveEffectiveCatalogAndSchema(Connection conn, String catalog, String schema) throws SQLException {
+        // MySQL: schema=null, catalog=database name
+        String effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+        return new CatalogAndSchema(effectiveCatalog, null);
     }
 }

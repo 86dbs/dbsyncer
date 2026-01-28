@@ -574,6 +574,38 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
+     * 解析有效的 catalog 和 schema
+     * 子类必须实现此方法以提供特定数据库的实现
+     *
+     * @param conn 数据库连接
+     * @param catalog 传入的 catalog（可能为 null）
+     * @param schema 传入的 schema（可能为 null）
+     * @return CatalogAndSchema 包含有效的 catalog 和 schema
+     */
+    protected abstract CatalogAndSchema resolveEffectiveCatalogAndSchema(Connection conn, String catalog, String schema) throws SQLException;
+
+    /**
+     * Catalog 和 Schema 的封装类
+     */
+    protected static class CatalogAndSchema {
+        private final String catalog;
+        private final String schema;
+
+        public CatalogAndSchema(String catalog, String schema) {
+            this.catalog = catalog;
+            this.schema = schema;
+        }
+
+        public String getCatalog() {
+            return catalog;
+        }
+
+        public String getSchema() {
+            return schema;
+        }
+    }
+
+    /**
      * 获取表列表
      *
      * @param connectorInstance
@@ -587,37 +619,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             List<Table> tables = new ArrayList<>();
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
-            DatabaseMetaData metaData = conn.getMetaData();
-            String dbProductName = metaData.getDatabaseProductName().toLowerCase();
-            // 兼容处理 schema 和 catalog
-            String effectiveCatalog = null;
-            String effectiveSchema = null;
-            if (dbProductName.contains("mysql") || dbProductName.contains("mariadb")) {
-                // MySQL: schema=null, catalog=database name
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-            } else if (dbProductName.contains("oracle")) {
-                // Oracle: schema=用户名（大写），catalog=null
-                effectiveSchema = (schema != null) ? schema : conn.getSchema();
-                if (effectiveSchema != null) {
-                    effectiveSchema = effectiveSchema.toUpperCase();
-                }
-            } else if (dbProductName.contains("postgresql")) {
-                // PostgreSQL: schema=public 等，catalog=数据库名
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : "public";
-            } else if (dbProductName.contains("sql server")) {
-                // SQL Server: catalog=数据库名，schema=如 dbo
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : "dbo";
-            } else {
-                // 其他数据库按默认处理
-                effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
-                effectiveSchema = (schema != null) ? schema : conn.getSchema();
-            }
+            
+            // 使用子类可重写的方法解析有效的 catalog 和 schema
+            CatalogAndSchema catalogAndSchema = resolveEffectiveCatalogAndSchema(conn, catalog, schema);
+            String effectiveCatalog = catalogAndSchema.getCatalog();
+            String effectiveSchema = catalogAndSchema.getSchema();
 
             String[] types = {TableTypeEnum.TABLE.getCode(), TableTypeEnum.VIEW.getCode(), TableTypeEnum.MATERIALIZED_VIEW.getCode()};
             final ResultSet rs = conn.getMetaData().getTables(effectiveCatalog, effectiveSchema, tableNamePattern, types);
-            logger.info("Using dbProductName：{}, catalog: {}, schema: {}", dbProductName, effectiveCatalog, effectiveSchema);
             while (rs.next()) {
                 final String tableName = rs.getString("TABLE_NAME");
                 final String tableType = rs.getString("TABLE_TYPE");

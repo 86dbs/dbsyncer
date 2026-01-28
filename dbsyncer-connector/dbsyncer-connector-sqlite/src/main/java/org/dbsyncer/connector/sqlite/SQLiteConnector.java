@@ -19,6 +19,8 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.connector.sqlite.schema.SQLiteSchemaResolver;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -103,5 +105,11 @@ public class SQLiteConnector extends AbstractDatabaseConnector {
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    @Override
+    protected CatalogAndSchema resolveEffectiveCatalogAndSchema(Connection conn, String catalog, String schema) throws SQLException {
+        // SQLite: 不支持 catalog 和 schema，都返回 null
+        return new CatalogAndSchema(null, null);
     }
 }

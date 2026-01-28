@@ -412,8 +412,6 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
      */
     public void parseDDl(WriterResponse response, Mapping mapping, TableGroup tableGroup) {
         try {
-            logger.info("开始处理 DDL: mapping={}, table={}, sql={}", mapping.getName(), tableGroup.getTargetTable().getName(), response.getSql());
-
             ListenerConfig listenerConfig = mapping.getListener();
 
             // 注意：全局 DDL 开关检查已在 Listener 和 pull() 方法中完成，此处无需重复检查
@@ -424,7 +422,6 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
             // 传递源和目标连接器类型信息给DDL解析器
             DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
-            logger.info("DDL 解析完成: 操作类型={}, 目标SQL={}", targetDDLConfig.getDdlOperationEnum(), targetDDLConfig.getSql());
 
             // 3. 根据操作类型检查细粒度配置
             DDLOperationEnum operation = targetDDLConfig.getDdlOperationEnum();
@@ -448,13 +445,12 @@ public class MetaBufferActuator extends AbstractBufferActuator<WriterRequest, Wr
             context.setTraceId(response.getTraceId());
 
             // 5. 生成目标表执行SQL(支持异构数据库)
-            logger.info("准备执行目标 DDL: table={}, sql={}", tableGroup.getTargetTable().getName(), targetDDLConfig.getSql());
             ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
             Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig, context);
             if (StringUtil.isBlank(result.error)) {
-                logger.info("目标 DDL 执行成功: table={}", tableGroup.getTargetTable().getName());
+                logger.info("目标 DDL 执行成功: table={}, sql={}", tableGroup.getTargetTable().getName(), targetDDLConfig.getSql());
             } else {
-                logger.error("目标 DDL 执行失败: table={}, error={}", tableGroup.getTargetTable().getName(), result.error);
+                logger.error("目标 DDL 执行失败: table={}, sql={}, error={}", tableGroup.getTargetTable().getName(), targetDDLConfig.getSql(), result.error);
             }
             // 5.持久化增量事件数据(含错误信息)
             result.setTableGroupId(tableGroup.getId());

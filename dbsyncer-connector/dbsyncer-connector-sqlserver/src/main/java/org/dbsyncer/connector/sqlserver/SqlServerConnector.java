@@ -32,6 +32,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -312,5 +313,13 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
         }
         
         return ddl.toString();
+    }
+
+    @Override
+    protected CatalogAndSchema resolveEffectiveCatalogAndSchema(Connection conn, String catalog, String schema) throws SQLException {
+        // SQL Server: catalog=数据库名，schema=如 dbo
+        String effectiveCatalog = (catalog != null) ? catalog : conn.getCatalog();
+        String effectiveSchema = (schema != null) ? schema : "dbo";
+        return new CatalogAndSchema(effectiveCatalog, effectiveSchema);
     }
 }

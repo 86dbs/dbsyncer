@@ -189,8 +189,6 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             String ddlSql = ddlConfig.getSql();
             assert ddlConfig != null && !StringUtil.isBlank(ddlSql);
 
-            logger.info("准备发送 DDL 消息到 Kafka: sql={}", ddlSql);
-
             // 从context中获取表名（与DML处理方式一致）
             assert context != null;
             String tableName = context.getSourceTableName();
@@ -216,8 +214,8 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
             kafkaClient.send(topic, tableName, message.toMap());
             kafkaClient.producer.flush();
 
-            logger.info("DDL 消息发送成功: topic={}, table={}, operation={}",
-                    topic, tableName, ddlConfig.getDdlOperationEnum());
+            logger.info("DDL 消息发送成功: topic={}, table={}, sql={}",
+                    topic, tableName, ddlConfig.getSql());
 
             // 返回成功结果
             Map<String, String> successMap = new HashMap<>();
