@@ -235,5 +235,11 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         return result;
     }
 
+    @Override
+    public boolean supportsCreateTable() {
+        // Kafka 不支持创建表操作
+        return false;
+    }
+
 
 }

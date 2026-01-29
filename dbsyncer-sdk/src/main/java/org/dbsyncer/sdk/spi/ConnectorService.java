@@ -295,4 +295,16 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
         // 对于不支持 DDL 操作的连接器（如 Kafka），需要重写此方法返回 false
         return true;
     }
+
+    /**
+     * 判断连接器是否支持创建表操作
+     * 用于在表缺失检测时判断是否需要检查目标表是否存在
+     * 
+     * @return true 连接器支持创建表操作，false 不支持
+     */
+    default boolean supportsCreateTable() {
+        // 默认返回 true，表示支持创建表操作
+        // 对于不支持创建表的连接器（如 Kafka），需要重写此方法返回 false
+        return true;
+    }
 }

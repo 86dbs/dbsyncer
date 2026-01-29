@@ -146,7 +146,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     /**
      * 检查所有已存在的表映射关系的目标表是否存在
      * 如果目标表不存在，抛出 TargetTableNotExistsException（包含所有缺失的表）
-     * 注意：如果目标连接器不支持 DDL（如 Kafka），则跳过检查
+     * 注意：如果目标连接器不支持创建表（如 Kafka），则跳过检查
      *
      * @param mapping Mapping配置
      * @throws TargetTableNotExistsException 如果目标表不存在
@@ -157,17 +157,18 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             return;
         }
 
-        // 检查目标连接器是否支持 DDL
+        // 检查目标连接器是否支持创建表
         Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
         org.dbsyncer.sdk.spi.ConnectorService<?, ?> targetConnectorService =
                 connectorFactory.getConnectorService(targetConnector.getConfig().getConnectorType());
 
-        // 如果目标连接器不支持执行 DDL 操作（如 Kafka），则跳过表存在性检查
-        // 注意：这里检查的是连接器能力（supportsDDLWrite），而不是任务配置（enableDDL）
-        // 因为表存在性检查的目的是判断是否可以创建表，这是连接器层面的能力
-        // supportsDDLWrite 表示支持"写入/执行"DDL 操作，enableDDL 表示是否"监听"DDL 事件
-        if (targetConnectorService != null && !targetConnectorService.supportsDDLWrite()) {
-            logger.debug("目标连接器 {} 不支持执行 DDL 操作，跳过表存在性检查", targetConnector.getConfig().getConnectorType());
+        // 如果目标连接器不支持创建表操作（如 Kafka），则跳过表存在性检查
+        // 注意：这里使用 supportsCreateTable() 而不是 supportsDDLWrite()
+        // - supportsCreateTable(): 判断是否支持"创建表"操作（如生成 CREATE TABLE DDL）
+        // - supportsDDLWrite(): 判断是否支持"写入/执行"DDL 操作（如传递 DDL 消息）
+        // 例如：Kafka 支持 writerDDL（传递 DDL 消息），但不支持 createTable（创建表）
+        if (targetConnectorService != null && !targetConnectorService.supportsCreateTable()) {
+            logger.debug("目标连接器 {} 不支持创建表操作，跳过表存在性检查", targetConnector.getConfig().getConnectorType());
             return;
         }
 
