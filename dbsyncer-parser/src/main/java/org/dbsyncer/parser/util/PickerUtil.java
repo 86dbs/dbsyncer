@@ -8,13 +8,12 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
-import org.dbsyncer.sdk.model.Table;
 import org.springframework.beans.BeanUtils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class PickerUtil {
@@ -91,19 +90,17 @@ public abstract class PickerUtil {
         List<Convert> convert = group.getConvert();
         if (!CollectionUtils.isEmpty(convert)) {
             Map<String, Field> targetFields = convert2Map(group.getTargetTable().getColumn());
+            Set<String> targetFieldNames = fieldMapping.stream()
+                    .map(FieldMapping::getTarget)
+                    .filter(f -> f != null)
+                    .map(Field::getName)
+                    .filter(StringUtil::isNotBlank)
+                    .collect(Collectors.toSet());
             convert.forEach(c -> {
                 String fieldName = c.getName();
                 Field targetField = targetFields.get(fieldName);
-                if (targetField != null) {
-                    // 检查是否已存在映射关系
-                    boolean exists = fieldMapping.stream()
-                        .anyMatch(fm -> fm.getTarget() != null 
-                            && StringUtil.equals(fm.getTarget().getName(), fieldName));
-                    if (!exists) {
-                        // 添加映射关系（source 为 null，表示无源字段）
-                        // 注意：这只是运行时添加，不会持久化到配置中，不会影响编辑界面
-                        fieldMapping.add(new FieldMapping(null, targetField));
-                    }
+                if (targetField != null && !targetFieldNames.contains(fieldName)) {
+                    fieldMapping.add(new FieldMapping(null, targetField));
                 }
             });
         }
