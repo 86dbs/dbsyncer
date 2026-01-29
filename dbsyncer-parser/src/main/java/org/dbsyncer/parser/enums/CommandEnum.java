@@ -55,12 +55,7 @@ public enum CommandEnum {
     /**
      * 预加载Meta
      */
-    PRELOAD_META(ConfigConstant.META, Preload::parseMeta, true),
-
-    /**
-     * 预加载ProjectGroup
-     */
-    PRELOAD_PROJECT_GROUP(ConfigConstant.PROJECT_GROUP, Preload::parseProjectGroup, true);
+    PRELOAD_META(ConfigConstant.META, Preload::parseMeta, true);
 
     /**
      * 命令类型

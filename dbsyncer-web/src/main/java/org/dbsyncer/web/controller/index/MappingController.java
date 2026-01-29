@@ -1,9 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ */
 package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +22,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -35,6 +43,17 @@ public class MappingController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
+    /**
+     * 同步任务列表页面
+     */
+    @GetMapping("/list")
+    public String list(ModelMap model) {
+        return "mapping/list";
+    }
+
+    /**
+     * 添加同步任务页面
+     */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
@@ -44,9 +63,30 @@ public class MappingController extends BaseController {
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
         model.put("mapping", mappingService.getMapping(id, exclude));
-        model.put("tableGroups", tableGroupService.getTableGroupAll(id));
         initConfig(model);
         return "mapping/" + page;
+    }
+
+    @GetMapping("/pageCustomTable")
+    public String page(ModelMap model, @RequestParam(value = "id") String id, @RequestParam(value = "type") String type) {
+        model.put("mapping", mappingService.getMappingCustomTable(id, type));
+        model.put("type", type);
+        List<DataTypeEnum> dataTypeEnums = Arrays.asList(DataTypeEnum.values());
+        Collections.sort(dataTypeEnums, Comparator.comparing(DataTypeEnum::name));
+        model.put("dataType", dataTypeEnums);
+        return "mapping/customTable";
+    }
+
+    @PostMapping("/search")
+    @ResponseBody
+    public RestResult search(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.search(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @PostMapping("/copy")
@@ -122,6 +162,42 @@ public class MappingController extends BaseController {
     public RestResult refreshTables(@RequestParam(value = "id") String id) {
         try {
             return RestResult.restSuccess(mappingService.refreshMappingTables(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/getCustomTable")
+    @ResponseBody
+    public RestResult getCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.getCustomTable(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/saveCustomTable")
+    @ResponseBody
+    public RestResult saveCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.saveCustomTable(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/removeCustomTable")
+    @ResponseBody
+    public RestResult removeCustomTable(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.removeCustomTable(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

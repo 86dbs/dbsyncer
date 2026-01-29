@@ -3,192 +3,71 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">URL<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="bootstrapServers" type="text" maxlength="1024" dbsyncer-valid="require" th:value="${connector?.config?.bootstrapServers}?:'127.0.0.1:9092'"/>
-        </div>
-        <label class="col-sm-2 control-label">Topic<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="topic" type="text" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.topic}"/>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label class="col-sm-2 control-label">字段<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持11种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-10">
-            <textarea id="fields" name="fields" class="form-control dbsyncer_textarea_resize_none" maxlength="4096" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.fields}"></textarea>
-        </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-12 text-right">
-            <a href="javascript:format();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化"></span>美化</a>
-        </div>
-    </div>
-
-    <!-- 消费者配置 -->
-    <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-10">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title">消费者配置</h3>
-                </div>
-                <div class="panel-body">
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">group.id<strong class="text-primary">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="groupId" type="text" maxlength="64" dbsyncer-valid="require" th:value="${connector?.config?.groupId}"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">反序列化<strong class="text-primary">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="deserializer" type="text" maxlength="2048" dbsyncer-valid="require" th:value="${connector?.config?.deserializer}?:'org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer'"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">session.timeout.ms<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="在使用Kafka的组管理时，用于检测消费者故障超时"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="sessionTimeoutMs">
-                                <option value="10000" th:selected="${connector?.config?.sessionTimeoutMs eq 10000}">10秒</option>
-                                <option value="15000" th:selected="${connector?.config?.sessionTimeoutMs eq 15000}">15秒</option>
-                                <option value="20000" th:selected="${connector?.config?.sessionTimeoutMs eq 20000}">20秒</option>
-                            </select>
-                        </div>
-                        <label class="col-sm-3 control-label">max.partition.fetch.bytes<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每次接收Kafka服务器订阅消息的最大大小，与max.request.size参数保持一致"></i></label>
-                        <div class="col-sm-3">
-                            <select id="maxPartitionFetchBytesSelect" class="form-control select-control" name="maxPartitionFetchBytes">
-                                <option value="1048576" th:selected="${connector?.config?.maxPartitionFetchBytes eq 1048576}">1MB</option>
-                                <option value="2097152" th:selected="${connector?.config?.maxPartitionFetchBytes eq 2097152}">2MB</option>
-                                <option value="3145728" th:selected="${connector?.config?.maxPartitionFetchBytes eq 3145728}">3MB</option>
-                            </select>
-                        </div>
-                    </div>
-
-                </div>
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">
+                URL<i class="fa fa-question-circle" title="多个使用英文逗号，例如：192.168.1.100:9092,192.168.1.200:9092"></i>
+                <strong class="text-primary">*</strong>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="url" type="text" maxlength="1024" required placeholder="127.0.0.1:9092" th:value="${connector?.config?.url}?:'127.0.0.1:9092'"/>
             </div>
         </div>
     </div>
 
-    <!-- 生产者配置 -->
-    <div class="row">
-        <div class="col-sm-2"></div>
-        <div class="col-sm-10">
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title">生产者配置</h3>
-                </div>
-                <div class="panel-body">
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">序列化<strong class="text-primary">*</strong></label>
-                        <div class="col-sm-9">
-                            <input class="form-control" name="serializer" type="text" maxlength="2048" dbsyncer-valid="require" th:value="${connector?.config?.serializer}?:'org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer'"/>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">buffer.memory<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="Kafka的客户端发送数据到服务器，不是来一条就发一条，而是经过缓冲，通过KafkaProducer发送出去的消息都是先进入到客户端本地的内存缓冲里，然后把很多消息收集成一个一个的Batch，再发送到Broker。buffer.memory用来约束KafkaProducer能够使用的内存缓冲的大小，默认值32MB。
-如果buffer.memory设置的太小，可能导致的问题是：消息快速的写入内存缓冲里，但Sender线程来不及把Request发送到Kafka服务器，会造成内存缓冲很快就被写满。而一旦被写满，就会阻塞用户线程，不让继续往Kafka写消息了。
-所以“buffer.memory”参数需要结合实际业务情况压测，需要测算在生产环境中用户线程会以每秒多少消息的频率来写入内存缓冲。经过压测，调试出来一个合理值。"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="bufferMemory">
-                                <option value="33554432" th:selected="${connector?.config?.bufferMemory eq 33554432}">32MB</option>
-                                <option value="67108864" th:selected="${connector?.config?.bufferMemory eq 67108864}">64MB</option>
-                                <option value="134217728" th:selected="${connector?.config?.bufferMemory eq 134217728}">128MB</option>
-                            </select>
-                        </div>
-                        <label class="col-sm-3 control-label">batch.size<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每个Batch要存放batch.size大小的数据后，才可以发送出去.
-比如说batch.size默认值是16KB，那么里面凑够16KB的数据才会发送。理论上来说，提升batch.size的大小，可以允许更多的数据缓冲在里面，那么一次Request发送出去的数据量就更多了，这样吞吐量可能会有所提升。
-但是batch.size也不能过大，要是数据老是缓冲在Batch里迟迟不发送出去，那么发送消息的延迟就会很高。一般可以尝试把这个参数调节大些，利用生产环境发消息负载测试一下。"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="batchSize">
-                                <option value="32768" th:selected="${connector?.config?.batchSize eq 32768}">32768</option>
-                                <option value="65536" th:selected="${connector?.config?.batchSize eq 65536}">65536</option>
-                                <option value="131072" th:selected="${connector?.config?.batchSize eq 131072}">131072</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">linger.ms<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="一个Batch被创建之后，最多过多久，不管这个Batch有没有写满，都必须发送出去了。比如说batch.size是16KB，但是现在某个低峰时间段，发送消息量很小。
-这会导致可能Batch被创建之后，有消息进来，但是迟迟无法凑够16KB，难道此时就一直等着吗？
-当然不是，假设设置“linger.ms”是50ms，那么只要这个Batch从创建开始到现在已经过了50ms了，哪怕他还没满16KB，也会被发送出去。
-所以“linger.ms”决定了消息一旦写入一个Batch，最多等待这么多时间，他一定会跟着Batch一起发送出去。
-linger.ms配合batch.size一起来设置，可避免一个Batch迟迟凑不满，导致消息一直积压在内存里发送不出去的情况。"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="lingerMs">
-                                <option value="10" th:selected="${connector?.config?.lingerMs eq 10}">10毫秒</option>
-                                <option value="20" th:selected="${connector?.config?.lingerMs eq 15}">15毫秒</option>
-                                <option value="30" th:selected="${connector?.config?.lingerMs eq 20}">20毫秒</option>
-                            </select>
-                        </div>
-                        <label class="col-sm-3 control-label">acks<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="0:客户端发送出去为成功；1:写入磁盘为成功；all：Leader保持同步Follower结束为成功"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="acks">
-                                <option value="1" th:selected="${connector?.config?.acks eq '1'}">1</option>
-                                <option value="0" th:selected="${connector?.config?.acks eq '0'}">0</option>
-                                <option value="all" th:selected="${connector?.config?.acks eq 'all'}">all</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-3 control-label">retries<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="发送失败重试次数"></i></label>
-                        <div class="col-sm-3">
-                            <select class="form-control select-control" name="retries">
-                                <option value="1" th:selected="${connector?.config?.retries eq 1}">1</option>
-                                <option value="2" th:selected="${connector?.config?.retries eq 2}">2</option>
-                                <option value="3" th:selected="${connector?.config?.retries eq 3}">3</option>
-                            </select>
-                        </div>
-                        <label class="col-sm-3 control-label">max.request.size<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="每次发送给Kafka服务器请求消息的最大大小，与max.partition.fetch.bytes保持一致"></i></label>
-                        <div class="col-sm-3">
-                            <select id="maxRequestSizeSelect" class="form-control select-control" name="maxRequestSize">
-                                <option value="1048576" th:selected="${connector?.config?.maxRequestSize eq 1048576}">1MB</option>
-                                <option value="2097152" th:selected="${connector?.config?.maxRequestSize eq 2097152}">2MB</option>
-                                <option value="3145728" th:selected="${connector?.config?.maxRequestSize eq 3145728}">3MB</option>
-                            </select>
-                        </div>
-                    </div>
-
-                </div>
+    <div class="grid mt-4">
+        <div class="form-item">
+            <label class="form-label">连接参数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="4" required>
+[[${connector?.config?.propertiesText ?:
+'connections.max.idle.ms=60000
+request.timeout.ms=30000
+retry.backoff.ms=1000
+metadata.max.age.ms=300000'}]]</textarea>
             </div>
         </div>
     </div>
 
-    <script type="text/javascript">
-        function format(){
-            const $text = $("#fields");
-            if("" == $text.text()){
-                const data = [
-                    {"name":"id","typeName":"String","type":12,"pk":true},
-                    {"name":"age","typeName":"Integer","type":4},
-                    {"name":"count","typeName":"Long","type":-5},
-                    {"name":"type","typeName":"Short","type":5},
-                    {"name":"money","typeName":"Float","type":6},
-                    {"name":"score","typeName":"Double","type":8},
-                    {"name":"status","typeName":"Boolean","type":-7},
-                    // {"name":"photo","typeName":"byte[]","type":-2},
-                    {"name":"create_date","typeName":"Date","type":91},
-                    {"name":"time","typeName":"Time","type":92},
-                    {"name":"update_time","typeName":"Timestamp","type":93}
-                ];
-                $text.val(JSON.stringify(data, null, 4));
-                return;
-            }
-            $text.val(JSON.stringify(JSON.parse($text.text()), null, 4));
-        }
+    <div class="grid mt-4">
+        <div class="form-item">
+            <label class="form-label">消费者参数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <textarea name="consumerProperties" class="form-control" maxlength="1024" rows="8" required>
+[[${connector?.config?.extInfo?.consumerProperties ?:
+'key.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer
+auto.offset.reset=latest
+enable.auto.commit=false
+auto.commit.interval.ms=5000
+max.poll.records=500
+max.poll.interval.ms=300000
+max.partition.fetch.bytes=1048576
+fetch.min.bytes=1
+fetch.max.wait.ms=500
+heartbeat.interval.ms=3000
+session.timeout.ms=10000'}]]</textarea>
+            </div>
+        </div>
+    </div>
 
-        $(function () {
-            format();
-
-            // 初始化select插件
-            initSelectIndex($(".select-control"), 1);
-
-            // 绑定下拉联动切换事件
-            $("#maxPartitionFetchBytesSelect").on('changed.bs.select',function(e){
-                $("#maxRequestSizeSelect").selectpicker('val', $(this).selectpicker('val'));
-            });
-        })
-    </script>
+    <div class="grid mt-4">
+        <div class="form-item">
+            <label class="form-label">生产者参数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <textarea name="producerProperties" class="form-control" maxlength="1024" rows="8" required>
+[[${connector?.config?.extInfo?.producerProperties ?:
+'key.serializer=org.apache.kafka.common.serialization.StringSerializer
+value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer
+acks=1
+batch.size=32768
+buffer.memory=33554432
+enable.idempotence=false
+linger.ms=10
+retries=1
+max.block.ms=60000
+max.request.size=1048576'}]]</textarea>
+            </div>
+        </div>
+    </div>
 </div>
-
-</html>

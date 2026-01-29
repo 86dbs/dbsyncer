@@ -6,7 +6,7 @@
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-    <version>2.0.7</version>
+    <version>2.0.8</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
     <url>https://gitee.com/ghi/dbsyncer</url>
@@ -36,6 +36,7 @@
         <spring-boot.version>2.5.14</spring-boot.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.7</commons-io.version>
+        <commons-codec.version>1.15</commons-codec.version>
         <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc8.version>21.6.0.0</ojdbc8.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
@@ -46,7 +47,7 @@
         <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
         <postgresql.version>42.3.3</postgresql.version>
         <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.11.0.0</kafka.version>
         <fastjson2.version>2.0.22</fastjson2.version>
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
@@ -111,6 +112,11 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
             </dependency>
 
             <!-- fastjson2 -->

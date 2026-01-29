@@ -42,7 +42,7 @@ public class BinaryLogRemoteClientTest {
                 return;
             }
 
-            if(EventType.isUpdate(header.getEventType())){
+            if (EventType.isUpdate(header.getEventType())) {
                 UpdateRowsEventData data = event.getData();
                 data.getRows().forEach(m -> {
                     List<Object> before = Stream.of(m.getKey()).collect(Collectors.toList());
@@ -51,19 +51,19 @@ public class BinaryLogRemoteClientTest {
                 });
                 return;
             }
-            if(EventType.isWrite(header.getEventType())){
+            if (EventType.isWrite(header.getEventType())) {
                 WriteRowsEventData data = event.getData();
                 data.getRows().forEach(m -> {
                     List<Object> after = Stream.of(m).collect(Collectors.toList());
-                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_INSERT, data.getTableId(), Collections.EMPTY_LIST, after);
+                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_INSERT, data.getTableId(), Collections.emptyList(), after);
                 });
                 return;
             }
-            if(EventType.isDelete(header.getEventType())){
+            if (EventType.isDelete(header.getEventType())) {
                 DeleteRowsEventData data = event.getData();
                 data.getRows().forEach(m -> {
                     List<Object> before = Stream.of(m).collect(Collectors.toList());
-                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_DELETE, data.getTableId(), before, Collections.EMPTY_LIST);
+                    logger.info("event:{}, tableName:{}, before:{}, after:{}", ConnectorConstant.OPERTION_DELETE, data.getTableId(), before, Collections.emptyList());
                 });
                 return;
             }

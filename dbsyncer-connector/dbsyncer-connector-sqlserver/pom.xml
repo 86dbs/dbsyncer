@@ -5,7 +5,7 @@
     <parent>
         <artifactId>dbsyncer-connector</artifactId>
         <groupId>org.ghi</groupId>
-        <version>2.0.7</version>
+        <version>2.0.8</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -24,6 +24,11 @@
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
         </dependency>
 
         <dependency>

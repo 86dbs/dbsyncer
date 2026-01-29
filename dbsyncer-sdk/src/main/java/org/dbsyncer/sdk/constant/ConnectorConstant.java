@@ -18,6 +18,11 @@ public class ConnectorConstant {
     public static final String OPERTION_UPDATE = "UPDATE";
 
     /**
+     * 覆盖更新
+     */
+    public static final String OPERTION_UPSERT = "UPSERT";
+
+    /**
      * 删除
      */
     public static final String OPERTION_DELETE = "DELETE";
@@ -48,8 +53,11 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
 
     /**
-     * 查询数据行是否存在
+     * 主表，扩展表映射关系
+     * <p>场景1:支持自定义SQL作为新表，需要根据主表监听增量数据
+     * <p>场景2:支持自定义半结构化字段作为新表，需要根据Topic（Kafka），FileName（File）监听增量数据
      */
-    public static final String OPERTION_QUERY_EXIST = "QUERY_COUNT_EXIST";
+    public static final String CUSTOM_TABLE_MAIN = "CT_MAIN";
+    public static final String CUSTOM_TABLE_SQL = "CT_SQL";
 
 }

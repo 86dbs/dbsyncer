@@ -80,9 +80,8 @@ public class LicenseController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("userInfo", getUserInfo());
         model.put("productInfo", licenseService.getProductInfo());
-        return "license/license";
+        return "license/list";
     }
 
     @PostMapping(value = "/upload")

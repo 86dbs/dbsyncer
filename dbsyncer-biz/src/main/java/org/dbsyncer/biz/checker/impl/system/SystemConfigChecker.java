@@ -3,14 +3,14 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
-import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.common.util.BeanUtil;
-import org.dbsyncer.common.util.NetworkUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,22 +52,16 @@ public class SystemConfigChecker extends AbstractChecker {
 
     @Override
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
-        logger.info("params:{}", params);
+        printParams(params);
         Assert.notEmpty(params, "Config check params is null.");
-        params.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")) ? "true" : "false");
-        params.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")) ? "true" : "false");
-        params.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")) ? "true" : "false");
-        params.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")) ? "true" : "false");
-        params.put("enableSchemaResolver", StringUtil.isNotBlank(params.get("enableSchemaResolver")) ? "true" : "false");
-        params.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")) ? "true" : "false");
-        String enableCDN = "false";
-        if (StringUtil.isNotBlank(params.get("enableCDN"))) {
-            if (!NetworkUtil.isInternetAvailable()) {
-                throw new BizException("无法访问互联网，不支持开启[CDN静态资源]");
-            }
-            enableCDN = "true";
-        }
-        params.put("enableCDN", enableCDN);
+        Map<String, Object> newParams = new HashMap<>();
+        newParams.putAll(params);
+        newParams.put("enableStorageWriteSuccess", StringUtil.isNotBlank(params.get("enableStorageWriteSuccess")));
+        newParams.put("enableStorageWriteFail", StringUtil.isNotBlank(params.get("enableStorageWriteFail")));
+        newParams.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")));
+        newParams.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")));
+        newParams.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")));
+        newParams.put("enableRsaConfig", StringUtil.isNotBlank(params.get("enableRsaConfig")));
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {
             Assert.isTrue(watermark.length() <= 64, "允许水印内容最多输入64个字.");
@@ -75,12 +70,33 @@ public class SystemConfigChecker extends AbstractChecker {
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
-        BeanUtil.mapToBean(params, systemConfig);
+        BeanUtil.mapToBean(newParams, systemConfig);
+        // 修改RSA配置
+        saveRSAConfig(systemConfig, params);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
 
         // 修改基本配置
         this.modifyConfigModel(systemConfig, params);
         return systemConfig;
+    }
+
+    private void saveRSAConfig(SystemConfig systemConfig, Map<String, String> params) {
+        if (!systemConfig.isEnableRsaConfig()) {
+            return;
+        }
+        String publicKey = params.get("rsaPublicKey");
+        String privateKey = params.get("rsaPrivateKey");
+        String rsaKeyLength = params.get("rsaKeyLength");
+        Assert.hasText(publicKey, "RSA公钥不能为空");
+        Assert.hasText(privateKey, "RSA私钥不能为空");
+        Assert.hasText(privateKey, "密钥长度不能为空");
+        int keyLength = NumberUtil.toInt(rsaKeyLength);
+        Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
+        RSAConfig rsaConfig = new RSAConfig();
+        rsaConfig.setPublicKey(publicKey);
+        rsaConfig.setPrivateKey(privateKey);
+        rsaConfig.setKeyLength(keyLength);
+        systemConfig.setRsaConfig(rsaConfig);
     }
 
 }

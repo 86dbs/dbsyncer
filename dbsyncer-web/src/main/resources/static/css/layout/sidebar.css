@@ -1,0 +1,54 @@
+/**
+ * DBSyncer 左侧边栏样式
+ */
+
+/* 侧边栏容器 */
+.sidebar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--header-height));
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-secondary);
+  overflow-y: auto;
+  z-index: var(--z-sticky);
+  transition: width var(--transition-normal);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+  margin-bottom: 4px;
+  user-select: none;
+}
+.sidebar-item > *:not(:first-child) { margin-left: 12px; }
+
+.sidebar-item:hover {
+  background-color: rgba(22, 93, 255, 0.05);
+  color: var(--primary-color);
+}
+
+.sidebar-item.active {
+  background-color: rgba(22, 93, 255, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+  border-right: 4px solid var(--primary-color);
+}
+
+.sidebar-item i {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-item span {
+  font-size: 14px;
+  flex: 1;
+}

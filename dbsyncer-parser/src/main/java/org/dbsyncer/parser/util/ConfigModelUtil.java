@@ -14,9 +14,6 @@ import java.util.Map;
  */
 public abstract class ConfigModelUtil {
 
-    private ConfigModelUtil() {
-    }
-
     public static Map<String, Object> convertModelToMap(ConfigModel model) {
         Map<String, Object> params = new HashMap();
         params.put(ConfigConstant.CONFIG_MODEL_ID, model.getId());

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 左侧边栏 -->
+<aside th:fragment="nav" class="border-r border-gray-200 flex-shrink-0 md:flex flex-col">
+    <!-- 品牌标识 -->
+    <div class="flex items-center px-3 mt-3">
+        <img draggable="false" th:src="@{'/img/logo.png'}" style="width: 50px; height: 50px;">
+        <span class="text-xl font-bold text-dark ml-2">DBSyncer</span>
+    </div>
+
+    <!-- 导航菜单 -->
+    <nav class="flex-1 p-2 overflow-y-auto">
+        <div class="space-y-1 mb-6">
+            <div class="sidebar-item active" url="/index">
+                <i class="fa fa-tachometer w-5 text-center"></i>
+                <span>仪表盘</span>
+            </div>
+            <div class="sidebar-item" url="/connector/list">
+                <i class="fa fa-database w-5 text-center"></i>
+                <span>连接管理</span>
+            </div>
+            <div class="sidebar-item" url="/mapping/list">
+                <i class="fa fa-exchange w-5 text-center"></i>
+                <span>驱动管理</span>
+            </div>
+            <div class="sidebar-item" url="/monitor">
+                <i class="fa fa-line-chart w-5 text-center"></i>
+                <span>性能监控</span>
+            </div>
+            <div class="sidebar-item" url="/plugin">
+                <i class="fa fa-plug w-5 text-center"></i>
+                <span>插件管理</span>
+            </div>
+            <div class="sidebar-item" url="/config">
+                <i class="fa fa-file-code-o w-5 text-center"></i>
+                <span>配置管理</span>
+            </div>
+            <div class="sidebar-item" url="/user">
+                <i class="fa fa-user w-5 text-center"></i>
+                <span>用户管理</span>
+            </div>
+            <div class="sidebar-item" url="/system">
+                <i class="fa fa-cog w-5 text-center"></i>
+                <span>系统配置</span>
+            </div>
+            <div class="sidebar-item" url="/license">
+                <i class="fa fa-key w-5 text-center"></i>
+                <span>授权许可</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 版权信息 -->
+    <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center text-sm">
+            <div>
+                <p id="copyRight"></p>
+            </div>
+        </div>
+    </div>
+</aside>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <form id="customTableForm" method="post">
+        <div class="card-header">
+            <div class="grid grid-cols-6 items-center">
+                <div class="lg:col-span-2"></div>
+                <div class="lg:col-span-2 card-title text-center">
+                    <span class="text-xxl">[[${mapping?.name}]] - 自定义表</span>
+                    <!-- 隐藏表单值 -->
+                    <div class="hidden">
+                        <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                        <input id="customType" name="type" type="text" th:value="${type}"/>
+                        <input id="connectorType" type="text" th:value="${mapping?.connectorType}"/>
+                    </div>
+                </div>
+                <div class="lg:col-span-2"></div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div th:replace="mapping/customTableSQL :: content"></div>
+
+            <div th:replace="mapping/customTableSemi :: content"></div>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        // 定义返回函数，子页面返回
+        let mappingId = $("#mappingId").val();
+        window.backIndexPage = function () {
+            doLoader("/mapping/page/edit?id=" + mappingId);
+        };
+    });
+</script>
+</html>

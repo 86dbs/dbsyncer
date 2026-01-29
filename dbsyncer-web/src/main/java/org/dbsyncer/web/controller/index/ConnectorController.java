@@ -2,6 +2,7 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,11 @@ public class ConnectorController extends BaseController {
     @Resource
     private ConnectorService connectorService;
 
+    @GetMapping("/list")
+    public String pageList(HttpServletRequest request, ModelMap model) {
+        return "connector/list";
+    }
+
     @GetMapping("/page/add")
     public String pageAdd(HttpServletRequest request, ModelMap model) {
         model.put("connectorTypes", connectorService.getConnectorTypeAll());
@@ -42,6 +48,18 @@ public class ConnectorController extends BaseController {
     public String pageEdit(HttpServletRequest request, ModelMap model, String id) {
         model.put("connector", connectorService.getConnector(id));
         return "connector/edit";
+    }
+
+    @PostMapping("/search")
+    @ResponseBody
+    public RestResult search(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(connectorService.search(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     @PostMapping("/copy")
@@ -101,4 +119,41 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @PostMapping("/test")
+    @ResponseBody
+    public RestResult test(@RequestParam(value = "id") String id) {
+        try {
+            boolean isAlive = connectorService.isAlive(id);
+            if (isAlive) {
+                return RestResult.restSuccess("连接测试成功");
+            } else {
+                return RestResult.restFail("连接测试失败");
+            }
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getDatabase")
+    @ResponseBody
+    public RestResult getDatabase(String id) {
+        try {
+            return RestResult.restSuccess(connectorService.getDatabase(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getSchema")
+    @ResponseBody
+    public RestResult getSchema(String id, String database) {
+        try {
+            return RestResult.restSuccess(connectorService.getSchema(id, database));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
 }

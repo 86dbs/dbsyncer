@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.time.Instant;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,8 +30,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     private final ReentrantLock lock = new ReentrantLock();
     private String driverClassName;
     private String url;
-    private String username;
-    private String password;
+    private Properties properties;
     // 连接池队列
     private BlockingQueue<SimpleConnection> pool;
     // 活跃连接数
@@ -42,11 +42,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     // 是否是Oracle连接
     private boolean oracleDriver;
 
-    public SimpleDataSource(String driverClassName, String url, String username, String password, int maxActive, long keepAlive) {
+    public SimpleDataSource(String driverClassName, String url, Properties properties, int maxActive, long keepAlive) {
         this.driverClassName = driverClassName;
         this.url = url;
-        this.username = username;
-        this.password = password;
+        this.properties = properties;
         this.maxActive = maxActive;
         this.keepAlive = keepAlive;
         oracleDriver = StringUtil.equals(driverClassName, "oracle.jdbc.OracleDriver");
@@ -126,7 +125,15 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public void close() {
-        pool.forEach(c -> c.close());
+        // 清空连接池并关闭所有连接，避免在遍历时修改集合
+        SimpleConnection connection;
+        while ((connection = pool.poll()) != null) {
+            try {
+                closeQuietly(connection);
+            } catch (Exception e) {
+                // 忽略关闭异常，确保所有连接都能尝试关闭
+            }
+        }
     }
 
     public void close(Connection connection) {
@@ -169,7 +176,7 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     private SimpleConnection createConnection() {
         SimpleConnection simpleConnection = null;
         try {
-            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, username, password), oracleDriver);
+            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, properties), oracleDriver);
             activeNum.incrementAndGet();
         } catch (SQLException e) {
             throw new SdkException(e);

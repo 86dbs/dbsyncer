@@ -6,6 +6,8 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
+import org.dbsyncer.biz.vo.ConnectorVo;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -16,16 +18,19 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -68,10 +73,13 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public String copy(String id) {
-        Connector connector = getConnector(id);
+        Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "The connector id is invalid.");
 
-        Map params = JsonUtil.parseMap(connector.getConfig());
+        ConnectorConfig config = connector.getConfig();
+        Map params = JsonUtil.parseMap(config);
+        params.put("properties", config.getPropertiesText());
+        params.put("extInfo", JsonUtil.objToJson(config.getExtInfo()));
         params.put(ConfigConstant.CONFIG_MODEL_NAME, connector.getName() + "(复制)");
         ConfigModel model = connectorChecker.checkAddConfigModel(params);
         log(LogType.ConnectorLog.COPY, model);
@@ -103,7 +111,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
         Connector connector = profileComponent.getConnector(id);
         if (connector != null) {
-            connectorFactory.disconnect(connector.getConfig());
+            connectorFactory.disconnect(connector.getId());
             log(LogType.ConnectorLog.DELETE, connector);
             profileComponent.removeConfigModel(id);
         }
@@ -112,15 +120,39 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public Connector getConnector(String id) {
-        return StringUtil.isNotBlank(id) ? profileComponent.getConnector(id) : null;
+        return profileComponent.getConnector(id);
     }
 
     @Override
-    public List<Connector> getConnectorAll() {
+    public List<String> getDatabase(String id) {
+        Connector connector = profileComponent.getConnector(id);
+        return connector != null ? connector.getDatabases() : Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getSchema(String id, String database) {
+        Connector connector = profileComponent.getConnector(id);
+        if (connector != null) {
+            ConnectorConfig config = connector.getConfig();
+            org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+            ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId());
+            return connectorService.getSchemas(connectorInstance, database);
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<ConnectorVo> getConnectorAll() {
         return profileComponent.getConnectorAll()
                 .stream()
+                .map(this::convertConnector2Vo)
                 .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Paging<ConnectorVo> search(Map<String, String> params) {
+        return searchConfigModel(params, getConnectorAll());
     }
 
     @Override
@@ -143,7 +175,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
         list.forEach(c -> {
-            health.put(c.getId(), isAlive(c.getConfig()));
+            health.put(c.getId(), isAlive(c.getId(), c.getConfig()));
             exist.add(c.getId());
         });
 
@@ -162,19 +194,20 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public boolean isAlive(String id) {
-        return health.containsKey(id) && health.get(id);
+        return health.getOrDefault(id, false);
     }
 
     @Override
-    public Object getPosition(String id) {
-        Connector connector = getConnector(id);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
+    public Object getPosition(String mappingId) {
+        Mapping mapping = profileComponent.getMapping(mappingId);
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         return connectorFactory.getPosition(connectorInstance);
     }
 
-    private boolean isAlive(ConnectorConfig config) {
+    private boolean isAlive(String connectorConfigId, ConnectorConfig config) {
         try {
-            return connectorFactory.isAlive(config);
+            return connectorFactory.isAlive(connectorConfigId, config);
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());
@@ -182,4 +215,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         }
     }
 
+    private ConnectorVo convertConnector2Vo(Connector connector) {
+        ConnectorVo vo = new ConnectorVo(isAlive(connector.getId()));
+        BeanUtils.copyProperties(connector, vo);
+        return vo;
+    }
 }

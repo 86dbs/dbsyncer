@@ -4,6 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.SystemConfigVo;
+import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 
@@ -69,4 +70,12 @@ public interface SystemConfigService {
      * @return
      */
     String getWatermark(SystemConfig systemConfig);
+
+    /**
+     * 生成RSA配置
+     *
+     * @param keyLength
+     * @return
+     */
+    RSAConfig createRSAConfig(int keyLength);
 }

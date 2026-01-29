@@ -40,7 +40,7 @@ public class CommonTask implements Serializable {
      * 任务状态, 0-未执行；1-执行中；2-执行成功；3-执行失败；
      * {@link CommonTaskStatusEnum}
      */
-    private int status;
+    private Integer status;
 
     /**
      * 任务类型

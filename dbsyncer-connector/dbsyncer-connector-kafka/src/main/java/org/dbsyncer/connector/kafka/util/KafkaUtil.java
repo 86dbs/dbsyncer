@@ -3,11 +3,14 @@
  */
 package org.dbsyncer.connector.kafka.util;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.dbsyncer.connector.kafka.KafkaClient;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.sdk.util.PropertiesUtil;
 
+import java.util.Collections;
 import java.util.Properties;
 
 /**
@@ -19,46 +22,37 @@ import java.util.Properties;
  */
 public abstract class KafkaUtil {
 
-    public static KafkaClient getConnection(KafkaConfig config) {
+    public static final String PRODUCER_PROPERTIES = "producerProperties";
+    public static final String CONSUMER_PROPERTIES = "consumerProperties";
 
-        // Consumer API
-        KafkaConsumer consumer;
-        {
-            Properties props = new Properties();
-            props.put("bootstrap.servers", config.getBootstrapServers());
-            props.put("group.id", config.getGroupId());
-            props.put("enable.auto.commit", true);
-            props.put("auto.commit.interval.ms", 5000);
-            props.put("session.timeout.ms", config.getSessionTimeoutMs());
-            props.put("max.partition.fetch.bytes", config.getMaxPartitionFetchBytes());
-            props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-            props.put("value.deserializer", config.getDeserializer());
-            consumer = new KafkaConsumer<>(props);
-        }
-
-        // Producer API
-        KafkaProducer producer;
-        {
-            Properties props = new Properties();
-            props.put("bootstrap.servers", config.getBootstrapServers());
-            props.put("buffer.memory", config.getBufferMemory());
-            props.put("batch.size", config.getBatchSize());
-            props.put("linger.ms", config.getLingerMs());
-            props.put("acks", config.getAcks());
-            props.put("retries", config.getRetries());
-            props.put("max.block.ms", 60000);
-            props.put("max.request.size", config.getMaxRequestSize());
-            props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-            props.put("value.serializer", config.getSerializer());
-            producer = new KafkaProducer<>(props);
-        }
-        return new KafkaClient(consumer, producer);
+    public static KafkaProducer<String, Object> createProducer(KafkaConfig config) {
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
+        props.putAll(parse(config.getExtInfo().getProperty(PRODUCER_PROPERTIES)));
+        return new KafkaProducer<>(props);
     }
 
-    public static void close(KafkaClient client) {
-        if (null != client) {
-            client.close();
-        }
+    public static KafkaConsumer<String, Object> createConsumer(KafkaConfig config, String topic, String groupId) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.putAll(parse(config.getExtInfo().getProperty(CONSUMER_PROPERTIES)));
+
+        KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(props);
+        consumer.subscribe(Collections.singletonList(topic));
+        return consumer;
+    }
+
+    public static Properties parse(String properties) {
+        properties = properties.replaceAll("\r\n", "&");
+        properties = properties.replaceAll("\n", "&");
+        return PropertiesUtil.parse(properties);
+    }
+
+    public static String toString(Properties properties) {
+        String propertiesText = PropertiesUtil.toString(properties);
+        propertiesText = propertiesText.replaceAll("&","\r\n");
+        return propertiesText;
     }
 
 }

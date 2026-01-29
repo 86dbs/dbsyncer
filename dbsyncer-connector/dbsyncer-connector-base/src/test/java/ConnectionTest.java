@@ -425,8 +425,10 @@ public class ConnectionTest {
 
     @Test
     public void testReadSchema() {
-        getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
-        getTables(createOracleConfig(), "test", "AE86", null);
+        List<Table> tables = getTables(createOracleConfig(), "test", "AE86", "MY_ORG");
+        assert !tables.isEmpty();
+        List<Table> tables1 = getTables(createOracleConfig(), "test", "AE86", null);
+        assert !tables1.isEmpty();
 
         getTables(createMysqlConfig(), "test", "root", "MY_ORG");
         getTables(createMysqlConfig(), "test", "root", null);
@@ -474,7 +476,10 @@ public class ConnectionTest {
             while (rs.next()) {
                 final String tableName = rs.getString("TABLE_NAME");
                 final String tableType = rs.getString("TABLE_TYPE");
-                tables.add(new Table(tableName, tableType));
+                Table table = new Table();
+                table.setName(tableName);
+                table.setType(tableType);
+                tables.add(table);
             }
             return tables;
         });

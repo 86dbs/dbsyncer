@@ -1,115 +1,96 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-  <div class="container">
-    <form id="userAddForm" class="form-horizontal" role="form" method="post">
-      <!-- 标题 -->
-      <div class="row text-center">
-        <div class="page-header">
-          <h3>添加用户</h3>
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">添加用户</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="userSubmitBtn" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 返回
+            </button>
         </div>
-      </div>
+        <form id="user-form-add" method="post">
+            <div class="grid grid-cols-2">
+                <!-- 账号 -->
+                <div class="form-item">
+                    <label class="form-label">账号<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="username" type="text" maxlength="50" required
+                               placeholder="请输入账号"/>
+                    </div>
+                </div>
 
-      <!-- 操作 -->
-      <div class="form-group">
-        <div class="col-md-10"></div>
-        <div class="col-md-2 text-right">
-          <button id="userSubmitBtn" type="button" class="btn btn-primary">
-            <span class="fa fa-save"></span>保存
-          </button>
-          <button id="userBackBtn" type="button" class="btn btn-default">
-            <span class="fa fa-reply"></span>返回
-          </button>
-        </div>
-      </div>
+                <!-- 昵称 -->
+                <div class="form-item">
+                    <label class="form-label">昵称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="nickname" type="text" maxlength="50" required
+                               placeholder="请输入昵称"/>
+                    </div>
+                </div>
 
-      <!-- 配置 -->
-      <div class="row">
-        <div class="col-md-12">
-          <div class="panel panel-info">
-            <div class="panel-heading">
-              <h3 class="panel-title">用户配置</h3>
+                <!-- 密码 -->
+                <div class="form-item">
+                    <label class="form-label">密码<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="password" type="password" maxlength="64" required
+                               placeholder="请输入密码"/>
+                    </div>
+                </div>
+
+                <!-- 邮箱 -->
+                <div class="form-item">
+                    <label class="form-label">邮箱
+                        <i class="fa fa-question-circle text-tertiary"
+                           title="支持多个邮箱，用逗号分隔"></i>
+                    </label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" name="email" data-role="tagsinput" placeholder="请输入邮箱地址"/>
+                    </div>
+                </div>
+
+                <!-- 手机 -->
+                <div class="form-item">
+                    <label class="form-label">手机</label>
+                    <div class="form-control-area">
+                        <input type="tel" class="form-control" maxlength="13" name="phone"
+                               placeholder="请输入手机号码"/>
+                    </div>
+                </div>
             </div>
-
-            <div class="panel-body">
-              <!-- 账号 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">账号<strong class="text-primary">*</strong></label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="username" type="text" maxlength="50" dbsyncer-valid="require" placeholder="账号"/>
-                </div>
-              </div>
-
-              <!-- 昵称 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">昵称<strong class="text-primary">*</strong></label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="nickname" type="text" maxlength="50" dbsyncer-valid="require" placeholder="昵称"/>
-                </div>
-              </div>
-
-              <!-- 密码 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">密码<strong class="text-primary">*</strong></label>
-                <div class="col-sm-10">
-                  <input class="form-control" name="password" type="password" maxlength="64" dbsyncer-valid="require" placeholder="密码"/>
-                </div>
-              </div>
-
-              <!-- 邮箱 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">邮箱<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持多个邮箱"></i></label>
-                <div class="col-sm-10">
-                  <input type="string" class="form-control" max="100" min="1" dbsyncer-valid="false" name="email" data-role="tagsinput"/>
-                </div>
-              </div>
-
-              <!-- 手机 -->
-              <div class="form-group">
-                <label class="col-sm-2 control-label">手机</label>
-                <div class="col-sm-10">
-                  <input type="number" class="form-control" dbsyncer-valid="false" maxlength="13" name="phone"/>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </form>
-  </div>
+        </form>
+    </div>
 </div>
 
 <script type="text/javascript">
-  // 绑定多值输入框事件
-  initMultipleInputTags();
-  // 跳转用户管理
-  function backUserIndexPage() {
-    doLoader("/user?refresh=" + new Date().getTime());
-  }
+    // 绑定多值输入框事件
+    initMultipleInputTags();
 
-  //保存
-  $("#userSubmitBtn").click(function () {
-    const $form = $("#userAddForm");
-    if ($form.formValidate() == true) {
-      const data = $form.serializeJson();
-      doPoster("/user/add", data, function (data) {
-        if (data.success == true) {
-          bootGrowl("新增用户成功！", "success");
-          backUserIndexPage();
-        } else {
-          bootGrowl(data.resultValue, "danger");
+    //保存
+    $("#userSubmitBtn").on('click', function () {
+        const $form = $("#user-form-add");
+        if (!validateForm($form)) {
+            return;
         }
-      });
-    }
-  });
 
-  //返回
-  $("#userBackBtn").click(function () {
-    backUserIndexPage();
-  });
+        const $btn = $(this);
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+        doPoster("/user/add", $form.serializeJson(), function (response) {
+            $btn.html(originalText).prop('disabled', false);
+            if (response.success === true) {
+                bootGrowl("新增用户成功！", "success");
+                doLoader("/user?refresh=" + new Date().getTime());
+            } else {
+                bootGrowl(response.message || "新增失败", "danger");
+            }
+        });
+    });
 </script>
 </html>

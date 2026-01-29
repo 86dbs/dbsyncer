@@ -15,15 +15,26 @@ import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -33,7 +44,11 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -92,7 +107,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                map.computeIfAbsent(metaId, k-> {
+                map.computeIfAbsent(metaId, k -> {
                     logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setBeginTime(now);
@@ -103,7 +118,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 }).start();
             } catch (Exception e) {
                 close(metaId);
-                logService.log(LogType.TableGroupLog.INCREMENT_FAILED, e.getMessage());
+                logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
         });
@@ -114,7 +129,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        map.compute(metaId, (k, listener)->{
+        map.compute(metaId, (k, listener) -> {
             if (listener != null) {
                 listener.close();
             }
@@ -140,9 +155,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
         map.values().forEach(Listener::flushEvent);
     }
 
-    private Listener getListener(Mapping mapping, Connector connector,Connector targetConnector, List<TableGroup> list, Meta meta) {
+    private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
-        ConnectorConfig targetConnectorConfig = targetConnector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();
 
@@ -170,28 +184,53 @@ public final class IncrementPuller extends AbstractPuller implements Application
             AbstractListener abstractListener = (AbstractListener) listener;
             Set<String> filterTable = new HashSet<>();
             List<Table> sourceTable = new ArrayList<>();
-            list.forEach(t -> {
-                Table table = t.getSourceTable();
-                if (!filterTable.contains(t.getName())) {
-                    sourceTable.add(table);
-                }
-                filterTable.add(table.getName());
-            });
-
+            List<Table> customTable = new ArrayList<>();
+            list.forEach(t -> addSourceTable(sourceTable, customTable, filterTable, t.getSourceTable()));
+            abstractListener.setDatabase(mapping.getSourceDatabase());
+            abstractListener.setSchema(mapping.getSourceSchema());
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));
-            abstractListener.setConnectorInstance(connectorFactory.connect(connectorConfig));
-            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetConnectorConfig));
+            String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), connector.getId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+            String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnector.getId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+            abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId));
+            abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
             abstractListener.setScheduledTaskService(scheduledTaskService);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);
             abstractListener.setFilterTable(filterTable);
             abstractListener.setSourceTable(sourceTable);
+            abstractListener.setCustomTable(customTable);
             abstractListener.setSnapshot(meta.getSnapshot());
             abstractListener.setMetaId(meta.getId());
         }
 
         listener.init();
         return listener;
+    }
+
+    private void addSourceTable(List<Table> sourceTable, List<Table> customTable, Set<String> filterTable, Table table) {
+        switch (TableTypeEnum.getTableType(table.getType())) {
+            case TABLE:
+            case VIEW:
+            case MATERIALIZED_VIEW:
+                if (!filterTable.contains(table.getName())) {
+                    sourceTable.add(table);
+                    filterTable.add(table.getName());
+                }
+                break;
+            case SQL:
+            case SEMI:
+                if (!filterTable.contains(table.getName())) {
+                    customTable.add(table);
+                    filterTable.add(table.getName());
+                    Object mainTable = table.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_MAIN);
+                    if (mainTable instanceof String) {
+                        filterTable.add(String.valueOf(mainTable));
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     }
 
 }

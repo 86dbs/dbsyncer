@@ -23,6 +23,7 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.StorageException;
@@ -246,10 +247,67 @@ public class Shard {
     }
 
     private void reopen() throws IOException {
-        Lock writeLock = directory.obtainLock(IndexWriter.WRITE_LOCK_NAME);
-        if (writeLock != null) {
-            IOUtils.close(writeLock); // release write lock
+        int maxRetries = 3;
+        int retryCount = 0;
+        
+        while (retryCount < maxRetries) {
+            try {
+                // 尝试获取写锁
+                Lock writeLock = directory.obtainLock(IndexWriter.WRITE_LOCK_NAME);
+                if (writeLock != null) {
+                    IOUtils.close(writeLock); // release write lock
+                }
+                // 成功获取锁，跳出循环
+                break;
+            } catch (LockObtainFailedException e) {
+                retryCount++;
+                // 锁被其他进程持有或残留，尝试清理锁文件
+                logger.warn("无法获取 Lucene 写锁 (尝试 {}/{}), 尝试清理锁文件: {}", 
+                    retryCount, maxRetries, indexPath.getAbsolutePath());
+                
+                if (retryCount >= maxRetries) {
+                    // 最后一次重试失败，抛出异常
+                    throw new IOException("无法获取 Lucene 写锁，已重试 " + maxRetries + " 次。请检查是否有其他进程正在使用索引目录: " + indexPath.getAbsolutePath(), e);
+                }
+                
+                try {
+                    // 对于 FSDirectory，锁文件是物理文件，可以直接删除
+                    File lockFile = new File(indexPath, IndexWriter.WRITE_LOCK_NAME);
+                    if (lockFile.exists()) {
+                        boolean deleted = lockFile.delete();
+                        if (deleted) {
+                            logger.info("已删除残留的 Lucene 锁文件: {}", lockFile.getAbsolutePath());
+                            // 删除锁文件后，等待一小段时间让其他进程释放
+                            try {
+                                Thread.sleep(100); // 等待 100ms
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+                        } else {
+                            logger.warn("无法删除 Lucene 锁文件，可能被其他进程占用: {}", lockFile.getAbsolutePath());
+                            // 如果无法删除，等待更长时间
+                            try {
+                                Thread.sleep(500); // 等待 500ms
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+                        }
+                    } else {
+                        // 锁文件不存在，但获取锁失败，可能是其他进程正在创建锁
+                        logger.warn("锁文件不存在但获取锁失败，等待后重试: {}", indexPath.getAbsolutePath());
+                        try {
+                            Thread.sleep(200); // 等待 200ms
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                } catch (Exception ex) {
+                    logger.error("清理 Lucene 锁文件失败: {}", indexPath.getAbsolutePath(), ex);
+                    // 继续重试
+                }
+            }
         }
+        
         // 创建索引写入配置
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         // 默认32M, 减少合并次数

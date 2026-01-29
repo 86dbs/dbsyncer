@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.enums;
 
+import org.dbsyncer.sdk.SdkException;
+
 /**
  * 标准数据类型
  *
@@ -29,7 +31,14 @@ public enum DataTypeEnum {
     TIME,
     TIMESTAMP,
     /** 二进制 */
-    BYTES,
-    /** 数组 */
-    ARRAY
+    BYTES;
+
+    public static DataTypeEnum getType(String type) {
+        for (DataTypeEnum e : DataTypeEnum.values()) {
+            if (e.name().equals(type)) {
+                return e;
+            }
+        }
+        throw new SdkException(String.format("DataTypeEnum type \"%s\" does not exist.", type));
+    }
 }

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 查询连接器列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">连接管理</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchConnector" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索连接名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div></div>
+            <div class="lg:col-span-3 flex items-center justify-end">
+                <button class="btn btn-primary" onclick="doLoader('/connector/page/add')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>名称</th>
+                <th>类型</th>
+                <th>连接地址</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="connectorTableBody"></tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+// 页面初始化
+$(document).ready(function() {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/connector/list');
+    };
+
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/connector/search',
+        tableBodySelector: '#connectorTableBody',
+        renderRow: function(connector, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td>
+                        <span>${escapeHtml(connector.name)}</span>
+                    </td>
+                    <td><img draggable="false" src="${$basePath}/img/${escapeHtml(connector.config.connectorType || '')}.png" style="width: 50px; height: 50px;"></td>
+                    <td title="${escapeHtml(connector.config.url || '')}">${escapeHtml(connector.config.url || '')}</td>
+                    <td>${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}</td>
+                    <td>
+                        <div class="flex items-center">
+                            <button class="table-action-btn view" title="修改" onclick="doLoader('/connector/page/edit?id=${connector.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button class="table-action-btn play" title="测试" onclick="testConnector('${connector.id}')">
+                                <i class="fa fa-flash"></i>
+                            </button>
+                            <button class="table-action-btn copy" title="复制" onclick="copyConnector('${connector.id}')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                            <button class="table-action-btn delete" title="删除" onclick="deleteConnector('${connector.id}')">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+        emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></td>'
+    });
+
+    // 搜索框输入事件
+    let searchInput = initSearch('searchConnector', function (searchKey) {
+        pagination.doSearch({'searchKey': searchKey});
+    });
+
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    });
+});
+
+// 复制连接
+function copyConnector(id) {
+    doPoster("/connector/copy", { id: id }, function (response) {
+        if (response.success) {
+            bootGrowl('复制成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl('复制失败: ' + response.message, 'danger');
+        }
+    });
+}
+
+// 测试连接
+function testConnector(id) {
+    // 显示加载状态
+    const btn = event.target.closest('.table-action-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="测试中"></i>';
+    btn.disabled = true;
+    doPoster("/connector/test", { id: id }, function (response) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if (response.success) {
+            bootGrowl('测试成功', 'success');
+        } else {
+            bootGrowl('测试失败: ' + response.message, 'danger');
+        }
+    });
+}
+
+// 删除连接
+function deleteConnector(id) {
+    showConfirm({
+        title: '确定要删除连接？',
+        icon: 'warning',
+        size: 'large',
+        confirmType: 'danger',
+        onConfirm: function() {
+            doPoster("/connector/remove", { id: id }, function (response) {
+                if (response.success) {
+                    bootGrowl('删除成功', 'success');
+                    backIndexPage();
+                } else {
+                    bootGrowl('删除失败: ' + response.message, 'danger');
+                }
+            });
+        }
+    });
+}
+</script>
+
+</html>

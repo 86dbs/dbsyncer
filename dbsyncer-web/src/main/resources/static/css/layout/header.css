@@ -1,0 +1,124 @@
+/* ========== 下拉菜单样式 ========== */
+.dropdown {
+  position: relative;
+}
+
+.dropdown button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+.dropdown button > *:not(:first-child) { margin-left: 8px; }
+
+.dropdown button:hover {
+  color: var(--text-primary);
+}
+
+.dropdown button:focus {
+  outline: none;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.dropdown-menu li {
+  margin: 0;
+}
+
+.dropdown-menu a {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+.dropdown-menu a > *:not(:first-child) { margin-left: 8px; }
+
+.dropdown-menu a:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.dropdown-menu a i {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* 下拉菜单按钮样式 */
+.dropdown-menu button {
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.dropdown-menu button:focus {
+  outline: none;
+}
+
+.dropdown-menu li:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.dropdown-menu li:hover button {
+  color: var(--primary-color);
+}
+
+.dropdown-menu button i {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-tertiary);
+  margin: 4px 0;
+}
+
+.dropdown.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown .dropdown-menu.hidden {
+  display: none;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+}

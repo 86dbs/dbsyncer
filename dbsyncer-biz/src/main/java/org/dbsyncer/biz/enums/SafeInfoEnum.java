@@ -12,7 +12,15 @@ public enum SafeInfoEnum {
     /**
      * 密码
      */
-    PASSWORD("password");
+    PASSWORD("password"),
+    /**
+     * RSA私钥
+     */
+    RSA_PRIVATE_KEY("rsaPrivateKey"),
+    /**
+     * RSA公钥
+     */
+    RSA_PUBLIC_KEY("rsaPublicKey");
 
     private final String code;
 

@@ -42,86 +42,205 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
 
     @Override
     public String asString() {
+        if (isEmpty(getValue())) {
+            return null;
+        }
         return getValue();
     }
 
     @Override
     public byte[] asByteArray() {
-        return StringUtil.hexStringToByteArray(getValue().substring(2));
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        if (value.length() < 2) {
+            return new byte[0];
+        }
+        return StringUtil.hexStringToByteArray(value.substring(2));
+    }
+
+    @Override
+    public Byte asByte() {
+        return 0;
     }
 
     @Override
     public Short asShort() {
-        return Short.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Short.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Short from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Integer asInteger() {
-        return Integer.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Integer from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Long asLong() {
-        return Long.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Long from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Float asFloat() {
-        return Float.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Float.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Float from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Double asDouble() {
-        return Double.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Double.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse Double from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Boolean asBoolean() {
-        return "t".equalsIgnoreCase(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return false;
+        }
+        return "t".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value);
     }
 
     @Override
     public BigDecimal asBigDecimal() {
-        return new BigDecimal(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Failed to parse BigDecimal from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Date asDate() {
-        return DateFormatUtil.stringToDate(asString());
+        String value = asString();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return DateFormatUtil.stringToDate(value);
+        } catch (Exception e) {
+            logger.warn("Failed to parse Date from value: {}", value, e);
+            return null;
+        }
     }
 
     @Override
     public Timestamp asTimestamp() {
-        if ("infinity".equals(asString())) {
+        String value = asString();
+        if ("infinity".equals(value)) {
             return Timestamp.from(toInstantFromMicros(PGStatement.DATE_POSITIVE_INFINITY));
-        } else if ("-infinity".equals(asString())) {
+        } else if ("-infinity".equals(value)) {
             return Timestamp.from(toInstantFromMicros(PGStatement.DATE_NEGATIVE_INFINITY));
-        } else if ("null".equals(asString()) || StringUtil.isBlank(asString())) {
+        } else if (isEmpty(value)) {
             return null;
         }
-        return DateFormatUtil.timeWithoutTimeZoneToTimestamp(asString());
+        return DateFormatUtil.timeWithoutTimeZoneToTimestamp(value);
     }
 
     @Override
     public Time asTime() {
-        return Time.valueOf(getValue());
+        String value = getValue();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return Time.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Failed to parse Time from value: {}", value, e);
+            return null;
+        }
     }
 
     public LocalTime asLocalTime() {
-        return DateFormatUtil.stringToLocalTime(asString());
+        String value = asString();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return DateFormatUtil.stringToLocalTime(value);
+        } catch (Exception e) {
+            logger.warn("Failed to parse LocalTime from value: {}", value, e);
+            return null;
+        }
     }
 
     public OffsetTime asOffsetTimeUtc() {
-        return DateFormatUtil.timeWithTimeZone(asString());
+        String value = asString();
+        if (isEmpty(value)) {
+            return null;
+        }
+        try {
+            return DateFormatUtil.timeWithTimeZone(value);
+        } catch (Exception e) {
+            logger.warn("Failed to parse OffsetTime from value: {}", value, e);
+            return null;
+        }
     }
 
     public OffsetDateTime asOffsetDateTimeAtUtc() {
-        if ("infinity".equals(asString())) {
+        String value = asString();
+        if (isEmpty(value)) {
+            return null;
+        }
+        if ("infinity".equals(value)) {
             return OffsetDateTime.ofInstant(toInstantFromMillis(PGStatement.DATE_POSITIVE_INFINITY), ZoneOffset.UTC);
-        } else if ("-infinity".equals(asString())) {
+        } else if ("-infinity".equals(value)) {
             return OffsetDateTime.ofInstant(toInstantFromMillis(PGStatement.DATE_NEGATIVE_INFINITY), ZoneOffset.UTC);
         }
-        return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(asString());
+        try {
+            return DateFormatUtil.timestampWithTimeZoneToOffsetDateTime(value);
+        } catch (Exception e) {
+            logger.warn("Failed to parse OffsetDateTime from value: {}", value, e);
+            return null;
+        }
     }
 
     public PGbox asBox() {
@@ -193,10 +312,14 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
     }
 
     public PGpoint asPoint() {
+        String value = asString();
+        if (isEmpty(value)) {
+            return null;
+        }
         try {
-            return new PGpoint(asString());
+            return new PGpoint(value);
         } catch (final SQLException e) {
-            logger.error("Failed to parse point {}, {}", asString(), e);
+            logger.error("Failed to parse point {}, {}", value, e);
             throw new PostgreSQLException(e);
         }
     }

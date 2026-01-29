@@ -3,29 +3,37 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.kafka.cdc.KafkaListener;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.schema.KafkaSchemaResolver;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,11 +48,19 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private final String TOPIC = "topic";
+
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
+    private final KafkaSchemaResolver schemaResolver = new KafkaSchemaResolver();
 
     @Override
     public String getConnectorType() {
         return "Kafka";
+    }
+
+    @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SEMI;
     }
 
     @Override
@@ -53,7 +69,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public ConnectorInstance connect(KafkaConfig config) {
+    public ConnectorInstance connect(KafkaConfig config, ConnectorServiceContext context) {
         return new KafkaConnectorInstance(config);
     }
 
@@ -69,26 +85,46 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public boolean isAlive(KafkaConnectorInstance connectorInstance) {
-        return connectorInstance.getConnection().ping();
+        try {
+            connectorInstance.ping();
+            return true;
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+            throw new KafkaException(e);
+        }
     }
 
     @Override
-    public String getConnectorInstanceCacheKey(KafkaConfig config) {
-        return String.format("%s-%s-%s-%s", config.getConnectorType(), config.getBootstrapServers(), config.getTopic(), config.getGroupId());
+    public List<String> getDatabases(KafkaConnectorInstance connectorInstance) {
+        try {
+            List<String> db = new ArrayList<>();
+            String clusterId = connectorInstance.getClusterId();
+            if (StringUtil.isNotBlank(clusterId)) {
+                db.add(clusterId);
+            }
+            return db;
+        } catch (Exception e) {
+            throw new KafkaException(e);
+        }
     }
 
     @Override
-    public List<Table> getTable(KafkaConnectorInstance connectorInstance) {
-        List<Table> topics = new ArrayList<>();
-        topics.add(new Table(connectorInstance.getConfig().getTopic()));
-        return topics;
+    public List<Table> getTable(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return new ArrayList<>();
     }
 
     @Override
-    public MetaInfo getMetaInfo(KafkaConnectorInstance connectorInstance, String tableName) {
-        KafkaConfig config = connectorInstance.getConfig();
-        List<Field> fields = JsonUtil.jsonToArray(config.getFields(), Field.class);
-        return new MetaInfo().setColumn(fields);
+    public List<MetaInfo> getMetaInfo(KafkaConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        List<MetaInfo> metaInfos = new ArrayList<>();
+        for (Table table : context.getTablePatterns()) {
+            MetaInfo metaInfo = new MetaInfo();
+            metaInfo.setTable(table.getName());
+            metaInfo.setTableType(getExtendedTableType().getCode());
+            metaInfo.setColumn(table.getColumn());
+            metaInfo.setExtInfo(table.getExtInfo());
+            metaInfos.add(metaInfo);
+        }
+        return metaInfos;
     }
 
     @Override
@@ -98,7 +134,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Result reader(KafkaConnectorInstance connectorInstance, ReaderContext context) {
-        throw new KafkaException("Full synchronization is not supported");
+        throw new KafkaException("Kafka暂不支持全量读取");
     }
 
     @Override
@@ -110,13 +146,12 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         }
 
         Result result = new Result();
-        final KafkaConfig cfg = connectorInstance.getConfig();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
-            String topic = cfg.getTopic();
-            // 默认取第一个主键
-            final String pk = pkFields.get(0).getName();
-            data.forEach(row -> connectorInstance.getConnection().send(topic, String.valueOf(row.get(pk)), row));
+            String topic = context.getCommand().get(TOPIC);
+            KafkaProducer<String, Object> producer = connectorInstance.getProducer(topic);
+            String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
+            data.forEach(row -> producer.send(new ProducerRecord<>(topic, key, row)));
             result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
@@ -129,17 +164,26 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        return new HashMap<>();
     }
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        return Collections.EMPTY_MAP;
+        Map<String, String> cmd = new HashMap<>();
+        cmd.put(TOPIC, commandConfig.getTable().getName());
+        return cmd;
     }
 
     @Override
     public Listener getListener(String listenerType) {
+        if (ListenerTypeEnum.isLog(listenerType)) {
+            return new KafkaListener();
+        }
         return null;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }

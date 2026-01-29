@@ -2,6 +2,8 @@ package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.util.JsonUtil;
 
+import java.util.Properties;
+
 /**
  * 字段属性
  *
@@ -22,7 +24,7 @@ public class Field {
     private String typeName;
 
     /**
-     * 类型编码，4
+     * 类型编码
      */
     private int type;
 
@@ -46,6 +48,11 @@ public class Field {
      */
     private int ratio;
 
+    /**
+     * 扩展配置
+     */
+    private Properties extInfo = new Properties();
+
     public Field() {
     }
 
@@ -62,7 +69,7 @@ public class Field {
         this.pk = pk;
     }
 
-    public Field(String name, String typeName, int type, boolean pk,int columnSize,int ratio) {
+    public Field(String name, String typeName, int type, boolean pk, int columnSize,int ratio) {
         this.name = name;
         this.typeName = typeName;
         this.type = type;
@@ -125,6 +132,14 @@ public class Field {
 
     public void setRatio(int ratio) {
         this.ratio = ratio;
+    }
+
+    public Properties getExtInfo() {
+        return extInfo;
+    }
+
+    public void setExtInfo(Properties extInfo) {
+        this.extInfo = extInfo;
     }
 
     @Override

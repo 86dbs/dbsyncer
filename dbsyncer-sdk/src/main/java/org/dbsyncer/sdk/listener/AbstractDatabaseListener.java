@@ -5,7 +5,8 @@ package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.connector.database.AbstractDQLConnector;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -34,6 +35,12 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      */
     private final Map<String, List<DqlMapper>> dqlMap = new ConcurrentHashMap<>();
 
+    @Override
+    public void init() {
+        super.init();
+        postProcessSqlBeforeInitialization();
+    }
+
     /**
      * 发送增量事件
      *
@@ -41,14 +48,10 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
      */
     protected void sendChangedEvent(ChangedEvent event) {
         changeEvent(event);
+        sendSqlChangedEvent(event);
     }
 
-    /**
-     * 发送DQL增量事件
-     *
-     * @param event
-     */
-    protected void sendDqlChangedEvent(ChangedEvent event) {
+    private void sendSqlChangedEvent(ChangedEvent event) {
         if (null == event) {
             return;
         }
@@ -77,33 +80,38 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
                 }
                 processed = true;
             }
-            event.setSourceTableName(dqlMapper.sqlName);
-            changeEvent(event);
+
+            try {
+                ChangedEvent newEvent = (ChangedEvent) event.clone();
+                newEvent.setSourceTableName(dqlMapper.sqlName);
+                changeEvent(newEvent);
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    /**
-     * 初始化Dql连接配置
-     */
-    protected void postProcessDqlBeforeInitialization() {
-        DatabaseConnectorInstance instance = (DatabaseConnectorInstance) connectorInstance;
-        AbstractDQLConnector service = (AbstractDQLConnector) connectorService;
-        String quotation = service.buildSqlWithQuotation();
+    private void postProcessSqlBeforeInitialization() {
+        if (CollectionUtils.isEmpty(customTable)) {
+            return;
+        }
 
-        // <用户表, MY_USER>
-        Map<String, String> tableMap = new HashMap<>();
-        instance.getConfig().getSqlTables().forEach(s -> tableMap.put(s.getSqlName(), s.getTable()));
-        // 清空默认表名
-        filterTable.clear();
-        for (Table t : sourceTable) {
-            String sql = t.getSql();
+        DatabaseConnectorInstance instance = getConnectorInstance();
+        Database service = (Database) connectorService;
+
+        for (Table t : customTable) {
+            Object mainTable = t.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_MAIN);
+            Object tableSQL = t.getExtInfo().get(ConnectorConstant.CUSTOM_TABLE_SQL);
+            if (tableSQL == null || mainTable == null) {
+                continue;
+            }
+            String sql = String.valueOf(tableSQL);
+            String tableName = String.valueOf(mainTable);
             String sqlName = t.getName();
-            String tableName = tableMap.get(sqlName);
             Assert.hasText(sql, "The sql is null.");
             Assert.hasText(tableName, "The tableName is null.");
 
-            MetaInfo tableMetaInfo = service.getTableMetaInfo(instance, tableName);
-            List<Field> tableColumns = tableMetaInfo.getColumn();
+            List<Field> tableColumns = t.getColumn();
             Assert.notEmpty(tableColumns, String.format("The column of table name '%s' is empty.", tableName));
             List<Field> primaryFields = PrimaryKeyUtil.findPrimaryKeyFields(tableColumns);
             Assert.notEmpty(primaryFields, String.format("主表 %s 缺少主键.", tableName));
@@ -111,7 +119,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             Map<String, Integer> tablePKIndexMap = new HashMap<>(primaryKeys.size());
             List<Integer> tablePKIndex = getPKIndex(tableColumns, tablePKIndexMap);
 
-            MetaInfo sqlMetaInfo = service.getMetaInfo(instance, sqlName);
+            MetaInfo sqlMetaInfo = getMetaInfo(t);
             final List<Field> sqlColumns = sqlMetaInfo.getColumn();
             Assert.notEmpty(sqlColumns, String.format("The column of table name '%s' is empty.", sqlName));
             Map<Integer, Integer> sqlPKIndexMap = getPKIndexMap(sqlColumns, tablePKIndexMap);
@@ -122,21 +130,32 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             sql = sql.replace("\n", " ");
 
             StringBuilder querySql = new StringBuilder(sql);
-            String temp = sql.toUpperCase();
-            boolean notContainsWhere = !StringUtil.contains(temp, " WHERE ");
-            querySql.append(notContainsWhere ? " WHERE " : StringUtil.EMPTY);
-            PrimaryKeyUtil.buildSql(querySql, primaryKeys, quotation, " AND ", " = ? ", notContainsWhere);
-            DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
-            dqlMap.compute(tableName, (k, v)-> {
-                if(v == null) {
-                    return new ArrayList<>();
-                }
-                return v;
-            }).add(dqlMapper);
+            querySql.append(!StringUtil.contains(sql.toUpperCase(), " WHERE ") ? " WHERE " : " AND ");
+            service.appendPrimaryKeys(querySql, primaryKeys);
 
-            // 注册监听表名
-            filterTable.add(tableName);
+            DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
+            dqlMap.compute(tableName, (k, v) -> {
+                if (v == null) {
+                    v = new ArrayList<>();
+                }
+                v.add(dqlMapper);
+                return v;
+            });
         }
+    }
+
+    private MetaInfo getMetaInfo(Table table) {
+        DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
+        context.setCatalog(database);
+        context.setSchema(schema);
+        context.addTablePattern(table);
+        MetaInfo sqlMetaInfo = getFirstMetaInfo(connectorService.getMetaInfo(connectorInstance, context));
+        Assert.notNull(sqlMetaInfo, "The sql table is not exist.");
+        return sqlMetaInfo;
+    }
+
+    private MetaInfo getFirstMetaInfo(List<MetaInfo> metaInfos) {
+        return CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
     }
 
     private Map<Integer, Integer> getPKIndexMap(List<Field> column, Map<String, Integer> tablePKIndexMap) {

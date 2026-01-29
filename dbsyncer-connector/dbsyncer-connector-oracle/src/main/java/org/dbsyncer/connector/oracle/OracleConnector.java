@@ -5,23 +5,26 @@ package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
-import org.dbsyncer.connector.oracle.schema.OracleClobValueMapper;
-import org.dbsyncer.connector.oracle.schema.OracleNClobValueMapper;
-import org.dbsyncer.connector.oracle.schema.OracleOtherValueMapper;
+import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
+import org.dbsyncer.sdk.connector.database.Database;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.sql.Types;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,15 +36,10 @@ import java.util.List;
  */
 public final class OracleConnector extends AbstractDatabaseConnector {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final String QUERY_SCHEMA = "SELECT USERNAME FROM ALL_USERS where USERNAME not in('ANONYMOUS','APEX_030200','APEX_PUBLIC_USER','APPQOSSYS','BI','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','HR','IX','MDDATA','MDSYS','MGMT_VIEW','OE','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','OWBSYS_AUDIT','PM','SCOTT','SH','SI_INFORMTN_SCHEMA','SPATIAL_CSW_ADMIN_USR','SPATIAL_WFS_ADMIN_USR','SYS','SYSMAN','SYSTEM','WMSYS','XDB','XS$NULL') ORDER BY USERNAME";
 
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
-
-    public OracleConnector() {
-        VALUE_MAPPERS.put(Types.OTHER, new OracleOtherValueMapper());
-        VALUE_MAPPERS.put(Types.CLOB, new OracleClobValueMapper());
-        VALUE_MAPPERS.put(Types.NCLOB, new OracleNClobValueMapper());
-    }
+    private final OracleSchemaResolver schemaResolver = new OracleSchemaResolver();
 
     @Override
     public String getConnectorType() {
@@ -66,37 +64,46 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+    }
+
+    @Override
     public String buildSqlWithQuotation() {
         return "\"";
     }
 
     @Override
-    public String getPageSql(PageSql config) {
-        // 如果不支持游标，则没有WHERE条件和ORDER BY，只做简单的ROWNUM限制
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            // 不支持游标分页的情况：只做简单的ROWNUM分页（性能较差，建议使用支持的主键类型）
-            logger.warn("表不支持游标分页，主键类型必须是可比较类型（数字、字符、日期时间等），将使用简单的ROWNUM分页");
-            StringBuilder sql = new StringBuilder();
-            sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
-            sql.append(config.getQuerySql());
-            sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
-            return sql.toString();
-        }
+    public String getQueryCountSql(SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        String queryFilter = config.getQueryFilter();
+        // PARALLEL hint 利用多核 CPU 并行处理，提升性能但不影响准确性
+        // 让 Oracle 优化器自动选择最佳访问路径（索引扫描或全表扫描）
+        String query = "SELECT /*+ PARALLEL(t, 8) */ COUNT(*) FROM %s%s t %s";
+        
+        return String.format(query,
+                config.getSchema(),
+                database.buildWithQuotation(config.getTableName()),
+                queryFilter);
+    }
 
-        // 支持游标分页：使用与getPageCursorSql相同的逻辑（但第一次查询时无游标条件）
+    @Override
+    public String getPageSql(PageSql config) {
+        // 使用三层嵌套查询：SELECT * FROM (SELECT A.*, ROWNUM RN FROM (...) A WHERE ROWNUM <= ?) WHERE RN > ?
         StringBuilder sql = new StringBuilder();
         sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
         sql.append(config.getQuerySql());
-        
-        final String quotation = buildSqlWithQuotation();
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        
-        // 第一次查询时没有游标条件，直接添加ORDER BY
-        sql.append(" ORDER BY ");
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-        
+        // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）
+        appendOrderByPrimaryKeys(sql, config);
         sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
         return sql.toString();
+    }
+
+    @Override
+    public Object[] getPageArgs(ReaderContext context) {
+        int pageSize = context.getPageSize();
+        int pageIndex = context.getPageIndex();
+        return new Object[]{pageIndex * pageSize, (pageIndex - 1) * pageSize};
     }
 
     @Override
@@ -107,147 +114,32 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         }
 
         StringBuilder sql = new StringBuilder();
-        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_START);
+        sql.append(DatabaseConstant.ORACLE_PAGE_CURSOR_SQL_START);
         sql.append(config.getQuerySql());
-        boolean skipFirst = false;
-        // 没有过滤条件
-        if (StringUtil.isBlank(config.getQueryFilter())) {
-            skipFirst = true;
-            sql.append(" WHERE ");
-        }
-        final String quotation = buildSqlWithQuotation();
-        final List<String> primaryKeys = config.getPrimaryKeys();
-        
-        // 构建复合键的游标分页条件: (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
-        buildCursorCondition(sql, primaryKeys, quotation, skipFirst);
-        
-        // 添加 ORDER BY - 必须按主键排序以保证游标分页的稳定性
-        sql.append(" ORDER BY ");
-        PrimaryKeyUtil.buildSql(sql, primaryKeys, quotation, ",", "", true);
-        
-        sql.append(DatabaseConstant.ORACLE_PAGE_SQL_END);
+        // 使用基类的公共方法构建WHERE条件和ORDER BY
+        buildCursorConditionAndOrderBy(sql, config);
+        sql.append(DatabaseConstant.ORACLE_PAGE_CURSOR_SQL_END);
         return sql.toString();
-    }
-    
-    /**
-     * 构建复合键的游标分页条件（支持任意数量的主键）
-     * 
-     * <p>对于单字段主键 (pk1)：生成条件：pk1 > ?</p>
-     * <p>对于2字段主键 (pk1, pk2)：生成条件：(pk1 > ?) OR (pk1 = ? AND pk2 > ?)</p>
-     * <p>对于3字段主键 (pk1, pk2, pk3)：生成条件：(pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?)</p>
-     * <p>对于n字段主键：依此类推...</p>
-     * 
-     * <p>原理：对于复合键 (pk1, pk2, ..., pkn)，要查询所有大于 (v1, v2, ..., vn) 的记录，
-     * 需要满足：(pk1 > v1) OR (pk1 = v1 AND pk2 > v2) OR ... OR (pk1 = v1 AND pk2 = v2 AND ... AND pkn > vn)</p>
-     * 
-     * @param sql SQL构建器
-     * @param primaryKeys 主键列表（支持任意长度）
-     * @param quotation 引号
-     * @param skipFirst 是否跳过第一个连接符
-     */
-    private void buildCursorCondition(StringBuilder sql, List<String> primaryKeys, String quotation, boolean skipFirst) {
-        if (primaryKeys.isEmpty()) {
-            return;
-        }
-        
-        // 单字段主键：直接使用 pk > ?
-        if (primaryKeys.size() == 1) {
-            if (!skipFirst) {
-                sql.append(" AND ");
-            }
-            sql.append(quotation).append(primaryKeys.get(0)).append(quotation).append(" > ? ");
-            return;
-        }
-        
-        // 复合键：构建 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR ...
-        if (!skipFirst) {
-            sql.append(" AND ");
-        }
-        sql.append("(");
-        
-        for (int i = 0; i < primaryKeys.size(); i++) {
-            if (i > 0) {
-                sql.append(" OR ");
-            }
-            sql.append("(");
-            
-            // 前面的字段都是等号
-            for (int j = 0; j < i; j++) {
-                if (j > 0) {
-                    sql.append(" AND ");
-                }
-                sql.append(quotation).append(primaryKeys.get(j)).append(quotation).append(" = ? ");
-            }
-            
-            // 最后一个字段使用大于号
-            if (i > 0) {
-                sql.append(" AND ");
-            }
-            sql.append(quotation).append(primaryKeys.get(i)).append(quotation).append(" > ? ");
-            sql.append(")");
-        }
-        
-        sql.append(") ");
-    }
-
-    @Override
-    public Object[] getPageArgs(ReaderContext context) {
-        // 统一使用游标分页方式：第一次查询时无游标，只需要pageSize参数
-        int pageSize = context.getPageSize();
-        return new Object[]{pageSize};
     }
 
     @Override
     public Object[] getPageCursorArgs(ReaderContext context) {
         int pageSize = context.getPageSize();
         Object[] cursors = context.getCursors();
-        // 第一次查询（无游标）
         if (null == cursors || cursors.length == 0) {
             return new Object[]{pageSize};
         }
-        // 单字段主键：只需要 pk > ?，参数为 [last_pk, pageSize]
-        int pkCount = cursors.length;
-        if (pkCount == 1) {
-            Object[] newCursors = new Object[2];
-            newCursors[0] = cursors[0];
-            newCursors[1] = pageSize;
-            return newCursors;
+        // 使用基类的公共方法构建游标条件参数
+        Object[] cursorArgs = buildCursorArgs(cursors);
+        if (cursorArgs == null) {
+            return new Object[]{pageSize};
         }
-        
-        // 复合键（支持任意数量的主键）
-        // WHERE 条件为 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?) OR ...
-        // 
-        // 参数数量计算：等差数列求和
-        // - 1个主键：1个参数 (pk1 > ?)
-        // - 2个主键：1+2=3个参数 (pk1 > ?) OR (pk1 = ? AND pk2 > ?)
-        // - 3个主键：1+2+3=6个参数 (pk1 > ?) OR (pk1 = ? AND pk2 > ?) OR (pk1 = ? AND pk2 = ? AND pk3 > ?)
-        // - n个主键：1+2+...+n = n*(n+1)/2 个参数
-        //
-        // 参数顺序示例（2个主键，cursors=[v1, v2]）：
-        //   [v1, v1, v2, pageSize] 对应条件 (pk1 > v1) OR (pk1 = v1 AND pk2 > v2) 限制 ROWNUM <= pageSize
-        // 参数顺序示例（3个主键，cursors=[v1, v2, v3]）：
-        //   [v1, v1, v2, v1, v2, v3, pageSize] 对应条件 (pk1 > v1) OR (pk1 = v1 AND pk2 > v2) OR (pk1 = v1 AND pk2 = v2 AND pk3 > v3) 限制 ROWNUM <= pageSize
-        int paramCount = pkCount * (pkCount + 1) / 2;
-        Object[] newCursors = new Object[paramCount + 1];
-        
-        int index = 0;
-        // 遍历每个主键字段，生成对应的参数
-        for (int i = 0; i < pkCount; i++) {
-            // 对于第 i 个主键，前面的所有主键都需要等号条件
-            for (int j = 0; j < i; j++) {
-                newCursors[index++] = cursors[j];
-            }
-            // 第 i 个主键使用大于号条件
-            newCursors[index++] = cursors[i];
-        }
-        
-        newCursors[paramCount] = pageSize;
-        return newCursors;
-    }
 
-    @Override
-    public boolean enableCursor() {
-        return true;
+        // Oracle不需要OFFSET，只需要添加pageSize参数
+        Object[] newCursors = new Object[cursorArgs.length + 1];
+        System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
+        newCursors[cursorArgs.length] = pageSize;
+        return newCursors;
     }
 
     @Override
@@ -255,4 +147,154 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return "select 1 from dual";
     }
 
+    @Override
+    protected String getCatalog(String database, Connection connection) {
+        return null;
+    }
+
+    @Override
+    protected String getSchema(String schema, Connection connection) throws SQLException {
+        if (StringUtil.isBlank(schema)) {
+            schema = connection.getSchema();
+        }
+        if (StringUtil.isNotBlank(schema)) {
+            schema = schema.toUpperCase();
+        }
+        return schema;
+    }
+
+    @Override
+    public String buildJdbcUrl(DatabaseConfig config, String database) {
+        // jdbc:oracle:thin:@127.0.0.1:1521:ORCL
+        StringBuilder url = new StringBuilder();
+        url.append("jdbc:oracle:thin:@").append(config.getHost()).append(":").append(config.getPort());
+        String serviceName = config.getServiceName();
+        if (StringUtil.isNotBlank(serviceName)) {
+            // 使用Service Name
+            url.append("/").append(serviceName);
+        } else if (StringUtil.isNotBlank(database)) {
+            // 使用SID (传统方式)
+            url.append(":").append(database);
+        } else {
+            throw new IllegalArgumentException("Oracle需要指定serviceName或database(SID)");
+        }
+
+        return url.toString();
+    }
+
+    @Override
+    public String buildInsertSql(SqlBuilderConfig config) {
+        // Oracle 使用 MERGE 实现 INSERT IGNORE 效果（主键冲突时忽略）
+        MergeContext context = buildMergeContext(config);
+        
+        StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
+        // 构建 MERGE 头部
+        buildMergeHeader(sql, config, context);
+        
+        // 只有 WHEN NOT MATCHED 子句，主键冲突时什么都不做（INSERT IGNORE 行为）
+        buildInsertClause(sql, context);
+        
+        return sql.toString();
+    }
+
+    @Override
+    public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        MergeContext context = buildMergeContext(config);
+        
+        StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
+        // 构建 MERGE 头部
+        buildMergeHeader(sql, config, context);
+        
+        // WHEN MATCHED 子句 - 更新非主键字段
+        sql.append("WHEN MATCHED THEN UPDATE SET ");
+        sql.append(StringUtil.join(context.updateSets, StringUtil.COMMA)).append(" ");
+        
+        // WHEN NOT MATCHED 子句 - 插入
+        buildInsertClause(sql, context);
+        
+        return sql.toString();
+    }
+
+    /**
+     * 构建 MERGE 上下文（字段、主键等信息）
+     */
+    private MergeContext buildMergeContext(SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        MergeContext context = new MergeContext();
+        
+        config.getFields().forEach(f -> {
+            String fieldName = database.buildWithQuotation(f.getName());
+            context.fieldNames.add(fieldName);
+            
+            // 构建 SELECT 部分的字段别名
+            List<String> fieldVs = new ArrayList<>();
+            if (database.buildCustomValue(fieldVs, f)) {
+                context.selectFields.add(fieldVs.get(0) + " AS " + fieldName);
+            } else {
+                context.selectFields.add("? AS " + fieldName);
+            }
+            
+            if (f.isPk()) {
+                context.pkFieldNames.add(fieldName);
+            } else {
+                context.updateSets.add(String.format("t.%s = s.%s", fieldName, fieldName));
+            }
+        });
+        
+        return context;
+    }
+
+    /**
+     * 构建 MERGE 语句头部（MERGE INTO ... USING ... ON ...）
+     */
+    private void buildMergeHeader(StringBuilder sql, SqlBuilderConfig config, MergeContext context) {
+        Database database = config.getDatabase();
+        
+        sql.append("MERGE INTO ").append(config.getSchema());
+        sql.append(database.buildWithQuotation(config.getTableName())).append(" t ");
+        
+        // Oracle 使用 DUAL 表构造数据源
+        sql.append("USING (SELECT ");
+        sql.append(StringUtil.join(context.selectFields, StringUtil.COMMA));
+        sql.append(" FROM DUAL) s ");
+        
+        // 构建 ON 条件：t.pk = s.pk AND ...
+        sql.append("ON (");
+        for (int i = 0; i < context.pkFieldNames.size(); i++) {
+            if (i > 0) {
+                sql.append(" AND ");
+            }
+            String pkFieldName = context.pkFieldNames.get(i);
+            sql.append("t.").append(pkFieldName).append(" = s.").append(pkFieldName);
+        }
+        sql.append(") ");
+    }
+
+    /**
+     * 构建 INSERT 子句（WHEN NOT MATCHED THEN INSERT ...）
+     */
+    private void buildInsertClause(StringBuilder sql, MergeContext context) {
+        sql.append("WHEN NOT MATCHED THEN INSERT (");
+        sql.append(StringUtil.join(context.fieldNames, StringUtil.COMMA)).append(") VALUES (");
+        
+        // VALUES 子句使用 s.fieldName
+        List<String> sFieldNames = new ArrayList<>();
+        context.fieldNames.forEach(f -> sFieldNames.add("s." + f));
+        sql.append(StringUtil.join(sFieldNames, StringUtil.COMMA)).append(")");
+    }
+
+    /**
+     * MERGE 语句构建上下文
+     */
+    private static class MergeContext {
+        List<String> fieldNames = new ArrayList<>();
+        List<String> selectFields = new ArrayList<>();
+        List<String> pkFieldNames = new ArrayList<>();
+        List<String> updateSets = new ArrayList<>();
+    }
+
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }

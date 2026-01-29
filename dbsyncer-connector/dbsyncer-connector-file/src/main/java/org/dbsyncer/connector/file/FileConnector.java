@@ -7,23 +7,28 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
+import org.dbsyncer.connector.file.column.FileResolver;
 import org.dbsyncer.connector.file.config.FileConfig;
-import org.dbsyncer.connector.file.model.FileResolver;
-import org.dbsyncer.connector.file.model.FileSchema;
+import org.dbsyncer.connector.file.schema.FileSchemaResolver;
 import org.dbsyncer.connector.file.validator.FileConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +39,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,18 +57,20 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String FILE_NAME = "fileName";
+    public static final String FILE_SEPARATOR = "separator";
     private final String FILE_PATH = "filePath";
     private final FileResolver fileResolver = new FileResolver();
     private final FileConfigValidator configValidator = new FileConfigValidator();
-
-    public FileConnector() {
-        VALUE_MAPPERS.put(Types.BIT, new FileBitValueMapper());
-    }
+    private final FileSchemaResolver schemaResolver = new FileSchemaResolver();
 
     @Override
     public String getConnectorType() {
         return "File";
+    }
+
+    @Override
+    public TableTypeEnum getExtendedTableType() {
+        return TableTypeEnum.SEMI;
     }
 
     @Override
@@ -75,7 +79,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public ConnectorInstance connect(FileConfig config) {
+    public ConnectorInstance connect(FileConfig config, ConnectorServiceContext context) {
         return new FileConnectorInstance(config);
     }
 
@@ -97,37 +101,26 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             logger.warn("can not find fileDir:{}", fileDir);
             return false;
         }
-        for (FileSchema fileSchema : connectorInstance.getFileSchemaList()) {
-            String filePath = connectorInstance.getFilePath(fileSchema.getFileName());
-            if (!new File(filePath).exists()) {
-                logger.warn("can not find file:{}", filePath);
-                alive = false;
-            }
+        return true;
+    }
+
+    @Override
+    public List<Table> getTable(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public List<MetaInfo> getMetaInfo(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        List<MetaInfo> metaInfos = new ArrayList<>();
+        for (Table table : context.getTablePatterns()){
+            MetaInfo metaInfo = new MetaInfo();
+            metaInfo.setTable(table.getName());
+            metaInfo.setTableType(getExtendedTableType().getCode());
+            metaInfo.setColumn(table.getColumn());
+            metaInfo.setExtInfo(table.getExtInfo());
+            metaInfos.add(metaInfo);
         }
-        return alive;
-    }
-
-    @Override
-    public String getConnectorInstanceCacheKey(FileConfig config) {
-        String localIP;
-        try {
-            localIP = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            logger.error(e.getMessage());
-            localIP = "127.0.0.1";
-        }
-        return String.format("%s-%s", localIP, config.getFileDir());
-    }
-
-    @Override
-    public List<Table> getTable(FileConnectorInstance connectorInstance) {
-        return connectorInstance.getFileSchemaList().stream().map(fileSchema -> new Table(fileSchema.getFileName())).collect(Collectors.toList());
-    }
-
-    @Override
-    public MetaInfo getMetaInfo(FileConnectorInstance connectorInstance, String tableName) {
-        FileSchema fileSchema = connectorInstance.getFileSchema(tableName);
-        return new MetaInfo().setColumn(fileSchema.getFields());
+        return metaInfos;
     }
 
     @Override
@@ -135,14 +128,14 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         AtomicLong count = new AtomicLong();
         FileReader reader = null;
         try {
-            reader = new FileReader(new File(command.get(FILE_PATH)));
+            reader = new FileReader(command.get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
             while (lineIterator.hasNext()) {
                 lineIterator.next();
                 count.addAndGet(1);
             }
         } catch (IOException e) {
-            throw new FileException(e.getCause());
+            throw new FileException(e);
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -154,13 +147,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         List<Map<String, Object>> list = new ArrayList<>();
         FileReader reader = null;
         try {
-            FileConfig fileConfig = connectorInstance.getConfig();
-            FileSchema fileSchema = connectorInstance.getFileSchema(context.getCommand().get(FILE_NAME));
-            final List<Field> fields = fileSchema.getFields();
+            Map<String, String> command = context.getCommand();
+            final List<Field> fields = context.getSourceTable().getColumn();
             Assert.notEmpty(fields, "The fields of file schema is empty.");
-            final char separator = fileConfig.getSeparator();
-
-            reader = new FileReader(context.getCommand().get(FILE_PATH));
+            final char separator = command.get(FILE_SEPARATOR).charAt(0);
+            reader = new FileReader(command.get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
             int from = (context.getPageIndex() - 1) * context.getPageSize();
             int to = from + context.getPageSize();
@@ -177,7 +168,8 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
                 }
             }
         } catch (IOException e) {
-            throw new FileException(e.getCause());
+            logger.error(e.getMessage());
+            throw new FileException(e);
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -192,12 +184,12 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             throw new FileException("writer data can not be empty.");
         }
 
-        final String separator = new String(new char[]{connectorInstance.getConfig().getSeparator()});
-
         Result result = new Result();
         OutputStream output = null;
         try {
-            final String filePath = connectorInstance.getFilePath(context.getCommand().get(FILE_NAME));
+            Map<String, String> command = context.getCommand();
+            final String separator = command.get(FILE_SEPARATOR);
+            final String filePath = command.get(FILE_PATH);
             output = new FileOutputStream(filePath, true);
             List<String> lines = data.stream().map(row -> {
                 List<String> array = new ArrayList<>();
@@ -220,6 +212,14 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
+        Map<String, String> command = getTargetCommand(commandConfig);
+        String fieldList = JsonUtil.objToJson(commandConfig.getTable().getColumn());
+        command.put(ConnectorConstant.OPERTION_QUERY, fieldList);
+        return command;
+    }
+
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> command = new HashMap<>();
         FileConfig fileConfig = (FileConfig) commandConfig.getConnectorConfig();
         final String fileDir = fileConfig.getFileDir();
@@ -227,16 +227,11 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         if (!StringUtil.endsWith(fileDir, File.separator)) {
             file.append(File.separator);
         }
-        file.append(commandConfig.getTable().getName());
+        Table table = commandConfig.getTable();
+        file.append(table.getName());
+        String separator = table.getExtInfo().getProperty(FILE_SEPARATOR, StringUtil.VERTICAL_LINE);
         command.put(FILE_PATH, file.toString());
-        command.put(FILE_NAME, commandConfig.getTable().getName());
-        return command;
-    }
-
-    @Override
-    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Map<String, String> command = new HashMap<>();
-        command.put(FILE_NAME, commandConfig.getTable().getName());
+        command.put(FILE_SEPARATOR, separator);
         return command;
     }
 
@@ -248,4 +243,8 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
         return null;
     }
 
+    @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
 }

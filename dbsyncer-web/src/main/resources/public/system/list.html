@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">系统配置</h3>
+    </div>
+    <div class="card-body">
+        <form id="config-form-edit">
+            <!-- 管理员操作区域 -->
+            <div class="form-actions mb-4">
+                <button id="updateSystemBtn" type="button" class="btn btn-primary">
+                    <span class="fa fa-save"></span> 保存
+                </button>
+            </div>
+            <div class="grid grid-cols-2">
+                <div class="form-item">
+                    <label class="form-label">记录同步成功数据</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">记录全量数据<i class="fa fa-question-circle" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">记录同步失败数据</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">记录失败日志长度<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1024" max="8192" required name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">表执行器上限数<i class="fa fa-question-circle" title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="200" required name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">同步数据过期时间(天)<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="180" required name="expireDataDays" th:value="${config?.expireDataDays}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">系统日志过期时间(天)<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1" max="180" required name="expireLogDays" th:value="${config?.expireLogDays}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">打印trace信息<i class="fa fa-question-circle" title="仅用于排查问题，生产环境建议关闭"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">水印<i class="fa fa-question-circle" title="刷新页面生效"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input id="enableWatermark" name="enableWatermark" th:checked="${config?.enableWatermark}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label watermark hidden">水印内容</label>
+                    <div class="form-control-area watermark hidden">
+                        <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label hidden">开放api<i class="fa fa-question-circle" title="外部业务系统可凭此配置生成token，直接调用DBSyncer的管理接口，也可以同步数据。"></i></label>
+                    <div class="form-control-area hidden">
+                        <label class="form-switch">
+                            <input name="enableRsaConfig" th:checked="${config?.enableRsaConfig}" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label rsa-config hidden">密钥长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
+                    <div class="form-control-area flex">
+                        <input type="number" class="form-control rsa-config hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
+                        <button id="generateRSA" type="button" class="btn btn-outline rsa-config hidden ml-2">
+                            <span class="fa fa-refresh"></span> 生成RSA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid mt-4 rsa-config hidden">
+                <div class="form-item">
+                    <label class="form-label">RSA公钥</label>
+                    <div class="form-control-area">
+                        <textarea name="rsaPublicKey" class="form-control" disabled maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
+                        <button type="button" class="btn btn-outline mt-1" id="copyPublicKeyBtn">
+                            <i class="fa fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-item">
+                    <label class="form-label">RSA私钥</label>
+                    <div class="form-control-area">
+                        <textarea name="rsaPrivateKey" class="form-control" disabled maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
+                        <button type="button" class="btn btn-outline mt-1" id="copyPrivateKeyBtn">
+                            <i class="fa fa-copy"></i> 复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class="blank-block-md"></div>
+
+    </div>
+</div>
+
+<script>
+    $(function () {
+        const watermark = $('.watermark');
+        const rsaConfig = $(".rsa-config");
+        const rsaKeyLength = $("input[name='rsaKeyLength']");
+        const rsaPublicKey = $("textarea[name='rsaPublicKey']");
+        const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
+        const generateRSABtn = $("#generateRSA");
+        const copyPublicKeyBtn = $("#copyPublicKeyBtn");
+        const copyPrivateKeyBtn = $("#copyPrivateKeyBtn");
+
+        function toggleWatermark(checked) {
+            if (checked) {
+                watermark.show();
+            } else {
+                watermark.hide();
+            }
+        }
+        let switchApi = initSwitch($('#enableWatermark'), toggleWatermark);
+        toggleWatermark(switchApi.isChecked());
+
+        //保存
+        $("#updateSystemBtn").click(function () {
+            const $form = $("#config-form-edit");
+            if (validateForm($form)) {
+                // 允许修改参数
+                rsaPublicKey.prop('disabled', false);
+                rsaPrivateKey.prop('disabled', false);
+                const submitBtn = $(this);
+                const originalText = submitBtn.html();
+                submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+                doPoster('/system/edit', $form.serializeJson(), function (response) {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    if (response.success === true) {
+                        bootGrowl("修改成功!", "success");
+                        doLoader("/system");
+                    } else {
+                        bootGrowl(response.message, "danger");
+                    }
+                });
+            }
+        });
+
+        generateRSABtn.click(function () {
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<i class="fa fa-spinner fa-spin"></i> 生成中...').prop('disabled', true);
+            doPoster('/system/generateRSA', {'keyLength' : rsaKeyLength.val()}, function (response) {
+                btn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    rsaPublicKey.text(response.data.publicKey);
+                    rsaPrivateKey.text(response.data.privateKey);
+                    bootGrowl("生成成功!", "success");
+                } else {
+                    bootGrowl(response.message, "danger");
+                }
+            });
+        });
+
+        // 绑定复制按钮事件（在显示 RSA 配置区域时调用）
+        function bindCopyButtons() {
+            // 先移除旧的事件绑定，避免重复绑定
+            copyPublicKeyBtn.off('click');
+            copyPrivateKeyBtn.off('click');
+            
+            // 复制RSA公钥
+            copyPublicKeyBtn.on('click', function() {
+                const publicKeyText = rsaPublicKey.val();
+                if (isBlank(publicKeyText)) {
+                    bootGrowl("RSA公钥为空，无法复制", "warning");
+                    return;
+                }
+                copyToClipboard(publicKeyText, {
+                    button: $(this),
+                    successMessage: "复制RSA公钥成功！",
+                    originalText: "复制",
+                    originalIcon: "fa-copy"
+                });
+            });
+
+            // 复制RSA私钥
+            copyPrivateKeyBtn.on('click', function() {
+                const privateKeyText = rsaPrivateKey.val();
+                if (isBlank(privateKeyText)) {
+                    bootGrowl("RSA私钥为空，无法复制", "warning");
+                    return;
+                }
+                copyToClipboard(privateKeyText, {
+                    button: $(this),
+                    successMessage: "复制RSA私钥成功！",
+                    originalText: "复制",
+                    originalIcon: "fa-copy"
+                });
+            });
+        }
+
+        function toggleRSAConfig(checked) {
+            rsaKeyLength.prop('disabled', !checked);
+            generateRSABtn.prop('disabled', !checked);
+            if (checked) {
+                rsaConfig.show();
+                // 显示区域后，延迟绑定事件，确保 DOM 元素已渲染
+                setTimeout(function() {
+                    bindCopyButtons();
+                }, 100);
+                if (isBlank(rsaPublicKey.val()) && isBlank(rsaPrivateKey.val())) {
+                    generateRSABtn.click();
+                }
+                return;
+            }
+            rsaConfig.hide();
+        }
+        let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
+        const isRSAConfigChecked = enableRsaConfigApi.isChecked();
+        toggleRSAConfig(isRSAConfigChecked);
+        // 如果初始状态就是显示 RSA 配置，也需要绑定事件
+        if (isRSAConfigChecked) {
+            setTimeout(function() {
+                bindCopyButtons();
+            }, 100);
+        }
+
+    })
+</script>
+</html>

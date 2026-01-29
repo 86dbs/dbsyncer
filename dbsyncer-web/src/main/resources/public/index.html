@@ -13,71 +13,41 @@
     <meta name="author" content="AE86">
     <title>dbsyncer</title>
     <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.staticfile.org/font-awesome/4.7.0/css/font-awesome.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/font-awesome.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap.min.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap/bootstrap.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.34.5/css/bootstrap-dialog.min.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-dialog/bootstrap-dialog.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.17/css/bootstrap-select.min.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-select/bootstrap-select.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/bootstrap-switch/3.3.4/css/bootstrap3/bootstrap-switch.min.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-switch/bootstrap-switch.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcss.com/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-tagsinput/bootstrap-tagsinput.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcdn.net/ajax/libs/bootstrap-fileinput/5.1.5/css/fileinput.min.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/bootstrap-fileinput/fileinput.min.css}"/>
-    <link type="text/css" rel="stylesheet" th:if="${enableCDN}" href="https://cdn.bootcss.com/iCheck/1.0.2/skins/all.css"/>
-    <link type="text/css" rel="stylesheet" th:if="${!enableCDN}" th:href="@{/plugins/css/icheck/all.css}"/>
-    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/loading-plus/loading-plus.css}"/>
-    <link type="text/css" rel="stylesheet" th:href="@{/css/common.css}">
-    <link type="text/css" rel="stylesheet" th:href="@{/css/index/index.css}">
+    
+    <!-- 字体预加载优化：提前加载 woff2 格式字体 -->
+    <link rel="preload" th:href="@{/plugins/fonts/fontawesome-webfont.woff2?v=4.7.0}" as="font" type="font/woff2" crossorigin="anonymous">
+    <!-- FontAwesome 图标库 -->
+    <link type="text/css" rel="stylesheet" th:href="@{/plugins/css/font-awesome.min.css}"/>
+    <!-- 主题样式 -->
+    <link type="text/css" rel="stylesheet" th:href="@{/css/dbsyncer-theme.css}">
+    <script th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
+    <script th:src="@{/plugins/js/chartjs/chart.umd.min.js}" onerror="console.error('Chart.js 加载失败，请检查文件是否完整或版本是否兼容');"></script>
 </head>
-<body>
+<body class="bg-primary overflow-hidden">
+    <div class="flex h-screen">
+        <!-- 左侧导航区 -->
+        <div th:replace="sidebar :: nav"></div>
 
-<!-- 导航栏 -->
-<div th:replace="nav :: nav"></div>
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- 头部区 -->
+            <div th:replace="header :: header"></div>
 
-<!-- 内容区域 -->
-<div th:replace="content :: content"></div>
-
-<!-- 底部区域 -->
-<div th:replace="footer :: copy"></div>
-
+            <!-- 页面内容 -->
+            <div id="mainContent" class="p-5">
+                <div th:replace="index/list :: index"></div>
+            </div>
+        </main>
+    </div>
 </body>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap/respond.min.js}"></script>
-<script th:if="${enableCDN}" src="https://lib.baomitu.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap/html5shiv.min.js}"></script>
-<!-- 上述2个js文件解决IE8以上bootstrap的兼容性问题 -->
-<script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap/bootstrap.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/TableDnD/1.0.5/jquery.tablednd.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/tablednd/jquery.tablednd.js}"></script>
-<script th:if="${enableCDN}" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.34.5/js/bootstrap-dialog.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-dialog/bootstrap-dialog.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.17/js/bootstrap-select.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-select/bootstrap-select.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/bootstrap-switch/3.3.4/js/bootstrap-switch.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-switch/bootstrap-switch.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcss.com/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-tagsinput/bootstrap-tagsinput.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/bootstrap-fileinput/5.1.5/js/fileinput.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/bootstrap-fileinput/fileinput.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/sql-formatter/13.0.0/sql-formatter.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/sql-formatter/sql-formatter.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/echarts/5.3.3/echarts.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/echarts/echarts.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcss.com/iCheck/1.0.2/icheck.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/icheck/icheck.min.js}"></script>
-<script th:if="${enableCDN}" src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/qrcodejs/qrcode.min.js}"></script>
-<script th:src="@{/plugins/js/bootstrap-growl/jquery.bootstrap-growl.min.js}"></script>
-<script th:src="@{/plugins/js/loading-plus/loading-plus.js}"></script>
-<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
-<script th:src="@{/plugins/js/formValidate/formValidate.js}"></script>
-<script th:src="@{/js/common.js}"></script>
-<script th:src="@{/js/index.js}"></script>
+<script th:src="@{/js/framework.js}"></script>
+<script th:src="@{/js/components/confirm.js}"></script>
+<script th:src="@{/js/components/notify.js}"></script>
+<script th:src="@{/js/components/db-select.js}"></script>
+<script th:src="@{/js/components/pagination-manager.js}"></script>
+<script th:src="@{/js/components/qrcode-popover.js}"></script>
+<script th:src="@{/js/components/file-upload.js}"></script>
+<script th:src="@{/js/components/tags-input.js}"></script>
+<script th:src="@{/js/components/radio.js}"></script>
+<script th:src="@{/js/components/checkbox.js}"></script>
 </html>

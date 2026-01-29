@@ -1,0 +1,231 @@
+/**
+ * DBSyncer 卡片组件样式
+ */
+/* ========== 基础卡片 ========== */
+.card {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ========== 卡片头部 ========== */
+.card-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-primary);
+}
+
+/* ========== 卡片标题 ========== */
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ========== 卡片副标题 ========== */
+.card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin: var(--spacing-xs) 0 0 0;
+}
+
+/* ========== 卡片内容 ========== */
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+/* 卡片中的轻量交互元素 */
+.card button:not(.btn):not([class*='btn-']) {
+  background: transparent;
+  border: 0;
+}
+.card button:not(.btn):not([class*='btn-']):focus {
+  outline: none;
+  box-shadow: none;
+}
+.card input[type="text"], .card input[type="search"] {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+/* ========== 进度条卡片 ========== */
+.progress-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  padding: 20px;
+}
+
+.progress-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-title {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.progress-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.progress-value-success { color: #52c41a; }
+.progress-value-warning { color: #faad14; }
+.progress-value-danger { color: #ff4d4f; }
+
+.progress-bar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.success {
+  background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+}
+
+.progress-fill.warning {
+  background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
+}
+
+.progress-fill.danger {
+  background: linear-gradient(90deg, #ff4d4f 0%, #ff7875 100%);
+}
+
+.progress-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.progress-detail strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ========== 迷你统计卡片 ========== */
+.mini-stats-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 320px) {
+  .mini-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .mini-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mini-stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  border: 1px solid rgba(22, 93, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+  align-items: center;
+  justify-content: space-between;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.mini-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+.mini-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.mini-stat-card:hover::after {
+  opacity: 0.24;
+}
+
+.mini-stat-info {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.mini-stat-title {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.mini-stat-number {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mini-stat-card--success::after {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.65) 0%, rgba(82, 196, 26, 0.15) 100%);
+}
+
+.mini-stat-card--error::after {
+  background: linear-gradient(135deg, rgba(245, 34, 45, 0.65) 0%, rgba(245, 34, 45, 0.15) 100%);
+}
+
+.mini-stat-card--primary::after {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.6) 0%, rgba(22, 93, 255, 0.18) 100%);
+}
+
+.mini-stat-card--info::after {
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.6) 0%, rgba(24, 144, 255, 0.15) 100%);
+}
+
+.mini-stat-card--warning::after {
+  background: linear-gradient(135deg, rgba(250, 140, 22, 0.65) 0%, rgba(250, 140, 22, 0.18) 100%);
+}
+
+.mini-stat-card--violet::after {
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.65) 0%, rgba(114, 46, 209, 0.18) 100%);
+}

@@ -4,10 +4,11 @@
 package org.dbsyncer.connector.file.validator;
 
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.file.model.FileSchema;
+import org.dbsyncer.connector.file.FileConnector;
 import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -21,29 +22,32 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2022-05-06 00:04
  */
-public class FileConfigValidator implements ConfigValidator<FileConfig> {
+public class FileConfigValidator implements ConfigValidator<FileConnector, FileConfig> {
 
     @Override
-    public void modify(FileConfig fileConfig, Map<String, String> params) {
+    public void modify(FileConnector connectorService, FileConfig fileConfig, Map<String, String> params) {
         String fileDir = params.get("fileDir");
-        String schema = params.get("schema");
-        String separator = StringUtil.trim(params.get("separator"));
         Assert.hasText(fileDir, "fileDir is empty.");
-        Assert.hasText(schema, "schema is empty.");
-        Assert.hasText(separator, "separator is empty.");
-
-        List<FileSchema> fileSchemas = JsonUtil.jsonToArray(schema, FileSchema.class);
-        Assert.notEmpty(fileSchemas, "found not file schema.");
-
-        fileDir += !StringUtil.endsWith(fileDir, File.separator) ? File.separator : "";
-        for (FileSchema fileSchema : fileSchemas) {
-            String file = fileDir.concat(fileSchema.getFileName());
-            Assert.isTrue(new File(file).exists(), String.format("found not file '%s'", file));
-        }
-
+        Assert.isTrue(new File(fileDir).exists(), String.format("路径无效 '%s'", fileDir));
         fileConfig.setFileDir(fileDir);
-        fileConfig.setSeparator(separator.charAt(0));
-        fileConfig.setSchema(schema);
+    }
+
+    @Override
+    public Table modifyExtendedTable(FileConnector connectorService, Map<String, String> params) {
+        Table table = new Table();
+        String tableName = params.get("tableName");
+        String columnList = params.get("columnList");
+        String separator = params.get("separator");
+        Assert.hasText(tableName, "TableName is empty");
+        Assert.hasText(columnList, "ColumnList is empty");
+        Assert.hasText(separator, "分割符不能为空");
+        List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
+        Assert.notEmpty(fields, "字段不能为空.");
+        table.setName(tableName);
+        table.setColumn(fields);
+        table.setType(connectorService.getExtendedTableType().getCode());
+        table.getExtInfo().put(FileConnector.FILE_SEPARATOR, separator);
+        return table;
     }
 
 }

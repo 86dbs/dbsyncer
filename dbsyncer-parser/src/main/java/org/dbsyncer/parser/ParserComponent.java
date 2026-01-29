@@ -4,9 +4,11 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -24,11 +26,10 @@ public interface ParserComponent {
     /**
      * 获取表元信息
      *
-     * @param connectorId
-     * @param tableName
+     * @param context
      * @return
      */
-    MetaInfo getMetaInfo(String connectorId, String tableName);
+    List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context);
 
     /**
      * 获取映射关系执行命令
@@ -38,15 +39,6 @@ public interface ParserComponent {
      * @return
      */
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
-
-    /**
-     * 获取总数
-     *
-     * @param connectorId
-     * @param command
-     * @return
-     */
-    long getCount(String connectorId, Map<String, String> command);
 
     /**
      * 全量同步

@@ -9,6 +9,7 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
@@ -48,12 +49,19 @@ public class MappingChecker extends AbstractChecker {
     @Resource
     private TableGroupChecker tableGroupChecker;
 
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
+        String sourceDatabase = params.get("sourceDatabase");
+        String sourceSchema = params.get("sourceSchema");
         String targetConnectorId = params.get("targetConnectorId");
+        String targetDatabase = params.get("targetDatabase");
+        String targetSchema = params.get("targetSchema");
         Assert.hasText(name, "驱动名称不能为空");
         Assert.hasText(sourceConnectorId, "数据源不能为空.");
         Assert.hasText(targetConnectorId, "目标源不能为空.");
@@ -61,13 +69,19 @@ public class MappingChecker extends AbstractChecker {
         Mapping mapping = new Mapping();
         mapping.setName(name);
         mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setSourceDatabase(sourceDatabase);
+        mapping.setSourceSchema(sourceSchema);
         mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setTargetDatabase(targetDatabase);
+        mapping.setTargetSchema(targetSchema);
         mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
         mapping.setParams(new HashMap<>());
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
+
+        preloadTemplate.reConnect(mapping);
 
         // 创建meta
         addMeta(mapping);
@@ -95,7 +109,6 @@ public class MappingChecker extends AbstractChecker {
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
         mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
         mapping.setForceUpdate(StringUtil.isNotBlank(params.get("forceUpdate")));
-        mapping.setUpsert(StringUtil.isNotBlank(params.get("upsert")));
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
@@ -110,6 +123,8 @@ public class MappingChecker extends AbstractChecker {
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
+
+        preloadTemplate.reConnect(mapping);
 
         // 合并关联的映射关系配置
         batchMergeConfig(mapping, params);

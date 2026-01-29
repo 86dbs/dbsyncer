@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content" th:if="${mapping?.extendedType eq 'SEMI'}">
+    <!-- 半结构化配置 -->
+    <div class="grid grid-cols-2 mt-4">
+        <div class="form-item">
+            <label class="form-label">[[${type == 'source' ? '数据源' : '目标源'}]]表</label>
+            <select id="custom_table_select" class="form-control" name="customTable">
+                <option th:each="t,s:${mapping?.customTables}"
+                        th:value="${t?.name}"
+                        th:text="${t?.name} + ' ('+${t?.type}+')'"
+                        th:data-column="${t?.columnJson}"
+                        th:data-ext-info="${t?.extInfoJson}" />
+            </select>
+        </div>
+
+        <div class="form-item justify-between">
+            <label class="form-label"></label>
+            <div class="form-actions">
+                <button th:if="${mapping?.meta?.state eq 0 and mapping?.customTables.size gt 0}"
+                        id="delSemiTableBtn" type="button" class="btn btn-outline">
+                    <i class="fa fa-remove"></i> 删除
+                </button>
+                <button th:if="${mapping?.meta?.state eq 0 and mapping?.customTables.size gt 0}"
+                        id="editSemiTableBtn" type="button" class="btn btn-outline">
+                    <i class="fa fa-edit"></i> 修改
+                </button>
+                <button th:if="${mapping?.meta?.state eq 0}"
+                        id="addSemiTableBtn" type="button" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+                <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customItems" class="grid grid-cols-2 mt-4"></div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th></th>
+            <th>类型（<a class="text-sm" href="https://gitee.com/ghi/dbsyncer/wikis/%E9%A1%B9%E7%9B%AE%E8%AE%BE%E8%AE%A1/%E6%A0%87%E5%87%86%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/Standard%20Data%20Type#standard-data-type-mapping"
+                        title="DBS标准数据类型" target='_blank'>
+                <i class="fa fa-external-link"></i>参考文档
+            </a>）
+            </th>
+            <th>字段</th>
+            <th>主键</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="fieldList">
+        <tr class="field-input-row">
+            <td></td>
+            <td style="overflow: visible; position: relative;">
+                <select class="form-control field-type-select">
+                    <option th:each="dataTypeItem,s:${dataType}" th:value="${dataTypeItem.name()}" th:text="${dataTypeItem.name()}" th:selected="${dataTypeItem.name() eq 'STRING'}"/>
+                </select>
+            </td>
+            <td><input class="form-control field-name-input" type="text" maxlength="64" placeholder="请输入字段名"/></td>
+            <td></td>
+            <td>
+                <button class="table-action-btn view fieldAdd" type="button" title="添加">
+                    <i class="fa fa-plus"></i>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="blank-block"></div>
+<script>
+    function renderSemiInfo(tableName, extInfo) {
+        let connectorType = $("#connectorType").val();
+        let customType = $("#customType").val();
+        let config = {};
+        let items = [];
+        switch (connectorType) {
+            case 'Kafka':
+                config.label = 'Topic';
+                if (customType === 'source') {
+                    let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
+                    items.push(`<div class="form-item">
+                        <label class="form-label">group.id<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="groupId" type="text" maxlength="128" value="${groupId}" required/>
+                        </div>
+                    </div>`);
+                }
+                break;
+            case 'File':
+                config.label = '文件名';
+                let separator = extInfo.separator === undefined ? '|' : extInfo.separator;
+                items.push(`<div class="form-item">
+                        <label class="form-label">分割符<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="separator" type="text" maxlength="128" value="${separator}" required/>
+                        </div>
+                    </div>`);
+                break;
+            default:
+                config.label = '表名';
+                break;
+        }
+        items.unshift(`<div class="form-item">
+            <label class="form-label">${config.label}<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="tableName" type="text" maxlength="64" placeholder="请输入${config.label}" value="${tableName}" required />
+            </div>
+        </div>`);
+        return items;
+    }
+
+    $(function () {
+        const $fieldList = $("#fieldList");
+
+        // 更新序号
+        function updateRowNumbers() {
+            $fieldList.find('tr:not(.field-input-row)').each(function(index) {
+                $(this).find('td:first').text(index + 1);
+            });
+        }
+
+        // 切换主键
+        function togglePrimaryKey($row) {
+            const $pkCell = $row.find('td:eq(3)');
+            if ($pkCell.find('.fa-key').length > 0) {
+                $pkCell.empty();
+            } else {
+                $pkCell.html('<i title="主键" class="fa fa-key text-warning"></i>');
+            }
+        }
+
+        // 获取输入行的值
+        function getInputRowValues() {
+            const $inputRow = $fieldList.find('.field-input-row');
+            const fieldName = $inputRow.find('.field-name-input').val().trim();
+            const $typeSelect = $inputRow.find('.field-type-select');
+            // 如果已初始化 dbSelect，使用 getValues 方法
+            const typeSelectApi = $typeSelect.data('dbSelect');
+            const fieldType = typeSelectApi ? (typeSelectApi.getValues()[0] || '') : $typeSelect.val();
+            return { fieldName: fieldName, fieldType: fieldType };
+        }
+
+        // 清空输入行
+        function clearInputRow() {
+            const $inputRow = $fieldList.find('.field-input-row');
+            $inputRow.find('.field-name-input').val('');
+        }
+
+        // 绑定拖拽事件
+        function bindDragEvents($row) {
+            // 拖拽开始
+            $row.on('dragstart', function(e) {
+                e.originalEvent.dataTransfer.effectAllowed = 'move';
+                e.originalEvent.dataTransfer.setData('text/html', this.innerHTML);
+                $(this).addClass('dragging');
+            });
+
+            // 拖拽结束
+            $row.on('dragend', function(e) {
+                $(this).removeClass('dragging');
+                $fieldList.find('tr').removeClass('drag-over');
+                updateRowNumbers();
+            });
+
+            // 拖拽经过
+            $row.on('dragover', function(e) {
+                // 不允许拖到输入行
+                if ($(this).hasClass('field-input-row')) {
+                    return false;
+                }
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.originalEvent.dataTransfer.dropEffect = 'move';
+                $(this).addClass('drag-over');
+                return false;
+            });
+
+            // 拖拽离开
+            $row.on('dragleave', function(e) {
+                $(this).removeClass('drag-over');
+            });
+
+            // 放置
+            $row.on('drop', function(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                const $dragging = $fieldList.find('.dragging');
+                if ($dragging.length && $dragging[0] !== this && !$(this).hasClass('field-input-row')) {
+                    const draggingIndex = $dragging.index();
+                    const targetIndex = $(this).index();
+
+                    if (draggingIndex < targetIndex) {
+                        $(this).before($dragging);
+                    } else {
+                        $(this).after($dragging);
+                    }
+                    updateRowNumbers();
+                }
+                return false;
+            });
+        }
+
+        // 添加字段行
+        function addFieldRow(fieldName, fieldType, isPrimaryKey) {
+            // 使用 jQuery 创建元素，避免 XSS
+            const $newRow = $('<tr>')
+                .addClass('field-data-row')
+                .attr('title', '双击设置/取消主键 | 拖动排序')
+                .attr('draggable', 'true')
+                .append($('<td>'))
+                .append($('<td>').text(fieldType))
+                .append($('<td>').text(fieldName))
+                .append($('<td>').html(isPrimaryKey ? '<i title="主键" class="fa fa-key text-warning"></i>' : ''))
+                .append($('<td>').html('<button class="table-action-btn delete fieldDelete" type="button" title="删除"><i class="fa fa-trash"></i></button>'));
+
+            // 在输入行之前插入
+            $fieldList.find('.field-input-row').before($newRow);
+
+            // 绑定删除事件
+            $newRow.find('.fieldDelete').on('click', function(e) {
+                e.stopPropagation();
+                deleteFieldRow($newRow);
+            });
+
+            // 绑定双击主键事件
+            $newRow.on('dblclick', function(e) {
+                togglePrimaryKey($newRow);
+            });
+
+            // 绑定拖拽事件
+            bindDragEvents($newRow);
+
+            // 更新序号
+            updateRowNumbers();
+        }
+
+        // 删除字段行
+        function deleteFieldRow($row) {
+            $row.remove();
+            updateRowNumbers();
+        }
+
+        // 添加字段的通用逻辑（避免重复校验）
+        function handleAddField() {
+            const values = getInputRowValues();
+
+            if (!values.fieldName) {
+                bootGrowl("请输入字段名", "warning");
+                return false;
+            }
+
+            if (!values.fieldType) {
+                bootGrowl("请选择字段类型", "warning");
+                return false;
+            }
+
+            // 检查字段名是否重复
+            let isDuplicate = false;
+            $fieldList.find('.field-data-row').each(function() {
+                const existingField = $(this).find('td:eq(2)').text().trim();
+                if (existingField.toLowerCase() === values.fieldName.toLowerCase()) {
+                    isDuplicate = true;
+                    return false;
+                }
+            });
+
+            if (isDuplicate) {
+                bootGrowl("字段名已存在", "warning");
+                return false;
+            }
+
+            addFieldRow(values.fieldName, values.fieldType, false);
+            clearInputRow();
+            return true;
+        }
+
+        // 收集所有字段数据
+        function collectColumns() {
+            const fieldData = [];
+            $fieldList.find('tr.field-data-row').each(function() {
+                const $row = $(this);
+                const typeName = $row.find('td:eq(1)').text().trim();
+                const name = $row.find('td:eq(2)').text().trim();
+                const pk = $row.find('td:eq(3) .fa-key').length > 0;
+
+                if (name) { // 只收集有字段名的数据
+                    let row = { name: name, typeName: typeName }
+                    if (pk) {
+                        row.pk = pk;
+                    }
+                    fieldData.push(row);
+                }
+            });
+            return fieldData;
+        }
+
+        function handleResponse(response, title) {
+            if (response.success === true) {
+                bootGrowl(title + "成功！", "success");
+                doLoader('/mapping/pageCustomTable?id=' + $("#mappingId").val() + '&type=' + $("#customType").val());
+            } else {
+                bootGrowl(response.message || title + "失败", "danger");
+            }
+        }
+
+        function submit(operator, title) {
+            const $form = $("#customTableForm");
+            if (!validateForm($form)) {
+                return;
+            }
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html(`<i class="fa fa-spinner fa-spin"></i> ${title}中...`).prop('disabled', true);
+            let data = $form.serializeJson();
+            data.operator = operator;
+            data.columnList = JSON.stringify(collectColumns());
+            doPoster("/mapping/saveCustomTable", data, function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                handleResponse(response, title + "自定义表");
+            });
+        }
+
+        function showCustomTableInfo($customSelect) {
+            let selected = $customSelect.getValues();
+            let items;
+            if (selected.length >= 1) {
+                $(".field-data-row").remove();
+                let columns = JSON.parse($customSelect.getAttribute('column'));
+                let extInfo = JSON.parse($customSelect.getAttribute('extInfo'));
+                for (let c of columns) {
+                    addFieldRow(c.name, c.typeName, c.pk);
+                }
+                items = renderSemiInfo(selected[0], extInfo);
+            } else {
+                // 首次添加
+                items = renderSemiInfo('', {});
+            }
+            $("#customItems").html(items);
+        }
+
+        let customTableSelect = $("#custom_table_select").dbSelect({
+            type: 'single',
+            onSelect: function () {
+                showCustomTableInfo(customTableSelect);
+            }
+        });
+        showCustomTableInfo(customTableSelect);
+
+        // 初始化现有的字段类型选择器
+        initSelect($('.field-type-select'));
+
+        //添加
+        $("#addSemiTableBtn").off('click').on('click', function () {
+            submit("add", "添加");
+        });
+        //修改
+        $("#editSemiTableBtn").off('click').on('click', function () {
+            submit("edit", "修改");
+        });
+        //删除
+        $("#delSemiTableBtn").off('click').on('click', function () {
+            let selected = customTableSelect.getValues() || [];
+            if (selected.length >= 1) {
+                let data = {
+                    id: $("#mappingId").val(),
+                    type: $("#customType").val(),
+                    customTable: selected[0]
+                }
+                doPoster("/mapping/removeCustomTable", data, function (response) {
+                    handleResponse(response, "删除自定义表");
+                });
+            }
+        });
+
+        // 添加字段按钮点击事件
+        $(".fieldAdd").off('click').on('click', function () {
+            handleAddField();
+        });
+
+        // 输入框回车键添加（直接调用处理函数，避免触发按钮点击事件）
+        $(".field-name-input").off('keypress').on('keypress', function (e) {
+            if (e.which === 13) { // Enter键
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddField();
+            }
+        });
+    });
+</script>
+
+</div>

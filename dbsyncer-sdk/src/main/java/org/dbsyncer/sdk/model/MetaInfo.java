@@ -1,9 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2025 All Rights Reserved.
+ */
 package org.dbsyncer.sdk.model;
 
 import java.util.List;
+import java.util.Properties;
 
 /**
- * 连接器基本信息
+ * 表基本信息
  *
  * @author AE86
  * @ClassName: MetaInfo
@@ -11,6 +15,11 @@ import java.util.List;
  * @date: 2017年7月20日 下午3:37:59
  */
 public class MetaInfo {
+
+    /**
+     * 表
+     */
+    private String table;
 
     /**
      * 表类型
@@ -24,53 +33,40 @@ public class MetaInfo {
     private List<Field> column;
 
     /**
-     * sql
+     * 扩展配置
      */
-    private String sql;
+    private Properties extInfo = new Properties();
 
-    /**
-     * 索引类型（ES）
-     */
-    private String indexType;
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
+    }
 
     public String getTableType() {
         return tableType;
     }
 
-    public MetaInfo setTableType(String tableType) {
+    public void setTableType(String tableType) {
         this.tableType = tableType;
-        return this;
     }
 
     public List<Field> getColumn() {
         return column;
     }
 
-    public MetaInfo setColumn(List<Field> column) {
+    public void setColumn(List<Field> column) {
         this.column = column;
-        return this;
     }
 
-    public String getSql() {
-        return sql;
+    public Properties getExtInfo() {
+        return extInfo;
     }
 
-    public MetaInfo setSql(String sql) {
-        this.sql = sql;
-        return this;
+    public void setExtInfo(Properties extInfo) {
+        this.extInfo = extInfo;
     }
 
-    public String getIndexType() {
-        return indexType;
-    }
-
-    public MetaInfo setIndexType(String indexType) {
-        this.indexType = indexType;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("MetaInfo{").append("tableType=").append(tableType).append(", ").append("column=").append(column).append('}').toString();
-    }
 }

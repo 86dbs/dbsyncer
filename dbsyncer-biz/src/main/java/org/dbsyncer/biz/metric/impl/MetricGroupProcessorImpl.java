@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.metric.impl;
 
-import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
 import org.dbsyncer.biz.vo.MetricResponseVo;
@@ -30,22 +29,12 @@ public final class MetricGroupProcessorImpl implements MetricGroupProcessor {
                 switch (metricEnum) {
                     case THREADS_LIVE:
                     case THREADS_PEAK:
-                    case MEMORY_USED:
-                    case MEMORY_COMMITTED:
-                    case MEMORY_MAX:
                         buildMetricResponseVo(group, metricEnum.getGroup(), metricEnum.getMetricName(), metric.getDetail());
                         iterator.remove();
                         break;
                     default:
                         break;
                 }
-            }
-
-            // 硬盘
-            DiskMetricEnum diskEnum = DiskMetricEnum.getMetric(metric.getCode());
-            if (diskEnum != null) {
-                buildMetricResponseVo(group, diskEnum.getGroup(), diskEnum.getMetricName(), metric.getDetail());
-                iterator.remove();
             }
         }
         metrics.addAll(0, group.values());

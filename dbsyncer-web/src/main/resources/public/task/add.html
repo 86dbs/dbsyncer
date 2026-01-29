@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">添加任务</h3>
+    </div>
+
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="taskSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i>
+                保存
+            </button>
+            <button id="taskBackBtn" type="button" class="btn btn-outline">
+                <i class="fa fa-reply"></i>
+                返回
+            </button>
+        </div>
+
+        <!-- 步骤指示器 -->
+        <div class="dbsyncer-steps" style="display: flex; justify-content: center; align-items: center; max-width: 600px; margin: 0 auto;">
+            <div class="step-item active" id="step1Indicator" style="flex: 1; display: flex; align-items: center;">
+                <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px;">
+                    1
+                </div>
+                <div class="step-label" style="margin-left: 12px; flex: 1;">
+                    <div style="font-weight: 500; color: var(--text-primary);">基础配置</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">任务基本信息</div>
+                </div>
+            </div>
+            <div class="step-line" style="width: 80px; height: 2px; background: #e5e7eb; margin: 0 16px;"></div>
+            <div class="step-item" id="step2Indicator" style="flex: 1; display: flex; align-items: center;">
+                <div class="step-circle" style="width: 40px; height: 40px; border-radius: 50%; background: #e5e7eb; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px;">
+                    2
+                </div>
+                <div class="step-label" style="margin-left: 12px; flex: 1;">
+                    <div style="font-weight: 500; color: var(--text-secondary);">表映射配置</div>
+                    <div style="font-size: 12px; color: var(--text-tertiary);">配置表和字段映射</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表单主体 -->
+        <form id="taskAddForm">
+
+            <!-- 第一步：基础配置 -->
+            <div id="step1Content" class="step-content">
+
+                <!-- 任务基本配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 8px;"></i>
+                            任务基本配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 任务名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-tag" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    任务名称<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="name" type="text" maxlength="200"
+                                           required placeholder="请输入任务名称" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务类型（隐藏字段，使用默认值） -->
+                        <input type="hidden" name="type" value="SYNC" />
+                    </div>
+                </div>
+
+
+
+                <!-- 数据库配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-database" style="color: var(--success-color); margin-right: 8px;"></i>
+                            数据库配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 源连接器 和 源数据库名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-plug" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源连接器<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control select-control" required>
+                                        <option value="">请选择源连接器</option>
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                                th:text="${c?.name + ' (' + c?.config?.connectorType + ')'}" />
+                                    </select>
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-database" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源数据库<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="sourceDatabaseName" id="sourceDatabaseName" class="form-control select-control" required>
+                                        <option value="">请先选择源连接器</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 目标连接器 和 目标数据库名称 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-plug" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标连接器<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="targetConnectorId" id="targetConnectorId" class="form-control select-control" required>
+                                        <option value="">请选择目标连接器</option>
+                                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                                th:text="${c?.name + ' (' + c?.config?.connectorType + ')'}" />
+                                    </select>
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-database" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标数据库<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <select name="targetDatabaseName" id="targetDatabaseName" class="form-control select-control" required>
+                                        <option value="">请先选择目标连接器</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Schema 配置 (条件显示) -->
+                        <div class="form-group" id="sourceSchemaGroup" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 120px 1fr; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-sitemap" style="color: var(--primary-color); margin-right: 4px;"></i>
+                                    源Schema
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="sourceSchema" id="sourceSchema" type="text"
+                                           placeholder="请输入源Schema" />
+                                </div>
+                                <label class="form-label">
+                                    <i class="fa fa-sitemap" style="color: var(--success-color); margin-right: 4px;"></i>
+                                    目标Schema
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="targetSchema" id="targetSchema" type="text"
+                                           placeholder="请输入目标Schema" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 同步触发规则 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-clock-o" style="color: var(--warning-color); margin-right: 8px;"></i>
+                            同步触发规则
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <!-- 触发方式 -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-cogs" style="color: var(--warning-color); margin-right: 4px;"></i>
+                                    触发方式<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <label class="radio-inline" style="margin-right: 24px;">
+                                        <input type="radio" name="trigger" value="once" checked
+                                               style="margin-right: 6px; width: 16px; height: 16px; vertical-align: middle;">
+                                        <span style="vertical-align: middle;">执行一次</span>
+                                    </label>
+                                    <label class="radio-inline">
+                                        <input type="radio" name="trigger" value="timing"
+                                               style="margin-right: 6px; width: 16px; height: 16px; vertical-align: middle;">
+                                        <span style="vertical-align: middle;">定时触发</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cron 表达式 (条件显示) -->
+                        <div class="form-group" id="cronGroup" style="display: none;">
+                            <div style="display: grid; grid-template-columns: 120px 1fr 100px; align-items: center;">
+                                <label class="form-label">
+                                    <i class="fa fa-calendar" style="color: var(--warning-color); margin-right: 4px;"></i>
+                                    Cron表达式<strong class="text-primary">*</strong>
+                                </label>
+                                <div class="form-control-area">
+                                    <input class="form-control" name="cron" type="text" value="0 0 1 * * ?"
+                                           placeholder="请输入Cron表达式，例如：0 0 1 * * ?" />
+                                </div>
+                                <div>
+                                    <button type="button" class="dbsyncer-btn dbsyncer-btn-secondary"
+                                            onclick="showCronHelp()" style="width: 100%;">
+                                        <i class="fa fa-question-circle dbsyncer-btn-icon-left"></i>
+                                        帮助
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 同步范围与策略 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-sliders" style="color: var(--danger-color); margin-right: 8px;"></i>
+                            同步范围与策略
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr;">
+                            <!-- 左列 -->
+                            <div style="display: flex; flex-direction: column;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="autoMatchTable" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-magic" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>自动匹配表</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="verification" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-check-circle" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>数据校验</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="correction" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-wrench" style="color: var(--warning-color); margin-right: 6px;"></i>
+                                    <span>数据修正</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="tableStructure" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-table" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>表结构同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="rowData" value="true" checked
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-list" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>行数据同步</span>
+                                </label>
+                            </div>
+
+                            <!-- 右列 -->
+                            <div style="display: flex; flex-direction: column;">
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="index" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-bookmark" style="color: var(--primary-color); margin-right: 6px;"></i>
+                                    <span>索引同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="triggerFlag" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-bolt" style="color: var(--warning-color); margin-right: 6px;"></i>
+                                    <span>触发器同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="function" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-code" style="color: var(--success-color); margin-right: 6px;"></i>
+                                    <span>函数同步</span>
+                                </label>
+                                <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="storedProcedure" value="true"
+                                           style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+                                    <i class="fa fa-file-code-o" style="color: var(--danger-color); margin-right: 6px;"></i>
+                                    <span>存储过程同步</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第一步操作按钮 -->
+                <div style="display: flex; justify-content: flex-end; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="btn btn-secondary" id="step1BackBtn">
+                        <i class="fa fa-reply dbsyncer-btn-icon-left"></i>
+                        返回
+                    </button>
+                    <button type="button" class="btn btn-primary" id="step1NextBtn">
+                        <span>下一步</span>
+                        <i class="fa fa-arrow-right" style="margin-left: 8px;"></i>
+                    </button>
+                </div>
+
+            </div>
+            <!-- 第一步结束 -->
+
+            <!-- 第二步：表映射配置 -->
+            <div id="step2Content" class="step-content hidden">
+
+                <!-- 表映射配置 -->
+                <div class="dbsyncer-card" style="margin-bottom: 24px;">
+                    <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);">
+                        <h3 class="dbsyncer-card-title">
+                            <i class="fa fa-exchange" style="color: var(--primary-color); margin-right: 8px;"></i>
+                            表映射配置
+                        </h3>
+                    </div>
+                    <div class="dbsyncer-card-body" style="padding: 24px;">
+                        
+                        <!-- 添加映射表区域 -->
+                        <div class="grid grid-cols-9 items-center mt-4">
+                            <!-- 数据源表选择器 -->
+                            <div class="lg:col-span-4 flex items-center form-item">
+                                <label class="form-label">数据源表</label>
+                                <div class="form-control-area">
+                                    <select id="step2SourceTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
+                                        <!-- 选项将通过 JavaScript 动态加载 -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="text-info items-center text-center">
+                                <i class="fa fa-arrow-right"></i>
+                            </div>
+
+                            <!-- 目标源表选择器 -->
+                            <div class="lg:col-span-4 flex items-center form-item">
+                                <label class="form-label">目标源表</label>
+                                <div class="form-control-area">
+                                    <select id="step2TargetTable" class="form-control select-control" multiple="multiple" style="width: 100%;">
+                                        <!-- 选项将通过 JavaScript 动态加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 标记主键区域 -->
+                        <div class="grid grid-cols-9 items-center mt-4">
+                            <!-- 数据源主键 -->
+                            <div class="lg:col-span-4 flex items-center form-item">
+                                <label class="form-label">标记主键<i class="fa fa-question-circle" title="数据源表/视图没有主键，自定义一个或多个主键"></i></label>
+                                <div class="form-control-area">
+                                    <input id="step2SourceTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
+                                </div>
+                            </div>
+
+                            <div class="text-info items-center text-center">
+                                <i class="fa fa-arrow-right"></i>
+                            </div>
+
+                            <!-- 目标源主键 -->
+                            <div class="lg:col-span-4 flex items-center form-item">
+                                <label class="form-label">标记主键<i class="fa fa-question-circle" title="目标源表/视图没有主键，自定义一个或多个主键"></i></label>
+                                <div class="form-control-area">
+                                    <input id="step2TargetTablePK" class="form-control" type="text" data-role="tagsinput" placeholder="输入主键字段(大小写敏感)"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作按钮区域 -->
+                        <div class="flex items-center justify-between mt-4">
+                            <button id="refreshTableBtn" class="btn btn-outline" title="刷新数据源和目标源表">
+                                <i class="fa fa-refresh"></i> 刷新表
+                            </button>
+                            <div class="form-actions">
+                                <button id="addTableMappingBtn" type="button" class="btn btn-primary">
+                                    <i class="fa fa-plus"></i> 添加
+                                </button>
+                                <button id="removeTableMappingBtn" type="button" class="btn btn-outline" disabled="disabled">
+                                    <i class="fa fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 表映射列表 -->
+                        <table class="table" id="tableMappingTable" style="margin-top: 24px;">
+                            <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>数据源表</th>
+                                <th>目标源表</th>
+                                <th onclick="event.stopPropagation();">
+                                    <input type="checkbox" id="selectAllMappings" class="tableGroupCheckboxAll" onclick="event.stopPropagation();" />
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody id="tableMappingsContainer">
+                                <!-- 表映射行将动态添加到这里 -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- 空状态提示 -->
+                        <div id="emptyTableMappingTip" style="text-align: center; padding: 40px 0; color: var(--text-tertiary); display: none;">
+                            <i class="fa fa-inbox" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                            <p style="font-size: 14px;">暂无表映射配置，请点击"添加表映射"按钮添加</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二步操作按钮 -->
+                <div style="display: flex; justify-content: space-between; margin-top: 24px; padding: 20px 0; border-top: 1px solid #e5e7eb;">
+                    <button type="button" class="btn btn-secondary" id="step2PrevBtn">
+                        <i class="fa fa-arrow-left btn-icon-left"></i>
+                        上一步
+                    </button>
+                    <div style="display: flex;">
+                        <button type="button" class="btn btn-secondary" id="step2BackBtn">
+                            <i class="fa fa-reply btn-icon-left"></i>
+                            返回列表
+                        </button>
+                        <button type="button" class="btn btn-primary" id="step2SubmitBtn">
+                            <i class="fa fa-check dbsyncer-btn-icon-left"></i>
+                            完成
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/task/add.js}"></script>
+</html>

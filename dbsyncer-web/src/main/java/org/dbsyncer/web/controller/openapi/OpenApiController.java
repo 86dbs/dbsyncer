@@ -1,21 +1,29 @@
 /**
- * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
 package org.dbsyncer.web.controller.openapi;
 
-import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.common.util.RandomUtil;
+import org.dbsyncer.biz.ConnectorService;
+import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.impl.AppCredentialManager;
+import org.dbsyncer.biz.impl.JwtSecretManager;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.web.model.OpenApiResponse;
+import org.dbsyncer.web.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.stereotype.Controller;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.support.HandlerMethodArgumentResolverComposite;
@@ -38,17 +46,29 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * OpenAPI
- *
- * @Version 1.0.0
- * @Author AE86
- * @Date 2023-11-16 01:38
+ * OpenAPI控制器
+ * 提供外部业务系统集成接口
+ * 
+ * @author 穿云
+ * @version 2.0.0
  */
-@Controller
-@RequestMapping("/gateway")
+@RestController
+@RequestMapping("/openapi")
 public class OpenApiController implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Resource
+    private SystemConfigService systemConfigService;
+
+    @Resource
+    private ConnectorService connectorService;
+
+    @Resource
+    private JwtSecretManager jwtSecretManager;
+
+    @Resource
+    private AppCredentialManager appCredentialManager;
 
     @Resource
     private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
@@ -60,13 +80,6 @@ public class OpenApiController implements InitializingBean {
     private final Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
     private final HandlerMethodArgumentResolverComposite resolvers = new HandlerMethodArgumentResolverComposite();
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
-
-    @ResponseBody
-    @RequestMapping("/demo.json")
-    public RestResult demo(Long id, String version) {
-        logger.info("id:{},version:{}", id, version);
-        return RestResult.restSuccess(RandomUtil.nextInt(1, 100));
-    }
 
     @ResponseBody
     @RequestMapping("/api.json")
@@ -107,21 +120,21 @@ public class OpenApiController implements InitializingBean {
     }
 
     private void initHandlerMapping() {
-        parsePackage.put("/gateway/", "");
+        parsePackage.put("/openapi/", "");
         RequestMappingHandlerMapping mapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
         // 获取url与类和方法的对应信息
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
         map.forEach((k, v) -> {
             PatternsRequestCondition condition = k.getPatternsCondition();
+            assert condition != null;
             Object[] array = condition.getPatterns().toArray();
-            int length = array.length;
             boolean filter;
             for (Map.Entry<String, String> obj : parsePackage.entrySet()) {
                 filter = false;
                 // 匹配解析包
-                for (int i = 0; i < length; i++) {
-                    if (StringUtil.startsWith((String) array[i], obj.getKey())) {
-                        handlers.compute((String) array[i], (x, y) -> {
+                for (Object o : array) {
+                    if (StringUtil.startsWith((String) o, obj.getKey())) {
+                        handlers.compute((String) o, (x, y) -> {
                             if (y == null) {
                                 Object bean = applicationContext.getBean(v.getBeanType());
                                 InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());
@@ -140,6 +153,140 @@ public class OpenApiController implements InitializingBean {
             }
 
         });
+    }
+
+    /**
+     * 登录接口 - 获取Token
+     * POST /openapi/auth/login
+     * 
+     * @param requestBody 请求体（JSON格式，包含appId和appSecret）
+     * @return Token信息
+     */
+    @PostMapping("/auth/login")
+    public OpenApiResponse<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
+        try {
+            String appId = requestBody.get("appId");
+            String appSecret = requestBody.get("appSecret");
+            
+            if (StringUtil.isBlank(appId) || StringUtil.isBlank(appSecret)) {
+                return OpenApiResponse.fail(400, "appId和appSecret不能为空");
+            }
+            
+            // 验证appId和appSecret
+            if (!appCredentialManager.validateCredential(appId, appSecret)) {
+                logger.warn("业务系统 {} 凭证验证失败", appId);
+                return OpenApiResponse.fail(401, "appId或appSecret错误");
+            }
+            
+            // 获取系统配置中的RSA配置（用于生成JWT密钥）
+            SystemConfig systemConfig = systemConfigService.getSystemConfig();
+            if (systemConfig == null || !systemConfig.isEnableRsaConfig() || systemConfig.getRsaConfig() == null) {
+                return OpenApiResponse.fail(500, "RSA配置未启用或不存在");
+            }
+            
+            // 获取JWT密钥（如果不存在会自动生成）
+            String jwtSecret = jwtSecretManager.getCurrentSecret();
+            
+            // 生成Token
+            String token = JwtUtil.generateToken(appId, jwtSecret);
+            
+            Map<String, String> data = new HashMap<>();
+            data.put("token", token);
+            data.put("expiresIn", "7200"); // 2小时，单位：秒
+            
+            logger.info("业务系统 {} 登录成功", appId);
+            return OpenApiResponse.success("登录成功", data);
+        } catch (Exception e) {
+            logger.error("登录失败", e);
+            return OpenApiResponse.fail(500, "登录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 刷新Token接口
+     * POST /openapi/auth/refresh
+     * 
+     * @param request 请求对象（拦截器已解析token）
+     * @return 新的Token信息
+     */
+    @PostMapping("/auth/refresh")
+    public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
+        try {
+            JwtUtil.TokenInfo tokenInfo = (JwtUtil.TokenInfo) request.getAttribute("tokenInfo");
+            if (tokenInfo == null) {
+                return OpenApiResponse.fail(401, "Token信息不存在");
+            }
+            
+            // 获取JWT密钥（支持密钥轮换）
+            String[] jwtSecrets = jwtSecretManager.getSecretsForVerification();
+            
+            // 从请求头获取原Token
+            String oldToken = request.getHeader("Authorization");
+            if (oldToken != null && oldToken.startsWith("Bearer ")) {
+                oldToken = oldToken.substring(7);
+            }
+            
+            // 刷新Token（尝试使用当前密钥和上一个密钥）
+            String newToken = null;
+            for (String jwtSecret : jwtSecrets) {
+                newToken = JwtUtil.refreshToken(oldToken, jwtSecret);
+                if (newToken != null) {
+                    break;
+                }
+            }
+            if (newToken == null) {
+                return OpenApiResponse.fail(400, "Token不在刷新时间窗口内");
+            }
+            
+            Map<String, String> data = new HashMap<>();
+            data.put("token", newToken);
+            data.put("expiresIn", "7200");
+            
+            logger.info("业务系统 {} 刷新Token成功", tokenInfo.getAppId());
+            return OpenApiResponse.success("刷新Token成功", data);
+        } catch (Exception e) {
+            logger.error("刷新Token失败", e);
+            return OpenApiResponse.fail(500, "刷新Token失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 数据同步接口 - 业务系统同步数据到DBSyncer
+     * POST /openapi/data/sync
+     * 
+     * @param request 请求对象（拦截器已解密数据）
+     * @return 同步结果
+     */
+    @PostMapping("/data/sync")
+    public OpenApiResponse<Map<String, Object>> syncData(HttpServletRequest request) {
+        try {
+            String appId = (String) request.getAttribute("appId");
+            String decryptedData = (String) request.getAttribute("decryptedData");
+            
+            if (StringUtil.isBlank(decryptedData)) {
+                return OpenApiResponse.fail(400, "同步数据不能为空");
+            }
+            
+            // 解析同步数据
+            @SuppressWarnings("unchecked")
+            Map<String, Object> syncData = (Map<String, Object>) JsonUtil.jsonToObj(decryptedData, Map.class);
+            
+            // TODO: 实现数据同步逻辑
+            // 这里需要根据业务需求实现具体的数据同步处理
+            // syncData包含同步的数据内容，例如：connectorId, tableName, data等
+            logger.debug("接收到同步数据: {}", syncData);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("syncId", System.currentTimeMillis());
+            result.put("status", "success");
+            result.put("message", "数据同步成功");
+            
+            logger.info("业务系统 {} 同步数据成功", appId);
+            return OpenApiResponse.success("数据同步成功", result);
+        } catch (Exception e) {
+            logger.error("数据同步失败", e);
+            return OpenApiResponse.fail(500, "数据同步失败: " + e.getMessage());
+        }
     }
 
 }

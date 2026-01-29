@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ChangedOffset;
 
@@ -63,7 +64,7 @@ public abstract class AbstractWriter {
     }
 
     public String getTraceId() {
-        return traceId;
+        return traceId == null ? StringUtil.EMPTY : traceId;
     }
 
     public void setTraceId(String traceId) {

@@ -1,0 +1,280 @@
+/**
+ * DBSyncer 表格组件样式
+ */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  font-size: var(--font-size-sm);
+}
+
+/* 表格拖拽样式 */
+tr[draggable="true"] {
+  cursor: move;
+  transition: all 0.3s ease;
+}
+
+tr.dragging {
+  opacity: 0.5;
+  background-color: var(--primary-color) !important;
+  color: white;
+}
+
+tr.drag-over {
+  border-top: 2px solid var(--primary-color);
+}
+
+tr[draggable="true"]:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.table th {
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border-secondary);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-tertiary);
+  color: var(--text-secondary);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+/* 表格单元格中包含 select 或 dbSelect 组件时，允许下拉框显示 */
+.table td:has(select),
+.table td:has(.dbsyncer-select) {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+/* 兼容不支持 :has() 的浏览器 */
+.table td select,
+.table td .dbsyncer-select {
+  position: relative;
+  z-index: 10;
+}
+
+.table tbody tr {
+  transition: all var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 表格操作图标按钮 */
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  margin: 0 2px;
+}
+
+.table-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 查看详情按钮 */
+.table-action-btn.view {
+  color: var(--primary-color);
+  background-color: rgba(22, 93, 255, 0.08);
+}
+
+.table-action-btn.view:hover {
+  background-color: rgba(22, 93, 255, 0.15);
+  color: var(--primary-hover);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
+}
+
+.table-action-btn.copy {
+  color: var(--info-color);
+  background-color: rgba(109, 133, 151, 0.08);
+}
+
+.table-action-btn.copy:hover {
+  background-color: rgba(109, 133, 151, 0.15);
+  color: var(--info-color);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.2);
+}
+
+/* 暂停/启动按钮 */
+.table-action-btn.pause {
+  color: var(--warning-color);
+  background-color: rgba(250, 140, 22, 0.08);
+}
+
+.table-action-btn.pause:hover {
+  background-color: rgba(250, 140, 22, 0.15);
+  color: #ffc53d;
+  box-shadow: 0 2px 8px rgba(250, 140, 22, 0.2);
+}
+
+.table-action-btn.play {
+  color: var(--success-color);
+  background-color: rgba(82, 196, 26, 0.08);
+}
+
+.table-action-btn.play:hover {
+  background-color: rgba(82, 196, 26, 0.15);
+  color: #73d13d;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+}
+
+/* 删除按钮 */
+.table-action-btn.delete {
+  color: var(--error-color);
+  background-color: rgba(245, 34, 45, 0.08);
+}
+
+.table-action-btn.delete:hover {
+  background-color: rgba(245, 34, 45, 0.15);
+  color: #ff4d4f;
+  box-shadow: 0 2px 8px rgba(245, 34, 45, 0.2);
+}
+
+/* 分页组件 */
+.pagination {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.pagination > *:not(:first-child) { margin-left: var(--spacing-md); }
+
+.pagination-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+}
+.pagination-controls > *:not(:first-child) { margin-left: var(--spacing-sm); }
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  box-shadow: 0 2px 4px rgba(22, 93, 255, 0.08);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
+  color: var(--info-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(22, 93, 255, 0.15);
+}
+
+.pagination-btn.active {
+  background: linear-gradient(135deg, #4d8bff 0%, #165DFF 100%);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.25);
+  font-weight: 500;
+}
+
+.pagination-btn.active:hover {
+  background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  color: var(--text-disabled);
+  box-shadow: none;
+}
+
+.pagination-page {
+  display: flex;
+  align-items: center;
+}
+.pagination-page > *:not(:first-child) { margin-left: var(--spacing-xs); }
+
+.pagination-page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--spacing-sm);
+  border: none;
+  background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  box-shadow: 0 2px 4px rgba(22, 93, 255, 0.08);
+}
+
+.pagination-page-btn:hover {
+  background: linear-gradient(135deg, #f2f7ff 0%, #e3edff 100%);
+  color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(22, 93, 255, 0.15);
+  text-decoration: none;
+}
+
+.pagination-page-btn.active {
+  background: linear-gradient(135deg, #4d8bff 0%, #165DFF 100%);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.25);
+  font-weight: 500;
+}
+
+.pagination-page-btn.active:hover {
+  background: linear-gradient(135deg, #69b1ff 0%, #40a9ff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
+}
+
+/* 分页栏容器 */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+}
+.pagination-bar > *:not(:first-child) {
+  margin-left: var(--spacing-sm);
+}

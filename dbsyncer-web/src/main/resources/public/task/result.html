@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 任务执行结果详情 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">任务执行结果</h3>
+    </div>
+    <div class="card-body">
+        <!-- 任务信息卡片 -->
+        <div class="dbsyncer-card" style="margin-bottom: 24px;">
+            <div class="dbsyncer-card-header" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);">
+                <h3 class="dbsyncer-card-title">
+                    <i class="fa fa-info-circle" style="color: var(--primary-color); margin-right: 8px;"></i>
+                    任务信息
+                </h3>
+            </div>
+            <div class="dbsyncer-card-body" style="padding: 20px;">
+                <div class="grid grid-cols-2">
+                    <div class="flex items-center">
+                        <label class="font-medium text-gray-600" style="width: 120px;">任务名称：</label>
+                        <span id="taskName" class="text-gray-800">-</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="font-medium text-gray-600" style="width: 120px;">任务ID：</label>
+                        <span id="taskIdDisplay" class="text-gray-500 text-sm" th:text="${taskId}">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮区 -->
+        <div class="flex items-center justify-between mb-4">
+            <button id="backToListBtn" class="btn btn-outline">
+                <i class="fa fa-reply"></i> 返回列表
+            </button>
+            <button id="refreshResultBtn" class="btn btn-primary">
+                <i class="fa fa-refresh"></i> 刷新
+            </button>
+        </div>
+
+        <!-- 结果列表表格 -->
+        <table class="table">
+            <thead>
+            <tr>
+                <th style="width: 60px;">序号</th>
+                <th style="width: 200px;">数据源表</th>
+                <th style="width: 200px;">目标源表</th>
+                <th>执行结果</th>
+                <th style="width: 180px;">更新时间</th>
+            </tr>
+            </thead>
+            <tbody id="resultTableBody">
+            <!-- 数据将通过 JavaScript 动态加载 -->
+            </tbody>
+        </table>
+
+        <!-- 分页信息 -->
+        <div id="resultPagination" class="p-5 border-t border-gray-100 flex items-center justify-between" style="display: none;">
+            <p class="text-sm text-gray-500">
+                共 <span id="totalCount" class="totalCount">0</span> 条，第 <span id="currentPage" class="currentPage">1</span> / <span id="totalPages" class="totalPages">1</span> 页
+            </p>
+            <div class="pagination-bar flex items-center">
+                <!-- 分页按钮将通过 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div id="resultDetailModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa fa-list-alt" style="margin-right: 8px;"></i>
+                执行结果详情
+            </h3>
+            <button class="modal-close" id="closeDetailModal">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+            <div class="mb-4">
+                <div class="flex items-center mb-2">
+                    <label class="font-medium text-gray-600" style="width: 120px;">数据源表：</label>
+                    <span id="detailSourceTable" class="text-gray-800">-</span>
+                </div>
+                <div class="flex items-center mb-2">
+                    <label class="font-medium text-gray-600" style="width: 120px;">目标源表：</label>
+                    <span id="detailTargetTable" class="text-gray-800">-</span>
+                </div>
+                <div class="flex items-center mb-2">
+                    <label class="font-medium text-gray-600" style="width: 120px;">更新时间：</label>
+                    <span id="detailUpdateTime" class="text-gray-500">-</span>
+                </div>
+            </div>
+            
+            <div class="border-t pt-4">
+                <h4 class="font-medium text-gray-700 mb-3">
+                    <i class="fa fa-list" style="margin-right: 6px;"></i>
+                    字段差异详情
+                </h4>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 150px;">字段名</th>
+                        <th>源表字段值</th>
+                        <th>目标表字段值</th>
+                        <th>差异说明</th>
+                    </tr>
+                    </thead>
+                    <tbody id="detailContentTable">
+                    <!-- 详细内容将通过 JavaScript 动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="closeDetailModalBtn" class="btn btn-outline">
+                <i class="fa fa-times"></i> 关闭
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/task/result.js}"></script>
+<script th:inline="javascript">
+    // 从URL参数中获取taskId，并设置为全局变量供result.js使用
+
+    
+    $(document).ready(function() {
+        const taskId = window.taskId;
+        // 返回列表按钮
+        $('#backToListBtn').click(function() {
+            console.log('[任务执行结果] 返回任务列表');
+            doLoader('/task');
+        });
+
+        // 刷新按钮
+        $('#refreshResultBtn').click(function() {
+            console.log('[任务执行结果] 刷新结果列表');
+            if (window.resultPagination) {
+                window.resultPagination.doSearch(window.resultPagination.searchParams || {taskId: window.taskId}, window.resultPagination.currentPage);
+            }
+        });
+
+        // 关闭详情弹窗
+        $('#closeDetailModal, #closeDetailModalBtn').click(function() {
+            $('#resultDetailModal').hide();
+        });
+
+        // 点击弹窗外部关闭
+        $('#resultDetailModal').click(function(e) {
+            if ($(e.target).is('#resultDetailModal')) {
+                $(this).hide();
+            }
+        });
+    });
+</script>
+</html>
+

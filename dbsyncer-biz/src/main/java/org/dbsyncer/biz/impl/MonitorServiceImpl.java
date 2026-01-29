@@ -8,17 +8,14 @@ import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.enums.BufferActuatorMetricEnum;
-import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
-import org.dbsyncer.biz.metric.impl.CpuMetricDetailFormatter;
-import org.dbsyncer.biz.metric.impl.DiskMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
-import org.dbsyncer.biz.metric.impl.MemoryMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.DataVo;
 import org.dbsyncer.biz.vo.LogVo;
@@ -56,9 +53,10 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -101,21 +99,24 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private final Map<String, MetricDetailFormatter> metricMap = new ConcurrentHashMap<>();
 
+    private MetricResponse systemInfo;
+
     @PostConstruct
     private void init() {
         metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
-        metricMap.putIfAbsent(BufferActuatorMetricEnum.TABLE_GROUP.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_USED.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_COMMITTED.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.MEMORY_MAX.getCode(), new MemoryMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.CPU_USAGE.getCode(), new CpuMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
-        metricMap.putIfAbsent(DiskMetricEnum.THRESHOLD.getCode(), new DiskMetricDetailFormatter());
-        metricMap.putIfAbsent(DiskMetricEnum.FREE.getCode(), new DiskMetricDetailFormatter());
-        metricMap.putIfAbsent(DiskMetricEnum.TOTAL.getCode(), new DiskMetricDetailFormatter());
+        metricMap.putIfAbsent(MetricEnum.SYSTEM_ENV.getCode(), vo -> {
+            // 操作系统
+            String osName = System.getProperty("os.name");
+            // 架构
+            vo.setDetail(String.format("%s(%s) %s", osName, System.getProperty("os.version"), System.getProperty("os.arch")));
+        });
+        systemInfo = new MetricResponse();
+        systemInfo.setCode(MetricEnum.SYSTEM_ENV.getCode());
+        systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
 
         // 间隔10分钟预警
         scheduledTaskService.start("0 */10 * * * ?", this);
@@ -150,16 +151,16 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
-        String dataStatus = params.get("dataStatus");
+        String status = params.get("status");
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, dataStatus);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVo> list = new ArrayList<>();
         for (Map row : data) {
             try {
                 DataVo dataVo = convert2Vo(row, DataVo.class);
                 Map binlogData = dataSyncService.getBinlogData(row, true);
-                dataVo.setJson(JsonUtil.objToJson(binlogData));
+                dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
                 list.add(dataVo);
             } catch (Exception e) {
                 logger.error(e.getLocalizedMessage(), e);
@@ -173,6 +174,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
         Meta meta = profileComponent.getMeta(id);
+        meta.getFail().getAndSet(0);
+        // 让定时任务触发更新meta
+        meta.setUpdateTime(Instant.now().toEpochMilli());
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
@@ -217,15 +221,28 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public List<MetricEnum> getMetricEnumAll() {
-        return Arrays.asList(MetricEnum.values());
+    public AppReportMetric queryAppMetric(List<MetricResponse> metrics) {
+        AppReportMetric app = metricReporter.getAppReportMetric();
+        metrics.add(systemInfo);
+        // 系统指标
+        metrics.addAll(metricReporter.getMetricInfo());
+        // 合并分组显示
+        app.setMetrics(metricGroupProcessor.process(metricResponseToVo(metrics)));
+        return app;
     }
 
     @Override
-    public AppReportMetric queryAppReportMetric(List<MetricResponse> metrics) {
-        AppReportMetric app = metricReporter.getAppReportMetric();
-        app.setMetrics(getMetrics(metrics));
-        return app;
+    public DashboardMetric queryDashboardMetric() {
+        return metricReporter.getMappingReportMetric();
+    }
+
+    @Override
+    public Paging<MetricResponse> queryActuator(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String metaId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
+        return metricReporter.queryActuator(metaId, name, pageNum, pageSize);
     }
 
     @Override
@@ -238,18 +255,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
         StringBuilder content = new StringBuilder();
         metaAll.forEach(meta -> {
-            // 有失败记录
+            // 统计运行中和失败数
             if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
-                Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-                if (null != mapping) {
-                    ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-                    content.append("<p>");
-                    content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
-                    if (ModelEnum.FULL == modelEnum) {
-                        content.append(String.format(", 总数:%s", meta.getTotal()));
-                    }
-                    content.append("<p>");
-                }
+                writeMappingReport(meta, content);
             }
         });
 
@@ -259,7 +267,20 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String dataStatus) {
+    private void writeMappingReport(Meta meta, StringBuilder content) {
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        if (null != mapping) {
+            ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
+            content.append("<p>");
+            content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
+            if (ModelEnum.FULL == modelEnum) {
+                content.append(String.format(", 总数:%s", meta.getTotal()));
+            }
+            content.append("<p>");
+        }
+    }
+
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status) {
         // 没有驱动
         if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
@@ -274,8 +295,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询数据状态
-        if (StringUtil.isNotBlank(dataStatus)) {
-            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(dataStatus));
+        if (StringUtil.isNotBlank(status) && !StringUtil.equals("-1", status)) {
+            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(status));
         }
         query.setMetaId(metaId);
         query.setType(StorageEnum.DATA);
@@ -331,14 +352,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         return id;
     }
 
-    private List<MetricResponseVo> getMetrics(List<MetricResponse> metrics) {
-        // 系统指标
-        List<MetricResponse> metricList = metricReporter.getMetricInfo();
-        // 线程池状态
-        metrics.addAll(metricList);
-
-        // 转换显示
-        List<MetricResponseVo> formatMetrics = metrics.stream().map(metric -> {
+    private List<MetricResponseVo> metricResponseToVo(Collection<MetricResponse> metrics) {
+        return metrics.stream().map(metric -> {
             MetricResponseVo vo = new MetricResponseVo();
             vo.setCode(metric.getCode());
             vo.setGroup(metric.getGroup());
@@ -350,8 +365,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             });
             return vo;
         }).collect(Collectors.toList());
-        // 合并分组显示
-        return metricGroupProcessor.process(formatMetrics);
     }
 
 }

@@ -7,9 +7,11 @@ import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -50,6 +52,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Resource
     private ParserComponent parserComponent;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
 
     @Resource
     private DispatchTaskService dispatchTaskService;
@@ -149,6 +154,13 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
+    public Paging<TableGroup> search(Map<String, String> params) {
+        String mappingId = params.get("mappingId");
+        Assert.hasText(mappingId, "Mapping id can not be null");
+        return searchConfigModel(params, getTableGroupAll(mappingId));
+    }
+
+    @Override
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
@@ -239,6 +251,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setTableGroups(list);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setConnectorFactory(connectorFactory);
         task.setTableGroupService(this);
         dispatchTaskService.execute(task);
     }

@@ -1,9 +1,10 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.config.ListenerConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 
@@ -23,13 +24,31 @@ public class Mapping extends AbstractConfigModel {
     // 数据源连接器ID
     private String sourceConnectorId;
 
+    // 数据源库名称
+    private String sourceDatabase;
+
+    // 数据源库构架名
+    private String sourceSchema;
+
+    // 数据源库表列表
+    private List<Table> sourceTable;
+
+    // 数据源字段(公共字段)
+    private List<Field> sourceColumn;
+
     // 目标源连接器ID
     private String targetConnectorId;
 
-    // 数据源字段
-    private List<Field> sourceColumn;
+    // 目标源库名称
+    private String targetDatabase;
 
-    // 目标源字段
+    // 目标源库构架名
+    private String targetSchema;
+
+    // 目标源库表列表
+    private List<Table> targetTable;
+
+    // 目标源字段(公共字段)
     private List<Field> targetColumn;
 
     /**
@@ -57,9 +76,6 @@ public class Mapping extends AbstractConfigModel {
     // 覆盖写入
     private boolean forceUpdate = true;
 
-    // 支持upsert语句 TODO 临时开关，下个迭代会删除
-    private boolean upsert;
-
     public String getSourceConnectorId() {
         return sourceConnectorId;
     }
@@ -68,12 +84,60 @@ public class Mapping extends AbstractConfigModel {
         this.sourceConnectorId = sourceConnectorId;
     }
 
+    public String getSourceDatabase() {
+        return sourceDatabase;
+    }
+
+    public void setSourceDatabase(String sourceDatabase) {
+        this.sourceDatabase = sourceDatabase;
+    }
+
+    public String getSourceSchema() {
+        return sourceSchema;
+    }
+
+    public void setSourceSchema(String sourceSchema) {
+        this.sourceSchema = sourceSchema;
+    }
+
+    public List<Table> getSourceTable() {
+        return sourceTable;
+    }
+
+    public void setSourceTable(List<Table> sourceTable) {
+        this.sourceTable = sourceTable;
+    }
+
     public String getTargetConnectorId() {
         return targetConnectorId;
     }
 
     public void setTargetConnectorId(String targetConnectorId) {
         this.targetConnectorId = targetConnectorId;
+    }
+
+    public String getTargetDatabase() {
+        return targetDatabase;
+    }
+
+    public void setTargetDatabase(String targetDatabase) {
+        this.targetDatabase = targetDatabase;
+    }
+
+    public String getTargetSchema() {
+        return targetSchema;
+    }
+
+    public void setTargetSchema(String targetSchema) {
+        this.targetSchema = targetSchema;
+    }
+
+    public List<Table> getTargetTable() {
+        return targetTable;
+    }
+
+    public void setTargetTable(List<Table> targetTable) {
+        this.targetTable = targetTable;
     }
 
     public List<Field> getSourceColumn() {
@@ -150,11 +214,4 @@ public class Mapping extends AbstractConfigModel {
         this.forceUpdate = forceUpdate;
     }
 
-    public boolean isUpsert() {
-        return upsert;
-    }
-
-    public void setUpsert(boolean upsert) {
-        this.upsert = upsert;
-    }
 }

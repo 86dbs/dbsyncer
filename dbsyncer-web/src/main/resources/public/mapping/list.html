@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 查询驱动列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">驱动管理</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchMapping" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" id="addMappingBtn" onclick="doLoader('/mapping/pageAdd')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>名称</th>
+                <th>同步方案</th>
+                <th>类型</th>
+                <th>结果</th>
+                <th>状态</th>
+                <th>最后同步</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="mappingTableBody"></tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+function copyMapping(id) {
+    doPoster("/mapping/copy", { id: id }, function (response) {
+        if (response.success) {
+            bootGrowl('复制成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl('复制失败: ' + response.message, 'danger');
+        }
+    });
+}
+
+function changeMappingState(id, url, title) {
+    const btn = event.target.closest('.table-action-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
+    btn.disabled = true;
+    doPoster(url, {id: id}, function (response) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        if (response.success) {
+            bootGrowl(title +'成功', 'success');
+            backIndexPage();
+        } else {
+            bootGrowl(title +'失败: ' + response.message, 'danger');
+        }
+    })
+}
+
+function deleteMapping(id) {
+    showConfirm({
+        title: '确定要删除驱动？',
+        icon: 'warning',
+        size: 'large',
+        confirmType: 'danger',
+        onConfirm: function () {
+            // 禁用按钮，防止重复点击
+            doPoster('/mapping/remove', {id: id}, function (response) {
+                if (response.success === true) {
+                    bootGrowl("删除成功！", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(response.message || "删除失败", "danger");
+                }
+            });
+        }
+    });
+}
+
+
+// 页面初始化
+$(document).ready(function() {
+    // 定义返回函数，子页面返回
+    window.backIndexPage = function () {
+        doLoader('/mapping/list');
+    };
+
+    // 初始化分页管理器
+    const pagination = new PaginationManager({
+        requestUrl: '/mapping/search',
+        tableBodySelector: '#mappingTableBody',
+        renderRow: function(mapping, index) {
+            return `
+                <tr>
+                    <td>${index}</td>
+                    <td title="${escapeHtml(mapping.name)}">
+                        <span>${escapeHtml(mapping.name)}</span>
+                    </td>
+                    <td title="${escapeHtml(mapping.sourceConnector.name || '')} > ${escapeHtml(mapping.targetConnector.name || '')}">
+                        <div class="flex items-center">
+                            <img draggable="false" class='mr-3' src="${$basePath}/img/${escapeHtml(mapping.sourceConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                            <span>${escapeHtml(mapping.sourceConnector.name || '')}</span>
+                        </div>
+                        <i class="fa fa-angle-double-down ml-3"></i>
+                        <div class="flex items-center">
+                            <img draggable="false" class='mr-3' src="${$basePath}/img/${escapeHtml(mapping.targetConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                            <span>${escapeHtml(mapping.targetConnector.name || '')}</span>
+                        </div>
+                    </td>
+                    <td>${renderModelText(mapping.model)}</td>
+                    <td>${renderSyncResult(mapping)}</td>
+                    <td>${renderStateText(mapping.meta.state || 0)}</td>
+                    <td>${formatDate(mapping.meta.updateTime || '')}</td>
+                    <td>
+                        <div class="flex items-center">
+                            <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            ${renderStateButton(mapping.meta.state || 0, mapping.id)}
+                            <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+    });
+
+    // 搜索框输入事件
+    let searchInput = initSearch('searchMapping', function (searchKey) {
+        pagination.doSearch({'searchKey': searchKey});
+    });
+
+    // 注册到全局定时刷新管理器
+    PageRefreshManager.register(() => {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    });
+});
+</script>
+
+</html>

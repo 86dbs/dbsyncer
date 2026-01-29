@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <!-- 定时同步配置标题 -->
+    <p><i class="fa fa-clock-o text-success"></i> 定时配置</p>
+
+    <!-- 第一行：Insert、Update、Delete -->
+    <div class="grid grid-cols-3">
+        <!-- Insert -->
+        <div class="form-item">
+            <label class="form-label">Insert</label>
+            <input name="timingInsert"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="I"
+                   th:value="${mapping?.listener?.insert}?:'I'" />
+        </div>
+
+        <!-- Update -->
+        <div class="form-item">
+            <label class="form-label">Update</label>
+            <input name="timingUpdate"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="U"
+                   th:value="${mapping?.listener?.update}?:'U'"/>
+        </div>
+
+        <!-- Delete -->
+        <div class="form-item">
+            <label class="form-label">Delete</label>
+            <input name="timingDelete"
+                   type="text"
+                   class="form-control"
+                   data-role="tagsinput"
+                   placeholder="D"
+                   th:value="${mapping?.listener?.delete?:'D'}"/>
+        </div>
+    </div>
+
+    <!-- 第二行：Cron、事件 -->
+    <div class="grid grid-cols-3 mt-4">
+        <!-- Cron -->
+        <div class="form-item">
+            <label class="form-label">Cron<strong class="text-primary">*</strong></label>
+            <input class="form-control" required name="timingCronExpression" th:value="${mapping?.listener?.cron}?:'*/30 * * * * ?'" type="text" placeholder="*/30 * * * * ?" />
+        </div>
+
+        <!-- 事件 -->
+        <div class="form-item">
+            <label class="form-label">事件<i class="fa fa-question-circle text-tertiary" title="区分增删改事件"></i></label>
+            <select name="timingEventFieldName" class="form-control">
+                <option value="" selected="selected">无</option>
+                <option th:each="c,s:${mapping?.sourceColumn}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'"
+                        th:selected="${c.name eq mapping?.listener?.eventFieldName}"/>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            initSelect($('select[name="timingEventFieldName"]'));
+        });
+    </script>
+
+</div>
+
+</html>

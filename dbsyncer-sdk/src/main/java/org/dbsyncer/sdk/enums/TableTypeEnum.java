@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.enums;
 
+import org.dbsyncer.sdk.SdkException;
+
 /**
  * 表类型
  *
@@ -25,7 +27,17 @@ public enum TableTypeEnum {
     /**
      * 物化视图
      */
-    MATERIALIZED_VIEW("MATERIALIZED VIEW");
+    MATERIALIZED_VIEW("MATERIALIZED VIEW"),
+
+    /**
+     * SQL(扩展类型)
+     */
+    SQL("SQL"),
+
+    /**
+     * ‌半结构化(扩展类型，如File，Kafka，ES)
+     */
+    SEMI("SEMI");
 
     private final String code;
 
@@ -34,13 +46,22 @@ public enum TableTypeEnum {
     }
 
     /**
-     * 是否视图类型
+     * 是否表类型
      *
      * @param type
      * @return
      */
-    public static boolean isView(String type) {
-        return VIEW.getCode().equals(type);
+    public static boolean isTable(String type) {
+        return TABLE.getCode().equals(type);
+    }
+
+    public static TableTypeEnum getTableType(String type) throws SdkException {
+        for (TableTypeEnum e : TableTypeEnum.values()) {
+            if (e.getCode().equals(type)) {
+                return e;
+            }
+        }
+        throw new SdkException(String.format("TableTypeEnum type \"%s\" does not exist.", type));
     }
 
     public String getCode() {

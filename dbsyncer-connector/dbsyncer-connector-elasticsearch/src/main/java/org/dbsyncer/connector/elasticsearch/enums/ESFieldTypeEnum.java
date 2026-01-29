@@ -38,7 +38,8 @@ public enum ESFieldTypeEnum {
     /**
      * 源库中的类型为unsigned tinyint 或 unsigned smallint，建议使用integer
      */
-    SHORT("short", Types.TINYINT),
+    SHORT("short", Types.INTEGER),
+    VERSION("version", Types.INTEGER),
     BYTE("byte", Types.BIT),
     /**
      * 为保证精度，建议使用text

@@ -1,13 +1,13 @@
 package org.dbsyncer.common.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
-public class Paging {
+public class Paging<T> {
     private long total;
     private int pageNum;
     private int pageSize;
-    private Collection data = Collections.EMPTY_LIST;
+    private Collection<T> data = new ArrayList<>();
 
     public Paging(int pageNum, int pageSize) {
         this.pageNum = pageNum;
@@ -38,11 +38,11 @@ public class Paging {
         this.pageSize = pageSize;
     }
 
-    public Collection getData() {
+    public Collection<T> getData() {
         return data;
     }
 
-    public void setData(Collection data) {
+    public void setData(Collection<T> data) {
         this.data = data;
     }
 }

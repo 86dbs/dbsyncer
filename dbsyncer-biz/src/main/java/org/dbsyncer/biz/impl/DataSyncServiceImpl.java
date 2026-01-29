@@ -175,7 +175,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 转换为源字段
         final Picker picker = new Picker(tableGroup);
         List<Object> changedRow = picker.pickSourceData(tableGroup.getSourceTable().getColumn(), binlogData);
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null);
 
         // 执行同步是否成功
         bufferActuatorRouter.execute(metaId, changedEvent);

@@ -44,6 +44,15 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
     }
 
     @Override
+    public void stop(String uniqueId) {
+        active.computeIfPresent(uniqueId, (k, t) -> {
+            t.destroy();
+            logger.info("The dispatch task has been stop, {}", k);
+            return null;
+        });
+    }
+
+    @Override
     public boolean isRunning(String uniqueId) {
         return active.containsKey(uniqueId);
     }

@@ -6,8 +6,6 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -17,12 +15,13 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
@@ -94,16 +93,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     public UserConfig getUserConfig() {
         List<UserConfig> list = operationTemplate.queryAll(UserConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
-    }
-
-    @Override
-    public ProjectGroup getProjectGroup(String id) {
-        return operationTemplate.queryObject(ProjectGroup.class, id);
-    }
-
-    @Override
-    public List<ProjectGroup> getProjectGroupAll() {
-        return operationTemplate.queryAll(ProjectGroup.class);
     }
 
     @Override

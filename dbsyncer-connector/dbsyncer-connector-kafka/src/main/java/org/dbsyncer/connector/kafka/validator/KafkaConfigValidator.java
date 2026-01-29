@@ -3,13 +3,20 @@
  */
 package org.dbsyncer.connector.kafka.validator;
 
-import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Table;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Kafka连接配置校验器实现
@@ -19,50 +26,49 @@ import java.util.Map;
  * @Date 2021-11-22 23:55
  */
 @Component
-public class KafkaConfigValidator implements ConfigValidator<KafkaConfig> {
+public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, KafkaConfig> {
 
     @Override
-    public void modify(KafkaConfig connectorConfig, Map<String, String> params) {
-        String bootstrapServers = params.get("bootstrapServers");
-        String topic = params.get("topic");
-        String fields = params.get("fields");
-        Assert.hasText(bootstrapServers, "bootstrapServers is empty.");
-        Assert.hasText(topic, "topic is empty.");
-        Assert.hasText(fields, "fields is empty.");
+    public void modify(KafkaConnector connectorService, KafkaConfig connectorConfig, Map<String, String> params) {
+        String url = params.get("url");
+        String properties = params.get("properties");
+        String producerProperties = params.get(KafkaUtil.PRODUCER_PROPERTIES);
+        String consumerProperties = params.get(KafkaUtil.CONSUMER_PROPERTIES);
+        if (producerProperties == null && consumerProperties == null) {
+            String extInfo = params.get("extInfo");
+            Assert.hasText(extInfo, "扩展参数不能为空");
+            Properties props = JsonUtil.jsonToObj(extInfo, Properties.class);
+            connectorConfig.getExtInfo().putAll(props);
+        } else {
+            Assert.hasText(producerProperties, "生产者参数不能为空");
+            Assert.hasText(consumerProperties, "消费者参数不能为空");
+            connectorConfig.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, producerProperties);
+            connectorConfig.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, consumerProperties);
+        }
+        Assert.hasText(url, "url is empty.");
+        Assert.hasText(properties, "properties is empty.");
+        connectorConfig.setUrl(url);
+        connectorConfig.getProperties().putAll(KafkaUtil.parse(properties));
+    }
 
+    @Override
+    public Table modifyExtendedTable(KafkaConnector connectorService, Map<String, String> params) {
+        Table table = new Table();
+        String tableName = params.get("tableName");
+        String columnList = params.get("columnList");
         String groupId = params.get("groupId");
-        String serializer = params.get("serializer");
-        Assert.hasText(groupId, "groupId is empty.");
-        Assert.hasText(serializer, "serializer is empty.");
-        int sessionTimeoutMs = NumberUtil.toInt(params.get("sessionTimeoutMs"));
-        int maxPartitionFetchBytes = NumberUtil.toInt(params.get("maxPartitionFetchBytes"));
-
-        String deserializer = params.get("deserializer");
-        String acks = params.get("acks");
-        Assert.hasText(deserializer, "deserializer is empty.");
-        Assert.hasText(acks, "acks is empty.");
-        int bufferMemory = NumberUtil.toInt(params.get("bufferMemory"));
-        int batchSize = NumberUtil.toInt(params.get("batchSize"));
-        int lingerMs = NumberUtil.toInt(params.get("lingerMs"));
-        int retries = NumberUtil.toInt(params.get("retries"));
-        int maxRequestSize = NumberUtil.toInt(params.get("maxRequestSize"));
-
-        connectorConfig.setBootstrapServers(bootstrapServers);
-        connectorConfig.setTopic(topic);
-        connectorConfig.setFields(fields);
-
-        connectorConfig.setGroupId(groupId);
-        connectorConfig.setSerializer(serializer);
-        connectorConfig.setSessionTimeoutMs(sessionTimeoutMs);
-        connectorConfig.setMaxPartitionFetchBytes(maxPartitionFetchBytes);
-
-        connectorConfig.setDeserializer(deserializer);
-        connectorConfig.setBufferMemory(bufferMemory);
-        connectorConfig.setBatchSize(batchSize);
-        connectorConfig.setLingerMs(lingerMs);
-        connectorConfig.setAcks(acks);
-        connectorConfig.setRetries(retries);
-        connectorConfig.setMaxRequestSize(maxRequestSize);
+        Assert.hasText(tableName, "TableName is empty");
+        Assert.hasText(columnList, "ColumnList is empty");
+        List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
+        Assert.notEmpty(fields, "字段不能为空.");
+        table.setName(tableName);
+        table.setColumn(fields);
+        table.setType(connectorService.getExtendedTableType().getCode());
+        // 消费者配置
+        if (StringUtil.isNotBlank(groupId)) {
+            table.getExtInfo().put("groupId", groupId);
+        }
+        return table;
     }
 
 }

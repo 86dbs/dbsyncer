@@ -5,15 +5,16 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -50,18 +51,12 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setName(name);
         ConnectorConfig config = getConfig(connectorType);
         connector.setConfig(config);
-
-        // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(connectorType).getConfigValidator();
-        Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
-
-        // 获取表
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        connector.setTable(connectorFactory.getTable(connectorInstance));
-
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+        // 校验并修改配置
+        validateAndModifyConfig(config, params);
+        // 连接并获取数据库列表
+        connectAndLoadDatabases(connector, config);
 
         return connector;
     }
@@ -74,21 +69,33 @@ public class ConnectorChecker extends AbstractChecker {
         Connector connector = profileComponent.getConnector(id);
         Assert.notNull(connector, "Can not find connector.");
         ConnectorConfig config = connector.getConfig();
-        connectorFactory.disconnect(config);
-
         // 修改基本配置
         this.modifyConfigModel(connector, params);
-
-        // 连接器配置校验
-        ConfigValidator configValidator = connectorFactory.getConnectorService(config.getConnectorType()).getConfigValidator();
-        Assert.notNull(configValidator, "ConfigValidator can not be null.");
-        configValidator.modify(config, params);
-
-        // 获取表
-        ConnectorInstance connectorInstance = connectorFactory.connect(config);
-        connector.setTable(connectorFactory.getTable(connectorInstance));
+        // 校验并修改配置
+        validateAndModifyConfig(config, params);
+        // 获取数据库列表
+        connectAndLoadDatabases(connector, config);
 
         return connector;
+    }
+    
+    /**
+     * 校验并修改配置
+     */
+    private void validateAndModifyConfig(ConnectorConfig config, Map<String, String> params) {
+        ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        ConfigValidator configValidator = connectorService.getConfigValidator();
+        Assert.notNull(configValidator, "ConfigValidator can not be null.");
+        configValidator.modify(connectorService, config, params);
+    }
+    
+    /**
+     * 连接并加载数据库列表
+     */
+    private void connectAndLoadDatabases(Connector connector, ConnectorConfig config) {
+        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), config, StringUtil.EMPTY, StringUtil.EMPTY);
+        ConnectorService connectorService = connectorFactory.getConnectorService(config.getConnectorType());
+        connector.setDatabases(connectorService.getDatabases(connectorInstance));
     }
 
     private ConnectorConfig getConfig(String connectorType) {

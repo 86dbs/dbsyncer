@@ -63,7 +63,6 @@ public class MySQLListener extends AbstractDatabaseListener {
     private final String BINLOG_POSITION = "position";
     private final Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
-    private String database;
     private final Lock connectLock = new ReentrantLock();
 
     @Override
@@ -108,19 +107,8 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     private void run() throws Exception {
         final DatabaseConfig config = getConnectorInstance().getConfig();
-        if (StringUtil.isBlank(config.getUrl())) {
-            throw new MySQLException("url is invalid");
-        }
-        database = DatabaseUtil.getDatabaseName(config.getUrl());
-        List<Host> cluster = readNodes(config.getUrl());
-        Assert.notEmpty(cluster, "MySQL连接地址有误.");
-
-        int MASTER = 0;
-        final Host host = cluster.get(MASTER);
-        final String username = config.getUsername();
-        final String password = config.getPassword();
         boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
-        client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
+        client = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
@@ -133,24 +121,6 @@ public class MySQLListener extends AbstractDatabaseListener {
             refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
             super.forceFlushEvent();
         }
-    }
-
-    private List<Host> readNodes(String url) {
-        Matcher matcher = compile("(//)(?!(/)).+?(/)").matcher(url);
-        if (matcher.find()) {
-            url = matcher.group(0);
-        }
-        url = StringUtil.replace(url, "/", "");
-
-        List<Host> cluster = new ArrayList<>();
-        String[] arr = StringUtil.split(url, StringUtil.COMMA);
-        for (String s : arr) {
-            String[] host = StringUtil.split(s, ":");
-            if (2 == host.length) {
-                cluster.add(new Host(host[0], Integer.parseInt(host[1])));
-            }
-        }
-        return cluster;
     }
 
     private void refresh(EventHeader header) {
@@ -189,24 +159,6 @@ public class MySQLListener extends AbstractDatabaseListener {
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-        }
-    }
-
-    static final class Host {
-        private final String ip;
-        private final int port;
-
-        public Host(String ip, int port) {
-            this.ip = ip;
-            this.port = port;
-        }
-
-        public String getIp() {
-            return ip;
-        }
-
-        public int getPort() {
-            return port;
         }
     }
 

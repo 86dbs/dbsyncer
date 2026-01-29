@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.model.AppReportMetric;
+import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.vo.MetaVo;
 import org.dbsyncer.common.model.Paging;
@@ -87,17 +87,23 @@ public interface MonitorService {
     List<StorageDataStatusEnum> getStorageDataStatusEnumAll();
 
     /**
-     * 获取监控系统指标
-     *
-     * @return
-     */
-    List<MetricEnum> getMetricEnumAll();
-
-    /**
      * 获取应用报告
      *
      * @return
      */
-    AppReportMetric queryAppReportMetric(List<MetricResponse> metrics);
+    AppReportMetric queryAppMetric(List<MetricResponse> metrics);
 
+    /**
+     * 获取仪表盘报告
+     *
+     * @return
+     */
+    DashboardMetric queryDashboardMetric();
+
+    /**
+     * 查询表执行器
+     *
+     * @return
+     */
+    Paging<MetricResponse> queryActuator(Map<String, String> params);
 }

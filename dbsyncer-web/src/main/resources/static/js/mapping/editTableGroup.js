@@ -1,211 +1,324 @@
-function submit(data) {
-    //保存驱动配置
-    doPoster("/tableGroup/edit", data, function (data) {
-        if (data.success == true) {
-            bootGrowl("保存表映射关系成功!", "success");
-            backMappingPage($("#tableGroupSubmitBtn"));
-        } else {
-            bootGrowl(data.resultValue, "danger");
-        }
-    });
-}
+// 缓存常用选择器
+const $fieldMappingList = () => $("#fieldMappingList");
+const $fieldCheckboxes = () => $('.fieldCheckbox');
+const $fieldCheckboxAll = () => $('.fieldCheckboxAll');
+const $fieldDelBtn = () => $('#fieldDelBtn');
+const $fieldMapping = () => $("#fieldMapping");
 
 // 初始化映射关系参数
 function initFieldMappingParams(){
     // 生成JSON参数
     let row = [];
-    let $fieldMappingList = $("#fieldMappingList");
-    $fieldMappingList.find("tr").each(function(k,v){
-        let $pk = $(this).find("td:eq(2)").html();
+    const $list = $fieldMappingList();
+    $list.find("tr").each(function(k,v){
         row.push({
-            "source":$(this).find("td:eq(0)").text(),
-            "target":$(this).find("td:eq(1)").text(),
-            "pk":($pk != "" || $.trim($pk).length > 0)
+            "source":$(this).find("td:eq(1)").text(),
+            "target":$(this).find("td:eq(2)").text(),
+            "pk": $(this).find("td:eq(3) i").length > 0
         });
     });
-    let $fieldMappingTable = $("#fieldMappingTable");
-    if (0 >= row.length) {
-        $fieldMappingTable.addClass("hidden");
+    
+    // 根据是否有数据来显示/隐藏表格（通过tbody的父元素table）
+    const $table = $list.closest('table');
+    if (row.length === 0) {
+        $table.addClass("hidden");
     } else {
-        $fieldMappingTable.removeClass("hidden");
+        $table.removeClass("hidden");
     }
-    $("#fieldMapping").val(JSON.stringify(row));
+    $fieldMapping().val(JSON.stringify(row));
 }
 
-// 绑定表格拖拽事件
+function bindFieldSelect(selector, onChange){
+    return selector.dbSelect({
+        type: 'single',
+        onSelect: function (data) {
+            if (onChange) {
+                onChange(data);
+            }
+        },
+        defaultValue: [],// 默认选中
+        customButtons: [ // 最多2个自定义按钮
+            {
+                text: '刷新字段',
+                callback: function(values) {
+                    bindRefreshTableFieldsClick();
+                }
+            }
+        ]
+    });
+}
+
+// 绑定表格拖拽事件（使用原生 HTML5 拖拽 API）
 function bindFieldMappingDrop() {
-    $("#fieldMappingList").tableDnD({
-        onDrop: function(table, row) {
-            initFieldMappingParams();
+    const $list = $fieldMappingList();
+    const rows = $list.find("tr");
+    
+    // 先移除旧的事件监听器，避免重复绑定
+    rows.off('dragstart dragend dragover dragleave drop');
+    rows.each(function() {
+        const row = this;
+        row.setAttribute('draggable', 'true');
+    });
+    
+    // 使用事件委托，避免重复绑定
+    $list.on('dragstart', 'tr', function(e) {
+        e.originalEvent.dataTransfer.effectAllowed = 'move';
+        e.originalEvent.dataTransfer.setData('text/html', this.innerHTML);
+        $(this).addClass('dragging');
+    });
+
+    $list.on('dragend', 'tr', function(e) {
+        $(this).removeClass('dragging');
+        $list.find('tr').removeClass('drag-over');
+        // 更新行号
+        updateRowNumbers();
+        initFieldMappingParams();
+    });
+
+    $list.on('dragover', 'tr', function(e) {
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = 'move';
+        $(this).addClass('drag-over');
+        return false;
+    });
+
+    $list.on('dragleave', 'tr', function(e) {
+        $(this).removeClass('drag-over');
+    });
+
+    $list.on('drop', 'tr', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const $dragging = $list.find('.dragging');
+        if ($dragging.length && $dragging[0] !== this) {
+            const draggingIndex = $dragging.index();
+            const targetIndex = $(this).index();
+            
+            if (draggingIndex < targetIndex) {
+                $(this).after($dragging);
+            } else {
+                $(this).before($dragging);
+            }
+        }
+        
+        $(this).removeClass('drag-over');
+        return false;
+    });
+}
+
+// 更新表格行号
+function updateRowNumbers() {
+    $fieldMappingList().find("tr").each(function(index) {
+        $(this).find("td:eq(0)").text(index + 1);
+    });
+}
+
+// 绑定复选框多选或单选事件
+function bindFieldMappingCheckbox() {
+    const $checkboxAll = $fieldCheckboxAll();
+    const $delBtn = $fieldDelBtn();
+    let isUpdatingSelectAll = false;
+
+    // 更新全选复选框状态
+    function updateSelectAllState() {
+        if (isUpdatingSelectAll) return;
+        isUpdatingSelectAll = true;
+        const $checkboxes = $fieldCheckboxes();
+        const $checkedCheckboxes = $checkboxes.filter(':checked');
+        const allChecked = $checkboxes.length > 0 && $checkboxes.length === $checkedCheckboxes.length;
+        const checkboxAllApi = $checkboxAll.data('checkboxGroup');
+        if (checkboxAllApi) {
+            checkboxAllApi.setValue(allChecked);
+        } else {
+            $checkboxAll.prop('checked', allChecked);
+        }
+        setTimeout(function() {
+            isUpdatingSelectAll = false;
+        }, 0);
+    }
+
+    // 更新删除按钮状态
+    function updateDeleteButtonState() {
+        $delBtn.prop('disabled', $fieldCheckboxes().filter(':checked').length === 0);
+    }
+
+    // 先移除旧的事件绑定，避免重复绑定
+    $checkboxAll.off('change');
+    $fieldCheckboxes().off('change');
+
+    // 初始化全选复选框
+    $checkboxAll.checkboxGroup({
+        theme: 'danger',
+        size: 'md',
+        onChange: function(values) {
+            // 全选/取消全选时，同步所有单个复选框
+            const isChecked = values.length > 0;
+            $fieldCheckboxes().each(function() {
+                const api = $(this).data('checkboxGroup');
+                if (api) {
+                    api.setValue(isChecked);
+                }
+            });
+            updateDeleteButtonState();
+        }
+    });
+
+    // 为已存在的复选框初始化
+    $fieldCheckboxes().each(function() {
+        if (!$(this).data('checkboxGroup')) {
+            $(this).checkboxGroup({
+                theme: 'danger',
+                size: 'md',
+                onChange: function(values) {
+                    updateSelectAllState();
+                    updateDeleteButtonState();
+                }
+            });
         }
     });
 }
 
-// 获取选择的CheckBox[value]
-function getCheckedBoxElements($checkbox){
-    let checked = [];
-    $checkbox.each(function(){
-        if($(this).prop('checked')){
-            checked.push($(this).parent().parent().parent());
-        }
-    });
-    return checked;
-}
 // 绑定刷新表字段事件
 function bindRefreshTableFieldsClick() {
-    let $refreshBtn = $("#refreshTableFieldBtn");
-    $refreshBtn.bind('click', function(){
-        let id = $(this).attr("tableGroupId");
-        doPoster("/tableGroup/refreshFields", {'id': id}, function (data) {
-            if (data.success == true) {
-                bootGrowl("刷新字段成功!", "success");
-                doLoader('/tableGroup/page/editTableGroup?id=' + id);
-            } else {
-                bootGrowl(data.resultValue, "danger");
-            }
-        });
+    let id = $("#tableGroupId").val();
+    doPoster("/tableGroup/refreshFields", {'id': id}, function (data) {
+        if (data.success === true) {
+            bootGrowl("刷新字段成功!", "success");
+            doLoader('/tableGroup/page/editTableGroup?id=' + id);
+        } else {
+            bootGrowl(data.message, "danger");
+        }
     });
 }
-// 绑定删除表字段复选框事件
-function bindFieldMappingCheckBoxClick(){
-    let $checkboxAll = $('.fieldMappingDeleteCheckboxAll');
-    let $checkbox = $('.fieldMappingDeleteCheckbox');
-    let $delBtn = $("#fieldMappingDelBtn");
-    $checkboxAll.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        labelHover: false,
-        cursor: true
-    }).on('ifChecked', function (event) {
-        $checkbox.iCheck('check');
-    }).on('ifUnchecked', function (event) {
-        $checkbox.iCheck('uncheck');
-    }).on('ifChanged', function (event) {
-        $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
-    });
 
-    // 初始化icheck插件
-    $checkbox.iCheck({
-        checkboxClass: 'icheckbox_square-red',
-        cursor: true
-    }).on('ifChanged', function (event) {
-        // 阻止tr触发click事件
-        event.stopPropagation();
-        event.cancelBubble=true;
-        $delBtn.prop('disabled', getCheckedBoxElements($checkbox).length < 1);
-    });
-}
 // 绑定字段映射表格点击事件
 function bindFieldMappingListClick(){
-    // 行双击事件
-    let $tr = $("#fieldMappingList tr");
-    $tr.unbind("dblclick");
-    $tr.bind('dblclick', function () {
-        let $pk = $(this).find("td:eq(2)");
-        let $text = $pk.html();
-        let isPk = $text == "" || $.trim($text).length == 0;
-        $pk.html(isPk ? '<i title="主键" class="fa fa-key fa-fw fa-rotate-90 text-warning"></i>' : '');
+    // 使用事件委托，支持动态添加的行
+    const $list = $fieldMappingList();
+    $list.off("dblclick", "tr").on('dblclick', 'tr', function () {
+        const $pk = $(this).find("td:eq(3)");
+        // 更新为新的图标样式
+        $pk.html($pk.find("i").length > 0 ? '' : '<i title="主键" class="fa fa-key text-warning"></i>');
         initFieldMappingParams();
     });
 }
-// 绑定下拉选择事件自动匹配相似字段事件
-function bindTableFieldSelect(){
-    let $sourceSelect = $("#sourceTableField");
-    let $targetSelect = $("#targetTableField");
 
-    // 初始化选择器
-    initSelect($sourceSelect);
-    initSelect($targetSelect);
-
-    // 绑定数据源下拉切换事件
-    $sourceSelect.on('changed.bs.select',function(e){
-        $targetSelect.selectpicker('val', $(this).selectpicker('val'));
-    });
-    bindFieldMappingAddClick($sourceSelect, $targetSelect)
-}
 // 绑定添加字段映射点击事件
-function bindFieldMappingAddClick($sourceSelect, $targetSelect){
-    let $btn = $("#fieldMappingAddBtn");
-    $btn.bind('click', function(){
-        let sField = $sourceSelect.selectpicker("val");
-        let tField = $targetSelect.selectpicker("val");
-        sField = sField == null ? "" : sField;
-        tField = tField == null ? "" : tField;
+function bindFieldMappingAddClick(sourceSelector, targetSelector){
+    $("#fieldAddBtn").unbind("click").bind('click', function(){
+        let sValues = sourceSelector.getValues();
+        let tValues = targetSelector.getValues();
         // 非空检查
-        if(sField == "" && tField == ""){
-            bootGrowl("至少有一个表字段.", "danger");
+        if(sValues.length < 1 && tValues.length < 1){
+            bootGrowl("至少有一个字段.", "danger");
             return;
         }
 
         // 检查重复字段
+        let sField = sValues[0];
+        let tField = tValues[0];
+        sField = sField == null ? "" : sField;
+        tField = tField == null ? "" : tField;
         let repeated = false;
-        let $fieldMappingList = $("#fieldMappingList");
-        let $tr = $fieldMappingList.find("tr");
-        $tr.each(function(k,v){
-            let sf = $(this).find("td:eq(0)").text();
-            let tf = $(this).find("td:eq(1)").text();
-            if (repeated = (sField == sf && tField == tf)) {
-                bootGrowl("映射关系已存在.", "danger");
-                return false;
+        const $list = $fieldMappingList();
+        const $tr = $list.find("tr");
+        $tr.each(function (k, v) {
+            let sf = $(this).find("td:eq(1)").text();
+            let tf = $(this).find("td:eq(2)").text();
+            if (sField === sf && tField === tf) {
+                repeated = true;
+                return false; // 跳出循环
             }
         });
-        if(repeated){ return; }
+        if (repeated) {
+            bootGrowl("字段映射已存在.", "danger");
+            return;
+        }
 
-        let index = $tr.size();
-        let trHtml = "<tr id='fieldMapping_"+ (index + 1) +"' title='双击设置/取消主键'><td>" + sField + "</td><td>" + tField + "</td><td></td><td><input type='checkbox' class='fieldMappingDeleteCheckbox' /></td></tr>";
-        $fieldMappingList.append(trHtml);
+        // 转义HTML防止XSS攻击
+        const escapedSField = escapeHtml(sField);
+        const escapedTField = escapeHtml(tField);
+        const rowIndex = $tr.length + 1;
+
+        $list.append(`<tr title='双击设置/取消主键 | 拖动排序'>
+                    <td>${rowIndex}</td>
+                    <td>${escapedSField}</td>
+                    <td>${escapedTField}</td>
+                    <td></td>
+                    <td onclick="event.stopPropagation();">
+                        <input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />
+                    </td>
+                </tr>`);
 
         initFieldMappingParams();
         bindFieldMappingDrop();
         bindFieldMappingListClick();
-        bindFieldMappingCheckBoxClick();
-        bindFieldMappingDelClick();
+        bindFieldMappingCheckbox();
     });
 }
 // 绑定删除字段映射点击事件
 function bindFieldMappingDelClick(){
-    let $fieldMappingDelBtn = $("#fieldMappingDelBtn");
-    $fieldMappingDelBtn.unbind("click");
-    $fieldMappingDelBtn.click(function () {
-        let elements = getCheckedBoxElements($('.fieldMappingDeleteCheckbox'));
-        if (elements.length > 0) {
-            let len = elements.length;
-            for(let i = 0; i < len; i++){
-                elements[i].remove();
-            }
-            $fieldMappingDelBtn.prop('disabled', true);
+    $fieldDelBtn().unbind("click").bind('click', function () {
+        const checkedRows = [];
+        $fieldCheckboxes().filter(':checked').each(function () {
+            checkedRows.push($(this).closest('tr'));
+        });
+        if (checkedRows.length > 0) {
+            // 删除选中的行
+            checkedRows.forEach(function($row) {
+                $row.remove();
+            });
+            
+            // 更新行号
+            updateRowNumbers();
+            // 更新映射参数（会自动显示/隐藏表格）
             initFieldMappingParams();
+            // 更新删除按钮状态
+            $fieldDelBtn().prop('disabled', $fieldCheckboxes().filter(':checked').length === 0);
         }
     });
 }
-// 返回驱动配置页面
-function backMappingPage($this){
-    doLoader('/mapping/page/edit?id=' + $this.attr("mappingId"));
-}
 
 $(function() {
+    // 定义返回函数，子页面返回
+    let mappingId = $("#mappingId").val();
+    window.backIndexPage = function () {
+        doLoader("/mapping/page/edit?id=" + mappingId);
+    };
+
+    // 绑定下拉选择事件自动匹配相似字段事件
+    let targetTableSelect = bindFieldSelect($('#target_table_field'));
+    let sourceTableSelect = bindFieldSelect($('#source_table_field'), function(data) {
+        targetTableSelect.setValues(data);
+    });
+
     // 绑定表字段关系点击事件
     initFieldMappingParams();
     // 绑定表格拖拽事件
     bindFieldMappingDrop();
-    // 绑定下拉选择事件自动匹配相似字段事件
-    bindTableFieldSelect();
-    // 绑定刷新表字段事件
-    bindRefreshTableFieldsClick();
     // 绑定删除表字段映射事件
-    bindFieldMappingCheckBoxClick();
-    bindFieldMappingListClick();
+    bindFieldMappingCheckbox();
+    // 绑定添加字段映射关系事件
+    bindFieldMappingAddClick(sourceTableSelect, targetTableSelect);
+    // 绑定删除字段映射关系事件
     bindFieldMappingDelClick();
+    // 绑定字段关系点击事件
+    bindFieldMappingListClick();
 
     //保存
     $("#tableGroupSubmitBtn").click(function () {
-        let $form = $("#tableGroupModifyForm");
-        if ($form.formValidate() == true) {
-            submit($form.serializeJson());
+        let $form = $("#table_group_modify_form");
+        if (validateForm($form)) {
+            //保存驱动配置
+            doPoster("/tableGroup/edit", $form.serializeJson(), function (data) {
+                if (data.success === true) {
+                    bootGrowl("修改表字段映射成功!", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.message, "danger");
+                }
+            });
         }
-    });
-
-    // 返回按钮，跳转至上个页面
-    $("#tableGroupBackBtn").bind('click', function(){
-        backMappingPage($(this));
     });
 });

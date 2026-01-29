@@ -27,6 +27,7 @@ public final class DemoPluginServiceProvider implements PluginService {
 
     @Override
     public void convert(PluginContext context) {
+        context.setTerminated(true);
         logger.info("插件正在处理{}，数据源表:{}，目标源表:{}，事件:{}，条数:{}", context.getModelEnum().getName(), context.getSourceTableName(), context.getTargetTableName(),
                 context.getEvent(), context.getTargetList().size());
     }

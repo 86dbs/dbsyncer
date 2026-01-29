@@ -1,16 +1,379 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-	  xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html lang="zh-CN">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>dbsyncer</title>
-<link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
-<link type="text/css" rel="stylesheet" th:href="@{/css/login/login.css}"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbsyncer - 登录</title>
+    <link type="image/x-icon" rel="icon" th:href="@{/img/logo.ico}"/>
+    <link type="text/css" rel="stylesheet" th:href="@{/css/login.css}"/>
 </head>
-<body></body>
-<script th:if="${enableCDN}" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<script th:if="${!enableCDN}" th:src="@{/plugins/js/jquery/jquery-1.11.3.min.js}"></script>
-<script th:src="@{/plugins/js/placeholder/jquery.placeholder.js}"></script>
-<!-- 上述1个js文件解决IE10以上placeholder的兼容性问题 -->
-<script th:src="@{/js/login/login.js}"></script>
+<body class="font-inter bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<!-- 背景粒子特效画布：固定铺满屏幕，位于内容层之下 -->
+<canvas id="bgParticles" style="position:fixed;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+<!-- 登录卡片容器 -->
+<div class="w-full max-w-6xl grid md:grid-cols-2 shadow-2xl rounded-2xl overflow-hidden" style="position:relative;z-index:10;">
+
+    <!-- 左侧品牌展示区 -->
+    <div class="md:flex bg-gradient-primary p-12 flex-col justify-between text-white">
+        <div>
+            <div class="flex items-center space-x-3 mb-12">
+                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                    <i class="svg-database"></i>
+                </div>
+                <h1 id="appName" class="text-2xl font-bold tracking-tight">DBSyncer</h1>
+            </div>
+
+            <h2 class="text-responsive-2xl font-bold mb-4 text-shadow">数据同步，从未如此简单</h2>
+            <p class="text-white/80 mb-8 max-w-md">高效、稳定、安全的解决方案，为您的业务保驾护航</p>
+        </div>
+
+        <!-- 特性列表 -->
+        <div class="space-y-6">
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="svg-bolt"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mt-1">高效同步</h3>
+                    <p class="text-sm text-white/70">毫秒级响应，支持海量数据同步</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="svg-shield"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mt-1">安全可靠</h3>
+                    <p class="text-sm text-white/70">多重加密保障，确保数据传输安全</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-4">
+                <div class="mt-1 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <i class="svg-cogs"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold mt-1">灵活配置</h3>
+                    <p class="text-sm text-white/70">支持多种数据源，自定义同步策略</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧登录表单区 -->
+    <div class="bg-white p-8 md:p-12 flex flex-col h-full w-full-50 right-0 absolute">
+        <div class="mt-6 md:mt-12">
+            <h2 class="text-responsive-xl font-bold text-dark mb-2">欢迎回来</h2>
+            <p class="text-gray-500 mb-8">请输入您的账号信息登录系统</p>
+
+            <!-- 登录表单 -->
+            <form id="loginForm" class="space-y-6">
+                <!-- 用户名输入 -->
+                <div class="space-y-2">
+                    <label for="username" class="block text-sm font-medium text-gray-700">用户名</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="svg-user"></i>
+                        </div>
+                        <input type="text" id="username" name="username"
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
+                               placeholder="请输入用户名" required>
+                    </div>
+                    <div id="usernameError" class="hidden text-danger text-sm mt-1">
+                        <div class="flex">
+                            <i class="svg-exclamation-circle"></i>
+                            <span>用户名不能为空</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 密码输入 -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <label for="password" class="block text-sm font-medium text-gray-700">密码</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="svg-lock"></i>
+                        </div>
+                        <input type="password" id="password" name="password"
+                               class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom outline-none"
+                               placeholder="请输入密码" required>
+                        <button type="button" id="togglePassword"
+                                class="absolute inset-y-0 right-0 pr-3 flex mr-1 mt-1 mb-1 items-center rounded-lg">
+                            <i class="svg-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div id="passwordError" class="hidden text-danger text-sm mt-1">
+                        <div class="flex">
+                            <i class="svg-exclamation-circle"></i>
+                            <span>密码不能为空</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 错误提示 -->
+                <div id="loginError" class="hidden bg-danger/10 text-danger p-3 rounded-lg text-sm flex items-center">
+                    <div class="flex">
+                        <i class="svg-exclamation-circle"></i>
+                        <span id="errorMessage">登录失败，请检查用户名或密码</span>
+                    </div>
+                </div>
+
+                <!-- 登录按钮 -->
+                <button type="submit" id="loginButton"
+                        class="w-full bg-primary/80 hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                    <span>登录</span>
+                    <i class="svg-sign-in"></i>
+                </button>
+
+                <!-- 加载状态按钮 -->
+                <button type="button" id="loadingButton"
+                        class="hidden w-full bg-primary/80 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center space-x-2 cursor-not-allowed">
+                    <i class="rotate-loading"></i>
+                    <span>登录中...</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="mt-auto pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
+            <p id="appCopyRight" style="text-align:center;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 背景粒子特效（轻量、与现有蓝色系风格一致）
+    (function () {
+        const canvas = document.getElementById('bgParticles');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let dpr = Math.max(1, window.devicePixelRatio || 1);
+        let width = 0, height = 0;
+        const particles = [];
+        const PARTICLE_COUNT_BASE = 0.00012; // 越小越少：按像素面积计算数量，避免在小屏过密
+        const MAX_ALPHA = 0.45; // 最高不透明度，保持低调不抢眼
+        const COLORS = [
+            'rgba(59,130,246,ALPHA)',   // 蓝色（接近 primary）
+            'rgba(37,99,235,ALPHA)',    // 深蓝
+            'rgba(99,102,241,ALPHA)',   // 靛紫
+            'rgba(56,189,248,ALPHA)'    // 青蓝
+        ];
+
+        function resize() {
+            width = canvas.clientWidth = window.innerWidth;
+            height = canvas.clientHeight = window.innerHeight;
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            // 依据面积动态调整粒子数量
+            const target = Math.min(180, Math.max(60, Math.floor(width * height * PARTICLE_COUNT_BASE)));
+            if (particles.length > target) {
+                particles.length = target;
+            } else {
+                while (particles.length < target) particles.push(createParticle());
+            }
+        }
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function createParticle() {
+            const speed = rand(0.08, 0.35);
+            const angle = rand(0, Math.PI * 2);
+            const radius = rand(0.6, 1.8);
+            const alpha = rand(0.08, MAX_ALPHA);
+            const color = pick(COLORS).replace('ALPHA', alpha.toFixed(3));
+            return {
+                x: rand(0, width),
+                y: rand(0, height),
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                r: radius,
+                a: alpha,
+                color
+            };
+        }
+
+        function step() {
+            ctx.clearRect(0, 0, width, height);
+
+            // 轻微的渐隐，形成拖尾层次（非常轻，不突兀）
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // 边界回环
+                if (p.x < -10) p.x = width + 10; else if (p.x > width + 10) p.x = -10;
+                if (p.y < -10) p.y = height + 10; else if (p.y > height + 10) p.y = -10;
+
+                // 绘制柔和发光点
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+                grad.addColorStop(0, p.color);
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 邻近连线（仅近距离，极细，提升科技感）
+            ctx.lineWidth = 0.6;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const a = particles[i], b = particles[j];
+                    const dx = a.x - b.x, dy = a.y - b.y;
+                    const dist2 = dx * dx + dy * dy;
+                    const maxDist = 120; // 连线最大距离
+                    if (dist2 < maxDist * maxDist) {
+                        const t = 1 - Math.sqrt(dist2) / maxDist;
+                        ctx.strokeStyle = `rgba(99,102,241,${0.12 * t})`;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        requestAnimationFrame(step);
+    })();
+    // 获取项目地址
+    const $location = (window.location + '').split('/');
+    const $path = document.location.pathname;
+    const $basePath = $location[0] + '//' + $location[2] + $path.substr(0, $path.substr(1).indexOf("/") + 1);
+    const loginForm = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    const loginButton = document.getElementById('loginButton');
+    const loadingButton = document.getElementById('loadingButton');
+    const usernameError = document.getElementById('usernameError');
+    const passwordError = document.getElementById('passwordError');
+    const loginError = document.getElementById('loginError');
+    const errorMessage = document.getElementById('errorMessage');
+    // token过期，跳转默认页面
+    const navbar = document.querySelector("div.sidebar-item");
+    if (navbar !== null) {
+        window.location.href = $basePath;
+    }
+
+    // 切换密码可见性
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+
+        // 切换图标
+        togglePassword.querySelector('i').classList.toggle('svg-eye');
+        togglePassword.querySelector('i').classList.toggle('svg-eye-slash');
+    });
+
+    // 初始化加载版权信息
+    window.addEventListener('load', () => {
+        // 发送GET请求
+        fetch($basePath + '/index/version.json').then(response => {
+            if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+            return response.json();
+        }).then(response => {
+            if (response.success === true) {
+                document.getElementById('appName').textContent = response.data.appName;
+                document.getElementById('appCopyRight').innerHTML = response.data.appCopyRight;
+            }
+        }).catch(error => {
+            throw new Error(`请求错误: ${error.message}`);
+        });
+    });
+
+    function validateItem($input, $error){
+        // 隐藏登录错误提示
+        loginError.classList.add('hidden');
+        if (!$input.value.trim()) {
+            $error.classList.remove('hidden');
+            $input.classList.add('border-danger');
+            $input.classList.remove('border-gray-300', 'focus:border-primary');
+            return false;
+        }
+        $error.classList.add('hidden');
+        $input.classList.remove('border-danger');
+        $input.classList.add('border-gray-300', 'focus:border-primary');
+        return true;
+    }
+    // 表单验证
+    function validateForm() {
+        return validateItem(usernameInput, usernameError) && validateItem(passwordInput, passwordError);
+    }
+    // 输入框变化时重新验证
+    usernameInput.addEventListener('input', () => validateItem(usernameInput, usernameError));
+    passwordInput.addEventListener('input', () => validateItem(passwordInput, passwordError));
+
+    // 登录表单提交处理
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 表单验证
+        if (!validateForm()) {
+            return;
+        }
+
+        // 显示加载状态，隐藏登录按钮
+        loginButton.classList.add('hidden');
+        loadingButton.classList.remove('hidden');
+
+        // 获取表单数据
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        try {
+            const response = await fetch($basePath + '/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded', // 显式声明表单格式
+                },
+                body: formData,
+            });
+
+            // 处理响应
+            const result = await response.json();
+            if (response.ok) {
+                // 登录成功，跳转到首页或其他页面
+                window.location.href = $basePath;
+            } else {
+                // 登录失败，显示错误信息
+                throw new Error(result.message || '登录失败，请检查用户名或密码');
+            }
+        } catch (error) {
+            // 显示错误信息
+            errorMessage.textContent = error.message;
+            loginError.classList.remove('hidden');
+
+            // 添加错误抖动动画
+            loginError.classList.add('animate-shake');
+            setTimeout(() => {
+                loginError.classList.remove('animate-shake');
+            }, 500);
+        } finally {
+            // 恢复按钮状态
+            loginButton.classList.remove('hidden');
+            loadingButton.classList.add('hidden');
+        }
+    });
+</script>
+</body>
 </html>

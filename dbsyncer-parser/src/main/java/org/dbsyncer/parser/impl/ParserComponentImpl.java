@@ -10,13 +10,13 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -24,12 +24,12 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -73,20 +73,10 @@ public class ParserComponentImpl implements ParserComponent {
     private ApplicationContext applicationContext;
 
     @Override
-    public MetaInfo getMetaInfo(String connectorId, String tableName) {
-        Connector connector = profileComponent.getConnector(connectorId);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
-        if (!CollectionUtils.isEmpty(connector.getTable())) {
-            for (Table t : connector.getTable()) {
-                if (t.getName().equals(tableName)) {
-                    metaInfo.setTableType(t.getType());
-                    metaInfo.setSql(t.getSql());
-                    break;
-                }
-            }
-        }
-        return metaInfo;
+    public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
     @Override
@@ -108,18 +98,15 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
-        // TODO 下个迭代统一使用ForceUpdate
-        targetConfig.setForceUpdate(mapping.isUpsert());
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance sourceInstance = connectorFactory.connect(sourceInstanceId);
+        ConnectorInstance targetInstance = connectorFactory.connect(targetInstanceId);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, sourceInstance, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, targetInstance, null);
+        targetConfig.setForceUpdate(mapping.isForceUpdate());
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
-    }
-
-    @Override
-    public long getCount(String connectorId, Map<String, String> command) {
-        ConnectorInstance connectorInstance = connectorFactory.connect(getConnectorConfig(connectorId));
-        return connectorFactory.getCount(connectorInstance, command);
     }
 
     @Override
@@ -144,8 +131,11 @@ public class ParserComponentImpl implements ParserComponent {
         Picker picker = new Picker(group);
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
         final FullPluginContext context = new FullPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
+
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
+        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
         context.setSourceTableName(sTableName);
         context.setTargetTableName(tTableName);
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
@@ -154,14 +144,12 @@ public class ParserComponentImpl implements ParserComponent {
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setUpsert(mapping.isUpsert());
         context.setSourceTable(sourceTable);
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
         context.setPageSize(mapping.getReadNum());
-        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
-        picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
+        picker.setSourceResolver(sourceConnector.getSchemaResolver());
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
 

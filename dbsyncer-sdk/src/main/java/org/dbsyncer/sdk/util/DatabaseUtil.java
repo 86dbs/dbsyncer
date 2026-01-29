@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.SdkException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.regex.Matcher;
 
 import static java.util.regex.Pattern.compile;
@@ -24,6 +25,17 @@ public abstract class DatabaseUtil {
             }
         }
         return DriverManager.getConnection(url, username, password);
+    }
+
+    public static Connection getConnection(String driverClassName, String url, Properties properties) throws SQLException {
+        if (StringUtil.isNotBlank(driverClassName)) {
+            try {
+                Class.forName(driverClassName);
+            } catch (ClassNotFoundException e) {
+                throw new SdkException(e.getCause());
+            }
+        }
+        return DriverManager.getConnection(url, properties);
     }
 
     public static void close(AutoCloseable rs) {

@@ -3,102 +3,18 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <div class="form-group">
-        <label class="col-sm-2 control-label">监听路径<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="监听的文件路径"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="fileDir" type="text" maxlength="512" dbsyncer-valid="require" th:value="${connector?.config?.fileDir}?:'/soft'"/>
-        </div>
-        <label class="col-sm-2 control-label">分割符<strong class="text-primary">*</strong></label>
-        <div class="col-sm-4">
-            <input class="form-control" name="separator" type="text" maxlength="512" dbsyncer-valid="require" th:value="${connector?.config?.separator}?:'|'"/>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label class="col-sm-2 control-label">schema<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="支持10种字段类型。name字段名, typeName类型名称, type类型编码, pk是否为主键"></i><strong class="text-primary">*</strong></label>
-        <div class="col-sm-10">
-            <textarea id="schema" name="schema" class="form-control dbsyncer_textarea_resize_none" maxlength="4096" dbsyncer-valid="require" rows="20" th:text="${connector?.config?.schema}"></textarea>
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">
+                监听路径<i class="fa fa-question-circle" title="监听的文件路径"></i>
+                <strong class="text-primary">*</strong>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="fileDir" type="text" maxlength="512" required placeholder="/your_file_path" th:value="${connector?.config?.fileDir}?:'/your_file_path'"/>
+            </div>
         </div>
     </div>
-    <div class="form-group">
-        <div class="col-sm-12 text-right">
-            <a href="javascript:format();"><span class="fa fa-magic fa-1x fa-flip-horizontal dbsyncer_pointer" title="美化"></span>美化</a>
-        </div>
-    </div>
-
-    <script type="text/javascript">
-        function format() {
-            const $text = $("#schema");
-            if ("" == $text.text()) {
-                const data = [
-                    {
-                        "fileName": "test.unl",
-                        "separator": "|",
-                        "fields": [
-                            {
-                                "name": "id",
-                                "typeName": "integer",
-                                "type": 4,
-                                "pk": true
-                            },
-                            {
-                                "name": "name",
-                                "typeName": "string",
-                                "type": 12
-                            },
-                            {
-                                "name": "count",
-                                "typeName": "long",
-                                "type": -5
-                            },
-                            {
-                                "name": "type",
-                                "typeName": "short",
-                                "type": 5
-                            },
-                            {
-                                "name": "money",
-                                "typeName": "float",
-                                "type": 6
-                            },
-                            {
-                                "name": "score",
-                                "typeName": "double",
-                                "type": 8
-                            },
-                            {
-                                "name": "status",
-                                "typeName": "boolean",
-                                "type": -7
-                            },
-                            {
-                                "name": "create_date",
-                                "typeName": "date",
-                                "type": 91
-                            },
-                            {
-                                "name": "time",
-                                "typeName": "time",
-                                "type": 92
-                            },
-                            {
-                                "name": "update_time",
-                                "typeName": "timestamp",
-                                "type": 93
-                            }
-                        ]
-                    }
-                ];
-                $text.val(JSON.stringify(data, null, 4));
-                return;
-            }
-            $text.val(JSON.stringify(JSON.parse($text.text()), null, 4));
-        }
-
-        $(function () {
-            format();
-        })
-    </script>
+    <div class="blank-block"></div>
 </div>
 
 </html>

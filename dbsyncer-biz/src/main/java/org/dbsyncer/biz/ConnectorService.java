@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.biz.vo.ConnectorVo;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Connector;
 
 import java.util.List;
@@ -53,11 +55,36 @@ public interface ConnectorService {
     Connector getConnector(String id);
 
     /**
+     * 获取数据库信息
+     *
+     * @param id
+     * @return
+     */
+    List<String> getDatabase(String id);
+
+    /**
+     * 获取Schema信息
+     *
+     * @param id
+     * @param catalog
+     * @return
+     */
+    List<String> getSchema(String id, String catalog);
+
+    /**
      * 获取所有连接器
      *
      * @return
      */
-    List<Connector> getConnectorAll();
+    List<ConnectorVo> getConnectorAll();
+
+    /**
+     * 搜索连接器
+     *
+     * @param params
+     * @return
+     */
+    Paging<ConnectorVo> search(Map<String, String> params);
 
     /**
      * 获取所有支持的连接器类型
@@ -86,4 +113,5 @@ public interface ConnectorService {
      * @return
      */
     Object getPosition(String params);
+
 }

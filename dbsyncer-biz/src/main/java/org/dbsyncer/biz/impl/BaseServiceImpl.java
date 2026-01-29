@@ -3,12 +3,17 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -16,6 +21,9 @@ import org.dbsyncer.sdk.enums.ModelEnum;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class BaseServiceImpl {
 
@@ -89,4 +97,29 @@ public class BaseServiceImpl {
         messageService.sendMessage(title, content);
     }
 
+    protected <T> Paging<T> searchConfigModel(Map<String, String> params, List<T> list) {
+        String searchKey = params.get("searchKey");
+        if (StringUtil.isNotBlank(searchKey)) {
+            list = list.stream().filter(c -> {
+                if (c instanceof Connector || c instanceof Mapping) {
+                    ConfigModel m = (ConfigModel) c;
+                    return StringUtil.contains(m.getName(), searchKey);
+                }
+                if (c instanceof TableGroup) {
+                    TableGroup tg = (TableGroup) c;
+                    return StringUtil.contains(tg.getSourceTable().getName(), searchKey) || StringUtil.contains(tg.getTargetTable().getName(), searchKey);
+                }
+                return false;
+            }).collect(Collectors.toList());
+        }
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        Paging<T> paging = new Paging<>(pageNum, pageSize);
+        if (!CollectionUtils.isEmpty(list)) {
+            paging.setTotal(list.size());
+            int offset = (pageNum * pageSize) - pageSize;
+            paging.setData(list.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
+        }
+        return paging;
+    }
 }

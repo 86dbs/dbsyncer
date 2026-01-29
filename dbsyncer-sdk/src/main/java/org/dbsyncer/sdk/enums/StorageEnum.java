@@ -21,7 +21,15 @@ public enum StorageEnum {
     /**
      * 数据：全量或增量数据
      */
-    DATA("data");
+    DATA("data"),
+    /**
+     * 任务：同步任务
+     */
+    TASK("task"),
+    /**
+     * 任务详情：同步任务详情
+     */
+    TASK_DATA_VERIFICATION_DETAIL("task_data_verification_detail");
 
     private final String type;
 

@@ -1,0 +1,55 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
+package org.dbsyncer.connector.elasticsearch.schema.support;
+
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.support.BooleanType;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * ES 布尔类型
+ * 支持: boolean
+ *
+ * @Author 穿云
+ * @Version 1.0.0
+ * @Date 2026-01-11 22:21
+ */
+public final class ElasticsearchBooleanType extends BooleanType {
+
+    private enum TypeEnum {
+        BOOLEAN("boolean");
+
+        private final String value;
+
+        TypeEnum(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    @Override
+    public Set<String> getSupportedTypeName() {
+        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+    }
+
+    @Override
+    protected Boolean merge(Object val, Field field) {
+        if (val instanceof String) {
+            String str = (String) val;
+            return "true".equalsIgnoreCase(str) || "1".equals(str) || "yes".equalsIgnoreCase(str);
+        }
+
+        if (val instanceof Number) {
+            return ((Number) val).intValue() != 0;
+        }
+
+        return throwUnsupportedException(val, field);
+    }
+}

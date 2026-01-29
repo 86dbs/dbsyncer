@@ -36,9 +36,29 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     }
 
     @Override
+    public Byte asByte() {
+        return getValue().byteAt(0);
+    }
+
+    @Override
     public Short asShort() {
-        ByteBuffer buffer = ByteBuffer.allocate(BinlogByteEnum.SHORT.getByteLength());
-        buffer.put(asByteArray(), 0, buffer.capacity());
+        byte[] bytes = asByteArray();
+        int expectedLength = BinlogByteEnum.SHORT.getByteLength();
+        
+        // 如果字节数组长度小于期望长度，进行填充
+        if (bytes.length < expectedLength) {
+            byte[] paddedBytes = new byte[expectedLength];
+            System.arraycopy(bytes, 0, paddedBytes, 0, bytes.length);
+            // 剩余字节填充为0
+            ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+            buffer.put(paddedBytes);
+            buffer.flip();
+            return buffer.asShortBuffer().get();
+        }
+        
+        // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
+        ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+        buffer.put(bytes, 0, expectedLength);
         buffer.flip();
         return buffer.asShortBuffer().get();
     }
@@ -70,16 +90,46 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 
     @Override
     public Float asFloat() {
-        ByteBuffer buffer = ByteBuffer.allocate(BinlogByteEnum.FLOAT.getByteLength());
-        buffer.put(asByteArray(), 0, buffer.capacity());
+        byte[] bytes = asByteArray();
+        int expectedLength = BinlogByteEnum.FLOAT.getByteLength();
+        
+        // 如果字节数组长度小于期望长度，进行填充
+        if (bytes.length < expectedLength) {
+            byte[] paddedBytes = new byte[expectedLength];
+            System.arraycopy(bytes, 0, paddedBytes, 0, bytes.length);
+            // 剩余字节填充为0
+            ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+            buffer.put(paddedBytes);
+            buffer.flip();
+            return buffer.asFloatBuffer().get();
+        }
+        
+        // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
+        ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+        buffer.put(bytes, 0, expectedLength);
         buffer.flip();
         return buffer.asFloatBuffer().get();
     }
 
     @Override
     public Double asDouble() {
-        ByteBuffer buffer = ByteBuffer.allocate(BinlogByteEnum.DOUBLE.getByteLength());
-        buffer.put(asByteArray(), 0, buffer.capacity());
+        byte[] bytes = asByteArray();
+        int expectedLength = BinlogByteEnum.DOUBLE.getByteLength();
+        
+        // 如果字节数组长度小于期望长度，进行填充
+        if (bytes.length < expectedLength) {
+            byte[] paddedBytes = new byte[expectedLength];
+            System.arraycopy(bytes, 0, paddedBytes, 0, bytes.length);
+            // 剩余字节填充为0
+            ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+            buffer.put(paddedBytes);
+            buffer.flip();
+            return buffer.asDoubleBuffer().get();
+        }
+        
+        // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
+        ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
+        buffer.put(bytes, 0, expectedLength);
         buffer.flip();
         return buffer.asDoubleBuffer().get();
     }

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container mb-5">
+    <div class="card-header">
+        <h3 class="card-title text-center">插件管理</h3>
+    </div>
+    <div class="card-body">
+        <h3 class="card-title">插件列表</h3>
+        <p class="text-xs text-tertiary">上传插件后，选择同步任务，进入高级配置关联插件。</p>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>名称</th>
+                <th>运行驱动</th>
+                <th>类名</th>
+                <th>版本</th>
+                <th>文件</th>
+            </tr>
+            </thead>
+            <tbody id="pluginList">
+            <tr th:id="${p?.name}" th:each="p,state : ${plugins}">
+                <td>
+                    <div th:if="${p?.unmodifiable}" class="flex items-center" title="内置插件">
+                        <i class="fa fa-plug mr-2"></i>
+                        <span class="font-medium">[[${p?.name}]]</span>
+                        <span class="badge badge-info ml-2 text-xs">内置</span>
+                    </div>
+                    <div th:if="${not p?.unmodifiable}" class="flex items-center" title="普通插件">
+                        <i class="fa fa-star text-warning mr-2"></i>
+                        <span class="font-medium">[[${p?.name}]]</span>
+                    </div>
+                </td>
+                <td th:text="${p?.mappingName}"/>
+                <td th:text="${p?.className}" th:title="${p?.className}"/>
+                <td>
+                    <span class="badge badge-success" th:text="${p?.version}"></span>
+                </td>
+                <td class="text-sm" th:text="${p?.fileName}"/>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card-body">
+        <div id="pluginUploader" class="upload-container">
+            <div class="upload-area" data-upload-area>
+                <div class="upload-icon">
+                    <i class="fa fa-plug"></i>
+                </div>
+                <div class="upload-text">点击或拖拽 JAR 文件到此处上传</div>
+                <div class="upload-hint">
+                    支持的文件类型：.jar<br>
+                    最多上传 5 个文件
+                </div>
+                <div class="upload-button">选择文件</div>
+                <input type="file"
+                       class="upload-input"
+                       id="filePlugin"
+                       accept=".jar"
+                       multiple>
+            </div>
+            <div class="upload-list" data-upload-list></div>
+        </div>
+    </div>
+</div>
+
+<!-- 开发文档 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title">如何开发插件？</h3>
+        <p class="text-xs text-tertiary">插件是一种可扩展全量同步和增量同步实现数据转换的技术方式。通过插件可以接收同步数据，自定义同步到目标源的行数据，也能消费数据并实现更多业务场景。</p>
+    </div>
+    <div class="card-body">
+        <ol class="steps">
+            <li>
+                <span class="font-medium">新建工程</span>
+                <p>
+                    新建java或maven工程，或者下载
+                    <a href="https://gitee.com/ghi/dbsyncer-plugin-demo"
+                       title="提供开发者编写插件的示例项目"
+                       target='_blank'
+                       class="text-primary hover-underline">
+                        <i class="fa fa-external-link"></i> 示例项目
+                    </a>
+                </p>
+            </li>
+
+            <li>
+                <span class="font-medium">导入开发包</span>
+                <p class="text-sm font-medium mt-4 mb-2">方式1(推荐)：引入 pom（需要安装到本地）</p>
+                <div class="code-block-wrapper">
+                    <button class="code-copy-btn" onclick="copyCode(this)" title="点击复制">
+                        <i class="fa fa-copy"></i> 点击复制
+                    </button>
+                    <pre class="code-block"><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.ghi&lt;/groupId&gt;
+    &lt;artifactId&gt;dbsyncer-sdk&lt;/artifactId&gt;
+    &lt;version&gt;[[${version}]]&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+                </div>
+                <p class="text-sm font-medium mb-2">方式2：导入 jar</p>
+                <p class="mb-3">
+                    <a onClick="downLoad('sdk')" href="javascript:;" class="btn btn-sm btn-info" title="下载开发包">
+                        <i class="fa fa-download"></i> dbsyncer-sdk-[[${version}]].jar
+                    </a>
+                </p>
+            </li>
+            <li>
+                <span class="font-medium">新建插件类</span>
+                <p class="text-sm font-medium mt-3 mb-2">新建一个类，比如 MyPlugin，实现接口 PluginService 方法</p>
+                <div class="code-block-wrapper">
+                    <button class="code-copy-btn" onclick="copyCode(this)" title="点击复制">
+                        <i class="fa fa-copy"></i> 点击复制
+                    </button>
+                    <pre class="code-block"><code>package org.test;
+
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.spi.PluginService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MyPlugin implements PluginService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 全量同步/定时增量同步前置处理
+     *
+     * @param pluginContext 上下文
+     */
+    @Override
+    public void postProcessBefore(PluginContext pluginContext) {
+    }
+
+    /**
+     * 全量同步/增量同步
+     *
+     * @param pluginContext
+     */
+    @Override
+    public void convert(PluginContext pluginContext) {
+        // 扩展转换数据功能
+        logger.info("插件扩展转换数据中...");
+
+        // 是否终止同步到目标库开关，默认false
+        pluginContext.setTerminated(false);
+
+        // 数据源表和目标源表
+        pluginContext.getSourceTableName();
+        pluginContext.getTargetTableName();
+
+        // 捕获的事件（INSERT/UPDATE/DELETE）
+        pluginContext.getEvent();
+
+        // 数据源和目标源表全量或增量数据
+        pluginContext.getSourceList();
+        pluginContext.getTargetList();
+
+        // 获取目标库连接器实例（如果需要用到连接器，必须引入dbsyncer-connector-[[${version}]].jar）
+        pluginContext.getTargetConnectorInstance();
+    }
+
+    /**
+     * 全量同步/增量同步完成后执行处理
+     *
+     * @param context
+     */
+    @Override
+    public void postProcessAfter(PluginContext context) {
+        // 完成同步后调用该方法
+        logger.info("插件正在处理同步成功的数据，目标源表:{}，事件:{}，条数:{}", context.getTargetTableName(),
+                        context.getEvent(), context.getTargetList().size());
+
+        ConnectorInstance connectorInstance = context.getSourceConnectorInstance();
+
+        // 获取关系型数据库连接，实现自己的业务逻辑...
+        if (connectorInstance instanceof DatabaseConnectorInstance) {
+            DatabaseConnectorInstance db = (DatabaseConnectorInstance) connectorInstance;
+            // 方式一：
+            String query = "select * from my_user limit 10";
+            db.execute(databaseTemplate -> databaseTemplate.queryForList(query));
+
+            // 方式二，开启事务：
+            int execute = db.execute(databaseTemplate -> {
+                SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                int update = 0;
+                try {
+                    // 手动提交事务
+                    connection.setAutoCommit(false);
+                    Object[] args = new Object[3];
+                    args[0] = "1";
+                    args[1] = "2";
+                    args[2] = "3";
+                    update = databaseTemplate.update("INSERT INTO table_name (column1, column2,
+                        column3) VALUES (value1, value2, value3)", args);
+                    connection.commit();
+                } catch (Exception e) {
+                    // 异常回滚
+                    connection.rollback();
+                } finally {
+                    // 还原默认提交事务
+                    connection.setAutoCommit(true);
+                }
+                return update;
+            });
+            logger.info("手动执行SQL结果:{}", execute);
+        }
+    }
+
+    /**
+     * 重写方法：设置版本号
+     *
+     * @return
+     */
+    @Override
+    public String getVersion() {
+        return "1.0.0";
+    }
+
+    /**
+     * 重写方法：设置插件名称
+     *
+     * @return
+     */
+    @Override
+    public String getName() {
+        return "我的插件";
+    }
+}</code></pre>
+                </div>
+            </li>
+
+            <li>
+                <span class="font-medium">配置 SPI</span>
+                <p class="mt-3">
+                    在 /META-INF/ 新建 services 文件夹，并在 services 下新建一个文件，命名为 <code>org.dbsyncer.sdk.spi.PluginService</code>，文件写入实现类路径 <code>org.test.MyPlugin</code>，如果有多个实现就换行再写入
+                </p>
+                <div class="mt-3">
+                    <img draggable="false" th:src="@{'/img/plugin/spi.jpg'}" alt="SPI配置示例">
+                </div>
+            </li>
+
+            <li>
+                <span class="font-medium">打包</span>
+                <p class="mt-3">通过 maven 命令打包</p>
+                <div class="code-block-wrapper">
+                    <button class="code-copy-btn" onclick="copyCode(this)" title="点击复制">
+                        <i class="fa fa-copy"></i> 点击复制
+                    </button>
+                    <pre class="code-block"><code>mvn clean compile package</code></pre>
+                </div>
+            </li>
+        </ol>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(function() {
+        // 初始化文件上传组件
+        initFileUpload('#pluginUploader', {
+            uploadUrl: $basePath + '/plugin/upload',
+            maxFiles: 5,
+            maxSize: 50 * 1024 * 1024, // 50MB
+            acceptedFiles: '.jar',
+            autoUpload: true,
+            onSuccess: function(file, response) {
+                if (response.success) {
+                    bootGrowl("插件上传成功！", "success");
+                    doLoader("/plugin");
+                } else {
+                    bootGrowl(response.message || "上传失败", "danger");
+                }
+            },
+            onError: function(file, error) {
+                bootGrowl(error || "上传失败", "danger");
+            }
+        });
+    });
+    
+    function downLoad(fileName){
+        window.open($basePath + "/plugin/download?name=" + fileName);
+    }
+
+    // 复制代码功能
+    function copyCode(btn) {
+        const $btn = $(btn);
+        const codeBlock = $btn.siblings('.code-block').find('code');
+        const text = codeBlock.text();
+        
+        copyToClipboard(text, {
+            button: $btn,
+            successMessage: "复制代码成功！",
+            originalText: "点击复制",
+            originalIcon: "fa-copy"
+        });
+    }
+</script>
+</html>

@@ -18,7 +18,7 @@ import java.util.List;
  * @Author AE86
  * @Date 2023-08-20 20:00
  */
-public interface ChangedEvent {
+public interface ChangedEvent extends Cloneable {
 
     /**
      * 获取traceId
@@ -71,5 +71,7 @@ public interface ChangedEvent {
     default List<Object> getChangedRow() {
         return null;
     }
+
+    Object clone() throws CloneNotSupportedException;
 
 }

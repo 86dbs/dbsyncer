@@ -2,87 +2,102 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div th:fragment="content">
-    <p class="text-muted">增量配置</p>
-
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4 text-right" id="mappingIncrementStrategyConfig">
-                <div class="col-sm-6">
-                    <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" /> 日志
-                </div>
-                <div class="col-sm-6">
-                    <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" /> 定时
-                </div>
-            </div>
-            <div class="col-md-8"></div>
+<div th:fragment="content" id="mapping_increment" class="hidden">
+    <!-- 增量策略选择 -->
+    <div class="grid grid-cols-4">
+        <div id="increment_strategy" class="radio-group">
+            <input type="radio" name="incrementStrategy" value="log" th:checked="${'log' eq mapping?.listener?.listenerType}" />
+            <label>日志</label>
+            <input type="radio" name="incrementStrategy" value="timing" th:checked="${'timing' eq mapping?.listener?.listenerType}" />
+            <label>定时</label>
         </div>
     </div>
 
     <!-- 增量点配置 -->
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-1">
-                <input id="metaSnapshot" name="metaSnapshot" class="form-control hidden" type="text"/>
-            </div>
-            <div class="col-md-11">
-                <table th:if="${mapping?.meta?.snapshot?.size() gt 0}" class="table table-hover">
-                    <thead>
-                    <tr>
-                        <th>Key</th>
-                        <th>Value</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody id="mappingMetaSnapshotConfig">
-                    <tr th:each="item,entry:${mapping?.meta?.snapshot}">
-                        <td th:text="${entry.current.key}"></td>
-                        <td th:text="${entry.current.value}"></td>
-                        <td><i th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer metaSnapshotModify"></i></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <table class="table" th:if="${mapping?.meta?.snapshot.size() gt 0}">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Key</th>
+            <th>Value</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="mappingMetaSnapshotConfig">
+        <tr th:each="item,s:${mapping?.meta?.snapshot}">
+            <td th:text="${s.count}"/>
+            <td>[[${item.key}]]</td>
+            <td>[[${item.value}]]</td>
+            <td>
+                <button type="button" class="table-action-btn view metaSnapshotModify" title="修改">
+                    <i class="fa fa-edit"></i>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <input id="metaSnapshot" name="metaSnapshot" class="hidden" type="text"/>
+
+    <!-- 定时配置 -->
+    <div th:id="increment_quartz" class="hidden">
+        <div th:replace="mapping/editQuartz :: content"></div>
     </div>
 
     <!-- 增量事件配置 -->
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">新增</label>
-                <div class="col-sm-9">
-                    <input name="enableInsert" class="dbsyncer_switch" th:checked="${mapping?.listener?.enableInsert}" type="checkbox">
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">修改</label>
-                <div class="col-sm-9">
-                    <input name="enableUpdate" class="dbsyncer_switch" th:checked="${mapping?.listener?.enableUpdate}" type="checkbox">
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">删除</label>
-                <div class="col-sm-9">
-                    <input name="enableDelete" class="dbsyncer_switch" th:checked="${mapping?.listener?.enableDelete}" type="checkbox">
-                </div>
+    <p><i class="fa fa-send text-success"></i> 增量事件</p>
+    <div class="grid grid-cols-4">
+        <div class="form-item">
+            <label class="form-label">新增</label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="enableInsert" th:checked="${mapping?.listener?.enableInsert}" type="checkbox" />
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
             </div>
         </div>
-    </div>
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">ddl</label>
-                <div class="col-sm-9">
-                    <input name="enableDDL" class="dbsyncer_switch" th:checked="${mapping?.listener?.enableDDL}" type="checkbox">
-                </div>
+        <div class="form-item">
+            <label class="form-label">修改</label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="enableUpdate" th:checked="${mapping?.listener?.enableUpdate}" type="checkbox" />
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
             </div>
-            <div class="col-md-8"></div>
         </div>
-    </div>
-    <!-- 定时配置 -->
-    <div th:id="mappingIncrementStrategyQuartzConfig" class="hidden">
-        <div th:replace="mapping/editIncrementQuartz :: content"></div>
+        <div class="form-item">
+            <label class="form-label">删除</label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="enableDelete" th:checked="${mapping?.listener?.enableDelete}" type="checkbox" />
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">DDL</label>
+            <div class="form-control-area">
+                <label class="form-switch">
+                    <input name="enableDDL" th:checked="${mapping?.listener?.enableDDL}" type="checkbox" />
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+            </div>
+        </div>
     </div>
 
 </div>

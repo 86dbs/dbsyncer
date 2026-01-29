@@ -57,6 +57,7 @@ public abstract class DateFormatUtil {
     // 定义常见的日期时间格式模式
     private static final String[] SIMPLE_PATTERNS = {PATTERN_YYYY_MM_DD, PATTERN_YYYY_MM_DD_HH_MM_SS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSS, PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS, PATTERN_YYYYMMDD, PATTERN_YYYYMMDDHHMMSS, PATTERN_YYYYMMDDHHMMSSSSS};
 
+    public static final DateTimeFormatter MM_DD = DateTimeFormatter.ofPattern("MM-dd");
     public static final DateTimeFormatter HH_MM_SS = DateTimeFormatter.ofPattern("HH:mm:ss");
     /**
      * 默认时区
@@ -159,6 +160,20 @@ public abstract class DateFormatUtil {
         // 2020-7-12 00:00:00
         if (s.length() < 19) {
             return Timestamp.valueOf(LocalDateTime.from(YYYY_MM_DD_HH_MM_SS.parse(format(s))));
+        }
+
+        // 带时区的 ISO 字符串（如 2024-01-10T01:15:00.000Z、2024-01-10T09:15:00+08:00、2024-01-10T01:15:00.000-08:00）
+        // 按 UTC 解析为 Instant，避免被 LocalDateTime.parse 当成本地时间再 Timestamp.valueOf 产生时区偏差
+        if (s.contains("T") && (s.endsWith("Z") || s.contains("+") || s.matches(".*-\\d{2}:\\d{2}$"))) {
+            try {
+                return Timestamp.from(OffsetDateTime.parse(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant());
+            } catch (DateTimeParseException e) {
+                try {
+                    return Timestamp.from(Instant.parse(s));
+                } catch (DateTimeParseException e2) {
+                    // fall through to FORMATTERS loop
+                }
+            }
         }
 
         for (DateTimeFormatter formatter : FORMATTERS) {

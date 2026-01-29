@@ -29,7 +29,6 @@ public class ConfigConstant {
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
-    public static final String PROJECT_GROUP = "projectGroup";
 
     /**
      * 数据
@@ -39,10 +38,17 @@ public class ConfigConstant {
     public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
-
     /**
      * Binlog
      */
     public static final String BINLOG_DATA = "data";
+
+    /**
+     * 任务
+     */
+    public static final String TASK_STATUS = "status";
+    public static final String TASK_ID = "taskId";
+    public static final String TASK_SOURCE_TABLE_NAME = "sourceTableName";
+    public static final String TASK_CONTENT = "content";
 
 }
