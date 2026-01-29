@@ -191,11 +191,8 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (e instanceof ServerException) {
                 ServerException serverException = (ServerException) e;
                 if (serverException.getErrorCode() == 1236) {
-                    String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
-                            client.getWorkerThreadName(),
-                            client.getBinlogFilename());
-                    logger.error(log);
-                    errorEvent(new MySQLException(log));
+                    logger.error(e.getMessage());
+                    errorEvent(new MySQLException(e.getMessage()));
                     close();
                     return;
                 }

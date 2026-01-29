@@ -6,6 +6,7 @@ import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -51,9 +52,12 @@ public class TableGroupController extends BaseController {
     @Resource
     private ProfileComponent profileComponent;
 
+    @Resource
+    private ParserComponent parserComponent;
 
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) throws Exception {
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id)
+            throws Exception {
         TableGroup tableGroup = tableGroupService.getTableGroup(id);
         model.put("tableGroup", tableGroup);
         String mappingId = tableGroup.getMappingId();
@@ -102,7 +106,8 @@ public class TableGroupController extends BaseController {
 
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(@RequestParam(value = "mappingId") String mappingId, @RequestParam(value = "ids") String ids) {
+    public RestResult remove(@RequestParam(value = "mappingId") String mappingId,
+            @RequestParam(value = "ids") String ids) {
         try {
             return RestResult.restSuccess(tableGroupService.remove(mappingId, ids));
         } catch (Exception e) {
@@ -140,7 +145,8 @@ public class TableGroupController extends BaseController {
             // 检查目标表是否已存在（避免重复创建）
             try {
                 MetaInfo existingTable = connectorFactory.getMetaInfo(targetConnectorInstance, targetTable);
-                if (existingTable != null && existingTable.getColumn() != null && !existingTable.getColumn().isEmpty()) {
+                if (existingTable != null && existingTable.getColumn() != null
+                        && !existingTable.getColumn().isEmpty()) {
                     return RestResult.restSuccess("目标表已存在，无需创建");
                 }
             } catch (Exception e) {
@@ -159,23 +165,23 @@ public class TableGroupController extends BaseController {
             boolean isSameType = sourceType.equals(targetType);
 
             String createTableDDL;
-            
+
             if (isSameType) {
                 // 同类型数据库优化：直接使用源 MetaInfo，跳过类型转换，提高性能并保持一致性
                 logger.debug("检测到同类型数据库（{}），使用优化路径创建表", sourceType);
-                
+
                 // 获取目标连接器的 SqlTemplate
                 ConnectorService targetConnectorService = connectorFactory.getConnectorService(targetType);
                 if (!(targetConnectorService instanceof AbstractDatabaseConnector)) {
                     throw new UnsupportedOperationException("目标连接器不支持直接访问 SqlTemplate: " + targetType);
                 }
-                
+
                 AbstractDatabaseConnector targetDatabaseConnector = (AbstractDatabaseConnector) targetConnectorService;
                 SqlTemplate sqlTemplate = targetDatabaseConnector.sqlTemplate;
                 if (sqlTemplate == null) {
                     throw new UnsupportedOperationException("目标连接器未初始化 SqlTemplate: " + targetType);
                 }
-                
+
                 // 提取字段和主键
                 List<Field> fields = sourceMetaInfo.getColumn();
                 List<String> primaryKeys = new ArrayList<>();
@@ -184,14 +190,14 @@ public class TableGroupController extends BaseController {
                         primaryKeys.add(field.getName());
                     }
                 }
-                
+
                 // 直接调用 buildCreateTableSql，跳过类型转换
                 createTableDDL = sqlTemplate.buildCreateTableSql(null, targetTable, fields, primaryKeys);
                 logger.debug("使用优化路径生成 CREATE TABLE DDL（跳过类型转换）");
             } else {
                 // 不同类型数据库：走原有转换流程
                 logger.debug("检测到不同类型数据库（{} -> {}），使用标准转换流程", sourceType, targetType);
-                
+
                 // 将源表的字段类型转换为标准类型（重要：避免类型污染）
                 // 因为 sourceMetaInfo 中的字段类型是源数据库特定类型（如 SQL Server 的 NVARCHAR），
                 // 需要先转换为标准类型，然后目标数据库的 SqlTemplate 才能正确转换为目标数据库类型
@@ -231,12 +237,26 @@ public class TableGroupController extends BaseController {
                     return RestResult.restFail("创建表失败: " + result.error, 500);
                 }
 
+                // 刷新 command 配置，确保 IDENTITY 标记被正确设置
+                // 对于 SQL Server，创建表后需要重新查询目标表的 IDENTITY 列信息
+                // 否则第一次同步时会因为缺少 mark.hasIdentity 标记而失败
+                List<TableGroup> tableGroups = tableGroupService.getTableGroupAll(mappingId);
+                for (TableGroup tableGroup : tableGroups) {
+                    if (targetTable.equals(tableGroup.getTargetTable().getName())) {
+                        // 重新初始化 TableGroup 的 command 配置
+                        // 这会调用 connectorFactory.getCommand()，对于 SQL Server 会查询 IDENTITY 列
+                        tableGroup.isInit = false;
+                        tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
+                        profileComponent.editConfigModel(tableGroup);
+                        break;
+                    }
+                }
                 logger.info("成功创建目标表: {}", targetTable);
                 return RestResult.restSuccess("创建表成功");
 
             } catch (UnsupportedOperationException e) {
-                logger.error("连接器不支持自动生成 CREATE TABLE DDL: {}", targetConnector.getConfig().getConnectorType());
-                return RestResult.restFail("该数据库类型不支持自动创建表: " + targetConnector.getConfig().getConnectorType(), 400);
+                logger.error("建表失败： {}", targetConnector.getConfig().getConnectorType(), e);
+                return RestResult.restFail("建表失败：: " + e.getMessage);
             }
 
         } catch (IllegalArgumentException e) {
