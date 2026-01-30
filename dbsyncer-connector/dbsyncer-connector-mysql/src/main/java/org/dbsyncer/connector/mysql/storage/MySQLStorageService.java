@@ -224,7 +224,6 @@ public class MySQLStorageService extends AbstractStorageService {
         for (Field f : executor.getFields()) {
             if (f.isPk()) {
                 pk = params.get(f.getLabelName());
-                continue;
             }
             args.add(params.get(f.getLabelName()));
         }
