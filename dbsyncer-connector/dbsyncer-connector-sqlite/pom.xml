@@ -5,7 +5,7 @@
     <parent>
         <artifactId>dbsyncer-connector</artifactId>
         <groupId>org.ghi</groupId>
-        <version>2.15.0_0129</version>
+        <version>2.15.1_0130</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
