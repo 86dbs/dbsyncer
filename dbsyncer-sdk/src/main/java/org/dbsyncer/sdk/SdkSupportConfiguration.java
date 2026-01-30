@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -31,6 +32,11 @@ public class SdkSupportConfiguration {
             return s;
         }
         return new LicenseService() {
+            @Override
+            public EditionEnum getEditionEnum() {
+                return EditionEnum.COMMUNITY;
+            }
+
             @Override
             public String getLicensePath() {
                 return System.getProperty("user.dir") + File.separatorChar + "conf" + File.separatorChar;

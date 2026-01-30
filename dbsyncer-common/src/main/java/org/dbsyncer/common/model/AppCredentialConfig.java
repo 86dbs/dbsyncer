@@ -64,7 +64,6 @@ public class AppCredentialConfig {
             this.version = version;
             this.hashedSecret = hashedSecret;
             this.createTime = createTime;
-            this.enabled = true;
         }
 
         public int getVersion() {

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.model.ProductInfo;
 
 /**
@@ -11,6 +12,11 @@ import org.dbsyncer.sdk.model.ProductInfo;
  * @Date 2024-05-13 01:17
  */
 public interface LicenseService {
+
+    /**
+     * 获取版本号
+     */
+    EditionEnum getEditionEnum();
 
     /**
      * 获取License上传路径 dbsyncer/conf/
