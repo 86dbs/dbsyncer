@@ -55,9 +55,9 @@ public class TableGroupController extends BaseController {
     @Resource
     private ParserComponent parserComponent;
 
+
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id)
-            throws Exception {
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) throws Exception {
         TableGroup tableGroup = tableGroupService.getTableGroup(id);
         model.put("tableGroup", tableGroup);
         String mappingId = tableGroup.getMappingId();
@@ -106,8 +106,7 @@ public class TableGroupController extends BaseController {
 
     @PostMapping("/remove")
     @ResponseBody
-    public RestResult remove(@RequestParam(value = "mappingId") String mappingId,
-            @RequestParam(value = "ids") String ids) {
+    public RestResult remove(@RequestParam(value = "mappingId") String mappingId, @RequestParam(value = "ids") String ids) {
         try {
             return RestResult.restSuccess(tableGroupService.remove(mappingId, ids));
         } catch (Exception e) {
@@ -145,8 +144,7 @@ public class TableGroupController extends BaseController {
             // 检查目标表是否已存在（避免重复创建）
             try {
                 MetaInfo existingTable = connectorFactory.getMetaInfo(targetConnectorInstance, targetTable);
-                if (existingTable != null && existingTable.getColumn() != null
-                        && !existingTable.getColumn().isEmpty()) {
+                if (existingTable != null && existingTable.getColumn() != null && !existingTable.getColumn().isEmpty()) {
                     return RestResult.restSuccess("目标表已存在，无需创建");
                 }
             } catch (Exception e) {
@@ -237,26 +235,12 @@ public class TableGroupController extends BaseController {
                     return RestResult.restFail("创建表失败: " + result.error, 500);
                 }
 
-                // 刷新 command 配置，确保 IDENTITY 标记被正确设置
-                // 对于 SQL Server，创建表后需要重新查询目标表的 IDENTITY 列信息
-                // 否则第一次同步时会因为缺少 mark.hasIdentity 标记而失败
-                List<TableGroup> tableGroups = tableGroupService.getTableGroupAll(mappingId);
-                for (TableGroup tableGroup : tableGroups) {
-                    if (targetTable.equals(tableGroup.getTargetTable().getName())) {
-                        // 重新初始化 TableGroup 的 command 配置
-                        // 这会调用 connectorFactory.getCommand()，对于 SQL Server 会查询 IDENTITY 列
-                        tableGroup.isInit = false;
-                        tableGroup.initTableGroup(parserComponent, profileComponent, connectorFactory);
-                        profileComponent.editConfigModel(tableGroup);
-                        break;
-                    }
-                }
                 logger.info("成功创建目标表: {}", targetTable);
                 return RestResult.restSuccess("创建表成功");
 
             } catch (UnsupportedOperationException e) {
                 logger.error("建表失败： {}", targetConnector.getConfig().getConnectorType(), e);
-                return RestResult.restFail("建表失败：: " + e.getMessage);
+                return RestResult.restFail("建表失败：: " + e.getMessage());
             }
 
         } catch (IllegalArgumentException e) {

@@ -47,7 +47,6 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_VIEW = "select name from sysobjects where xtype in('v')";
     private final String QUERY_TABLE = "select name from sys.tables where schema_id = schema_id('%s') and is_ms_shipped = 0";
-    private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
     private final String MARK_HAS_IDENTITY = "mark.hasIdentity";
 
     private final SqlServerSchemaResolver schemaResolver = new SqlServerSchemaResolver();
@@ -98,13 +97,19 @@ public class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) throws Exception {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
-        String tableName = commandConfig.getTable().getName();
-        // 判断表是否包含标识自增列
-        DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
-        List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
-        // 允许显式插入标识列的值
-        boolean hasIdentity = !CollectionUtils.isEmpty(result);
-        targetCommand.put(MARK_HAS_IDENTITY, String.valueOf(hasIdentity));
+        
+        // 从源表的字段信息中判断是否包含IDENTITY列
+        // 不再需要查询目标端，直接使用源表的autoincrement属性
+        Table targetTable = commandConfig.getTable();
+
+        assert targetTable.getColumn() != null;
+        for (Field field : targetTable.getColumn()) {
+            if (field.isAutoincrement()) {
+                targetCommand.put(MARK_HAS_IDENTITY, String.valueOf(true));
+                break;
+            }
+        }
+        
         return targetCommand;
     }
 
