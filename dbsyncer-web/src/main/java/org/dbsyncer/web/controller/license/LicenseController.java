@@ -12,7 +12,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
-import org.dbsyncer.biz.vo.ProductInfoVo;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -80,6 +80,7 @@ public class LicenseController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
+        model.put("editionInfo", getEditionInfoVO());
         model.put("productInfo", licenseService.getProductInfo());
         return "license/list";
     }
@@ -147,22 +148,26 @@ public class LicenseController extends BaseController {
     @GetMapping("/query.json")
     @ResponseBody
     public RestResult query() {
-        ProductInfoVo infoVo = new ProductInfoVo();
-        if (StringUtil.isNotBlank(licenseService.getKey())) {
-            infoVo.setKey(licenseService.getKey());
-            ProductInfo productInfo = licenseService.getProductInfo();
-            if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
-                Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
-                if (first.isPresent()) {
-                    infoVo.setEffectiveTime(first.get().getEffectiveTime());
-                    formatEffectiveTimeContent(infoVo);
-                }
+        EditionInfoVO infoVo = getEditionInfoVO();
+        ProductInfo productInfo = licenseService.getProductInfo();
+        if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
+            Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
+            if (first.isPresent()) {
+                infoVo.setEffectiveTime(first.get().getEffectiveTime());
+                formatEffectiveTimeContent(infoVo);
             }
         }
         return RestResult.restSuccess(infoVo);
     }
 
-    private void formatEffectiveTimeContent(ProductInfoVo infoVo) {
+    private EditionInfoVO getEditionInfoVO() {
+        EditionInfoVO infoVo = new EditionInfoVO();
+        infoVo.setEdition(licenseService.getEditionEnum().getCode());
+        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
+        return infoVo;
+    }
+
+    private void formatEffectiveTimeContent(EditionInfoVO infoVo) {
         LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
         LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
         Period period = Period.between(startDateTime.toLocalDate(), endDateTime.toLocalDate());

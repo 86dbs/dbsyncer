@@ -103,9 +103,13 @@ $(function () {
     $("#mappingSubmitBtn").click(function () {
         let $form = $("#mappingModifyForm");
         if (validateForm($form)) {
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
             doPoster("/mapping/edit", $form.serializeJson(), function (response) {
+                $btn.html(originalText).prop('disabled', false);
                 if (response.success === true) {
-                    bootGrowl("修改驱动成功!", "success");
+                    bootGrowl("保存成功!", "success");
                     // 返回到默认主页
                     backIndexPage();
                 } else {

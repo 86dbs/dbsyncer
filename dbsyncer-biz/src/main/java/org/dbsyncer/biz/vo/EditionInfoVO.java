@@ -8,19 +8,28 @@ package org.dbsyncer.biz.vo;
  * @Version 1.0.0
  * @Date 2025-07-04 22:38
  */
-public class ProductInfoVo {
+public class EditionInfoVO {
 
-    private String key;
+    private String edition;
+    private String editionName;
     private long effectiveTime;
     private long currentTime = System.currentTimeMillis();
     private String effectiveContent;
 
-    public String getKey() {
-        return key;
+    public String getEdition() {
+        return edition;
     }
 
-    public void setKey(String key) {
-        this.key = key;
+    public void setEdition(String edition) {
+        this.edition = edition;
+    }
+
+    public String getEditionName() {
+        return editionName;
+    }
+
+    public void setEditionName(String editionName) {
+        this.editionName = editionName;
     }
 
     public long getEffectiveTime() {

@@ -15,21 +15,27 @@ public enum EditionEnum {
     /**
      * 社区版
      */
-    COMMUNITY("community"),
+    COMMUNITY("community", "社区版"),
 
     /**
      * 专业版
      */
-    PROFESSIONAL("professional");
+    PROFESSIONAL("professional", "专业版");
 
     private final String code;
+    private final String message;
 
-    EditionEnum(String code) {
+    EditionEnum(String code, String message) {
         this.code = code;
+        this.message = message;
     }
 
     public String getCode() {
         return code;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
 }
