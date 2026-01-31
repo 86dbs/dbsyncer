@@ -4,9 +4,9 @@
 
 <!-- 引入 QRCode 库 -->
 <script th:src="@{/plugins/js/qrcodejs/qrcode.min.js}"></script>
-<h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
 <!-- 社区版提示 -->
 <div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
     <p class="text-secondary mb-6">
         暂未开放，请下载
         <a href="https://gitee.com/ghi/dbsyncer/releases"
@@ -22,6 +22,7 @@
 </div>
 <!-- 专业版提示 -->
 <div th:if="${(not (editionInfo.edition eq 'community')) and #strings.isEmpty(key)}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
     <p class="text-secondary mb-6">暂不支持激活虚拟机环境，请联系<a href="javascript:void(0);" class="text-success qrcode-trigger"><i class="fa fa-wechat"></i> 星河同步官方</a></p>
     <script>
         $(function () {
