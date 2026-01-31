@@ -694,7 +694,7 @@ function refreshLicense() {
     doGetter("/license/query.json", {}, function (response) {
         if (response.success === true) {
             // 社区版
-            if (isBlank(response.data.key)) {
+            if (response.data.edition === "community") {
                 return;
             }
             $("#licenseInfo").show();

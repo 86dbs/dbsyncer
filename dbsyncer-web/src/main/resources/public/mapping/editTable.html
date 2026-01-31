@@ -163,7 +163,11 @@
             m.targetType = targetSelector.getAttribute('type');
             m.sourceTablePK = $("#sourceTablePK").val();
             m.targetTablePK = $("#targetTablePK").val();
+            const $btn = $(this);
+            const originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 添加中...').prop('disabled', true);
             doPoster("/tableGroup/add", m, function (data) {
+                $btn.html(originalText).prop('disabled', false);
                 if (data.success === true) {
                     bootGrowl("新增映射关系成功!", "success");
                 } else {
@@ -185,7 +189,11 @@
             });
             if (ids.length > 0) {
                 let id = $("#mappingId").val();
+                const $btn = $(this);
+                const originalText = $btn.html();
+                $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true);
                 doPoster("/tableGroup/remove", {"mappingId": id, "ids" : ids.join()}, function (response) {
+                    $btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
                         bootGrowl("删除映射关系成功!", "success");
                         refreshMappingEditPage();

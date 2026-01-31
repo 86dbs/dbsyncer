@@ -112,7 +112,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             // 操作系统
             String osName = System.getProperty("os.name");
             // 架构
-            vo.setDetail(String.format("%s(%s) %s", osName, System.getProperty("os.version"), System.getProperty("os.arch")));
+            vo.setDetail(String.format("%s %s %s", osName, System.getProperty("os.arch"), System.getProperty("os.version")));
         });
         systemInfo = new MetricResponse();
         systemInfo.setCode(MetricEnum.SYSTEM_ENV.getCode());

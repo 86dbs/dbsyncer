@@ -2,11 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
+<!-- 引入 QRCode 库 -->
+<script th:src="@{/plugins/js/qrcodejs/qrcode.min.js}"></script>
+<h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
 <!-- 社区版提示 -->
-<div th:if="${#strings.isEmpty(key)}" class="text-center">
-    <h3 class="text-xl text-center text-gray-500">社区版暂未开放</h3>
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
     <p class="text-secondary mb-6">
-        请下载
+        暂未开放，请下载
         <a href="https://gitee.com/ghi/dbsyncer/releases"
            class="text-primary hover-underline font-medium"
            title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
@@ -17,6 +19,21 @@
     <div class="mb-6">
         <img draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
     </div>
+</div>
+<!-- 专业版提示 -->
+<div th:if="${(not (editionInfo.edition eq 'community')) and #strings.isEmpty(key)}" class="text-center">
+    <p class="text-secondary mb-6">暂不支持激活虚拟机环境，请联系<a href="javascript:void(0);" class="text-success qrcode-trigger"><i class="fa fa-wechat"></i> 星河同步官方</a></p>
+    <script>
+        $(function () {
+            // 初始化二维码悬浮提示
+            initQRCodePopover({
+                url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
+                selector: '.qrcode-trigger',
+                size: 150,
+                position: 'bottom'
+            });
+        });
+    </script>
 </div>
 
 <!-- 许可证已激活 -->
@@ -230,7 +247,5 @@
 
 </div>
 
-<!-- 引入 QRCode 库 -->
-<script th:if="${not #strings.isEmpty(key)}" th:src="@{/plugins/js/qrcodejs/qrcode.min.js}"></script>
 <script th:if="${not #strings.isEmpty(key)}" th:src="@{/js/license/license.js}"></script>
 </html>
