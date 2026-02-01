@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.util.StringUtil;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -124,7 +126,7 @@ public class JwtSecretManager {
             if (StringUtil.isNotBlank(jwtSecretConfig.getCurrentSecret())) {
                 int oldVersion = jwtSecretConfig.getCurrentVersion();
                 String oldSecret = jwtSecretConfig.getCurrentSecret();
-                jwtSecretConfig.addHistorySecret(oldVersion, oldSecret);
+                jwtSecretConfig.getHistorySecrets().put(oldVersion, oldSecret);
                 logger.info("保存当前密钥到历史密钥，版本: {}", oldVersion);
             }
 
@@ -136,7 +138,7 @@ public class JwtSecretManager {
             int newVersion = jwtSecretConfig.getCurrentVersion() + 1;
             jwtSecretConfig.setCurrentSecret(newSecret);
             jwtSecretConfig.setCurrentVersion(newVersion);
-            jwtSecretConfig.setGenerateTime(System.currentTimeMillis());
+            jwtSecretConfig.setGenerateTime(Instant.now().toEpochMilli());
 
             // 保存到系统配置
             saveJwtSecretConfig(jwtSecretConfig);
@@ -146,7 +148,7 @@ public class JwtSecretManager {
             return newSecret;
         } catch (Exception e) {
             logger.error("生成并保存JWT密钥失败", e);
-            throw new RuntimeException("生成并保存JWT密钥失败", e);
+            throw new BizException("生成并保存JWT密钥失败", e);
         }
     }
 
@@ -235,24 +237,19 @@ public class JwtSecretManager {
      * @param jwtSecretConfig JWT密钥配置
      */
     private void saveJwtSecretConfig(JwtSecretConfig jwtSecretConfig) {
-        try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null) {
-                throw new RuntimeException("系统配置不存在");
-            }
-
-            // 设置JWT密钥配置
-            systemConfig.setJwtSecretConfig(jwtSecretConfig);
-
-            // 将JWT密钥配置序列化为JSON字符串，保存到系统配置的扩展字段中
-            // 由于SystemConfig是通过JSON序列化的，JwtSecretConfig会自动序列化
-            // 但为了确保兼容性，我们通过ProfileComponent直接更新配置
-            profileComponent.editConfigModel(systemConfig);
-
-            logger.info("保存JWT密钥配置成功，版本: {}", jwtSecretConfig.getCurrentVersion());
-        } catch (Exception e) {
-            logger.error("保存JWT密钥配置失败", e);
-            throw new RuntimeException("保存JWT密钥配置失败", e);
+        SystemConfig systemConfig = systemConfigService.getSystemConfig();
+        if (systemConfig == null) {
+            throw new RuntimeException("系统配置不存在");
         }
+
+        // 设置JWT密钥配置
+        systemConfig.setJwtSecretConfig(jwtSecretConfig);
+
+        // 将JWT密钥配置序列化为JSON字符串，保存到系统配置的扩展字段中
+        // 由于SystemConfig是通过JSON序列化的，JwtSecretConfig会自动序列化
+        // 但为了确保兼容性，我们通过ProfileComponent直接更新配置
+        profileComponent.editConfigModel(systemConfig);
+
+        logger.info("保存JWT密钥配置成功，版本: {}", jwtSecretConfig.getCurrentVersion());
     }
 }

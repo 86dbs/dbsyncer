@@ -30,9 +30,7 @@ public class TimestampValidator {
     static {
         nonceCache.init();
         // 注册JVM关闭钩子，确保清理任务正确关闭
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            nonceCache.destroy();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(nonceCache::destroy));
     }
 
     /**

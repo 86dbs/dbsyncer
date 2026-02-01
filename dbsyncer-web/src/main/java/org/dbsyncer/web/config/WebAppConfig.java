@@ -170,14 +170,14 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
-        logger.debug("创建会话:{}", se.getSession().getId());
+        logger.info("创建会话:{}", se.getSession().getId());
         int maxInactiveInterval = se.getSession().getMaxInactiveInterval();
-        logger.debug(String.valueOf(maxInactiveInterval));
+        logger.info(String.valueOf(maxInactiveInterval));
     }
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se) {
-        logger.debug("销毁会话:{}", se.getSession().getId());
+        logger.info("销毁会话:{}", se.getSession().getId());
     }
 
     /**

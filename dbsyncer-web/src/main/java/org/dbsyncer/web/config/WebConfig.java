@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.web.config;
 
-import org.dbsyncer.web.interceptor.OpenApiInterceptor;
+import org.dbsyncer.web.controller.openapi.OpenApiInterceptor;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

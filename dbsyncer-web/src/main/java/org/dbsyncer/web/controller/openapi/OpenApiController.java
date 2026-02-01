@@ -3,11 +3,9 @@
  */
 package org.dbsyncer.web.controller.openapi;
 
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.impl.AppCredentialManager;
+import org.dbsyncer.biz.impl.CredentialManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
@@ -47,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * OpenAPI控制器
- * 提供外部业务系统集成接口
+ * 提供外部系统集成接口
  * 
  * @author 穿云
  * @version 2.0.0
@@ -62,13 +60,10 @@ public class OpenApiController implements InitializingBean {
     private SystemConfigService systemConfigService;
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private JwtSecretManager jwtSecretManager;
 
     @Resource
-    private AppCredentialManager appCredentialManager;
+    private CredentialManager appCredentialManager;
 
     @Resource
     private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
@@ -159,42 +154,37 @@ public class OpenApiController implements InitializingBean {
      * 登录接口 - 获取Token
      * POST /openapi/auth/login
      * 
-     * @param requestBody 请求体（JSON格式，包含appId和appSecret）
+     * @param requestBody 请求体（JSON格式，包含secret）
      * @return Token信息
      */
     @PostMapping("/auth/login")
     public OpenApiResponse<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
         try {
-            String appId = requestBody.get("appId");
-            String appSecret = requestBody.get("appSecret");
-            
-            if (StringUtil.isBlank(appId) || StringUtil.isBlank(appSecret)) {
-                return OpenApiResponse.fail(400, "appId和appSecret不能为空");
+            String secret = requestBody.get("secret");
+            if (StringUtil.isBlank(secret)) {
+                return OpenApiResponse.fail(400, "secret不能为空");
             }
-            
-            // 验证appId和appSecret
-            if (!appCredentialManager.validateCredential(appId, appSecret)) {
-                logger.warn("业务系统 {} 凭证验证失败", appId);
-                return OpenApiResponse.fail(401, "appId或appSecret错误");
+
+            // 验证secret
+            if (!appCredentialManager.validateCredential(secret)) {
+                logger.warn("无效凭证 {}", secret);
+                return OpenApiResponse.fail(401, "secret错误");
             }
-            
-            // 获取系统配置中的RSA配置（用于生成JWT密钥）
+
             SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null || !systemConfig.isEnableRsaConfig() || systemConfig.getRsaConfig() == null) {
-                return OpenApiResponse.fail(500, "RSA配置未启用或不存在");
+            if (!systemConfig.isEnableOpenAPI()) {
+                return OpenApiResponse.fail(500, "未开放API");
             }
             
             // 获取JWT密钥（如果不存在会自动生成）
             String jwtSecret = jwtSecretManager.getCurrentSecret();
             
             // 生成Token
-            String token = JwtUtil.generateToken(appId, jwtSecret);
-            
+            String token = JwtUtil.generateToken(jwtSecret);
+
             Map<String, String> data = new HashMap<>();
             data.put("token", token);
             data.put("expiresIn", "7200"); // 2小时，单位：秒
-            
-            logger.info("业务系统 {} 登录成功", appId);
             return OpenApiResponse.success("登录成功", data);
         } catch (Exception e) {
             logger.error("登录失败", e);
@@ -212,11 +202,6 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/refresh")
     public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
         try {
-            JwtUtil.TokenInfo tokenInfo = (JwtUtil.TokenInfo) request.getAttribute("tokenInfo");
-            if (tokenInfo == null) {
-                return OpenApiResponse.fail(401, "Token信息不存在");
-            }
-            
             // 获取JWT密钥（支持密钥轮换）
             String[] jwtSecrets = jwtSecretManager.getSecretsForVerification();
             
@@ -241,51 +226,11 @@ public class OpenApiController implements InitializingBean {
             Map<String, String> data = new HashMap<>();
             data.put("token", newToken);
             data.put("expiresIn", "7200");
-            
-            logger.info("业务系统 {} 刷新Token成功", tokenInfo.getAppId());
+
             return OpenApiResponse.success("刷新Token成功", data);
         } catch (Exception e) {
             logger.error("刷新Token失败", e);
             return OpenApiResponse.fail(500, "刷新Token失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 数据同步接口 - 业务系统同步数据到DBSyncer
-     * POST /openapi/data/sync
-     * 
-     * @param request 请求对象（拦截器已解密数据）
-     * @return 同步结果
-     */
-    @PostMapping("/data/sync")
-    public OpenApiResponse<Map<String, Object>> syncData(HttpServletRequest request) {
-        try {
-            String appId = (String) request.getAttribute("appId");
-            String decryptedData = (String) request.getAttribute("decryptedData");
-            
-            if (StringUtil.isBlank(decryptedData)) {
-                return OpenApiResponse.fail(400, "同步数据不能为空");
-            }
-            
-            // 解析同步数据
-            @SuppressWarnings("unchecked")
-            Map<String, Object> syncData = (Map<String, Object>) JsonUtil.jsonToObj(decryptedData, Map.class);
-            
-            // TODO: 实现数据同步逻辑
-            // 这里需要根据业务需求实现具体的数据同步处理
-            // syncData包含同步的数据内容，例如：connectorId, tableName, data等
-            logger.debug("接收到同步数据: {}", syncData);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("syncId", System.currentTimeMillis());
-            result.put("status", "success");
-            result.put("message", "数据同步成功");
-            
-            logger.info("业务系统 {} 同步数据成功", appId);
-            return OpenApiResponse.success("数据同步成功", result);
-        } catch (Exception e) {
-            logger.error("数据同步失败", e);
-            return OpenApiResponse.fail(500, "数据同步失败: " + e.getMessage());
         }
     }
 

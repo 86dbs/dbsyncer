@@ -29,7 +29,7 @@ public class JwtSecretConfig {
      * 历史密钥Map（版本号 -> 密钥）
      * 用于验证旧Token，支持多个历史密钥
      */
-    private Map<Integer, String> historySecrets;
+    private Map<Integer, String> historySecrets = new HashMap<>();
 
     /**
      * 密钥生成时间（毫秒时间戳）
@@ -63,40 +63,11 @@ public class JwtSecretConfig {
     }
 
     public Map<Integer, String> getHistorySecrets() {
-        if (historySecrets == null) {
-            historySecrets = new HashMap<>();
-        }
         return historySecrets;
     }
 
     public void setHistorySecrets(Map<Integer, String> historySecrets) {
         this.historySecrets = historySecrets;
-    }
-
-    /**
-     * 添加历史密钥
-     * 
-     * @param version 版本号
-     * @param secret 密钥
-     */
-    public void addHistorySecret(int version, String secret) {
-        if (historySecrets == null) {
-            historySecrets = new HashMap<>();
-        }
-        historySecrets.put(version, secret);
-    }
-
-    /**
-     * 获取历史密钥
-     * 
-     * @param version 版本号
-     * @return 密钥，如果不存在返回null
-     */
-    public String getHistorySecret(int version) {
-        if (historySecrets == null) {
-            return null;
-        }
-        return historySecrets.get(version);
     }
 
     public Long getGenerateTime() {

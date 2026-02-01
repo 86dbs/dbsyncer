@@ -1,9 +1,10 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.interceptor;
+package org.dbsyncer.web.controller.openapi;
 
 import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.web.model.OpenApiRequest;
 import org.dbsyncer.web.model.OpenApiResponse;
 import org.dbsyncer.common.util.CryptoUtil;
@@ -54,43 +55,49 @@ public class OpenApiInterceptor implements HandlerInterceptor {
 
     @Resource
     private IpWhitelistManager ipWhitelistManager;
-    
+
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     // TODO HMAC密钥（内网场景使用，可以从配置中获取）
     private String hmacSecret = "dbsyncer-internal-hmac-secret-key-2026";
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
-        String requestPath = request.getRequestURI();
-        
         try {
-            // 0. 验证IP白名单（优先验证，避免无效请求消耗资源）
+            // 1. 排除认证接口（登录、刷新token）- 这些接口不需要Token验证
+            String requestPath = request.getRequestURI();
+            if (isAuthEndpoint(requestPath)) {
+                return true;
+            }
+
+            // 2. 配置是否开启
+            if (!preloadTemplate.isPreloadCompleted()) {
+                writeErrorResponse(response, 503, "服务暂不可用");
+                return false;
+            }
+            SystemConfig systemConfig = systemConfigService.getSystemConfig();
+            if (!systemConfig.isEnableOpenAPI()) {
+                writeErrorResponse(response, 500, "未开放API");
+                return false;
+            }
+
+            // 3. 验证IP白名单（优先验证，避免无效请求消耗资源）
             // 所有OpenAPI接口都需要验证IP白名单，包括登录接口
             String clientIp = getClientIp(request);
+            // TODO 安全问题
             if (!ipWhitelistManager.isAllowed(clientIp)) {
                 logger.warn("IP {} 不在白名单中，拒绝访问 {}", clientIp, requestPath);
                 writeErrorResponse(response, 403, "IP地址不在白名单中");
                 return false;
             }
             
-            // 排除认证接口（登录、刷新token）- 这些接口不需要Token验证
-            if (isAuthEndpoint(requestPath)) {
-                return true;
-            }
-            
-            // 1. 验证Token
+            // 4. 验证Token
             String token = extractToken(request);
             if (StringUtil.isBlank(token)) {
                 writeErrorResponse(response, 401, "Token不能为空");
                 return false;
             }
-            
-            // 获取系统配置中的RSA配置（用于验证签名）
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null || !systemConfig.isEnableRsaConfig() || systemConfig.getRsaConfig() == null) {
-                writeErrorResponse(response, 500, "RSA配置未启用或不存在");
-                return false;
-            }
-            
             // 获取JWT密钥（支持密钥轮换，尝试当前密钥和上一个密钥）
             String[] jwtSecrets = jwtSecretManager.getSecretsForVerification();
             JwtUtil.TokenInfo tokenInfo = null;
@@ -100,13 +107,14 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                     break;
                 }
             }
-            
             if (tokenInfo == null || !tokenInfo.isValid()) {
                 writeErrorResponse(response, 401, "Token无效或已过期");
                 return false;
             }
+            // 将token信息存储到request attribute中
+            request.setAttribute("tokenInfo", tokenInfo);
             
-            // 2. 解析加密请求（如果是加密接口）
+            // 5. 解析加密请求（如果是加密接口）
             if (isEncryptedEndpoint(requestPath)) {
                 String requestBody = readRequestBody(request);
                 if (StringUtil.isBlank(requestBody)) {
@@ -142,16 +150,12 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                     
                     // 将解密后的数据存储到request attribute中，供Controller使用
                     request.setAttribute("decryptedData", decryptedData);
-                    request.setAttribute("appId", tokenInfo.getAppId());
                 } catch (Exception e) {
                     logger.error("解析加密请求失败", e);
                     writeErrorResponse(response, 400, "解析加密请求失败: " + e.getMessage());
                     return false;
                 }
             }
-            
-            // 将token信息存储到request attribute中
-            request.setAttribute("tokenInfo", tokenInfo);
             
             return true;
         } catch (Exception e) {

@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.common.model.AppCredentialConfig;
+import org.dbsyncer.common.model.CredentialConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RSAConfig;
@@ -73,6 +73,11 @@ public class SystemConfig extends ConfigModel {
     private boolean enablePrintTraceInfo;
 
     /**
+     * 是否开放API
+     */
+    private boolean enableOpenAPI;
+
+    /**
      * 是否开启RSA配置
      */
     private boolean enableRsaConfig;
@@ -88,9 +93,9 @@ public class SystemConfig extends ConfigModel {
     private JwtSecretConfig jwtSecretConfig;
 
     /**
-     * 业务系统凭证配置
+     * 系统凭证配置
      */
-    private AppCredentialConfig appCredentialConfig;
+    private CredentialConfig credentialConfig;
 
     /**
      * IP白名单配置
@@ -177,6 +182,14 @@ public class SystemConfig extends ConfigModel {
         this.enablePrintTraceInfo = enablePrintTraceInfo;
     }
 
+    public boolean isEnableOpenAPI() {
+        return enableOpenAPI;
+    }
+
+    public void setEnableOpenAPI(boolean enableOpenAPI) {
+        this.enableOpenAPI = enableOpenAPI;
+    }
+
     public boolean isEnableRsaConfig() {
         return enableRsaConfig;
     }
@@ -201,12 +214,12 @@ public class SystemConfig extends ConfigModel {
         this.jwtSecretConfig = jwtSecretConfig;
     }
 
-    public AppCredentialConfig getAppCredentialConfig() {
-        return appCredentialConfig;
+    public CredentialConfig getCredentialConfig() {
+        return credentialConfig;
     }
 
-    public void setAppCredentialConfig(AppCredentialConfig appCredentialConfig) {
-        this.appCredentialConfig = appCredentialConfig;
+    public void setCredentialConfig(CredentialConfig credentialConfig) {
+        this.credentialConfig = credentialConfig;
     }
 
     public IpWhitelistConfig getIpWhitelistConfig() {
