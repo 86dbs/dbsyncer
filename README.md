@@ -32,9 +32,9 @@
 | 后期计划    | Redis | |                |
 
 ## ✨预览
-![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
+![仪表盘](https://foruda.gitee.com/images/1769953561917318680/775e6928_376718.png "仪表盘")
 
-![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
+![监控](https://foruda.gitee.com/images/1769953915949399025/fc16d35b_376718.png "监控")
 
 ## 📚[使用手册 Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
