@@ -25,11 +25,6 @@ fi
 ###########################################################################
 # 构建 JVM 参数
 JAVA_OPTS=()
-JAVA_OPTS+=("-Xms3800m")
-JAVA_OPTS+=("-Xmx3800m")
-JAVA_OPTS+=("-Xss512k")
-JAVA_OPTS+=("-XX:MetaspaceSize=192m")
-JAVA_OPTS+=("-XX:+DisableAttachMechanism")
 
 ENCRYPT_FILE=''
 if [[ $(uname -m) == "aarch64"* ]]; then
@@ -47,9 +42,6 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
   JAVA_OPTS+=("-agentpath:$DBS_HOME/bin/$ENCRYPT_FILE")
 fi
 
-# --- 构建 JVM 参数数组 ---
-JAVA_OPTS=()
-
 # 1. 内存与基础配置 (放在最前面)
 JAVA_OPTS+=("-Xms3g")
 JAVA_OPTS+=("-Xmx3g")
@@ -57,7 +49,6 @@ JAVA_OPTS+=("-Xss512k")
 JAVA_OPTS+=("-XX:MetaspaceSize=256m")
 JAVA_OPTS+=("-XX:MaxDirectMemorySize=512m")
 JAVA_OPTS+=("-XX:+DisableAttachMechanism")
-JAVA_OPTS+=("-XX:+UseCGroupMemoryLimitForHeap")
 
 # 2. GC 配置
 JAVA_OPTS+=("-XX:+UseG1GC")
