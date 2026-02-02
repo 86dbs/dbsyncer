@@ -5,24 +5,12 @@ SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 DBS_HOME=$(cd "$SCRIPT_DIR/.."; pwd)
 echo "DBS_HOME=$DBS_HOME"
 
-# 检查 JAVA_HOME
-if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
-  echo "Error: JAVA_HOME is not set or invalid: $JAVA_HOME" >&2
-  exit 1
-fi
-
-# 检查 java 可执行文件
-if [ ! -f "$JAVA_HOME/bin/java" ]; then
-  echo "Error: java executable not found in $JAVA_HOME" >&2
-  exit 1
-fi
-
 # 确保 conf 目录存在
 if [ ! -d "$DBS_HOME/conf" ]; then
   mkdir -p "$DBS_HOME/conf"
 fi
 
-# 确保 logs 目录存在 (如果应用还会写文件日志，或者为了 GC 日志)
+# 确保 logs 目录存在
 if [ ! -d "$DBS_HOME/logs" ]; then
   mkdir -p "$DBS_HOME/logs"
 fi
@@ -56,12 +44,13 @@ fi
 
 # JVM 参数
 SERVER_OPTS="$SERVER_OPTS \
--Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
+-Djava.ext.dirs=$DBS_HOME/lib \
 -Dspring.config.location=$CONFIG_PATH \
 -DLOG_HOME=$DBS_HOME/logs \
 -Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
 -XX:+UseG1GC \
 -XX:MaxGCPauseMillis=200 \
+-XX:+UnlockExperimentalVMOptions \
 -XX:G1NewSizePercent=30 \
 -XX:G1MaxNewSizePercent=50 \
 -XX:InitiatingHeapOccupancyPercent=45 \
@@ -70,8 +59,8 @@ SERVER_OPTS="$SERVER_OPTS \
 -XX:G1HeapWastePercent=5 \
 -XX:G1MixedGCCountTarget=4 \
 -XX:G1OldCSetRegionThresholdPercent=5 \
--verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
 -XX:+HeapDumpOnOutOfMemoryError \
+-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
 -XX:HeapDumpPath=$DBS_HOME/logs \
 -XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log"
 
