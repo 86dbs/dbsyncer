@@ -1,5 +1,5 @@
 # 基础镜像
-FROM openjdk:8-jre-slim
+FROM scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/java:8
 
 # 维护者信息
 LABEL authors="chuanyun"
