@@ -1,5 +1,5 @@
 # 基础镜像
-FROM java:8
+FROM openjdk:8-jre-slim
 
 # 维护者信息
 LABEL authors="chuanyun"
