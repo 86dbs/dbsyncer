@@ -202,7 +202,7 @@ public class MonitorController extends BaseController {
     @GetMapping("/metric")
     public RestResult metric() {
         try {
-            AppReportMetric reportMetric = monitorService.queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK, MetricEnum.GC_PAUSE)
+            AppReportMetric reportMetric = monitorService.queryAppMetric(Stream.of(MetricEnum.THREADS_LIVE, MetricEnum.THREADS_PEAK)
                     .map(m -> getMetricResponse(m.getCode())).collect(Collectors.toList()));
             reportMetric.setCpu(cpu);
             reportMetric.setMemory(memory);
