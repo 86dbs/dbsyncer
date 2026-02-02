@@ -24,7 +24,12 @@ fi
 
 ###########################################################################
 # 构建 JVM 参数
-SERVER_OPTS="-Xms3800m -Xmx3800m -Xss512k -XX:MetaspaceSize=192m -XX:+DisableAttachMechanism"
+JAVA_OPTS=()
+JAVA_OPTS+=("-Xms3800m")
+JAVA_OPTS+=("-Xmx3800m")
+JAVA_OPTS+=("-Xss512k")
+JAVA_OPTS+=("-XX:MetaspaceSize=192m")
+JAVA_OPTS+=("-XX:+DisableAttachMechanism")
 
 ENCRYPT_FILE=''
 if [[ $(uname -m) == "aarch64"* ]]; then
@@ -39,35 +44,47 @@ else
 fi
 
 if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
-  SERVER_OPTS="$SERVER_OPTS -agentpath:$DBS_HOME/bin/$ENCRYPT_FILE"
+  JAVA_OPTS+=("-agentpath:$DBS_HOME/bin/$ENCRYPT_FILE")
 fi
 
-# JVM 参数
-SERVER_OPTS="$SERVER_OPTS \
--Djava.ext.dirs=$DBS_HOME/lib \
--Dspring.config.location=$CONFIG_PATH \
--DLOG_HOME=$DBS_HOME/logs \
--Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
--XX:+UseG1GC \
--XX:MaxGCPauseMillis=200 \
--XX:+UnlockExperimentalVMOptions \
--XX:G1NewSizePercent=30 \
--XX:G1MaxNewSizePercent=50 \
--XX:InitiatingHeapOccupancyPercent=45 \
--XX:G1ReservePercent=15 \
--XX:G1MixedGCLiveThresholdPercent=85 \
--XX:G1HeapWastePercent=5 \
--XX:G1MixedGCCountTarget=4 \
--XX:G1OldCSetRegionThresholdPercent=5 \
--XX:+HeapDumpOnOutOfMemoryError \
--verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
--XX:HeapDumpPath=$DBS_HOME/logs \
--XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log"
+# 系统属性
+JAVA_OPTS+=("-Djava.ext.dirs=$DBS_HOME/lib")
+JAVA_OPTS+=("-Dspring.config.location=$CONFIG_PATH")
+JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
+JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
+JAVA_OPTS+=("-Dfile.encoding=UTF-8")
+JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
 
+# G1GC 配置
+JAVA_OPTS+=("-XX:+UseG1GC")
+JAVA_OPTS+=("-XX:MaxGCPauseMillis=200")
+JAVA_OPTS+=("-XX:+UnlockExperimentalVMOptions")
+JAVA_OPTS+=("-XX:G1NewSizePercent=30")
+JAVA_OPTS+=("-XX:G1MaxNewSizePercent=50")
+JAVA_OPTS+=("-XX:InitiatingHeapOccupancyPercent=45")
+JAVA_OPTS+=("-XX:G1ReservePercent=15")
+JAVA_OPTS+=("-XX:G1MixedGCLiveThresholdPercent=85")
+JAVA_OPTS+=("-XX:G1HeapWastePercent=5")
+JAVA_OPTS+=("-XX:G1MixedGCCountTarget=4")
+JAVA_OPTS+=("-XX:G1OldCSetRegionThresholdPercent=5")
+
+# 错误与 Dump 配置
+JAVA_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+JAVA_OPTS+=("-XX:HeapDumpPath=$DBS_HOME/logs/heapdump.hprof") # 建议指定具体文件名或路径
+JAVA_OPTS+=("-XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log")
+
+# GC 日志配置
+JAVA_OPTS+=("-verbose:gc")
+JAVA_OPTS+=("-XX:+PrintGCDetails")
+JAVA_OPTS+=("-XX:+PrintGCDateStamps")
+
+###########################################################################
 # execute command
 echo "Starting DBSyncer Application..."
 echo "================================================================"
-echo "$SERVER_OPTS"
+# 打印参数数组
+printf '%s ' "${JAVA_OPTS[@]}"
+echo ""
 echo "================================================================"
 
-exec java $SERVER_OPTS "$APP"
+nohup java "${JAVA_OPTS[@]}" "$APP"
