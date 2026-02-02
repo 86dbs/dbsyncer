@@ -7,13 +7,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * JWT密钥配置
- * 支持密钥版本管理和多个历史密钥，用于平滑轮换
+ * JWT密钥配置（服务端签名密钥配置）
+ * <p>
+ * 支持密钥版本管理和多个历史密钥，用于平滑轮换。
+ * 用于生成和验证JWT Token。
+ * </p>
  *
  * @author 穿云
  * @version 2.0.0
  */
 public class JwtSecretConfig {
+
+    /**
+     * 默认最大保留的历史密钥数量
+     * 与 ApiKeyConfig.DEFAULT_MAX_VERSION_SIZE 保持一致
+     */
+    public static final int DEFAULT_MAX_HISTORY_SIZE = 5;
 
     /**
      * 当前密钥版本
@@ -44,7 +53,7 @@ public class JwtSecretConfig {
     /**
      * 最大保留的历史密钥数量（默认5个）
      */
-    private int maxHistorySize = 5;
+    private int maxHistorySize = DEFAULT_MAX_HISTORY_SIZE;
 
     public int getCurrentVersion() {
         return currentVersion;

@@ -23,12 +23,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * JWT密钥管理器
- * 负责JWT密钥的生成、存储、获取和轮换
- * 支持多个历史密钥，实现平滑轮换
- * 
+ * JWT密钥管理器（服务端签名密钥管理）
+ * <p>
+ * 负责JWT密钥的生成、存储、获取和轮换。
+ * 支持多个历史密钥，实现平滑轮换。
+ * </p>
+ *
+ * <h3>与 ApiKeyManager 的区别：</h3>
+ * <table border="1">
+ *   <tr><th>维度</th><th>JwtSecretManager</th><th>ApiKeyManager</th></tr>
+ *   <tr><td>职责</td><td>会话令牌管理（授权访问）</td><td>客户端身份认证（Who are you?）</td></tr>
+ *   <tr><td>密钥持有方</td><td>服务端内部</td><td>客户端持有</td></tr>
+ *   <tr><td>使用场景</td><td>生成和验证JWT Token</td><td>登录时验证</td></tr>
+ *   <tr><td>密钥格式</td><td>Base64编码（用于签名）</td><td>SHA1哈希存储（不可逆）</td></tr>
+ *   <tr><td>生命周期</td><td>随Token过期轮换</td><td>长期有效</td></tr>
+ * </table>
+ *
+ * <h3>认证流程：</h3>
+ * <pre>
+ * 1. 客户端提交 API Key（secret）
+ * 2. ApiKeyManager.validateCredential() 验证身份
+ * 3. 验证通过后，JwtSecretManager 生成 JWT Token
+ * 4. 后续请求携带 JWT Token，由 JwtSecretManager 验证
+ * </pre>
+ *
  * @author 穿云
  * @version 2.0.0
+ * @see ApiKeyManager
  */
 @Component
 public class JwtSecretManager {
@@ -48,8 +69,9 @@ public class JwtSecretManager {
 
     /**
      * 默认最大保留的历史密钥数量
+     * 与 ApiKeyConfig.DEFAULT_MAX_VERSION_SIZE 保持一致
      */
-    private static final int DEFAULT_MAX_HISTORY_SIZE = 5;
+    public static final int DEFAULT_MAX_HISTORY_SIZE = JwtSecretConfig.DEFAULT_MAX_HISTORY_SIZE;
 
     /**
      * 获取当前JWT密钥（用于生成新Token）

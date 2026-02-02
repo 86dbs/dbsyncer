@@ -14,6 +14,7 @@
         <module>dbsyncer-connector-base</module>
         <module>dbsyncer-connector-elasticsearch</module>
         <module>dbsyncer-connector-file</module>
+        <module>dbsyncer-connector-http</module>
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-mysql</module>
         <module>dbsyncer-connector-oracle</module>

@@ -207,12 +207,12 @@ public class CryptoUtil {
                 if (rsaPublicKey == null || rsaPublicKey.isEmpty()) {
                     throw new RuntimeException("公网场景需要RSA公钥进行签名验证");
                 }
-                signatureValid = verifySignature(dataToVerify, signature, rsaPublicKey, null, isPublicNetwork);
+                signatureValid = verifySignature(dataToVerify, signature, rsaPublicKey, null, true);
             } else {
                 if (hmacSecret == null || hmacSecret.isEmpty()) {
                     throw new RuntimeException("内网场景需要HMAC密钥进行签名验证");
                 }
-                signatureValid = verifySignature(dataToVerify, signature, null, hmacSecret, isPublicNetwork);
+                signatureValid = verifySignature(dataToVerify, signature, null, hmacSecret, false);
             }
             
             if (!signatureValid) {

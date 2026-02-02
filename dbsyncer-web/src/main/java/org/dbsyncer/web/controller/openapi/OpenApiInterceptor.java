@@ -66,6 +66,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         try {
             // 1. 排除认证接口（登录、刷新token）- 这些接口不需要Token验证
+            // TODO 安全问题
             String requestPath = request.getRequestURI();
             if (isAuthEndpoint(requestPath)) {
                 return true;
@@ -85,7 +86,6 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             // 3. 验证IP白名单（优先验证，避免无效请求消耗资源）
             // 所有OpenAPI接口都需要验证IP白名单，包括登录接口
             String clientIp = getClientIp(request);
-            // TODO 安全问题
             if (!ipWhitelistManager.isAllowed(clientIp)) {
                 logger.warn("IP {} 不在白名单中，拒绝访问 {}", clientIp, requestPath);
                 writeErrorResponse(response, 403, "IP地址不在白名单中");

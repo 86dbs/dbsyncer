@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.common.model.CredentialConfig;
+import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RSAConfig;
@@ -77,6 +77,7 @@ public class SystemConfig extends ConfigModel {
      */
     private boolean enableOpenAPI;
 
+    private boolean isPublicNetwork;
     /**
      * 是否开启RSA配置
      */
@@ -93,9 +94,9 @@ public class SystemConfig extends ConfigModel {
     private JwtSecretConfig jwtSecretConfig;
 
     /**
-     * 系统凭证配置
+     * API密钥配置（客户端凭证）
      */
-    private CredentialConfig credentialConfig;
+    private ApiKeyConfig apiKeyConfig;
 
     /**
      * IP白名单配置
@@ -214,12 +215,12 @@ public class SystemConfig extends ConfigModel {
         this.jwtSecretConfig = jwtSecretConfig;
     }
 
-    public CredentialConfig getCredentialConfig() {
-        return credentialConfig;
+    public ApiKeyConfig getApiKeyConfig() {
+        return apiKeyConfig;
     }
 
-    public void setCredentialConfig(CredentialConfig credentialConfig) {
-        this.credentialConfig = credentialConfig;
+    public void setApiKeyConfig(ApiKeyConfig apiKeyConfig) {
+        this.apiKeyConfig = apiKeyConfig;
     }
 
     public IpWhitelistConfig getIpWhitelistConfig() {

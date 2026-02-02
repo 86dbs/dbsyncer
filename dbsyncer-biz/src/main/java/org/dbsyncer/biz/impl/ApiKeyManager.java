@@ -4,7 +4,7 @@
 package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.common.model.CredentialConfig;
+import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.SecretVersion;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
@@ -23,21 +23,43 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 业务系统凭证管理器
- * 支持多版本密钥，实现平滑轮换
+ * API密钥管理器（客户端凭证管理）
+ * <p>
+ * 负责管理外部系统接入的API密钥（API Key），用于OpenAPI的身份认证。
+ * 支持多版本密钥，实现平滑轮换。
+ * </p>
+ *
+ * <h3>与 JwtSecretManager 的区别：</h3>
+ * <table border="1">
+ *   <tr><th>维度</th><th>ApiKeyManager</th><th>JwtSecretManager</th></tr>
+ *   <tr><td>职责</td><td>客户端身份认证（Who are you?）</td><td>会话令牌管理（授权访问）</td></tr>
+ *   <tr><td>密钥持有方</td><td>客户端持有</td><td>服务端内部</td></tr>
+ *   <tr><td>使用场景</td><td>登录时验证</td><td>生成和验证JWT Token</td></tr>
+ *   <tr><td>密钥格式</td><td>SHA1哈希存储（不可逆）</td><td>Base64编码（用于签名）</td></tr>
+ *   <tr><td>生命周期</td><td>长期有效</td><td>随Token过期轮换</td></tr>
+ * </table>
+ *
+ * <h3>认证流程：</h3>
+ * <pre>
+ * 1. 客户端提交 API Key（secret）
+ * 2. ApiKeyManager.validateCredential() 验证身份
+ * 3. 验证通过后，JwtSecretManager 生成 JWT Token
+ * 4. 后续请求携带 JWT Token，由 JwtSecretManager 验证
+ * </pre>
  *
  * @author 穿云
  * @version 2.0.0
+ * @see JwtSecretManager
  */
 @Component
-public class CredentialManager {
+public class ApiKeyManager {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 默认最大保留的密钥版本数量
      */
-    private static final int DEFAULT_MAX_VERSION_SIZE = 5;
+    public static final int DEFAULT_MAX_VERSION_SIZE = 5;
 
     @Resource
     private SystemConfigService systemConfigService;
@@ -46,17 +68,17 @@ public class CredentialManager {
     private ProfileComponent profileComponent;
 
     /**
-     * 验证系统凭证
+     * 验证API密钥
      * 支持多版本密钥，按版本号从高到低尝试验证
      *
-     * @param secret 系统密钥（原始密钥，会进行哈希后比较）
+     * @param secret API密钥（原始密钥，会进行哈希后比较）
      * @return 验证是否通过
      */
     public boolean validateCredential(String secret) {
         Assert.hasText(secret, "secret为空");
-        CredentialConfig config = getCredentialConfig();
-        Assert.notNull(config, "系统凭证配置未启用");
-        Assert.notEmpty(config.getSecretVersions(), "系统凭证配置未启用");
+        ApiKeyConfig config = getApiKeyConfig();
+        Assert.notNull(config, "API密钥配置未启用");
+        Assert.notEmpty(config.getSecretVersions(), "API密钥配置未启用");
 
         // 对输入的密钥进行哈希处理
         String hashedSecret = SHA1Util.b64_sha1(secret);
@@ -77,18 +99,18 @@ public class CredentialManager {
     }
 
     /**
-     * 添加系统凭证
+     * 添加API密钥
      * 如果已存在，会创建新版本密钥，保留旧版本用于验证
      *
-     * @param secret 系统密钥（原始密钥，会自动进行哈希存储）
+     * @param secret API密钥（原始密钥，会自动进行哈希存储）
      * @return 是否添加成功
      */
     public boolean addCredential(String secret) {
         Assert.hasText(secret, "secret为空");
 
-        CredentialConfig config = getCredentialConfig();
+        ApiKeyConfig config = getApiKeyConfig();
         if (config == null) {
-            config = new CredentialConfig();
+            config = new ApiKeyConfig();
             config.setMaxVersionSize(DEFAULT_MAX_VERSION_SIZE);
         }
 
@@ -119,19 +141,19 @@ public class CredentialManager {
         cleanupOldVersions(versions);
 
         // 保存配置
-        saveCredentialConfig(config);
-        logger.info("添加业务系统凭证成功，secret: {}，版本: {}", hashedSecret, newVersion);
+        saveApiKeyConfig(config);
+        logger.info("添加API密钥成功，secret: {}，版本: {}", hashedSecret, newVersion);
         return true;
     }
 
     /**
-     * 移除系统凭证
+     * 移除API密钥
      *
-     * @param secret 系统密钥
+     * @param secret API密钥
      */
     public void removeCredential(String secret) {
         Assert.hasText(secret, "secret为空");
-        CredentialConfig config = getCredentialConfig();
+        ApiKeyConfig config = getApiKeyConfig();
         if (config == null) {
             return;
         }
@@ -141,8 +163,8 @@ public class CredentialManager {
             SecretVersion version = iterator.next();
             if (version.getSecret().equals(secret)) {
                 iterator.remove();
-                saveCredentialConfig(config);
-                logger.info("移除系统凭证成功，secret:{}, version:{}", version.getHashedSecret(), version.getVersion());
+                saveApiKeyConfig(config);
+                logger.info("移除API密钥成功，secret:{}, version:{}", version.getHashedSecret(), version.getVersion());
                 break;
             }
         }
@@ -160,40 +182,40 @@ public class CredentialManager {
             versions.sort(Comparator.comparingInt(SecretVersion::getVersion));
             // 删除最旧的版本
             SecretVersion remove = versions.remove(0);
-            logger.info("清理过旧的密钥，secret: {}，版本: {}", remove.getSecret(), remove.getVersion());
+            logger.info("清理过旧的API密钥，secret: {}，版本: {}", remove.getSecret(), remove.getVersion());
         }
     }
 
     /**
-     * 从系统配置中获取系统凭证配置
+     * 从系统配置中获取API密钥配置
      *
-     * @return 系统凭证配置，如果不存在返回null
+     * @return API密钥配置，如果不存在返回null
      */
-    private CredentialConfig getCredentialConfig() {
+    private ApiKeyConfig getApiKeyConfig() {
         try {
-            return systemConfigService.getSystemConfig().getCredentialConfig();
+            return systemConfigService.getSystemConfig().getApiKeyConfig();
         } catch (Exception e) {
-            logger.error("获取系统凭证配置失败", e);
+            logger.error("获取API密钥配置失败", e);
             return null;
         }
     }
 
     /**
-     * 保存系统凭证配置到系统配置
+     * 保存API密钥配置到系统配置
      *
-     * @param credentialConfig 系统凭证配置
+     * @param apiKeyConfig API密钥配置
      */
-    private void saveCredentialConfig(CredentialConfig credentialConfig) {
+    private void saveApiKeyConfig(ApiKeyConfig apiKeyConfig) {
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
         if (systemConfig == null) {
             throw new RuntimeException("系统配置不存在");
         }
 
-        // 设置业务系统凭证配置
-        systemConfig.setCredentialConfig(credentialConfig);
+        // 设置API密钥配置
+        systemConfig.setApiKeyConfig(apiKeyConfig);
 
         // 保存到系统配置
         profileComponent.editConfigModel(systemConfig);
-        logger.info("保存系统凭证配置成功");
+        logger.info("保存API密钥配置成功");
     }
 }

@@ -33,6 +33,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-http -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-http</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- dbsyncer-connector-kafka -->
         <dependency>
             <groupId>org.ghi</groupId>

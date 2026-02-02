@@ -4,7 +4,7 @@
 package org.dbsyncer.web.controller.openapi;
 
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.impl.CredentialManager;
+import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -63,7 +63,7 @@ public class OpenApiController implements InitializingBean {
     private JwtSecretManager jwtSecretManager;
 
     @Resource
-    private CredentialManager appCredentialManager;
+    private ApiKeyManager apiKeyManager;
 
     @Resource
     private RequestMappingHandlerAdapter requestMappingHandlerAdapter;
@@ -165,8 +165,8 @@ public class OpenApiController implements InitializingBean {
                 return OpenApiResponse.fail(400, "secret不能为空");
             }
 
-            // 验证secret
-            if (!appCredentialManager.validateCredential(secret)) {
+            // 验证API密钥
+            if (!apiKeyManager.validateCredential(secret)) {
                 logger.warn("无效凭证 {}", secret);
                 return OpenApiResponse.fail(401, "secret错误");
             }
