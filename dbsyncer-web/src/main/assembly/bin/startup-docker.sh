@@ -43,12 +43,13 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
 fi
 
 # 1. 内存与基础配置 (放在最前面)
-JAVA_OPTS+=("-Xms3g")
-JAVA_OPTS+=("-Xmx3g")
+JAVA_OPTS+=("-Xms2g")
+JAVA_OPTS+=("-Xmx2g")
 JAVA_OPTS+=("-Xss512k")
 JAVA_OPTS+=("-XX:MetaspaceSize=256m")
 JAVA_OPTS+=("-XX:MaxDirectMemorySize=512m")
 JAVA_OPTS+=("-XX:+DisableAttachMechanism")
+JAVA_OPTS+=("-XX:NativeMemoryTracking=summary")
 
 # 2. GC 配置
 JAVA_OPTS+=("-XX:+UseG1GC")

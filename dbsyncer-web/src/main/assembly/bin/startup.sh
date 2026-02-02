@@ -46,10 +46,6 @@ else
   exit 1
 fi
 
-if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
-  JAVA_OPTS+=("-agentpath:$DBS_HOME/bin/$ENCRYPT_FILE")
-fi
-
 # 1. 内存与基础配置 (放在最前面)
 JAVA_OPTS+=("-Xms3g")
 JAVA_OPTS+=("-Xmx3g")
@@ -81,9 +77,8 @@ JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
 JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
 JAVA_OPTS+=("-Dfile.encoding=UTF-8")
 JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
-# --- 注意：这里不要再加任何 -XX 参数了 ---
 
-# 5. 主类 (放在最后)
+# 5. 主类
 APP="org.dbsyncer.web.Application"
 
 # execute command
@@ -92,7 +87,7 @@ echo "================================================================"
 echo "$SERVER_OPTS"
 echo "================================================================"
 
-nohup java $SERVER_OPTS "$APP" > /dev/null 2>&1 &
+nohup java "${JAVA_OPTS[@]}" "$APP" > /dev/null 2>&1 &
 APP_PID=$!
 
 # 保存 PID 并反馈结果
