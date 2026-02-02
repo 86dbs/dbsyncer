@@ -51,14 +51,18 @@ fi
 JAVA_OPTS=()
 
 # 1. 内存与基础配置 (放在最前面)
-JAVA_OPTS+=("-Xms3800m")
-JAVA_OPTS+=("-Xmx3800m")
+JAVA_OPTS+=("-Xms3g")
+JAVA_OPTS+=("-Xmx3g")
 JAVA_OPTS+=("-Xss512k")
-JAVA_OPTS+=("-XX:MetaspaceSize=192m")
+JAVA_OPTS+=("-XX:MetaspaceSize=256m")
+JAVA_OPTS+=("-XX:MaxDirectMemorySize=512m")
 JAVA_OPTS+=("-XX:+DisableAttachMechanism")
+JAVA_OPTS+=("-XX:+UseCGroupMemoryLimitForHeap")
+JAVA_OPTS+=("-XX:+UnlockExperimentalVMOptions")
 
 # 2. GC 配置
 JAVA_OPTS+=("-XX:+UseG1GC")
+JAVA_OPTS+=("-XX:G1HeapRegionSize=16m")
 JAVA_OPTS+=("-XX:MaxGCPauseMillis=200")
 JAVA_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
 JAVA_OPTS+=("-XX:HeapDumpPath=$DBS_HOME/logs/heapdump.hprof")
