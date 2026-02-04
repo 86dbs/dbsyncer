@@ -194,6 +194,14 @@ public class ParserComponentImpl implements ParserComponent {
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
 
+            // 释放本批数据引用，避免 context 长期持有大 List（如 10000 条），减轻 LinkedList 保留内存
+            if (context.getSourceList() != null) {
+                context.getSourceList().clear();
+            }
+            if (context.getTargetList() != null) {
+                context.getTargetList().clear();
+            }
+
             // 8、判断尾页
             if (source.size() < context.getPageSize()) {
                 logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);

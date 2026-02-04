@@ -165,6 +165,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             default:
                 break;
         }
+        // 及时清空列表引用，便于 GC 回收，减轻 parser 侧 LinkedList 保留内存
+        response.getDataList().clear();
     }
 
     @Override
