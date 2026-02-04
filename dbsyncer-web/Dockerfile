@@ -6,6 +6,8 @@ LABEL authors="chuanyun"
 
 # 定义时区参数
 ENV TZ=Asia/Shanghai
+# 限制 glibc 分配区数量，减轻「JVM 回收正常但 Docker RSS 持续增长」（堆外/原生内存不归还 OS）
+ENV MALLOC_ARENA_MAX=2
 
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
