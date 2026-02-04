@@ -49,6 +49,11 @@ public class DatabaseConfig extends ConnectorConfig {
     private long keepAlive = 60000;
 
     /**
+     * 数据库名(PGSQL、MySQL)
+     */
+    private String database;
+
+    /**
      * 服务名称(Oracle)
      */
     private String serviceName;
@@ -109,6 +114,14 @@ public class DatabaseConfig extends ConnectorConfig {
 
     public void setKeepAlive(long keepAlive) {
         this.keepAlive = keepAlive;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
     }
 
     public String getServiceName() {

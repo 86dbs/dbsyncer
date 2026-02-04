@@ -156,7 +156,8 @@ public class Picker {
                 return compareFilter.compare(null == comparedValue ? null : "not null", filter.getValue());
             default:
                 if (comparedValue == null) {
-                    return false;
+                    // 赋值为空字符串，否则后续 String.valueOf(comparedValue) 返回值为 "null" 会造成BUG
+                    comparedValue = "";
                 }
                 break;
         }

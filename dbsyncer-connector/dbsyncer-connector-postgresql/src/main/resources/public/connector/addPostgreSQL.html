@@ -7,13 +7,15 @@
         <div class="form-item">
             <label class="form-label">主机<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="host" type="text" maxlength="100" required placeholder="127.0.0.1" th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+                <input class="form-control" name="host" type="text" maxlength="100" required placeholder="127.0.0.1"
+                       th:value="${connector?.config?.host}?: '127.0.0.1'"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">端口<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="5432" th:value="${connector?.config?.port}?: '5432'"/>
+                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="5432"
+                       th:value="${connector?.config?.port}?: '5432'"/>
             </div>
         </div>
         <div class="form-item">
@@ -26,17 +28,29 @@
         <div class="form-item">
             <label class="form-label">密码<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" required maxlength="64" name="password" placeholder="请输入密码" type="password" th:value="${connector?.config?.password}"/>
+                <input class="form-control" required maxlength="64" name="password" placeholder="请输入密码"
+                       type="password" th:value="${connector?.config?.password}"/>
             </div>
         </div>
 
         <div class="form-item">
-            <label class="form-label">删除slot<i aria-hidden="true" class="fa fa-question-circle" title="增量同步，停止驱动自动删除Slot"></i></label>
+            <label class="form-label">数据库名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="64" name="database" placeholder="请输入数据库名"
+                       type="text" th:value="${connector?.config?.database}"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 mt-5">
+        <div class="form-item">
+            <label class="form-label">删除slot<i aria-hidden="true" class="fa fa-question-circle"
+                                                 title="增量同步，停止驱动自动删除Slot"></i></label>
             <div class="form-control-area">
                 <label class="form-switch">
                     <input name="dropSlotOnClose"
                            th:checked="${#maps.isEmpty(connector?.config?.extInfo) or connector?.config?.extInfo?.dropSlotOnClose eq 'true'}"
-                           type="checkbox" />
+                           type="checkbox"/>
                     <span class="switch-track">
                         <span class="switch-option switch-option-on">Yes</span>
                         <span class="switch-option switch-option-off">No</span>
@@ -48,8 +62,12 @@
         <div class="form-item">
             <label class="form-label">插件</label>
             <select class="form-control" id="pluginName" name="pluginName">
-                <option value="pgoutput" th:selected="${connector?.config?.extInfo?.pluginName eq 'pgoutput'}">pgoutput</option>
-                <option value="test_decoding" th:selected="${connector?.config?.extInfo?.pluginName eq 'test_decoding'}">test_decoding</option>
+                <option value="pgoutput" th:selected="${connector?.config?.extInfo?.pluginName eq 'pgoutput'}">
+                    pgoutput
+                </option>
+                <option value="test_decoding"
+                        th:selected="${connector?.config?.extInfo?.pluginName eq 'test_decoding'}">test_decoding
+                </option>
             </select>
         </div>
 
@@ -84,16 +102,17 @@
         <div class="form-item">
             <label class="form-label">驱动</label>
             <div class="form-control-area">
-                <input class="form-control" name="driverClassName" readonly="true" th:value="${connector?.config?.driverClassName} ?: 'org.postgresql.Driver'" type="text"/>
+                <input class="form-control" name="driverClassName" readonly="true"
+                       th:value="${connector?.config?.driverClassName} ?: 'org.postgresql.Driver'" type="text"/>
             </div>
         </div>
     </div>
 
-<script>
-    $(document).ready(function() {
-        initSelect($('#pluginName'));
-    });
-</script>
+    <script>
+        $(document).ready(function () {
+            initSelect($('#pluginName'));
+        });
+    </script>
 </div>
 
 </html>
