@@ -37,7 +37,7 @@
             <label class="form-label">数据库名<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" required maxlength="64" name="database" placeholder="请输入数据库名"
-                       type="text" th:value="${connector?.config?.database}"/>
+                       type="text" th:value="${connector?.config?.database}?: 'postgres'"/>
             </div>
         </div>
     </div>

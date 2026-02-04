@@ -155,11 +155,10 @@ public class Picker {
                 // 此处传入 “not null” 表示有值，没必要对原始值进行转换
                 return compareFilter.compare(null == comparedValue ? null : "not null", filter.getValue());
             default:
-                if (comparedValue == null) {
-                    // 赋值为空字符串，否则后续 String.valueOf(comparedValue) 返回值为 "null" 会造成BUG
-                    comparedValue = "";
-                }
                 break;
+        }
+        if (comparedValue == null) {
+            return false;
         }
 
         // 支持时间比较
