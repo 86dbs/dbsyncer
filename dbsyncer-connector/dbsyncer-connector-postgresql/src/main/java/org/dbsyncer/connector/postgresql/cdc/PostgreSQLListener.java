@@ -48,7 +48,24 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
     private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
     private static final String GET_RESTART_LSN = "select restart_lsn from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_ROLE = "SELECT r.rolcanlogin AS login, r.rolreplication AS replication, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS superuser, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS admin, CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid) WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin FROM pg_roles r WHERE r.rolname = current_user";
+    private static final String GET_ROLE = "SELECT r.rolcanlogin                                                                        AS login,\n" +
+            "       r.rolreplication                                                                     AS replication,\n" +
+            "       u.usesuper as superuser,\n" +
+            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
+            "                                 FROM pg_catalog.pg_auth_members m\n" +
+            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
+            "                                 WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS rds_superuser,\n" +
+            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
+            "                                 FROM pg_catalog.pg_auth_members m\n" +
+            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
+            "                                 WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE      AS admin,\n" +
+            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
+            "                                 FROM pg_catalog.pg_auth_members m\n" +
+            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
+            "                                 WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE  AS rep_admin\n" +
+            "FROM pg_user u\n" +
+            "left join pg_roles r on u.usename=r.rolname\n" +
+            "WHERE u.usename = current_user";
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
     private static final String LSN_POSITION = "position";
