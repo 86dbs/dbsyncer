@@ -43,13 +43,20 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
 fi
 
 # 1. 内存与基础配置 (放在最前面)
+# 堆：固定 2g，避免无界增长；若容器限 5g 且希望堆外/系统内存可控，可设 JAVA_OPTS="-Xmx3500m" 等覆盖
 JAVA_OPTS+=("-Xms2g")
 JAVA_OPTS+=("-Xmx2g")
 JAVA_OPTS+=("-Xss512k")
 JAVA_OPTS+=("-XX:MetaspaceSize=256m")
-JAVA_OPTS+=("-XX:MaxDirectMemorySize=512m")
+JAVA_OPTS+=("-XX:MaxMetaspaceSize=384m")
+# 直接内存：限制 NIO 等堆外占用
+JAVA_OPTS+=("-XX:MaxDirectMemorySize=256m")
 JAVA_OPTS+=("-XX:+DisableAttachMechanism")
 JAVA_OPTS+=("-XX:NativeMemoryTracking=summary")
+# 允许通过环境变量追加 JVM 参数（如 JAVA_OPTS_EXT="-Xmx3500m -XX:MaxDirectMemorySize=512m"）
+if [[ -n "${JAVA_OPTS_EXT:-}" ]]; then
+  for opt in $JAVA_OPTS_EXT; do JAVA_OPTS+=("$opt"); done
+fi
 
 # 2. GC 配置
 JAVA_OPTS+=("-XX:+UseG1GC")
