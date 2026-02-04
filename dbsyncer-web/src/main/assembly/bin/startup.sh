@@ -61,9 +61,10 @@ JAVA_OPTS+=("-XX:MaxGCPauseMillis=200")
 JAVA_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
 JAVA_OPTS+=("-XX:HeapDumpPath=$DBS_HOME/logs/heapdump.hprof")
 JAVA_OPTS+=("-XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log")
-JAVA_OPTS+=("-verbose:gc")
-JAVA_OPTS+=("-XX:+PrintGCDetails")
-JAVA_OPTS+=("-XX:+PrintGCDateStamps")
+# GC 日志已关闭，需要时可取消下面三行注释
+# JAVA_OPTS+=("-verbose:gc")
+# JAVA_OPTS+=("-XX:+PrintGCDetails")
+# JAVA_OPTS+=("-XX:+PrintGCDateStamps")
 
 # 3. Agent (如果有)
 if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
