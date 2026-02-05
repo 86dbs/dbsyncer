@@ -55,6 +55,7 @@ JAVA_OPTS+=("-XX:MaxDirectMemorySize=512m")
 JAVA_OPTS+=("-XX:+DisableAttachMechanism")
 
 # 2. GC 配置
+JAVA_OPTS+=("-XX:+UnlockExperimentalVMOptions")
 JAVA_OPTS+=("-XX:+UseG1GC")
 JAVA_OPTS+=("-XX:G1HeapRegionSize=16m")
 JAVA_OPTS+=("-XX:MaxGCPauseMillis=200")
