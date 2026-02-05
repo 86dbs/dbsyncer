@@ -28,7 +28,9 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +61,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
     private AppConfig appConfig;
+
+    @Resource
+    private ApiKeyManager apiKeyManager;
 
     @Override
     public String edit(Map<String, String> params) {
@@ -137,5 +142,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public RSAConfig createRSAConfig(int keyLength) {
         Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
         return RSAUtil.createKeys(keyLength);
+    }
+
+    @Override
+    public String generateApiSecret() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        String secret = Base64.getEncoder().encodeToString(bytes);
+        apiKeyManager.addCredential(secret);
+        return secret;
     }
 }

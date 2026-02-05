@@ -78,4 +78,12 @@ public interface SystemConfigService {
      * @return
      */
     RSAConfig createRSAConfig(int keyLength);
+
+    /**
+     * 生成并保存 API 密钥（OpenAPI 登录凭证）
+     * 返回明文密钥，仅展示一次，请妥善保管
+     *
+     * @return 新生成的 API 密钥
+     */
+    String generateApiSecret();
 }

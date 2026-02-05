@@ -243,28 +243,4 @@ public class IpWhitelistManager {
         }
     }
 
-    /**
-     * 保存IP白名单配置到系统配置
-     * 
-     * @param ipWhitelistConfig IP白名单配置
-     */
-    public void saveIpWhitelistConfig(IpWhitelistConfig ipWhitelistConfig) {
-        try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null) {
-                throw new RuntimeException("系统配置不存在");
-            }
-
-            // 设置IP白名单配置
-            systemConfig.setIpWhitelistConfig(ipWhitelistConfig);
-
-            // 保存到系统配置
-            profileComponent.editConfigModel(systemConfig);
-
-            logger.info("保存IP白名单配置成功");
-        } catch (Exception e) {
-            logger.error("保存IP白名单配置失败", e);
-            throw new RuntimeException("保存IP白名单配置失败", e);
-        }
-    }
 }

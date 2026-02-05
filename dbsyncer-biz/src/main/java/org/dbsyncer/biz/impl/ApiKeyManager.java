@@ -103,9 +103,8 @@ public class ApiKeyManager {
      * 如果已存在，会创建新版本密钥，保留旧版本用于验证
      *
      * @param secret API密钥（原始密钥，会自动进行哈希存储）
-     * @return 是否添加成功
      */
-    public boolean addCredential(String secret) {
+    public void addCredential(String secret) {
         Assert.hasText(secret, "secret为空");
 
         ApiKeyConfig config = getApiKeyConfig();
@@ -143,7 +142,6 @@ public class ApiKeyManager {
         // 保存配置
         saveApiKeyConfig(config);
         logger.info("添加API密钥成功，secret: {}，版本: {}", hashedSecret, newVersion);
-        return true;
     }
 
     /**

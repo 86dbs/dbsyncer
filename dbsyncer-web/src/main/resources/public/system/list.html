@@ -114,7 +114,7 @@
                     <label class="form-label">开放api<i class="fa fa-question-circle" title="外部业务系统可凭此配置生成token，直接调用DBSyncer的管理接口，也可以同步数据。"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableRsaConfig" th:checked="${config?.enableRsaConfig}" type="checkbox" />
+                            <input name="enableOpenAPI" th:checked="${config?.enableOpenAPI}" type="checkbox" />
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -124,27 +124,27 @@
                     </div>
                 </div>
                 <div class="form-item"></div>
-                <div class="form-item">
-                    <label class="form-label rsa-config hidden">密钥<i class="fa fa-question-circle" title="通过密钥生成访问接口的token凭证，也可以刷新密钥"></i></label>
+                <div class="form-item open-api hidden">
+                    <label class="form-label">API密钥<i class="fa fa-question-circle" title="用于OpenAPI登录获取token，生成后请妥善保管"></i></label>
                     <div class="form-control-area flex">
-                        <input type="number" class="form-control rsa-config hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
-                        <button id="generateSecret" type="button" class="btn btn-outline rsa-config hidden ml-2">
+                        <input type="text" class="form-control" disabled th:value="${config?.apiSecret}"/>
+                        <button id="generateSecret" type="button" class="btn btn-outline ml-2">
                             <span class="fa fa-refresh"></span> 生成
                         </button>
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label rsa-config hidden">RSA长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
+                    <label class="form-label open-api hidden">RSA长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
                     <div class="form-control-area flex">
-                        <input type="number" class="form-control rsa-config hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
-                        <button id="generateRSA" type="button" class="btn btn-outline rsa-config hidden ml-2">
+                        <input type="number" class="form-control open-api hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
+                        <button id="generateRSA" type="button" class="btn btn-outline open-api hidden ml-2">
                             <span class="fa fa-refresh"></span> 生成
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="grid mt-4 rsa-config hidden">
+            <div class="grid mt-4 open-api hidden">
                 <div class="form-item">
                     <label class="form-label">RSA公钥</label>
                     <div class="form-control-area">
@@ -165,6 +165,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- IP白名单 -->
+            <div class="grid grid-cols-2 mt-4 open-api hidden">
+                <div class="form-item">
+                    <label class="form-label">启用IP白名单<i class="fa fa-question-circle" title="开启后仅白名单内IP可访问OpenAPI"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="ipWhitelistEnabled" th:checked="${config?.ipWhitelistConfig?.enabled}" type="checkbox" value="true"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">允许本地访问<i class="fa fa-question-circle" title="127.0.0.1、localhost等"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="ipWhitelistAllowLocalhost" th:checked="${config?.ipWhitelistConfig?.allowLocalhost != null ? config.ipWhitelistConfig.allowLocalhost : true}" type="checkbox" value="true"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">IP白名单</label>
+                    <div class="form-control-area">
+                        <textarea name="ipWhitelist" class="form-control" rows="5" placeholder="每行一个，支持：单个IP、CIDR(192.168.1.0/24)、范围(192.168.1.1-192.168.1.100)">[[${config?.ipWhitelistText}]]</textarea>
+                    </div>
+                </div>
+            </div>
+
         </form>
         <div class="blank-block-md"></div>
 
@@ -174,8 +211,9 @@
 <script>
     $(function () {
         const watermark = $('.watermark');
-        const rsaConfig = $(".rsa-config");
+        const openApiItems = $(".open-api");
         const rsaKeyLength = $("input[name='rsaKeyLength']");
+        const apiSecret = $("input[name='apiSecret']");
         const rsaPublicKey = $("textarea[name='rsaPublicKey']");
         const rsaPrivateKey = $("textarea[name='rsaPrivateKey']");
         const generateRSABtn = $("#generateRSA");
@@ -230,6 +268,22 @@
             });
         });
 
+        // 生成 API 密钥（OpenAPI 登录凭证）
+        $("#generateSecret").click(function () {
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<i class="fa fa-spinner fa-spin"></i> 生成中...').prop('disabled', true);
+            doPoster('/system/generateApiSecret', {}, function (response) {
+                btn.html(originalText).prop('disabled', false);
+                if (response.success === true && response.data) {
+                    apiSecret.val(response.data.secret);
+                    bootGrowl("生成成功!", "success");
+                } else {
+                    bootGrowl(response.message || "生成失败", "danger");
+                }
+            });
+        });
+
         // 绑定复制按钮事件（在显示 RSA 配置区域时调用）
         function bindCopyButtons() {
             // 先移除旧的事件绑定，避免重复绑定
@@ -267,11 +321,11 @@
             });
         }
 
-        function toggleRSAConfig(checked) {
+        function toggleOpenApiItem(checked) {
             rsaKeyLength.prop('disabled', !checked);
             generateRSABtn.prop('disabled', !checked);
             if (checked) {
-                rsaConfig.show();
+                openApiItems.show();
                 // 显示区域后，延迟绑定事件，确保 DOM 元素已渲染
                 setTimeout(function() {
                     bindCopyButtons();
@@ -281,13 +335,13 @@
                 }
                 return;
             }
-            rsaConfig.hide();
+            openApiItems.hide();
         }
-        let enableRsaConfigApi = initSwitch($("input[name='enableRsaConfig']"), toggleRSAConfig);
-        const isRSAConfigChecked = enableRsaConfigApi.isChecked();
-        toggleRSAConfig(isRSAConfigChecked);
+        let enableOpenAPI = initSwitch($("input[name='enableOpenAPI']"), toggleOpenApiItem);
+        const enableOpenAPIChecked = enableOpenAPI.isChecked();
+        toggleOpenApiItem(enableOpenAPIChecked);
         // 如果初始状态就是显示 RSA 配置，也需要绑定事件
-        if (isRSAConfigChecked) {
+        if (enableOpenAPIChecked) {
             setTimeout(function() {
                 bindCopyButtons();
             }, 100);

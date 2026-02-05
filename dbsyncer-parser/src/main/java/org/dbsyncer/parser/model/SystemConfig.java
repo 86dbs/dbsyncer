@@ -77,12 +77,6 @@ public class SystemConfig extends ConfigModel {
      */
     private boolean enableOpenAPI;
 
-    private boolean isPublicNetwork;
-    /**
-     * 是否开启RSA配置
-     */
-    private boolean enableRsaConfig;
-
     /**
      * RSA配置
      */
@@ -189,14 +183,6 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnableOpenAPI(boolean enableOpenAPI) {
         this.enableOpenAPI = enableOpenAPI;
-    }
-
-    public boolean isEnableRsaConfig() {
-        return enableRsaConfig;
-    }
-
-    public void setEnableRsaConfig(boolean enableRsaConfig) {
-        this.enableRsaConfig = enableRsaConfig;
     }
 
     public RSAConfig getRsaConfig() {
