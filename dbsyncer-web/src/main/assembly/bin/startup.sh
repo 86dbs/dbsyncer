@@ -31,6 +31,8 @@ if [[ -n "$PROCESS" ]]; then
 fi
 
 ###########################################################################
+# set up environment for Java
+#JAVA_HOME=/opt/jdk1.8.0_202
 # 构建 JVM 参数
 JAVA_OPTS=()
 
@@ -72,7 +74,7 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
 fi
 
 # 4. 系统属性
-JAVA_OPTS+=("-Djava.ext.dirs=$DBS_HOME/lib")
+JAVA_OPTS+=("-Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib")
 JAVA_OPTS+=("-Dspring.config.location=$CONFIG_PATH")
 JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
 JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
