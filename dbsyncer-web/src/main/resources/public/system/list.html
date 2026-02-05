@@ -275,9 +275,10 @@
             btn.html('<i class="fa fa-spinner fa-spin"></i> 生成中...').prop('disabled', true);
             doPoster('/system/generateApiSecret', {}, function (response) {
                 btn.html(originalText).prop('disabled', false);
-                if (response.success === true && response.data) {
-                    apiSecret.val(response.data.secret);
-                    bootGrowl("生成成功!", "success");
+                if (response.success === true && response.data && response.data.secret) {
+                    const secret = response.data.secret;
+                    apiSecret.val(secret);
+                    copyToClipboard(secret, { successMessage: "生成成功，已自动复制到剪贴板！" });
                 } else {
                     bootGrowl(response.message || "生成失败", "danger");
                 }
