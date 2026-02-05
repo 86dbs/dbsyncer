@@ -68,7 +68,7 @@ $(function() {
         uploadUrl: $basePath + '/config/upload',
         accept: ['.json'],
         maxFiles: 5,
-        maxSize: 10 * 1024 * 1024, // 10MB
+        maxSize: 50 * 1024 * 1024, // 50MB
         onSuccess: function(file, response) {
             if (response.success) {
                 notify({ message: '上传成功！', type: 'success' });
