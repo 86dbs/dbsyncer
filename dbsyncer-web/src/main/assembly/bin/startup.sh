@@ -85,9 +85,6 @@ APP="org.dbsyncer.web.Application"
 
 # execute command
 echo "Starting DBSyncer Application..."
-echo "================================================================"
-echo "$SERVER_OPTS"
-echo "================================================================"
 
 nohup java "${JAVA_OPTS[@]}" "$APP" > /dev/null 2>&1 &
 APP_PID=$!

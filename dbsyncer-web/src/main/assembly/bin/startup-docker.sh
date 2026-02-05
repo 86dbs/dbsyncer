@@ -90,10 +90,5 @@ APP="org.dbsyncer.web.Application"
 ###########################################################################
 # execute command
 echo "Starting DBSyncer Application..."
-echo "================================================================"
-# 打印参数数组
-printf '%s ' "${JAVA_OPTS[@]}"
-echo ""
-echo "================================================================"
 
 nohup java "${JAVA_OPTS[@]}" "$APP"
