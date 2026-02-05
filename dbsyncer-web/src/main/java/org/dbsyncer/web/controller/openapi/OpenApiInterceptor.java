@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.UrlPathHelper;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -62,12 +63,14 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     // TODO HMAC密钥（内网场景使用，可以从配置中获取）
     private String hmacSecret = "dbsyncer-internal-hmac-secret-key-2026";
 
+    private UrlPathHelper urlPathHelper = new UrlPathHelper();
+
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         try {
             // 1. 排除认证接口（登录、刷新token）- 这些接口不需要Token验证
-            // TODO 安全问题
-            String requestPath = request.getRequestURI();
+            // 获取请求路径，避免用户请求/.;之类的字符绕过权限判断，导致绕过权限检查风险。
+            String requestPath = urlPathHelper.getLookupPathForRequest(request);
             if (isAuthEndpoint(requestPath)) {
                 return true;
             }
