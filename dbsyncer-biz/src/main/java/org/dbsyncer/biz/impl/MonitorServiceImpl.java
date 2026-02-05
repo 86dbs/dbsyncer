@@ -107,7 +107,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         metricMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
+//        metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.SYSTEM_ENV.getCode(), vo -> {
             // 操作系统
             String osName = System.getProperty("os.name");

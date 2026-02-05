@@ -1,34 +1,32 @@
 #!/bin/bash
-SCRIPT_DIR=$(cd $(dirname $0);pwd)
-DBS_HOME=$(cd $SCRIPT_DIR/..;pwd)
-echo DBS_HOME=$DBS_HOME
+
+# 获取目录路径
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+DBS_HOME=$(cd "$SCRIPT_DIR/.."; pwd)
+echo "DBS_HOME=$DBS_HOME"
 
 # 确保 conf 目录存在
 if [ ! -d "$DBS_HOME/conf" ]; then
   mkdir -p "$DBS_HOME/conf"
 fi
 
-# application.properties
-CONFIG_PATH=$DBS_HOME'/conf/application.properties'
-if [ ! -f ${CONFIG_PATH} ]; then
-  echo "The conf/application.properties does't exist, please check it first!";
-  exit 1
+# 确保 logs 目录存在
+if [ ! -d "$DBS_HOME/logs" ]; then
+  mkdir -p "$DBS_HOME/logs"
 fi
 
-# check process
-APP="org.dbsyncer.web.Application" 
-PROCESS="`ps -ef|grep java|grep ${APP}|awk '{print $2}'`"
-if [[ -n ${PROCESS} ]]; then
-  echo "The app already started.";
+# application.properties
+CONFIG_PATH="$DBS_HOME/conf/application.properties"
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "The conf/application.properties doesn't exist, please check it first!" >&2
   exit 1
 fi
 
 ###########################################################################
 # set up environment for Java
 #JAVA_HOME=/opt/jdk1.8.0_202
-SERVER_OPTS='-Xms3800m -Xmx3800m -Xmn1500m -Xss512k -XX:MetaspaceSize=192m -XX:+DisableAttachMechanism'
-# set IPv4
-#SERVER_OPTS="$SERVER_OPTS -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses"
+# 构建 JVM 参数
+JAVA_OPTS=()
 
 ENCRYPT_FILE=''
 if [[ $(uname -m) == "aarch64"* ]]; then
@@ -38,29 +36,61 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
    ENCRYPT_FILE='libDBSyncer.dylib'
 else
-  echo "Unsupported OS."
+  echo "Unsupported OS." >&2
   exit 1
 fi
 
 if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
-  SERVER_OPTS="$SERVER_OPTS -agentpath:$DBS_HOME/bin/$ENCRYPT_FILE"
+  JAVA_OPTS+=("-agentpath:$DBS_HOME/bin/$ENCRYPT_FILE")
 fi
 
-# 确保 logs 目录存在
-if [ ! -d "$DBS_HOME/logs" ]; then
-  mkdir -p "$DBS_HOME/logs"
+# 1. 内存与基础配置 (放在最前面)
+# 堆：固定 2g，避免无界增长；若容器限 5g 且希望堆外/系统内存可控，可设 JAVA_OPTS="-Xmx3500m" 等覆盖
+JAVA_OPTS+=("-Xms2g")
+JAVA_OPTS+=("-Xmx2g")
+JAVA_OPTS+=("-Xss512k")
+JAVA_OPTS+=("-XX:MetaspaceSize=256m")
+JAVA_OPTS+=("-XX:MaxMetaspaceSize=384m")
+# 直接内存：限制 NIO 等堆外占用
+JAVA_OPTS+=("-XX:MaxDirectMemorySize=256m")
+JAVA_OPTS+=("-XX:+DisableAttachMechanism")
+JAVA_OPTS+=("-XX:NativeMemoryTracking=summary")
+# 允许通过环境变量追加 JVM 参数（如 JAVA_OPTS_EXT="-Xmx3500m -XX:MaxDirectMemorySize=512m"）
+if [[ -n "${JAVA_OPTS_EXT:-}" ]]; then
+  for opt in $JAVA_OPTS_EXT; do JAVA_OPTS+=("$opt"); done
 fi
 
-SERVER_OPTS="$SERVER_OPTS \
--Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib \
--Dspring.config.location=$CONFIG_PATH \
--DLOG_HOME=$DBS_HOME/logs \
--Dsun.stdout.encoding=UTF-8 -Dfile.encoding=UTF-8 -Duser.dir=$DBS_HOME \
--XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:ParallelGCThreads=4 \
--XX:+CMSClassUnloadingEnabled -XX:+DisableExplicitGC -XX:+UseCMSInitiatingOccupancyOnly \
--XX:CMSInitiatingOccupancyFraction=68 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps \
--XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$DBS_HOME/logs -XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log"
+# 2. GC 配置
+JAVA_OPTS+=("-XX:+UseG1GC")
+JAVA_OPTS+=("-XX:G1HeapRegionSize=16m")
+JAVA_OPTS+=("-XX:MaxGCPauseMillis=200")
+JAVA_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+JAVA_OPTS+=("-XX:HeapDumpPath=$DBS_HOME/logs/heapdump.hprof")
+JAVA_OPTS+=("-XX:ErrorFile=$DBS_HOME/logs/hs_err_pid_%p.log")
+# GC 日志已关闭，需要时可取消下面三行注释
+# JAVA_OPTS+=("-verbose:gc")
+# JAVA_OPTS+=("-XX:+PrintGCDetails")
+# JAVA_OPTS+=("-XX:+PrintGCDateStamps")
 
+# 3. Agent (如果有)
+if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
+  JAVA_OPTS+=("-agentpath:$DBS_HOME/bin/$ENCRYPT_FILE")
+fi
+
+# 4. 系统属性
+JAVA_OPTS+=("-Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib")
+JAVA_OPTS+=("-Dspring.config.location=$CONFIG_PATH")
+JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
+JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
+JAVA_OPTS+=("-Dfile.encoding=UTF-8")
+JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
+# --- 注意：这里不要再加任何 -XX 参数了 ---
+
+# 5. 主类 (放在最后)
+APP="org.dbsyncer.web.Application"
+
+###########################################################################
 # execute command
-echo $SERVER_OPTS
-java $SERVER_OPTS -Dfile.encoding=UTF-8 $APP
+echo "Starting DBSyncer Application..."
+
+nohup java "${JAVA_OPTS[@]}" "$APP"

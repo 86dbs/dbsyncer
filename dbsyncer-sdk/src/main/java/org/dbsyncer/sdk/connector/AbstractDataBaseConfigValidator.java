@@ -36,6 +36,7 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         String properties = params.get("properties");
         String extInfo = params.get("extInfo");
         String serviceName = params.get("serviceName");
+        String database = params.get("database");
         String driverClassName = params.get("driverClassName");
         int maxActive = NumberUtil.toInt(Objects.toString(params.get("maxActive")), connectorConfig.getMaxActive());
         long keepAlive = NumberUtil.toLong(Objects.toString(params.get("keepAlive")), connectorConfig.getKeepAlive());
@@ -52,10 +53,11 @@ public abstract class AbstractDataBaseConfigValidator implements ConfigValidator
         connectorConfig.setUsername(username);
         connectorConfig.setPassword(password);
         connectorConfig.setServiceName(serviceName);
+        connectorConfig.setDatabase(database);
         connectorConfig.setProperties(PropertiesUtil.parse(properties));
         Properties extInfoObj = JsonUtil.jsonToObj(extInfo, Properties.class);
         connectorConfig.setExtInfo(extInfoObj != null ? extInfoObj : new Properties());
-        connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, StringUtil.EMPTY));
+        connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, database));
         connectorConfig.setDriverClassName(driverClassName);
         connectorConfig.setMaxActive(maxActive);
         connectorConfig.setKeepAlive(keepAlive);
