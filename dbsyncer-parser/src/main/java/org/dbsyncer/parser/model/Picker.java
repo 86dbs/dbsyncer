@@ -1,5 +1,6 @@
 package org.dbsyncer.parser.model;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -14,7 +15,14 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Picker {
@@ -144,7 +152,7 @@ public class Picker {
      * @param comparedValue 比较值
      * @return
      */
-    private boolean compareValueWithFilter(Filter filter, Object comparedValue) {
+    public boolean compareValueWithFilter(Filter filter, Object comparedValue) {
         final FilterEnum filterEnum = FilterEnum.getFilterEnum(filter.getFilter());
         final CompareFilter compareFilter = filterEnum.getCompareFilter();
 
@@ -156,9 +164,6 @@ public class Picker {
                 return compareFilter.compare(null == comparedValue ? null : "not null", filter.getValue());
             default:
                 break;
-        }
-        if (comparedValue == null) {
-            return false;
         }
 
         // 支持时间比较
@@ -173,7 +178,8 @@ public class Picker {
             return compareFilter.compare(String.valueOf(comparedDate.getTime()), String.valueOf(filterDate.getTime()));
         }
 
-        return compareFilter.compare(String.valueOf(comparedValue), filter.getValue());
+        String value = ObjectUtils.toString(comparedValue, () -> StringUtil.EMPTY);
+        return compareFilter.compare(value, filter.getValue());
     }
 
     private void exchange(int sFieldSize, int tFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source, Map<String, Object> target) {
