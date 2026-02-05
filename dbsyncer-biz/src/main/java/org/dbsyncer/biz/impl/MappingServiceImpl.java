@@ -526,6 +526,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             params.put("mappingId", id);
             params.put("sourceTable", sourceTableName);
             params.put("targetTable", targetTableName);
+            params.put("sourceType", TableTypeEnum.TABLE.getCode());
+            params.put("targetType", TableTypeEnum.TABLE.getCode());
             // A1*|A2*,B1|B2,|C3
             if (StringUtil.isNotBlank(fieldMappings)) {
                 String[] mappings = StringUtil.split(fieldMappings, StringUtil.COMMA);
