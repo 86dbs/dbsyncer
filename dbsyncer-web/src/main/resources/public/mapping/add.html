@@ -186,9 +186,13 @@
         $("#mappingSubmitBtn").click(function () {
             const $form = $("#mappingAddForm");
             if (validateForm($form)) {
+                const btn = $(this);
+                const originalText = btn.html();
+                btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
                 doPoster("/mapping/add", $form.serializeJson(), function (response) {
+                    btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
-                        bootGrowl("新增驱动成功!", "success");
+                        bootGrowl("保存驱动成功!", "success");
                         backIndexPage();
                     } else {
                         bootGrowl(response.message, "danger");

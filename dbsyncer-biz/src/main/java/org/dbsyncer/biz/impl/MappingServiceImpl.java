@@ -33,6 +33,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
@@ -559,7 +560,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 }
             }
             tableGroupService.add(params);
-        } catch (RepeatedTableGroupException e) {
+        } catch (RepeatedTableGroupException | SdkException e) {
             logger.error(e.getMessage(), e);
         }
     }
