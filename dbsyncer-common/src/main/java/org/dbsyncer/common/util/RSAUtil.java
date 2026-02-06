@@ -2,7 +2,7 @@ package org.dbsyncer.common.util;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.model.RsaVersion;
 
 import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
@@ -22,7 +22,7 @@ public class RSAUtil {
 
     public static final String RSA_ALGORITHM = "RSA";
 
-    public static RSAConfig createKeys(int keySize) {
+    public static RsaVersion createKeys(int keySize) {
         //为RSA算法创建一个KeyPairGenerator对象
         KeyPairGenerator kpg;
         try {
@@ -41,7 +41,7 @@ public class RSAUtil {
         //得到私钥
         Key privateKey = keyPair.getPrivate();
         String privateKeyStr = Base64.encodeBase64URLSafeString(privateKey.getEncoded());
-        RSAConfig rsaConfig = new RSAConfig();
+        RsaVersion rsaConfig = new RsaVersion();
         rsaConfig.setKeyLength(keySize);
         rsaConfig.setPublicKey(publicKeyStr);
         rsaConfig.setPrivateKey(privateKeyStr);

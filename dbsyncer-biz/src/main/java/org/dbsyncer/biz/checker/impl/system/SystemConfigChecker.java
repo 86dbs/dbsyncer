@@ -3,11 +3,12 @@
  */
 package org.dbsyncer.biz.checker.impl.system;
 
-import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.biz.impl.ApiKeyManager;
+import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -46,6 +47,9 @@ public class SystemConfigChecker extends AbstractChecker {
 
     @Resource
     private ApiKeyManager apiKeyManager;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -134,10 +138,7 @@ public class SystemConfigChecker extends AbstractChecker {
         Assert.hasText(rsaKeyLength, "密钥长度不能为空");
         int keyLength = NumberUtil.toInt(rsaKeyLength);
         Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
-        RSAConfig rsaConfig = new RSAConfig();
-        rsaConfig.setPublicKey(publicKey);
-        rsaConfig.setPrivateKey(privateKey);
-        rsaConfig.setKeyLength(keyLength);
+        RsaConfig rsaConfig = rsaManager.addCredential(systemConfig.getRsaConfig(), publicKey, privateKey, keyLength);
         systemConfig.setRsaConfig(rsaConfig);
     }
 

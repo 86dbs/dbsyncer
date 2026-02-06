@@ -3,8 +3,7 @@
  */
 package org.dbsyncer.web.security;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,14 +52,16 @@ public class JwtUtil {
         Map<String, String> header = new HashMap<>();
         header.put("typ", TYP);
         header.put("alg", ALG);
-        String headerJson = JSON.toJSONString(header);
+        String headerJson = JsonUtil.objToJson(header);
         String headerBase64 = base64UrlEncode(headerJson.getBytes(StandardCharsets.UTF_8));
 
         // Payload
-        JSONObject payload = new JSONObject();
-        payload.put("iat", now); // 签发时间
-        payload.put("exp", expireTime); // 过期时间
-        String payloadJson = payload.toJSONString();
+        TokenInfo payload = new TokenInfo();
+        // 过期时间
+        payload.setExp(expireTime);
+        // 签发时间
+        payload.setIat(now);
+        String payloadJson = JsonUtil.objToJson(payload);
         String payloadBase64 = base64UrlEncode(payloadJson.getBytes(StandardCharsets.UTF_8));
 
         // Signature
@@ -98,20 +99,16 @@ public class JwtUtil {
 
         // 解析Payload
         String payloadJson = new String(base64UrlDecode(parts[1]), StandardCharsets.UTF_8);
-        JSONObject payload = JSON.parseObject(payloadJson);
+        TokenInfo tokenInfo = JsonUtil.jsonToObj(payloadJson, TokenInfo.class);
 
         // 验证过期时间
-        Long exp = payload.getLong("exp");
+        Long exp = tokenInfo.getExp();
         if (exp == null || exp < System.currentTimeMillis()) {
             logger.warn("Token已过期，exp: {}", exp);
             return null;
         }
 
-        TokenInfo tokenInfo = new TokenInfo();
-        tokenInfo.setIat(payload.getLong("iat"));
-        tokenInfo.setExp(exp);
         tokenInfo.setValid(true);
-
         return tokenInfo;
     }
 

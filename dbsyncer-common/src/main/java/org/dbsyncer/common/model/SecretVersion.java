@@ -10,7 +10,7 @@ package org.dbsyncer.common.model;
  * @version 1.0.0
  * @date 2026-02-02 00:04
  */
-public class SecretVersion {
+public class SecretVersion extends ConfigVersion {
 
     /**
      * 密钥
@@ -21,21 +21,6 @@ public class SecretVersion {
      * 密钥哈希值（SHA-1哈希后的Base64编码）
      */
     private String hashedSecret;
-
-    /**
-     * 版本号（从1开始递增）
-     */
-    private int version;
-
-    /**
-     * 创建时间（毫秒时间戳）
-     */
-    private Long createTime;
-
-    /**
-     * 是否启用
-     */
-    private boolean enabled = true;
 
     public String getSecret() {
         return secret;
@@ -53,27 +38,4 @@ public class SecretVersion {
         this.hashedSecret = hashedSecret;
     }
 
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public Long getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Long createTime) {
-        this.createTime = createTime;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
 }

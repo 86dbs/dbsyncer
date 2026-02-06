@@ -4,7 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.SystemConfigVo;
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 
@@ -77,7 +77,7 @@ public interface SystemConfigService {
      * @param keyLength
      * @return
      */
-    RSAConfig createRSAConfig(int keyLength);
+    RsaVersion createRSAConfig(int keyLength);
 
     /**
      * 生成并保存 API 密钥（OpenAPI 登录凭证）

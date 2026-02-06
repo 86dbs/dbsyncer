@@ -6,7 +6,7 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
@@ -80,7 +80,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * RSA配置
      */
-    private RSAConfig rsaConfig;
+    private RsaConfig rsaConfig;
 
     /**
      * JWT密钥配置
@@ -185,11 +185,11 @@ public class SystemConfig extends ConfigModel {
         this.enableOpenAPI = enableOpenAPI;
     }
 
-    public RSAConfig getRsaConfig() {
+    public RsaConfig getRsaConfig() {
         return rsaConfig;
     }
 
-    public void setRsaConfig(RSAConfig rsaConfig) {
+    public void setRsaConfig(RsaConfig rsaConfig) {
         this.rsaConfig = rsaConfig;
     }
 

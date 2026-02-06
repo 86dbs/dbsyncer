@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.common.util;
 
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.model.RsaVersion;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +23,7 @@ public class CryptoUtilTest {
 
     private static final Logger logger = LoggerFactory.getLogger(CryptoUtilTest.class);
     
-    private RSAConfig rsaConfig;
+    private RsaVersion rsaConfig;
     private Map<String, Object> testData;
 
     @Before

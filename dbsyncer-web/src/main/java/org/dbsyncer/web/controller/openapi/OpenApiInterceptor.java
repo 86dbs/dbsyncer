@@ -4,15 +4,15 @@
 package org.dbsyncer.web.controller.openapi;
 
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.web.model.OpenApiRequest;
-import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.common.util.CryptoUtil;
+import org.dbsyncer.biz.impl.IpWhitelistManager;
+import org.dbsyncer.biz.impl.JwtSecretManager;
+import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.biz.impl.JwtSecretManager;
-import org.dbsyncer.biz.impl.IpWhitelistManager;
+import org.dbsyncer.web.model.OpenApiRequest;
+import org.dbsyncer.web.model.OpenApiResponse;
 import org.dbsyncer.web.security.JwtUtil;
 import org.dbsyncer.web.security.TimestampValidator;
 import org.slf4j.Logger;
@@ -55,13 +55,13 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     private JwtSecretManager jwtSecretManager;
 
     @Resource
+    private RsaManager rsaManager;
+
+    @Resource
     private IpWhitelistManager ipWhitelistManager;
 
     @Resource
     private PreloadTemplate preloadTemplate;
-
-    // TODO HMAC密钥（内网场景使用，可以从配置中获取）
-    private String hmacSecret = "dbsyncer-internal-hmac-secret-key-2026";
 
     private UrlPathHelper urlPathHelper = new UrlPathHelper();
 
@@ -142,14 +142,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                     boolean isPublicNetwork = isPublicNetwork(request);
                     
                     // 解析加密请求（解密数据）
-                    String decryptedData = CryptoUtil.parseEncryptedRequest(
-                            requestBody,
-                            systemConfig.getRsaConfig().getPrivateKey(),
-                            systemConfig.getRsaConfig().getPublicKey(),
-                            hmacSecret,
-                            isPublicNetwork,
-                            String.class
-                    );
+                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
                     
                     // 将解密后的数据存储到request attribute中，供Controller使用
                     request.setAttribute("decryptedData", decryptedData);

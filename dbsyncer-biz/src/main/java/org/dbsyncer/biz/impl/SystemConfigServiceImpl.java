@@ -9,17 +9,17 @@ import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVo;
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.common.model.RSAConfig;
+import org.dbsyncer.common.enums.FileSuffixEnum;
+import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -139,7 +139,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public RSAConfig createRSAConfig(int keyLength) {
+    public RsaVersion createRSAConfig(int keyLength) {
         Assert.isTrue(keyLength >= 1024 && keyLength <= 8192, "密钥长度支持的范围[1024-8192]");
         return RSAUtil.createKeys(keyLength);
     }
