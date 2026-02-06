@@ -165,21 +165,21 @@ public class OpenApiController implements InitializingBean {
         try {
             SystemConfig systemConfig = systemConfigService.getSystemConfig();
             if (!systemConfig.isEnableOpenAPI() || systemConfig.getApiKeyConfig() == null) {
-                return OpenApiResponse.fail(404, "未开放API");
+                return OpenApiResponse.fail(OpenApiErrorCode.NOT_FOUND, "未开放API");
             }
             if (!preloadTemplate.isPreloadCompleted()) {
-                return OpenApiResponse.fail(503, "服务暂不可用");
+                return OpenApiResponse.fail(OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
             }
 
             String secret = requestBody.get("secret");
             if (StringUtil.isBlank(secret)) {
-                return OpenApiResponse.fail(400, "secret不能为空");
+                return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "secret不能为空");
             }
 
             // 验证API密钥
             if (!apiKeyManager.validate(systemConfig.getApiKeyConfig(), secret)) {
                 logger.error("无效凭证 {}", secret);
-                return OpenApiResponse.fail(401, "无效凭证");
+                return OpenApiResponse.fail(OpenApiErrorCode.UNAUTHORIZED, "无效凭证");
             }
             
             // 获取JWT密钥（如果不存在会自动生成）
@@ -189,7 +189,7 @@ public class OpenApiController implements InitializingBean {
             return OpenApiResponse.success("登录成功", data);
         } catch (Exception e) {
             logger.error("登录失败", e);
-            return OpenApiResponse.fail(500, "登录失败: " + e.getMessage());
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "登录失败: " + e.getMessage());
         }
     }
 
@@ -204,7 +204,7 @@ public class OpenApiController implements InitializingBean {
     public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
         try {
             if (!preloadTemplate.isPreloadCompleted()) {
-                return OpenApiResponse.fail(503, "服务暂不可用");
+                return OpenApiResponse.fail(OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
             }
             // 从请求头获取原Token
             String oldToken = request.getHeader("Authorization");
@@ -212,12 +212,12 @@ public class OpenApiController implements InitializingBean {
                 oldToken = oldToken.substring(7);
             }
             if (StringUtil.isBlank(oldToken)) {
-                return OpenApiResponse.fail(401, "Token不能为空");
+                return OpenApiResponse.fail(OpenApiErrorCode.UNAUTHORIZED, "Token不能为空");
             }
             // 刷新Token
             String newToken = jwtSecretManager.refreshToken(oldToken);
             if (StringUtil.isBlank(newToken)) {
-                return OpenApiResponse.fail(400, "Token不在刷新时间窗口内");
+                return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "Token不在刷新时间窗口内");
             }
             
             Map<String, String> data = new HashMap<>();
@@ -226,7 +226,7 @@ public class OpenApiController implements InitializingBean {
             return OpenApiResponse.success("刷新Token成功", data);
         } catch (Exception e) {
             logger.error("刷新Token失败", e);
-            return OpenApiResponse.fail(500, "刷新Token失败: " + e.getMessage());
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "刷新Token失败: " + e.getMessage());
         }
     }
 

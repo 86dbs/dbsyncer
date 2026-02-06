@@ -76,12 +76,12 @@ public class OpenApiInterceptor implements HandlerInterceptor {
 
             // 2. 配置是否开启
             if (!preloadTemplate.isPreloadCompleted()) {
-                writeErrorResponse(response, 503, "服务暂不可用");
+                writeErrorResponse(response, OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
                 return false;
             }
             SystemConfig systemConfig = systemConfigService.getSystemConfig();
             if (!systemConfig.isEnableOpenAPI()) {
-                writeErrorResponse(response, 404, "未开放API");
+                writeErrorResponse(response, OpenApiErrorCode.NOT_FOUND, "未开放API");
                 return false;
             }
 
@@ -90,14 +90,14 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             String clientIp = getClientIp(request);
             if (!ipWhitelistManager.isAllowed(systemConfig.getIpWhitelistConfig(), clientIp)) {
                 logger.warn("IP {} 不在白名单中，拒绝访问 {}", clientIp, requestPath);
-                writeErrorResponse(response, 403, "IP地址不在白名单中");
+                writeErrorResponse(response, OpenApiErrorCode.FORBIDDEN, "IP地址不在白名单中");
                 return false;
             }
             
             // 4. 验证Token
             String token = extractToken(request);
             if (!jwtSecretManager.verifyToken(token)) {
-                writeErrorResponse(response, 401, "Token无效或已过期");
+                writeErrorResponse(response, OpenApiErrorCode.UNAUTHORIZED, "Token无效或已过期");
                 return false;
             }
             
@@ -105,7 +105,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             if (isEncryptedEndpoint(requestPath)) {
                 String requestBody = readRequestBody(request);
                 if (StringUtil.isBlank(requestBody)) {
-                    writeErrorResponse(response, 400, "请求体不能为空");
+                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
                     return false;
                 }
                 
@@ -117,7 +117,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                     if (encryptedRequest.getTimestamp() != null && 
                         StringUtil.isNotBlank(encryptedRequest.getNonce())) {
                         if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
-                            writeErrorResponse(response, 400, "时间戳或Nonce验证失败");
+                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
                             return false;
                         }
                     }
@@ -132,7 +132,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                     request.setAttribute("decryptedData", decryptedData);
                 } catch (Exception e) {
                     logger.error("解析加密请求失败", e);
-                    writeErrorResponse(response, 400, "解析加密请求失败: " + e.getMessage());
+                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
                     return false;
                 }
             }
@@ -140,7 +140,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             return true;
         } catch (Exception e) {
             logger.error("OpenAPI拦截器处理失败", e);
-            writeErrorResponse(response, 500, "请求处理失败: " + e.getMessage());
+            writeErrorResponse(response, OpenApiErrorCode.INTERNAL_ERROR, "请求处理失败: " + e.getMessage());
             return false;
         }
     }
