@@ -217,7 +217,7 @@ public class OpenApiController implements InitializingBean {
             // 刷新Token
             String newToken = jwtSecretManager.refreshToken(oldToken);
             if (StringUtil.isBlank(newToken)) {
-                return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "Token不在刷新时间窗口内");
+                return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "刷新Token失败, 请检查Token配置");
             }
             
             Map<String, String> data = new HashMap<>();

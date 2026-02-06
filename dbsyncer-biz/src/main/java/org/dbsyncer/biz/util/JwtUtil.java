@@ -86,7 +86,7 @@ public abstract class JwtUtil {
 
         String[] parts = token.split("\\.");
         if (parts.length != 3) {
-            logger.warn("Token格式错误，部分数量: {}", parts.length);
+            logger.error("Token格式错误，部分数量: {}", parts.length);
             return null;
         }
 
@@ -94,7 +94,7 @@ public abstract class JwtUtil {
         String data = parts[0] + "." + parts[1];
         String expectedSignature = base64UrlEncode(hmacSha256(data, secret).getBytes(StandardCharsets.UTF_8));
         if (!expectedSignature.equals(parts[2])) {
-            logger.warn("Token签名验证失败");
+            logger.error("Token签名验证失败");
             return null;
         }
 
