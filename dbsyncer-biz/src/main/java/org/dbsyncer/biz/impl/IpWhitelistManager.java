@@ -3,16 +3,12 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -28,26 +24,20 @@ public class IpWhitelistManager {
 
     private static final Logger logger = LoggerFactory.getLogger(IpWhitelistManager.class);
 
-    @Resource
-    private SystemConfigService systemConfigService;
-
-    @Resource
-    private ProfileComponent profileComponent;
-
     /**
      * 验证IP是否在白名单中
      * 
+     * @param config 当前配置
      * @param clientIp 客户端IP地址
      * @return 是否在白名单中
      */
-    public boolean isAllowed(String clientIp) {
+    public boolean isAllowed(IpWhitelistConfig config, String clientIp) {
         try {
             if (StringUtil.isBlank(clientIp)) {
                 logger.warn("客户端IP为空");
                 return false;
             }
 
-            IpWhitelistConfig config = getIpWhitelistConfig();
             if (config == null || !config.isEnabled()) {
                 // 如果未启用白名单，默认允许所有IP
                 return true;
@@ -55,7 +45,6 @@ public class IpWhitelistManager {
 
             // 允许localhost（如果配置允许）
             if (config.isAllowLocalhost() && isLocalhost(clientIp)) {
-                logger.debug("允许localhost访问: {}", clientIp);
                 return true;
             }
 
@@ -115,8 +104,7 @@ public class IpWhitelistManager {
                 return matchesIpRange(clientIp, pattern);
             }
 
-            // 简单匹配
-            return clientIp.equals(pattern);
+            return false;
         } catch (Exception e) {
             logger.warn("匹配IP规则失败: {} - {}", clientIp, pattern, e);
             return false;
@@ -222,25 +210,6 @@ public class IpWhitelistManager {
                "0:0:0:0:0:0:0:1".equals(ip) ||
                "::1".equals(ip) ||
                "localhost".equalsIgnoreCase(ip);
-    }
-
-    /**
-     * 从系统配置中获取IP白名单配置
-     * 
-     * @return IP白名单配置，如果不存在返回null
-     */
-    private IpWhitelistConfig getIpWhitelistConfig() {
-        try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null) {
-                return null;
-            }
-
-            return systemConfig.getIpWhitelistConfig();
-        } catch (Exception e) {
-            logger.error("获取IP白名单配置失败", e);
-            return null;
-        }
     }
 
 }

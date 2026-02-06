@@ -130,7 +130,7 @@
                 <div class="form-item lg:col-span-2">
                     <label class="form-label open-api hidden">API密钥<i class="fa fa-question-circle" title="用于生成token访问OpenAPI，生成后请妥善保管"></i></label>
                     <div class="form-control-area flex">
-                        <input type="text" class="form-control open-api hidden" name="apiSecret" th:value="${config?.apiSecret}"/>
+                        <input type="text" class="form-control open-api hidden" name="apiSecret" th:value="${config?.currentSecret}"/>
                         <div class="form-actions ml-2">
                             <button type="button" class="open-api hidden btn btn-outline" id="copyApiSecretBtn">
                                 <i class="fa fa-copy"></i> 复制
@@ -147,7 +147,7 @@
                 <div class="form-item lg:col-span-2">
                     <label class="form-label open-api hidden">RSA长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
                     <div class="form-control-area flex">
-                        <input type="number" class="form-control open-api hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.rsaConfig?.keyLength}?: 2048"/>
+                        <input type="number" class="form-control open-api hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.currentRsa?.keyLength}?: 2048"/>
                         <button id="generateRSA" type="button" class="open-api hidden btn btn-outline ml-2">
                             <span class="fa fa-refresh"></span> 生成
                         </button>
@@ -159,7 +159,7 @@
                 <div class="form-item">
                     <label class="form-label">RSA公钥</label>
                     <div class="form-control-area">
-                        <textarea name="rsaPublicKey" class="form-control" disabled maxlength="8192" rows="5">[[${config?.rsaConfig?.publicKey}]]</textarea>
+                        <textarea name="rsaPublicKey" class="form-control" disabled maxlength="8192" rows="5">[[${config?.currentRsa?.publicKey}]]</textarea>
                         <button type="button" class="btn btn-outline mt-1" id="copyPublicKeyBtn">
                             <i class="fa fa-copy"></i> 复制
                         </button>
@@ -169,7 +169,7 @@
                 <div class="form-item">
                     <label class="form-label">RSA私钥</label>
                     <div class="form-control-area">
-                        <textarea name="rsaPrivateKey" class="form-control" disabled maxlength="8192" rows="10">[[${config?.rsaConfig?.privateKey}]]</textarea>
+                        <textarea name="rsaPrivateKey" class="form-control" disabled maxlength="8192" rows="10">[[${config?.currentRsa?.privateKey}]]</textarea>
                         <button type="button" class="btn btn-outline mt-1" id="copyPrivateKeyBtn">
                             <i class="fa fa-copy"></i> 复制
                         </button>

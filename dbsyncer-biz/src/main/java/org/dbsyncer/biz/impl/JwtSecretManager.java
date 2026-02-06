@@ -5,23 +5,25 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.SystemConfigService;
+import org.dbsyncer.biz.model.TokenInfo;
+import org.dbsyncer.biz.util.JwtUtil;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.JwtSecretVersion;
-import org.dbsyncer.common.model.RsaVersion;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -72,7 +74,7 @@ public class JwtSecretManager {
     /**
      * 默认最大保留的历史密钥数量
      */
-    public static final int DEFAULT_MAX_VERSION_SIZE = 3;
+    private static final int DEFAULT_MAX_VERSION_SIZE = 3;
 
     /**
      * 获取当前JWT密钥（用于生成新Token）
@@ -80,33 +82,68 @@ public class JwtSecretManager {
      * 
      * @return JWT密钥
      */
-    public String getCurrentSecret() {
+    public String generateToken() throws NoSuchAlgorithmException, InvalidKeyException {
         JwtSecretConfig config = getJwtSecretConfig();
-        if (config == null) {
-            logger.warn("JWT密钥不存在，自动生成新密钥");
-            generateAndSaveSecret();
-            config = getJwtSecretConfig();
-        }
-        return config.getCurrentSecret();
+        List<JwtSecretVersion> secrets = config.getSecrets();
+        String secret = CollectionUtils.isEmpty(secrets) ? StringUtil.EMPTY : secrets.get(secrets.size() - 1).getSecret();
+        return JwtUtil.generateToken(secret);
     }
 
     /**
-     * 获取用于验证Token的密钥
-     * 优先使用当前密钥，如果验证失败，按版本号从高到低尝试历史密钥（支持平滑轮换）
-     * 
-     * @return JWT密钥数组，第一个是当前密钥，后面是历史密钥（按版本号从高到低排序）
+     * 获取JWT密钥（支持密钥轮换）
+     *
+     * @param token 当前使用的token
+     * @return 生成新的JWT密钥
      */
-    public List<JwtSecretVersion> getReversedSecrets() {
+    public String refreshToken(String token) throws NoSuchAlgorithmException, InvalidKeyException {
         JwtSecretConfig config = getJwtSecretConfig();
-        if (config == null) {
-            generateAndSaveSecret();
-            config = getJwtSecretConfig();
+        // 从最新的密钥开始验证
+        for (int i = config.getSecrets().size() - 1; i >= 0; i--) {
+            JwtSecretVersion version = config.getSecrets().get(i);
+            String newToken = JwtUtil.refreshToken(token, version.getSecret());
+            if (newToken != null) {
+                return newToken;
+            }
         }
+        return null;
+    }
 
-        // 倒序返回
-        List<JwtSecretVersion> sorted = new ArrayList<>(config.getSecrets());
-        Collections.reverse(sorted);
-        return sorted;
+    /**
+     * 校验JWT密钥（支持密钥轮换）
+     *
+     * @param token 当前使用的token
+     * @return 校验结果true/false
+     */
+    public boolean verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (StringUtil.isBlank(token)) {
+            return false;
+        }
+        JwtSecretConfig config = getJwtSecretConfig();
+        // 从最新的密钥开始验证
+        for (int i = config.getSecrets().size() - 1; i >= 0; i--) {
+            JwtSecretVersion version = config.getSecrets().get(i);
+            TokenInfo tokenInfo = JwtUtil.verifyToken(token, version.getSecret());
+            if (tokenInfo != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 从系统配置中获取JWT密钥配置
+     *
+     * @return JWT密钥配置，如果不存在返回null
+     */
+    private JwtSecretConfig getJwtSecretConfig() {
+        SystemConfig systemConfig = systemConfigService.getSystemConfig();
+        Assert.notNull(systemConfig,"系统服务暂不可用，请重试");
+        JwtSecretConfig config = systemConfig.getJwtSecretConfig();
+        if (config == null) {
+            generateAndSaveSecret(systemConfig);
+            config = systemConfig.getJwtSecretConfig();
+        }
+        return config;
     }
 
     /**
@@ -114,19 +151,13 @@ public class JwtSecretManager {
      * 如果存在旧密钥，会将其添加到历史密钥Map中，实现平滑轮换
      * 会自动清理过旧的历史密钥，只保留最近N个版本
      */
-    public void generateAndSaveSecret() {
+    private synchronized void generateAndSaveSecret(SystemConfig systemConfig) {
         try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null) {
-                throw new RuntimeException("系统配置不存在");
+            JwtSecretConfig config = systemConfig.getJwtSecretConfig();
+            if (config == null) {
+                config = new JwtSecretConfig();
             }
-
-            JwtSecretConfig jwtSecretConfig = getJwtSecretConfig();
-            if (jwtSecretConfig == null) {
-                jwtSecretConfig = new JwtSecretConfig();
-            }
-
-            List<JwtSecretVersion> versions = jwtSecretConfig.getSecrets();
+            List<JwtSecretVersion> versions = config.getSecrets();
 
             // 计算新版本号
             int newVersion = 1;
@@ -147,9 +178,9 @@ public class JwtSecretManager {
             cleanupOldVersions(versions);
 
             // 保存到系统配置
-            saveJwtSecretConfig(jwtSecretConfig);
-
-            logger.info("生成新的JWT密钥成功，版本: {}，历史密钥数量: {}", newVersion, jwtSecretConfig.getSecrets().size());
+            systemConfig.setJwtSecretConfig(config);
+            profileComponent.editConfigModel(systemConfig);
+            logger.info("生成新的JWT密钥成功，版本: {}，历史密钥数量: {}", newVersion, versions.size());
         } catch (Exception e) {
             logger.error("生成并保存JWT密钥失败", e);
             throw new BizException("生成并保存JWT密钥失败", e);
@@ -164,8 +195,6 @@ public class JwtSecretManager {
     private void cleanupOldVersions(List<JwtSecretVersion> versions) {
         // 如果版本数量超过限制，删除最旧的版本
         if (versions.size() > DEFAULT_MAX_VERSION_SIZE) {
-            // 按版本号从低到高排序
-            versions.sort(Comparator.comparingInt(JwtSecretVersion::getVersion));
             // 删除最旧的版本
             JwtSecretVersion remove = versions.remove(0);
             logger.info("清理过旧的JWT密钥，secret: {}，版本: {}", remove.getSecret(), remove.getVersion());
@@ -189,44 +218,4 @@ public class JwtSecretManager {
         }
     }
 
-    /**
-     * 从系统配置中获取JWT密钥配置
-     * 
-     * @return JWT密钥配置，如果不存在返回null
-     */
-    private JwtSecretConfig getJwtSecretConfig() {
-        try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (systemConfig == null) {
-                return null;
-            }
-
-            return systemConfig.getJwtSecretConfig();
-        } catch (Exception e) {
-            logger.error("获取JWT密钥配置失败", e);
-            return null;
-        }
-    }
-
-    /**
-     * 保存JWT密钥配置到系统配置
-     * 
-     * @param jwtSecretConfig JWT密钥配置
-     */
-    private void saveJwtSecretConfig(JwtSecretConfig jwtSecretConfig) {
-        SystemConfig systemConfig = systemConfigService.getSystemConfig();
-        if (systemConfig == null) {
-            throw new RuntimeException("系统配置不存在");
-        }
-
-        // 设置JWT密钥配置
-        systemConfig.setJwtSecretConfig(jwtSecretConfig);
-
-        // 将JWT密钥配置序列化为JSON字符串，保存到系统配置的扩展字段中
-        // 由于SystemConfig是通过JSON序列化的，JwtSecretConfig会自动序列化
-        // 但为了确保兼容性，我们通过ProfileComponent直接更新配置
-        profileComponent.editConfigModel(systemConfig);
-
-        logger.info("保存JWT密钥配置成功，版本: {}", jwtSecretConfig.getJwtSecretVersion().getVersion());
-    }
 }

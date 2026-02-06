@@ -7,14 +7,12 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.IpWhitelistManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.impl.RsaManager;
-import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiRequest;
 import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.web.security.JwtUtil;
 import org.dbsyncer.web.security.TimestampValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * OpenAPI拦截器
@@ -84,14 +81,14 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             }
             SystemConfig systemConfig = systemConfigService.getSystemConfig();
             if (!systemConfig.isEnableOpenAPI()) {
-                writeErrorResponse(response, 500, "未开放API");
+                writeErrorResponse(response, 404, "未开放API");
                 return false;
             }
 
             // 3. 验证IP白名单（优先验证，避免无效请求消耗资源）
             // 所有OpenAPI接口都需要验证IP白名单，包括登录接口
             String clientIp = getClientIp(request);
-            if (!ipWhitelistManager.isAllowed(clientIp)) {
+            if (!ipWhitelistManager.isAllowed(systemConfig.getIpWhitelistConfig(), clientIp)) {
                 logger.warn("IP {} 不在白名单中，拒绝访问 {}", clientIp, requestPath);
                 writeErrorResponse(response, 403, "IP地址不在白名单中");
                 return false;
@@ -99,26 +96,10 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             
             // 4. 验证Token
             String token = extractToken(request);
-            if (StringUtil.isBlank(token)) {
-                writeErrorResponse(response, 401, "Token不能为空");
-                return false;
-            }
-            // 获取JWT密钥（支持密钥轮换，尝试当前密钥和上一个密钥）
-            List<JwtSecretVersion> jwtSecrets = jwtSecretManager.getReversedSecrets();
-            JwtUtil.TokenInfo tokenInfo = null;
-            for (JwtSecretVersion jwtSecret : jwtSecrets) {
-                tokenInfo = JwtUtil.verifyToken(token, jwtSecret.getSecret());
-                if (tokenInfo != null && tokenInfo.isValid()) {
-                    break;
-                }
-            }
-            jwtSecrets.clear();
-            if (tokenInfo == null || !tokenInfo.isValid()) {
+            if (!jwtSecretManager.verifyToken(token)) {
                 writeErrorResponse(response, 401, "Token无效或已过期");
                 return false;
             }
-            // 将token信息存储到request attribute中
-            request.setAttribute("tokenInfo", tokenInfo);
             
             // 5. 解析加密请求（如果是加密接口）
             if (isEncryptedEndpoint(requestPath)) {

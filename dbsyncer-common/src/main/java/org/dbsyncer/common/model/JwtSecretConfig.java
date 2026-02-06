@@ -3,9 +3,6 @@
  */
 package org.dbsyncer.common.model;
 
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.StringUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,11 +27,4 @@ public class JwtSecretConfig {
         return secrets;
     }
 
-    public JwtSecretVersion getJwtSecretVersion() {
-        return CollectionUtils.isEmpty(secrets) ? null : secrets.get(secrets.size() - 1);
-    }
-
-    public String getCurrentSecret() {
-        return CollectionUtils.isEmpty(secrets) ? StringUtil.EMPTY : secrets.get(secrets.size() - 1).getSecret();
-    }
 }

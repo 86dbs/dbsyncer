@@ -14,9 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * API密钥管理器（客户端凭证管理）
@@ -55,7 +53,7 @@ public class ApiKeyManager {
     /**
      * 默认最大保留的密钥版本数量
      */
-    public static final int DEFAULT_MAX_VERSION_SIZE = 3;
+    private static final int DEFAULT_MAX_VERSION_SIZE = 3;
 
     /**
      * 验证API密钥
@@ -76,10 +74,8 @@ public class ApiKeyManager {
         String hashedSecret = SHA1Util.b64_sha1(secret);
 
         // 按版本号从高到低排序，优先尝试最新版本
-        List<SecretVersion> sortedVersions = config.getSecrets().stream().sorted(Comparator.comparingInt(SecretVersion::getVersion).reversed()).collect(Collectors.toList());
-
-        // 尝试所有启用的密钥版本
-        for (SecretVersion version : sortedVersions) {
+        for (int i = config.getSecrets().size() - 1; i >= 0; i--) {
+            SecretVersion version = config.getSecrets().get(i);
             if (!version.isEnabled()) {
                 continue;
             }
@@ -143,8 +139,6 @@ public class ApiKeyManager {
     private void cleanupOldVersions(List<SecretVersion> versions) {
         // 如果版本数量超过限制，删除最旧的版本
         if (versions.size() > DEFAULT_MAX_VERSION_SIZE) {
-            // 按版本号从低到高排序
-            versions.sort(Comparator.comparingInt(SecretVersion::getVersion));
             // 删除最旧的版本
             SecretVersion remove = versions.remove(0);
             logger.info("清理过旧的API密钥，secret: {}，版本: {}", remove.getSecret(), remove.getVersion());

@@ -33,7 +33,7 @@ public class RsaManager {
     /**
      * 默认最大保留的密钥版本数量
      */
-    public static final int DEFAULT_MAX_VERSION_SIZE = 3;
+    private static final int DEFAULT_MAX_VERSION_SIZE = 3;
 
     /**
      * 解密请求参数

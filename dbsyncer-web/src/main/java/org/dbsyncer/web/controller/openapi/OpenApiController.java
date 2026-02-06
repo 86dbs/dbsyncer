@@ -6,11 +6,10 @@ package org.dbsyncer.web.controller.openapi;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
-import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.web.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -71,6 +70,9 @@ public class OpenApiController implements InitializingBean {
 
     @Resource
     private ApplicationContext applicationContext;
+
+    @Resource
+    private PreloadTemplate preloadTemplate;
 
     private final Map<String, String> parsePackage = new HashMap<>();
     private final Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
@@ -163,7 +165,10 @@ public class OpenApiController implements InitializingBean {
         try {
             SystemConfig systemConfig = systemConfigService.getSystemConfig();
             if (!systemConfig.isEnableOpenAPI() || systemConfig.getApiKeyConfig() == null) {
-                return OpenApiResponse.fail(500, "未开放API");
+                return OpenApiResponse.fail(404, "未开放API");
+            }
+            if (!preloadTemplate.isPreloadCompleted()) {
+                return OpenApiResponse.fail(503, "服务暂不可用");
             }
 
             String secret = requestBody.get("secret");
@@ -178,10 +183,8 @@ public class OpenApiController implements InitializingBean {
             }
             
             // 获取JWT密钥（如果不存在会自动生成）
-            String jwtSecret = jwtSecretManager.getCurrentSecret();
-
             Map<String, String> data = new HashMap<>();
-            data.put("token", JwtUtil.generateToken(jwtSecret)); // 生成Token
+            data.put("token", jwtSecretManager.generateToken()); // 生成Token
             data.put("expiresIn", "7200"); // 2小时，单位：秒
             return OpenApiResponse.success("登录成功", data);
         } catch (Exception e) {
@@ -200,32 +203,26 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/refresh")
     public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
         try {
+            if (!preloadTemplate.isPreloadCompleted()) {
+                return OpenApiResponse.fail(503, "服务暂不可用");
+            }
             // 从请求头获取原Token
             String oldToken = request.getHeader("Authorization");
             if (oldToken != null && oldToken.startsWith("Bearer ")) {
                 oldToken = oldToken.substring(7);
             }
-            
-            // 刷新Token（尝试使用当前密钥和上一个密钥）
-            String newToken = null;
-
-            // 获取JWT密钥（支持密钥轮换）
-            List<JwtSecretVersion> jwtSecrets = jwtSecretManager.getReversedSecrets();
-            for (JwtSecretVersion jwtSecret : jwtSecrets) {
-                newToken = JwtUtil.refreshToken(oldToken, jwtSecret.getSecret());
-                if (newToken != null) {
-                    break;
-                }
+            if (StringUtil.isBlank(oldToken)) {
+                return OpenApiResponse.fail(401, "Token不能为空");
             }
-            jwtSecrets.clear();
-            if (newToken == null) {
+            // 刷新Token
+            String newToken = jwtSecretManager.refreshToken(oldToken);
+            if (StringUtil.isBlank(newToken)) {
                 return OpenApiResponse.fail(400, "Token不在刷新时间窗口内");
             }
             
             Map<String, String> data = new HashMap<>();
             data.put("token", newToken);
-            data.put("expiresIn", "7200");
-
+            data.put("expires", "7200");
             return OpenApiResponse.success("刷新Token成功", data);
         } catch (Exception e) {
             logger.error("刷新Token失败", e);

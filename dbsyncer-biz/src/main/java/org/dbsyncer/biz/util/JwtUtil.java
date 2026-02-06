@@ -1,8 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.security;
+package org.dbsyncer.biz.util;
 
+import org.dbsyncer.biz.model.TokenInfo;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
@@ -24,7 +25,7 @@ import java.util.Map;
  * @author 穿云
  * @version 1.0.0
  */
-public class JwtUtil {
+public abstract class JwtUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
@@ -108,7 +109,6 @@ public class JwtUtil {
             return null;
         }
 
-        tokenInfo.setValid(true);
         return tokenInfo;
     }
 
@@ -120,28 +120,23 @@ public class JwtUtil {
      * @param secret 密钥
      * @return 新Token，如果不在刷新窗口内返回null
      */
-    public static String refreshToken(String token, String secret) {
-        try {
-            TokenInfo tokenInfo = verifyToken(token, secret);
-            if (tokenInfo == null || !tokenInfo.isValid()) {
-                return null;
-            }
-
-            long now = System.currentTimeMillis();
-            long elapsed = now - tokenInfo.getIat();
-
-            // 检查是否在刷新时间窗口内
-            if (elapsed > TOKEN_REFRESH_TIME) {
-                logger.warn("Token不在刷新时间窗口内，elapsed: {}ms", elapsed);
-                return null;
-            }
-
-            // 生成新token
-            return generateToken(secret);
-        } catch (Exception e) {
-            logger.error("刷新Token失败", e);
+    public static String refreshToken(String token, String secret) throws NoSuchAlgorithmException, InvalidKeyException {
+        TokenInfo tokenInfo = verifyToken(token, secret);
+        if (tokenInfo == null) {
             return null;
         }
+
+        long now = System.currentTimeMillis();
+        long elapsed = now - tokenInfo.getIat();
+
+        // 检查是否在刷新时间窗口内
+        if (elapsed > TOKEN_REFRESH_TIME) {
+            logger.warn("Token不在刷新时间窗口内，elapsed: {}ms", elapsed);
+            return null;
+        }
+
+        // 生成新token
+        return generateToken(secret);
     }
 
     /**
@@ -169,36 +164,4 @@ public class JwtUtil {
         return Base64.getUrlDecoder().decode(data);
     }
 
-    /**
-     * Token信息
-     */
-    public static class TokenInfo {
-        private Long iat;
-        private Long exp;
-        private boolean valid;
-
-        public Long getIat() {
-            return iat;
-        }
-
-        public void setIat(Long iat) {
-            this.iat = iat;
-        }
-
-        public Long getExp() {
-            return exp;
-        }
-
-        public void setExp(Long exp) {
-            this.exp = exp;
-        }
-
-        public boolean isValid() {
-            return valid;
-        }
-
-        public void setValid(boolean valid) {
-            this.valid = valid;
-        }
-    }
 }
