@@ -52,7 +52,7 @@
             <label class="form-label">连接参数</label>
             <div class="form-control-area">
                 <textarea name="properties" class="form-control" maxlength="1024" rows="5"
-                          th:text="${connector?.config?.propertiesText} ?: 'rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;verifyServerCertificate=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;tinyInt1isBit=false&allowPublicKeyRetrieval=true'"></textarea>
+                          th:text="${connector?.config?.propertiesText} ?: 'rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;verifyServerCertificate=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;tinyInt1isBit=false&allowPublicKeyRetrieval=true&cachePrepStmts=false'"></textarea>
             </div>
         </div>
     </div>

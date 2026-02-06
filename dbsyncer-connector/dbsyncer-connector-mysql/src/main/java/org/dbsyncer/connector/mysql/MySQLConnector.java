@@ -211,16 +211,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildJdbcUrl(DatabaseConfig config, String database) {
-        // jdbc:mysql://127.0.0.1:3306/test?cachePrepStmts=false&rewriteBatchedStatements=true&useUnicode=true
-        // cachePrepStmts=false 避免驱动缓存大量 PreparedStatement 及 BindValue，防止长时间运行内存持续增长
+        // jdbc:mysql://127.0.0.1:3306/test?rewriteBatchedStatements=true&useUnicode=true
         StringBuilder url = new StringBuilder();
         url.append("jdbc:mysql://").append(config.getHost()).append(":").append(config.getPort());
         if (database != null && !database.trim().isEmpty()) {
             url.append("/").append(database);
         }
-        String base = url.toString();
-        String sep = base.contains("?") ? "&" : "?";
-        url.append(sep).append("cachePrepStmts=false");
         return url.toString();
     }
 
