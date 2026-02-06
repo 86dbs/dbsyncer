@@ -160,30 +160,27 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/login")
     public OpenApiResponse<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
         try {
+            SystemConfig systemConfig = systemConfigService.getSystemConfig();
+            if (!systemConfig.isEnableOpenAPI() || systemConfig.getApiKeyConfig() == null) {
+                return OpenApiResponse.fail(500, "未开放API");
+            }
+
             String secret = requestBody.get("secret");
             if (StringUtil.isBlank(secret)) {
                 return OpenApiResponse.fail(400, "secret不能为空");
             }
 
             // 验证API密钥
-            if (!apiKeyManager.validateCredential(secret)) {
-                logger.warn("无效凭证 {}", secret);
-                return OpenApiResponse.fail(401, "secret错误");
-            }
-
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (!systemConfig.isEnableOpenAPI()) {
-                return OpenApiResponse.fail(500, "未开放API");
+            if (!apiKeyManager.validate(systemConfig.getApiKeyConfig(), secret)) {
+                logger.error("无效凭证 {}", secret);
+                return OpenApiResponse.fail(401, "无效凭证");
             }
             
             // 获取JWT密钥（如果不存在会自动生成）
             String jwtSecret = jwtSecretManager.getCurrentSecret();
-            
-            // 生成Token
-            String token = JwtUtil.generateToken(jwtSecret);
 
             Map<String, String> data = new HashMap<>();
-            data.put("token", token);
+            data.put("token", JwtUtil.generateToken(jwtSecret)); // 生成Token
             data.put("expiresIn", "7200"); // 2小时，单位：秒
             return OpenApiResponse.success("登录成功", data);
         } catch (Exception e) {

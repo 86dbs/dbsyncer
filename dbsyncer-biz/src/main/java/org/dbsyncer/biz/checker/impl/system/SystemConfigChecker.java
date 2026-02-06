@@ -5,6 +5,7 @@ package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.RSAConfig;
 import org.dbsyncer.common.util.BeanUtil;
@@ -69,7 +70,6 @@ public class SystemConfigChecker extends AbstractChecker {
         newParams.put("enableStorageWriteFull", StringUtil.isNotBlank(params.get("enableStorageWriteFull")));
         newParams.put("enableWatermark", StringUtil.isNotBlank(params.get("enableWatermark")));
         newParams.put("enablePrintTraceInfo", StringUtil.isNotBlank(params.get("enablePrintTraceInfo")));
-        // 开放 API 与 RSA 配置开关同步
         newParams.put("enableOpenAPI", StringUtil.isNotBlank(params.get("enableOpenAPI")));
         String watermark = params.get("watermark");
         if (StringUtil.isNotBlank(watermark)) {
@@ -80,6 +80,8 @@ public class SystemConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
         BeanUtil.mapToBean(newParams, systemConfig);
+        // 修改 API 密钥配置
+        saveApiKeyConfig(systemConfig, params);
         // 修改RSA配置
         saveRSAConfig(systemConfig, params);
         // 修改 IP 白名单配置
@@ -91,7 +93,20 @@ public class SystemConfigChecker extends AbstractChecker {
         return systemConfig;
     }
 
+    private void saveApiKeyConfig(SystemConfig systemConfig, Map<String, String> params) {
+        if (!systemConfig.isEnableOpenAPI()) {
+            return;
+        }
+        String apiSecret = params.get("apiSecret");
+        Assert.hasText(apiSecret, "API密钥不能为空");
+        ApiKeyConfig apiKeyConfig = apiKeyManager.addCredential(systemConfig.getApiKeyConfig(), apiSecret);
+        systemConfig.setApiKeyConfig(apiKeyConfig);
+    }
+
     private void saveIpWhitelistConfig(SystemConfig systemConfig, Map<String, String> params) {
+        if (!systemConfig.isEnableOpenAPI()) {
+            return;
+        }
         IpWhitelistConfig config = new IpWhitelistConfig();
         config.setEnabled(StringUtil.isNotBlank(params.get("ipWhitelistEnabled")));
         config.setAllowLocalhost(StringUtil.isNotBlank(params.get("ipWhitelistAllowLocalhost")));

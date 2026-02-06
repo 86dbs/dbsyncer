@@ -181,7 +181,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
      */
     private boolean isEncryptedEndpoint(String path) {
         // 数据同步接口需要加密
-        return path.contains("/openapi/data/");
+        return path.startsWith("/openapi/data/");
     }
 
     /**

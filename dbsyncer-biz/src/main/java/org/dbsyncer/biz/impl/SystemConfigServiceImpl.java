@@ -148,8 +148,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public String generateApiSecret() {
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
-        String secret = Base64.getEncoder().encodeToString(bytes);
-        apiKeyManager.addCredential(secret);
-        return secret;
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

@@ -59,16 +59,12 @@ public class SystemController extends BaseController {
 
     /**
      * 生成 API 密钥（OpenAPI 登录凭证）
-     * 返回的密钥仅展示一次，请妥善保管
      */
     @PostMapping("/generateApiSecret")
     @ResponseBody
     public RestResult generateApiSecret(HttpServletRequest request) {
         try {
-            String secret = systemConfigService.generateApiSecret();
-            java.util.Map<String, String> data = new java.util.HashMap<>();
-            data.put("secret", secret);
-            return RestResult.restSuccess(data);
+            return RestResult.restSuccess(systemConfigService.generateApiSecret());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

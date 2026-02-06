@@ -19,19 +19,14 @@ import java.util.List;
 public class ApiKeyConfig {
 
     /**
-     * 默认最大保留的密钥版本数量
-     */
-    public static final int DEFAULT_MAX_VERSION_SIZE = 5;
-
-    /**
      * API密钥可以有多个版本，支持平滑轮换
      */
     private final List<SecretVersion> secretVersions = new ArrayList<>();
 
     /**
-     * 最大保留的密钥版本数量（默认5个）
+     * 最大保留的密钥版本数量
      */
-    private int maxVersionSize = DEFAULT_MAX_VERSION_SIZE;
+    private int maxVersionSize = 3;
 
     public List<SecretVersion> getSecretVersions() {
         return secretVersions;

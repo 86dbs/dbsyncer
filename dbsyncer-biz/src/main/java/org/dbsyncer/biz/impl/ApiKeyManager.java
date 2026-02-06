@@ -3,22 +3,18 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.SecretVersion;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,26 +55,22 @@ public class ApiKeyManager {
     /**
      * 默认最大保留的密钥版本数量
      */
-    public static final int DEFAULT_MAX_VERSION_SIZE = 5;
-
-    @Resource
-    private SystemConfigService systemConfigService;
-
-    @Resource
-    private ProfileComponent profileComponent;
+    public static final int DEFAULT_MAX_VERSION_SIZE = 3;
 
     /**
      * 验证API密钥
      * 支持多版本密钥，按版本号从高到低尝试验证
      *
+     * @param config 当前配置
      * @param secret API密钥（原始密钥，会进行哈希后比较）
      * @return 验证是否通过
      */
-    public boolean validateCredential(String secret) {
+    public boolean validate(ApiKeyConfig config, String secret) {
         Assert.hasText(secret, "secret为空");
-        ApiKeyConfig config = getApiKeyConfig();
-        Assert.notNull(config, "API密钥配置未启用");
-        Assert.notEmpty(config.getSecretVersions(), "API密钥配置未启用");
+        if (config == null || CollectionUtils.isEmpty(config.getSecretVersions())) {
+            logger.warn("API密钥配置未启用");
+            return false;
+        }
 
         // 对输入的密钥进行哈希处理
         String hashedSecret = SHA1Util.b64_sha1(secret);
@@ -102,12 +94,12 @@ public class ApiKeyManager {
      * 添加API密钥
      * 如果已存在，会创建新版本密钥，保留旧版本用于验证
      *
+     * @param config 当前配置
      * @param secret API密钥（原始密钥，会自动进行哈希存储）
      */
-    public void addCredential(String secret) {
+    public ApiKeyConfig addCredential(ApiKeyConfig config, String secret) {
         Assert.hasText(secret, "secret为空");
 
-        ApiKeyConfig config = getApiKeyConfig();
         if (config == null) {
             config = new ApiKeyConfig();
             config.setMaxVersionSize(DEFAULT_MAX_VERSION_SIZE);
@@ -140,32 +132,8 @@ public class ApiKeyManager {
         cleanupOldVersions(versions);
 
         // 保存配置
-        saveApiKeyConfig(config);
         logger.info("添加API密钥成功，secret: {}，版本: {}", hashedSecret, newVersion);
-    }
-
-    /**
-     * 移除API密钥
-     *
-     * @param secret API密钥
-     */
-    public void removeCredential(String secret) {
-        Assert.hasText(secret, "secret为空");
-        ApiKeyConfig config = getApiKeyConfig();
-        if (config == null) {
-            return;
-        }
-
-        Iterator<SecretVersion> iterator = config.getSecretVersions().iterator();
-        while (iterator.hasNext()) {
-            SecretVersion version = iterator.next();
-            if (version.getSecret().equals(secret)) {
-                iterator.remove();
-                saveApiKeyConfig(config);
-                logger.info("移除API密钥成功，secret:{}, version:{}", version.getHashedSecret(), version.getVersion());
-                break;
-            }
-        }
+        return config;
     }
 
     /**
@@ -184,36 +152,4 @@ public class ApiKeyManager {
         }
     }
 
-    /**
-     * 从系统配置中获取API密钥配置
-     *
-     * @return API密钥配置，如果不存在返回null
-     */
-    private ApiKeyConfig getApiKeyConfig() {
-        try {
-            return systemConfigService.getSystemConfig().getApiKeyConfig();
-        } catch (Exception e) {
-            logger.error("获取API密钥配置失败", e);
-            return null;
-        }
-    }
-
-    /**
-     * 保存API密钥配置到系统配置
-     *
-     * @param apiKeyConfig API密钥配置
-     */
-    private void saveApiKeyConfig(ApiKeyConfig apiKeyConfig) {
-        SystemConfig systemConfig = systemConfigService.getSystemConfig();
-        if (systemConfig == null) {
-            throw new RuntimeException("系统配置不存在");
-        }
-
-        // 设置API密钥配置
-        systemConfig.setApiKeyConfig(apiKeyConfig);
-
-        // 保存到系统配置
-        profileComponent.editConfigModel(systemConfig);
-        logger.info("保存API密钥配置成功");
-    }
 }
