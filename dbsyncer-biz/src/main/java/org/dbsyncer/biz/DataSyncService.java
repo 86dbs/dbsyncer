@@ -4,7 +4,7 @@
 package org.dbsyncer.biz;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.dbsyncer.biz.vo.MessageVo;
+import org.dbsyncer.biz.vo.MessageVO;
 
 import java.util.Map;
 
@@ -17,7 +17,7 @@ public interface DataSyncService {
      * @param messageId
      * @return
      */
-    MessageVo getMessageVo(String metaId, String messageId);
+    MessageVO getMessageVo(String metaId, String messageId);
 
     /**
      * 获取Binlog

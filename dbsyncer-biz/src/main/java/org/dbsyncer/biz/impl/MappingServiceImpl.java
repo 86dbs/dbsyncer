@@ -11,8 +11,8 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
-import org.dbsyncer.biz.vo.MappingVo;
-import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.biz.vo.MappingVO;
+import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
@@ -221,7 +221,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public MappingVo getMapping(String id) {
+    public MappingVO getMapping(String id) {
         Mapping mapping = profileComponent.getMapping(id);
         return convertMapping2Vo(mapping);
     }
@@ -267,14 +267,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public MappingVo getMapping(String id, Integer exclude) {
+    public MappingVO getMapping(String id, Integer exclude) {
         Mapping mapping = profileComponent.getMapping(id);
         // 显示所有表
         if (exclude != null && exclude == 1) {
             return convertMapping2Vo(mapping);
         }
         // 过滤已映射的表
-        MappingVo vo = convertMapping2Vo(mapping);
+        MappingVO vo = convertMapping2Vo(mapping);
         List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
         if (!CollectionUtils.isEmpty(tableGroupAll)) {
             final Set<String> sTables = new HashSet<>();
@@ -292,16 +292,16 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public List<MappingVo> getMappingAll() {
+    public List<MappingVO> getMappingAll() {
         return profileComponent.getMappingAll()
                 .stream()
                 .map(this::convertMapping2Vo)
-                .sorted(Comparator.comparing(MappingVo::getUpdateTime).reversed())
+                .sorted(Comparator.comparing(MappingVO::getUpdateTime).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Paging<MappingVo> search(Map<String, String> params) {
+    public Paging<MappingVO> search(Map<String, String> params) {
         return searchConfigModel(params, getMappingAll());
     }
 
@@ -436,20 +436,20 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return tables;
     }
 
-    private MappingVo convertMapping2Vo(Mapping mapping) {
+    private MappingVO convertMapping2Vo(Mapping mapping) {
         String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
 
         // 元信息
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
-        MetaVo metaVo = new MetaVo(ModelEnum.getModelEnum(model).getName(), mapping.getName());
+        MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
 
         Connector s = profileComponent.getConnector(mapping.getSourceConnectorId());
         Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
-        MappingVo vo = new MappingVo(s, t, metaVo);
+        MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
         return vo;
     }

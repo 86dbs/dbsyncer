@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.SystemConfigVo;
+import org.dbsyncer.biz.vo.SystemConfigVO;
 import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -33,7 +33,7 @@ public interface SystemConfigService {
      *
      * @return
      */
-    SystemConfigVo getSystemConfigVo();
+    SystemConfigVO getSystemConfigVo();
 
     /**
      * 获取系统配置

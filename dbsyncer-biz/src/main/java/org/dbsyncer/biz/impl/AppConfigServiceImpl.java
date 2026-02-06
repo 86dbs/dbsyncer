@@ -5,7 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.SystemConfigService;
-import org.dbsyncer.biz.vo.VersionVo;
+import org.dbsyncer.biz.vo.VersionVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
@@ -30,8 +30,8 @@ public class AppConfigServiceImpl implements AppConfigService {
     public static final String WATERMARK_USERNAME = "${username}";
 
     @Override
-    public VersionVo getVersionInfo(String username) {
-        VersionVo versionVo = new VersionVo(appConfig.getName(), appConfig.getCopyright());
+    public VersionVO getVersionInfo(String username) {
+        VersionVO versionVo = new VersionVO(appConfig.getName(), appConfig.getCopyright());
         // 是否启用水印
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
         if (systemConfig.isEnableWatermark()) {

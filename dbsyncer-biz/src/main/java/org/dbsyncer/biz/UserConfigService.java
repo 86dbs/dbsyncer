@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.UserInfoVo;
+import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
 
@@ -60,7 +60,7 @@ public interface UserConfigService {
      * @param username        查询的用户
      * @return
      */
-    UserInfoVo getUserInfoVo(String currentUserName, String username);
+    UserInfoVO getUserInfoVo(String currentUserName, String username);
 
     /**
      * 获取所有用户信息VO(系统管理员可以查看所有用户，其他用户只能查看自己)
@@ -68,7 +68,7 @@ public interface UserConfigService {
      * @param currentUserName 登录用户
      * @return
      */
-    List<UserInfoVo> getUserInfoAll(String currentUserName);
+    List<UserInfoVO> getUserInfoAll(String currentUserName);
 
     /**
      * 获取用户配置

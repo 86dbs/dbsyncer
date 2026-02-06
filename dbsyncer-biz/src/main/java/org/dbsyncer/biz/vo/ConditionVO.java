@@ -14,7 +14,7 @@ import java.util.List;
  * @Version 1.0.0
  * @Date 2020-01-19 17:20
  */
-public class ConditionVo {
+public class ConditionVO {
 
     /**
      * 条件
@@ -31,7 +31,7 @@ public class ConditionVo {
      */
     private List<FilterEnum> filter;
 
-    public ConditionVo(List<OperationEnum> operation, List<QuartzFilterEnum> quartzFilter, List<FilterEnum> filter) {
+    public ConditionVO(List<OperationEnum> operation, List<QuartzFilterEnum> quartzFilter, List<FilterEnum> filter) {
         this.operation = operation;
         this.quartzFilter = quartzFilter;
         this.filter = filter;

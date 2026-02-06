@@ -7,7 +7,7 @@ import org.apache.commons.io.FileUtils;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.biz.vo.SystemConfigVo;
+import org.dbsyncer.biz.vo.SystemConfigVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.dbsyncer.common.model.RsaVersion;
@@ -73,8 +73,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     @Override
-    public SystemConfigVo getSystemConfigVo() {
-        SystemConfigVo systemConfigVo = new SystemConfigVo();
+    public SystemConfigVO getSystemConfigVo() {
+        SystemConfigVO systemConfigVo = new SystemConfigVO();
         BeanUtils.copyProperties(getSystemConfig(), systemConfigVo);
         systemConfigVo.setWatermark(getWatermark(systemConfigVo));
         return systemConfigVo;

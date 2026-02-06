@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-public class BinlogColumnVo {
+public class BinlogColumnVO {
 
     private String key;
 
@@ -10,7 +10,7 @@ public class BinlogColumnVo {
 
     private String valueType;
 
-    public BinlogColumnVo(String key, Object value, String keyType) {
+    public BinlogColumnVO(String key, Object value, String keyType) {
         this.key = key;
         this.value = value;
         this.keyType = keyType;

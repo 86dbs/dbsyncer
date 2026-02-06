@@ -2,7 +2,7 @@ package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.biz.model.MetricResponse;
 
-public class MetricResponseVo extends MetricResponse {
+public class MetricResponseVO extends MetricResponse {
 
     private String detail;
 

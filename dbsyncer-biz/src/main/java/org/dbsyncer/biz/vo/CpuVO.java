@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  * @Version 1.0.0
  * @Date 2025-12-20 21:22
  */
-public final class CpuVO extends HistoryStackVo {
+public final class CpuVO extends HistoryStackVO {
 
     private final int core = Runtime.getRuntime().availableProcessors();
 

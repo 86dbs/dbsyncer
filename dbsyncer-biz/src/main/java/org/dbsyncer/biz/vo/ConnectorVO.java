@@ -7,12 +7,12 @@ import org.dbsyncer.parser.model.Connector;
  * @version 1.0.0
  * @date 2020/04/10 17:20
  */
-public class ConnectorVo extends Connector {
+public class ConnectorVO extends Connector {
 
     // 是否运行
     private boolean running;
 
-    public ConnectorVo(boolean running) {
+    public ConnectorVO(boolean running) {
         this.running = running;
     }
 

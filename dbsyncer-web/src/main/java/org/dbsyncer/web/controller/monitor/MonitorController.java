@@ -14,9 +14,9 @@ import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.Sample;
 import org.dbsyncer.biz.vo.CpuVO;
 import org.dbsyncer.biz.vo.DiskSpaceVO;
-import org.dbsyncer.biz.vo.HistoryStackVo;
+import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.biz.vo.MemoryVO;
-import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -112,7 +112,7 @@ public class MonitorController extends BaseController {
 
     @GetMapping("/page/retry")
     public String page(ModelMap model, String metaId, String messageId) {
-        MetaVo metaVo = monitorService.getMetaVo(metaId);
+        MetaVO metaVo = monitorService.getMetaVo(metaId);
         model.put("meta", metaVo);
         model.put("mapping", mappingService.getMapping(metaVo.getMappingId()));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
@@ -349,7 +349,7 @@ public class MonitorController extends BaseController {
         return metricResponse;
     }
 
-    private void collectStackMetric(MetricEnum metricEnum, HistoryStackVo stackVo, ValueFormatter<Object, Object> formatter) {
+    private void collectStackMetric(MetricEnum metricEnum, HistoryStackVO stackVo, ValueFormatter<Object, Object> formatter) {
         MetricResponse metricResponse = getMetricResponse(metricEnum.getCode());
         List<Sample> measurements = metricResponse.getMeasurements();
         if (!CollectionUtils.isEmpty(measurements)) {

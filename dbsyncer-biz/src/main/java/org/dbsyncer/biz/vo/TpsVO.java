@@ -8,5 +8,5 @@ package org.dbsyncer.biz.vo;
  * @Version 1.0.0
  * @Date 2025-12-20 21:41
  */
-public class TpsVO extends HistoryStackVo {
+public class TpsVO extends HistoryStackVO {
 }

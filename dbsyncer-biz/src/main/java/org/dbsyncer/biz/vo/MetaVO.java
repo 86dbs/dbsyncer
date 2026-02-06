@@ -7,7 +7,7 @@ import org.dbsyncer.parser.model.Meta;
  * @version 1.0.0
  * @date 2020/01/03 17:20
  */
-public class MetaVo extends Meta {
+public class MetaVO extends Meta {
 
     // 同步方式
     private String model;
@@ -16,7 +16,7 @@ public class MetaVo extends Meta {
     // 是否统计总数中
     private boolean counting;
 
-    public MetaVo(String model, String mappingName) {
+    public MetaVO(String model, String mappingName) {
         this.model = model;
         this.mappingName = mappingName;
     }

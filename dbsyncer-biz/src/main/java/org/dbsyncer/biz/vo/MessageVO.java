@@ -2,7 +2,7 @@ package org.dbsyncer.biz.vo;
 
 import java.util.List;
 
-public class MessageVo {
+public class MessageVO {
 
     private String id;
 
@@ -10,7 +10,7 @@ public class MessageVo {
 
     private String targetTableName;
 
-    private List<BinlogColumnVo> columns;
+    private List<BinlogColumnVO> columns;
 
     public String getId() {
         return id;
@@ -36,11 +36,11 @@ public class MessageVo {
         this.targetTableName = targetTableName;
     }
 
-    public List<BinlogColumnVo> getColumns() {
+    public List<BinlogColumnVO> getColumns() {
         return columns;
     }
 
-    public void setColumns(List<BinlogColumnVo> columns) {
+    public void setColumns(List<BinlogColumnVO> columns) {
         this.columns = columns;
     }
 }

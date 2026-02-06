@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.ConditionVo;
+import org.dbsyncer.biz.vo.ConditionVO;
 
 /**
  * @author AE86
@@ -17,6 +17,6 @@ public interface ConditionService {
      *
      * @return
      */
-    ConditionVo getCondition();
+    ConditionVO getCondition();
 
 }

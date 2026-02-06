@@ -1,9 +1,9 @@
 package org.dbsyncer.biz.metric;
 
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 
 public interface MetricDetailFormatter {
 
-    void format(MetricResponseVo vo);
+    void format(MetricResponseVO vo);
 
 }

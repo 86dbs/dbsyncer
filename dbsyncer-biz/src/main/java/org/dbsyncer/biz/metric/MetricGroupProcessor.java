@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz.metric;
 
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 
 import java.util.List;
 
@@ -15,5 +15,5 @@ import java.util.List;
  * @Date 2025-04-15 23:13
  */
 public interface MetricGroupProcessor {
-    List<MetricResponseVo> process(List<MetricResponseVo> metrics);
+    List<MetricResponseVO> process(List<MetricResponseVO> metrics);
 }

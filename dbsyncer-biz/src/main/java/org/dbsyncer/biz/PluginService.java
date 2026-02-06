@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.PluginVo;
+import org.dbsyncer.biz.vo.PluginVO;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ public interface PluginService {
      *
      * @return
      */
-    List<PluginVo> getPluginAll();
+    List<PluginVO> getPluginAll();
 
     /**
      * 获取插件上传路径

@@ -3,8 +3,11 @@
  */
 package org.dbsyncer.common.model;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JWT密钥配置（服务端签名密钥配置）
@@ -19,87 +22,19 @@ import java.util.Map;
 public class JwtSecretConfig {
 
     /**
-     * 默认最大保留的历史密钥数量
-     * 与 ApiKeyConfig.DEFAULT_MAX_VERSION_SIZE 保持一致
+     * 密钥列表（按版本号存储，用于验证旧Token）
      */
-    public static final int DEFAULT_MAX_HISTORY_SIZE = 5;
+    private final List<JwtSecretVersion> secrets = new ArrayList<>();
 
-    /**
-     * 当前密钥版本
-     */
-    private int currentVersion = 1;
-
-    /**
-     * 当前密钥（用于生成新Token）
-     */
-    private String currentSecret;
-
-    /**
-     * 历史密钥Map（版本号 -> 密钥）
-     * 用于验证旧Token，支持多个历史密钥
-     */
-    private Map<Integer, String> historySecrets = new HashMap<>();
-
-    /**
-     * 密钥生成时间（毫秒时间戳）
-     */
-    private Long generateTime;
-
-    /**
-     * 密钥长度（默认256位，32字节）
-     */
-    private int secretLength = 32;
-
-    /**
-     * 最大保留的历史密钥数量（默认5个）
-     */
-    private int maxHistorySize = DEFAULT_MAX_HISTORY_SIZE;
-
-    public int getCurrentVersion() {
-        return currentVersion;
+    public List<JwtSecretVersion> getSecrets() {
+        return secrets;
     }
 
-    public void setCurrentVersion(int currentVersion) {
-        this.currentVersion = currentVersion;
+    public JwtSecretVersion getJwtSecretVersion() {
+        return CollectionUtils.isEmpty(secrets) ? null : secrets.get(secrets.size() - 1);
     }
 
     public String getCurrentSecret() {
-        return currentSecret;
-    }
-
-    public void setCurrentSecret(String currentSecret) {
-        this.currentSecret = currentSecret;
-    }
-
-    public Map<Integer, String> getHistorySecrets() {
-        return historySecrets;
-    }
-
-    public void setHistorySecrets(Map<Integer, String> historySecrets) {
-        this.historySecrets = historySecrets;
-    }
-
-    public Long getGenerateTime() {
-        return generateTime;
-    }
-
-    public void setGenerateTime(Long generateTime) {
-        this.generateTime = generateTime;
-    }
-
-    public int getSecretLength() {
-        return secretLength;
-    }
-
-    public void setSecretLength(int secretLength) {
-        this.secretLength = secretLength;
-    }
-
-    public int getMaxHistorySize() {
-        return maxHistorySize;
-    }
-
-    public void setMaxHistorySize(int maxHistorySize) {
-        this.maxHistorySize = maxHistorySize;
+        return CollectionUtils.isEmpty(secrets) ? StringUtil.EMPTY : secrets.get(secrets.size() - 1).getSecret();
     }
 }

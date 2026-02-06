@@ -6,7 +6,7 @@ package org.dbsyncer.biz.vo;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class HistoryStackVo {
+public class HistoryStackVO {
 
     private List<Object> name;
 
@@ -14,7 +14,7 @@ public class HistoryStackVo {
 
     private double average;
 
-    public HistoryStackVo() {
+    public HistoryStackVO() {
         this.name = new CopyOnWriteArrayList<>();
         this.value = new CopyOnWriteArrayList<>();
     }

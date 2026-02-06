@@ -4,7 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
-import org.dbsyncer.biz.vo.MappingVo;
+import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.Table;
 
@@ -52,7 +52,7 @@ public interface MappingService {
      * @param id
      * @return
      */
-    MappingVo getMapping(String id);
+    MappingVO getMapping(String id);
 
     /**
      * 获取驱动自定义表信息
@@ -70,14 +70,14 @@ public interface MappingService {
      * @param exclude 0-过滤已添加的表；1-显示所有表，包含已添加的表
      * @return
      */
-    MappingVo getMapping(String id, Integer exclude);
+    MappingVO getMapping(String id, Integer exclude);
 
     /**
      * 获取所有驱动
      *
      * @return
      */
-    List<MappingVo> getMappingAll();
+    List<MappingVO> getMappingAll();
 
     /**
      * 分页搜索
@@ -85,7 +85,7 @@ public interface MappingService {
      * @param params
      * @return
      */
-    Paging<MappingVo> search(Map<String, String> params);
+    Paging<MappingVO> search(Map<String, String> params);
 
     /**
      * 启动驱动

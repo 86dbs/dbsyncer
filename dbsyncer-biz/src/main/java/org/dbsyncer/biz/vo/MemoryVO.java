@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  * @Version 1.0.0
  * @Date 2025-12-20 21:17
  */
-public final class MemoryVO extends HistoryStackVo {
+public final class MemoryVO extends HistoryStackVO {
     private BigDecimal jvmUsed;
     private BigDecimal jvmTotal;
     private BigDecimal sysUsed;

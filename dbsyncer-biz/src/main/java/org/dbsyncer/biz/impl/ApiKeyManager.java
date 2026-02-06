@@ -67,7 +67,7 @@ public class ApiKeyManager {
      */
     public boolean validate(ApiKeyConfig config, String secret) {
         Assert.hasText(secret, "secret为空");
-        if (config == null || CollectionUtils.isEmpty(config.getSecretVersions())) {
+        if (config == null || CollectionUtils.isEmpty(config.getSecrets())) {
             logger.warn("API密钥配置未启用");
             return false;
         }
@@ -76,7 +76,7 @@ public class ApiKeyManager {
         String hashedSecret = SHA1Util.b64_sha1(secret);
 
         // 按版本号从高到低排序，优先尝试最新版本
-        List<SecretVersion> sortedVersions = config.getSecretVersions().stream().sorted(Comparator.comparingInt(SecretVersion::getVersion).reversed()).collect(Collectors.toList());
+        List<SecretVersion> sortedVersions = config.getSecrets().stream().sorted(Comparator.comparingInt(SecretVersion::getVersion).reversed()).collect(Collectors.toList());
 
         // 尝试所有启用的密钥版本
         for (SecretVersion version : sortedVersions) {
@@ -102,11 +102,10 @@ public class ApiKeyManager {
 
         if (config == null) {
             config = new ApiKeyConfig();
-            config.setMaxVersionSize(DEFAULT_MAX_VERSION_SIZE);
         }
 
         // 获取现有密钥版本列表
-        List<SecretVersion> versions = config.getSecretVersions();
+        List<SecretVersion> versions = config.getSecrets();
 
         // 计算新版本号
         int newVersion = 1;

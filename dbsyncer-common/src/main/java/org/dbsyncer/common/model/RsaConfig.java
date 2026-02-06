@@ -15,20 +15,7 @@ import java.util.List;
  */
 public class RsaConfig {
 
-    /**
-     * 最大保留的密钥版本数量
-     */
-    private int maxVersionSize = 3;
-
     private final List<RsaVersion> rsaVersions = new ArrayList<>();
-
-    public int getMaxVersionSize() {
-        return maxVersionSize;
-    }
-
-    public void setMaxVersionSize(int maxVersionSize) {
-        this.maxVersionSize = maxVersionSize;
-    }
 
     public List<RsaVersion> getRsaVersions() {
         return rsaVersions;

@@ -6,7 +6,7 @@ package org.dbsyncer.biz.model;
 import org.dbsyncer.biz.vo.CpuVO;
 import org.dbsyncer.biz.vo.DiskSpaceVO;
 import org.dbsyncer.biz.vo.MemoryVO;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.biz.vo.TpsVO;
 
 import java.util.List;
@@ -44,7 +44,7 @@ public class AppReportMetric {
 
     private DiskSpaceVO disk;
 
-    private List<MetricResponseVo> metrics;
+    private List<MetricResponseVO> metrics;
 
     public long getQueueUp() {
         return queueUp;
@@ -110,11 +110,11 @@ public class AppReportMetric {
         this.disk = disk;
     }
 
-    public List<MetricResponseVo> getMetrics() {
+    public List<MetricResponseVO> getMetrics() {
         return metrics;
     }
 
-    public void setMetrics(List<MetricResponseVo> metrics) {
+    public void setMetrics(List<MetricResponseVO> metrics) {
         this.metrics = metrics;
     }
 }

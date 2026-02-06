@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.VersionVo;
+import org.dbsyncer.biz.vo.VersionVO;
 
 /**
  * @Author AE86
@@ -17,5 +17,5 @@ public interface AppConfigService {
      *
      * @return
      */
-    VersionVo getVersionInfo(String username);
+    VersionVO getVersionInfo(String username);
 }

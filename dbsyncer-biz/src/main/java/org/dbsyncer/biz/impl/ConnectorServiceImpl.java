@@ -6,7 +6,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.checker.Checker;
-import org.dbsyncer.biz.vo.ConnectorVo;
+import org.dbsyncer.biz.vo.ConnectorVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -142,7 +142,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public List<ConnectorVo> getConnectorAll() {
+    public List<ConnectorVO> getConnectorAll() {
         return profileComponent.getConnectorAll()
                 .stream()
                 .map(this::convertConnector2Vo)
@@ -151,7 +151,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
-    public Paging<ConnectorVo> search(Map<String, String> params) {
+    public Paging<ConnectorVO> search(Map<String, String> params) {
         return searchConfigModel(params, getConnectorAll());
     }
 
@@ -215,8 +215,8 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         }
     }
 
-    private ConnectorVo convertConnector2Vo(Connector connector) {
-        ConnectorVo vo = new ConnectorVo(isAlive(connector.getId()));
+    private ConnectorVO convertConnector2Vo(Connector connector) {
+        ConnectorVO vo = new ConnectorVO(isAlive(connector.getId()));
         BeanUtils.copyProperties(connector, vo);
         return vo;
     }

@@ -60,15 +60,15 @@ public class RsaManager {
             }
             try {
                 // 解析加密请求（解密数据）
-                String decryptedData = CryptoUtil.parseEncryptedRequest(
+                // TODO 待补充
+                return CryptoUtil.parseEncryptedRequest(
                         requestBody,
                         version.getPrivateKey(),
                         version.getPublicKey(),
-                        "", // TODO 待补充
+                        "",
                         isPublicNetwork,
                         String.class
                 );
-                return decryptedData;
             } catch (Exception e) {
                 logger.error("解密失败，版本: {}", version.getVersion());
             }
@@ -89,7 +89,6 @@ public class RsaManager {
     public RsaConfig addCredential(RsaConfig config, String publicKey, String privateKey, int keyLength) {
         if (config == null) {
             config = new RsaConfig();
-            config.setMaxVersionSize(DEFAULT_MAX_VERSION_SIZE);
         }
 
         // 获取现有密钥版本列表

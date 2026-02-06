@@ -12,15 +12,14 @@ import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricDetailFormatter;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
 import org.dbsyncer.biz.metric.impl.DoubleRoundMetricDetailFormatter;
-import org.dbsyncer.biz.metric.impl.GCMetricDetailFormatter;
 import org.dbsyncer.biz.metric.impl.ValueMetricDetailFormatter;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
-import org.dbsyncer.biz.vo.DataVo;
-import org.dbsyncer.biz.vo.LogVo;
-import org.dbsyncer.biz.vo.MetaVo;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.DataVO;
+import org.dbsyncer.biz.vo.LogVO;
+import org.dbsyncer.biz.vo.MetaVO;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -123,16 +122,16 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public List<MetaVo> getMetaAll() {
+    public List<MetaVO> getMetaAll() {
         return profileComponent.getMetaAll()
                 .stream()
                 .map(this::convertMeta2Vo)
-                .sorted(Comparator.comparing(MetaVo::getUpdateTime).reversed())
+                .sorted(Comparator.comparing(MetaVO::getUpdateTime).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public MetaVo getMetaVo(String metaId) {
+    public MetaVO getMetaVo(String metaId) {
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "The meta is null.");
 
@@ -155,10 +154,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
         Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status);
         List<Map> data = (List<Map>) paging.getData();
-        List<DataVo> list = new ArrayList<>();
+        List<DataVO> list = new ArrayList<>();
         for (Map row : data) {
             try {
-                DataVo dataVo = convert2Vo(row, DataVo.class);
+                DataVO dataVo = convert2Vo(row, DataVO.class);
                 Map binlogData = dataSyncService.getBinlogData(row, true);
                 dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
                 list.add(dataVo);
@@ -198,7 +197,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Paging paging = storageService.query(query);
         List<Map> data = (List<Map>) paging.getData();
         paging.setData(data.stream()
-                .map(m -> convert2Vo(m, LogVo.class))
+                .map(m -> convert2Vo(m, LogVO.class))
                 .collect(Collectors.toList()));
         return paging;
     }
@@ -304,7 +303,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void deleteExpiredData() {
-        List<MetaVo> metaAll = getMetaAll();
+        List<MetaVO> metaAll = getMetaAll();
         if (!CollectionUtils.isEmpty(metaAll)) {
             Query query = new Query();
             query.setType(StorageEnum.DATA);
@@ -329,11 +328,11 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         storageService.delete(query);
     }
 
-    private MetaVo convertMeta2Vo(Meta meta) {
+    private MetaVO convertMeta2Vo(Meta meta) {
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         Assert.notNull(mapping, String.format("驱动不存在. metaId:%s, mappingId:%s", meta.getId(), meta.getMappingId()));
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-        MetaVo metaVo = new MetaVo(modelEnum.getName(), mapping.getName());
+        MetaVO metaVo = new MetaVO(modelEnum.getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         return metaVo;
     }
@@ -344,7 +343,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private String getDefaultMetaId(String id) {
         if (StringUtil.isBlank(id)) {
-            List<MetaVo> list = getMetaAll();
+            List<MetaVO> list = getMetaAll();
             if (!CollectionUtils.isEmpty(list)) {
                 return list.get(0).getId();
             }
@@ -352,9 +351,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         return id;
     }
 
-    private List<MetricResponseVo> metricResponseToVo(Collection<MetricResponse> metrics) {
+    private List<MetricResponseVO> metricResponseToVo(Collection<MetricResponse> metrics) {
         return metrics.stream().map(metric -> {
-            MetricResponseVo vo = new MetricResponseVo();
+            MetricResponseVO vo = new MetricResponseVO();
             vo.setCode(metric.getCode());
             vo.setGroup(metric.getGroup());
             vo.setMetricName(metric.getMetricName());

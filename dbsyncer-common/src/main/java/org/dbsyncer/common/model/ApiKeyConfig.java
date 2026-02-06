@@ -21,22 +21,9 @@ public class ApiKeyConfig {
     /**
      * API密钥可以有多个版本，支持平滑轮换
      */
-    private final List<SecretVersion> secretVersions = new ArrayList<>();
+    private final List<SecretVersion> secrets = new ArrayList<>();
 
-    /**
-     * 最大保留的密钥版本数量
-     */
-    private int maxVersionSize = 3;
-
-    public List<SecretVersion> getSecretVersions() {
-        return secretVersions;
-    }
-
-    public int getMaxVersionSize() {
-        return maxVersionSize;
-    }
-
-    public void setMaxVersionSize(int maxVersionSize) {
-        this.maxVersionSize = maxVersionSize;
+    public List<SecretVersion> getSecrets() {
+        return secrets;
     }
 }

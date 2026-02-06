@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-public class DataVo {
+public class DataVO {
 
     private String id;
     private int success;

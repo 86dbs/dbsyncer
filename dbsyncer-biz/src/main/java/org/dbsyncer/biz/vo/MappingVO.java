@@ -8,16 +8,16 @@ import org.dbsyncer.parser.model.Mapping;
  * @version 1.0.0
  * @date 2020/01/03 17:20
  */
-public class MappingVo extends Mapping {
+public class MappingVO extends Mapping {
 
     // 连接器
     private final Connector sourceConnector;
     private final Connector targetConnector;
 
     // 元信息
-    private final MetaVo meta;
+    private final MetaVO meta;
 
-    public MappingVo(Connector sourceConnector, Connector targetConnector, MetaVo meta) {
+    public MappingVO(Connector sourceConnector, Connector targetConnector, MetaVO meta) {
         this.sourceConnector = sourceConnector;
         this.targetConnector = targetConnector;
         this.meta = meta;
@@ -31,7 +31,7 @@ public class MappingVo extends Mapping {
         return targetConnector;
     }
 
-    public MetaVo getMeta() {
+    public MetaVO getMeta() {
         return meta;
     }
 }

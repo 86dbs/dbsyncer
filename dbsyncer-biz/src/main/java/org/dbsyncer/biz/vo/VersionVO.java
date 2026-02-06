@@ -5,22 +5,22 @@ package org.dbsyncer.biz.vo;
  * @Author AE86
  * @Date 2021-01-27 20:55
  */
-public class VersionVo {
+public class VersionVO {
 
     /**
      * 应用名称
      */
-    private String appName;
+    private final String appName;
     /**
      * 版权详细
      */
-    private String appCopyRight;
+    private final String appCopyRight;
     /**
      * 水印
      */
     private String watermark;
 
-    public VersionVo(String appName, String appCopyRight) {
+    public VersionVO(String appName, String appCopyRight) {
         this.appName = appName;
         this.appCopyRight = appCopyRight;
     }

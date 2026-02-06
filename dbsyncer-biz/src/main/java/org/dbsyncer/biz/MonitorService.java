@@ -6,7 +6,7 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.model.AppReportMetric;
 import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
-import org.dbsyncer.biz.vo.MetaVo;
+import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
@@ -25,7 +25,7 @@ public interface MonitorService {
      *
      * @return
      */
-    List<MetaVo> getMetaAll();
+    List<MetaVO> getMetaAll();
 
     /**
      * 获取驱动元信息
@@ -33,7 +33,7 @@ public interface MonitorService {
      * @param metaId
      * @return
      */
-    MetaVo getMetaVo(String metaId);
+    MetaVO getMetaVo(String metaId);
 
     /**
      * 获取驱动默认元信息id

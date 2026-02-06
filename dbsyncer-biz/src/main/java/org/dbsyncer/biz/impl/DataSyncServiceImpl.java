@@ -6,8 +6,8 @@ package org.dbsyncer.biz.impl;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
-import org.dbsyncer.biz.vo.BinlogColumnVo;
-import org.dbsyncer.biz.vo.MessageVo;
+import org.dbsyncer.biz.vo.BinlogColumnVO;
+import org.dbsyncer.biz.vo.MessageVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -67,11 +67,11 @@ public class DataSyncServiceImpl implements DataSyncService {
     private StorageService storageService;
 
     @Override
-    public MessageVo getMessageVo(String metaId, String messageId) {
+    public MessageVO getMessageVo(String metaId, String messageId) {
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
-        MessageVo messageVo = new MessageVo();
+        MessageVO messageVo = new MessageVO();
         try {
             Map row = getData(metaId, messageId);
             Map binlogData = getBinlogData(row, true);
@@ -83,8 +83,8 @@ public class DataSyncServiceImpl implements DataSyncService {
 
             if (!CollectionUtils.isEmpty(binlogData)) {
                 Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
-                List<BinlogColumnVo> columns = new ArrayList<>();
-                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVo((String) k, v, columnMap.get(k))));
+                List<BinlogColumnVO> columns = new ArrayList<>();
+                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
                 messageVo.setColumns(columns);
             }
         } catch (Exception e) {

@@ -7,6 +7,7 @@ import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.IpWhitelistManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.impl.RsaManager;
+import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * OpenAPI拦截器
@@ -63,7 +65,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     @Resource
     private PreloadTemplate preloadTemplate;
 
-    private UrlPathHelper urlPathHelper = new UrlPathHelper();
+    private final UrlPathHelper urlPathHelper = new UrlPathHelper();
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
@@ -102,14 +104,15 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 return false;
             }
             // 获取JWT密钥（支持密钥轮换，尝试当前密钥和上一个密钥）
-            String[] jwtSecrets = jwtSecretManager.getSecretsForVerification();
+            List<JwtSecretVersion> jwtSecrets = jwtSecretManager.getReversedSecrets();
             JwtUtil.TokenInfo tokenInfo = null;
-            for (String jwtSecret : jwtSecrets) {
-                tokenInfo = JwtUtil.verifyToken(token, jwtSecret);
+            for (JwtSecretVersion jwtSecret : jwtSecrets) {
+                tokenInfo = JwtUtil.verifyToken(token, jwtSecret.getSecret());
                 if (tokenInfo != null && tokenInfo.isValid()) {
                     break;
                 }
             }
+            jwtSecrets.clear();
             if (tokenInfo == null || !tokenInfo.isValid()) {
                 writeErrorResponse(response, 401, "Token无效或已过期");
                 return false;

@@ -1,7 +1,7 @@
 package org.dbsyncer.biz.metric.impl;
 
 import org.dbsyncer.biz.metric.AbstractMetricDetailFormatter;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.biz.model.Sample;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
 public final class GCMetricDetailFormatter extends AbstractMetricDetailFormatter {
 
     @Override
-    public void apply(MetricResponseVo vo) {
+    public void apply(MetricResponseVO vo) {
         List<Sample> list = vo.getMeasurements();
         long count = Math.round((Double) list.get(0).getValue());
         String total = String.format("%.2f", ((Double) list.get(1).getValue()));

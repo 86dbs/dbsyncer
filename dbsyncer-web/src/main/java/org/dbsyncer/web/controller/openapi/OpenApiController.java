@@ -6,6 +6,7 @@ package org.dbsyncer.web.controller.openapi;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
+import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
@@ -199,9 +200,6 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/refresh")
     public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
         try {
-            // 获取JWT密钥（支持密钥轮换）
-            String[] jwtSecrets = jwtSecretManager.getSecretsForVerification();
-            
             // 从请求头获取原Token
             String oldToken = request.getHeader("Authorization");
             if (oldToken != null && oldToken.startsWith("Bearer ")) {
@@ -210,12 +208,16 @@ public class OpenApiController implements InitializingBean {
             
             // 刷新Token（尝试使用当前密钥和上一个密钥）
             String newToken = null;
-            for (String jwtSecret : jwtSecrets) {
-                newToken = JwtUtil.refreshToken(oldToken, jwtSecret);
+
+            // 获取JWT密钥（支持密钥轮换）
+            List<JwtSecretVersion> jwtSecrets = jwtSecretManager.getReversedSecrets();
+            for (JwtSecretVersion jwtSecret : jwtSecrets) {
+                newToken = JwtUtil.refreshToken(oldToken, jwtSecret.getSecret());
                 if (newToken != null) {
                     break;
                 }
             }
+            jwtSecrets.clear();
             if (newToken == null) {
                 return OpenApiResponse.fail(400, "Token不在刷新时间窗口内");
             }

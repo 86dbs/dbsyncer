@@ -5,7 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
-import org.dbsyncer.biz.vo.PluginVo;
+import org.dbsyncer.biz.vo.PluginVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
@@ -46,13 +46,13 @@ public class PluginServiceImpl implements PluginService {
     private LogService logService;
 
     @Override
-    public List<PluginVo> getPluginAll() {
+    public List<PluginVO> getPluginAll() {
         List<Plugin> pluginAll = pluginFactory.getPluginAll();
-        List<PluginVo> vos = new ArrayList<>();
+        List<PluginVO> vos = new ArrayList<>();
         if (!CollectionUtils.isEmpty(pluginAll)) {
             Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
             vos.addAll(pluginAll.stream().map(plugin -> {
-                PluginVo vo = new PluginVo();
+                PluginVO vo = new PluginVO();
                 BeanUtils.copyProperties(plugin, vo);
                 vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
                 return vo;

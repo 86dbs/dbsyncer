@@ -1,6 +1,6 @@
 package org.dbsyncer.biz.vo;
 
-public class LogVo {
+public class LogVO {
 
     private String id;
     private String type;

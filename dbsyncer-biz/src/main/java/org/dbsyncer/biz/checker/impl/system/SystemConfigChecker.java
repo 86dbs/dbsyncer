@@ -17,8 +17,6 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -36,8 +34,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class SystemConfigChecker extends AbstractChecker {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private ProfileComponent profileComponent;
@@ -87,7 +83,7 @@ public class SystemConfigChecker extends AbstractChecker {
         // 修改 API 密钥配置
         saveApiKeyConfig(systemConfig, params);
         // 修改RSA配置
-        saveRSAConfig(systemConfig, params);
+        saveRsaConfig(systemConfig, params);
         // 修改 IP 白名单配置
         saveIpWhitelistConfig(systemConfig, params);
         logService.log(LogType.SystemLog.INFO, "修改系统配置");
@@ -126,7 +122,7 @@ public class SystemConfigChecker extends AbstractChecker {
         systemConfig.setIpWhitelistConfig(config);
     }
 
-    private void saveRSAConfig(SystemConfig systemConfig, Map<String, String> params) {
+    private void saveRsaConfig(SystemConfig systemConfig, Map<String, String> params) {
         if (!systemConfig.isEnableOpenAPI()) {
             return;
         }

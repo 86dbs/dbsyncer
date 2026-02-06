@@ -7,7 +7,7 @@ import org.dbsyncer.parser.model.UserInfo;
  * @version 1.0.0
  * @date 2022/11/17 0:14
  */
-public class UserInfoVo extends UserInfo {
+public class UserInfoVO extends UserInfo {
 
     /**
      * 角色名称
