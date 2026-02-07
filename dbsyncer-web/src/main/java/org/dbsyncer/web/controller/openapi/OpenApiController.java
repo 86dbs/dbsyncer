@@ -36,6 +36,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -80,10 +81,21 @@ public class OpenApiController implements InitializingBean {
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @ResponseBody
+    @RequestMapping("/demo.json")
+    public OpenApiResponse<Map<String, Object>> demo(HttpServletRequest request, HttpServletResponse response) {
+        // 模拟参数
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", 1000L);
+        data.put("version", "20201124");
+        data.put("time", Instant.now().toEpochMilli());
+        return OpenApiResponse.success(data);
+    }
+
+    @ResponseBody
     @RequestMapping("/api.json")
     public Object adapter(HttpServletRequest request, HttpServletResponse response) {
         try {
-            InvocableHandlerMethod invocableMethod = handlers.get("/gateway/demo.json");
+            InvocableHandlerMethod invocableMethod = handlers.get("/openapi/demo.json");
             // 模拟参数
             Map<String, Object> params = new HashMap<>();
             params.put("id", 1000L);

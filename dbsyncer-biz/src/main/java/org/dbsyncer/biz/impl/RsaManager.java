@@ -8,6 +8,7 @@ import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.CryptoUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.util.Assert;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,8 +41,8 @@ public class RsaManager {
      * 解密请求参数
      * 支持多版本密钥，按版本号从高到低尝试验证
      *
-     * @param config 当前配置
-     * @param requestBody 请求参数
+     * @param config          当前配置
+     * @param requestBody     请求参数
      * @param isPublicNetwork 是否公网请求
      * @return 验证是否通过
      */
@@ -61,14 +63,7 @@ public class RsaManager {
             try {
                 // 解析加密请求（解密数据）
                 // TODO 待补充
-                return CryptoUtil.parseEncryptedRequest(
-                        requestBody,
-                        version.getPrivateKey(),
-                        version.getPublicKey(),
-                        "",
-                        isPublicNetwork,
-                        String.class
-                );
+                return CryptoUtil.parseEncryptedRequest(requestBody, version.getPrivateKey(), version.getPublicKey(), "", isPublicNetwork, String.class);
             } catch (Exception e) {
                 logger.error("解密失败，版本: {}", version.getVersion());
             }
@@ -80,10 +75,10 @@ public class RsaManager {
      * 添加API密钥
      * 如果已存在，会创建新版本密钥，保留旧版本用于验证
      *
-     * @param config 当前配置
-     * @param publicKey 公钥
+     * @param config     当前配置
+     * @param publicKey  公钥
      * @param privateKey 私钥
-     * @param keyLength 密钥长度
+     * @param keyLength  密钥长度
      * @return 新的配置
      */
     public RsaConfig addCredential(RsaConfig config, String publicKey, String privateKey, int keyLength) {
@@ -94,29 +89,31 @@ public class RsaManager {
         // 获取现有密钥版本列表
         List<RsaVersion> versions = config.getRsaVersions();
 
-        // 计算新版本号
-        int newVersion = 1;
-        if (!versions.isEmpty()) {
-            int maxVersion = versions.stream().mapToInt(RsaVersion::getVersion).max().orElse(0);
-            newVersion = maxVersion + 1;
-        }
+        // 不存在
+        Optional<RsaVersion> exist = versions.stream().filter(v -> StringUtil.equals(v.getPublicKey(), publicKey) && StringUtil.equals(v.getPrivateKey(), privateKey)).findFirst();
+        if (!exist.isPresent()) {
+            // 计算新版本号
+            int newVersion = 1;
+            if (!versions.isEmpty()) {
+                int maxVersion = versions.stream().mapToInt(RsaVersion::getVersion).max().orElse(0);
+                newVersion = maxVersion + 1;
+            }
+            // 创建新版本
+            RsaVersion newVersionObj = new RsaVersion();
+            newVersionObj.setPublicKey(publicKey);
+            newVersionObj.setPrivateKey(privateKey);
+            newVersionObj.setKeyLength(keyLength);
+            newVersionObj.setVersion(newVersion);
+            newVersionObj.setCreateTime(Instant.now().toEpochMilli());
+            newVersionObj.setEnabled(true);
+            // 添加到版本列表
+            versions.add(newVersionObj);
 
-        // 创建新版本
-        RsaVersion newVersionObj = new RsaVersion();
-        newVersionObj.setPublicKey(publicKey);
-        newVersionObj.setPrivateKey(privateKey);
-        newVersionObj.setKeyLength(keyLength);
-        newVersionObj.setVersion(newVersion);
-        newVersionObj.setCreateTime(Instant.now().toEpochMilli());
-        newVersionObj.setEnabled(true);
-        // 添加到版本列表
-        versions.add(newVersionObj);
+            logger.info("添加RSA密钥成功，版本: {}", newVersion);
+        }
 
         // 清理过旧的版本
         cleanupOldVersions(versions);
-
-        // 保存配置
-        logger.info("添加RSA密钥成功，版本: {}", newVersion);
         return config;
     }
 

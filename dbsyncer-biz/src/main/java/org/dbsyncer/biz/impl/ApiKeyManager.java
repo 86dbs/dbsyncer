@@ -15,6 +15,7 @@ import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * API密钥管理器（客户端凭证管理）
@@ -103,31 +104,34 @@ public class ApiKeyManager {
         // 获取现有密钥版本列表
         List<SecretVersion> versions = config.getSecrets();
 
-        // 计算新版本号
-        int newVersion = 1;
-        if (!versions.isEmpty()) {
-            int maxVersion = versions.stream().mapToInt(SecretVersion::getVersion).max().orElse(0);
-            newVersion = maxVersion + 1;
-        }
-
         // 对密钥进行哈希处理
         String hashedSecret = SHA1Util.b64_sha1(secret);
 
-        // 创建新版本
-        SecretVersion newVersionObj = new SecretVersion();
-        newVersionObj.setSecret(secret);
-        newVersionObj.setHashedSecret(hashedSecret);
-        newVersionObj.setVersion(newVersion);
-        newVersionObj.setCreateTime(Instant.now().toEpochMilli());
-        newVersionObj.setEnabled(true);
-        // 添加到版本列表
-        versions.add(newVersionObj);
+        // 不存在
+        Optional<SecretVersion> exist = versions.stream().filter(v -> StringUtil.equals(v.getHashedSecret(), hashedSecret)).findFirst();
+        if (!exist.isPresent()) {
+            // 计算新版本号
+            int newVersion = 1;
+            if (!versions.isEmpty()) {
+                int maxVersion = versions.stream().mapToInt(SecretVersion::getVersion).max().orElse(0);
+                newVersion = maxVersion + 1;
+            }
+            // 创建新版本
+            SecretVersion newVersionObj = new SecretVersion();
+            newVersionObj.setSecret(secret);
+            newVersionObj.setHashedSecret(hashedSecret);
+            newVersionObj.setVersion(newVersion);
+            newVersionObj.setCreateTime(Instant.now().toEpochMilli());
+            newVersionObj.setEnabled(true);
+            // 添加到版本列表
+            versions.add(newVersionObj);
+
+            logger.info("添加API密钥成功，版本: {}", newVersion);
+        }
 
         // 清理过旧的版本
         cleanupOldVersions(versions);
 
-        // 保存配置
-        logger.info("添加API密钥成功，secret: {}，版本: {}", hashedSecret, newVersion);
         return config;
     }
 
