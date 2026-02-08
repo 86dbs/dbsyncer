@@ -22,7 +22,6 @@ import org.springframework.web.util.UrlPathHelper;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -95,42 +94,6 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 writeErrorResponse(response, OpenApiErrorCode.UNAUTHORIZED, "Token无效或已过期");
                 return false;
             }
-
-//            // 5. 解析加密请求（如果是加密接口）
-//            if (isEncryptedEndpoint(requestPath)) {
-//                String requestBody = readRequestBody(request);
-//                if (StringUtil.isBlank(requestBody)) {
-//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
-//                    return false;
-//                }
-//
-//                try {
-//                    // 先解析为OpenApiRequest格式（包含时间戳和nonce）
-//                    OpenApiRequest encryptedRequest = JsonUtil.jsonToObj(requestBody, OpenApiRequest.class);
-//
-//                    // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
-//                    if (encryptedRequest.getTimestamp() != null &&
-//                        StringUtil.isNotBlank(encryptedRequest.getNonce())) {
-//                        if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
-//                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
-//                            return false;
-//                        }
-//                    }
-//
-//                    // 判断是否为公网场景
-//                    boolean isPublicNetwork = isPublicNetwork(request);
-//
-//                    // 解析加密请求（解密数据）
-//                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
-//
-//                    // 将解密后的数据存储到request attribute中，供Controller使用
-//                    request.setAttribute("decryptedData", decryptedData);
-//                } catch (Exception e) {
-//                    logger.error("解析加密请求失败", e);
-//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
-//                    return false;
-//                }
-//            }
             
             return true;
         } catch (Exception e) {
@@ -205,20 +168,6 @@ public class OpenApiInterceptor implements HandlerInterceptor {
             return authHeader.substring(TOKEN_PREFIX.length());
         }
         return null;
-    }
-
-    /**
-     * 读取请求体
-     */
-    private String readRequestBody(HttpServletRequest request) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = request.getReader()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-        }
-        return sb.toString();
     }
 
     /**

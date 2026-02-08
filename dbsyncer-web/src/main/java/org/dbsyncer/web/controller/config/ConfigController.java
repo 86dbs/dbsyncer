@@ -68,17 +68,17 @@ public class ConfigController {
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {
         try {
-            if (files != null && files.length > 0) {
-                for (int i = 0; i < files.length; i++) {
-                    if (files[i] == null) {
+            if (files != null) {
+                for (MultipartFile file : files) {
+                    if (file == null) {
                         continue;
                     }
-                    String filename = files[i].getOriginalFilename();
+                    String filename = file.getOriginalFilename();
                     systemConfigService.checkFileSuffix(filename);
                     String tmpdir = System.getProperty("java.io.tmpdir");
                     File dest = new File(tmpdir + filename);
                     FileUtils.deleteQuietly(dest);
-                    FileUtils.copyInputStreamToFile(files[i].getInputStream(), dest);
+                    FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     systemConfigService.refreshConfig(dest);
                     String msg = String.format("导入配置文件%s", filename);
                     logger.info(msg);

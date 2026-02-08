@@ -46,7 +46,7 @@ public class RsaManager {
      * @param isPublicNetwork 是否公网请求
      * @return 验证是否通过
      */
-    public String parseEncryptedData(RsaConfig config, String requestBody, boolean isPublicNetwork) {
+    public String decryptData(RsaConfig config, String requestBody, boolean isPublicNetwork) {
         Assert.hasText(requestBody, "requestBody为空");
         if (config == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
             throw new BizException("RSA密钥配置未启用");
@@ -77,7 +77,7 @@ public class RsaManager {
      * @param data            返回数据
      * @param isPublicNetwork 是否公网请求
      */
-    public Object buildEncryptedData(RsaConfig config, Object data, boolean isPublicNetwork) {
+    public Object encryptData(RsaConfig config, Object data, boolean isPublicNetwork) {
         if (config == null || CollectionUtils.isEmpty(config.getRsaVersions()) || data == null) {
             return data;
         }

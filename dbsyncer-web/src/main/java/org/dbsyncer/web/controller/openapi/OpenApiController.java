@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +38,8 @@ import org.springframework.web.util.UrlPathHelper;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -127,6 +130,42 @@ public class OpenApiController implements InitializingBean {
             ModelAndViewContainer mavContainer = new ModelAndViewContainer();
             mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
             // TODO 解密入参
+//            // 5. 解析加密请求（如果是加密接口）
+//            if (isEncryptedEndpoint(requestPath)) {
+//                String requestBody = readRequestBody(request);
+//                if (StringUtil.isBlank(requestBody)) {
+//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
+//                    return false;
+//                }
+//
+//                try {
+//                    // 先解析为OpenApiRequest格式（包含时间戳和nonce）
+//                    OpenApiRequest encryptedRequest = JsonUtil.jsonToObj(requestBody, OpenApiRequest.class);
+//
+//                    // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
+//                    if (encryptedRequest.getTimestamp() != null &&
+//                        StringUtil.isNotBlank(encryptedRequest.getNonce())) {
+//                        if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
+//                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
+//                            return false;
+//                        }
+//                    }
+//
+//                    // 判断是否为公网场景
+//                    boolean isPublicNetwork = isPublicNetwork(request);
+//
+//                    // 解析加密请求（解密数据）
+//                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
+//
+//                    // 将解密后的数据存储到request attribute中，供Controller使用
+//                    request.setAttribute("decryptedData", decryptedData);
+//                } catch (Exception e) {
+//                    logger.error("解析加密请求失败", e);
+//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
+//                    return false;
+//                }
+//            }
+
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);
             // 加密返回
             buildEncryptedRestResult(request, result);
@@ -135,49 +174,6 @@ public class OpenApiController implements InitializingBean {
             logger.error("OpenAPI adapter 执行失败", e);
             return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "请求处理失败: " + e.getMessage());
         }
-    }
-
-    private void buildEncryptedRestResult(HttpServletRequest request, Object result) {
-        if (!(result instanceof RestResult)) {
-            return;
-        }
-        RestResult restResult = (RestResult) result;
-        if (restResult.getData() == null || !restResult.isSuccess()) {
-            return;
-        }
-        boolean publicNetwork = isPublicNetwork(request);
-        RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
-        Object data = rsaManager.buildEncryptedData(rsaConfig, restResult.getData(), publicNetwork);
-        restResult.setData(data);
-    }
-
-    /**
-     * 将请求方法字符串转为 RequestMethod；不支持的方法返回 null
-     */
-    private RequestMethod parseRequestMethod(String method) {
-        if (StringUtil.isBlank(method)) {
-            return null;
-        }
-        try {
-            return RequestMethod.valueOf(method.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    /**
-     * 从请求中解析 /openapi/v1 之后的路径，作为内部 handler 的 lookup key（如 /connector/test）
-     */
-    private String getV1LookupPath(HttpServletRequest request) {
-        String uri = urlPathHelper.getLookupPathForRequest(request);
-        if (StringUtil.isBlank(uri)) {
-            return null;
-        }
-        if (!uri.startsWith(OPENAPI_V1_PREFIX)) {
-            return null;
-        }
-        String path = uri.substring(OPENAPI_V1_PREFIX.length());
-        return path.startsWith("/") ? path : "/" + path;
     }
 
     @Override
@@ -229,6 +225,48 @@ public class OpenApiController implements InitializingBean {
 
         });
         parsePackage.clear();
+    }
+
+    /**
+     * 查看文档接口
+     * GET /openapi/api
+     *
+     * @param request 请求对象
+     * @return Token信息
+     */
+    @GetMapping("/api")
+    public OpenApiResponse<Object> api(HttpServletRequest request) {
+        try {
+            // TODO 实现具体逻辑
+            logger.info("查看文档");
+            return OpenApiResponse.success("查看文档", "success");
+        } catch (Exception e) {
+            logger.error("查看文档失败", e);
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "查看文档失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * TODO 单独放一个控制器 同步接口
+     * POST /openapi/data/sync
+     *
+     * @param request 请求对象
+     * @return Token信息
+     */
+    @PostMapping("/data/sync")
+    public OpenApiResponse<Object> sync(HttpServletRequest request) {
+        try {
+            String requestBody = readRequestBody(request);
+            boolean publicNetwork = isPublicNetwork(request);
+            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+            String decryptedData = rsaManager.decryptData(rsaConfig, requestBody, publicNetwork);
+            // TODO 实现具体逻辑
+            logger.info("同步数据：{}", decryptedData);
+            return OpenApiResponse.success("同步数据", "success");
+        } catch (Exception e) {
+            logger.error("同步失败", e);
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "同步失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -306,6 +344,62 @@ public class OpenApiController implements InitializingBean {
             logger.error("刷新Token失败", e);
             return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "刷新Token失败: " + e.getMessage());
         }
+    }
+
+    private void buildEncryptedRestResult(HttpServletRequest request, Object result) {
+        if (!(result instanceof RestResult)) {
+            return;
+        }
+        RestResult restResult = (RestResult) result;
+        if (restResult.getData() == null || !restResult.isSuccess()) {
+            return;
+        }
+        boolean publicNetwork = isPublicNetwork(request);
+        RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+        restResult.setData(rsaManager.encryptData(rsaConfig, restResult.getData(), publicNetwork));
+    }
+
+    /**
+     * 将请求方法字符串转为 RequestMethod；不支持的方法返回 null
+     */
+    private RequestMethod parseRequestMethod(String method) {
+        if (StringUtil.isBlank(method)) {
+            return null;
+        }
+        try {
+            return RequestMethod.valueOf(method.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从请求中解析 /openapi/v1 之后的路径，作为内部 handler 的 lookup key（如 /connector/test）
+     */
+    private String getV1LookupPath(HttpServletRequest request) {
+        String uri = urlPathHelper.getLookupPathForRequest(request);
+        if (StringUtil.isBlank(uri)) {
+            return null;
+        }
+        if (!uri.startsWith(OPENAPI_V1_PREFIX)) {
+            return null;
+        }
+        String path = uri.substring(OPENAPI_V1_PREFIX.length());
+        return path.startsWith("/") ? path : "/" + path;
+    }
+
+    /**
+     * 读取请求体
+     */
+    private String readRequestBody(HttpServletRequest request) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = request.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
     }
 
     /**
