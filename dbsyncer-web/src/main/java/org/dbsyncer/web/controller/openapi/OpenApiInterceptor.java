@@ -11,10 +11,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.web.model.OpenApiRequest;
 import org.dbsyncer.web.model.OpenApiResponse;
-import org.dbsyncer.web.security.TimestampValidator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -25,7 +22,6 @@ import org.springframework.web.util.UrlPathHelper;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -41,14 +37,11 @@ import java.nio.charset.StandardCharsets;
 public class OpenApiInterceptor implements HandlerInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(OpenApiInterceptor.class);
-
+    
     // Token请求头名称
     private static final String TOKEN_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
-
-    // 是否公网场景（可通过配置或请求头判断）
-    private static final String PUBLIC_NETWORK_HEADER = "X-Public-Network";
-
+    
     @Resource
     private SystemConfigService systemConfigService;
 
@@ -95,7 +88,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 writeErrorResponse(response, OpenApiErrorCode.FORBIDDEN, "IP地址不在白名单中");
                 return false;
             }
-
+            
             // 4. 验证Token
             String token = extractToken(request);
             if (!jwtSecretManager.verifyToken(token)) {
@@ -103,41 +96,42 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // 5. 解析加密请求（如果是加密接口）
-            if (isEncryptedEndpoint(requestPath)) {
-                String requestBody = readRequestBody(request);
-                if (StringUtil.isBlank(requestBody)) {
-                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
-                    return false;
-                }
-
-                try {
-                    // 先解析为OpenApiRequest格式（包含时间戳和nonce）
-                    OpenApiRequest encryptedRequest = JsonUtil.jsonToObj(requestBody, OpenApiRequest.class);
-
-                    // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
-                    if (encryptedRequest.getTimestamp() != null && StringUtil.isNotBlank(encryptedRequest.getNonce())) {
-                        if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
-                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
-                            return false;
-                        }
-                    }
-
-                    // 判断是否为公网场景
-                    boolean isPublicNetwork = isPublicNetwork(request);
-
-                    // 解析加密请求（解密数据）
-                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
-
-                    // 将解密后的数据存储到request attribute中，供Controller使用
-                    request.setAttribute("decryptedData", decryptedData);
-                } catch (Exception e) {
-                    logger.error("解析加密请求失败", e);
-                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
-                    return false;
-                }
-            }
-
+//            // 5. 解析加密请求（如果是加密接口）
+//            if (isEncryptedEndpoint(requestPath)) {
+//                String requestBody = readRequestBody(request);
+//                if (StringUtil.isBlank(requestBody)) {
+//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
+//                    return false;
+//                }
+//
+//                try {
+//                    // 先解析为OpenApiRequest格式（包含时间戳和nonce）
+//                    OpenApiRequest encryptedRequest = JsonUtil.jsonToObj(requestBody, OpenApiRequest.class);
+//
+//                    // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
+//                    if (encryptedRequest.getTimestamp() != null &&
+//                        StringUtil.isNotBlank(encryptedRequest.getNonce())) {
+//                        if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
+//                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
+//                            return false;
+//                        }
+//                    }
+//
+//                    // 判断是否为公网场景
+//                    boolean isPublicNetwork = isPublicNetwork(request);
+//
+//                    // 解析加密请求（解密数据）
+//                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
+//
+//                    // 将解密后的数据存储到request attribute中，供Controller使用
+//                    request.setAttribute("decryptedData", decryptedData);
+//                } catch (Exception e) {
+//                    logger.error("解析加密请求失败", e);
+//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
+//                    return false;
+//                }
+//            }
+            
             return true;
         } catch (Exception e) {
             logger.error("OpenAPI拦截器处理失败", e);
@@ -150,23 +144,8 @@ public class OpenApiInterceptor implements HandlerInterceptor {
      * 判断是否为认证接口
      */
     private boolean isAuthEndpoint(String path) {
-        return path.endsWith("/openapi/auth/login") || path.endsWith("/openapi/auth/refresh");
-    }
-
-    /**
-     * 判断是否为加密接口
-     */
-    private boolean isEncryptedEndpoint(String path) {
-        // 数据同步接口需要加密
-        return path.startsWith("/openapi/data/");
-    }
-
-    /**
-     * 判断是否为公网场景
-     */
-    private boolean isPublicNetwork(HttpServletRequest request) {
-        String header = request.getHeader(PUBLIC_NETWORK_HEADER);
-        return "true".equalsIgnoreCase(header);
+        return path.endsWith("/openapi/auth/login") || 
+               path.endsWith("/openapi/auth/refresh");
     }
 
     /**
@@ -249,10 +228,10 @@ public class OpenApiInterceptor implements HandlerInterceptor {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
+        
         OpenApiResponse<Object> errorResponse = OpenApiResponse.fail(code, message);
         String json = JsonUtil.objToJson(errorResponse);
-
+        
         response.getWriter().write(json);
         response.getWriter().flush();
     }
