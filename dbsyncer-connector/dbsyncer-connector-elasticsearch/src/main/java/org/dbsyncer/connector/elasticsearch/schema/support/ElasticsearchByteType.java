@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchByteType extends ByteType {
 
     private enum TypeEnum {
+
         BYTE("byte");
 
         private final String value;

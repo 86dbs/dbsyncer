@@ -1,18 +1,20 @@
 package org.dbsyncer.web.controller.config;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.VersionInfo;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.CacheService;
-import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.web.Version;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -25,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -123,5 +126,4 @@ public class ConfigController {
         map.putAll(cacheService.getAll());
         return map;
     }
-
 }

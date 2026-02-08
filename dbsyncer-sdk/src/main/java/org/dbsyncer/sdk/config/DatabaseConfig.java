@@ -139,5 +139,4 @@ public class DatabaseConfig extends ConnectorConfig {
     public void setUrl(String url) {
         this.url = url;
     }
-
 }

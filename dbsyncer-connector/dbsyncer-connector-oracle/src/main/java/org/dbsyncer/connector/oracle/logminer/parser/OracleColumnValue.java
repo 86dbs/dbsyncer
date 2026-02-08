@@ -3,21 +3,29 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
+import org.dbsyncer.common.column.AbstractColumnValue;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.common.util.StringUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import org.dbsyncer.common.column.AbstractColumnValue;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -126,7 +134,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
 
     @Override
     public Timestamp asTimestamp() {
-        return handleColumnValue((type, value) -> {
+        return handleColumnValue((type, value)-> {
             switch (type) {
                 case "TO_DATE":
                     return toDate(value);
@@ -144,7 +152,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
     }
 
     public OffsetDateTime asOffsetDateTime() {
-        return handleColumnValue((type, value) -> {
+        return handleColumnValue((type, value)-> {
             switch (type) {
                 case "TO_TIMESTAMP_TZ":
                     return toOffsetDateTime(value);
@@ -210,7 +218,7 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
                 int unicodeValue = Integer.parseInt(unicodeDigits, 16);
                 // 转换为字符并追加到结果
                 result.append((char) unicodeValue);
-                i += 5;  // 跳过已经处理的部分（1个 \ 和 4个十六进制数字）
+                i += 5; // 跳过已经处理的部分（1个 \ 和 4个十六进制数字）
             } else {
                 // 如果不是 \ 开头的部分，直接追加原始字符
                 result.append(dataStr.charAt(i));
@@ -219,6 +227,5 @@ public class OracleColumnValue extends AbstractColumnValue<Expression> {
         }
         return result.toString();
     }
-
 
 }

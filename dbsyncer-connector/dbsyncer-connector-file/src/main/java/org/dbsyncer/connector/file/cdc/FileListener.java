@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.file.cdc;
 
-import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -17,6 +16,9 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
+import org.apache.commons.io.IOUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -154,7 +156,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
 
     private void closePipelineAndWatch() {
         try {
-            pipeline.values().forEach(pipelineResolver -> IOUtils.closeQuietly(pipelineResolver.raf));
+            pipeline.values().forEach(pipelineResolver->IOUtils.closeQuietly(pipelineResolver.raf));
             pipeline.clear();
 
             if (null != watchService) {
@@ -198,6 +200,7 @@ public class FileListener extends AbstractListener<FileConnectorInstance> {
     }
 
     static final class PipelineResolver {
+
         List<Field> fields;
         char separator;
         RandomAccessFile raf;

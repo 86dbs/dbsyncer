@@ -7,6 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.UserConfig;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -33,5 +34,4 @@ public class UserConfigChecker extends AbstractChecker {
     public ConfigModel checkEditConfigModel(Map<String, String> params) {
         throw new BizException("Unsupported method");
     }
-
 }

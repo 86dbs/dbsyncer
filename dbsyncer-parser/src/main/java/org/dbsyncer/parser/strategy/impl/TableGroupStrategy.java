@@ -19,5 +19,4 @@ public final class TableGroupStrategy implements GroupStrategy<TableGroup> {
         String mappingId = model.getMappingId();
         return new StringBuilder(ConfigConstant.TABLE_GROUP).append("_").append(mappingId).toString();
     }
-
 }

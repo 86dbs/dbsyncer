@@ -3,48 +3,44 @@
 
 package org.dbsyncer.storage.binlog.proto;
 
-public interface BinlogMapOrBuilder extends
-        // @@protoc_insertion_point(interface_extends:BinlogMap)
-        com.google.protobuf.MessageOrBuilder {
+public interface BinlogMapOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:BinlogMap)
+            com.google.protobuf.MessageOrBuilder {
 
-  /**
-   * <code>map&lt;string, bytes&gt; row = 1;</code>
-   */
-  int getRowCount();
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
+    int getRowCount();
 
-  /**
-   * <code>map&lt;string, bytes&gt; row = 1;</code>
-   */
-  boolean containsRow(
-          String key);
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
+    boolean containsRow(String key);
 
-  /**
-   * Use {@link #getRowMap()} instead.
-   */
-  @Deprecated
-  java.util.Map<String, com.google.protobuf.ByteString>
-  getRow();
+    /**
+     * Use {@link #getRowMap()} instead.
+     */
+    @Deprecated
+    java.util.Map<String, com.google.protobuf.ByteString> getRow();
 
-  /**
-   * <code>map&lt;string, bytes&gt; row = 1;</code>
-   */
-  java.util.Map<String, com.google.protobuf.ByteString>
-  getRowMap();
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
+    java.util.Map<String, com.google.protobuf.ByteString> getRowMap();
 
-  /**
-   * <code>map&lt;string, bytes&gt; row = 1;</code>
-   */
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
 
-  /* nullable */
-  com.google.protobuf.ByteString getRowOrDefault(
-          String key,
-          /* nullable */
-          com.google.protobuf.ByteString defaultValue);
+    /* nullable */
+    com.google.protobuf.ByteString getRowOrDefault(String key,
+                                                   /* nullable */
+                                                   com.google.protobuf.ByteString defaultValue);
 
-  /**
-   * <code>map&lt;string, bytes&gt; row = 1;</code>
-   */
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
 
-  com.google.protobuf.ByteString getRowOrThrow(
-          String key);
+    com.google.protobuf.ByteString getRowOrThrow(String key);
 }

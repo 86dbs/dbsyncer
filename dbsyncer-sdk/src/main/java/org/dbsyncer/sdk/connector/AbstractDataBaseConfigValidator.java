@@ -5,13 +5,12 @@ package org.dbsyncer.sdk.connector;
 
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PropertiesUtil;
+
 import org.springframework.util.Assert;
 
 import java.util.Map;

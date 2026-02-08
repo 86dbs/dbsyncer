@@ -2,9 +2,10 @@ package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.parser.model.Mapping;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -48,5 +49,4 @@ public class TimingConfigChecker implements MappingConfigChecker {
         config.setListenerType(ListenerTypeEnum.TIMING.getType());
         mapping.setListener(config);
     }
-
 }

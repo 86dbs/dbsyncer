@@ -3,10 +3,12 @@ package org.dbsyncer.web.controller;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.biz.PluginService;
+
 import org.springframework.ui.ModelMap;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +37,7 @@ public abstract class BaseController {
     protected Map<String, String> getParams(HttpServletRequest request) {
         Map<String, String[]> map = request.getParameterMap();
         Map<String, String> res = new HashMap<>();
-        map.forEach((k, v) -> res.put(k, v[0]));
+        map.forEach((k, v)->res.put(k, v[0]));
         return res;
     }
 
@@ -43,10 +45,9 @@ public abstract class BaseController {
      * 初始化: 条件/转换/插件
      * @param model
      */
-    protected void initConfig(ModelMap model){
+    protected void initConfig(ModelMap model) {
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
         model.put("plugin", pluginService.getPluginAll());
     }
-
 }

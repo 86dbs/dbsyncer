@@ -42,5 +42,4 @@ public interface ColumnValue {
     Timestamp asTimestamp();
 
     Time asTime();
-
 }

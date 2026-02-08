@@ -31,7 +31,7 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         List<String> fs = new ArrayList<>();
         for (Field f : config.getFields()) {
             String fieldName = database.buildWithQuotation(f.getName());
-            
+
             // 处理特殊类型的值表达式
             List<String> vs = new ArrayList<>();
             if (database.buildCustomValue(vs, f)) {
@@ -49,5 +49,4 @@ public class SqlBuilderUpdate extends AbstractSqlBuilder {
         database.appendPrimaryKeys(sql, config.getPrimaryKeys());
         return sql.toString();
     }
-
 }

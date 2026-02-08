@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.biz.impl;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.vo.BinlogColumnVO;
 import org.dbsyncer.biz.vo.MessageVO;
@@ -29,12 +27,20 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
+
+import org.apache.lucene.index.IndexableField;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,7 +90,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (!CollectionUtils.isEmpty(binlogData)) {
                 Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
                 List<BinlogColumnVO> columns = new ArrayList<>();
-                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
+                binlogData.forEach((k, v)->columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
                 messageVo.setColumns(columns);
             }
         } catch (Exception e) {
@@ -117,14 +123,14 @@ public class DataSyncServiceImpl implements DataSyncService {
         BinlogMap message = BinlogMap.parseFrom(bytes);
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
         if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
-            message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
+            message.getRowMap().forEach((k, v)->target.put(k, v.toStringUtf8()));
             return target;
         }
 
         // 4、反序列
         final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
-        message.getRowMap().forEach((k, v) -> {
+        message.getRowMap().forEach((k, v)-> {
             if (fieldMap.containsKey(k)) {
                 try {
                     Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
@@ -142,8 +148,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     }
                     target.put(k, val);
                 } catch (Exception e) {
-                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(),
-                            (v == null ? null : v.getClass().getName()), v);
+                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(), (v == null ? null : v.getClass().getName()), v);
                 }
             }
         });
@@ -167,7 +172,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 有修改同步值
         String retryDataParams = params.get("retryDataParams");
         if (StringUtil.isNotBlank(retryDataParams)) {
-            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+            JsonUtil.parseMap(retryDataParams).forEach((k, v)->binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
@@ -192,7 +197,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field->field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setMetaId(metaId);

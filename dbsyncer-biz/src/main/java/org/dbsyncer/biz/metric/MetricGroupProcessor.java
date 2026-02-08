@@ -15,5 +15,6 @@ import java.util.List;
  * @Date 2025-04-15 23:13
  */
 public interface MetricGroupProcessor {
+
     List<MetricResponseVO> process(List<MetricResponseVO> metrics);
 }

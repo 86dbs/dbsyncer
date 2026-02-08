@@ -22,6 +22,7 @@ import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -100,7 +102,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     public String remove(String id) {
         List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (!CollectionUtils.isEmpty(mappingAll)) {
-            mappingAll.forEach(mapping -> {
+            mappingAll.forEach(mapping-> {
                 if (StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)) {
                     String error = String.format("驱动“%s”正在使用，请先删除", mapping.getName());
                     logger.error(error);
@@ -143,11 +145,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public List<ConnectorVO> getConnectorAll() {
-        return profileComponent.getConnectorAll()
-                .stream()
-                .map(this::convertConnector2Vo)
-                .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
-                .collect(Collectors.toList());
+        return profileComponent.getConnectorAll().stream().map(this::convertConnector2Vo).sorted(Comparator.comparing(Connector::getUpdateTime).reversed()).collect(Collectors.toList());
     }
 
     @Override
@@ -174,7 +172,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
-        list.forEach(c -> {
+        list.forEach(c-> {
             health.put(c.getId(), isAlive(c.getId(), c.getConfig()));
             exist.add(c.getId());
         });

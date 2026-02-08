@@ -3,13 +3,12 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
 import org.dbsyncer.connector.sqlserver.enums.TableOperationEnum;
 import org.dbsyncer.connector.sqlserver.model.CDCEvent;
+import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -17,9 +16,14 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
+import com.microsoft.sqlserver.jdbc.SQLServerException;
+
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -151,7 +155,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private void readLastLsn() {
         if (!snapshot.containsKey(LSN_POSITION)) {
-            lastLsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+            lastLsn = queryAndMap(GET_MAX_LSN, rs->new Lsn(rs.getBytes(1)));
             if (null != lastLsn && lastLsn.isAvailable()) {
                 snapshot.put(LSN_POSITION, lastLsn.toString());
                 super.forceFlushEvent();
@@ -164,7 +168,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void readTables() {
-        tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs -> {
+        tables = queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, schema), rs-> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
                 if (filterTable.contains(rs.getString(1))) {
@@ -176,7 +180,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void readChangeTables() {
-        changeTables = queryAndMapList(GET_TABLES_CDC_ENABLED, rs -> {
+        changeTables = queryAndMapList(GET_TABLES_CDC_ENABLED, rs-> {
             final Set<SqlServerChangeTable> tables = new HashSet<>();
             while (rs.next()) {
                 SqlServerChangeTable changeTable = new SqlServerChangeTable(
@@ -202,11 +206,11 @@ public class SqlServerListener extends AbstractDatabaseListener {
 
     private void enableTableCDC() {
         if (!CollectionUtils.isEmpty(tables)) {
-            tables.forEach(table -> {
-                boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+            tables.forEach(table-> {
+                boolean enabledTableCDC = queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs->rs.getInt(1) > 0);
                 if (!enabledTableCDC) {
                     execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                    Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    Lsn minLsn = queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs->new Lsn(rs.getBytes(1)));
                     logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
                 }
             });
@@ -214,20 +218,20 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void enableDBCDC() throws InterruptedException {
-        String realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
-        boolean enabledCDC = queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
+        String realDatabaseName = queryAndMap(GET_DATABASE_NAME, rs->rs.getString(1));
+        boolean enabledCDC = queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs->rs.getBoolean(1));
         if (!enabledCDC) {
             execute(ENABLE_DB_CDC.replace(STATEMENTS_PLACEHOLDER, realDatabaseName));
             // make sure it works
             TimeUnit.SECONDS.sleep(3);
 
-            enabledCDC = queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
+            enabledCDC = queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs->rs.getBoolean(1));
             Assert.isTrue(enabledCDC, "Please ensure that the SQL Server Agent is running");
         }
     }
 
     private void execute(String... sqlStatements) {
-        instance.execute(databaseTemplate -> {
+        instance.execute(databaseTemplate-> {
             for (String sqlStatement : sqlStatements) {
                 if (sqlStatement != null) {
                     logger.info("executing '{}'", sqlStatement);
@@ -239,13 +243,13 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private void pull(Lsn stopLsn) {
-        Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
-        changeTables.forEach(changeTable -> {
+        Lsn startLsn = queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
+        changeTables.forEach(changeTable-> {
             final String query = GET_ALL_CHANGES_FOR_TABLE.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
-            List<CDCEvent> list = queryAndMapList(query, statement -> {
+            List<CDCEvent> list = queryAndMapList(query, statement-> {
                 statement.setBytes(1, startLsn.getBinary());
                 statement.setBytes(2, stopLsn.getBinary());
-            }, rs -> {
+            }, rs-> {
                 int columnCount = rs.getMetaData().getColumnCount();
                 List<Object> row = null;
                 List<CDCEvent> data = new ArrayList<>();
@@ -270,8 +274,8 @@ public class SqlServerListener extends AbstractDatabaseListener {
         });
     }
 
-    private void trySendEvent(RowChangedEvent event){
-        while (connected){
+    private void trySendEvent(RowChangedEvent event) {
+        while (connected) {
             try {
                 sendChangedEvent(event);
                 break;
@@ -307,10 +311,12 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private interface ResultSetMapper<T> {
+
         T apply(ResultSet rs) throws SQLException;
     }
 
     private interface StatementPreparer {
+
         void accept(PreparedStatement statement) throws SQLException;
     }
 
@@ -319,7 +325,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private <T> T queryAndMap(String sql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        return query(sql, statementPreparer, (rs) -> {
+        return query(sql, statementPreparer, (rs)-> {
             rs.next();
             return mapper.apply(rs);
         });
@@ -334,7 +340,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     private <T> T query(String preparedQuerySql, StatementPreparer statementPreparer, ResultSetMapper<T> mapper) {
-        Object execute = instance.execute(databaseTemplate -> {
+        Object execute = instance.execute(databaseTemplate-> {
             PreparedStatement ps = null;
             ResultSet rs = null;
             T apply = null;
@@ -346,7 +352,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 rs = ps.executeQuery();
                 apply = mapper.apply(rs);
             } catch (SQLServerException e) {
-                // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
+                // 为过程或函数 cdc.fn_cdc_get_all_changes_ ... 提供的参数数目不足。
             } catch (Exception e) {
                 logger.error(e.getMessage());
             } finally {
@@ -359,7 +365,7 @@ public class SqlServerListener extends AbstractDatabaseListener {
     }
 
     public Lsn getMaxLsn() {
-        return queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+        return queryAndMap(GET_MAX_LSN, rs->new Lsn(rs.getBytes(1)));
     }
 
     final class Worker extends Thread {

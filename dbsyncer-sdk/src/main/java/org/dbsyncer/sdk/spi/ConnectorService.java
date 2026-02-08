@@ -213,5 +213,4 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     default Object getPosition(I connectorInstance) {
         return StringUtil.EMPTY;
     }
-
 }

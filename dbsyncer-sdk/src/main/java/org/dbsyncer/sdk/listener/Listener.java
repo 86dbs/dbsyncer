@@ -17,7 +17,8 @@ public interface Listener {
     /**
      * 初始化
      */
-    default void init(){};
+    default void init() {
+    };
 
     /**
      * 启动定时/日志抽取任务

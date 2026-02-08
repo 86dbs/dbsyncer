@@ -213,5 +213,4 @@ public class Mapping extends AbstractConfigModel {
     public void setForceUpdate(boolean forceUpdate) {
         this.forceUpdate = forceUpdate;
     }
-
 }

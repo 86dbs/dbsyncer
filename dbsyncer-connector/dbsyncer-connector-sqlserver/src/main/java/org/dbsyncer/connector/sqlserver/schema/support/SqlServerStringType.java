@@ -9,6 +9,7 @@ import org.dbsyncer.connector.sqlserver.schema.SqlServerGeographyData;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeometryData;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
@@ -29,12 +30,8 @@ import java.util.stream.Collectors;
 public final class SqlServerStringType extends StringType {
 
     private enum TypeEnum {
-        CHAR("char"),
-        VARCHAR("varchar"),
-        NVARCHAR("nvarchar"),
-        TEXT("text"),
-        GEOMETRY("geometry"),
-        GEOGRAPHY("geography");
+
+        CHAR("char"), VARCHAR("varchar"), NVARCHAR("nvarchar"), TEXT("text"), GEOMETRY("geometry"), GEOGRAPHY("geography");
 
         private final String value;
 

@@ -2,12 +2,6 @@
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.kafka.KafkaConnector;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
@@ -15,6 +9,14 @@ import org.dbsyncer.connector.kafka.config.KafkaConfig;
 import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2021/11/23 23:13
  */
 public class KafkaClientTest {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private KafkaConnectorInstance instance;
@@ -48,40 +50,25 @@ public class KafkaClientTest {
     public void init() {
         KafkaConfig config = new KafkaConfig();
         config.setUrl("127.0.0.1:9092");
-        String properties = "connections.max.idle.ms=60000\n" +
-                "request.timeout.ms=30000\n" +
-                "retry.backoff.ms=100";
+        String properties = "connections.max.idle.ms=60000\n" + "request.timeout.ms=30000\n" + "retry.backoff.ms=100";
         config.getProperties().putAll(KafkaUtil.parse(properties));
 
-        config.getExtInfo().put(KafkaUtil.CONSUMER_PROPERTIES, "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n" +
-                "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" +
-                "auto.offset.reset=latest\n" +
-                "enable.auto.commit=false\n" +
-                "auto.commit.interval.ms=5000\n" +
-                "max.poll.records=500\n" +
-                "max.poll.interval.ms=300000\n" +
-                "max.partition.fetch.bytes=1048576\n" +
-                "fetch.min.bytes=1\n" +
-                "fetch.max.wait.ms=500\n" +
-                "heartbeat.interval.ms=3000\n" +
-                "session.timeout.ms=10000");
+        config.getExtInfo()
+                .put(KafkaUtil.CONSUMER_PROPERTIES, "key.deserializer=org.apache.kafka.common.serialization.StringDeserializer\n"
+                        + "value.deserializer=org.dbsyncer.connector.kafka.serialization.JsonToMapDeserializer\n" + "auto.offset.reset=latest\n" + "enable.auto.commit=false\n"
+                        + "auto.commit.interval.ms=5000\n" + "max.poll.records=500\n" + "max.poll.interval.ms=300000\n" + "max.partition.fetch.bytes=1048576\n" + "fetch.min.bytes=1\n"
+                        + "fetch.max.wait.ms=500\n" + "heartbeat.interval.ms=3000\n" + "session.timeout.ms=10000");
 
-        config.getExtInfo().put(KafkaUtil.PRODUCER_PROPERTIES, "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n" +
-                "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" +
-                "acks=1\n" +
-                "batch.size=32768\n" +
-                "buffer.memory=33554432\n" +
-                "enable.idempotence=false\n" +
-                "linger.ms=10\n" +
-                "retries=1\n" +
-                "max.block.ms=60000\n" +
-                "max.request.size=1048576");
+        config.getExtInfo()
+                .put(KafkaUtil.PRODUCER_PROPERTIES, "key.serializer=org.apache.kafka.common.serialization.StringSerializer\n"
+                        + "value.serializer=org.dbsyncer.connector.kafka.serialization.MapToJsonSerializer\n" + "acks=1\n" + "batch.size=32768\n" + "buffer.memory=33554432\n"
+                        + "enable.idempotence=false\n" + "linger.ms=10\n" + "retries=1\n" + "max.block.ms=60000\n" + "max.request.size=1048576");
         instance = new KafkaConnectorInstance(config);
 
         // 生产者
         producer = instance.getProducer(topic);
         // 消费者
-//        consumer = instance.getConsumer(topic, groupId);
+        // consumer = instance.getConsumer(topic, groupId);
     }
 
     @After
@@ -114,8 +101,8 @@ public class KafkaClientTest {
             System.out.println("发送成功: " + JsonUtil.objToJson(send));
         }
 
-//        new Consumer().start();
-//        TimeUnit.SECONDS.sleep(6000);
+        // new Consumer().start();
+        // TimeUnit.SECONDS.sleep(6000);
         logger.info("test end");
     }
 

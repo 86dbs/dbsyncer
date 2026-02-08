@@ -21,6 +21,6 @@ public final class TimeRegistry {
     private Map<String, TimeMetric> metricMap = new ConcurrentHashMap<>();
 
     public TimeMetric meter(String name) {
-        return metricMap.computeIfAbsent(name, k -> new TimeMetric());
+        return metricMap.computeIfAbsent(name, k->new TimeMetric());
     }
 }

@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,5 +187,4 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     public void setMetaId(String metaId) {
         this.metaId = metaId;
     }
-
 }

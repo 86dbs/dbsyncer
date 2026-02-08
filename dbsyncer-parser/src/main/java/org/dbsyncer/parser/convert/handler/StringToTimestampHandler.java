@@ -20,5 +20,4 @@ public class StringToTimestampHandler extends AbstractHandler {
         }
         return value;
     }
-
 }

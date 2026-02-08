@@ -9,6 +9,7 @@ import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.CryptoUtil;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -90,7 +91,7 @@ public class RsaManager {
         List<RsaVersion> versions = config.getRsaVersions();
 
         // 不存在
-        Optional<RsaVersion> exist = versions.stream().filter(v -> StringUtil.equals(v.getPublicKey(), publicKey) && StringUtil.equals(v.getPrivateKey(), privateKey)).findFirst();
+        Optional<RsaVersion> exist = versions.stream().filter(v->StringUtil.equals(v.getPublicKey(), publicKey) && StringUtil.equals(v.getPrivateKey(), privateKey)).findFirst();
         if (!exist.isPresent()) {
             // 计算新版本号
             int newVersion = 1;

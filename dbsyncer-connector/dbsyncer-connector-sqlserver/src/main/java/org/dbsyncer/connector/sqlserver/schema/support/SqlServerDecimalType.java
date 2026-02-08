@@ -8,7 +8,6 @@ import org.dbsyncer.sdk.schema.support.DecimalType;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,6 +19,7 @@ import java.util.stream.Collectors;
 public final class SqlServerDecimalType extends DecimalType {
 
     private enum TypeEnum {
+
         DECIMAL("decimal");
 
         private final String value;
@@ -42,5 +42,4 @@ public final class SqlServerDecimalType extends DecimalType {
     protected BigDecimal merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

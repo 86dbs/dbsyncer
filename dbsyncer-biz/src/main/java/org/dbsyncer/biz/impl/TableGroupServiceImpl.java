@@ -3,10 +3,10 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -21,10 +21,12 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,7 +128,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         assertRunning(mapping);
 
         // 批量删除表
-        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
+        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id-> {
             TableGroup model = profileComponent.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
             profileComponent.removeTableGroup(id);
@@ -233,8 +235,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
         List<Field> list = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        column.forEach(f -> keys.add(f.getName()));
-        target.forEach(f -> {
+        column.forEach(f->keys.add(f.getName()));
+        target.forEach(f-> {
             if (keys.contains(f.getName())) {
                 list.add(f);
             }

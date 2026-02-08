@@ -28,26 +28,15 @@ import java.util.stream.Stream;
  * @Date 2026-01-11 22:18
  */
 public final class HttpSchemaResolver extends AbstractSchemaResolver {
+
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(
-                new HttpStringType(),
-                new HttpIntType(),
-                new HttpShortType(),
-                new HttpLongType(),
-                new HttpDecimalType(),
-                new HttpFloatType(),
-                new HttpDoubleType(),
-                new HttpDateType(),
-                new HttpTimestampType(),
-                new HttpBooleanType(),
-                new HttpBytesType(),
-                new HttpByteType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
-            if (mapping.containsKey(typeName)) {
-                throw new HttpException("Duplicate type name: " + typeName);
-            }
-            mapping.put(typeName, t);
-        }));
+        Stream.of(new HttpStringType(), new HttpIntType(), new HttpShortType(), new HttpLongType(), new HttpDecimalType(), new HttpFloatType(), new HttpDoubleType(), new HttpDateType(), new HttpTimestampType(), new HttpBooleanType(), new HttpBytesType(), new HttpByteType())
+                .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
+                    if (mapping.containsKey(typeName)) {
+                        throw new HttpException("Duplicate type name: " + typeName);
+                    }
+                    mapping.put(typeName, t);
+                }));
     }
 }

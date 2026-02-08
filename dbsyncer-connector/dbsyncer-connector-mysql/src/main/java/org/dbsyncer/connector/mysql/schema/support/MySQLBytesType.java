@@ -20,12 +20,7 @@ import java.util.stream.Collectors;
 public final class MySQLBytesType extends BytesType {
 
     private enum TypeEnum {
-        TINYBLOB,
-        BLOB,
-        MEDIUMBLOB,
-        LONGBLOB,
-        BINARY,
-        VARBINARY;
+        TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB, BINARY, VARBINARY;
     }
 
     @Override
@@ -44,5 +39,4 @@ public final class MySQLBytesType extends BytesType {
         }
         return throwUnsupportedException(val, field);
     }
-
 }

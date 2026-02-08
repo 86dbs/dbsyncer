@@ -5,6 +5,7 @@ package org.dbsyncer.web.config;
 
 import org.dbsyncer.web.security.AESKeyManager;
 import org.dbsyncer.web.security.TimestampValidator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +16,7 @@ import javax.annotation.PreDestroy;
 /**
  * 安全配置类
  * 初始化安全相关的缓存和定时任务
- * 
+ *
  * @author 穿云
  * @version 1.0.0
  */

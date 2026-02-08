@@ -6,6 +6,7 @@ package org.dbsyncer.connector.oracle.logminer;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ import java.util.Objects;
  * @Date 2023-12-09 20:23
  */
 public class LogMinerHelper {
+
     private static final Logger logger = LoggerFactory.getLogger(LogMinerHelper.class);
     public static final int LOG_MINER_OC_INSERT = 1;
     public static final int LOG_MINER_OC_DELETE = 2;
@@ -44,36 +46,18 @@ public class LogMinerHelper {
     private static final String LOG_MINER_SQL_GET_CURRENT_SCN = "select CURRENT_SCN from V$DATABASE";
     private static final String LOG_MINER_SQL_IS_CDB = "select cdb from v$database";
     private static final String LOG_MINER_SQL_ALTER_SESSION_CONTAINER = "alter session set container=CDB$ROOT";
-    private static final String LOG_MINER_SQL_ALTER_NLS_SESSION_PARAMETERS = "ALTER SESSION SET "
-            + "  NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'"
-            + "  NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'"
-            + "  NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'"
-            + "  NLS_NUMERIC_CHARACTERS = '.,'"
-            + "  TIME_ZONE = '00:00'";
+    private static final String LOG_MINER_SQL_ALTER_NLS_SESSION_PARAMETERS = "ALTER SESSION SET " + "  NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'"
+            + "  NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'" + "  NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'" + "  NLS_NUMERIC_CHARACTERS = '.,'" + "  TIME_ZONE = '00:00'";
     private static final String LOG_MINER_SQL_CURRENT_REDO_SEQUENCE = "SELECT SEQUENCE# FROM V$LOG WHERE STATUS = 'CURRENT'";
     private static final String LOG_MINER_SQL_END_LOG_MINER = "BEGIN SYS.DBMS_LOGMNR.END_LOGMNR(); END;";
-    private static final String LOG_MINER_SQL_START_LOG_MINER = "DECLARE\n" +
-            "start_scn NUMBER := ?; end_scn NUMBER := ?; first_file BOOLEAN := true; \n" +
-            "BEGIN \n" +
-            "FOR log_file IN\n" +
-            " (\n" +
-            "  SELECT MIN(name) name, first_change# FROM \n" +
-            "  (\n" +
-            "   SELECT member AS name, first_change# FROM v$log l INNER JOIN v$logfile f ON l.group# = f.group# WHERE (l.STATUS = 'CURRENT' OR l.STATUS = 'ACTIVE') AND first_change# < end_scn\n" +
-            "   UNION\n" +
-            "   SELECT name, first_change# FROM v$archived_log WHERE name IS NOT NULL AND STANDBY_DEST='NO' AND first_change# < end_scn AND next_change# > start_scn \n" +
-            "  ) group by first_change# ORDER BY first_change# \n" +
-            " ) LOOP \n" +
-            " IF first_file THEN\n" +
-            "  SYS.DBMS_LOGMNR.add_logfile(log_file.name, SYS.DBMS_LOGMNR.NEW);\n" +
-            "  first_file := false;\n" +
-            " ELSE\n" +
-            "  SYS.DBMS_LOGMNR.add_logfile(log_file.name, SYS.DBMS_LOGMNR.ADDFILE);\n" +
-            " END IF;\n" +
-            "END LOOP;\n" +
-            "\n" +
-            "SYS.DBMS_LOGMNR.start_logmnr( options => SYS.DBMS_LOGMNR.SKIP_CORRUPTION + SYS.DBMS_LOGMNR.NO_SQL_DELIMITER + SYS.DBMS_LOGMNR.NO_ROWID_IN_STMT + SYS.DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG);\n" +
-            "END;";
+    private static final String LOG_MINER_SQL_START_LOG_MINER = "DECLARE\n" + "start_scn NUMBER := ?; end_scn NUMBER := ?; first_file BOOLEAN := true; \n" + "BEGIN \n" + "FOR log_file IN\n" + " (\n"
+            + "  SELECT MIN(name) name, first_change# FROM \n" + "  (\n"
+            + "   SELECT member AS name, first_change# FROM v$log l INNER JOIN v$logfile f ON l.group# = f.group# WHERE (l.STATUS = 'CURRENT' OR l.STATUS = 'ACTIVE') AND first_change# < end_scn\n"
+            + "   UNION\n" + "   SELECT name, first_change# FROM v$archived_log WHERE name IS NOT NULL AND STANDBY_DEST='NO' AND first_change# < end_scn AND next_change# > start_scn \n"
+            + "  ) group by first_change# ORDER BY first_change# \n" + " ) LOOP \n" + " IF first_file THEN\n" + "  SYS.DBMS_LOGMNR.add_logfile(log_file.name, SYS.DBMS_LOGMNR.NEW);\n"
+            + "  first_file := false;\n" + " ELSE\n" + "  SYS.DBMS_LOGMNR.add_logfile(log_file.name, SYS.DBMS_LOGMNR.ADDFILE);\n" + " END IF;\n" + "END LOOP;\n" + "\n"
+            + "SYS.DBMS_LOGMNR.start_logmnr( options => SYS.DBMS_LOGMNR.SKIP_CORRUPTION + SYS.DBMS_LOGMNR.NO_SQL_DELIMITER + SYS.DBMS_LOGMNR.NO_ROWID_IN_STMT + SYS.DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG);\n"
+            + "END;";
 
     public static void executeCallableStatement(Connection connection, String statement) throws SQLException {
         Objects.requireNonNull(statement);
@@ -111,7 +95,7 @@ public class LogMinerHelper {
 
     public static String logMinerViewQuery(String schema, String logMinerUser) {
         StringBuilder query = new StringBuilder();
-//        query.append("SELECT SCN, SQL_REDO, OPERATION_CODE, TIMESTAMP, XID, CSF, TABLE_NAME, SEG_OWNER, OPERATION, USERNAME ");
+        // query.append("SELECT SCN, SQL_REDO, OPERATION_CODE, TIMESTAMP, XID, CSF, TABLE_NAME, SEG_OWNER, OPERATION, USERNAME ");
         query.append("SELECT * ");
         query.append("FROM V$LOGMNR_CONTENTS ");
         query.append("WHERE ");
@@ -128,10 +112,10 @@ public class LogMinerHelper {
 
         if (StringUtil.isNotBlank(schema)) {
             query.append(String.format(" AND (REGEXP_LIKE(SEG_OWNER,'^%s$','i')) ", schema));
-//            query.append(" AND ");
-//            query.append("USERNAME = '");
-//            query.append(schema);
-//            query.append("' ");
+            // query.append(" AND ");
+            // query.append("USERNAME = '");
+            // query.append(schema);
+            // query.append("' ");
         }
 
         query.append(" ))");

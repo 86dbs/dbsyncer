@@ -56,5 +56,4 @@ public interface CacheService {
      * @return
      */
     Map<String, Object> getAll();
-
 }

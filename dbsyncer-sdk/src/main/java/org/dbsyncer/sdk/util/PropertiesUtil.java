@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.sdk.util;
 
-import java.util.Properties;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @Author 穿云
@@ -15,7 +15,7 @@ public abstract class PropertiesUtil {
 
     /**
      * 将字符串解析为Properties对象
-     * 
+     *
      * @param params 格式：key1=value1&key2=value2
      * @return Properties对象
      */
@@ -42,7 +42,7 @@ public abstract class PropertiesUtil {
 
     /**
      * 将Properties对象转换为字符串
-     * 
+     *
      * @param properties Properties对象
      * @return 格式：key1=value1&key2=value2，如果properties为null或空，返回空字符串
      */
@@ -63,5 +63,4 @@ public abstract class PropertiesUtil {
         }
         return sb.toString();
     }
-
 }

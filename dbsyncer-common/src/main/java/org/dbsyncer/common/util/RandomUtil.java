@@ -7,5 +7,4 @@ public abstract class RandomUtil {
     public static int nextInt(int startInclusive, int endExclusive) {
         return RandomUtils.nextInt(startInclusive, endExclusive);
     }
-
 }

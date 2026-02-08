@@ -11,6 +11,7 @@ import org.dbsyncer.connector.kafka.util.KafkaUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -70,5 +71,4 @@ public class KafkaConfigValidator implements ConfigValidator<KafkaConnector, Kaf
         }
         return table;
     }
-
 }

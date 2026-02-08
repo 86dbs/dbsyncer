@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public final class PostgreSQLBytesType extends BytesType {
 
     private enum TypeEnum {
+
         BYTEA("bytea");
 
         private final String value;
@@ -40,5 +41,4 @@ public final class PostgreSQLBytesType extends BytesType {
     protected byte[] merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

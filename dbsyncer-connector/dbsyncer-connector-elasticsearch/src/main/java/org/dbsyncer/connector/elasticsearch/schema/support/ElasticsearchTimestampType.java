@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchTimestampType extends TimestampType {
 
     private enum TypeEnum {
+
         DATE("date");
 
         private final String value;

@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public final class SqlServerBytesType extends BytesType {
 
     private enum TypeEnum {
+
         IMAGE("image");
 
         private final String value;
@@ -45,5 +46,4 @@ public final class SqlServerBytesType extends BytesType {
     protected byte[] merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

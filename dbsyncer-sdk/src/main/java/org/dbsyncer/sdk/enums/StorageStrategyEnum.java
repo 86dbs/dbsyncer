@@ -5,7 +5,6 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
-import org.dbsyncer.sdk.storage.strategy.*;
 
 /**
  * 存储策略枚举

@@ -19,6 +19,7 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -89,7 +91,7 @@ public class ConnectorFactory implements DisposableBean {
         if (newInstance == null) {
             throw new ConnectorException("连接配置异常：无法创建连接实例");
         }
-        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v) -> {
+        ConnectorInstance pooledInstance = pool.compute(instanceId, (k, v)-> {
             if (v != null) {
                 disconnect(v);
             }
@@ -217,8 +219,8 @@ public class ConnectorFactory implements DisposableBean {
                 result.getError().append(e.getMessage());
                 result.addFailData(context.getTargetList());
                 if (context.isEnablePrintTraceInfo()) {
-                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                            context.getEvent(), context.getTargetList(), JsonUtil.objToJson(result));
+                    logger.error("traceId:{}, tableName:{}, event:{}, targetList:{}, result:{}", context.getTraceId(), context.getSourceTableName(), context.getEvent(), context
+                            .getTargetList(), JsonUtil.objToJson(result));
                 }
                 return result;
             }
@@ -226,8 +228,7 @@ public class ConnectorFactory implements DisposableBean {
 
         Result result = targetConnector.writer(targetInstance, context);
         if (context.isEnablePrintTraceInfo()) {
-            logger.info("traceId:{}, tableName:{}, event:{}, result:{}", context.getTraceId(), context.getSourceTableName(),
-                    context.getEvent(), JsonUtil.objToJson(result));
+            logger.info("traceId:{}, tableName:{}, event:{}, result:{}", context.getTraceId(), context.getSourceTableName(), context.getEvent(), JsonUtil.objToJson(result));
         }
         Assert.notNull(result, "Connector writer batch result can not null");
         return result;
@@ -268,7 +269,7 @@ public class ConnectorFactory implements DisposableBean {
             return;
         }
         // 原子性地移除实例，但不在回调中执行阻塞操作
-        pool.computeIfPresent(instanceId, (k, v) -> (v == instance) ? null : v);
+        pool.computeIfPresent(instanceId, (k, v)->(v == instance) ? null : v);
         // 在锁外执行断开连接操作，避免阻塞其他线程
         disconnect(instance);
     }

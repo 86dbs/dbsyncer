@@ -1,21 +1,30 @@
 package org.dbsyncer.storage.util;
 
-import com.google.protobuf.ByteString;
-import oracle.sql.BLOB;
-import oracle.sql.CLOB;
-import oracle.sql.STRUCT;
-import oracle.sql.TIMESTAMP;
-import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.schema.CustomData;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.binlog.BinlogColumnValue;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.enums.BinlogByteEnum;
+
+import org.apache.commons.io.IOUtils;
+
 import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.protobuf.ByteString;
+import oracle.sql.BLOB;
+import oracle.sql.CLOB;
+import oracle.sql.STRUCT;
+import oracle.sql.TIMESTAMP;
+
+import com.google.protobuf.ByteString;
+import oracle.sql.BLOB;
+import oracle.sql.CLOB;
+import oracle.sql.STRUCT;
+import oracle.sql.TIMESTAMP;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -31,8 +40,8 @@ import java.time.LocalDateTime;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Java语言提供了八种基本类型，六种数字类型（四个整数型，两个浮点型），一种字符类型，一种布尔型。
@@ -66,7 +75,7 @@ public abstract class BinlogMessageUtil {
 
     public static BinlogMap toBinlogMap(Map<String, Object> data) {
         BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
-        data.forEach((k, v) -> {
+        data.forEach((k, v)-> {
             if (null != v) {
                 ByteString bytes = serializeValue(v);
                 if (null != bytes) {
@@ -111,40 +120,40 @@ public abstract class BinlogMessageUtil {
 
             // 时间
             case "java.sql.Timestamp":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
                     Timestamp timestamp = (Timestamp) v;
                     buffer.putLong(timestamp.getTime());
                 });
             case "java.sql.Date":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
                     Date date = (Date) v;
                     buffer.putLong(date.getTime());
                 });
             case "java.util.Date":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
                     java.util.Date uDate = (java.util.Date) v;
                     buffer.putLong(uDate.getTime());
                 });
             case "java.sql.Time":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
                     Time time = (Time) v;
                     buffer.putLong(time.getTime());
                 });
 
             // 数字
             case "java.lang.Integer":
-                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer -> buffer.putInt((Integer) v));
+                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer->buffer.putInt((Integer) v));
             case "java.math.BigInteger":
                 BigInteger bigInteger = (BigInteger) v;
                 return ByteString.copyFrom(bigInteger.toByteArray());
             case "java.lang.Long":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong((Long) v));
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong((Long) v));
             case "java.lang.Short":
-                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> buffer.putShort((Short) v));
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer->buffer.putShort((Short) v));
             case "java.lang.Float":
-                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer -> buffer.putFloat((Float) v));
+                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer->buffer.putFloat((Float) v));
             case "java.lang.Double":
-                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer -> buffer.putDouble((Double) v));
+                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer->buffer.putDouble((Double) v));
             case "java.math.BigDecimal":
                 BigDecimal bigDecimal = (BigDecimal) v;
                 return ByteString.copyFromUtf8(bigDecimal.toString());
@@ -154,14 +163,14 @@ public abstract class BinlogMessageUtil {
 
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":
-                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer-> {
                     Boolean b = (Boolean) v;
                     buffer.putShort((short) (b ? 1 : 0));
                 });
             case "java.time.LocalDateTime":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong(Timestamp.valueOf((LocalDateTime) v).getTime()));
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong(Timestamp.valueOf((LocalDateTime) v).getTime()));
             case "oracle.sql.TIMESTAMP":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
                     TIMESTAMP timeStamp = (TIMESTAMP) v;
                     try {
                         buffer.putLong(timeStamp.timestampValue().getTime());
@@ -304,6 +313,7 @@ public abstract class BinlogMessageUtil {
     }
 
     interface ByteStringMapper {
+
         void apply(ByteBuffer buffer);
     }
 

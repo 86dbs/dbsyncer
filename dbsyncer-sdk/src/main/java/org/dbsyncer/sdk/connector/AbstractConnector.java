@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ public abstract class AbstractConnector {
                     continue;
                 }
                 try {
-                    row.compute(f.getName(), (k, v) -> targetResolver.convert(v, f));
+                    row.compute(f.getName(), (k, v)->targetResolver.convert(v, f));
                 } catch (Exception e) {
                     logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTableName(), f.getName(), row.get(f.getName())), e);
                     throw new SdkException(e);

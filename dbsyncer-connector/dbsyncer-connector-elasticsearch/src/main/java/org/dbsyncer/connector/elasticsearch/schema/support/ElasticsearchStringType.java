@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,28 +33,14 @@ public final class ElasticsearchStringType extends StringType {
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchStringType.class);
 
     private enum TypeEnum {
-        KEYWORD("keyword"),
-        WILDCARD("wildcard"),
-        TEXT("text"),
-        @Deprecated
-        STRING("string"),  // ES 5.X之后不再支持，由text或keyword取代
-        IP("ip"),
-        IP_RANGE("ip_range"),
-        INTEGER_RANGE("integer_range"),
-        LONG_RANGE("long_range"),
-        DOUBLE_RANGE("double_range"),
-        FLOAT_RANGE("float_range"),
-        DATE_RANGE("date_range"),
-        COMPLETION("completion"),
-        OBJECT("object"),
-        FLATTENED("flattened"), /* 7.3+ 引入的一种特殊数据类型，用于扁平化对象（Flattened Object）存储。它专门用于处理动态的、不可预测结构的对象字段，通过将整个对象扁平化为键值对来避免字段爆炸问题。 */
-        DENSE_VECTOR("dense_vector"), /* 7.0+ 引入的密集向量, 用于存储和搜索高维浮点数向量, 支持现代 AI/ML 应用的向量相似性搜索。*/
-        SHAPE("shape"),
-        RANK_FEATURES("rank_features"), /* 7.8+ 专门用于特征排名 */
-        POINT("point"),
-        GEO_POINT("geo_point"),
-        GEO_SHAPE("geo_shape"),
-        NESTED("nested");
+
+        KEYWORD("keyword"), WILDCARD("wildcard"), TEXT("text"), @Deprecated
+        STRING("string"), // ES 5.X之后不再支持，由text或keyword取代
+        IP("ip"), IP_RANGE("ip_range"), INTEGER_RANGE("integer_range"), LONG_RANGE("long_range"), DOUBLE_RANGE("double_range"), FLOAT_RANGE("float_range"), DATE_RANGE("date_range"),
+        COMPLETION("completion"), OBJECT("object"), FLATTENED("flattened"), /* 7.3+ 引入的一种特殊数据类型，用于扁平化对象（Flattened Object）存储。它专门用于处理动态的、不可预测结构的对象字段，通过将整个对象扁平化为键值对来避免字段爆炸问题。 */
+        DENSE_VECTOR("dense_vector"), /* 7.0+ 引入的密集向量, 用于存储和搜索高维浮点数向量, 支持现代 AI/ML 应用的向量相似性搜索。 */
+        SHAPE("shape"), RANK_FEATURES("rank_features"), /* 7.8+ 专门用于特征排名 */
+        POINT("point"), GEO_POINT("geo_point"), GEO_SHAPE("geo_shape"), NESTED("nested");
 
         private final String value;
 

@@ -1,8 +1,11 @@
 package org.dbsyncer.common.util;
 
-import com.alibaba.fastjson2.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson2.JSONObject;
+
+import com.alibaba.fastjson2.JSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -10,6 +13,7 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
@@ -138,8 +142,7 @@ public class CryptoUtil {
      * @param isPublicNetwork 是否为公网场景（true-公网使用RSA-SHA256签名，false-内网使用HMAC-SHA256签名）
      * @return 加密后的请求JSON字符串
      */
-    public static String buildEncryptedRequest(Object data, String rsaPublicKey, String rsaPrivateKey, 
-                                               String hmacSecret, boolean isPublicNetwork) {
+    public static String buildEncryptedRequest(Object data, String rsaPublicKey, String rsaPrivateKey, String hmacSecret, boolean isPublicNetwork) {
         try {
             // 1. 生成临时AES密钥
             Map<String, String> aesKeyPair = generateAESKeyPair();
@@ -185,9 +188,7 @@ public class CryptoUtil {
      * @param clazz 目标类型
      * @return 解密后的数据对象
      */
-    public static <T> T parseEncryptedRequest(String encryptedRequest, String rsaPrivateKey, 
-                                               String rsaPublicKey, String hmacSecret,
-                                               boolean isPublicNetwork, Class<T> clazz) {
+    public static <T> T parseEncryptedRequest(String encryptedRequest, String rsaPrivateKey, String rsaPublicKey, String hmacSecret, boolean isPublicNetwork, Class<T> clazz) {
         try {
             JSONObject request = JsonUtil.jsonToObj(encryptedRequest, JSONObject.class);
 
@@ -196,12 +197,12 @@ public class CryptoUtil {
             if (signature == null || signature.isEmpty()) {
                 throw new RuntimeException("签名不能为空");
             }
-            
+
             // 创建副本用于验证签名（不包含signature字段）
             JSONObject requestForVerify = new JSONObject(request);
             requestForVerify.remove("signature");
             String dataToVerify = requestForVerify.toJSONString();
-            
+
             boolean signatureValid = false;
             if (isPublicNetwork) {
                 if (rsaPublicKey == null || rsaPublicKey.isEmpty()) {
@@ -214,7 +215,7 @@ public class CryptoUtil {
                 }
                 signatureValid = verifySignature(dataToVerify, signature, null, hmacSecret, false);
             }
-            
+
             if (!signatureValid) {
                 throw new RuntimeException("签名验证失败");
             }
@@ -235,13 +236,13 @@ public class CryptoUtil {
             if (iv == null || iv.isEmpty()) {
                 throw new RuntimeException("IV不能为空");
             }
-            
+
             String jsonData = decryptData(encryptedData, iv, aesKey);
-            
+
             if (StringUtil.isBlank(jsonData)) {
                 throw new RuntimeException("解密后的数据为空");
             }
-            
+
             logger.debug("解密后的JSON数据: {}", jsonData);
 
             // 4. 反序列化数据
@@ -265,8 +266,7 @@ public class CryptoUtil {
      * @param isPublicNetwork 是否为公网场景
      * @return 加密后的响应JSON字符串
      */
-    public static String buildEncryptedResponse(Object data, String rsaPublicKey, String rsaPrivateKey, 
-                                                String hmacSecret, boolean isPublicNetwork) {
+    public static String buildEncryptedResponse(Object data, String rsaPublicKey, String rsaPrivateKey, String hmacSecret, boolean isPublicNetwork) {
         return buildEncryptedRequest(data, rsaPublicKey, rsaPrivateKey, hmacSecret, isPublicNetwork);
     }
 
@@ -281,9 +281,7 @@ public class CryptoUtil {
      * @param clazz 目标类型
      * @return 解密后的数据对象
      */
-    public static <T> T parseEncryptedResponse(String encryptedResponse, String rsaPrivateKey, 
-                                               String rsaPublicKey, String hmacSecret,
-                                               boolean isPublicNetwork, Class<T> clazz) {
+    public static <T> T parseEncryptedResponse(String encryptedResponse, String rsaPrivateKey, String rsaPublicKey, String hmacSecret, boolean isPublicNetwork, Class<T> clazz) {
         return parseEncryptedRequest(encryptedResponse, rsaPrivateKey, rsaPublicKey, hmacSecret, isPublicNetwork, clazz);
     }
 
@@ -309,8 +307,7 @@ public class CryptoUtil {
      * @param isPublicNetwork 是否为公网场景
      * @return 签名
      */
-    public static String generateSignature(String data, String rsaPublicKey, String rsaPrivateKey, 
-                                          String hmacSecret, boolean isPublicNetwork) {
+    public static String generateSignature(String data, String rsaPublicKey, String rsaPrivateKey, String hmacSecret, boolean isPublicNetwork) {
         try {
             if (isPublicNetwork) {
                 // 公网场景：使用RSA-SHA256签名（使用私钥签名）
@@ -341,8 +338,7 @@ public class CryptoUtil {
      * @param isPublicNetwork 是否为公网场景
      * @return 验证结果
      */
-    public static boolean verifySignature(String data, String signature, String rsaPublicKey, 
-                                         String hmacSecret, boolean isPublicNetwork) {
+    public static boolean verifySignature(String data, String signature, String rsaPublicKey, String hmacSecret, boolean isPublicNetwork) {
         try {
             if (isPublicNetwork) {
                 // 公网场景：使用RSA-SHA256验证

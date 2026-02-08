@@ -27,5 +27,4 @@ public interface BaseContext {
     ConnectorInstance getSourceConnectorInstance();
 
     void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance);
-
 }

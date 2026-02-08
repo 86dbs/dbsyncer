@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
 public final class MySQLByteType extends ByteType {
 
     private enum TypeEnum {
-        BIT,
-        TINYINT
+        BIT, TINYINT
     }
 
     @Override
@@ -65,5 +64,4 @@ public final class MySQLByteType extends ByteType {
         }
         return super.convert(val, field);
     }
-
 }

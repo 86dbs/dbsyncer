@@ -8,6 +8,7 @@ import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 
 import javax.sql.DataSource;
+
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -22,7 +23,7 @@ import java.util.logging.Logger;
 
 public class SimpleDataSource implements DataSource, AutoCloseable {
 
-    //从缓存队列获取连接次数
+    // 从缓存队列获取连接次数
     private final int MAX_PULL_TIME = 20;
     // 有效检测时间（秒），默认10s
     private final int VALID_TIMEOUT_SECONDS = 10;
@@ -57,12 +58,12 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     public Connection getConnection() throws SQLException {
         try {
             lock.lock();
-            //如果当前连接数大于或等于最大连接数
+            // 如果当前连接数大于或等于最大连接数
             if (activeNum.get() >= maxActive) {
                 throw new SdkException(String.format("数据库连接数超过上限%d，url=%s", maxActive, url));
             }
             int time = MAX_PULL_TIME;
-            while (time-- > 0){
+            while (time-- > 0) {
                 SimpleConnection poll = pool.poll();
                 if (null == poll) {
                     return createConnection();
@@ -105,12 +106,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     @Override
     public void setLogWriter(PrintWriter out) throws SQLException {
-
     }
 
     @Override
     public void setLoginTimeout(int seconds) throws SQLException {
-
     }
 
     @Override
@@ -183,5 +182,4 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
         }
         return simpleConnection;
     }
-
 }

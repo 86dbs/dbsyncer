@@ -6,6 +6,9 @@ package org.dbsyncer.connector.mysql.deserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
+import com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary;
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
+
 import java.io.IOException;
 
 /**
@@ -23,5 +26,4 @@ public final class JsonBinaryDeserialize {
         JsonBinary jsonBinary = new JsonBinary(bytes);
         return jsonBinary.getString().getBytes(CHARSET_NAME);
     }
-
 }

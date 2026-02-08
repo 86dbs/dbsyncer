@@ -12,6 +12,7 @@ import java.util.Objects;
  * @Date 2023-12-09 20:20
  */
 public class LogFile {
+
     private final String fileName;
     private final BigInteger firstScn;
     private final BigInteger nextScn;

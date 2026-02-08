@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
  * @Date 2025-06-25 23:26
  */
 public final class PostgreSQLFloatType extends FloatType {
+
     private enum TypeEnum {
+
         FLOAT4("float4");
 
         private final String value;

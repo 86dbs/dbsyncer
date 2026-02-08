@@ -42,5 +42,4 @@ public class YesDateFilter implements QuartzFilter<Date> {
     public boolean begin() {
         return begin;
     }
-
 }

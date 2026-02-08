@@ -4,8 +4,8 @@
 package org.dbsyncer.connector.postgresql.enums;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
+import org.dbsyncer.connector.postgresql.decoder.MessageDecoder;
 import org.dbsyncer.connector.postgresql.decoder.impl.PgOutputMessageDecoder;
 import org.dbsyncer.connector.postgresql.decoder.impl.TestDecodingMessageDecoder;
 

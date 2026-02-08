@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.storage.lucene;
 
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.storage.StorageException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,8 +28,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
-import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.storage.StorageException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,18 +80,18 @@ public class Shard {
     }
 
     public void insertBatch(List<Document> docs) {
-        execute(docs, () -> indexWriter.addDocuments(docs));
+        execute(docs, ()->indexWriter.addDocuments(docs));
     }
 
     public void update(Term term, Document doc) {
         if (null != term) {
-            execute(doc, () -> indexWriter.updateDocument(term, doc));
+            execute(doc, ()->indexWriter.updateDocument(term, doc));
         }
     }
 
     public void deleteBatch(Term... terms) {
         if (null != terms) {
-            execute(terms, () -> indexWriter.deleteDocuments(terms));
+            execute(terms, ()->indexWriter.deleteDocuments(terms));
         }
     }
 
@@ -249,7 +251,7 @@ public class Shard {
     private void reopen() throws IOException {
         int maxRetries = 3;
         int retryCount = 0;
-        
+
         while (retryCount < maxRetries) {
             try {
                 // 尝试获取写锁
@@ -262,14 +264,13 @@ public class Shard {
             } catch (LockObtainFailedException e) {
                 retryCount++;
                 // 锁被其他进程持有或残留，尝试清理锁文件
-                logger.warn("无法获取 Lucene 写锁 (尝试 {}/{}), 尝试清理锁文件: {}", 
-                    retryCount, maxRetries, indexPath.getAbsolutePath());
-                
+                logger.warn("无法获取 Lucene 写锁 (尝试 {}/{}), 尝试清理锁文件: {}", retryCount, maxRetries, indexPath.getAbsolutePath());
+
                 if (retryCount >= maxRetries) {
                     // 最后一次重试失败，抛出异常
                     throw new IOException("无法获取 Lucene 写锁，已重试 " + maxRetries + " 次。请检查是否有其他进程正在使用索引目录: " + indexPath.getAbsolutePath(), e);
                 }
-                
+
                 try {
                     // 对于 FSDirectory，锁文件是物理文件，可以直接删除
                     File lockFile = new File(indexPath, IndexWriter.WRITE_LOCK_NAME);
@@ -307,7 +308,7 @@ public class Shard {
                 }
             }
         }
-        
+
         // 创建索引写入配置
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         // 默认32M, 减少合并次数

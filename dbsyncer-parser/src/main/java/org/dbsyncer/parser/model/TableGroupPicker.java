@@ -6,7 +6,6 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @Author 穿云

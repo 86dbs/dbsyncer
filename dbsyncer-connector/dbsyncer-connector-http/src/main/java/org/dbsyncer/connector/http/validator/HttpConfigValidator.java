@@ -9,6 +9,7 @@ import org.dbsyncer.connector.http.config.HttpConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 

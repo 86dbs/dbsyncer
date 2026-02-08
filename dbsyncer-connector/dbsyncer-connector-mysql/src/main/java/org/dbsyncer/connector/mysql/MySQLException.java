@@ -10,9 +10,9 @@ package org.dbsyncer.connector.mysql;
  */
 public class MySQLException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public MySQLException(String message) {
+    public MySQLException(String message) {
         super(message);
     }
 

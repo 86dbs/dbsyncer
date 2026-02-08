@@ -15,5 +15,4 @@ public class NumberToStringHandler extends AbstractHandler {
     public Object convert(String args, Object value) {
         return String.valueOf(value);
     }
-
 }

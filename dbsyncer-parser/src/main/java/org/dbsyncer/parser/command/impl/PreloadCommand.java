@@ -59,5 +59,4 @@ public final class PreloadCommand implements Command {
     public Meta parseMeta() {
         return profileComponent.parseObject(json, Meta.class);
     }
-
 }

@@ -3,27 +3,29 @@
  */
 package org.dbsyncer.connector.mysql.binlog;
 
-import com.github.shyiko.mysql.binlog.GtidSet;
-import com.github.shyiko.mysql.binlog.MariadbGtidSet;
-import com.github.shyiko.mysql.binlog.event.*;
-import com.github.shyiko.mysql.binlog.event.deserialization.*;
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-import com.github.shyiko.mysql.binlog.network.*;
-import com.github.shyiko.mysql.binlog.network.protocol.*;
-import com.github.shyiko.mysql.binlog.network.protocol.command.*;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.ExtDeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.ExtUpdateDeserializer;
-import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.ExtWriteDeserializer;
+import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.shyiko.mysql.binlog.GtidSet;
+import com.github.shyiko.mysql.binlog.MariadbGtidSet;
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
+
+import com.github.shyiko.mysql.binlog.GtidSet;
+import com.github.shyiko.mysql.binlog.MariadbGtidSet;
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -31,7 +33,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
-import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -45,23 +46,21 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
         @Override
         protected void initSSLContext(SSLContext sc) throws GeneralSecurityException {
-            sc.init(null, new TrustManager[]{
-                    new X509TrustManager() {
+            sc.init(null, new TrustManager[]{new X509TrustManager() {
 
-                        @Override
-                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) {
-                        }
+                @Override
+                public void checkClientTrusted(X509Certificate[] x509Certificates, String s) {
+                }
 
-                        @Override
-                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) {
-                        }
+                @Override
+                public void checkServerTrusted(X509Certificate[] x509Certificates, String s) {
+                }
 
-                        @Override
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[0];
-                        }
-                    }
-            }, null);
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            }}, null);
         }
     };
     private static final SSLSocketFactory DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY = new DefaultSSLSocketFactory();
@@ -150,7 +149,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
             // new listen thread
             spawnWorkerThread();
-            lifecycleListeners.forEach(listener -> listener.onConnect(this));
+            lifecycleListeners.forEach(listener->listener.onConnect(this));
         } finally {
             connectLock.unlock();
         }
@@ -171,7 +170,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                     this.keepAlive.interrupt();
                     this.keepAlive = null;
                 }
-                lifecycleListeners.forEach(listener -> listener.onDisconnect(this));
+                lifecycleListeners.forEach(listener->listener.onDisconnect(this));
             } finally {
                 connectLock.unlock();
             }
@@ -245,7 +244,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         if (logs.length == 0) {
             return;
         }
-        boolean exists = Arrays.stream(logs).anyMatch(r -> binlogFilename.equals(r.getValue(0)));
+        boolean exists = Arrays.stream(logs).anyMatch(r->binlogFilename.equals(r.getValue(0)));
         if (!exists) {
             logger.warn("Requested binlog {} no longer exists, fallback to latest.", binlogFilename);
             fetchBinlogFilenameAndPosition();
@@ -263,8 +262,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private boolean tryUpgradeToSSL(GreetingPacket greetingPacket) throws IOException {
         if (sslMode != SSLMode.DISABLED) {
             boolean serverSupportsSSL = (greetingPacket.getServerCapabilities() & ClientCapabilities.SSL) != 0;
-            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA ||
-                    sslMode == SSLMode.VERIFY_IDENTITY)) {
+            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA || sslMode == SSLMode.VERIFY_IDENTITY)) {
                 throw new IOException("MySQL server does not support SSL");
             }
             if (serverSupportsSSL) {
@@ -272,9 +270,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 int collation = greetingPacket.getServerCollation();
                 sslRequestCommand.setCollation(collation);
                 channel.write(sslRequestCommand);
-                SSLSocketFactory sslSocketFactory = sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ?
-                                        DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY :
-                                        DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY;
+                SSLSocketFactory sslSocketFactory = sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ? DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY : DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY;
                 channel.upgradeToSSL(sslSocketFactory, sslMode == SSLMode.VERIFY_IDENTITY ? new TLSHostnameVerifier() : null);
                 logger.info("SSL enabled");
                 return true;
@@ -294,8 +290,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 // 255 error
                 if (marker == 0xFF) {
                     ErrorPacket errorPacket = new ErrorPacket(inputStream.read(packetLength - 1));
-                    throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                            errorPacket.getSqlState());
+                    throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
                 }
                 // 254 empty
                 if (marker == 0xFE && !blocking) {
@@ -332,8 +327,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         if (packet[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(packet, 1, packet.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
     }
 
@@ -343,8 +337,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         if (initialHandshakePacket[0] == (byte) 0xFF) {
             byte[] bytes = Arrays.copyOfRange(initialHandshakePacket, 1, initialHandshakePacket.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
         return new GreetingPacket(initialHandshakePacket);
     }
@@ -363,9 +356,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         Command dumpBinaryLogCommand;
         synchronized (gtidSetAccessLock) {
             if (this.gtidEnabled) {
-                dumpBinaryLogCommand = new DumpBinaryLogGtidCommand(serverId,
-                        useBinlogFilenamePositionInGtidMode ? binlogFilename : "",
-                        useBinlogFilenamePositionInGtidMode ? binlogPosition : 4,
+                dumpBinaryLogCommand = new DumpBinaryLogGtidCommand(serverId, useBinlogFilenamePositionInGtidMode ? binlogFilename : "", useBinlogFilenamePositionInGtidMode ? binlogPosition : 4,
                         gtidSet);
             } else {
                 dumpBinaryLogCommand = new DumpBinaryLogCommand(serverId, binlogFilename, binlogPosition);
@@ -395,20 +386,16 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         channel.write(dumpBinaryLogCommand);
     }
 
-    private void ensureEventDataDeserializerIfPresent(EventType eventType,
-                                                      Class<? extends EventDataDeserializer<?>> eventDataDeserializerClass) {
+    private void ensureEventDataDeserializerIfPresent(EventType eventType, Class<? extends EventDataDeserializer<?>> eventDataDeserializerClass) {
         EventDataDeserializer<?> eventDataDeserializer = eventDeserializer.getEventDataDeserializer(eventType);
-        if (eventDataDeserializer.getClass() != eventDataDeserializerClass &&
-                eventDataDeserializer.getClass() != EventDeserializer.EventDataWrapper.Deserializer.class) {
+        if (eventDataDeserializer.getClass() != eventDataDeserializerClass && eventDataDeserializer.getClass() != EventDeserializer.EventDataWrapper.Deserializer.class) {
             EventDataDeserializer<?> internalEventDataDeserializer;
             try {
                 internalEventDataDeserializer = eventDataDeserializerClass.newInstance();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            eventDeserializer.setEventDataDeserializer(eventType,
-                    new EventDeserializer.EventDataWrapper.Deserializer(internalEventDataDeserializer,
-                            eventDataDeserializer));
+            eventDeserializer.setEventDataDeserializer(eventType, new EventDeserializer.EventDataWrapper.Deserializer(internalEventDataDeserializer, eventDataDeserializer));
         }
     }
 
@@ -496,7 +483,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         int chunkLength;
         do {
             chunkLength = inputStream.readInteger(3);
-            //noinspection ResultOfMethodCallIgnored
+            // noinspection ResultOfMethodCallIgnored
             inputStream.skip(1); // 1 byte for sequence
             result = Arrays.copyOf(result, result.length + chunkLength);
             inputStream.fill(result, result.length - chunkLength, chunkLength);
@@ -512,15 +499,15 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             binlogFilename = rotateEventData.getBinlogFilename();
             binlogPosition = rotateEventData.getBinlogPosition();
         } else
-            // do not update binlogPosition on TABLE_MAP so that in case of reconnect (using a different instance of
-            // client) table mapping cache could be reconstructed before hitting row mutation event
-            if (eventType != EventType.TABLE_MAP && eventHeader instanceof EventHeaderV4) {
-                EventHeaderV4 trackableEventHeader = (EventHeaderV4) eventHeader;
-                long nextBinlogPosition = trackableEventHeader.getNextPosition();
-                if (nextBinlogPosition > 0) {
-                    binlogPosition = nextBinlogPosition;
-                }
+        // do not update binlogPosition on TABLE_MAP so that in case of reconnect (using a different instance of
+        // client) table mapping cache could be reconstructed before hitting row mutation event
+        if (eventType != EventType.TABLE_MAP && eventHeader instanceof EventHeaderV4) {
+            EventHeaderV4 trackableEventHeader = (EventHeaderV4) eventHeader;
+            long nextBinlogPosition = trackableEventHeader.getNextPosition();
+            if (nextBinlogPosition > 0) {
+                binlogPosition = nextBinlogPosition;
             }
+        }
     }
 
     private void updateGtidSet(Event event) {
@@ -572,11 +559,11 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
-        while ((channel.read())[0] != (byte) 0xFE /* eof */) { /* skip */ }
-        for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */; ) {
+        while ((channel.read())[0] != (byte) 0xFE /* eof */) {
+            /* skip */ }
+        for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */;) {
             resultSet.add(new ResultSetRowPacket(bytes));
         }
         return resultSet.toArray(new ResultSetRowPacket[0]);
@@ -648,7 +635,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     }
 
     private void spawnWorkerThread() {
-        this.worker = new Thread(() -> listenForEventPackets(channel));
+        this.worker = new Thread(()->listenForEventPackets(channel));
         this.worker.setDaemon(false);
         this.workerThreadName = "binlog-parser-" + createClientId();
         this.worker.setName(workerThreadName);
@@ -657,7 +644,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     private void spawnKeepAliveThread() {
         String clientId = createClientId();
-        this.keepAlive = new Thread(() -> {
+        this.keepAlive = new Thread(()-> {
             while (connected) {
                 if (connectedError) {
                     break;
@@ -708,7 +695,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 }
             }
             connectedError = true;
-            lifecycleListeners.forEach(listener -> listener.onException(this, e));
+            lifecycleListeners.forEach(listener->listener.onException(this, e));
         }
     }
 

@@ -3,9 +3,10 @@
  */
 package org.dbsyncer.connector.kafka.serialization;
 
+import org.dbsyncer.common.util.JsonUtil;
+
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
-import org.dbsyncer.common.util.JsonUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.Map;
  * @Date 2021-12-16 23:09
  */
 public class JsonToMapDeserializer implements Deserializer<Map> {
+
     private String encoding = "UTF8";
 
     @Override

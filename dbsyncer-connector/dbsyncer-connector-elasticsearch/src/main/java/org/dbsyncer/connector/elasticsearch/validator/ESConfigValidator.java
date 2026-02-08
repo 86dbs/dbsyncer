@@ -10,6 +10,7 @@ import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
 import org.springframework.util.Assert;
 
 import java.util.List;

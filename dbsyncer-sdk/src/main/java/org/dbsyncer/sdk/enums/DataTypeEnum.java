@@ -13,23 +13,17 @@ import org.dbsyncer.sdk.SdkException;
  * @Date 2024-11-23 22:39
  */
 public enum DataTypeEnum {
+
     /** 文本 */
     STRING,
     /** 整型 */
-    BYTE,
-    SHORT,
-    INT,
-    LONG,
+    BYTE, SHORT, INT, LONG,
     /** 浮点型 */
-    DECIMAL,
-    DOUBLE,
-    FLOAT,
+    DECIMAL, DOUBLE, FLOAT,
     /** 布尔型 */
     BOOLEAN,
     /** 时间 */
-    DATE,
-    TIME,
-    TIMESTAMP,
+    DATE, TIME, TIMESTAMP,
     /** 二进制 */
     BYTES;
 

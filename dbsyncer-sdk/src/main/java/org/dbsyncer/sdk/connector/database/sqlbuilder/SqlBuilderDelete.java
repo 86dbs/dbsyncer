@@ -25,5 +25,4 @@ public class SqlBuilderDelete extends AbstractSqlBuilder {
         database.appendPrimaryKeys(sql, config.getPrimaryKeys());
         return sql.toString();
     }
-
 }

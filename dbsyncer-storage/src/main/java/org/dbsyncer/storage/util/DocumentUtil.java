@@ -1,8 +1,9 @@
 package org.dbsyncer.storage.util;
 
-import org.apache.lucene.document.*;
-import org.apache.lucene.util.BytesRef;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+
+import org.apache.lucene.util.BytesRef;
+
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -42,6 +43,7 @@ import java.util.Map;
  * @date 2019/11/19 22:07
  */
 public abstract class DocumentUtil {
+
     private DocumentUtil() {
     }
 

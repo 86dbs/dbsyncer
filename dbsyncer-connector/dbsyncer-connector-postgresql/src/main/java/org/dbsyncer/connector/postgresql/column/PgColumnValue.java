@@ -7,6 +7,7 @@ import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
+
 import org.postgresql.PGStatement;
 import org.postgresql.geometric.PGbox;
 import org.postgresql.geometric.PGcircle;
@@ -334,15 +335,11 @@ public final class PgColumnValue extends AbstractColumnValue<String> {
     }
 
     private Instant toInstantFromMicros(long microsSinceEpoch) {
-        return Instant.ofEpochSecond(
-                TimeUnit.MICROSECONDS.toSeconds(microsSinceEpoch),
-                TimeUnit.MICROSECONDS.toNanos(microsSinceEpoch % TimeUnit.SECONDS.toMicros(1)));
+        return Instant.ofEpochSecond(TimeUnit.MICROSECONDS.toSeconds(microsSinceEpoch), TimeUnit.MICROSECONDS.toNanos(microsSinceEpoch % TimeUnit.SECONDS.toMicros(1)));
     }
 
     private Instant toInstantFromMillis(long millisecondSinceEpoch) {
-        return Instant.ofEpochSecond(
-                TimeUnit.MILLISECONDS.toSeconds(millisecondSinceEpoch),
-                TimeUnit.MILLISECONDS.toNanos(millisecondSinceEpoch % TimeUnit.SECONDS.toMillis(1)));
+        return Instant.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(millisecondSinceEpoch), TimeUnit.MILLISECONDS.toNanos(millisecondSinceEpoch % TimeUnit.SECONDS.toMillis(1)));
     }
 
 }

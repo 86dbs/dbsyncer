@@ -19,5 +19,4 @@ public interface MappingConfigChecker {
      * @return
      */
     void modify(Mapping mapping, Map<String, String> params);
-
 }

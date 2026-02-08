@@ -7,6 +7,7 @@ import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,7 @@ import java.sql.Timestamp;
  * @Date 2022-05-05 23:19
  */
 public class FileColumnValue extends AbstractColumnValue<String> {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String value;

@@ -36,6 +36,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -98,13 +99,13 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     private final ElasticsearchSchemaResolver schemaResolver = new ElasticsearchSchemaResolver();
 
     public ElasticsearchConnector() {
-        filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v) -> builder.must(QueryBuilders.matchQuery(k, v)));
-        filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v) -> builder.mustNot(QueryBuilders.matchQuery(k, v)));
-        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gt(v)));
-        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lt(v)));
-        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gte(v)));
-        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lte(v)));
-        filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v) -> builder.filter(QueryBuilders.wildcardQuery(k, v)));
+        filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v)->builder.must(QueryBuilders.matchQuery(k, v)));
+        filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v)->builder.mustNot(QueryBuilders.matchQuery(k, v)));
+        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v)->builder.filter(QueryBuilders.rangeQuery(k).gt(v)));
+        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v)->builder.filter(QueryBuilders.rangeQuery(k).lt(v)));
+        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v)->builder.filter(QueryBuilders.rangeQuery(k).gte(v)));
+        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v)->builder.filter(QueryBuilders.rangeQuery(k).lte(v)));
+        filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v)->builder.filter(QueryBuilders.wildcardQuery(k, v)));
     }
 
     @Override
@@ -171,7 +172,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             Map<String, Set<AliasMetadata>> aliases = indicesAlias.getAliases();
             if (!CollectionUtils.isEmpty(aliases)) {
                 // 排除系统索引
-                return aliases.keySet().stream().filter(index -> !StringUtil.startsWith(index, StringUtil.POINT)).map(name -> {
+                return aliases.keySet().stream().filter(index->!StringUtil.startsWith(index, StringUtil.POINT)).map(name-> {
                     Table table = new Table();
                     table.setName(name);
                     table.setType(TableTypeEnum.TABLE.getCode());
@@ -189,7 +190,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public List<MetaInfo> getMetaInfo(ESConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
         try {
-            for (Table table : context.getTablePatterns()){
+            for (Table table : context.getTablePatterns()) {
                 // 自定义SQL
                 if (TableTypeEnum.getTableType(table.getType()) == getExtendedTableType()) {
                     getExtendedMetaInfo(connectorInstance, metaInfos, table);
@@ -284,7 +285,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         genSearchSourceBuilder(builder, context.getCommand());
         builder.timeout(TimeValue.timeValueSeconds(connectorInstance.getConfig().getTimeoutSeconds()));
         List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(context.getSourceTable());
-        primaryKeys.forEach(pk -> builder.sort(pk, SortOrder.ASC));
+        primaryKeys.forEach(pk->builder.sort(pk, SortOrder.ASC));
         // 深度分页
         if (!CollectionUtils.isEmpty(context.getCursors())) {
             builder.from(0);
@@ -328,7 +329,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             final String pk = pkFields.get(0).getName();
             final String indexName = context.getCommand().get(_TARGET_INDEX);
             final String type = context.getCommand().get(_TYPE);
-            data.forEach(row -> addRequest(request, indexName, type, context.getEvent(), String.valueOf(row.get(pk)), row));
+            data.forEach(row->addRequest(request, indexName, type, context.getEvent(), String.valueOf(row.get(pk)), row));
 
             BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -341,9 +342,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
                 r = items[i];
                 if (r.isFailed()) {
                     result.getFailData().add(data.get(i));
-                    result.getError().append("\n[").append(i)
-                            .append("]: index [").append(r.getIndex()).append("], type [")
-                            .append(r.getType()).append("], id [").append(r.getId())
+                    result.getError().append("\n[").append(i).append("]: index [").append(r.getIndex()).append("], type [").append(r.getType()).append("], id [").append(r.getId())
                             .append("], message [").append(r.getFailureMessage()).append("]");
                     continue;
                 }
@@ -366,7 +365,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         command.put(_SOURCE_INDEX, table.getName());
         List<Field> column = table.getColumn();
         if (!CollectionUtils.isEmpty(column)) {
-            List<String> fieldNames = column.stream().map(c -> c.getName()).collect(Collectors.toList());
+            List<String> fieldNames = column.stream().map(c->c.getName()).collect(Collectors.toList());
             command.put(ConnectorConstant.OPERTION_QUERY, StringUtil.join(fieldNames, ","));
         }
 
@@ -409,7 +408,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         if (CollectionUtils.isEmpty(properties)) {
             throw new ElasticsearchException("查询字段不能为空.");
         }
-        properties.forEach((fieldName, c) -> {
+        properties.forEach((fieldName, c)-> {
             Map fieldDesc = (Map) c;
             String columnType = (String) fieldDesc.get("type");
             // dynamic => object
@@ -449,13 +448,13 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             return;
         }
 
-        List<Filter> and = filters.stream().filter(f -> OperationEnum.isAnd(f.getOperation())).collect(Collectors.toList());
-        List<Filter> or = filters.stream().filter(f -> OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
+        List<Filter> and = filters.stream().filter(f->OperationEnum.isAnd(f.getOperation())).collect(Collectors.toList());
+        List<Filter> or = filters.stream().filter(f->OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
         // where (id = 1 and name = 'tom') or id = 2 or id = 3
         BoolQueryBuilder q = QueryBuilders.boolQuery();
         if (!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)) {
             BoolQueryBuilder andQuery = QueryBuilders.boolQuery();
-            and.forEach(f -> addFilter(andQuery, f));
+            and.forEach(f->addFilter(andQuery, f));
             q.should(andQuery);
             genShouldQuery(q, or);
             builder.query(q);
@@ -468,12 +467,12 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             return;
         }
 
-        and.forEach(f -> addFilter(q, f));
+        and.forEach(f->addFilter(q, f));
         builder.query(q);
     }
 
     private void genShouldQuery(BoolQueryBuilder q, List<Filter> or) {
-        or.forEach(f -> {
+        or.forEach(f-> {
             BoolQueryBuilder orQuery = QueryBuilders.boolQuery();
             addFilter(orQuery, f);
             q.should(orQuery);
@@ -505,6 +504,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     private interface FilterMapper {
+
         void apply(BoolQueryBuilder builder, String key, String value);
     }
 }

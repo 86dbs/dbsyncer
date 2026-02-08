@@ -19,5 +19,4 @@ public class BytesToStringHandler extends AbstractHandler {
         }
         return value;
     }
-
 }

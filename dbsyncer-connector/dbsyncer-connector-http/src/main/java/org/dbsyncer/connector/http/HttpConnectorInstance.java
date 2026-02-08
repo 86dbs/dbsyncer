@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
  * @date 2026-02-02 00:01
  */
 public final class HttpConnectorInstance implements ConnectorInstance<HttpConfig, Object> {
+
     private HttpConfig config;
 
     public HttpConnectorInstance(HttpConfig config) {

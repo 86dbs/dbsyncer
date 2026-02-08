@@ -21,5 +21,4 @@ public abstract class UUIDUtil {
     public static UUID fromString(String s) {
         return UUID.fromString(s);
     }
-
 }

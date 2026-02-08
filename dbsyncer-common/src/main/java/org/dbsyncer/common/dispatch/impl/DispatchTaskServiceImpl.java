@@ -5,12 +5,14 @@ package org.dbsyncer.common.dispatch.impl;
 
 import org.dbsyncer.common.dispatch.DispatchTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,19 +35,19 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
 
     @Override
     public void execute(DispatchTask task) {
-        dispatchTaskExecutor.execute(active.compute(task.getUniqueId(), (k, t) -> {
+        dispatchTaskExecutor.execute(active.compute(task.getUniqueId(), (k, t)-> {
             if (t != null) {
                 t.destroy();
                 logger.warn("The dispatch task was terminated, {}", k);
             }
-            task.onDestroy(dispatchTask -> active.remove(task.getUniqueId()));
+            task.onDestroy(dispatchTask->active.remove(task.getUniqueId()));
             return task;
         }));
     }
 
     @Override
     public void stop(String uniqueId) {
-        active.computeIfPresent(uniqueId, (k, t) -> {
+        active.computeIfPresent(uniqueId, (k, t)-> {
             t.destroy();
             logger.info("The dispatch task has been stop, {}", k);
             return null;

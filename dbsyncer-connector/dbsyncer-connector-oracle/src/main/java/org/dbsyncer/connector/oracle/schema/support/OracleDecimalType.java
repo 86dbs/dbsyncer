@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 public final class OracleDecimalType extends DecimalType {
 
     private enum TypeEnum {
-        NUMBER("NUMBER"),
-        FLOAT("FLOAT");
+
+        NUMBER("NUMBER"), FLOAT("FLOAT");
 
         private final String value;
 

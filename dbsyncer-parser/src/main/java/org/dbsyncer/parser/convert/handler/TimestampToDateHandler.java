@@ -22,5 +22,4 @@ public class TimestampToDateHandler extends AbstractHandler {
         }
         return value;
     }
-
 }

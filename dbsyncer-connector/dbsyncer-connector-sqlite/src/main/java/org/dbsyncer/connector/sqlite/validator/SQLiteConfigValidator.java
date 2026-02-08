@@ -8,6 +8,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.util.PropertiesUtil;
+
 import org.springframework.util.Assert;
 
 import java.util.Map;

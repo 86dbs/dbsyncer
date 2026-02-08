@@ -20,14 +20,10 @@ import java.util.stream.Stream;
  * @Date 2026-01-13 00:08
  */
 public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
+
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(
-                new SQLiteStringType(),
-                new SQLiteIntType(),
-                new SQLiteDoubleType(),
-                new SQLiteBytesType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
+        Stream.of(new SQLiteStringType(), new SQLiteIntType(), new SQLiteDoubleType(), new SQLiteBytesType()).forEach(t->t.getSupportedTypeName().forEach(typeName-> {
             if (mapping.containsKey(typeName)) {
                 throw new SQLiteException("Duplicate type name: " + typeName);
             }

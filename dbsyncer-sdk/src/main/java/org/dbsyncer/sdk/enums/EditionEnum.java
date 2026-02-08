@@ -37,5 +37,4 @@ public enum EditionEnum {
     public String getMessage() {
         return message;
     }
-
 }

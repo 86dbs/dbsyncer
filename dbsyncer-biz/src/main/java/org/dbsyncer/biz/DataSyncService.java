@@ -3,8 +3,11 @@
  */
 package org.dbsyncer.biz;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.dbsyncer.biz.vo.MessageVO;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.Map;
 

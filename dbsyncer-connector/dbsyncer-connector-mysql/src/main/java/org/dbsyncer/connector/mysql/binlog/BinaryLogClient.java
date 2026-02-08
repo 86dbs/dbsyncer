@@ -9,6 +9,12 @@ import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
 import com.github.shyiko.mysql.binlog.network.AuthenticationException;
 import com.github.shyiko.mysql.binlog.network.ServerException;
 
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
+import com.github.shyiko.mysql.binlog.network.AuthenticationException;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+
 import java.util.Map;
 
 public interface BinaryLogClient {
@@ -101,5 +107,4 @@ public interface BinaryLogClient {
      * @return workerThreadName
      */
     String getWorkerThreadName();
-
 }

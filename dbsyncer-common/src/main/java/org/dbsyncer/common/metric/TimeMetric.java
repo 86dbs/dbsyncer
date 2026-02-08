@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @Date 2024-06-02 22:44
  */
 public class TimeMetric {
+
     /**
      * 槽位的数量
      */
@@ -105,5 +106,4 @@ public class TimeMetric {
     public Bucket[] getBucketAll() {
         return buckets;
     }
-
 }

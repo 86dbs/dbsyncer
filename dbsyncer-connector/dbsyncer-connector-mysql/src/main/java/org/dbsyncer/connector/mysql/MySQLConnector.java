@@ -71,10 +71,10 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             List<String> databases = databaseTemplate.queryForList("SHOW DATABASES", String.class);
             if (!CollectionUtils.isEmpty(databases)) {
-                return databases.stream().filter(name -> !SYSTEM_DATABASES.contains(name.toLowerCase())).collect(Collectors.toList());
+                return databases.stream().filter(name->!SYSTEM_DATABASES.contains(name.toLowerCase())).collect(Collectors.toList());
             }
             return Collections.emptyList();
         });
@@ -139,8 +139,8 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         // MySQL需要OFFSET=0和LIMIT=pageSize参数
         Object[] newCursors = new Object[cursorArgs.length + 2];
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
-        newCursors[cursorArgs.length] = 0;  // OFFSET
-        newCursors[cursorArgs.length + 1] = pageSize;  // LIMIT
+        newCursors[cursorArgs.length] = 0; // OFFSET
+        newCursors[cursorArgs.length + 1] = pageSize; // LIMIT
         return newCursors;
     }
 
@@ -151,7 +151,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> dfs = new ArrayList<>();
-        fields.forEach(f -> {
+        fields.forEach(f-> {
             String name = database.buildWithQuotation(f.getName());
             fs.add(name);
             vs.add("?");
@@ -166,8 +166,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         String values = StringUtil.join(vs, StringUtil.COMMA);
         String dupNames = StringUtil.join(dfs, StringUtil.COMMA);
         // 基于主键或唯一索引冲突时更新
-        return String.format("%sINSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;",
-                uniqueCode, table, fieldNames, values, dupNames);
+        return String.format("%sINSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;", uniqueCode, table, fieldNames, values, dupNames);
     }
 
     @Override
@@ -177,7 +176,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
-        fields.forEach(f -> {
+        fields.forEach(f-> {
             fs.add(database.buildWithQuotation(f.getName()));
             vs.add("?");
         });

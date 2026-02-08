@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
  * @Date 2026-01-11 22:21
  */
 public final class SQLiteStringType extends StringType {
+
     private enum TypeEnum {
+
         TEXT("TEXT");
 
         private final String value;
@@ -62,5 +64,4 @@ public final class SQLiteStringType extends StringType {
         }
         return throwUnsupportedException(val, field);
     }
-
 }

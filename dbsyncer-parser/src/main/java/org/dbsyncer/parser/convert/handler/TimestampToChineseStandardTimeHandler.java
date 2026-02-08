@@ -22,5 +22,4 @@ public class TimestampToChineseStandardTimeHandler extends AbstractHandler {
         }
         return value;
     }
-
 }

@@ -24,12 +24,14 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -130,7 +132,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     private Table findTable(List<Table> tables, String tableName, String type) {
         if (!CollectionUtils.isEmpty(tables)) {
-            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
+            Optional<Table> first = tables.stream().filter(table->table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
             if (first.isPresent()) {
                 return first.get();
             }
@@ -171,7 +173,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
             String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
-            Arrays.stream(pks).forEach(pk -> {
+            Arrays.stream(pks).forEach(pk-> {
                 for (Field field : metaInfo.getColumn()) {
                     if (StringUtil.equalsIgnoreCase(field.getName(), pk)) {
                         field.setPk(true);
@@ -213,18 +215,16 @@ public class TableGroupChecker extends AbstractChecker {
         // 模糊匹配相似字段
         AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
         AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
-        m1.forEach((s, f1) ->
-            m2.computeIfPresent(s, (t, f2) -> {
-                tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
-                if (f1.isPk()) {
-                    existSourcePKFieldMapping.set(true);
-                }
-                if (f2.isPk()) {
-                    existTargetPKFieldMapping.set(true);
-                }
-                return f2;
-            })
-        );
+        m1.forEach((s, f1)->m2.computeIfPresent(s, (t, f2)-> {
+            tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
+            if (f1.isPk()) {
+                existSourcePKFieldMapping.set(true);
+            }
+            if (f2.isPk()) {
+                existTargetPKFieldMapping.set(true);
+            }
+            return f2;
+        }));
 
         // 沒有主键映射关系，取第一个主键作为映射关系
         if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
@@ -245,8 +245,8 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
+        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
         List<FieldMapping> fieldMappingList = tableGroup.getFieldMapping();
         Set<String> exist = new HashSet<>();
         String[] fieldMapping = StringUtil.split(fieldMappings, StringUtil.COMMA);
@@ -267,7 +267,7 @@ public class TableGroupChecker extends AbstractChecker {
                 String name = m[0];
                 if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                     if (!exist.contains(mapping)) {
-                        tMap.computeIfPresent(name, (k, field) -> {
+                        tMap.computeIfPresent(name, (k, field)-> {
                             fieldMappingList.add(new FieldMapping(null, field));
                             exist.add(mapping);
                             return field;
@@ -276,7 +276,7 @@ public class TableGroupChecker extends AbstractChecker {
                     continue;
                 }
                 if (!exist.contains(mapping)) {
-                    sMap.computeIfPresent(name, (k, field) -> {
+                    sMap.computeIfPresent(name, (k, field)-> {
                         fieldMappingList.add(new FieldMapping(field, null));
                         exist.add(mapping);
                         return field;
@@ -288,7 +288,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private void shuffleColumn(List<Field> col, Map<String, Field> map) {
-        col.forEach(f -> map.putIfAbsent(f.getName().toUpperCase(), f));
+        col.forEach(f->map.putIfAbsent(f.getName().toUpperCase(), f));
     }
 
     /**

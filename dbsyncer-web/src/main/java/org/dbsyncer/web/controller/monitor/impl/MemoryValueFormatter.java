@@ -1,6 +1,7 @@
 package org.dbsyncer.web.controller.monitor.impl;
 
 import org.dbsyncer.web.controller.monitor.ValueFormatter;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

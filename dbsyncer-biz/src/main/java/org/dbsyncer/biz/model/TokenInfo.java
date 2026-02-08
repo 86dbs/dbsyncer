@@ -11,6 +11,7 @@ package org.dbsyncer.biz.model;
  * @date 2026-02-07 00:02
  */
 public class TokenInfo {
+
     /**
      * 签发时间
      */

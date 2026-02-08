@@ -6,6 +6,9 @@ package org.dbsyncer.sdk.sqlparser;
 import net.sf.jsqlparser.parser.CCJSqlParserTokenManager;
 import net.sf.jsqlparser.parser.SimpleCharStream;
 
+import net.sf.jsqlparser.parser.CCJSqlParserTokenManager;
+import net.sf.jsqlparser.parser.SimpleCharStream;
+
 /**
  * @Author 穿云
  * @Version 1.0.0

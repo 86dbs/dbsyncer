@@ -13,12 +13,14 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.SystemConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -137,7 +139,7 @@ public class JwtSecretManager {
      */
     private JwtSecretConfig getJwtSecretConfig() {
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
-        Assert.notNull(systemConfig,"系统服务暂不可用，请重试");
+        Assert.notNull(systemConfig, "系统服务暂不可用，请重试");
         JwtSecretConfig config = systemConfig.getJwtSecretConfig();
         if (config == null) {
             generateAndSaveSecret(systemConfig);

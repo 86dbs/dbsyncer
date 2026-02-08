@@ -1,17 +1,19 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
 import org.dbsyncer.connector.sqlserver.cdc.Lsn;
+import org.dbsyncer.connector.sqlserver.model.SqlServerChangeTable;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.util.*;
+import com.microsoft.sqlserver.jdbc.SQLServerException;
+
+import com.microsoft.sqlserver.jdbc.SQLServerException;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -69,17 +71,17 @@ public class ChangeDataCaptureTest {
         cdc.start();
 
         // 获取数据库名 test
-        realDatabaseName = cdc.queryAndMap(GET_DATABASE_NAME, rs -> rs.getString(1));
+        realDatabaseName = cdc.queryAndMap(GET_DATABASE_NAME, rs->rs.getString(1));
         logger.info("数据库名:{}", realDatabaseName);
         // As per https://www.mssqltips.com/sqlservertip/1140/how-to-tell-what-sql-server-version-you-are-running/
         // Always beginning with 'Microsoft SQL Server NNNN' but only in case SQL Server is standalone
-        String version = cdc.queryAndMap(GET_DATABASE_VERSION, rs -> rs.getString(1));
+        String version = cdc.queryAndMap(GET_DATABASE_VERSION, rs->rs.getString(1));
         boolean supportsAtTimeZone = false;
         if (version.startsWith("Microsoft SQL Server ")) {
             supportsAtTimeZone = 2016 < Integer.valueOf(version.substring(21, 25));
         }
         logger.info("数据库版本:{}", version);
-        tables = cdc.queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> {
+        tables = cdc.queryAndMapList(GET_TABLE_LIST.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs-> {
             Set<String> table = new LinkedHashSet<>();
             while (rs.next()) {
                 table.add(rs.getString(1));
@@ -88,10 +90,10 @@ public class ChangeDataCaptureTest {
         });
         logger.info("所有表:{}", tables);
         // 获取Agent服务状态 Stopped. Running.
-        boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> "Running.".equals(rs.getString(1)));
+        boolean enabledServerAgent = cdc.queryAndMap(IS_SERVER_AGENT_RUNNING.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs->"Running.".equals(rs.getString(1)));
         logger.info("是否启动Agent服务:{}", enabledServerAgent);
         Assert.assertTrue("The agent server is not running", enabledServerAgent);
-        boolean enabledCDC = cdc.queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs -> rs.getBoolean(1));
+        boolean enabledCDC = cdc.queryAndMap(IS_DB_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, realDatabaseName), rs->rs.getBoolean(1));
         logger.info("是否启用CDC库[{}]:{}", realDatabaseName, enabledCDC);
         if (!enabledCDC) {
             cdc.execute(ENABLE_DB_CDC.replace(STATEMENTS_PLACEHOLDER, realDatabaseName));
@@ -100,13 +102,13 @@ public class ChangeDataCaptureTest {
         }
 
         // 注册CDC表
-        tables.forEach(table -> {
+        tables.forEach(table-> {
             try {
-                boolean enabledTableCDC = cdc.queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs -> rs.getInt(1) > 0);
+                boolean enabledTableCDC = cdc.queryAndMap(IS_TABLE_CDC_ENABLED.replace(STATEMENTS_PLACEHOLDER, table), rs->rs.getInt(1) > 0);
                 logger.info("是否启用CDC表[{}]:{}", table, enabledTableCDC);
                 if (!enabledTableCDC) {
                     cdc.execute(String.format(ENABLE_TABLE_CDC.replace(STATEMENTS_PLACEHOLDER, table), schema));
-                    Lsn minLsn = cdc.queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs -> new Lsn(rs.getBytes(1)));
+                    Lsn minLsn = cdc.queryAndMap(GET_MIN_LSN.replace(STATEMENTS_PLACEHOLDER, table), rs->new Lsn(rs.getBytes(1)));
                     logger.info("启用CDC表[{}]:{}", table, minLsn.isAvailable());
                 }
             } catch (SQLException e) {
@@ -118,7 +120,7 @@ public class ChangeDataCaptureTest {
         getAllChangesForTable = GET_ALL_CHANGES_FOR_TABLE.replaceFirst(STATEMENTS_PLACEHOLDER, Matcher.quoteReplacement(supportsAtTimeZone ? AT_TIME_ZONE_UTC : ""));
 
         // 读取增量
-        Set<SqlServerChangeTable> changeTables = cdc.queryAndMapList(GET_TABLES_CDC_ENABLED, rs -> {
+        Set<SqlServerChangeTable> changeTables = cdc.queryAndMapList(GET_TABLES_CDC_ENABLED, rs-> {
             final Set<SqlServerChangeTable> tables = new HashSet<>();
             while (rs.next()) {
                 SqlServerChangeTable changeTable = new SqlServerChangeTable(
@@ -145,10 +147,10 @@ public class ChangeDataCaptureTest {
 
         if (!CollectionUtils.isEmpty(changeTables)) {
             AtomicInteger count = new AtomicInteger(0);
-            Lsn lastLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+            Lsn lastLsn = cdc.queryAndMap(GET_MAX_LSN, rs->new Lsn(rs.getBytes(1)));
 
             while (true && count.getAndAdd(1) < 30) {
-                Lsn stopLsn = cdc.queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+                Lsn stopLsn = cdc.queryAndMap(GET_MAX_LSN, rs->new Lsn(rs.getBytes(1)));
                 if (!stopLsn.isAvailable()) {
                     logger.warn("No maximum LSN recorded in the database; please ensure that the SQL Server Agent is running");
                     cdc.pause();
@@ -161,15 +163,15 @@ public class ChangeDataCaptureTest {
                 }
 
                 Lsn startLsn = getIncrementLsn(cdc, lastLsn);
-                changeTables.forEach(changeTable -> {
+                changeTables.forEach(changeTable-> {
                     try {
                         final String query = getAllChangesForTable.replace(STATEMENTS_PLACEHOLDER, changeTable.getCaptureInstance());
                         logger.info("Getting changes for table {} in range[{}, {}]", changeTable.getTableName(), startLsn, stopLsn);
 
-                        cdc.queryAndMapList(query, statement -> {
+                        cdc.queryAndMapList(query, statement-> {
                             statement.setBytes(1, startLsn.getBinary());
                             statement.setBytes(2, stopLsn.getBinary());
-                        }, rs -> {
+                        }, rs-> {
                             int columnCount = rs.getMetaData().getColumnCount();
                             List<List<Object>> data = new ArrayList<>(columnCount);
                             List<Object> row = null;
@@ -231,7 +233,7 @@ public class ChangeDataCaptureTest {
     }
 
     private Lsn getIncrementLsn(ChangeDataCaptureTest cdc, Lsn lastLsn) {
-        return cdc.queryAndMap(GET_INCREMENT_LSN, statement -> statement.setBytes(1, lastLsn.getBinary()), rs -> Lsn.valueOf(rs.getBytes(1)));
+        return cdc.queryAndMap(GET_INCREMENT_LSN, statement->statement.setBytes(1, lastLsn.getBinary()), rs->Lsn.valueOf(rs.getBytes(1)));
     }
 
     private void pause() throws InterruptedException {
@@ -255,10 +257,12 @@ public class ChangeDataCaptureTest {
     }
 
     public interface ResultSetMapper<T> {
+
         T apply(ResultSet rs) throws SQLException;
     }
 
     public interface StatementPreparer {
+
         void accept(PreparedStatement statement) throws SQLException;
     }
 
@@ -304,7 +308,7 @@ public class ChangeDataCaptureTest {
             rs = ps.executeQuery();
             apply = mapper.apply(rs);
         } catch (SQLServerException e) {
-            // 为过程或函数 cdc.fn_cdc_get_all_changes_ ...  提供的参数数目不足。
+            // 为过程或函数 cdc.fn_cdc_get_all_changes_ ... 提供的参数数目不足。
             logger.warn(e.getMessage());
         } catch (Exception e) {
             logger.error(e.getMessage());

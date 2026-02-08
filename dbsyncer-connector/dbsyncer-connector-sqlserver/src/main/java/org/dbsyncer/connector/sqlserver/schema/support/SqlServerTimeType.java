@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public final class SqlServerTimeType extends TimeType {
 
     private enum TypeEnum {
+
         TIME("time");
 
         private final String value;
@@ -41,5 +42,4 @@ public final class SqlServerTimeType extends TimeType {
     protected Time merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

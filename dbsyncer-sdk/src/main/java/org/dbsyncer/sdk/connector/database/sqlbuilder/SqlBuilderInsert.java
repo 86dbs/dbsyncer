@@ -28,7 +28,7 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
         for (Field f : config.getFields()) {
             // 添加字段名
             fs.add(database.buildWithQuotation(f.getName()));
-            
+
             // 处理特殊类型的值表达式
             if (database.buildCustomValue(vs, f)) {
                 continue;
@@ -36,12 +36,8 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
             vs.add("?");
         }
         // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        return String.format("%sINSERT INTO %s%s(%s) VALUES (%s)",
-                database.generateUniqueCode(),
-                config.getSchema(),
-                database.buildWithQuotation(config.getTableName()),
-                StringUtil.join(fs, StringUtil.COMMA),
-                StringUtil.join(vs, StringUtil.COMMA));
+        return String.format("%sINSERT INTO %s%s(%s) VALUES (%s)", database.generateUniqueCode(), config.getSchema(), database.buildWithQuotation(config.getTableName()), StringUtil
+                .join(fs, StringUtil.COMMA), StringUtil.join(vs, StringUtil.COMMA));
     }
 
 }

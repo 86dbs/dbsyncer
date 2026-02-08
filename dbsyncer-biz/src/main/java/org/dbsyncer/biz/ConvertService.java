@@ -20,5 +20,4 @@ public interface ConvertService {
      * @return
      */
     List<ConvertEnum> getConvertEnumAll();
-
 }

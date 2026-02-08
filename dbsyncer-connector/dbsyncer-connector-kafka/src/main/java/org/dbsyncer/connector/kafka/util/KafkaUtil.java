@@ -3,12 +3,13 @@
  */
 package org.dbsyncer.connector.kafka.util;
 
+import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.sdk.util.PropertiesUtil;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.dbsyncer.connector.kafka.config.KafkaConfig;
-import org.dbsyncer.sdk.util.PropertiesUtil;
 
 import java.util.Collections;
 import java.util.Properties;
@@ -51,8 +52,7 @@ public abstract class KafkaUtil {
 
     public static String toString(Properties properties) {
         String propertiesText = PropertiesUtil.toString(properties);
-        propertiesText = propertiesText.replaceAll("&","\r\n");
+        propertiesText = propertiesText.replaceAll("&", "\r\n");
         return propertiesText;
     }
-
 }

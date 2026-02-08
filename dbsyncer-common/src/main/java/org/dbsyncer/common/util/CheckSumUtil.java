@@ -2,6 +2,7 @@ package org.dbsyncer.common.util;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.nio.charset.StandardCharsets;
 
 public class CheckSumUtil {

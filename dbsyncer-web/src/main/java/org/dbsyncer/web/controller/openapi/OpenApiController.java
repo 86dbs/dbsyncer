@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -36,6 +37,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,7 +136,7 @@ public class OpenApiController implements InitializingBean {
         RequestMappingHandlerMapping mapping = applicationContext.getBean(RequestMappingHandlerMapping.class);
         // 获取url与类和方法的对应信息
         Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
-        map.forEach((k, v) -> {
+        map.forEach((k, v)-> {
             PatternsRequestCondition condition = k.getPatternsCondition();
             assert condition != null;
             Object[] array = condition.getPatterns().toArray();
@@ -144,7 +146,7 @@ public class OpenApiController implements InitializingBean {
                 // 匹配解析包
                 for (Object o : array) {
                     if (StringUtil.startsWith((String) o, obj.getKey())) {
-                        handlers.compute((String) o, (x, y) -> {
+                        handlers.compute((String) o, (x, y)-> {
                             if (y == null) {
                                 Object bean = applicationContext.getBean(v.getBeanType());
                                 InvocableHandlerMethod invocableHandlerMethod = new InvocableHandlerMethod(bean, v.getMethod());
@@ -193,7 +195,7 @@ public class OpenApiController implements InitializingBean {
                 logger.error("无效凭证 {}", secret);
                 return OpenApiResponse.fail(OpenApiErrorCode.UNAUTHORIZED, "无效凭证");
             }
-            
+
             // 获取JWT密钥（如果不存在会自动生成）
             Map<String, String> data = new HashMap<>();
             data.put("token", jwtSecretManager.generateToken()); // 生成Token
@@ -231,7 +233,7 @@ public class OpenApiController implements InitializingBean {
             if (StringUtil.isBlank(newToken)) {
                 return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "刷新Token失败, 请检查Token配置");
             }
-            
+
             Map<String, String> data = new HashMap<>();
             data.put("token", newToken);
             data.put("expires", "7200");

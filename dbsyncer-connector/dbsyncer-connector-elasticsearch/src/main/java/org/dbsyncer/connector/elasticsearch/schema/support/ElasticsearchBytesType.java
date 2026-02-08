@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchBytesType extends BytesType {
 
     private enum TypeEnum {
+
         BINARY("binary");
 
         private final String value;
@@ -45,7 +46,8 @@ public final class ElasticsearchBytesType extends BytesType {
     @Override
     protected byte[] merge(Object val, Field field) {
         if (val instanceof String) {
-            // The binary type accepts a binary value as a Base64 encoded string. The field is not stored by default and is not searchable.
+            // The binary type accepts a binary value as a Base64 encoded string. The field is not
+            // stored by default and is not searchable.
             // ES binary 类型以 Base64 编码存储
             try {
                 return Base64.getDecoder().decode((String) val);

@@ -78,5 +78,4 @@ public interface TaskService {
      * @return
      */
     Paging result(Map<String, String> param);
-
 }

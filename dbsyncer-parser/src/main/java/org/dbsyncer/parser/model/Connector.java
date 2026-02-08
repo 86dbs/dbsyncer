@@ -42,5 +42,4 @@ public class Connector extends ConfigModel {
     public void setDatabases(List<String> databases) {
         this.databases = databases;
     }
-
 }

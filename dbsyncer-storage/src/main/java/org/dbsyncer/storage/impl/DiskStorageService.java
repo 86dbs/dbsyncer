@@ -3,16 +3,6 @@
  */
 package org.dbsyncer.storage.impl;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -27,6 +17,17 @@ import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.lucene.Option;
 import org.dbsyncer.storage.lucene.Shard;
 import org.dbsyncer.storage.util.DocumentUtil;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,8 +70,7 @@ public class DiskStorageService extends AbstractStorageService {
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
             boolean desc = query.getSort().isDesc();
             // 根据修改时间 > 创建时间排序
-            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, desc),
-                    new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, desc));
+            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, desc), new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, desc));
             Option option = new Option();
             option.setQueryTotal(query.isQueryTotal());
             option.setFieldResolverMap(query.getFieldResolverMap());
@@ -110,7 +110,7 @@ public class DiskStorageService extends AbstractStorageService {
 
     @Override
     public void deleteAll(String sharding) {
-        shards.computeIfPresent(sharding, (k, v) -> {
+        shards.computeIfPresent(sharding, (k, v)-> {
             v.deleteAll();
             return v;
         });
@@ -119,12 +119,12 @@ public class DiskStorageService extends AbstractStorageService {
 
     @Override
     protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, (shard, docs) -> shard.insertBatch(docs));
+        batchExecute(type, sharding, list, (shard, docs)->shard.insertBatch(docs));
     }
 
     @Override
     protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, (shard, docs) -> {
+        batchExecute(type, sharding, list, (shard, docs)-> {
             for (Document doc : docs) {
                 shard.update(getPrimaryKeyTerm(doc), doc);
             }
@@ -159,7 +159,7 @@ public class DiskStorageService extends AbstractStorageService {
 
     private BooleanQuery buildQueryWithFilters(List<AbstractFilter> filters, Set<String> highLightKeys) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        filters.forEach(p -> {
+        filters.forEach(p-> {
             FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
             BooleanClause.Occur occur = getOccur(p.getOperation());
             switch (filterEnum) {
@@ -188,7 +188,7 @@ public class DiskStorageService extends AbstractStorageService {
 
     private BooleanQuery buildQueryWithBooleanFilters(List<BooleanFilter> clauses, Set<String> highLightKeys) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        clauses.forEach(c -> {
+        clauses.forEach(c-> {
             if (!CollectionUtils.isEmpty(c.getFilters())) {
                 BooleanQuery cBuild = buildQueryWithFilters(c.getFilters(), highLightKeys);
                 builder.add(cBuild, getOccur(c.getOperationEnum().getName()));
@@ -216,7 +216,7 @@ public class DiskStorageService extends AbstractStorageService {
 
         Shard shard = getShard(sharding);
         List<Document> docs = new ArrayList<>();
-        list.forEach(r -> {
+        list.forEach(r-> {
             switch (type) {
                 case DATA:
                     docs.add(DocumentUtil.convertData2Doc(r));
@@ -248,10 +248,11 @@ public class DiskStorageService extends AbstractStorageService {
      * @throws IOException
      */
     private Shard getShard(String sharding) {
-        return shards.computeIfAbsent(sharding, k -> new Shard(PATH + k));
+        return shards.computeIfAbsent(sharding, k->new Shard(PATH + k));
     }
 
     interface ExecuteMapper {
+
         void apply(Shard shard, List<Document> docs) throws IOException;
     }
 

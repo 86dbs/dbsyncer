@@ -25,5 +25,4 @@ public class SqlBuilderQueryCursor extends SqlBuilderQuery {
         PageSql pageSql = new PageSql(querySql, queryFilter, primaryKeys, fields);
         return config.getDatabase().getPageCursorSql(pageSql);
     }
-
 }

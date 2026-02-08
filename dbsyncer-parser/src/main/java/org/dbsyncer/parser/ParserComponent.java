@@ -58,5 +58,4 @@ public interface ParserComponent {
      * @return
      */
     Result writeBatch(PluginContext pluginContext, Executor executor);
-
 }

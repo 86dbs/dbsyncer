@@ -8,6 +8,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
+
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public abstract class PickerUtil {
     }
 
     public static Map<String, Field> convert2Map(List<Field> col) {
-        return col.stream().collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+        return col.stream().collect(Collectors.toMap(Field::getName, f->f, (k1, k2)->k1));
     }
 
     private static void appendFieldMapping(Mapping mapping, TableGroup group) {
@@ -60,14 +61,14 @@ public abstract class PickerUtil {
         List<Filter> filter = group.getFilter();
         if (!CollectionUtils.isEmpty(filter)) {
             Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
-            filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields, true));
+            filter.forEach(f->addFieldMapping(fieldMapping, f.getName(), fields, true));
         }
 
         // 检查转换配置是否在映射关系中
         List<Convert> convert = group.getConvert();
         if (!CollectionUtils.isEmpty(convert)) {
             Map<String, Field> fields = convert2Map(group.getTargetTable().getColumn());
-            convert.forEach(c -> addFieldMapping(fieldMapping, c.getName(), fields, false));
+            convert.forEach(c->addFieldMapping(fieldMapping, c.getName(), fields, false));
         }
     }
 
@@ -90,5 +91,4 @@ public abstract class PickerUtil {
             }
         }
     }
-
 }

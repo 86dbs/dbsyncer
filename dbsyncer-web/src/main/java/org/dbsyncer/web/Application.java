@@ -4,6 +4,7 @@
 package org.dbsyncer.web;
 
 import org.dbsyncer.common.util.DateFormatUtil;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;

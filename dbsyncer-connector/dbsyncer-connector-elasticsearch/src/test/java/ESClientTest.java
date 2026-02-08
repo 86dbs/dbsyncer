@@ -4,6 +4,7 @@
 
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
+
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -51,6 +52,7 @@ import java.util.Map;
  * @Date 2023-11-25 23:10
  */
 public class ESClientTest {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private RestHighLevelClient client;
     private String indexName = "test_index";
@@ -90,10 +92,7 @@ public class ESClientTest {
     @Test
     public void createIndexTest() throws IOException {
         CreateIndexRequest request = new CreateIndexRequest(indexName);
-        request.settings(Settings.builder()
-                .put("index.number_of_shards", 1)
-                .put("index.number_of_replicas", 0)
-        );
+        request.settings(Settings.builder().put("index.number_of_shards", 1).put("index.number_of_replicas", 0));
         // 构建索引字段
         XContentBuilder builder = XContentFactory.jsonBuilder();
         builder.startObject();

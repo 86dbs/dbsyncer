@@ -6,9 +6,11 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ConvertEnum;
+
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.util.List;
 
 /**
@@ -26,5 +28,4 @@ public class ConvertServiceImpl implements ConvertService {
     public List<ConvertEnum> getConvertEnumAll() {
         return profileComponent.getConvertEnumAll();
     }
-
 }

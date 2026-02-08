@@ -24,5 +24,4 @@ public interface ScheduledTaskService {
     void start(long period, ScheduledTaskJob job);
 
     void stop(String key);
-
 }

@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public final class SqlServerIntType extends IntType {
 
     private enum TypeEnum {
+
         INT("int");
 
         private final String value;
@@ -40,5 +41,4 @@ public final class SqlServerIntType extends IntType {
     protected Integer merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

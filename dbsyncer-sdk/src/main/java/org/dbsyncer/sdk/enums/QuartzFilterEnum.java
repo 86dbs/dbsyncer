@@ -90,5 +90,4 @@ public enum QuartzFilterEnum {
     public QuartzFilter getQuartzFilter() {
         return quartzFilter;
     }
-
 }

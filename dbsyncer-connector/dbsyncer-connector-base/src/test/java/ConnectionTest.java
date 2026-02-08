@@ -1,7 +1,6 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-import oracle.jdbc.OracleConnection;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -13,10 +12,15 @@ import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+
+import oracle.jdbc.OracleConnection;
+
+import oracle.jdbc.OracleConnection;
 
 import java.nio.charset.Charset;
 import java.sql.Clob;
@@ -69,7 +73,7 @@ public class ConnectionTest {
         final String sql2 = "UPDATE `test`.`vote_records_test` SET `user_id` = ?, `create_time` = now() WHERE `id` = ?";
         for (int i = 0; i < threadSize; i++) {
             final int k = i + 1;
-            pool.submit(() -> {
+            pool.submit(()-> {
                 try {
                     barrier.await();
                     // 模拟操作
@@ -119,30 +123,29 @@ public class ConnectionTest {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createOracleConfig());
 
         String executeSql = "UPDATE \"my_user\" SET \"name\"=?,\"clo\"=? WHERE \"id\"=?";
-        int[] execute = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(PreparedStatement ps, int i) {
-                        try {
-                            SimpleConnection connection = databaseTemplate.getSimpleConnection();
-                            OracleConnection conn = (OracleConnection) connection.getConnection();
-                            Clob clob = conn.createClob();
-                            clob.setString(1, new String("中文888".getBytes(Charset.defaultCharset())));
+        int[] execute = connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(executeSql, new BatchPreparedStatementSetter() {
 
-                            ps.setString(1, "hello888");
-                            ps.setClob(2, clob);
-                            ps.setInt(3, 2);
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
+            @Override
+            public void setValues(PreparedStatement ps, int i) {
+                try {
+                    SimpleConnection connection = databaseTemplate.getSimpleConnection();
+                    OracleConnection conn = (OracleConnection) connection.getConnection();
+                    Clob clob = conn.createClob();
+                    clob.setString(1, new String("中文888".getBytes(Charset.defaultCharset())));
 
-                    @Override
-                    public int getBatchSize() {
-                        return 1;
-                    }
-                })
-        );
+                    ps.setString(1, "hello888");
+                    ps.setClob(2, clob);
+                    ps.setInt(3, 2);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public int getBatchSize() {
+                return 1;
+            }
+        }));
         logger.info("execute:{}", execute);
     }
 
@@ -157,14 +160,14 @@ public class ConnectionTest {
         final CountDownLatch latch = new CountDownLatch(threadSize);
         for (int i = 0; i < threadSize; i++) {
             final int k = i + 3;
-            pool.submit(() -> {
+            pool.submit(()-> {
                 try {
                     barrier.await();
 
                     // 模拟操作
                     System.out.println(String.format("%s %s:%s", LocalDateTime.now(), Thread.currentThread().getName(), k));
 
-                    Object execute = connectorInstance.execute(tem -> tem.queryForObject("select 1", Integer.class));
+                    Object execute = connectorInstance.execute(tem->tem.queryForObject("select 1", Integer.class));
                     System.out.println(String.format("%s %s:%s execute=>%s", LocalDateTime.now(), Thread.currentThread().getName(), k, execute));
 
                 } catch (InterruptedException e) {
@@ -198,7 +201,7 @@ public class ConnectionTest {
         String querySql = "SELECT * from test_schema where id = ?";
         Object[] args = new Object[1];
         args[0] = 9999999;
-        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, args));
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(querySql, args));
         logger.info("test list={}", list);
     }
 
@@ -326,7 +329,7 @@ public class ConnectionTest {
         // 模拟单表增删改事件
         for (int i = 0; i < threadSize; i++) {
             final int offset = i;
-            pool.submit(() -> {
+            pool.submit(()-> {
                 try {
                     logger.info("{}-开始任务", Thread.currentThread().getName());
                     // 增删改事件密集型
@@ -377,9 +380,9 @@ public class ConnectionTest {
             deleteArgs[0] = i + start;
             deleteData.add(deleteArgs);
 
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(insert, insertData));
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(update, updateData));
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(delete, deleteData));
+            connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(insert, insertData));
+            connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(update, updateData));
+            connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(delete, deleteData));
             insertData.clear();
             updateData.clear();
             deleteData.clear();
@@ -406,9 +409,9 @@ public class ConnectionTest {
         for (int i = 0; i < taskSize; i++) {
             List<Object[]> slice = dataList.stream().skip(offset).limit(batchSize).collect(Collectors.toList());
             offset += batchSize;
-            pool.submit(() -> {
+            pool.submit(()-> {
                 try {
-                    connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, slice));
+                    connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(sql, slice));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
                 } finally {
@@ -445,7 +448,7 @@ public class ConnectionTest {
         final String schema = "root";
         final String tableNamePattern = "sw_test";
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(createMysqlConfig());
-        connectorInstance.execute(databaseTemplate -> {
+        connectorInstance.execute(databaseTemplate-> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = conn.getCatalog();
@@ -466,7 +469,7 @@ public class ConnectionTest {
     private List<Table> getTables(DatabaseConfig config, final String catalog, final String schema, final String tableNamePattern) {
         final DatabaseConnectorInstance connectorInstance = new DatabaseConnectorInstance(config);
         List<Table> tables = new ArrayList<>();
-        connectorInstance.execute(databaseTemplate -> {
+        connectorInstance.execute(databaseTemplate-> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             String databaseCatalog = null == catalog ? conn.getCatalog() : catalog;
@@ -485,7 +488,7 @@ public class ConnectionTest {
         });
 
         logger.info("\r 表总数{}", tables.size());
-        tables.forEach(t -> logger.info("{} {}", t.getName(), t.getType()));
+        tables.forEach(t->logger.info("{} {}", t.getName(), t.getType()));
 
         return tables;
     }

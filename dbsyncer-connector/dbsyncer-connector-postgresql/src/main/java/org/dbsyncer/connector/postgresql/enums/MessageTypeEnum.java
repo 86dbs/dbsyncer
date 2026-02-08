@@ -4,17 +4,8 @@
 package org.dbsyncer.connector.postgresql.enums;
 
 public enum MessageTypeEnum {
-    BEGIN,
-    COMMIT,
-    TABLE,
-    INSERT,
-    UPDATE,
-    DELETE,
-    RELATION,
-    TRUNCATE,
-    TYPE,
-    ORIGIN,
-    NONE;
+
+    BEGIN, COMMIT, TABLE, INSERT, UPDATE, DELETE, RELATION, TRUNCATE, TYPE, ORIGIN, NONE;
 
     public static MessageTypeEnum getType(char type) {
         switch (type) {

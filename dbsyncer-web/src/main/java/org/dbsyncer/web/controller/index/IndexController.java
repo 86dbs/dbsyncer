@@ -5,6 +5,7 @@ package org.dbsyncer.web.controller.index;
 
 import org.dbsyncer.biz.AppConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -33,5 +34,4 @@ public class IndexController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return RestResult.restSuccess(appConfigService.getVersionInfo(authentication.getName()));
     }
-
 }

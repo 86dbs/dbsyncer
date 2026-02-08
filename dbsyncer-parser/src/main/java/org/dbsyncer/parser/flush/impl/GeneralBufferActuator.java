@@ -40,6 +40,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -48,6 +49,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -148,17 +150,17 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
-                tableGroupContext.update(mapping, pickers.stream().map(picker -> {
+                tableGroupContext.update(mapping, pickers.stream().map(picker-> {
                     TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList()));
                 break;
             case SCAN:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
+                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
                 break;
             case ROW:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
+                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
                 // 发布刷新增量点事件
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
                 break;
@@ -190,8 +192,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
         List<Map> sourceDataList = new ArrayList<>();
-        List<Map> targetDataList = tableGroupPicker.getPicker()
-                .setSourceResolver(sourceConnector.getSchemaResolver())
+        List<Map> targetDataList = tableGroupPicker.getPicker().setSourceResolver(sourceConnector.getSchemaResolver())
                 .pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
@@ -299,7 +300,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private void printTraceInfo(WriterResponse response) {
         if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
-            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil.objToJson(response.getChangedOffset()), response.getDataList());
+            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil
+                    .objToJson(response.getChangedOffset()), response.getDataList());
         }
     }
 

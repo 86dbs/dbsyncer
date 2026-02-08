@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -23,15 +24,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AESKeyManager {
 
     private static final Logger logger = LoggerFactory.getLogger(AESKeyManager.class);
-    
+
     // 密钥缓存（key: appId, value: AES密钥）
     // 默认过期时间：30天，清理间隔：1小时
-    private static final ExpiringCache<String, String> keyCache = 
-            new ExpiringCache<>(30L * 24 * 60 * 60 * 1000, 60 * 60 * 1000L);
-    
+    private static final ExpiringCache<String, String> keyCache = new ExpiringCache<>(30L * 24 * 60 * 60 * 1000, 60 * 60 * 1000L);
+
     // 读写锁，保证线程安全
     private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    
+
     // AES密钥长度
     private static final int AES_KEY_SIZE = 256;
 
@@ -59,7 +59,7 @@ public class AESKeyManager {
         } finally {
             lock.readLock().unlock();
         }
-        
+
         // 需要生成新密钥
         lock.writeLock().lock();
         try {
@@ -68,7 +68,7 @@ public class AESKeyManager {
             if (key != null) {
                 return key;
             }
-            
+
             // 生成新密钥
             String newKey = generateAESKey();
             long expireTime = 30L * 24 * 60 * 60 * 1000; // 默认30天
@@ -163,7 +163,7 @@ public class AESKeyManager {
             lock.readLock().unlock();
         }
     }
-    
+
     /**
      * 获取密钥缓存大小（用于监控）
      * 

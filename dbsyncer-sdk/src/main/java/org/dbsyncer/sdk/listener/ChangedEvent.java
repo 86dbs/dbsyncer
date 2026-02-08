@@ -73,5 +73,4 @@ public interface ChangedEvent extends Cloneable {
     }
 
     Object clone() throws CloneNotSupportedException;
-
 }

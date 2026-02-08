@@ -61,5 +61,4 @@ public abstract class DatabaseUtil {
 
         throw new SdkException("database is invalid");
     }
-
 }

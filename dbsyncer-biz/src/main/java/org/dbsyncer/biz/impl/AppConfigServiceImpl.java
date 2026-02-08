@@ -9,6 +9,7 @@ import org.dbsyncer.biz.vo.VersionVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
+
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

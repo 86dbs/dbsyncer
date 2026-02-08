@@ -3,8 +3,11 @@
  */
 package org.dbsyncer.parser.ddl;
 
-import net.sf.jsqlparser.statement.alter.AlterExpression;
 import org.dbsyncer.sdk.config.DDLConfig;
+
+import net.sf.jsqlparser.statement.alter.AlterExpression;
+
+import net.sf.jsqlparser.statement.alter.AlterExpression;
 
 /**
  * Alter策略

@@ -28,5 +28,4 @@ public abstract class AbstractColumnValue<T> implements ColumnValue {
     protected boolean isEmpty(String value) {
         return value == null || StringUtil.isBlank(value) || "null".equalsIgnoreCase(value);
     }
-
 }

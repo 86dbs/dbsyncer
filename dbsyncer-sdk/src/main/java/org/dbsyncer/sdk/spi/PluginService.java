@@ -19,7 +19,6 @@ public interface PluginService {
      * 初始化加载
      */
     default void init() {
-
     }
 
     /**

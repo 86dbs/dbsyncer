@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.parser.sql.impl;
 
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.sql.SqlParser;
+
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -10,8 +13,14 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.delete.Delete;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.sql.SqlParser;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.delete.Delete;
 
 import java.util.List;
 
@@ -41,7 +50,7 @@ public final class DeleteSql implements SqlParser {
     public String parse() {
         try {
             Delete delete = (Delete) CCJSqlParserUtil.parse(sql);
-            //替换表名
+            // 替换表名
             Table table = new Table();
             table.setName(targetTableName);
             delete.setTable(table);
@@ -52,7 +61,7 @@ public final class DeleteSql implements SqlParser {
         }
     }
 
-    private void whereParse(Expression expression){
+    private void whereParse(Expression expression) {
         BinaryExpression binaryExpression = (BinaryExpression) expression;
         Expression left = binaryExpression.getLeftExpression();
         Expression right = binaryExpression.getRightExpression();
@@ -60,14 +69,11 @@ public final class DeleteSql implements SqlParser {
         findColumn((BinaryExpression) right);
     }
 
-    private void findColumn(BinaryExpression binaryExpression){
-        if (binaryExpression.getLeftExpression() instanceof Column){
+    private void findColumn(BinaryExpression binaryExpression) {
+        if (binaryExpression.getLeftExpression() instanceof Column) {
             Column column = (Column) binaryExpression.getLeftExpression();
-            fieldMappingList.stream()
-                    .filter(x -> x.getSource().getName()
-                            .equals(column.getColumnName().replaceAll("\"", "")))
-                    .findFirst().ifPresent(
-                    fieldMapping -> column.setColumnName(fieldMapping.getTarget().getName()));
+            fieldMappingList.stream().filter(x->x.getSource().getName().equals(column.getColumnName().replaceAll("\"", ""))).findFirst()
+                    .ifPresent(fieldMapping->column.setColumnName(fieldMapping.getTarget().getName()));
             return;
         }
         findColumn((BinaryExpression) binaryExpression.getLeftExpression());

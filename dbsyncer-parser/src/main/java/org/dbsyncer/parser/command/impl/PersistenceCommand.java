@@ -38,5 +38,4 @@ public final class PersistenceCommand implements Command {
         storageService.edit(StorageEnum.CONFIG, params);
         return true;
     }
-
 }

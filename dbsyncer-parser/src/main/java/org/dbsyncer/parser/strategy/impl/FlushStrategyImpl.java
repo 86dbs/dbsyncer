@@ -19,12 +19,14 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -80,7 +82,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
-        data.forEach(r -> {
+        data.forEach(r-> {
             Map<String, Object> row = new HashMap();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());

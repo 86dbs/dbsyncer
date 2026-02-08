@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public final class OracleDateType extends DateType {
 
     private enum TypeEnum {
+
         DATE("DATE");
 
         private final String value;
@@ -69,5 +70,4 @@ public final class OracleDateType extends DateType {
         }
         return throwUnsupportedException(val, field);
     }
-
 }

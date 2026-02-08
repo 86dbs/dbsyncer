@@ -3,14 +3,21 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
-import java.util.List;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
+import org.dbsyncer.sdk.model.Field;
+
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.insert.Insert;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
-import org.dbsyncer.sdk.model.Field;
+
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.insert.Insert;
+
+import java.util.List;
 
 /**
  * @Author AE86
@@ -31,8 +38,7 @@ public class InsertSql extends AbstractParser {
         List<Column> columns = insert.getColumns();
         ExpressionList<Expression> values = (ExpressionList<Expression>) insert.getSelect().getValues().getExpressions();
         for (int i = 0; i < columns.size(); i++) {
-            columnMap.put(StringUtil.replace(columns.get(i).getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY),
-                    values.get(i));
+            columnMap.put(StringUtil.replace(columns.get(i).getColumnName(), StringUtil.DOUBLE_QUOTATION, StringUtil.EMPTY), values.get(i));
         }
         return columnMapToData();
     }

@@ -4,6 +4,7 @@
 package org.dbsyncer.web.config;
 
 import org.apache.catalina.connector.Connector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 /**
@@ -66,8 +68,7 @@ public class HttpRedirectConfig implements WebServerFactoryCustomizer<TomcatServ
     public class HttpsRedirectFilter implements Filter {
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-                throws IOException, ServletException {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -77,9 +78,7 @@ public class HttpRedirectConfig implements WebServerFactoryCustomizer<TomcatServ
                 String queryString = httpRequest.getQueryString();
 
                 // 构建HTTPS URL
-                String httpsUrl = url.toString()
-                        .replaceFirst("http://", "https://")
-                        .replace(":" + httpPort, ":" + httpsPort);
+                String httpsUrl = url.toString().replaceFirst("http://", "https://").replace(":" + httpPort, ":" + httpsPort);
 
                 if (queryString != null) {
                     httpsUrl += "?" + queryString;

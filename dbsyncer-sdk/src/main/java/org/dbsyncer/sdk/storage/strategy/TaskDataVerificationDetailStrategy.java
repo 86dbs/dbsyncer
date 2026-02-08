@@ -12,6 +12,7 @@ import org.dbsyncer.sdk.storage.Strategy;
  * @Date 2025-10-18 20:39
  */
 public final class TaskDataVerificationDetailStrategy implements Strategy {
+
     @Override
     public String createSharding(String separator, String collectionId) {
         return StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType();

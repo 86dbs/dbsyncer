@@ -22,5 +22,4 @@ public abstract class ConnectorServiceContextUtil {
         context.setSuffix(isSource ? ConnectorInstanceUtil.SOURCE_SUFFIX : ConnectorInstanceUtil.TARGET_SUFFIX);
         return context;
     }
-
 }

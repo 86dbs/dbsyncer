@@ -17,6 +17,7 @@ import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.web.controller.BaseController;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
@@ -80,7 +82,7 @@ public class TaskController extends BaseController {
      */
     @GetMapping("/page/edit")
     public String pageEdit(@RequestParam("id") String taskId, ModelMap model) {
-       model.put("connectors", connectorService.getConnectorAll());
+        model.put("connectors", connectorService.getConnectorAll());
         model.put("taskId", taskId);
         return "task/edit";
     }
@@ -248,7 +250,8 @@ public class TaskController extends BaseController {
      */
     @GetMapping("/getTables")
     @ResponseBody
-    public RestResult getTables(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema) {
+    public RestResult getTables(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database,
+                                @RequestParam(value = "schema", required = false) String schema) {
         try {
             ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
             DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
@@ -266,7 +269,8 @@ public class TaskController extends BaseController {
      */
     @GetMapping("/getTableFields")
     @ResponseBody
-    public RestResult getTableFields(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database, @RequestParam(value = "schema", required = false) String schema, @RequestParam("tableName") String tableName) {
+    public RestResult getTableFields(@RequestParam("connectorId") String connectorId, @RequestParam(value = "database", required = false) String database,
+                                     @RequestParam(value = "schema", required = false) String schema, @RequestParam("tableName") String tableName) {
         try {
             ConnectorInstance connectorInstance = connectorFactory.connect(connectorId);
             DefaultConnectorServiceContext context = new DefaultConnectorServiceContext();
@@ -317,7 +321,7 @@ public class TaskController extends BaseController {
             DatabaseConnectorInstance connection = (DatabaseConnectorInstance) connectorInstance.getConnection();
             if (connectorType.contains("mysql")) {
                 // MySQL: SHOW DATABASES
-                databases = connection.execute(databaseTemplate -> {
+                databases = connection.execute(databaseTemplate-> {
                     List<String> dbList = new ArrayList<>();
                     try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SHOW DATABASES")) {
                         while (rs.next()) {
@@ -332,7 +336,7 @@ public class TaskController extends BaseController {
                 });
             } else if (connectorType.contains("postgresql")) {
                 // PostgreSQL: SELECT datname FROM pg_database
-                databases = connection.execute(databaseTemplate -> {
+                databases = connection.execute(databaseTemplate-> {
                     List<String> dbList = new ArrayList<>();
                     try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT datname FROM pg_database WHERE datistemplate = false")) {
                         while (rs.next()) {
@@ -346,7 +350,7 @@ public class TaskController extends BaseController {
                 });
             } else if (connectorType.contains("oracle")) {
                 // Oracle: SELECT username FROM all_users
-                databases = connection.execute(databaseTemplate -> {
+                databases = connection.execute(databaseTemplate-> {
                     List<String> dbList = new ArrayList<>();
                     try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT username FROM all_users ORDER BY username")) {
                         while (rs.next()) {
@@ -360,7 +364,7 @@ public class TaskController extends BaseController {
                 });
             } else if (connectorType.contains("sqlserver")) {
                 // SQL Server: SELECT name FROM sys.databases
-                databases = connection.execute(databaseTemplate -> {
+                databases = connection.execute(databaseTemplate-> {
                     List<String> dbList = new ArrayList<>();
                     try (ResultSet rs = databaseTemplate.getSimpleConnection().getConnection().createStatement().executeQuery("SELECT name FROM sys.databases WHERE database_id > 4")) {
                         while (rs.next()) {
@@ -388,10 +392,13 @@ public class TaskController extends BaseController {
      * 判断是否为系统数据库
      */
     private boolean isSystemDatabase(String dbName) {
-        if (dbName == null) return true;
+        if (dbName == null)
+            return true;
 
         String lowerDbName = dbName.toLowerCase();
-        return lowerDbName.equals("information_schema") || lowerDbName.equals("mysql") || lowerDbName.equals("performance_schema") || lowerDbName.equals("sys") || lowerDbName.equals("postgres") || lowerDbName.equals("template0") || lowerDbName.equals("template1") || lowerDbName.equals("master") || lowerDbName.equals("tempdb") || lowerDbName.equals("model") || lowerDbName.equals("msdb");
+        return lowerDbName.equals("information_schema") || lowerDbName.equals("mysql") || lowerDbName.equals("performance_schema") || lowerDbName.equals("sys") || lowerDbName.equals("postgres")
+                || lowerDbName.equals("template0") || lowerDbName.equals("template1") || lowerDbName.equals("master") || lowerDbName.equals("tempdb") || lowerDbName.equals("model")
+                || lowerDbName.equals("msdb");
     }
 
 }

@@ -6,6 +6,7 @@ package org.dbsyncer.common.column;
  * @date 2022/4/24 18:22
  */
 public final class Lexer {
+
     private final char[] array;
     private final int length;
     private int pos = 0;

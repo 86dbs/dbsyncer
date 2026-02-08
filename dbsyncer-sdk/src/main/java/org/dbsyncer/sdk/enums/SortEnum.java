@@ -11,6 +11,7 @@ package org.dbsyncer.sdk.enums;
  * @date 2023/6/1 00:07
  */
 public enum SortEnum {
+
     /**
      * 升序
      */

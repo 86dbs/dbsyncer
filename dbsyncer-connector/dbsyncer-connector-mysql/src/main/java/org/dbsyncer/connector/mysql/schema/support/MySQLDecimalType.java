@@ -19,9 +19,8 @@ import java.util.stream.Collectors;
 public final class MySQLDecimalType extends DecimalType {
 
     private enum TypeEnum {
-        DECIMAL("DECIMAL"),
-        DECIMAL_UNSIGNED("DECIMAL UNSIGNED"),
-        BIGINT_UNSIGNED("BIGINT UNSIGNED");
+
+        DECIMAL("DECIMAL"), DECIMAL_UNSIGNED("DECIMAL UNSIGNED"), BIGINT_UNSIGNED("BIGINT UNSIGNED");
 
         private final String value;
 

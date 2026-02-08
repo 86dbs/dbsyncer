@@ -61,6 +61,6 @@ public class TableGroupQuartzCommand {
     }
 
     public List<Object> getChangedRow(Map<String, Object> row) {
-        return fields.stream().map(field -> row.get(field.getName())).collect(Collectors.toList());
+        return fields.stream().map(field->row.get(field.getName())).collect(Collectors.toList());
     }
 }

@@ -1,6 +1,7 @@
 package org.dbsyncer.web.controller.monitor.impl;
 
 import org.dbsyncer.web.controller.monitor.ValueFormatter;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,5 +20,4 @@ public final class CpuValueFormatter implements ValueFormatter<Object, Object> {
         String percent = String.format("%.2f", val);
         return new BigDecimal(percent).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }
-
 }

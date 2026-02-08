@@ -3,14 +3,6 @@
  */
 package org.dbsyncer.web.controller.license;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
@@ -25,6 +17,16 @@ import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;

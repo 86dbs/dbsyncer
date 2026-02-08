@@ -58,6 +58,6 @@ public class ConnectorConstant {
      * <p>场景2:支持自定义半结构化字段作为新表，需要根据Topic（Kafka），FileName（File）监听增量数据
      */
     public static final String CUSTOM_TABLE_MAIN = "CT_MAIN";
-    public static final String CUSTOM_TABLE_SQL = "CT_SQL";
 
+    public static final String CUSTOM_TABLE_SQL = "CT_SQL";
 }

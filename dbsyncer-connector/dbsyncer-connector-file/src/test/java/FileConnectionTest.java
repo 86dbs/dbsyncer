@@ -1,9 +1,9 @@
 import org.apache.commons.io.IOUtils;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -36,7 +36,7 @@ public class FileConnectionTest {
         file.close();
         InputStream fileR = new FileInputStream(f);
         List<String> strings = IOUtils.readLines(fileR, Charset.defaultCharset());
-        strings.forEach(line -> logger.info("{}", line));
+        strings.forEach(line->logger.info("{}", line));
         fileR.close();
     }
 
@@ -65,5 +65,4 @@ public class FileConnectionTest {
             latch.countDown();
         }
     }
-
 }

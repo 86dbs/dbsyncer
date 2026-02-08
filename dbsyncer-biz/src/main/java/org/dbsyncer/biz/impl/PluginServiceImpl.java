@@ -6,22 +6,24 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.PluginService;
 import org.dbsyncer.biz.vo.PluginVO;
+import org.dbsyncer.common.enums.FileSuffixEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.model.Plugin;
-import org.dbsyncer.common.enums.FileSuffixEnum;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,7 @@ public class PluginServiceImpl implements PluginService {
         List<PluginVO> vos = new ArrayList<>();
         if (!CollectionUtils.isEmpty(pluginAll)) {
             Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
-            vos.addAll(pluginAll.stream().map(plugin -> {
+            vos.addAll(pluginAll.stream().map(plugin-> {
                 PluginVO vo = new PluginVO();
                 BeanUtils.copyProperties(plugin, vo);
                 vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
@@ -121,7 +123,7 @@ public class PluginServiceImpl implements PluginService {
     }
 
     private void putPluginMap(Map<String, List<String>> map, String className, String name) {
-        map.compute(className, (k,v) -> {
+        map.compute(className, (k, v)-> {
             if (v == null) {
                 try {
                     return new ArrayList<>();

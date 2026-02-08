@@ -8,13 +8,13 @@ import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.decoder.AbstractMessageDecoder;
 import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
-import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +104,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
     private void initPublication() {
         String pubName = getPubName();
         String selectPublication = String.format("SELECT COUNT(1) FROM pg_publication WHERE pubname = '%s'", pubName);
-        Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(selectPublication, Integer.class));
+        Integer count = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForObject(selectPublication, Integer.class));
         if (0 < count) {
             return;
         }
@@ -113,7 +113,7 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         try {
             String createPublication = String.format("CREATE PUBLICATION %s FOR ALL TABLES", pubName);
             logger.info("Creating Publication with statement '{}'", createPublication);
-            connectorInstance.execute(databaseTemplate -> {
+            connectorInstance.execute(databaseTemplate-> {
                 databaseTemplate.execute(createPublication);
                 return true;
             });
@@ -124,9 +124,9 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
 
     private void readSchema() {
         final String querySchema = String.format(GET_TABLE_SCHEMA, schema);
-        List<Map> schemas = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySchema));
+        List<Map> schemas = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(querySchema));
         if (!CollectionUtils.isEmpty(schemas)) {
-            schemas.forEach(map -> {
+            schemas.forEach(map-> {
                 Long oid = (Long) map.get("oid");
                 String tableName = (String) map.get("tableName");
                 MetaInfo metaInfo = getMetaInfo(tableName);
@@ -203,12 +203,14 @@ public class PgOutputMessageDecoder extends AbstractMessageDecoder {
         // 添加详细日志，方便诊断问题
         if (CollectionUtils.isEmpty(metaInfo.getColumn())) {
             logger.error("Table '{}.{}' has no columns. This may be caused by unsupported column types. ", schema, tableName);
-            throw new IllegalArgumentException(String.format("The table column for '%s.%s' must not be empty. Please check table structure and ensure all column types are supported.", schema, tableName));
+            throw new IllegalArgumentException(
+                    String.format("The table column for '%s.%s' must not be empty. Please check table structure and ensure all column types are supported.", schema, tableName));
         }
         return metaInfo;
     }
 
     final class TableId {
+
         Integer oid;
         String tableName;
         List<Field> fields;

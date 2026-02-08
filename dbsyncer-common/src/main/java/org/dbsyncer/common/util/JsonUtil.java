@@ -3,11 +3,14 @@ package org.dbsyncer.common.util;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONValidator;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONValidator;
+
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -73,58 +76,68 @@ public abstract class JsonUtil {
         if (o instanceof int[]) {
             int[] a = (int[]) o;
             List<Integer> list = new ArrayList<>(a.length);
-            for (int x : a) list.add(x);
+            for (int x : a)
+                list.add(x);
             return list;
         }
         if (o instanceof long[]) {
             long[] a = (long[]) o;
             List<Long> list = new ArrayList<>(a.length);
-            for (long x : a) list.add(x);
+            for (long x : a)
+                list.add(x);
             return list;
         }
         if (o instanceof short[]) {
             short[] a = (short[]) o;
             List<Integer> list = new ArrayList<>(a.length);
-            for (short x : a) list.add((int) x);
+            for (short x : a)
+                list.add((int) x);
             return list;
         }
         if (o instanceof float[]) {
             float[] a = (float[]) o;
             List<Double> list = new ArrayList<>(a.length);
-            for (float x : a) list.add((double) x);
+            for (float x : a)
+                list.add((double) x);
             return list;
         }
         if (o instanceof double[]) {
             double[] a = (double[]) o;
             List<Double> list = new ArrayList<>(a.length);
-            for (double x : a) list.add(x);
+            for (double x : a)
+                list.add(x);
             return list;
         }
         if (o instanceof boolean[]) {
             boolean[] a = (boolean[]) o;
             List<Boolean> list = new ArrayList<>(a.length);
-            for (boolean x : a) list.add(x);
+            for (boolean x : a)
+                list.add(x);
             return list;
         }
         if (o instanceof char[]) {
             char[] a = (char[]) o;
             List<String> list = new ArrayList<>(a.length);
-            for (char x : a) list.add(String.valueOf(x));
+            for (char x : a)
+                list.add(String.valueOf(x));
             return list;
         }
         if (o.getClass().isArray()) {
             Object[] a = (Object[]) o;
             List<Object> list = new ArrayList<>(a.length);
-            for (Object x : a) list.add(sanitizeForJson(x));
+            for (Object x : a)
+                list.add(sanitizeForJson(x));
             return list;
         }
         if (o instanceof Double) {
             double d = (Double) o;
-            if (Double.isNaN(d) || Double.isInfinite(d)) return String.valueOf(d);
+            if (Double.isNaN(d) || Double.isInfinite(d))
+                return String.valueOf(d);
         }
         if (o instanceof Float) {
             float f = (Float) o;
-            if (Float.isNaN(f) || Float.isInfinite(f)) return String.valueOf(f);
+            if (Float.isNaN(f) || Float.isInfinite(f))
+                return String.valueOf(f);
         }
         if (o instanceof java.util.Date) {
             return String.valueOf(((java.util.Date) o).getTime());
@@ -142,12 +155,14 @@ public abstract class JsonUtil {
      * 清理字符串中的非法 UTF-16（未配对 surrogate 等），避免 FastJSON 写入 JSON 时抛错。
      */
     private static String sanitizeStringForJson(String s) {
-        if (s == null || s.isEmpty()) return s;
+        if (s == null || s.isEmpty())
+            return s;
         StringBuilder sb = null;
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if (Character.isSurrogate(c)) {
-                if (sb == null) sb = new StringBuilder(s.length()).append(s, 0, i);
+                if (sb == null)
+                    sb = new StringBuilder(s.length()).append(s, 0, i);
                 sb.append('\uFFFD');
             } else if (sb != null) {
                 sb.append(c);
@@ -229,13 +244,13 @@ public abstract class JsonUtil {
     }
 
     public enum JsonType {
-        OBJECT,      // JSON对象 {key: value}
-        ARRAY,       // JSON数组 [element1, element2]
-        STRING,      // JSON字符串 "text"
-        NUMBER,      // JSON数字 123 or 123.45
-        BOOLEAN,     // JSON布尔值 true or false
-        NULL,        // JSON null
-        INVALID,     // 无效的JSON
-        UNKNOWN      // 未知类型
+        OBJECT, // JSON对象 {key: value}
+        ARRAY, // JSON数组 [element1, element2]
+        STRING, // JSON字符串 "text"
+        NUMBER, // JSON数字 123 or 123.45
+        BOOLEAN, // JSON布尔值 true or false
+        NULL, // JSON null
+        INVALID, // 无效的JSON
+        UNKNOWN // 未知类型
     }
 }

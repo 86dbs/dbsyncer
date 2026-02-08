@@ -3,6 +3,24 @@
  */
 package org.dbsyncer.connector.mysql.cdc;
 
+import org.dbsyncer.common.QueueOverflowException;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.mysql.MySQLException;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.sdk.util.SqlParserUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventHeader;
@@ -18,37 +36,31 @@ import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
-import org.dbsyncer.common.QueueOverflowException;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.mysql.MySQLException;
-import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
-import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
-import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
-import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
-import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.util.DatabaseUtil;
-import org.dbsyncer.sdk.util.SqlParserUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
-import java.util.ArrayList;
+import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.QueryEventData;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.regex.Pattern.compile;
 
 /**
  * @Author AE86
@@ -218,7 +230,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -229,7 +241,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -240,7 +252,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -296,8 +308,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             }
             databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             if (isFilterTable(databaseName, tableName)) {
-                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
-                        data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
             }
         }
 

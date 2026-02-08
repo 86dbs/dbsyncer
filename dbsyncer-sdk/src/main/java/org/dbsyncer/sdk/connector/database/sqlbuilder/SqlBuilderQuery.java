@@ -48,11 +48,7 @@ public class SqlBuilderQuery extends AbstractSqlBuilder {
         }
 
         // SELECT "ID","NAME" FROM "TEST"."MY_USER" WHERE "ID" > 100
-        return String.format("SELECT %s FROM %s%s%s",
-                StringUtil.join(fs, StringUtil.COMMA),
-                config.getSchema(),
-                database.buildWithQuotation(config.getTableName()),
-                config.getQueryFilter());
+        return String.format("SELECT %s FROM %s%s%s", StringUtil.join(fs, StringUtil.COMMA), config.getSchema(), database.buildWithQuotation(config.getTableName()), config.getQueryFilter());
     }
 
 }

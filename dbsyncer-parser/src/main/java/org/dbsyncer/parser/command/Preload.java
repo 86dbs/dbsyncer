@@ -20,28 +20,27 @@ import org.dbsyncer.parser.model.UserConfig;
  */
 public interface Preload {
 
-    default SystemConfig parseSystemConfig(){
+    default SystemConfig parseSystemConfig() {
         throw new ParserException("Unsupported method parseSystemConfig");
     }
 
-    default UserConfig parseUserConfig(){
+    default UserConfig parseUserConfig() {
         throw new ParserException("Unsupported method parseUserConfig");
     }
 
-    default Connector parseConnector(){
+    default Connector parseConnector() {
         throw new ParserException("Unsupported method parseConnector");
     }
 
-    default Mapping parseMapping(){
+    default Mapping parseMapping() {
         throw new ParserException("Unsupported method parseMapping");
     }
 
-    default TableGroup parseTableGroup(){
+    default TableGroup parseTableGroup() {
         throw new ParserException("Unsupported method parseTableGroup");
     }
 
-    default Meta parseMeta(){
+    default Meta parseMeta() {
         throw new ParserException("Unsupported method parseMeta");
     }
-
 }

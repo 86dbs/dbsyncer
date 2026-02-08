@@ -82,5 +82,4 @@ public enum MetricEnum {
     public String getMetricName() {
         return metricName;
     }
-
 }

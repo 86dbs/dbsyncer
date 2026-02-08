@@ -11,6 +11,7 @@ import java.math.BigDecimal;
  * @Date 2025-12-20 21:17
  */
 public final class MemoryVO extends HistoryStackVO {
+
     private BigDecimal jvmUsed;
     private BigDecimal jvmTotal;
     private BigDecimal sysUsed;

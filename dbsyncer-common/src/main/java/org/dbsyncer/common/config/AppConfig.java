@@ -4,6 +4,7 @@
 package org.dbsyncer.common.config;
 
 import org.dbsyncer.common.util.StringUtil;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

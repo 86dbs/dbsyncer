@@ -21,5 +21,4 @@ public final class PostgreSQLConfigConstant {
      * 删除slot，增量同步，停止驱动自动删除Slot
      */
     public static final String DROP_SLOT_ON_CLOSE = "dropSlotOnClose";
-
 }

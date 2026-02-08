@@ -42,6 +42,7 @@ import java.util.Map;
  * @Date 2022-05-22 22:56
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
+
     private final String QUERY_DATABASE = "SELECT name FROM SYS.DATABASES WHERE database_id > 4 order by name";
     private final String QUERY_SCHEMA = "SELECT name FROM sys.schemas WHERE name NOT IN ('sys','INFORMATION_SCHEMA','db_owner','db_accessadmin','db_securityadmin','db_ddladmin','db_backupoperator','db_datareader','db_datawriter','db_denydatareader','db_denydatawriter') order by name";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
@@ -75,12 +76,12 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
+        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override
@@ -112,7 +113,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         // 构建带游标条件的查询SQL（只添加WHERE条件，不添加ORDER BY）
         StringBuilder innerSql = new StringBuilder(config.getQuerySql());
         buildCursorConditionOnly(innerSql, config);
-        
+
         // 使用 ROW_NUMBER() 方式分页（兼容 SQL Server 2008+）
         // 外层的 ORDER BY 已经在 ROW_NUMBER() OVER(ORDER BY ...) 中处理
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
@@ -133,12 +134,12 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         if (cursorArgs == null) {
             return new Object[]{1, pageSize};
         }
-        
+
         // SQL Server使用 ROW_NUMBER() 方式：[游标参数..., 1, pageSize]
         Object[] newCursors = new Object[cursorArgs.length + 2];
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
-        newCursors[cursorArgs.length] = 1;  // BETWEEN 起始
-        newCursors[cursorArgs.length + 1] = pageSize;  // BETWEEN 结束
+        newCursors[cursorArgs.length] = 1; // BETWEEN 起始
+        newCursors[cursorArgs.length + 1] = pageSize; // BETWEEN 结束
         return newCursors;
     }
 
@@ -148,11 +149,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         String tableName = commandConfig.getTable().getName();
         // 判断表是否包含标识自增列
         DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
-        List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
+        List<Integer> result = db.execute(databaseTemplate->databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
-            String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName)
-                    + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
+            String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName) + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
                     + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
         }
@@ -162,14 +162,14 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
-        
+
         List<String> fs = new ArrayList<>();
         List<String> sfs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> updateSets = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();
 
-        config.getFields().forEach(f -> {
+        config.getFields().forEach(f-> {
             String fieldName = database.buildWithQuotation(f.getName());
             fs.add(fieldName);
             sfs.add("s." + fieldName);
@@ -183,14 +183,14 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 updateSets.add(String.format("%s = s.%s", fieldName, fieldName));
             }
         });
-        
+
         StringBuilder sql = new StringBuilder(database.generateUniqueCode());
         sql.append("MERGE ").append(config.getSchema());
         sql.append(database.buildWithQuotation(config.getTableName())).append(" AS t ");
         sql.append("USING (VALUES (").append(StringUtil.join(vs, StringUtil.COMMA)).append(")) AS s (");
         sql.append(StringUtil.join(fs, StringUtil.COMMA)).append(") ");
         sql.append("ON ");
-        
+
         // 构建 ON 条件：t.pk = s.pk AND ...
         StringBuilder onCondition = new StringBuilder();
         for (int i = 0; i < pkFieldNames.size(); i++) {
@@ -201,28 +201,28 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             onCondition.append("t.").append(pkFieldName).append(" = s.").append(pkFieldName);
         }
         sql.append(onCondition).append(" ");
-        
+
         sql.append("WHEN MATCHED THEN UPDATE SET ");
         sql.append(StringUtil.join(updateSets, StringUtil.COMMA)).append(" ");
         sql.append("WHEN NOT MATCHED THEN INSERT (");
         sql.append(StringUtil.join(fs, StringUtil.COMMA)).append(") VALUES (");
         sql.append(StringUtil.join(sfs, StringUtil.COMMA)).append(");");
-        
+
         return sql.toString();
     }
 
     @Override
     public Object getPosition(DatabaseConnectorInstance connectorInstance) {
         String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
-        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
+        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(sql));
         if (!CollectionUtils.isEmpty(result)) {
             List<Object> list = new ArrayList<>();
-            result.forEach(r -> {
-                r.computeIfPresent("start_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_lsn", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_id", (k, lsn)-> new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)-> DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
-                r.computeIfPresent("tran_end_time", (k, tranEndTime)-> DateFormatUtil.timestampToString((Timestamp) tranEndTime));
+            result.forEach(r-> {
+                r.computeIfPresent("start_lsn", (k, lsn)->new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_lsn", (k, lsn)->new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_id", (k, lsn)->new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)->DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
+                r.computeIfPresent("tran_end_time", (k, tranEndTime)->DateFormatUtil.timestampToString((Timestamp) tranEndTime));
                 list.add(r);
             });
             return list;
@@ -267,8 +267,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             case "geometry":
             case "geography":
                 // 使用 STAsText() 获取 WKT 格式，同时包含 SRID 信息，格式：POINT (...) | 4326
-                fs.add(String.format("CAST([%s].STAsText() AS NVARCHAR(MAX)) + ' | ' + CAST([%s].STSrid AS NVARCHAR(10)) AS [%s]",
-                    field.getName(), field.getName(), field.getName()));
+                fs.add(String.format("CAST([%s].STAsText() AS NVARCHAR(MAX)) + ' | ' + CAST([%s].STSrid AS NVARCHAR(10)) AS [%s]", field.getName(), field.getName(), field.getName()));
                 return true;
             default:
                 break;

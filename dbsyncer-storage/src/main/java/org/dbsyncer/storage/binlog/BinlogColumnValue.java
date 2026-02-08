@@ -3,10 +3,13 @@
  */
 package org.dbsyncer.storage.binlog;
 
-import com.google.protobuf.ByteString;
 import org.dbsyncer.common.column.AbstractColumnValue;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.storage.enums.BinlogByteEnum;
+
+import com.google.protobuf.ByteString;
+
+import com.google.protobuf.ByteString;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -44,7 +47,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     public Short asShort() {
         byte[] bytes = asByteArray();
         int expectedLength = BinlogByteEnum.SHORT.getByteLength();
-        
+
         // 如果字节数组长度小于期望长度，进行填充
         if (bytes.length < expectedLength) {
             byte[] paddedBytes = new byte[expectedLength];
@@ -55,7 +58,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
             buffer.flip();
             return buffer.asShortBuffer().get();
         }
-        
+
         // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
         ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
         buffer.put(bytes, 0, expectedLength);
@@ -92,7 +95,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     public Float asFloat() {
         byte[] bytes = asByteArray();
         int expectedLength = BinlogByteEnum.FLOAT.getByteLength();
-        
+
         // 如果字节数组长度小于期望长度，进行填充
         if (bytes.length < expectedLength) {
             byte[] paddedBytes = new byte[expectedLength];
@@ -103,7 +106,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
             buffer.flip();
             return buffer.asFloatBuffer().get();
         }
-        
+
         // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
         ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
         buffer.put(bytes, 0, expectedLength);
@@ -115,7 +118,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
     public Double asDouble() {
         byte[] bytes = asByteArray();
         int expectedLength = BinlogByteEnum.DOUBLE.getByteLength();
-        
+
         // 如果字节数组长度小于期望长度，进行填充
         if (bytes.length < expectedLength) {
             byte[] paddedBytes = new byte[expectedLength];
@@ -126,7 +129,7 @@ public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
             buffer.flip();
             return buffer.asDoubleBuffer().get();
         }
-        
+
         // 如果字节数组长度大于等于期望长度，只取前 expectedLength 字节
         ByteBuffer buffer = ByteBuffer.allocate(expectedLength);
         buffer.put(bytes, 0, expectedLength);

@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 /**
  * SQLite连接器实现
  * @Author bble
@@ -79,7 +78,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             Map<String, Object> result = databaseTemplate.queryForMap(QUERY_DATABASE);
             List<String> list = new ArrayList<>();
             if (!CollectionUtils.isEmpty(result)) {
@@ -136,12 +135,12 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         if (cursorArgs == null) {
             return new Object[]{pageSize, 0};
         }
-        
+
         // SQLite使用 LIMIT ? OFFSET ?，参数顺序为 [游标参数..., pageSize, 0]
         Object[] newCursors = new Object[cursorArgs.length + 2];
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
-        newCursors[cursorArgs.length] = pageSize;  // LIMIT
-        newCursors[cursorArgs.length + 1] = 0;  // OFFSET
+        newCursors[cursorArgs.length] = pageSize; // LIMIT
+        newCursors[cursorArgs.length + 1] = 0; // OFFSET
         return newCursors;
     }
 
@@ -156,10 +155,8 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         UpsertContext context = buildUpsertContext(config);
 
         // 构建 INSERT OR IGNORE INTO ... VALUES (...)
-        return config.getDatabase().generateUniqueCode() + "INSERT OR IGNORE INTO " + config.getSchema() +
-                config.getDatabase().buildWithQuotation(config.getTableName()) +
-                "(" + StringUtil.join(context.fieldNames, StringUtil.COMMA) + ") " +
-                "VALUES (" + StringUtil.join(context.valuePlaceholders, StringUtil.COMMA) + ")";
+        return config.getDatabase().generateUniqueCode() + "INSERT OR IGNORE INTO " + config.getSchema() + config.getDatabase().buildWithQuotation(config.getTableName()) + "("
+                + StringUtil.join(context.fieldNames, StringUtil.COMMA) + ") " + "VALUES (" + StringUtil.join(context.valuePlaceholders, StringUtil.COMMA) + ")";
     }
 
     @Override
@@ -167,15 +164,15 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         // SQLite 3.24.0+ 支持 ON CONFLICT DO UPDATE 语法
         UpsertContext context = buildUpsertContext(config);
         StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
-        
+
         // 构建 INSERT INTO ... VALUES (...)
         buildInsertIntoClause(sql, config, context);
-        
+
         // 构建 ON CONFLICT (...) DO UPDATE SET
         buildOnConflictClause(sql, context);
         sql.append(" DO UPDATE SET ");
         sql.append(StringUtil.join(context.updateSets, StringUtil.COMMA));
-        
+
         return sql.toString();
     }
 
@@ -204,11 +201,11 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     private UpsertContext buildUpsertContext(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         UpsertContext context = new UpsertContext();
-        
-        config.getFields().forEach(f -> {
+
+        config.getFields().forEach(f-> {
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
-            
+
             // 构建 VALUES 占位符
             List<String> fieldVs = new ArrayList<>();
             if (database.buildCustomValue(fieldVs, f)) {
@@ -217,7 +214,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
             } else {
                 context.valuePlaceholders.add("?");
             }
-            
+
             if (f.isPk()) {
                 context.pkFieldNames.add(fieldName);
             } else {
@@ -225,7 +222,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
                 context.updateSets.add(String.format("%s = excluded.%s", fieldName, fieldName));
             }
         });
-        
+
         return context;
     }
 
@@ -233,6 +230,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
      * UPSERT 语句构建上下文
      */
     private static class UpsertContext {
+
         List<String> fieldNames = new ArrayList<>();
         List<String> valuePlaceholders = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();
@@ -240,9 +238,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
-        List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
+        List<String> tableNames = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> {
+            return tableNames.stream().map(name-> {
                 Table table = new Table();
                 table.setName(name);
                 table.setType(type.getCode());

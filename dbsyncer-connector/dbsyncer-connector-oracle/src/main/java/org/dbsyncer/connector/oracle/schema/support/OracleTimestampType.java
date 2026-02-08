@@ -19,9 +19,8 @@ import java.util.stream.Collectors;
 public final class OracleTimestampType extends TimestampType {
 
     private enum TypeEnum {
-        TIMESTAMP("TIMESTAMP(6)"),
-        TIMESTAMP_WITH_TIME_ZONE("TIMESTAMP(6) WITH TIME ZONE"),
-        TIMESTAMP_WITH_LOCAL_TIME_ZONE("TIMESTAMP(6) WITH LOCAL TIME ZONE");
+
+        TIMESTAMP("TIMESTAMP(6)"), TIMESTAMP_WITH_TIME_ZONE("TIMESTAMP(6) WITH TIME ZONE"), TIMESTAMP_WITH_LOCAL_TIME_ZONE("TIMESTAMP(6) WITH LOCAL TIME ZONE");
 
         private final String value;
 

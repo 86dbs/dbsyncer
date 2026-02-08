@@ -3,15 +3,17 @@
  */
 package org.dbsyncer.connector.sqlserver.schema.support;
 
-import microsoft.sql.DateTimeOffset;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
+import microsoft.sql.DateTimeOffset;
+
+import microsoft.sql.DateTimeOffset;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,8 +25,8 @@ import java.util.stream.Collectors;
 public final class SqlServerTimestampType extends TimestampType {
 
     private enum TypeEnum {
-        DATETIME("datetime"),
-        DATETIME2("datetime2");
+
+        DATETIME("datetime"), DATETIME2("datetime2");
 
         private final String value;
 

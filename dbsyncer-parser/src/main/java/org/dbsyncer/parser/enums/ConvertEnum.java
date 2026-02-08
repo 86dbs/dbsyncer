@@ -3,7 +3,6 @@ package org.dbsyncer.parser.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.convert.Handler;
-import org.dbsyncer.parser.convert.handler.*;
 
 /**
  * 支持的转换类型

@@ -3,14 +3,14 @@
  */
 package org.dbsyncer.sdk.enums;
 
-import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCursor;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilder;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderDelete;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderInsert;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQuery;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCount;
+import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderQueryCursor;
 import org.dbsyncer.sdk.connector.database.sqlbuilder.SqlBuilderUpdate;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 
 /**
  * @author AE86
@@ -66,5 +66,4 @@ public enum SqlBuilderEnum {
     public SqlBuilder getSqlBuilder() {
         return sqlBuilder;
     }
-
 }

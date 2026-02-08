@@ -3,10 +3,11 @@
  */
 package org.dbsyncer.storage.lucene;
 
+import org.dbsyncer.sdk.filter.FieldResolver;
+
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.dbsyncer.sdk.filter.FieldResolver;
 
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class Option {
         if (fieldResolverMap.containsKey(name)) {
             return fieldResolverMap.get(name);
         }
-        return (f) -> f.stringValue();
+        return (f)->f.stringValue();
     }
 
     public Query getQuery() {

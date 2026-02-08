@@ -3,10 +3,13 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
-import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
+import oracle.sql.CLOB;
+
+import oracle.sql.CLOB;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,15 +28,8 @@ import java.util.stream.Collectors;
 public final class OracleStringType extends StringType {
 
     private enum TypeEnum {
-        CHAR("CHAR"),
-        NCHAR("NCHAR"),
-        VARCHAR2("VARCHAR2"),
-        NVARCHAR2("NVARCHAR2"),
-        CLOB("CLOB"),
-        NCLOB("NCLOB"),
-        LONG("LONG"),
-        ROWID("ROWID"),
-        UROWID("UROWID");
+
+        CHAR("CHAR"), NCHAR("NCHAR"), VARCHAR2("VARCHAR2"), NVARCHAR2("NVARCHAR2"), CLOB("CLOB"), NCLOB("NCLOB"), LONG("LONG"), ROWID("ROWID"), UROWID("UROWID");
 
         private final String value;
 

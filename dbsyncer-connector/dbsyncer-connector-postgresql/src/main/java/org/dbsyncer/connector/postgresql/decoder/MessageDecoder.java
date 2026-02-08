@@ -7,6 +7,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 
@@ -39,5 +40,4 @@ public interface MessageDecoder {
     void setDatabase(String database);
 
     void setSchema(String schema);
-
 }

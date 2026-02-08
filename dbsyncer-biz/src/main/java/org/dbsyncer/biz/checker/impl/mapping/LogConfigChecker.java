@@ -1,9 +1,10 @@
 package org.dbsyncer.biz.checker.impl.mapping;
 
 import org.dbsyncer.biz.checker.MappingConfigChecker;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
-import org.dbsyncer.parser.model.Mapping;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -26,5 +27,4 @@ public class LogConfigChecker implements MappingConfigChecker {
 
         listener.setListenerType(ListenerTypeEnum.LOG.getType());
     }
-
 }

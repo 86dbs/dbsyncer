@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchDecimalType extends DecimalType {
 
     private enum TypeEnum {
+
         SCALED_FLOAT("scaled_float");
 
         private final String value;

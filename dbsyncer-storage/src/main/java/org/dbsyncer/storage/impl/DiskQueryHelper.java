@@ -3,14 +3,15 @@
  */
 package org.dbsyncer.storage.impl;
 
+import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.sdk.filter.AbstractFilter;
+import org.dbsyncer.storage.StorageException;
+
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.sdk.filter.AbstractFilter;
-import org.dbsyncer.storage.StorageException;
 
 /**
  * @Author AE86
@@ -21,7 +22,7 @@ public class DiskQueryHelper {
 
     public static Query newEqual(AbstractFilter filter) {
         Query query = null;
-         switch (filter.getFilterTypeEnum()) {
+        switch (filter.getFilterTypeEnum()) {
             case STRING:
                 query = new TermQuery(new Term(filter.getName(), filter.getValue()));
                 break;
@@ -69,5 +70,4 @@ public class DiskQueryHelper {
         }
         return query;
     }
-
 }

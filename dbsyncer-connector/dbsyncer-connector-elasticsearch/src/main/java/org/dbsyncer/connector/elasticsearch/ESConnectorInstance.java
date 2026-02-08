@@ -7,6 +7,7 @@ import org.dbsyncer.connector.elasticsearch.api.EasyRestHighLevelClient;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.client.RequestOptions;
@@ -20,6 +21,7 @@ import org.elasticsearch.client.core.MainResponse;
  * @Date 2023-11-25 23:10
  */
 public final class ESConnectorInstance implements ConnectorInstance<ESConfig, EasyRestHighLevelClient> {
+
     private ESConfig config;
     private EasyRestHighLevelClient client;
 

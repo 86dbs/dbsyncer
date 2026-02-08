@@ -20,14 +20,17 @@ public abstract class CommonChangedEvent implements ChangedEvent {
      * traceId
      */
     private String traceId = StringUtil.EMPTY;
+
     /**
      * 变更表名称
      */
     private String sourceTableName;
+
     /**
      * 变更事件
      */
     private String event;
+
     /**
      * 增量偏移量
      */

@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.elasticsearch.enums;
 
 import org.dbsyncer.common.util.StringUtil;
+
 import org.elasticsearch.ElasticsearchException;
 
 import java.sql.Types;
@@ -18,8 +19,7 @@ import java.sql.Types;
 public enum ESFieldTypeEnum {
 
     // 字符类型
-    KEYWORD("keyword", Types.VARCHAR),
-    TEXT("text", Types.LONGVARCHAR),
+    KEYWORD("keyword", Types.VARCHAR), TEXT("text", Types.LONGVARCHAR),
     /**
      * ES 5.X之后不再支持string, 由text或keyword取代
      */
@@ -38,17 +38,11 @@ public enum ESFieldTypeEnum {
     /**
      * 源库中的类型为unsigned tinyint 或 unsigned smallint，建议使用integer
      */
-    SHORT("short", Types.INTEGER),
-    VERSION("version", Types.INTEGER),
-    BYTE("byte", Types.BIT),
+    SHORT("short", Types.INTEGER), VERSION("version", Types.INTEGER), BYTE("byte", Types.BIT),
     /**
      * 为保证精度，建议使用text
      */
-    DOUBLE("double", Types.DOUBLE),
-    FLOAT("float", Types.FLOAT),
-    HALF_FLOAT("half_float", Types.FLOAT),
-    SCALED_FLOAT("scaled_float", Types.FLOAT),
-    BOOLEAN("boolean", Types.BOOLEAN),
+    DOUBLE("double", Types.DOUBLE), FLOAT("float", Types.FLOAT), HALF_FLOAT("half_float", Types.FLOAT), SCALED_FLOAT("scaled_float", Types.FLOAT), BOOLEAN("boolean", Types.BOOLEAN),
 
     // 日期类型
     /**
@@ -58,23 +52,15 @@ public enum ESFieldTypeEnum {
     DATE("date", Types.DATE),
 
     // 范围类型
-    INTEGER_RANGE("integer_range", Types.INTEGER),
-    FLOAT_RANGE("float_range", Types.FLOAT),
-    LONG_RANGE("long_range", Types.BIGINT),
-    DOUBLE_RANGE("double_range", Types.DOUBLE),
+    INTEGER_RANGE("integer_range", Types.INTEGER), FLOAT_RANGE("float_range", Types.FLOAT), LONG_RANGE("long_range", Types.BIGINT), DOUBLE_RANGE("double_range", Types.DOUBLE),
     DATE_RANGE("date_range", Types.DATE),
 
     // 其他类型
     /**
      * 弥补object类型不足，格式出现list放object会变为array："test": [{"a":"b},{}]
      */
-    NESTED("nested", Types.OTHER),
-    OBJECT("object", Types.VARCHAR),
-    IP("ip", Types.VARCHAR),
-    TOKEN_COUNT("token_count", Types.BIGINT),
-    GEO_POINT("geo_point", Types.VARCHAR),
-    GEO_SHAPE("geo_shape", Types.VARCHAR),
-    BINARY("binary", Types.BINARY);
+    NESTED("nested", Types.OTHER), OBJECT("object", Types.VARCHAR), IP("ip", Types.VARCHAR), TOKEN_COUNT("token_count", Types.BIGINT), GEO_POINT("geo_point", Types.VARCHAR),
+    GEO_SHAPE("geo_shape", Types.VARCHAR), BINARY("binary", Types.BINARY);
 
     private final String code;
     private final int type;
@@ -100,5 +86,4 @@ public enum ESFieldTypeEnum {
     public int getType() {
         return type;
     }
-
 }

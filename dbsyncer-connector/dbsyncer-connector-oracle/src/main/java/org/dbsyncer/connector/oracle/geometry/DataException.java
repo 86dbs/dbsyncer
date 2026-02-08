@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 public class DataException extends Exception {
+
     public String description = "";
     public Throwable detail = null;
 
@@ -33,7 +34,6 @@ public class DataException extends Exception {
                 this.detail.printStackTrace(var1);
             }
         }
-
     }
 
     public void printStackTrace() {
@@ -49,6 +49,5 @@ public class DataException extends Exception {
                 this.detail.printStackTrace(var1);
             }
         }
-
     }
 }

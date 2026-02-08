@@ -9,6 +9,7 @@ import org.dbsyncer.connector.file.config.FileConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -49,5 +50,4 @@ public class FileConfigValidator implements ConfigValidator<FileConnector, FileC
         table.getExtInfo().put(FileConnector.FILE_SEPARATOR, separator);
         return table;
     }
-
 }

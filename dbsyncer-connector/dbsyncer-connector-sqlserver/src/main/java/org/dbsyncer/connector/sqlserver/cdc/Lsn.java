@@ -3,9 +3,9 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
-import java.util.Arrays;
-
 import org.dbsyncer.common.util.StringUtil;
+
+import java.util.Arrays;
 
 /**
  * SQL Server LSN（日志序列号）位置的逻辑表示, LSN不可用时为NULL。
@@ -15,6 +15,7 @@ import org.dbsyncer.common.util.StringUtil;
  * @Date 2022-05-22 22:56
  */
 public class Lsn implements Comparable<Lsn> {
+
     private static final String NULL_STRING = "NULL";
 
     public static final Lsn NULL = new Lsn(null);
@@ -149,5 +150,4 @@ public class Lsn implements Comparable<Lsn> {
         }
         return 0;
     }
-
 }

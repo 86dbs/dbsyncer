@@ -3,6 +3,11 @@
  */
 package org.dbsyncer.connector.kafka;
 
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.util.KafkaUtil;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -13,10 +18,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.connector.kafka.config.KafkaConfig;
-import org.dbsyncer.connector.kafka.util.KafkaUtil;
-import org.dbsyncer.sdk.connector.ConnectorInstance;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeoutException;
  * @Date 2021-11-22 23:55
  */
 public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConfig, AdminClient> {
+
     private KafkaConfig config;
     private final AdminClient client;
     private final Map<String, KafkaProducer<String, Object>> producers = new ConcurrentHashMap<>();
@@ -49,9 +51,9 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.getUrl());
         props.put(AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 60000); // 连接空闲超时
-        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);       // 请求超时
-        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, 1000);          // 重试间隔
-        props.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, 300000);        // 元数据最大缓存时间（5分钟）
+        props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000); // 请求超时
+        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, 1000); // 重试间隔
+        props.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, 300000); // 元数据最大缓存时间（5分钟）
         props.putAll(config.getProperties());
         props.remove(KafkaUtil.PRODUCER_PROPERTIES);
         props.remove(KafkaUtil.CONSUMER_PROPERTIES);
@@ -109,7 +111,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
             Collection<Node> nodeList = nodes.get();
             if (!CollectionUtils.isEmpty(nodeList)) {
                 clusterNodes.clear();
-                nodeList.forEach(node -> clusterNodes.add(new InetSocketAddress(node.host(), node.port())));
+                nodeList.forEach(node->clusterNodes.add(new InetSocketAddress(node.host(), node.port())));
             }
         }
     }
@@ -134,7 +136,7 @@ public final class KafkaConnectorInstance implements ConnectorInstance<KafkaConf
     }
 
     public KafkaProducer<String, Object> getProducer(String topic) {
-        return producers.computeIfAbsent(topic, k -> KafkaUtil.createProducer(config));
+        return producers.computeIfAbsent(topic, k->KafkaUtil.createProducer(config));
     }
 
     public KafkaConsumer<String, Object> getConsumer(String topic, String groupId) {

@@ -14,6 +14,7 @@ import java.sql.Timestamp;
  * @Date 2025-10-18 21:18
  */
 public class CommonTask implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     /**

@@ -24,13 +24,15 @@ import java.util.Map;
  * @Date 2023-11-12 01:32
  */
 public final class ParserConsumer implements Watcher {
+
     private final BufferActuatorRouter bufferActuatorRouter;
     private final ProfileComponent profileComponent;
     private final PluginFactory pluginFactory;
     private final LogService logService;
     private final String metaId;
 
-    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, PluginFactory pluginFactory, LogService logService, String metaId, List<TableGroup> tableGroups) {
+    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, PluginFactory pluginFactory, LogService logService, String metaId,
+                          List<TableGroup> tableGroups) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.profileComponent = profileComponent;
         this.pluginFactory = pluginFactory;

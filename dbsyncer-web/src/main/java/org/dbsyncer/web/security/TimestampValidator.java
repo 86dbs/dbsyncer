@@ -4,6 +4,7 @@
 package org.dbsyncer.web.security;
 
 import org.dbsyncer.common.util.StringUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,15 +18,14 @@ import org.slf4j.LoggerFactory;
 public class TimestampValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(TimestampValidator.class);
-    
+
     // 默认时间窗口：±5分钟（毫秒）
     private static final long DEFAULT_TIME_WINDOW = 5 * 60 * 1000L;
-    
+
     // Nonce缓存，用于防止重放攻击（key: nonce, value: timestamp）
     // 缓存时间：10分钟，清理间隔：1分钟
-    private static final ExpiringCache<String, Long> nonceCache = 
-            new ExpiringCache<>(10 * 60 * 1000L, 60 * 1000L);
-    
+    private static final ExpiringCache<String, Long> nonceCache = new ExpiringCache<>(10 * 60 * 1000L, 60 * 1000L);
+
     // 静态初始化块，确保缓存清理任务启动
     static {
         nonceCache.init();
@@ -50,13 +50,12 @@ public class TimestampValidator {
     public static boolean validateTimestamp(long timestamp, long timeWindow) {
         long now = System.currentTimeMillis();
         long diff = Math.abs(now - timestamp);
-        
+
         if (diff > timeWindow) {
-            logger.warn("时间戳验证失败，当前时间: {}, 请求时间: {}, 差值: {}ms, 允许窗口: {}ms", 
-                    now, timestamp, diff, timeWindow);
+            logger.warn("时间戳验证失败，当前时间: {}, 请求时间: {}, 差值: {}ms, 允许窗口: {}ms", now, timestamp, diff, timeWindow);
             return false;
         }
-        
+
         return true;
     }
 
@@ -82,16 +81,16 @@ public class TimestampValidator {
             logger.warn("Nonce为空");
             return false;
         }
-        
+
         // 检查nonce是否已存在
         if (nonceCache.containsKey(nonce)) {
             logger.warn("检测到重复的Nonce: {}", nonce);
             return false;
         }
-        
+
         // 将nonce加入缓存
         nonceCache.put(nonce, timestamp);
-        
+
         return true;
     }
 
@@ -108,7 +107,7 @@ public class TimestampValidator {
         if (!validateTimestamp(timestamp, timeWindow)) {
             return false;
         }
-        
+
         // 再验证nonce
         return validateNonce(nonce, timestamp);
     }
@@ -132,7 +131,7 @@ public class TimestampValidator {
     public static long getDefaultTimeWindow() {
         return DEFAULT_TIME_WINDOW;
     }
-    
+
     /**
      * 获取Nonce缓存大小（用于监控）
      * 

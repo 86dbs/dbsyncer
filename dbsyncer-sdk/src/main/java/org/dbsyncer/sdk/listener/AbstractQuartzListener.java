@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.model.Point;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,7 +196,6 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         if (context.isSupportedCursor() && cursors != null && cursors.length > 0) {
             snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
-
     }
 
     private void trySendEvent(ChangedEvent event) {
@@ -221,5 +221,4 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
     public void setCommands(List<TableGroupQuartzCommand> commands) {
         this.commands = commands;
     }
-
 }

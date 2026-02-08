@@ -13,6 +13,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -134,7 +135,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             service.appendPrimaryKeys(querySql, primaryKeys);
 
             DqlMapper dqlMapper = new DqlMapper(instance, sqlName, querySql.toString(), sqlColumns, tablePKIndex, sqlPKIndexMap);
-            dqlMap.compute(tableName, (k, v) -> {
+            dqlMap.compute(tableName, (k, v)-> {
                 if (v == null) {
                     v = new ArrayList<>();
                 }
@@ -160,12 +161,12 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
 
     private Map<Integer, Integer> getPKIndexMap(List<Field> column, Map<String, Integer> tablePKIndexMap) {
         Map<String, Integer> lowerCasePKMap = new HashMap<>();
-        tablePKIndexMap.forEach((k, v) -> lowerCasePKMap.put(k.toLowerCase(), v));
+        tablePKIndexMap.forEach((k, v)->lowerCasePKMap.put(k.toLowerCase(), v));
         Map<Integer, Integer> map = new HashMap<>();
         for (int i = 0; i < column.size(); i++) {
             final int index = i;
             String colNameLower = column.get(i).getName().toLowerCase();
-            lowerCasePKMap.computeIfPresent(colNameLower, (k, v) -> map.put(index, v));
+            lowerCasePKMap.computeIfPresent(colNameLower, (k, v)->map.put(index, v));
         }
         return map;
     }
@@ -183,7 +184,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
 
     private void queryDqlData(DqlMapper dqlMapper, List<Object> data) {
         if (!CollectionUtils.isEmpty(data)) {
-            Map<String, Object> row = dqlMapper.instance.execute(databaseTemplate -> {
+            Map<String, Object> row = dqlMapper.instance.execute(databaseTemplate-> {
                 int size = dqlMapper.tablePKIndex.size();
                 Object[] args = new Object[size];
                 for (int i = 0; i < size; i++) {
@@ -193,7 +194,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
             });
             if (!CollectionUtils.isEmpty(row)) {
                 data.clear();
-                dqlMapper.column.forEach(field -> data.add(row.get(field.getName())));
+                dqlMapper.column.forEach(field->data.add(row.get(field.getName())));
             }
         }
     }
@@ -217,6 +218,7 @@ public abstract class AbstractDatabaseListener extends AbstractListener<Database
     }
 
     static final class DqlMapper {
+
         DatabaseConnectorInstance instance;
         String sqlName;
         String sql;

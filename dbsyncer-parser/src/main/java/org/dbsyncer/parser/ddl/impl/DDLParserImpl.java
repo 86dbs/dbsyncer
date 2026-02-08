@@ -3,11 +3,6 @@
  */
 package org.dbsyncer.parser.ddl.impl;
 
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.alter.AlterExpression;
-import net.sf.jsqlparser.statement.alter.AlterOperation;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.AlterStrategy;
@@ -24,11 +19,25 @@ import org.dbsyncer.sdk.enums.DDLOperationEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.SqlParserUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.alter.AlterExpression;
+import net.sf.jsqlparser.statement.alter.AlterOperation;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.alter.AlterExpression;
+import net.sf.jsqlparser.statement.alter.AlterOperation;
+
 import javax.annotation.PostConstruct;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +79,7 @@ public class DDLParserImpl implements DDLParser {
             alter.getTable().setName(newTableName);
             ddlConfig.setSql(alter.toString());
             for (AlterExpression expression : alter.getAlterExpressions()) {
-                STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy) -> {
+                STRATEGIES.computeIfPresent(expression.getOperation(), (k, strategy)-> {
                     strategy.parse(expression, ddlConfig);
                     return strategy;
                 });
@@ -100,8 +109,8 @@ public class DDLParserImpl implements DDLParser {
     }
 
     private void updateFieldMapping(TableGroup tableGroup, List<String> modifiedFieldNames) {
-        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed->filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed->filed));
         for (FieldMapping fieldMapping : tableGroup.getFieldMapping()) {
             Field source = fieldMapping.getSource();
             Field target = fieldMapping.getTarget();
@@ -111,12 +120,12 @@ public class DDLParserImpl implements DDLParser {
                 if (!modifiedFieldNames.contains(modifiedName)) {
                     continue;
                 }
-                sourceFiledMap.computeIfPresent(modifiedName, (k, field) -> {
+                sourceFiledMap.computeIfPresent(modifiedName, (k, field)-> {
                     fieldMapping.setSource(field);
                     return field;
                 });
                 if (target != null && StringUtil.equals(modifiedName, target.getName())) {
-                    targetFiledMap.computeIfPresent(modifiedName, (k, field) -> {
+                    targetFiledMap.computeIfPresent(modifiedName, (k, field)-> {
                         fieldMapping.setTarget(field);
                         return field;
                     });
@@ -136,7 +145,7 @@ public class DDLParserImpl implements DDLParser {
                 if (!oldNames.contains(oldFieldName)) {
                     continue;
                 }
-                changedFieldNames.computeIfPresent(oldFieldName, (k, newName) -> {
+                changedFieldNames.computeIfPresent(oldFieldName, (k, newName)-> {
                     source.setName(newName);
                     if (target != null && StringUtil.equals(oldFieldName, target.getName())) {
                         target.setName(newName);
@@ -176,12 +185,12 @@ public class DDLParserImpl implements DDLParser {
             return;
         }
 
-        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sourceFiledMap = tableGroup.getSourceTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed->filed));
+        Map<String, Field> targetFiledMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, filed->filed));
         if (CollectionUtils.isEmpty(sourceFiledMap) || CollectionUtils.isEmpty(targetFiledMap)) {
             return;
         }
-        addedFieldNames.forEach(newFieldName -> {
+        addedFieldNames.forEach(newFieldName-> {
             if (sourceFiledMap.containsKey(newFieldName) && targetFiledMap.containsKey(newFieldName)) {
                 fieldMappings.add(new FieldMapping(sourceFiledMap.get(newFieldName), targetFiledMap.get(newFieldName)));
             }

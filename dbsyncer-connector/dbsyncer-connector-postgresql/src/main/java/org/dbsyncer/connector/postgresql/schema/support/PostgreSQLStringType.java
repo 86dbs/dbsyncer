@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
@@ -26,46 +27,27 @@ import java.util.stream.Collectors;
  * @Date 2025-06-25 23:04
  */
 public final class PostgreSQLStringType extends StringType {
+
     private enum TypeEnum {
+
         // 标准字符串类型
-        UUID("uuid"),
-        VARCHAR("varchar"),
-        TEXT("text"),
-        CHAR("char"),
-        BPCHAR("bpchar"),
-        NAME("name"),
+        UUID("uuid"), VARCHAR("varchar"), TEXT("text"), CHAR("char"), BPCHAR("bpchar"), NAME("name"),
         // JSON 类型
-        JSON("json"),
-        JSONB("jsonb"),
+        JSON("json"), JSONB("jsonb"),
         // 几何类型
         POINT("point"),
         // PostGIS 扩展类型
-        GEOMETRY("geometry"),
-        GEOGRAPHY("geography"),
+        GEOMETRY("geometry"), GEOGRAPHY("geography"),
         // 网络类型
-        INET("inet"),
-        CIDR("cidr"),
-        MACADDR("macaddr"),
-        MACADDR8("macaddr8"),
+        INET("inet"), CIDR("cidr"), MACADDR("macaddr"), MACADDR8("macaddr8"),
         // 文本搜索类型
-        TSQUERY("tsquery"),
-        TSVECTOR("tsvector"),
+        TSQUERY("tsquery"), TSVECTOR("tsvector"),
         // 范围类型
-        TSRANGE("tsrange"),
-        TSTZRANGE("tstzrange"),
-        DATERANGE("daterange"),
-        INT4RANGE("int4range"),
-        INT8RANGE("int8range"),
-        NUMRANGE("numrange"),
+        TSRANGE("tsrange"), TSTZRANGE("tstzrange"), DATERANGE("daterange"), INT4RANGE("int4range"), INT8RANGE("int8range"), NUMRANGE("numrange"),
         // 位串类型
-        BIT("bit"),
-        BIT_VARYING("bit varying"),
-        VARBIT("varbit"),
+        BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
         // 其他类型
-        CITEXT("citext"),
-        XML("xml"),
-        PG_LSN("pg_lsn"),
-        TXID_SNAPSHOT("txid_snapshot");
+        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
 
         private final String value;
 
@@ -126,7 +108,7 @@ public final class PostgreSQLStringType extends StringType {
 
         if (val instanceof String) {
             String strVal = (String) val;
-            switch (typeEnum){
+            switch (typeEnum) {
                 case UUID:
                     try {
                         return UUIDUtil.fromString(strVal);

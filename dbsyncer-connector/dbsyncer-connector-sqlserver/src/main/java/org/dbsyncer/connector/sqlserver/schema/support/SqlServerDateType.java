@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public final class SqlServerDateType extends DateType {
 
     private enum TypeEnum {
+
         DATE("date");
 
         private final String value;
@@ -41,5 +42,4 @@ public final class SqlServerDateType extends DateType {
     protected Date merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

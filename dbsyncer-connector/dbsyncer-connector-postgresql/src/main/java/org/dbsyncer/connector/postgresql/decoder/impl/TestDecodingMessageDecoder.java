@@ -9,6 +9,7 @@ import org.dbsyncer.connector.postgresql.enums.MessageDecoderEnum;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+
 import org.postgresql.replication.fluent.logical.ChainedLogicalStreamBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +48,7 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
 
     @Override
     public void withSlotOption(ChainedLogicalStreamBuilder builder) {
-        builder.withSlotOption("include-xids", true)
-                .withSlotOption("skip-empty-xacts", true);
+        builder.withSlotOption("include-xids", true).withSlotOption("skip-empty-xacts", true);
     }
 
     private RowChangedEvent parseMessage(String message) {
@@ -115,5 +115,4 @@ public class TestDecodingMessageDecoder extends AbstractMessageDecoder {
         lexer.nextToken(' ');
         return lexer.token();
     }
-
 }

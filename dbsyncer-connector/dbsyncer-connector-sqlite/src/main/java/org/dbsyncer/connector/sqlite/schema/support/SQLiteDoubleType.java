@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
  * @Date 2026-01-11 22:21
  */
 public final class SQLiteDoubleType extends DoubleType {
+
     private enum TypeEnum {
+
         REAL("REAL");
 
         private final String value;
@@ -39,5 +41,4 @@ public final class SQLiteDoubleType extends DoubleType {
     protected Double merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

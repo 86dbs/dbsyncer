@@ -82,5 +82,4 @@ public abstract class AbstractDataType<T> implements DataType {
     protected T throwUnsupportedException(Object val, Field field) {
         throw new SdkException(String.format("%s does not support type [%s] convert to %s(%s), val [%s]", getClass().getSimpleName(), val.getClass(), field.getName(), field.getTypeName(), val));
     }
-
 }

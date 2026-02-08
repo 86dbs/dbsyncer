@@ -7,6 +7,10 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.UpdateRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.deserialization.UpdateRowsEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
@@ -39,5 +43,4 @@ public final class ExtUpdateDeserializer extends UpdateRowsEventDataDeserializer
     protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
     }
-
 }

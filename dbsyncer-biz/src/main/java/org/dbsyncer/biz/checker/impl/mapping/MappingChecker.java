@@ -19,12 +19,14 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,7 +166,7 @@ public class MappingChecker extends AbstractChecker {
             // 手动排序
             String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
             if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
-                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f->f, (k1, k2)->k1));
                 groupAll.clear();
                 int size = sortedTableGroupIds.length;
                 int i = size;

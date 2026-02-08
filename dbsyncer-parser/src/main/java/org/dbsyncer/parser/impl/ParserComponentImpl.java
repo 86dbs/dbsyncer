@@ -32,6 +32,7 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +91,7 @@ public class ParserComponentImpl implements ParserComponent {
         Table tTable = targetTable.clone().setColumn(new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
-            fieldMapping.forEach(m -> {
+            fieldMapping.forEach(m-> {
                 if (null != m.getSource()) {
                     sTable.getColumn().add(m.getSource());
                 }
@@ -153,7 +155,7 @@ public class ParserComponentImpl implements ParserComponent {
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
 
-        for (; ; ) {
+        for (;;) {
             if (!task.isRunning()) {
                 logger.warn("任务被中止:{}", metaId);
                 break;
@@ -236,7 +238,7 @@ public class ParserComponentImpl implements ParserComponent {
                 PluginContext tmpContext = (PluginContext) context.clone();
                 tmpContext.setTargetList(context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
                 offset += batchSize;
-                executor.execute(() -> {
+                executor.execute(()-> {
                     try {
                         Result w = connectorFactory.writer(tmpContext);
                         result.addSuccessData(w.getSuccessData());

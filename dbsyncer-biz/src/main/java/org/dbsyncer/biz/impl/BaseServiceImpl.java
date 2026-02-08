@@ -18,9 +18,11 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.enums.ModelEnum;
+
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -100,7 +102,7 @@ public class BaseServiceImpl {
     protected <T> Paging<T> searchConfigModel(Map<String, String> params, List<T> list) {
         String searchKey = params.get("searchKey");
         if (StringUtil.isNotBlank(searchKey)) {
-            list = list.stream().filter(c -> {
+            list = list.stream().filter(c-> {
                 if (c instanceof Connector || c instanceof Mapping) {
                     ConfigModel m = (ConfigModel) c;
                     return StringUtil.contains(m.getName(), searchKey);

@@ -14,5 +14,4 @@ public final class FullPluginContext extends AbstractPluginContext {
     public ModelEnum getModelEnum() {
         return ModelEnum.FULL;
     }
-
 }

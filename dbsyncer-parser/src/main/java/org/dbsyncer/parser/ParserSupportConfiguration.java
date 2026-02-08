@@ -9,12 +9,14 @@ import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.dbsyncer.sdk.spi.TaskService;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Resource;
+
 import java.util.Map;
 
 /**
@@ -48,6 +50,7 @@ public class ParserSupportConfiguration {
             return taskService;
         }
         return new TaskService() {
+
             @Override
             public void add(Map<String, String> params) {
 
@@ -89,6 +92,5 @@ public class ParserSupportConfiguration {
             }
         };
     }
-
 
 }

@@ -41,14 +41,13 @@ public abstract class BatchTaskUtil {
      * @return
      */
     public static ExecutorService createExecutor(int threadPoolSize, int maximumPoolSize, int queueSize) {
-        return new ThreadPoolExecutor(
-                threadPoolSize,                     // 核心线程数
-                maximumPoolSize,                    // 最大线程数
-                60L,                                // 线程空闲时间
-                TimeUnit.SECONDS,                   // 过期时间单位
+        return new ThreadPoolExecutor(threadPoolSize, // 核心线程数
+                maximumPoolSize, // 最大线程数
+                60L, // 线程空闲时间
+                TimeUnit.SECONDS, // 过期时间单位
                 new ArrayBlockingQueue<>(queueSize), // 有界队列
-                Executors.defaultThreadFactory(),   // 线程工厂
-                new ThreadPoolExecutor.CallerRunsPolicy());  // 拒绝策略, 当队列满时，由调用线程执行任务
+                Executors.defaultThreadFactory(), // 线程工厂
+                new ThreadPoolExecutor.CallerRunsPolicy()); // 拒绝策略, 当队列满时，由调用线程执行任务
     }
 
     /**
@@ -73,7 +72,7 @@ public abstract class BatchTaskUtil {
         try {
             // 提交所有任务
             for (T data : dataList) {
-                futures.add(executor.submit(() -> {
+                futures.add(executor.submit(()-> {
                     try {
                         return processor.process(data);
                     } catch (Throwable e) {
@@ -130,7 +129,7 @@ public abstract class BatchTaskUtil {
         try {
             // 提交所有任务
             for (T data : dataList) {
-                futures.add(executor.submit(() -> {
+                futures.add(executor.submit(()-> {
                     try {
                         consumer.accept(data);
                     } catch (Throwable e) {
@@ -179,7 +178,7 @@ public abstract class BatchTaskUtil {
         List<Future<?>> futures = new ArrayList<>();
         // 提交所有任务
         for (T data : dataList) {
-            futures.add(executor.submit(() -> {
+            futures.add(executor.submit(()-> {
                 try {
                     consumer.accept(data);
                 } catch (Throwable e) {
@@ -219,6 +218,7 @@ public abstract class BatchTaskUtil {
      */
     @FunctionalInterface
     public interface Processor<T, R> {
+
         R process(T data) throws Exception;
     }
 

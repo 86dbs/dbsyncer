@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!-- https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/guide/jdt_api_options.htm -->
+<profiles version="13">
+    <profile kind="CodeFormatterProfile" name="'DBSyncer'" version="13">
+        <!-- 编译器配置 -->
+        <setting id="org.eclipse.jdt.core.compiler.source" value="1.8" />
+        <setting id="org.eclipse.jdt.core.compiler.compliance" value="1.8" />
+        <setting id="org.eclipse.jdt.core.compiler.codegen.targetPlatform" value="1.8" />
+
+        <!-- 缩进配置 -->
+        <setting id="org.eclipse.jdt.core.formatter.indent_empty_lines" value="false" />
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4" />
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space" />
+        <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="1" />
+
+        <!-- 单行最大字符数：提升到200-->
+        <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="200" />
+        <setting id="org.eclipse.jdt.core.formatter.comment.line_length" value="200" />
+        <!-- 赋值语句仅在超出行宽时换行，禁止强制对齐换行 -->
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_assignment" value="0" />
+        <setting id="org.eclipse.jdt.core.formatter.wrap_assignment_statements" value="false" />
+        <!-- 方法调用参数仅在超出行宽时换行，禁用强制对齐 -->
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_method_invocation" value="0" />
+        <setting id="org.eclipse.jdt.core.formatter.wrap_arguments" value="false" />
+        <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="true" />
+
+        <!-- Lambda 格式化禁用配置 -->
+        <setting id="org.eclipse.jdt.core.formatter.format_lambda_body" value="false" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_lambda_arrow" value="do not insert" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_after_lambda_arrow" value="do not insert" />
+        <setting id="org.eclipse.jdt.core.formatter.remove_parens_from_single_arg_lambda" value="false" />
+        <setting id="org.eclipse.jdt.core.formatter.continuation_indentation_for_lambda" value="0" />
+
+        <!-- 常规设置 -->
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_before_first_class_body_declaration" value="1" />
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="false" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_conditional" value="insert" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_default" value="do not insert" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants" value="16" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_labeled_statement" value="do not insert" />
+        <setting id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_case" value="do not insert" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_conditional_expression" value="80" />
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_after_package" value="1" />
+        <setting id="org.eclipse.jdt.core.formatter.continuation_indentation_for_array_initializer" value="2" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_resources_in_try" value="160" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_throws_clause_in_method_declaration" value="10" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_parameters_in_method_declaration" value="106" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_parameters_in_constructor_declaration" value="106" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_throws_clause_in_constructor_declaration" value="106" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_explicit_constructor_call.count_dependent" value="16|5|80" />
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_annotation" value="16" />
+    </profile>
+</profiles>

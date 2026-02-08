@@ -25,5 +25,4 @@ public interface ReaderContext extends BaseContext {
     int getPageIndex();
 
     int getPageSize();
-
 }

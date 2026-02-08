@@ -7,6 +7,7 @@ import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
 import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
@@ -48,7 +49,7 @@ public final class MetricGroupProcessorImpl implements MetricGroupProcessor {
     }
 
     private MetricResponseVO getMetricResponseVo(Map<String, MetricResponseVO> group, String groupName) {
-        return group.compute(groupName, (k, v) -> {
+        return group.compute(groupName, (k, v)-> {
             if (v == null) {
                 MetricResponseVO responseVo = new MetricResponseVO();
                 responseVo.setGroup(groupName);

@@ -1,8 +1,8 @@
 package org.dbsyncer.biz.metric.impl;
 
 import org.dbsyncer.biz.metric.AbstractMetricDetailFormatter;
-import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 
 public final class ValueMetricDetailFormatter extends AbstractMetricDetailFormatter {
 

@@ -83,5 +83,4 @@ public interface UserConfigService {
      * @return
      */
     UserInfo getDefaultUser();
-
 }

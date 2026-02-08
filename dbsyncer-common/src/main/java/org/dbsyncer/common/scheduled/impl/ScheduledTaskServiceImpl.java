@@ -4,6 +4,7 @@ import org.dbsyncer.common.CommonException;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.UUIDUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -12,6 +13,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -37,13 +39,13 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     @Override
     public void start(String key, String cron, ScheduledTaskJob job) {
         logger.info("[{}], Started task [{}]", cron, job.getClass().getSimpleName());
-        apply(key, () -> taskScheduler.schedule(job, (trigger) -> new CronTrigger(cron).nextExecutionTime(trigger)));
+        apply(key, ()->taskScheduler.schedule(job, (trigger)->new CronTrigger(cron).nextExecutionTime(trigger)));
     }
 
     @Override
     public void start(String key, long period, ScheduledTaskJob job) {
         logger.info("[period={}], Started task [{}]", period, job.getClass().getSimpleName());
-        apply(key, () -> taskScheduler.scheduleAtFixedRate(job, period));
+        apply(key, ()->taskScheduler.scheduleAtFixedRate(job, period));
     }
 
     @Override
@@ -73,7 +75,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
             logger.error(msg);
             throw new CommonException(msg);
         }
-        map.compute(key, (k,v) -> {
+        map.compute(key, (k, v)-> {
             if (v == null) {
                 return scheduledFutureMapper.apply();
             }
@@ -87,6 +89,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     }
 
     private interface ScheduledFutureMapper {
+
         /**
          * 返回定时任务
          *

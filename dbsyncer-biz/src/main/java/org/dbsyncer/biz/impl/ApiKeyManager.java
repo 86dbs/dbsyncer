@@ -8,6 +8,7 @@ import org.dbsyncer.common.model.SecretVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -108,7 +109,7 @@ public class ApiKeyManager {
         String hashedSecret = SHA1Util.b64_sha1(secret);
 
         // 不存在
-        Optional<SecretVersion> exist = versions.stream().filter(v -> StringUtil.equals(v.getHashedSecret(), hashedSecret)).findFirst();
+        Optional<SecretVersion> exist = versions.stream().filter(v->StringUtil.equals(v.getHashedSecret(), hashedSecret)).findFirst();
         if (!exist.isPresent()) {
             // 计算新版本号
             int newVersion = 1;

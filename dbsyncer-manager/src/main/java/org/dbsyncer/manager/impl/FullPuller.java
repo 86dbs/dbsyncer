@@ -17,6 +17,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +61,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     public void start(Mapping mapping) {
         List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
         Assert.notEmpty(list, "映射关系不能为空");
-        Thread worker = new Thread(() -> {
+        Thread worker = new Thread(()-> {
             final String metaId = mapping.getMetaId();
             ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
             try {
-                Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
+                Task task = map.computeIfAbsent(metaId, k->new Task(metaId));
                 logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
                 doTask(task, mapping, list, executor);
             } catch (Exception e) {
@@ -87,7 +89,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void close(String metaId) {
-        map.computeIfPresent(metaId, (k, task) -> {
+        map.computeIfPresent(metaId, (k, task)-> {
             task.stop();
             return null;
         });

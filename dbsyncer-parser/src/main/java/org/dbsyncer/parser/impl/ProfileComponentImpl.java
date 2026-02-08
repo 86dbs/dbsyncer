@@ -25,10 +25,12 @@ import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -143,10 +145,7 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public List<TableGroup> getSortedTableGroupAll(String mappingId) {
-        return getTableGroupAll(mappingId)
-                .stream()
-                .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
-                .collect(Collectors.toList());
+        return getTableGroupAll(mappingId).stream().sorted(Comparator.comparing(TableGroup::getIndex).reversed()).collect(Collectors.toList());
     }
 
     @Override

@@ -46,5 +46,4 @@ public final class FileConnectorInstance implements ConnectorInstance<FileConfig
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
     }
-
 }

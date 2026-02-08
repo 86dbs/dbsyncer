@@ -113,5 +113,4 @@ public interface ConnectorService {
      * @return
      */
     Object getPosition(String params);
-
 }

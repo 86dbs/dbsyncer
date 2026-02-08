@@ -91,8 +91,8 @@ public class SqlServerGeometryData extends CustomData {
     }
 
     static class GeometryData {
+
         String wkt = "";
         int srid = 0;
     }
-
 }

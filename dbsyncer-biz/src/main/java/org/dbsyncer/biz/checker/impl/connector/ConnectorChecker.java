@@ -15,12 +15,14 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.Map;
 
 /**
@@ -78,7 +80,7 @@ public class ConnectorChecker extends AbstractChecker {
 
         return connector;
     }
-    
+
     /**
      * 校验并修改配置
      */
@@ -88,7 +90,7 @@ public class ConnectorChecker extends AbstractChecker {
         Assert.notNull(configValidator, "ConfigValidator can not be null.");
         configValidator.modify(connectorService, config, params);
     }
-    
+
     /**
      * 连接并加载数据库列表
      */
@@ -110,5 +112,4 @@ public class ConnectorChecker extends AbstractChecker {
             throw new BizException("获取连接器配置异常.");
         }
     }
-
 }

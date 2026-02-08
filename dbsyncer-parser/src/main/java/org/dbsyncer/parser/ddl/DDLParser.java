@@ -3,10 +3,13 @@
  */
 package org.dbsyncer.parser.ddl;
 
-import net.sf.jsqlparser.JSQLParserException;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
+import net.sf.jsqlparser.JSQLParserException;
+
+import net.sf.jsqlparser.JSQLParserException;
 
 public interface DDLParser {
 

@@ -3,16 +3,10 @@
  */
 package org.dbsyncer.sdk.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.util.Stack;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
+import org.dbsyncer.sdk.sqlparser.SimpleSqlParser;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
@@ -25,9 +19,29 @@ import net.sf.jsqlparser.parser.StringProvider;
 import net.sf.jsqlparser.parser.feature.Feature;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.Statements;
-import org.dbsyncer.sdk.sqlparser.SimpleSqlParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.parser.CCJSqlParserConstants;
+import net.sf.jsqlparser.parser.Node;
+import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.parser.StatementListener;
+import net.sf.jsqlparser.parser.StreamProvider;
+import net.sf.jsqlparser.parser.StringProvider;
+import net.sf.jsqlparser.parser.feature.Feature;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.Statements;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.Stack;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 /**
  * @Author 穿云
@@ -55,8 +69,7 @@ public abstract class SqlParserUtil {
         return parse(sql, null);
     }
 
-    public static Statement parse(String sql, Consumer<SimpleSqlParser> consumer)
-            throws JSQLParserException {
+    public static Statement parse(String sql, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
 
         if (sql == null || sql.isEmpty()) {
             return null;
@@ -72,9 +85,7 @@ public abstract class SqlParserUtil {
         return statement;
     }
 
-    public static Statement parse(String sql, ExecutorService executorService,
-                                  Consumer<SimpleSqlParser> consumer)
-            throws JSQLParserException {
+    public static Statement parse(String sql, ExecutorService executorService, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
         if (sql == null || sql.isEmpty()) {
             return null;
         }
@@ -161,19 +172,17 @@ public abstract class SqlParserUtil {
         return parseExpression(expression, true);
     }
 
-    public static Expression parseExpression(String expression, boolean allowPartialParse)
-            throws JSQLParserException {
+    public static Expression parseExpression(String expression, boolean allowPartialParse) throws JSQLParserException {
         if (expression == null || expression.isEmpty()) {
             return null;
         }
 
-        return parseExpression(expression, allowPartialParse, p -> {
+        return parseExpression(expression, allowPartialParse, p-> {
         });
     }
 
     @SuppressWarnings("PMD.CyclomaticComplexity")
-    public static Expression parseExpression(String expressionStr, boolean allowPartialParse,
-                                             Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
+    public static Expression parseExpression(String expressionStr, boolean allowPartialParse, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
         if (expressionStr == null || expressionStr.isEmpty()) {
             return null;
         }
@@ -188,8 +197,7 @@ public abstract class SqlParserUtil {
             try {
                 expression = parser.Expression();
                 if (parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
-                    throw new JSQLParserException(
-                            "could only parse partial expression " + expression.toString());
+                    throw new JSQLParserException("could only parse partial expression " + expression.toString());
                 }
             } catch (ParseException ex) {
                 throw new JSQLParserException(ex);
@@ -204,10 +212,8 @@ public abstract class SqlParserUtil {
                 }
                 try {
                     expression = parser.Expression();
-                    if (!allowPartialParse
-                            && parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
-                        throw new JSQLParserException(
-                                "could only parse partial expression " + expression.toString());
+                    if (!allowPartialParse && parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
+                        throw new JSQLParserException("could only parse partial expression " + expression.toString());
                     }
                 } catch (JSQLParserException ex) {
                     throw ex;
@@ -242,18 +248,16 @@ public abstract class SqlParserUtil {
      * @return the expression parsed
      * @see #parseCondExpression(String)
      */
-    public static Expression parseCondExpression(String condExpr, boolean allowPartialParse)
-            throws JSQLParserException {
+    public static Expression parseCondExpression(String condExpr, boolean allowPartialParse) throws JSQLParserException {
         if (condExpr == null || condExpr.isEmpty()) {
             return null;
         }
-        return parseCondExpression(condExpr, allowPartialParse, p -> {
+        return parseCondExpression(condExpr, allowPartialParse, p-> {
         });
     }
 
     @SuppressWarnings("PMD.CyclomaticComplexity")
-    public static Expression parseCondExpression(String conditionalExpressionStr,
-                                                 boolean allowPartialParse, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
+    public static Expression parseCondExpression(String conditionalExpressionStr, boolean allowPartialParse, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
         if (conditionalExpressionStr == null || conditionalExpressionStr.isEmpty()) {
             return null;
         }
@@ -261,33 +265,28 @@ public abstract class SqlParserUtil {
         Expression expression = null;
         // first, try to parse fast and simple
         try {
-            SimpleSqlParser parser =
-                    newParser(conditionalExpressionStr).withAllowComplexParsing(false);
+            SimpleSqlParser parser = newParser(conditionalExpressionStr).withAllowComplexParsing(false);
             if (consumer != null) {
                 consumer.accept(parser);
             }
             try {
                 expression = parser.Expression();
                 if (parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
-                    throw new JSQLParserException(
-                            "could only parse partial expression " + expression.toString());
+                    throw new JSQLParserException("could only parse partial expression " + expression.toString());
                 }
             } catch (ParseException ex) {
                 throw new JSQLParserException(ex);
             }
         } catch (JSQLParserException ex1) {
             if (getNestingDepth(conditionalExpressionStr) <= ALLOWED_NESTING_DEPTH) {
-                SimpleSqlParser parser =
-                        newParser(conditionalExpressionStr).withAllowComplexParsing(true);
+                SimpleSqlParser parser = newParser(conditionalExpressionStr).withAllowComplexParsing(true);
                 if (consumer != null) {
                     consumer.accept(parser);
                 }
                 try {
                     expression = parser.Expression();
-                    if (!allowPartialParse
-                            && parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
-                        throw new JSQLParserException(
-                                "could only parse partial expression " + expression.toString());
+                    if (!allowPartialParse && parser.getNextToken().kind != CCJSqlParserConstants.EOF) {
+                        throw new JSQLParserException("could only parse partial expression " + expression.toString());
                     }
                 } catch (JSQLParserException ex) {
                     throw ex;
@@ -307,13 +306,11 @@ public abstract class SqlParserUtil {
      *         timeout is reached
      */
 
-    public static Statement parseStatement(SimpleSqlParser parser, ExecutorService executorService)
-            throws JSQLParserException {
+    public static Statement parseStatement(SimpleSqlParser parser, ExecutorService executorService) throws JSQLParserException {
         Statement statement = null;
         Future<Statement> future = executorService.submit(parser::Statement);
         try {
-            statement = future.get(parser.getConfiguration().getAsLong(Feature.timeOut),
-                    TimeUnit.MILLISECONDS);
+            statement = future.get(parser.getConfiguration().getAsLong(Feature.timeOut), TimeUnit.MILLISECONDS);
         } catch (TimeoutException ex) {
             parser.interrupted = true;
             future.cancel(true);
@@ -337,8 +334,7 @@ public abstract class SqlParserUtil {
         return parseStatements(sqls, null);
     }
 
-    public static Statements parseStatements(String sqls, Consumer<SimpleSqlParser> consumer)
-            throws JSQLParserException {
+    public static Statements parseStatements(String sqls, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
         if (sqls == null || sqls.isEmpty()) {
             return null;
         }
@@ -355,9 +351,7 @@ public abstract class SqlParserUtil {
      *
      * @return the statements parsed
      */
-    public static Statements parseStatements(String sqls, ExecutorService executorService,
-                                             Consumer<SimpleSqlParser> consumer)
-            throws JSQLParserException {
+    public static Statements parseStatements(String sqls, ExecutorService executorService, Consumer<SimpleSqlParser> consumer) throws JSQLParserException {
         if (sqls == null || sqls.isEmpty()) {
             return null;
         }
@@ -394,14 +388,12 @@ public abstract class SqlParserUtil {
      * @throws JSQLParserException when either the Statement can't be parsed or the configured
      *         timeout is reached
      */
-    public static Statements parseStatements(SimpleSqlParser parser, ExecutorService executorService)
-            throws JSQLParserException {
+    public static Statements parseStatements(SimpleSqlParser parser, ExecutorService executorService) throws JSQLParserException {
         Statements statements;
         Future<Statements> future = null;
         try {
             future = executorService.submit(parser::Statements);
-            statements = future.get(parser.getConfiguration().getAsLong(Feature.timeOut),
-                    TimeUnit.MILLISECONDS);
+            statements = future.get(parser.getConfiguration().getAsLong(Feature.timeOut), TimeUnit.MILLISECONDS);
         } catch (TimeoutException ex) {
             parser.interrupted = true;
             future.cancel(true);
@@ -412,8 +404,7 @@ public abstract class SqlParserUtil {
         return statements;
     }
 
-    public static void streamStatements(StatementListener listener, InputStream is, String encoding)
-            throws JSQLParserException {
+    public static void streamStatements(StatementListener listener, InputStream is, String encoding) throws JSQLParserException {
         try {
             SimpleSqlParser parser = newParser(is, encoding);
             while (true) {

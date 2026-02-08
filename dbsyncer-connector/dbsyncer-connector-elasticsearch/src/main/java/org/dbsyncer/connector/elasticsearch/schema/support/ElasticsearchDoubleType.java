@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchDoubleType extends DoubleType {
 
     private enum TypeEnum {
+
         DOUBLE("double");
 
         private final String value;

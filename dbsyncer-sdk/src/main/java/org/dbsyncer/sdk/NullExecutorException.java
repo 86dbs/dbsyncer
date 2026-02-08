@@ -10,9 +10,9 @@ package org.dbsyncer.sdk;
  */
 public class NullExecutorException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public NullExecutorException(String message) {
+    public NullExecutorException(String message) {
         super(message);
     }
 }

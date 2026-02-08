@@ -23,7 +23,7 @@ public class FileResolver {
 
     public Map<String, Object> parseMap(List<Field> fields, char separator, String line) {
         Map<String, Object> row = new ConcurrentHashMap<>();
-        parse(fields, separator, line, (key, value) -> {
+        parse(fields, separator, line, (key, value)-> {
             if (value != null) {
                 row.put(key, value);
             }
@@ -33,7 +33,7 @@ public class FileResolver {
 
     public List<Object> parseList(List<Field> fields, char separator, String line) {
         List<Object> data = new ArrayList<>();
-        parse(fields, separator, line, (key, value) -> data.add(value));
+        parse(fields, separator, line, (key, value)->data.add(value));
         return data;
     }
 
@@ -99,6 +99,7 @@ public class FileResolver {
     }
 
     private interface ResultSetMapper {
+
         void apply(String key, Object value);
     }
 

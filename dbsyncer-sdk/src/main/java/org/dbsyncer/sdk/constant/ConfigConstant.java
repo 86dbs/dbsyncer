@@ -14,6 +14,7 @@ public class ConfigConstant {
      * 公共属性
      */
     public static final String CONFIG_MODEL_ID = "id";
+
     public static final String CONFIG_MODEL_NAME = "name";
     public static final String CONFIG_MODEL_TYPE = "type";
     public static final String CONFIG_MODEL_CREATE_TIME = "createTime";
@@ -24,6 +25,7 @@ public class ConfigConstant {
      * 配置类型
      */
     public static final String SYSTEM = "system";
+
     public static final String USER = "user";
     public static final String CONNECTOR = "connector";
     public static final String MAPPING = "mapping";
@@ -34,10 +36,12 @@ public class ConfigConstant {
      * 数据
      */
     public static final String DATA_SUCCESS = "success";
+
     public static final String DATA_TABLE_GROUP_ID = "tableGroupId";
     public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
+
     /**
      * Binlog
      */
@@ -47,8 +51,8 @@ public class ConfigConstant {
      * 任务
      */
     public static final String TASK_STATUS = "status";
+
     public static final String TASK_ID = "taskId";
     public static final String TASK_SOURCE_TABLE_NAME = "sourceTableName";
     public static final String TASK_CONTENT = "content";
-
 }

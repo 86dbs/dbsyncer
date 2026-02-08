@@ -3,10 +3,6 @@
  */
 package org.dbsyncer.connector.kafka.cdc;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -18,6 +14,12 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
  * @Date 2026-01-10 14:58
  */
 public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final List<ConsumerInfo> consumers = new ArrayList<>();
@@ -97,7 +100,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                 }
                 worker = null;
             }
-            
+
             // 3. 关闭线程池，等待任务完成
             if (executor != null) {
                 executor.shutdown();
@@ -117,7 +120,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     executor.shutdownNow();
                 }
             }
-            
+
             // 4. 最后关闭所有consumer（此时没有线程在使用它们）
             consumers.forEach(ConsumerInfo::close);
             consumers.clear();
@@ -160,7 +163,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         if (map == null || columns == null) {
             return new ArrayList<>();
         }
-        return columns.stream().map(c -> map.get(c.getName())).collect(Collectors.toList());
+        return columns.stream().map(c->map.get(c.getName())).collect(Collectors.toList());
     }
 
     private void trySendEvent(ChangedEvent event) {
@@ -197,7 +200,8 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
         // 将value转换为Map
         Map<String, Object> valueMap;
         if (value instanceof Map) {
-            @SuppressWarnings("unchecked") Map<String, Object> tempMap = (Map<String, Object>) value;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> tempMap = (Map<String, Object>) value;
             valueMap = tempMap;
         } else {
             logger.warn("消息value类型不是Map，topic: {}, offset: {}, type: {}", topic, record.offset(), value.getClass().getName());
@@ -253,8 +257,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     // 使用较短的超时时间来触发分区分配
                     consumerInfo.consumer.poll(100);
                     Set<TopicPartition> partitions = consumerInfo.consumer.assignment();
-                    logger.info("Consumer分区分配完成，topic: {}, groupId: {}, 分区数量: {}", 
-                        consumerInfo.table.getName(), consumerInfo.table.getExtInfo().getProperty("groupId"), partitions.size());
+                    logger.info("Consumer分区分配完成，topic: {}, groupId: {}, 分区数量: {}", consumerInfo.table.getName(), consumerInfo.table.getExtInfo().getProperty("groupId"), partitions.size());
                     if (!partitions.isEmpty()) {
                         for (TopicPartition partition : partitions) {
                             long position = consumerInfo.consumer.position(partition);
@@ -268,7 +271,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
                     consumerInfo.offsetRestored = true;
                     logger.info("Offset恢复完成，topic: {}", consumerInfo.table.getName());
                 }
-                
+
                 long processedCount = 0;
                 while (connected && processedCount < fetchSize) {
                     ConsumerRecords<String, Object> records = consumerInfo.consumer.poll(100);
@@ -298,6 +301,7 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
     }
 
     static final class ConsumerInfo {
+
         Table table;
         KafkaConsumer<String, Object> consumer;
         private final Object closeLock = new Object(); // 用于同步关闭操作

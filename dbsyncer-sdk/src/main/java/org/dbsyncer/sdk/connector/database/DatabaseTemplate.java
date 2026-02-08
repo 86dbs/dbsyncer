@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.connector.database;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -280,13 +281,12 @@ public class DatabaseTemplate implements JdbcOperations {
         return this.resultsMapCaseInsensitive;
     }
 
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Methods dealing with a plain java.sql.Connection
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     @Override
-    @Nullable
-    public <T> T execute(ConnectionCallback<T> action) throws DataAccessException {
+    @Nullable public <T> T execute(ConnectionCallback<T> action) throws DataAccessException {
         Assert.notNull(action, "Callback object must not be null");
 
         try {
@@ -312,19 +312,14 @@ public class DatabaseTemplate implements JdbcOperations {
      * @see #applyStatementSettings
      */
     protected Connection createConnectionProxy(Connection con) {
-        return (Connection) Proxy.newProxyInstance(
-                ConnectionProxy.class.getClassLoader(),
-                new Class<?>[]{ConnectionProxy.class},
-                new DatabaseTemplate.CloseSuppressingInvocationHandler(con));
+        return (Connection) Proxy.newProxyInstance(ConnectionProxy.class.getClassLoader(), new Class<?>[]{ConnectionProxy.class}, new DatabaseTemplate.CloseSuppressingInvocationHandler(con));
     }
 
-
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Methods dealing with static SQL (java.sql.Statement)
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
-    @Nullable
-    private <T> T execute(StatementCallback<T> action, boolean closeResources) throws DataAccessException {
+    @Nullable private <T> T execute(StatementCallback<T> action, boolean closeResources) throws DataAccessException {
         Assert.notNull(action, "Callback object must not be null");
 
         Statement stmt = null;
@@ -349,8 +344,7 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T execute(StatementCallback<T> action) throws DataAccessException {
+    @Nullable public <T> T execute(StatementCallback<T> action) throws DataAccessException {
         return execute(action, true);
     }
 
@@ -364,9 +358,9 @@ public class DatabaseTemplate implements JdbcOperations {
          * Callback to execute the statement.
          */
         class ExecuteStatementCallback implements StatementCallback<Object>, SqlProvider {
+
             @Override
-            @Nullable
-            public Object doInStatement(Statement stmt) throws SQLException {
+            @Nullable public Object doInStatement(Statement stmt) throws SQLException {
                 stmt.execute(sql);
                 return null;
             }
@@ -381,8 +375,7 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T query(final String sql, final ResultSetExtractor<T> rse) throws DataAccessException {
+    @Nullable public <T> T query(final String sql, final ResultSetExtractor<T> rse) throws DataAccessException {
         Assert.notNull(sql, "SQL must not be null");
         Assert.notNull(rse, "ResultSetExtractor must not be null");
         if (logger.isDebugEnabled()) {
@@ -393,9 +386,9 @@ public class DatabaseTemplate implements JdbcOperations {
          * Callback to execute the query.
          */
         class QueryStatementCallback implements StatementCallback<T>, SqlProvider {
+
             @Override
-            @Nullable
-            public T doInStatement(Statement stmt) throws SQLException {
+            @Nullable public T doInStatement(Statement stmt) throws SQLException {
                 ResultSet rs = null;
                 try {
                     rs = stmt.executeQuery(sql);
@@ -427,10 +420,11 @@ public class DatabaseTemplate implements JdbcOperations {
     @Override
     public <T> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper) throws DataAccessException {
         class StreamStatementCallback implements StatementCallback<Stream<T>>, SqlProvider {
+
             @Override
             public Stream<T> doInStatement(Statement stmt) throws SQLException {
                 ResultSet rs = stmt.executeQuery(sql);
-                return new DatabaseTemplate.ResultSetSpliterator<>(rs, rowMapper).stream().onClose(() -> {
+                return new DatabaseTemplate.ResultSetSpliterator<>(rs, rowMapper).stream().onClose(()-> {
                     JdbcUtils.closeResultSet(rs);
                     JdbcUtils.closeStatement(stmt);
                 });
@@ -451,15 +445,13 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, RowMapper<T> rowMapper) throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, RowMapper<T> rowMapper) throws DataAccessException {
         List<T> results = query(sql, rowMapper);
         return DataAccessUtils.nullableSingleResult(results);
     }
 
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, Class<T> requiredType) throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, Class<T> requiredType) throws DataAccessException {
         return queryForObject(sql, getSingleColumnRowMapper(requiredType));
     }
 
@@ -489,6 +481,7 @@ public class DatabaseTemplate implements JdbcOperations {
          * Callback to execute the update statement.
          */
         class UpdateStatementCallback implements StatementCallback<Integer>, SqlProvider {
+
             @Override
             public Integer doInStatement(Statement stmt) throws SQLException {
                 int rows = stmt.executeUpdate(sql);
@@ -516,8 +509,7 @@ public class DatabaseTemplate implements JdbcOperations {
          */
         class BatchUpdateStatementCallback implements StatementCallback<int[]>, SqlProvider {
 
-            @Nullable
-            private String currSql;
+            @Nullable private String currSql;
 
             @Override
             public int[] doInStatement(Statement stmt) throws SQLException, DataAccessException {
@@ -559,8 +551,7 @@ public class DatabaseTemplate implements JdbcOperations {
             }
 
             @Override
-            @Nullable
-            public String getSql() {
+            @Nullable public String getSql() {
                 return this.currSql;
             }
         }
@@ -570,14 +561,11 @@ public class DatabaseTemplate implements JdbcOperations {
         return result;
     }
 
-
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Methods dealing with prepared statements
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
-    @Nullable
-    private <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action, boolean closeResources)
-            throws DataAccessException {
+    @Nullable private <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action, boolean closeResources) throws DataAccessException {
 
         Assert.notNull(psc, "PreparedStatementCreator must not be null");
         Assert.notNull(action, "Callback object must not be null");
@@ -611,16 +599,13 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action)
-            throws DataAccessException {
+    @Nullable public <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action) throws DataAccessException {
 
         return execute(psc, action, true);
     }
 
     @Override
-    @Nullable
-    public <T> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
+    @Nullable public <T> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
         return execute(new DatabaseTemplate.SimplePreparedStatementCreator(sql), action, true);
     }
 
@@ -636,18 +621,15 @@ public class DatabaseTemplate implements JdbcOperations {
      * @return an arbitrary result object, as returned by the ResultSetExtractor
      * @throws DataAccessException if there is any problem
      */
-    @Nullable
-    public <T> T query(
-            PreparedStatementCreator psc, @Nullable final PreparedStatementSetter pss, final ResultSetExtractor<T> rse)
-            throws DataAccessException {
+    @Nullable public <T> T query(PreparedStatementCreator psc, @Nullable final PreparedStatementSetter pss, final ResultSetExtractor<T> rse) throws DataAccessException {
 
         Assert.notNull(rse, "ResultSetExtractor must not be null");
         logger.debug("Executing prepared SQL query");
 
         return execute(psc, new PreparedStatementCallback<T>() {
+
             @Override
-            @Nullable
-            public T doInPreparedStatement(PreparedStatement ps) throws SQLException {
+            @Nullable public T doInPreparedStatement(PreparedStatement ps) throws SQLException {
                 ResultSet rs = null;
                 try {
                     if (pss != null) {
@@ -666,33 +648,28 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T query(PreparedStatementCreator psc, ResultSetExtractor<T> rse) throws DataAccessException {
+    @Nullable public <T> T query(PreparedStatementCreator psc, ResultSetExtractor<T> rse) throws DataAccessException {
         return query(psc, null, rse);
     }
 
     @Override
-    @Nullable
-    public <T> T query(String sql, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse) throws DataAccessException {
+    @Nullable public <T> T query(String sql, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse) throws DataAccessException {
         return query(new DatabaseTemplate.SimplePreparedStatementCreator(sql), pss, rse);
     }
 
     @Override
-    @Nullable
-    public <T> T query(String sql, Object[] args, int[] argTypes, ResultSetExtractor<T> rse) throws DataAccessException {
+    @Nullable public <T> T query(String sql, Object[] args, int[] argTypes, ResultSetExtractor<T> rse) throws DataAccessException {
         return query(sql, newArgTypePreparedStatementSetter(args, argTypes), rse);
     }
 
     @Deprecated
     @Override
-    @Nullable
-    public <T> T query(String sql, @Nullable Object[] args, ResultSetExtractor<T> rse) throws DataAccessException {
+    @Nullable public <T> T query(String sql, @Nullable Object[] args, ResultSetExtractor<T> rse) throws DataAccessException {
         return query(sql, newArgPreparedStatementSetter(args), rse);
     }
 
     @Override
-    @Nullable
-    public <T> T query(String sql, ResultSetExtractor<T> rse, @Nullable Object... args) throws DataAccessException {
+    @Nullable public <T> T query(String sql, ResultSetExtractor<T> rse, @Nullable Object... args) throws DataAccessException {
         return query(sql, newArgPreparedStatementSetter(args), rse);
     }
 
@@ -762,15 +739,14 @@ public class DatabaseTemplate implements JdbcOperations {
      * @throws DataAccessException if the query fails
      * @since 5.3
      */
-    public <T> Stream<T> queryForStream(PreparedStatementCreator psc, @Nullable PreparedStatementSetter pss,
-                                        RowMapper<T> rowMapper) throws DataAccessException {
+    public <T> Stream<T> queryForStream(PreparedStatementCreator psc, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
 
-        return result(execute(psc, ps -> {
+        return result(execute(psc, ps-> {
             if (pss != null) {
                 pss.setValues(ps);
             }
             ResultSet rs = ps.executeQuery();
-            return new DatabaseTemplate.ResultSetSpliterator<>(rs, rowMapper).stream().onClose(() -> {
+            return new DatabaseTemplate.ResultSetSpliterator<>(rs, rowMapper).stream().onClose(()-> {
                 JdbcUtils.closeResultSet(rs);
                 if (pss instanceof ParameterDisposer) {
                     ((ParameterDisposer) pss).cleanupParameters();
@@ -796,9 +772,7 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, Object[] args, int[] argTypes, RowMapper<T> rowMapper)
-            throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, Object[] args, int[] argTypes, RowMapper<T> rowMapper) throws DataAccessException {
 
         List<T> results = query(sql, args, argTypes, new RowMapperResultSetExtractor<>(rowMapper, 1));
         return DataAccessUtils.nullableSingleResult(results);
@@ -806,23 +780,19 @@ public class DatabaseTemplate implements JdbcOperations {
 
     @Deprecated
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, @Nullable Object[] args, RowMapper<T> rowMapper) throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, @Nullable Object[] args, RowMapper<T> rowMapper) throws DataAccessException {
         List<T> results = query(sql, args, new RowMapperResultSetExtractor<>(rowMapper, 1));
         return DataAccessUtils.nullableSingleResult(results);
     }
 
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, RowMapper<T> rowMapper, @Nullable Object... args) throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, RowMapper<T> rowMapper, @Nullable Object... args) throws DataAccessException {
         List<T> results = query(sql, args, new RowMapperResultSetExtractor<>(rowMapper, 1));
         return DataAccessUtils.nullableSingleResult(results);
     }
 
     @Override
-    @Nullable
-    public <T> T queryForObject(String sql, Object[] args, int[] argTypes, Class<T> requiredType)
-            throws DataAccessException {
+    @Nullable public <T> T queryForObject(String sql, Object[] args, int[] argTypes, Class<T> requiredType) throws DataAccessException {
 
         return queryForObject(sql, args, argTypes, getSingleColumnRowMapper(requiredType));
     }
@@ -884,12 +854,11 @@ public class DatabaseTemplate implements JdbcOperations {
         return result(query(sql, args, new SqlRowSetResultSetExtractor()));
     }
 
-    protected int update(final PreparedStatementCreator psc, @Nullable final PreparedStatementSetter pss)
-            throws DataAccessException {
+    protected int update(final PreparedStatementCreator psc, @Nullable final PreparedStatementSetter pss) throws DataAccessException {
 
         logger.debug("Executing prepared SQL update");
 
-        return updateCount(execute(psc, ps -> {
+        return updateCount(execute(psc, ps-> {
             try {
                 if (pss != null) {
                     pss.setValues(ps);
@@ -913,21 +882,19 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    public int update(final PreparedStatementCreator psc, final KeyHolder generatedKeyHolder)
-            throws DataAccessException {
+    public int update(final PreparedStatementCreator psc, final KeyHolder generatedKeyHolder) throws DataAccessException {
 
         Assert.notNull(generatedKeyHolder, "KeyHolder must not be null");
         logger.debug("Executing SQL update and returning generated keys");
 
-        return updateCount(execute(psc, ps -> {
+        return updateCount(execute(psc, ps-> {
             int rows = ps.executeUpdate();
             List<Map<String, Object>> generatedKeys = generatedKeyHolder.getKeyList();
             generatedKeys.clear();
             ResultSet keys = ps.getGeneratedKeys();
             if (keys != null) {
                 try {
-                    RowMapperResultSetExtractor<Map<String, Object>> rse =
-                            new RowMapperResultSetExtractor<>(getColumnMapRowMapper(), 1);
+                    RowMapperResultSetExtractor<Map<String, Object>> rse = new RowMapperResultSetExtractor<>(getColumnMapRowMapper(), 1);
                     generatedKeys.addAll(result(rse.extractData(keys)));
                 } finally {
                     JdbcUtils.closeResultSet(keys);
@@ -961,12 +928,10 @@ public class DatabaseTemplate implements JdbcOperations {
             logger.debug("Executing SQL batch update [" + sql + "]");
         }
 
-        int[] result = execute(sql, (PreparedStatementCallback<int[]>) ps -> {
+        int[] result = execute(sql, (PreparedStatementCallback<int[]>) ps-> {
             try {
                 int batchSize = pss.getBatchSize();
-                InterruptibleBatchPreparedStatementSetter ipss =
-                        (pss instanceof InterruptibleBatchPreparedStatementSetter ?
-                                (InterruptibleBatchPreparedStatementSetter) pss : null);
+                InterruptibleBatchPreparedStatementSetter ipss = (pss instanceof InterruptibleBatchPreparedStatementSetter ? (InterruptibleBatchPreparedStatementSetter) pss : null);
                 if (JdbcUtils.supportsBatchUpdates(ps.getConnection())) {
                     for (int i = 0; i < batchSize; i++) {
                         pss.setValues(ps, i);
@@ -1026,45 +991,43 @@ public class DatabaseTemplate implements JdbcOperations {
             return new int[0];
         }
 
-        return batchUpdate(
-                sql,
-                new BatchPreparedStatementSetter() {
-                    @Override
-                    public void setValues(PreparedStatement ps, int i) throws SQLException {
-                        Object[] values = batchArgs.get(i);
-                        int colIndex = 0;
-                        for (Object value : values) {
-                            colIndex++;
-                            if (value instanceof SqlParameterValue) {
-                                SqlParameterValue paramValue = (SqlParameterValue) value;
-                                StatementCreatorUtils.setParameterValue(ps, colIndex, paramValue, paramValue.getValue());
-                            } else {
-                                int colType;
-                                if (argTypes.length < colIndex) {
-                                    colType = SqlTypeValue.TYPE_UNKNOWN;
-                                } else {
-                                    colType = argTypes[colIndex - 1];
-                                }
-                                StatementCreatorUtils.setParameterValue(ps, colIndex, colType, value);
-                            }
-                        }
-                    }
+        return batchUpdate(sql, new BatchPreparedStatementSetter() {
 
-                    @Override
-                    public int getBatchSize() {
-                        return batchArgs.size();
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                Object[] values = batchArgs.get(i);
+                int colIndex = 0;
+                for (Object value : values) {
+                    colIndex++;
+                    if (value instanceof SqlParameterValue) {
+                        SqlParameterValue paramValue = (SqlParameterValue) value;
+                        StatementCreatorUtils.setParameterValue(ps, colIndex, paramValue, paramValue.getValue());
+                    } else {
+                        int colType;
+                        if (argTypes.length < colIndex) {
+                            colType = SqlTypeValue.TYPE_UNKNOWN;
+                        } else {
+                            colType = argTypes[colIndex - 1];
+                        }
+                        StatementCreatorUtils.setParameterValue(ps, colIndex, colType, value);
                     }
-                });
+                }
+            }
+
+            @Override
+            public int getBatchSize() {
+                return batchArgs.size();
+            }
+        });
     }
 
     @Override
-    public <T> int[][] batchUpdate(String sql, final Collection<T> batchArgs, final int batchSize,
-                                   final ParameterizedPreparedStatementSetter<T> pss) throws DataAccessException {
+    public <T> int[][] batchUpdate(String sql, final Collection<T> batchArgs, final int batchSize, final ParameterizedPreparedStatementSetter<T> pss) throws DataAccessException {
 
         if (logger.isDebugEnabled()) {
             logger.debug("Executing SQL batch update [" + sql + "] with a batch size of " + batchSize);
         }
-        int[][] result = execute(sql, (PreparedStatementCallback<int[][]>) ps -> {
+        int[][] result = execute(sql, (PreparedStatementCallback<int[][]>) ps-> {
             List<int[]> rowsAffected = new ArrayList<>();
             try {
                 boolean batchSupported = JdbcUtils.supportsBatchUpdates(ps.getConnection());
@@ -1103,15 +1066,12 @@ public class DatabaseTemplate implements JdbcOperations {
         return result;
     }
 
-
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Methods dealing with callable statements
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     @Override
-    @Nullable
-    public <T> T execute(CallableStatementCreator csc, CallableStatementCallback<T> action)
-            throws DataAccessException {
+    @Nullable public <T> T execute(CallableStatementCreator csc, CallableStatementCallback<T> action) throws DataAccessException {
 
         Assert.notNull(csc, "CallableStatementCreator must not be null");
         Assert.notNull(action, "Callback object must not be null");
@@ -1147,14 +1107,12 @@ public class DatabaseTemplate implements JdbcOperations {
     }
 
     @Override
-    @Nullable
-    public <T> T execute(String callString, CallableStatementCallback<T> action) throws DataAccessException {
+    @Nullable public <T> T execute(String callString, CallableStatementCallback<T> action) throws DataAccessException {
         return execute(new DatabaseTemplate.SimpleCallableStatementCreator(callString), action);
     }
 
     @Override
-    public Map<String, Object> call(CallableStatementCreator csc, List<SqlParameter> declaredParameters)
-            throws DataAccessException {
+    public Map<String, Object> call(CallableStatementCreator csc, List<SqlParameter> declaredParameters) throws DataAccessException {
 
         final List<SqlParameter> updateCountParameters = new ArrayList<>();
         final List<SqlParameter> resultSetParameters = new ArrayList<>();
@@ -1172,7 +1130,7 @@ public class DatabaseTemplate implements JdbcOperations {
             }
         }
 
-        Map<String, Object> result = execute(csc, cs -> {
+        Map<String, Object> result = execute(csc, cs-> {
             boolean retVal = cs.execute();
             int updateCount = cs.getUpdateCount();
             if (logger.isTraceEnabled()) {
@@ -1199,8 +1157,7 @@ public class DatabaseTemplate implements JdbcOperations {
      * @param resultSetParameters   the parameter list of declared resultSet parameters for the stored procedure
      * @return a Map that contains returned results
      */
-    protected Map<String, Object> extractReturnedResults(CallableStatement cs,
-                                                         @Nullable List<SqlParameter> updateCountParameters, @Nullable List<SqlParameter> resultSetParameters,
+    protected Map<String, Object> extractReturnedResults(CallableStatement cs, @Nullable List<SqlParameter> updateCountParameters, @Nullable List<SqlParameter> resultSetParameters,
                                                          int updateCount) throws SQLException {
 
         Map<String, Object> results = new LinkedHashMap<>(4);
@@ -1247,8 +1204,7 @@ public class DatabaseTemplate implements JdbcOperations {
                 if (logger.isTraceEnabled()) {
                     logger.trace("CallableStatement.getUpdateCount() returned " + updateCount);
                 }
-            }
-            while (moreResults || updateCount != -1);
+            } while (moreResults || updateCount != -1);
         }
         return results;
     }
@@ -1260,8 +1216,7 @@ public class DatabaseTemplate implements JdbcOperations {
      * @param parameters parameter list for the stored procedure
      * @return a Map that contains returned results
      */
-    protected Map<String, Object> extractOutputParameters(CallableStatement cs, List<SqlParameter> parameters)
-            throws SQLException {
+    protected Map<String, Object> extractOutputParameters(CallableStatement cs, List<SqlParameter> parameters) throws SQLException {
 
         Map<String, Object> results = CollectionUtils.newLinkedHashMap(parameters.size());
         int sqlColIndex = 1;
@@ -1305,8 +1260,7 @@ public class DatabaseTemplate implements JdbcOperations {
      * @param param the corresponding stored procedure parameter
      * @return a Map that contains returned results
      */
-    protected Map<String, Object> processResultSet(
-            @Nullable ResultSet rs, ResultSetSupportingSqlParameter param) throws SQLException {
+    protected Map<String, Object> processResultSet(@Nullable ResultSet rs, ResultSetSupportingSqlParameter param) throws SQLException {
 
         if (rs != null) {
             try {
@@ -1317,8 +1271,7 @@ public class DatabaseTemplate implements JdbcOperations {
                 } else if (param.getRowCallbackHandler() != null) {
                     RowCallbackHandler rch = param.getRowCallbackHandler();
                     (new DatabaseTemplate.RowCallbackHandlerResultSetExtractor(rch)).extractData(rs);
-                    return Collections.singletonMap(param.getName(),
-                            "ResultSet returned from stored procedure was processed");
+                    return Collections.singletonMap(param.getName(), "ResultSet returned from stored procedure was processed");
                 } else if (param.getResultSetExtractor() != null) {
                     Object data = param.getResultSetExtractor().extractData(rs);
                     return Collections.singletonMap(param.getName(), data);
@@ -1330,10 +1283,9 @@ public class DatabaseTemplate implements JdbcOperations {
         return Collections.emptyMap();
     }
 
-
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Implementation hooks and helper methods
-    //-------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     /**
      * Create a new RowMapper for reading columns as key-value pairs.
@@ -1434,8 +1386,7 @@ public class DatabaseTemplate implements JdbcOperations {
             if (logger.isDebugEnabled()) {
                 SQLWarning warningToLog = stmt.getWarnings();
                 while (warningToLog != null) {
-                    logger.debug("SQLWarning ignored: SQL state '" + warningToLog.getSQLState() + "', error code '" +
-                            warningToLog.getErrorCode() + "', message [" + warningToLog.getMessage() + "]");
+                    logger.debug("SQLWarning ignored: SQL state '" + warningToLog.getSQLState() + "', error code '" + warningToLog.getErrorCode() + "', message [" + warningToLog.getMessage() + "]");
                     warningToLog = warningToLog.getNextWarning();
                 }
             }
@@ -1478,8 +1429,7 @@ public class DatabaseTemplate implements JdbcOperations {
      * @return the SQL string, or {@code null} if not known
      * @see SqlProvider
      */
-    @Nullable
-    private static String getSql(Object sqlProvider) {
+    @Nullable private static String getSql(Object sqlProvider) {
         if (sqlProvider instanceof SqlProvider) {
             return ((SqlProvider) sqlProvider).getSql();
         } else {
@@ -1529,8 +1479,7 @@ public class DatabaseTemplate implements JdbcOperations {
         }
 
         @Override
-        @Nullable
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        @Nullable public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             // Invocation on ConnectionProxy interface coming in...
 
             switch (method.getName()) {
@@ -1571,7 +1520,6 @@ public class DatabaseTemplate implements JdbcOperations {
         }
     }
 
-
     /**
      * Simple adapter for PreparedStatementCreator, allowing to use a plain SQL statement.
      */
@@ -1594,7 +1542,6 @@ public class DatabaseTemplate implements JdbcOperations {
             return this.sql;
         }
     }
-
 
     /**
      * Simple adapter for CallableStatementCreator, allowing to use a plain SQL statement.
@@ -1619,7 +1566,6 @@ public class DatabaseTemplate implements JdbcOperations {
         }
     }
 
-
     /**
      * Adapter to enable use of a RowCallbackHandler inside a ResultSetExtractor.
      * <p>Uses a regular ResultSet, so we have to be careful when using it:
@@ -1634,15 +1580,13 @@ public class DatabaseTemplate implements JdbcOperations {
         }
 
         @Override
-        @Nullable
-        public Object extractData(ResultSet rs) throws SQLException {
+        @Nullable public Object extractData(ResultSet rs) throws SQLException {
             while (rs.next()) {
                 this.rch.processRow(rs);
             }
             return null;
         }
     }
-
 
     /**
      * Spliterator for queryForStream adaptation of a ResultSet to a Stream.
@@ -1676,8 +1620,7 @@ public class DatabaseTemplate implements JdbcOperations {
         }
 
         @Override
-        @Nullable
-        public Spliterator<T> trySplit() {
+        @Nullable public Spliterator<T> trySplit() {
             return null;
         }
 

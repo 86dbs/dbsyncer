@@ -3,11 +3,14 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
-import oracle.sql.BLOB;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
+
+import oracle.sql.BLOB;
+
+import oracle.sql.BLOB;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -22,10 +25,8 @@ import java.util.stream.Collectors;
 public final class OracleBytesType extends BytesType {
 
     private enum TypeEnum {
-        BLOB("BLOB"),
-        RAW("RAW"),
-        LONG_RAW("LONG RAW"),
-        BFILE("BFILE");
+
+        BLOB("BLOB"), RAW("RAW"), LONG_RAW("LONG RAW"), BFILE("BFILE");
 
         private final String value;
 
@@ -72,8 +73,7 @@ public final class OracleBytesType extends BytesType {
                 if (startIdx >= 0 && endIdx > startIdx) {
                     String hexContent = s.substring(startIdx + 1, endIdx).trim();
                     // 移除引号（单引号或双引号）
-                    if ((hexContent.startsWith("'") && hexContent.endsWith("'")) ||
-                        (hexContent.startsWith("\"") && hexContent.endsWith("\""))) {
+                    if ((hexContent.startsWith("'") && hexContent.endsWith("'")) || (hexContent.startsWith("\"") && hexContent.endsWith("\""))) {
                         hexContent = hexContent.substring(1, hexContent.length() - 1);
                     }
                     return StringUtil.hexStringToByteArray(hexContent);
@@ -92,7 +92,7 @@ public final class OracleBytesType extends BytesType {
         }
         return throwUnsupportedException(val, field);
     }
-    
+
     /**
      * 判断字符串是否为十六进制字符串
      */

@@ -65,12 +65,12 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
+        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
+        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
     }
 
     @Override
@@ -120,12 +120,12 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         if (cursorArgs == null) {
             return new Object[]{pageSize, 0};
         }
-        
+
         // PostgreSQL使用 LIMIT ? OFFSET ?，参数顺序为 [游标参数..., pageSize, 0]
         Object[] newCursors = new Object[cursorArgs.length + 2];
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
-        newCursors[cursorArgs.length] = pageSize;  // LIMIT
-        newCursors[cursorArgs.length + 1] = 0;  // OFFSET
+        newCursors[cursorArgs.length] = pageSize; // LIMIT
+        newCursors[cursorArgs.length + 1] = 0; // OFFSET
         return newCursors;
     }
 
@@ -155,14 +155,14 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         // PostgreSQL 使用 ON CONFLICT DO NOTHING 实现 INSERT IGNORE 效果
         UpsertContext context = buildUpsertContext(config);
         StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
-        
+
         // 构建 INSERT INTO ... VALUES (...)
         buildInsertIntoClause(sql, config, context);
-        
+
         // 构建 ON CONFLICT (...) DO NOTHING
         buildOnConflictClause(sql, context);
         sql.append(" DO NOTHING");
-        
+
         return sql.toString();
     }
 
@@ -170,15 +170,15 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         UpsertContext context = buildUpsertContext(config);
         StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
-        
+
         // 构建 INSERT INTO ... VALUES (...)
         buildInsertIntoClause(sql, config, context);
-        
+
         // 构建 ON CONFLICT (...) DO UPDATE SET
         buildOnConflictClause(sql, context);
         sql.append(" DO UPDATE SET ");
         sql.append(StringUtil.join(context.updateSets, StringUtil.COMMA));
-        
+
         return sql.toString();
     }
 
@@ -207,11 +207,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     private UpsertContext buildUpsertContext(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         UpsertContext context = new UpsertContext();
-        
-        config.getFields().forEach(f -> {
+
+        config.getFields().forEach(f-> {
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
-            
+
             // 构建 VALUES 占位符
             List<String> fieldVs = new ArrayList<>();
             if (database.buildCustomValue(fieldVs, f)) {
@@ -220,7 +220,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             } else {
                 context.valuePlaceholders.add("?");
             }
-            
+
             if (f.isPk()) {
                 context.pkFieldNames.add(fieldName);
             } else {
@@ -228,7 +228,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
                 context.updateSets.add(String.format("%s = EXCLUDED.%s", fieldName, fieldName));
             }
         });
-        
+
         return context;
     }
 
@@ -236,6 +236,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
      * UPSERT 语句构建上下文
      */
     private static class UpsertContext {
+
         List<String> fieldNames = new ArrayList<>();
         List<String> valuePlaceholders = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();

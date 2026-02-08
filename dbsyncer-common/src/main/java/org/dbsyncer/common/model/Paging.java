@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class Paging<T> {
+
     private long total;
     private int pageNum;
     private int pageSize;

@@ -6,6 +6,7 @@ package org.dbsyncer.connector.mysql.schema.support;
 import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ByteOrderValues;
 import org.locationtech.jts.io.ParseException;
@@ -35,7 +36,8 @@ public final class MySQLStringType extends StringType {
         MEDIUMTEXT, // 可变长度，最多2的24次方-1个字符，16M
         LONGTEXT, // 可变长度，最多2的32次方-1个字符，4GB
         ENUM, // 2字节，最大可达65535个不同的枚举值
-        JSON, GEOMETRY; // POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON, GEOMETRYCOLLECTION
+        JSON, GEOMETRY; // POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON,
+        // GEOMETRYCOLLECTION
     }
 
     @Override
@@ -51,7 +53,7 @@ public final class MySQLStringType extends StringType {
             case ENUM:
                 return String.valueOf(val);
             default:
-               break;
+                break;
         }
         if (val instanceof byte[]) {
             return new String((byte[]) val, StandardCharsets.UTF_8);

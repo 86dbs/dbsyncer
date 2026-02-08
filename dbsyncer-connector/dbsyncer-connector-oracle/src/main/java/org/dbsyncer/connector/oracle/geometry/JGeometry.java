@@ -3,6 +3,20 @@
  */
 package org.dbsyncer.connector.oracle.geometry;
 
+import oracle.sql.ARRAY;
+import oracle.sql.ArrayDescriptor;
+import oracle.sql.Datum;
+import oracle.sql.NUMBER;
+import oracle.sql.STRUCT;
+import oracle.sql.StructDescriptor;
+
+import oracle.sql.ARRAY;
+import oracle.sql.ArrayDescriptor;
+import oracle.sql.Datum;
+import oracle.sql.NUMBER;
+import oracle.sql.STRUCT;
+import oracle.sql.StructDescriptor;
+
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
@@ -18,14 +32,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import oracle.sql.ARRAY;
-import oracle.sql.ArrayDescriptor;
-import oracle.sql.Datum;
-import oracle.sql.NUMBER;
-import oracle.sql.STRUCT;
-import oracle.sql.StructDescriptor;
-
 public class JGeometry implements Cloneable, Serializable {
+
     static final long serialVersionUID = -4792272186565640701L;
     protected static StructDescriptor geomDesc = null;
     protected static StructDescriptor pointDesc = null;
@@ -73,7 +81,7 @@ public class JGeometry implements Cloneable, Serializable {
             var3 = var2.smax / Math.sqrt(1.0D - var2.esq * var7 * var7);
             var9 = var1[2] + var3 * var2.esq * var7;
             var7 = var9 / Math.sqrt(var11 + var9 * var9);
-        } while(Math.abs(var7 - var5) > 1.0E-15D);
+        } while (Math.abs(var7 - var5) > 1.0E-15D);
 
         var3 = var2.smax / Math.sqrt(1.0D - var2.esq * var7 * var7);
         var9 = var1[2] + var3 * var2.esq * var7;
@@ -84,13 +92,13 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private boolean gxyzgmcenter(double[] var1, double[] var2, JGeometry.Gc_trans var3) {
-        for(int var4 = 0; var4 < 3; ++var4) {
+        for (int var4 = 0; var4 < 3; ++var4) {
             var1[var4] = (var2[var4] + var2[var4 + 3]) / 2.0D;
         }
 
         double var7 = var3.radius / Math.sqrt(var1[0] * var1[0] + var1[1] * var1[1] + var1[2] * var1[2]);
 
-        for(int var6 = 0; var6 < 3; ++var6) {
+        for (int var6 = 0; var6 < 3; ++var6) {
             var1[var6] *= var7;
         }
 
@@ -149,12 +157,12 @@ public class JGeometry implements Cloneable, Serializable {
                 double[] var14 = new double[var12.size()];
 
                 int var15;
-                for(var15 = 0; var15 < var11.size(); ++var15) {
-                    var13[var15] = (Integer)var11.get(var15);
+                for (var15 = 0; var15 < var11.size(); ++var15) {
+                    var13[var15] = (Integer) var11.get(var15);
                 }
 
-                for(var15 = 0; var15 < var12.size(); ++var15) {
-                    var14[var15] = (Double)var12.get(var15);
+                for (var15 = 0; var15 < var12.size(); ++var15) {
+                    var14[var15] = (Double) var12.get(var15);
                 }
 
                 this.elemInfo = var13;
@@ -181,12 +189,12 @@ public class JGeometry implements Cloneable, Serializable {
                 double[] var8 = new double[var6.size()];
 
                 int var9;
-                for(var9 = 0; var9 < var5.size(); ++var9) {
-                    var7[var9] = (Integer)var5.get(var9);
+                for (var9 = 0; var9 < var5.size(); ++var9) {
+                    var7[var9] = (Integer) var5.get(var9);
                 }
 
-                for(var9 = 0; var9 < var6.size(); ++var9) {
-                    var8[var9] = (Double)var6.get(var9);
+                for (var9 = 0; var9 < var6.size(); ++var9) {
+                    var8[var9] = (Double) var6.get(var9);
                 }
 
                 this.elemInfo = var7;
@@ -230,7 +238,7 @@ public class JGeometry implements Cloneable, Serializable {
 
     public Object clone() {
         try {
-            JGeometry var1 = (JGeometry)super.clone();
+            JGeometry var1 = (JGeometry) super.clone();
             if (this.elemInfo != null) {
                 var1.elemInfo = new int[this.elemInfo.length];
                 System.arraycopy(this.elemInfo, 0, var1.elemInfo, 0, this.elemInfo.length);
@@ -286,7 +294,8 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     public static JGeometry createCircle(double var0, double var2, double var4, int var6) {
-        return createCircle(var0 + var4 * Math.cos(0.7853981633974483D), var2 + var4 * Math.sin(0.7853981633974483D), var0 + var4 * Math.cos(2.356194490192345D), var2 + var4 * Math.sin(2.356194490192345D), var0 + var4 * Math.cos(4.71238898038469D), var2 + var4 * Math.sin(4.71238898038469D), var6);
+        return createCircle(var0 + var4 * Math.cos(0.7853981633974483D), var2 + var4 * Math.sin(0.7853981633974483D), var0 + var4 * Math.cos(2.356194490192345D), var2
+                + var4 * Math.sin(2.356194490192345D), var0 + var4 * Math.cos(4.71238898038469D), var2 + var4 * Math.sin(4.71238898038469D), var6);
     }
 
     public static JGeometry createCircle(double var0, double var2, double var4, double var6, double var8, double var10, int var12) {
@@ -363,7 +372,7 @@ public class JGeometry implements Cloneable, Serializable {
 
     public static JGeometry createLinearMultiLineString(Object[] var0, int var1, int var2) {
         if (var0.length == 1) {
-            return createLinearLineString((double[])((double[])var0[0]), var1, var2);
+            return createLinearLineString((double[]) ((double[]) var0[0]), var1, var2);
         } else {
             JGeometry var3 = new JGeometry(6, var2);
             var3.dim = var1;
@@ -371,18 +380,18 @@ public class JGeometry implements Cloneable, Serializable {
             int var5 = 1;
             var3.elemInfo = new int[var4 * 3];
 
-            for(int var6 = 0; var6 < var4; ++var6) {
+            for (int var6 = 0; var6 < var4; ++var6) {
                 var3.elemInfo[var6 * 3 + 0] = var5;
                 var3.elemInfo[var6 * 3 + 1] = 2;
                 var3.elemInfo[var6 * 3 + 2] = 1;
-                var5 += ((double[])((double[])var0[var6])).length;
+                var5 += ((double[]) ((double[]) var0[var6])).length;
             }
 
             double[] var10 = new double[var5 - 1];
             int var7 = 0;
 
-            for(int var8 = 0; var8 < var4; ++var8) {
-                double[] var9 = (double[])((double[])var0[var8]);
+            for (int var8 = 0; var8 < var4; ++var8) {
+                double[] var9 = (double[]) ((double[]) var0[var8]);
                 System.arraycopy(var9, 0, var10, var7, var9.length);
                 var7 += var9.length;
             }
@@ -424,7 +433,7 @@ public class JGeometry implements Cloneable, Serializable {
 
     public static JGeometry createMultiPoint(Object[] var0, int var1, int var2) {
         if (var0.length == 1) {
-            return createPoint((double[])((double[])var0[0]), var1, var2);
+            return createPoint((double[]) ((double[]) var0[0]), var1, var2);
         } else {
             JGeometry var3 = new JGeometry(5, var2);
             var3.dim = var1;
@@ -436,8 +445,8 @@ public class JGeometry implements Cloneable, Serializable {
             double[] var5 = new double[var4 * var1];
             int var6 = 0;
 
-            for(int var7 = 0; var7 < var4; ++var7) {
-                double[] var8 = (double[])((double[])var0[var7]);
+            for (int var7 = 0; var7 < var4; ++var7) {
+                double[] var8 = (double[]) ((double[]) var0[var7]);
                 System.arraycopy(var8, 0, var5, var6, var1);
                 var6 += var1;
             }
@@ -460,7 +469,7 @@ public class JGeometry implements Cloneable, Serializable {
 
     public static JGeometry createLinearPolygon(Object[] var0, int var1, int var2) {
         if (var0.length == 1) {
-            return createLinearPolygon((double[])((double[])var0[0]), var1, var2);
+            return createLinearPolygon((double[]) ((double[]) var0[0]), var1, var2);
         } else {
             JGeometry var3 = new JGeometry(3, var2);
             var3.dim = var1;
@@ -468,25 +477,25 @@ public class JGeometry implements Cloneable, Serializable {
             Object[] var5 = new Object[var4];
 
             int var6;
-            for(var6 = 0; var6 < var4; ++var6) {
-                var5[var6] = closeCoords((double[])((double[])var0[var6]), var1);
+            for (var6 = 0; var6 < var4; ++var6) {
+                var5[var6] = closeCoords((double[]) ((double[]) var0[var6]), var1);
             }
 
             var6 = 1;
             var3.elemInfo = new int[var4 * 3];
 
-            for(int var7 = 0; var7 < var4; ++var7) {
+            for (int var7 = 0; var7 < var4; ++var7) {
                 var3.elemInfo[var7 * 3 + 0] = var6;
                 var3.elemInfo[var7 * 3 + 1] = var7 == 0 ? 1003 : 2003;
                 var3.elemInfo[var7 * 3 + 2] = 1;
-                var6 += ((double[])((double[])var5[var7])).length;
+                var6 += ((double[]) ((double[]) var5[var7])).length;
             }
 
             double[] var11 = new double[var6 - 1];
             int var8 = 0;
 
-            for(int var9 = 0; var9 < var4; ++var9) {
-                double[] var10 = (double[])((double[])var5[var9]);
+            for (int var9 = 0; var9 < var4; ++var9) {
+                double[] var10 = (double[]) ((double[]) var5[var9]);
                 System.arraycopy(var10, 0, var11, var8, var10.length);
                 var8 += var10.length;
             }
@@ -500,7 +509,7 @@ public class JGeometry implements Cloneable, Serializable {
         try {
             JGeometry var3;
             if (var1 == 2) {
-                var3 = createLinearPolygon((double[])var0, 3, var2);
+                var3 = createLinearPolygon((double[]) var0, 3, var2);
                 var3.setType(3303);
                 if (monoMeasure(var3.ordinates, var1 + 1) != 0) {
                     return var3;
@@ -509,7 +518,7 @@ public class JGeometry implements Cloneable, Serializable {
                     return null;
                 }
             } else if (var1 == 3) {
-                var3 = createLinearPolygon((double[])var0, 4, var2);
+                var3 = createLinearPolygon((double[]) var0, 4, var2);
                 var3.setType(4403);
                 if (monoMeasure(var3.ordinates, var1 + 1) != 0) {
                     return var3;
@@ -529,8 +538,8 @@ public class JGeometry implements Cloneable, Serializable {
     public static JGeometry createLRSLinearPolygon(Object[] var0, int var1, int var2) {
         try {
             if (var0 instanceof double[][]) {
-                for(int var3 = 0; var3 < var0.length; ++var3) {
-                    double[] var4 = ((double[][])((double[][])var0))[var3];
+                for (int var3 = 0; var3 < var0.length; ++var3) {
+                    double[] var4 = ((double[][]) ((double[][]) var0))[var3];
                     if (monoMeasure(var4, var1 + 1) == 0) {
                         System.out.println("Inconsistent LRS Measure Values");
                         return null;
@@ -540,11 +549,11 @@ public class JGeometry implements Cloneable, Serializable {
 
             JGeometry var6;
             if (var1 == 2) {
-                var6 = createLinearPolygon((Object[])var0, 3, var2);
+                var6 = createLinearPolygon((Object[]) var0, 3, var2);
                 var6.setType(3303);
                 return var6;
             } else if (var1 == 3) {
-                var6 = createLinearPolygon((Object[])var0, 4, var2);
+                var6 = createLinearPolygon((Object[]) var0, 4, var2);
                 var6.setType(4403);
                 return var6;
             } else {
@@ -563,7 +572,7 @@ public class JGeometry implements Cloneable, Serializable {
         double var6 = 0.0D / 0.0;
 
         int var13;
-        for(var13 = var1 - 1; var13 < var0.length; var13 += var1) {
+        for (var13 = var1 - 1; var13 < var0.length; var13 += var1) {
             var2 = var0[var13];
             if (!Double.isNaN(var2)) {
                 var4 = var13;
@@ -584,7 +593,7 @@ public class JGeometry implements Cloneable, Serializable {
             byte var8 = 0;
             double var11 = var2;
 
-            for(var13 = var4 + var1; var13 < var14; var13 += var1) {
+            for (var13 = var4 + var1; var13 < var14; var13 += var1) {
                 var6 = var0[var13];
                 if (!Double.isNaN(var6)) {
                     double var9 = var6 - var11;
@@ -596,7 +605,7 @@ public class JGeometry implements Cloneable, Serializable {
                         } else {
                             var8 = 0;
                         }
-                    } else if (var9 * (double)var8 < 0.0D) {
+                    } else if (var9 * (double) var8 < 0.0D) {
                         return 0;
                     }
 
@@ -684,7 +693,7 @@ public class JGeometry implements Cloneable, Serializable {
                     }
                 }
             } else {
-                for(int var2 = 0; var2 < this.dim; ++var2) {
+                for (int var2 = 0; var2 < this.dim; ++var2) {
                     var1[var2] = this.ordinates[var2];
                 }
 
@@ -717,7 +726,7 @@ public class JGeometry implements Cloneable, Serializable {
         } else if (this.isMultiPoint()) {
             var2 = 0;
 
-            for(var3 = 0; var3 < this.elemInfo.length; var3 += 3) {
+            for (var3 = 0; var3 < this.elemInfo.length; var3 += 3) {
                 var2 += this.elemInfo[var3 + 2];
             }
         }
@@ -730,7 +739,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var5 = this.getOrientMultiPointOffset();
             }
 
-            for(int var6 = 0; var6 < var3; ++var6) {
+            for (int var6 = 0; var6 < var3; ++var6) {
                 var4[var6] = new java.awt.geom.Point2D.Double(this.ordinates[var6 * (this.dim + var5)], this.ordinates[var6 * (this.dim + var5) + 1]);
             }
 
@@ -794,7 +803,7 @@ public class JGeometry implements Cloneable, Serializable {
 
     public final boolean hasCircularArcs() {
         if (this.elemInfo != null) {
-            for(int var1 = 1; var1 < this.elemInfo.length; var1 += 3) {
+            for (int var1 = 1; var1 < this.elemInfo.length; var1 += 3) {
                 int var2 = this.elemInfo[var1];
                 int var3 = this.elemInfo[var1 + 1];
                 if (var3 == 2 && (var2 == 2 || var2 == 2003 || var2 == 3 || var2 == 1003) || var2 == 4 || var2 == 5 || var2 == 2005 || var2 == 1005) {
@@ -840,7 +849,7 @@ public class JGeometry implements Cloneable, Serializable {
 
             return var1;
         } else {
-            for(int var2 = 0; var2 < this.dim; ++var2) {
+            for (int var2 = 0; var2 < this.dim; ++var2) {
                 var1[var2] = this.ordinates[var2];
             }
 
@@ -861,7 +870,7 @@ public class JGeometry implements Cloneable, Serializable {
         } else {
             int var2;
             if (this.isOrientedPoint()) {
-                for(var2 = 0; var2 < this.dim; ++var2) {
+                for (var2 = 0; var2 < this.dim; ++var2) {
                     var1[var2] = this.ordinates[var2];
                 }
 
@@ -874,7 +883,7 @@ public class JGeometry implements Cloneable, Serializable {
 
                 int var3 = this.ordinates.length - this.dim - var2;
 
-                for(int var4 = 0; var4 < this.dim; ++var4) {
+                for (int var4 = 0; var4 < this.dim; ++var4) {
                     var1[var4] = this.ordinates[var3 + var4];
                 }
 
@@ -909,7 +918,7 @@ public class JGeometry implements Cloneable, Serializable {
                     var10 = this.ordinates.length / (2 * this.dim);
                     var12 = this.getOrientMultiPointOffset();
 
-                    for(int var6 = 0; var6 < var10; ++var6) {
+                    for (int var6 = 0; var6 < var10; ++var6) {
                         expandMBR(this.mbr, this.ordinates[var6 * (this.dim + var12)], this.ordinates[var6 * (this.dim + var12) + 1], this.ordinates[var6 * (this.dim + var12) + 2]);
                     }
 
@@ -918,11 +927,11 @@ public class JGeometry implements Cloneable, Serializable {
                     int[] var9 = new int[this.elemInfo.length];
                     double[] var11 = new double[this.ordinates.length];
 
-                    for(var10 = 0; var10 < this.ordinates.length; ++var10) {
+                    for (var10 = 0; var10 < this.ordinates.length; ++var10) {
                         var11[var10] = this.ordinates[var10];
                     }
 
-                    for(var10 = 0; var10 < this.elemInfo.length; ++var10) {
+                    for (var10 = 0; var10 < this.elemInfo.length; ++var10) {
                         var9[var10] = this.elemInfo[var10];
                     }
 
@@ -930,7 +939,7 @@ public class JGeometry implements Cloneable, Serializable {
                     double[][] var13 = new double[3][2];
                     var13 = J3D_Geometry.getMBH(var8);
 
-                    for(var12 = 0; var12 < 3; ++var12) {
+                    for (var12 = 0; var12 < 3; ++var12) {
                         this.mbr[var12] = var13[var12][0];
                         this.mbr[var12 + 3] = var13[var12][1];
                     }
@@ -965,7 +974,7 @@ public class JGeometry implements Cloneable, Serializable {
                     if (this.isMultiPoint() && this.elemInfo.length == 3) {
                         var7 = this.elemInfo[2];
 
-                        for(var2 = 0; var2 < var7; ++var2) {
+                        for (var2 = 0; var2 < var7; ++var2) {
                             expandMBR(this.mbr, this.ordinates[var2 * this.dim], this.ordinates[var2 * this.dim + 1]);
                         }
 
@@ -976,7 +985,7 @@ public class JGeometry implements Cloneable, Serializable {
                             var7 = this.ordinates.length / (2 * this.dim);
                             var2 = this.getOrientMultiPointOffset();
 
-                            for(var3 = 0; var3 < var7; ++var3) {
+                            for (var3 = 0; var3 < var7; ++var3) {
                                 expandMBR(this.mbr, this.ordinates[var3 * (this.dim + var2)], this.ordinates[var3 * (this.dim + var2) + 1]);
                             }
 
@@ -984,17 +993,19 @@ public class JGeometry implements Cloneable, Serializable {
                         } else {
                             JGeometry.ElementIterator var1 = new JGeometry.ElementIterator(this);
 
-                            while(var1.next()) {
+                            while (var1.next()) {
                                 var2 = var1.ord_offset;
 
-                                for(var3 = 0; var3 < var1.nCoord; ++var3) {
+                                for (var3 = 0; var3 < var1.nCoord; ++var3) {
                                     double[] var4;
                                     if (var1.eitpr == 2) {
                                         if (var2 + var3 * this.dim >= var1.next_ord_offset || var1.lastElem && var2 + var3 * this.dim >= var1.next_ord_offset - this.dim || var3 >= var1.nCoord - 1) {
                                             break;
                                         }
 
-                                        var4 = computeArcMBR(this.ordinates[var2 + var3 * this.dim], this.ordinates[var2 + var3 * this.dim + 1], this.ordinates[var2 + (var3 + 1) * this.dim], this.ordinates[var2 + (var3 + 1) * this.dim + 1], this.ordinates[var2 + (var3 + 2) * this.dim], this.ordinates[var2 + (var3 + 2) * this.dim + 1]);
+                                        var4 = computeArcMBR(this.ordinates[var2 + var3 * this.dim], this.ordinates[var2 + var3 * this.dim + 1], this.ordinates[var2
+                                                + (var3 + 1) * this.dim], this.ordinates[var2 + (var3 + 1) * this.dim
+                                                        + 1], this.ordinates[var2 + (var3 + 2) * this.dim], this.ordinates[var2 + (var3 + 2) * this.dim + 1]);
                                         this.expandMBR(this.mbr, var4, 2);
                                         ++var3;
                                     } else if (var1.eitpr == 4) {
@@ -1002,7 +1013,9 @@ public class JGeometry implements Cloneable, Serializable {
                                             break;
                                         }
 
-                                        var4 = computeArc(this.ordinates[var2 + var3 * this.dim], this.ordinates[var2 + var3 * this.dim + 1], this.ordinates[var2 + (var3 + 1) * this.dim], this.ordinates[var2 + (var3 + 1) * this.dim + 1], this.ordinates[var2 + (var3 + 2) * this.dim], this.ordinates[var2 + (var3 + 2) * this.dim + 1]);
+                                        var4 = computeArc(this.ordinates[var2 + var3 * this.dim], this.ordinates[var2 + var3 * this.dim + 1], this.ordinates[var2
+                                                + (var3 + 1) * this.dim], this.ordinates[var2 + (var3 + 1) * this.dim
+                                                        + 1], this.ordinates[var2 + (var3 + 2) * this.dim], this.ordinates[var2 + (var3 + 2) * this.dim + 1]);
                                         double[] var5 = new double[]{var4[0] - var4[2], var4[1] - var4[2], var4[0] + var4[2], var4[1] + var4[2]};
                                         this.expandMBR(this.mbr, var5, 2);
                                         var3 += 2;
@@ -1041,12 +1054,12 @@ public class JGeometry implements Cloneable, Serializable {
 
         JGeometry.ElementIterator var3 = new JGeometry.ElementIterator(this);
 
-        while(var3.next()) {
+        while (var3.next()) {
             int var4 = var3.ord_offset;
             double[] var5 = new double[var3.nCoord * this.dim];
 
-            for(int var6 = 0; var6 < var3.nCoord; ++var6) {
-                for(int var7 = 0; var7 < this.dim; ++var7) {
+            for (int var6 = 0; var6 < var3.nCoord; ++var6) {
+                for (int var7 = 0; var7 < this.dim; ++var7) {
                     var5[var6 * this.dim + var7] = this.ordinates[var4 + var6 * (this.dim + var2) + var7];
                 }
             }
@@ -1061,7 +1074,7 @@ public class JGeometry implements Cloneable, Serializable {
         double[] var3 = new double[var2 - var1];
         int var4 = 0;
 
-        for(int var5 = var1; var5 < var2; ++var5) {
+        for (int var5 = var1; var5 < var2; ++var5) {
             var3[var4] = this.ordinates[var5];
             ++var4;
         }
@@ -1074,7 +1087,7 @@ public class JGeometry implements Cloneable, Serializable {
         int var4 = 0;
         int var5 = this.elemInfo[var1] - 1;
 
-        for(int var6 = var1; var6 < var2; var6 += 3) {
+        for (int var6 = var1; var6 < var2; var6 += 3) {
             var3[var4] = this.elemInfo[var6] - var5;
             var3[var4 + 1] = this.elemInfo[var6 + 1];
             var3[var4 + 2] = this.elemInfo[var6 + 2];
@@ -1122,7 +1135,7 @@ public class JGeometry implements Cloneable, Serializable {
                 boolean var7 = false;
                 int var8 = 0;
 
-                for(int var9 = 0; var9 < this.elemInfo.length; var9 += 3) {
+                for (int var9 = 0; var9 < this.elemInfo.length; var9 += 3) {
                     byte var10;
                     int var17;
                     if (this.elemInfo[var9 + 1] == 2) {
@@ -1199,7 +1212,7 @@ public class JGeometry implements Cloneable, Serializable {
                                         }
                                     }
 
-                                    for(var13 = 0; var13 < var19; ++var13) {
+                                    for (var13 = 0; var13 < var19; ++var13) {
                                         ++var4;
                                         if (this.dim == 2 && !var12) {
                                             if (var4 == var1 || var1 == -1) {
@@ -1282,7 +1295,7 @@ public class JGeometry implements Cloneable, Serializable {
 
                                 boolean var21 = true;
 
-                                while(var12 && var21) {
+                                while (var12 && var21) {
                                     if (var9 + 3 + 1 < this.elemInfo.length) {
                                         int var14 = this.elemInfo[var9 + 3 + 1];
                                         if (var14 == 2003) {
@@ -1339,7 +1352,7 @@ public class JGeometry implements Cloneable, Serializable {
 
         if (var1 <= var4 && var4 != 0) {
             JGeometry[] var16 = new JGeometry[var2.size()];
-            return (JGeometry[])((JGeometry[])var2.toArray(var16));
+            return (JGeometry[]) ((JGeometry[]) var2.toArray(var16));
         } else {
             return null;
         }
@@ -1362,7 +1375,8 @@ public class JGeometry implements Cloneable, Serializable {
         GeneralPath var1 = null;
         if (!this.isRectangle() && !this.isGeodeticMBR()) {
             if (this.isCircle()) {
-                double[] var12 = computeArc(this.ordinates[0], this.ordinates[1], this.ordinates[this.dim], this.ordinates[this.dim + 1], this.ordinates[2 * this.dim], this.ordinates[2 * this.dim + 1]);
+                double[] var12 = computeArc(this.ordinates[0], this.ordinates[1], this.ordinates[this.dim], this.ordinates[this.dim + 1], this.ordinates[2 * this.dim], this.ordinates[2 * this.dim
+                        + 1]);
                 java.awt.geom.Ellipse2D.Double var13 = new java.awt.geom.Ellipse2D.Double(var12[0] - var12[2], var12[1] - var12[2], 2.0D * var12[2], 2.0D * var12[2]);
                 return var13;
             } else {
@@ -1373,19 +1387,19 @@ public class JGeometry implements Cloneable, Serializable {
 
                 JGeometry.ElementIterator var11 = new JGeometry.ElementIterator(this);
 
-                while(var11.next()) {
+                while (var11.next()) {
                     if (var1 == null) {
                         var1 = new GeneralPath();
                     }
 
                     int var14 = var11.ord_offset;
 
-                    for(int var15 = 0; var15 < var11.nCoord; ++var15) {
+                    for (int var15 = 0; var15 < var11.nCoord; ++var15) {
                         if (var11.etype != 1 && var11.eitpr == 1) {
                             if (var15 != 0 || var11.isCompound && !var11.isFirstElemOfCompound) {
-                                var1.lineTo((float)this.ordinates[var14 + var15 * (this.dim + var10)], (float)this.ordinates[var14 + var15 * (this.dim + var10) + 1]);
+                                var1.lineTo((float) this.ordinates[var14 + var15 * (this.dim + var10)], (float) this.ordinates[var14 + var15 * (this.dim + var10) + 1]);
                             } else {
-                                var1.moveTo((float)this.ordinates[var14 + var15 * (this.dim + var10)], (float)this.ordinates[var14 + var15 * (this.dim + var10) + 1]);
+                                var1.moveTo((float) this.ordinates[var14 + var15 * (this.dim + var10)], (float) this.ordinates[var14 + var15 * (this.dim + var10) + 1]);
                             }
 
                             if (var15 >= var11.nCoord - 1 && var11.top_etype == 3) {
@@ -1398,29 +1412,32 @@ public class JGeometry implements Cloneable, Serializable {
                                     return null;
                                 }
 
-                                if (var14 + var15 * this.dim >= var11.next_ord_offset || var11.lastElem && var14 + var15 * this.dim >= var11.next_ord_offset - this.dim || (var11.next_ord_offset - (var14 + var15 * this.dim)) / this.dim < 2) {
+                                if (var14 + var15 * this.dim >= var11.next_ord_offset || var11.lastElem && var14 + var15 * this.dim >= var11.next_ord_offset - this.dim
+                                        || (var11.next_ord_offset - (var14 + var15 * this.dim)) / this.dim < 2) {
                                     break;
                                 }
 
-                                var16 = new double[]{this.ordinates[var14 + var15 * this.dim], this.ordinates[var14 + var15 * this.dim + 1], this.ordinates[var14 + (var15 + 1) * this.dim], this.ordinates[var14 + (var15 + 1) * this.dim + 1], this.ordinates[var14 + (var15 + 2) * this.dim], this.ordinates[var14 + (var15 + 2) * this.dim + 1]};
+                                var16 = new double[]{this.ordinates[var14 + var15 * this.dim], this.ordinates[var14 + var15 * this.dim + 1], this.ordinates[var14 + (var15 + 1) * this.dim],
+                                        this.ordinates[var14 + (var15 + 1) * this.dim + 1], this.ordinates[var14 + (var15 + 2) * this.dim], this.ordinates[var14 + (var15 + 2) * this.dim + 1]};
                                 double[] var18 = reFormulateArc(var16);
                                 if (var15 != 0 || var11.isCompound && !var11.isFirstElemOfCompound) {
-                                    var1.lineTo((float)this.ordinates[var14 + var15 * this.dim], (float)this.ordinates[var14 + var15 * this.dim + 1]);
+                                    var1.lineTo((float) this.ordinates[var14 + var15 * this.dim], (float) this.ordinates[var14 + var15 * this.dim + 1]);
                                 } else {
-                                    var1.moveTo((float)this.ordinates[var14 + var15 * this.dim], (float)this.ordinates[var14 + var15 * this.dim + 1]);
+                                    var1.moveTo((float) this.ordinates[var14 + var15 * this.dim], (float) this.ordinates[var14 + var15 * this.dim + 1]);
                                 }
 
-                                java.awt.geom.Arc2D.Double var19 = new java.awt.geom.Arc2D.Double(var18[0] - var18[2], var18[1] - var18[2], var18[2] * 2.0D, var18[2] * 2.0D, var18[3] / 3.141592653589793D * 180.0D, (var18[5] - var18[3]) / 3.141592653589793D * 180.0D, 0);
+                                java.awt.geom.Arc2D.Double var19 = new java.awt.geom.Arc2D.Double(var18[0] - var18[2], var18[1] - var18[2], var18[2] * 2.0D, var18[2] * 2.0D,
+                                        var18[3] / 3.141592653589793D * 180.0D, (var18[5] - var18[3]) / 3.141592653589793D * 180.0D, 0);
                                 var1.append(var19, true);
                                 ++var15;
                                 if (var15 >= var11.nCoord - 1 && (var11.top_etype == 3 || var11.top_etype == 5)) {
                                     var1.closePath();
                                 }
                             } else if (var11.eitpr == 3) {
-                                float var6 = (float)this.ordinates[var14 + 0];
-                                float var7 = (float)this.ordinates[var14 + 1];
-                                float var8 = (float)this.ordinates[var14 + this.dim];
-                                float var9 = (float)this.ordinates[var14 + this.dim + 1];
+                                float var6 = (float) this.ordinates[var14 + 0];
+                                float var7 = (float) this.ordinates[var14 + 1];
+                                float var8 = (float) this.ordinates[var14 + this.dim];
+                                float var9 = (float) this.ordinates[var14 + this.dim + 1];
                                 if (var11.original_etype < 2000) {
                                     var1.moveTo(var6, var7);
                                     var1.lineTo(var8, var7);
@@ -1441,7 +1458,9 @@ public class JGeometry implements Cloneable, Serializable {
                                     break;
                                 }
 
-                                var16 = computeArc(this.ordinates[var14 + var15 * this.dim], this.ordinates[var14 + var15 * this.dim + 1], this.ordinates[var14 + (var15 + 1) * this.dim], this.ordinates[var14 + (var15 + 1) * this.dim + 1], this.ordinates[var14 + (var15 + 2) * this.dim], this.ordinates[var14 + (var15 + 2) * this.dim + 1]);
+                                var16 = computeArc(this.ordinates[var14 + var15 * this.dim], this.ordinates[var14 + var15 * this.dim + 1], this.ordinates[var14
+                                        + (var15 + 1) * this.dim], this.ordinates[var14 + (var15 + 1) * this.dim
+                                                + 1], this.ordinates[var14 + (var15 + 2) * this.dim], this.ordinates[var14 + (var15 + 2) * this.dim + 1]);
                                 java.awt.geom.Ellipse2D.Double var17 = new java.awt.geom.Ellipse2D.Double(var16[0] - var16[2], var16[1] - var16[2], 2.0D * var16[2], 2.0D * var16[2]);
                                 var1.append(var17, false);
                                 if (var11.original_etype > 2000) {
@@ -1457,11 +1476,11 @@ public class JGeometry implements Cloneable, Serializable {
                 return var1;
             }
         } else {
-            float var2 = (float)this.ordinates[0];
-            float var3 = (float)this.ordinates[1];
-            float var4 = (float)this.ordinates[2];
-            float var5 = (float)this.ordinates[3];
-            return new java.awt.geom.Rectangle2D.Double((double)var2, (double)Math.min(var3, var5), (double)(var4 - var2), (double)Math.abs(var5 - var3));
+            float var2 = (float) this.ordinates[0];
+            float var3 = (float) this.ordinates[1];
+            float var4 = (float) this.ordinates[2];
+            float var5 = (float) this.ordinates[3];
+            return new java.awt.geom.Rectangle2D.Double((double) var2, (double) Math.min(var3, var5), (double) (var4 - var2), (double) Math.abs(var5 - var3));
         }
     }
 
@@ -1504,7 +1523,7 @@ public class JGeometry implements Cloneable, Serializable {
                     double var27 = 0.0D;
                     JGeometry.ElementIterator var11 = new JGeometry.ElementIterator(this);
 
-                    while(var11.next()) {
+                    while (var11.next()) {
                         if (var5 == null) {
                             var5 = new GeneralPath();
                         }
@@ -1513,7 +1532,7 @@ public class JGeometry implements Cloneable, Serializable {
                         double var13 = 1.7976931348623157E308D;
                         double var15 = 1.7976931348623157E308D;
 
-                        for(int var17 = 0; var17 < var11.nCoord; ++var17) {
+                        for (int var17 = 0; var17 < var11.nCoord; ++var17) {
                             if (var11.etype != 1 && var11.eitpr == 1) {
                                 var25 = this.ordinates[var12 + var17 * (this.dim + var23)];
                                 var27 = this.ordinates[var12 + var17 * (this.dim + var23) + 1];
@@ -1528,12 +1547,12 @@ public class JGeometry implements Cloneable, Serializable {
                                     if (!var2 || var22) {
                                         var13 = var25;
                                         var15 = var27;
-                                        var5.lineTo((float)var25, (float)var27);
+                                        var5.lineTo((float) var25, (float) var27);
                                     }
                                 } else {
                                     var13 = var25;
                                     var15 = var27;
-                                    var5.moveTo((float)var25, (float)var27);
+                                    var5.moveTo((float) var25, (float) var27);
                                 }
 
                                 if (var17 >= var11.nCoord - 1 && var11.top_etype == 3) {
@@ -1546,20 +1565,23 @@ public class JGeometry implements Cloneable, Serializable {
                                         return null;
                                     }
 
-                                    if (var12 + var17 * this.dim >= var11.next_ord_offset || var11.lastElem && var12 + var17 * this.dim >= var11.next_ord_offset - this.dim || (var11.next_ord_offset - (var12 + var17 * this.dim)) / this.dim < 2) {
+                                    if (var12 + var17 * this.dim >= var11.next_ord_offset || var11.lastElem && var12 + var17 * this.dim >= var11.next_ord_offset - this.dim
+                                            || (var11.next_ord_offset - (var12 + var17 * this.dim)) / this.dim < 2) {
                                         break;
                                     }
 
-                                    var29 = new double[]{this.ordinates[var12 + var17 * this.dim], this.ordinates[var12 + var17 * this.dim + 1], this.ordinates[var12 + (var17 + 1) * this.dim], this.ordinates[var12 + (var17 + 1) * this.dim + 1], this.ordinates[var12 + (var17 + 2) * this.dim], this.ordinates[var12 + (var17 + 2) * this.dim + 1]};
+                                    var29 = new double[]{this.ordinates[var12 + var17 * this.dim], this.ordinates[var12 + var17 * this.dim + 1], this.ordinates[var12 + (var17 + 1) * this.dim],
+                                            this.ordinates[var12 + (var17 + 1) * this.dim + 1], this.ordinates[var12 + (var17 + 2) * this.dim], this.ordinates[var12 + (var17 + 2) * this.dim + 1]};
                                     var1.transform(var29, 0, var29, 0, 3);
                                     var31 = reFormulateArc(var29);
                                     if (var17 == 0 && (!var11.isCompound || var11.isFirstElemOfCompound)) {
-                                        var5.moveTo((float)var29[0], (float)var29[1]);
+                                        var5.moveTo((float) var29[0], (float) var29[1]);
                                     } else {
-                                        var5.lineTo((float)var29[0], (float)var29[1]);
+                                        var5.lineTo((float) var29[0], (float) var29[1]);
                                     }
 
-                                    java.awt.geom.Arc2D.Double var34 = new java.awt.geom.Arc2D.Double(var31[0] - var31[2], var31[1] - var31[2], var31[2] * 2.0D, var31[2] * 2.0D, var31[3] / 3.141592653589793D * 180.0D, (var31[5] - var31[3]) / 3.141592653589793D * 180.0D, 0);
+                                    java.awt.geom.Arc2D.Double var34 = new java.awt.geom.Arc2D.Double(var31[0] - var31[2], var31[1] - var31[2], var31[2] * 2.0D, var31[2] * 2.0D,
+                                            var31[3] / 3.141592653589793D * 180.0D, (var31[5] - var31[3]) / 3.141592653589793D * 180.0D, 0);
                                     var5.append(var34, true);
                                     ++var17;
                                     if (var17 >= var11.nCoord - 1 && (var11.top_etype == 3 || var11.top_etype == 5)) {
@@ -1568,12 +1590,12 @@ public class JGeometry implements Cloneable, Serializable {
                                 } else if (var11.eitpr == 3) {
                                     var3.setLocation(this.ordinates[var12 + 0], this.ordinates[var12 + 1]);
                                     var1.transform(var3, var4);
-                                    float var18 = (float)var4.getX();
-                                    float var19 = (float)var4.getY();
+                                    float var18 = (float) var4.getX();
+                                    float var19 = (float) var4.getY();
                                     var3.setLocation(this.ordinates[var12 + this.dim], this.ordinates[var12 + this.dim + 1]);
                                     var1.transform(var3, var4);
-                                    float var20 = (float)var4.getX();
-                                    float var21 = (float)var4.getY();
+                                    float var20 = (float) var4.getX();
+                                    float var21 = (float) var4.getY();
                                     if (var11.original_etype < 2000) {
                                         var5.moveTo(var18, var19);
                                         var5.lineTo(var20, var19);
@@ -1594,7 +1616,8 @@ public class JGeometry implements Cloneable, Serializable {
                                         break;
                                     }
 
-                                    var29 = new double[]{this.ordinates[var12 + var17 * this.dim], this.ordinates[var12 + var17 * this.dim + 1], this.ordinates[var12 + (var17 + 1) * this.dim], this.ordinates[var12 + (var17 + 1) * this.dim + 1], this.ordinates[var12 + (var17 + 2) * this.dim], this.ordinates[var12 + (var17 + 2) * this.dim + 1]};
+                                    var29 = new double[]{this.ordinates[var12 + var17 * this.dim], this.ordinates[var12 + var17 * this.dim + 1], this.ordinates[var12 + (var17 + 1) * this.dim],
+                                            this.ordinates[var12 + (var17 + 1) * this.dim + 1], this.ordinates[var12 + (var17 + 2) * this.dim], this.ordinates[var12 + (var17 + 2) * this.dim + 1]};
                                     var1.transform(var29, 0, var29, 0, 3);
                                     var31 = computeArc(var29[0], var29[1], var29[2], var29[3], var29[4], var29[5]);
                                     java.awt.geom.Ellipse2D.Double var33 = new java.awt.geom.Ellipse2D.Double(var31[0] - var31[2], var31[1] - var31[2], 2.0D * var31[2], 2.0D * var31[2]);
@@ -1614,13 +1637,13 @@ public class JGeometry implements Cloneable, Serializable {
             } else {
                 var3.setLocation(this.ordinates[0], this.ordinates[1]);
                 var1.transform(var3, var4);
-                float var6 = (float)var4.getX();
-                float var7 = (float)var4.getY();
+                float var6 = (float) var4.getX();
+                float var7 = (float) var4.getY();
                 var3.setLocation(this.ordinates[2], this.ordinates[3]);
                 var1.transform(var3, var4);
-                float var8 = (float)var4.getX();
-                float var9 = (float)var4.getY();
-                return new java.awt.geom.Rectangle2D.Double((double)var6, (double)Math.min(var7, var9), (double)(var8 - var6), (double)Math.abs(var9 - var7));
+                float var8 = (float) var4.getX();
+                float var9 = (float) var4.getY();
+                return new java.awt.geom.Rectangle2D.Double((double) var6, (double) Math.min(var7, var9), (double) (var8 - var6), (double) Math.abs(var9 - var7));
             }
         }
     }
@@ -1629,12 +1652,12 @@ public class JGeometry implements Cloneable, Serializable {
         Datum[] var1 = var0.getOracleAttributes();
         int var2 = var1[0] != null ? var1[0].intValue() : 0;
         int var3 = var1[1] != null ? var1[1].intValue() : 0;
-        STRUCT var4 = (STRUCT)var1[2];
+        STRUCT var4 = (STRUCT) var1[2];
         double var5 = 0.0D / 0.0;
         double var7 = 0.0D / 0.0;
         double var9 = 0.0D / 0.0;
         if (var4 != null) {
-            Datum[] var11 = (Datum[])var4.getOracleAttributes();
+            Datum[] var11 = (Datum[]) var4.getOracleAttributes();
             if (var11[0] != null && var11[1] != null) {
                 var5 = var11[0].doubleValue();
                 var7 = var11[1].doubleValue();
@@ -1645,22 +1668,22 @@ public class JGeometry implements Cloneable, Serializable {
             }
         }
 
-        int[] var18 = var1[3] != null ? ((ARRAY)var1[3]).getIntArray() : null;
+        int[] var18 = var1[3] != null ? ((ARRAY) var1[3]).getIntArray() : null;
         double[] var12 = null;
         if (var1[4] != null) {
             if (var2 % 1000 / 100 == 0) {
-                var12 = ((ARRAY)var1[4]).getDoubleArray();
+                var12 = ((ARRAY) var1[4]).getDoubleArray();
             } else {
                 int var13 = var2 % 1000 / 100;
                 int var14 = var2 / 1000 > 0 ? var2 / 1000 : 2;
-                Datum[] var15 = ((ARRAY)var1[4]).getOracleArray();
+                Datum[] var15 = ((ARRAY) var1[4]).getOracleArray();
                 int var16 = var15.length;
                 var12 = new double[var16];
                 if (var14 == 2 || (var14 != 3 || var14 != var13) && (var14 != 4 || var13 != 3 && var13 != 4)) {
                     throw new SQLException("An invalid sdo_gtype is found");
                 }
 
-                for(int var17 = 0; var17 < var16; ++var17) {
+                for (int var17 = 0; var17 < var16; ++var17) {
                     if (var15[var17] == null && var17 % var14 != var13 - 1) {
                         throw new SQLException("An invalid null value is found in LRS sdo_ordinates");
                     }
@@ -1690,7 +1713,7 @@ public class JGeometry implements Cloneable, Serializable {
     private static boolean etype0_exists(int[] var0) {
         boolean var1 = false;
 
-        for(int var2 = 0; var2 < var0.length / 3; ++var2) {
+        for (int var2 = 0; var2 < var0.length / 3; ++var2) {
             if (var0[3 * var2 + 1] == 0) {
                 var1 = true;
                 break;
@@ -1703,7 +1726,7 @@ public class JGeometry implements Cloneable, Serializable {
     private static boolean ordOffset0_exists(int[] var0) {
         boolean var1 = false;
 
-        for(int var2 = 0; var2 < var0.length / 3; ++var2) {
+        for (int var2 = 0; var2 < var0.length / 3; ++var2) {
             if (var0[3 * var2] < 1) {
                 var1 = true;
                 break;
@@ -1724,7 +1747,7 @@ public class JGeometry implements Cloneable, Serializable {
         boolean var11 = false;
         boolean var12 = false;
 
-        for(int var14 = 0; var14 < var0.length / 3; ++var14) {
+        for (int var14 = 0; var14 < var0.length / 3; ++var14) {
             int var16;
             int var17;
             if (var0[3 * var14 + 1] == 0) {
@@ -1745,7 +1768,7 @@ public class JGeometry implements Cloneable, Serializable {
                 }
 
                 int var15;
-                for(var15 = var16; var15 <= var17; ++var15) {
+                for (var15 = var16; var15 <= var17; ++var15) {
                     var5[var9] = var1[var15];
                     ++var9;
                 }
@@ -1753,7 +1776,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var4[var8] = var0[3 * var14] - var10;
                 ++var8;
 
-                for(var15 = 1; var15 < 3; ++var15) {
+                for (var15 = 1; var15 < 3; ++var15) {
                     var4[var8] = var0[3 * var14 + var15];
                     ++var8;
                 }
@@ -1761,11 +1784,11 @@ public class JGeometry implements Cloneable, Serializable {
         }
 
         int var13;
-        for(var13 = 0; var13 < var8; ++var13) {
+        for (var13 = 0; var13 < var8; ++var13) {
             var2.add(var4[var13]);
         }
 
-        for(var13 = 0; var13 < var9; ++var13) {
+        for (var13 = 0; var13 < var9; ++var13) {
             var3.add(var5[var13]);
         }
 
@@ -1785,11 +1808,11 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     public static STRUCT store(JGeometry var0, Connection var1) throws SQLException {
-        return store((JGeometry)var0, (Connection)var1, (Object[])null);
+        return store((JGeometry) var0, (Connection) var1, (Object[]) null);
     }
 
     public static STRUCT store(JGeometry var0, Connection var1, boolean var2) throws SQLException {
-        return store(var0, var1, (Object[])null, var2);
+        return store(var0, var1, (Object[]) null, var2);
     }
 
     public static STRUCT store(JGeometry var0, Connection var1, Object[] var2) throws SQLException {
@@ -1802,10 +1825,10 @@ public class JGeometry implements Cloneable, Serializable {
         ArrayDescriptor var6 = null;
         ArrayDescriptor var7 = null;
         if (var2 != null && var2.length >= 4) {
-            var4 = (StructDescriptor)var2[0];
-            var5 = (StructDescriptor)var2[1];
-            var6 = (ArrayDescriptor)var2[2];
-            var7 = (ArrayDescriptor)var2[3];
+            var4 = (StructDescriptor) var2[0];
+            var5 = (StructDescriptor) var2[1];
+            var6 = (ArrayDescriptor) var2[2];
+            var7 = (ArrayDescriptor) var2[3];
         } else {
             if (geomDesc == null) {
                 createDBDescriptors(var1);
@@ -1856,7 +1879,7 @@ public class JGeometry implements Cloneable, Serializable {
                 if (var0.ordinates != null) {
                     var13 = new BigDecimal[var0.ordinates.length];
                     if (var0.linfo == 0) {
-                        for(var14 = 0; var14 < var0.ordinates.length; ++var14) {
+                        for (var14 = 0; var14 < var0.ordinates.length; ++var14) {
                             var13[var14] = new BigDecimal(var0.ordinates[var14]);
                         }
                     } else {
@@ -1864,7 +1887,7 @@ public class JGeometry implements Cloneable, Serializable {
                             throw new SQLException("An invalid gtype value for LRS is found");
                         }
 
-                        for(var14 = 0; var14 < var0.ordinates.length; ++var14) {
+                        for (var14 = 0; var14 < var0.ordinates.length; ++var14) {
                             if (Double.isNaN(var0.ordinates[var14]) && var14 % var0.dim != var0.linfo - 1) {
                                 throw new SQLException("An invalid Double.NaN is found in LRS ordinates");
                             }
@@ -1880,7 +1903,7 @@ public class JGeometry implements Cloneable, Serializable {
                 if (var0.ordinates != null) {
                     var16 = new Double[var0.ordinates.length];
                     if (var0.linfo == 0) {
-                        for(var14 = 0; var14 < var0.ordinates.length; ++var14) {
+                        for (var14 = 0; var14 < var0.ordinates.length; ++var14) {
                             var16[var14] = new Double(var0.ordinates[var14]);
                         }
                     } else {
@@ -1888,7 +1911,7 @@ public class JGeometry implements Cloneable, Serializable {
                             throw new SQLException("An invalid gtype value for LRS is found");
                         }
 
-                        for(var14 = 0; var14 < var0.ordinates.length; ++var14) {
+                        for (var14 = 0; var14 < var0.ordinates.length; ++var14) {
                             if (Double.isNaN(var0.ordinates[var14]) && var14 % var0.dim != var0.linfo - 1) {
                                 throw new SQLException("An invalid Double.NaN is found in LRS ordinates");
                             }
@@ -1980,7 +2003,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     protected final void expandMBR(double[] var1, double[] var2, int var3) {
-        for(int var4 = 0; var4 < var2.length / var3; ++var4) {
+        for (int var4 = 0; var4 < var2.length / var3; ++var4) {
             int var5 = var4 * var3;
             if (var3 == 2) {
                 expandMBR(var1, var2[var5], var2[var5 + 1]);
@@ -1992,7 +2015,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     protected final void expandMBR(double[] var1, double[] var2, int var3, int var4, int var5) {
-        for(int var6 = 0; var6 < var4 / var5; ++var6) {
+        for (int var6 = 0; var6 < var4 / var5; ++var6) {
             int var7 = var3 + var6 * var5;
             if (var5 == 2) {
                 expandMBR(var1, var2[var7], var2[var7 + 1]);
@@ -2106,7 +2129,7 @@ public class JGeometry implements Cloneable, Serializable {
                 ++var8;
             }
 
-            return (short)(var8 & 1);
+            return (short) (var8 & 1);
         } else {
             return -1;
         }
@@ -2140,8 +2163,8 @@ public class JGeometry implements Cloneable, Serializable {
 
             double[] var32 = new double[10];
 
-            for(int var33 = 0; var33 <= var12; ++var33) {
-                double var34 = var28 + (double)var33 * 1.5707963267948966D * var30;
+            for (int var33 = 0; var33 <= var12; ++var33) {
+                double var34 = var28 + (double) var33 * 1.5707963267948966D * var30;
                 var32[var33 * 2] = var14 + var18 * Math.cos(var34);
                 var32[var33 * 2 + 1] = var16 + var18 * Math.sin(var34);
             }
@@ -2187,7 +2210,7 @@ public class JGeometry implements Cloneable, Serializable {
                     var33 -= 6.283185307179586D;
                 }
 
-                double var35 = Math.abs(var33) / (double)var13;
+                double var35 = Math.abs(var33) / (double) var13;
                 double var37 = Math.sin(var35);
                 double var39 = Math.cos(var35);
                 if (var27 > 0.0D) {
@@ -2201,7 +2224,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var45[1] = var2;
                 double var46 = 0.0D;
 
-                for(int var48 = 1; var48 < var13; ++var48) {
+                for (int var48 = 1; var48 < var13; ++var48) {
                     var46 = var41 * var39 + var43 * var37;
                     var43 = -var41 * var37 + var43 * var39;
                     var41 = var46;
@@ -2248,7 +2271,7 @@ public class JGeometry implements Cloneable, Serializable {
                 }
 
                 double var32 = Math.acos(1.0D - var12 / var20) * 2.0D;
-                int var34 = (int)Math.ceil(var30 / var32);
+                int var34 = (int) Math.ceil(var30 / var32);
                 if (var34 > 1000) {
                     var34 = 1000;
                 }
@@ -2257,7 +2280,7 @@ public class JGeometry implements Cloneable, Serializable {
                     var15 = new double[]{var0, var2, var4, var6, var8, var10};
                     return var15;
                 } else {
-                    double var35 = Math.abs(var30) / (double)var34;
+                    double var35 = Math.abs(var30) / (double) var34;
                     double var37 = Math.sin(var35);
                     double var39 = Math.cos(var35);
                     if (var28 > 0.0D) {
@@ -2271,7 +2294,7 @@ public class JGeometry implements Cloneable, Serializable {
                     var45[1] = var2;
                     double var46 = 0.0D;
 
-                    for(int var48 = 1; var48 < var34; ++var48) {
+                    for (int var48 = 1; var48 < var34; ++var48) {
                         var46 = var41 * var39 + var43 * var37;
                         var43 = -var41 * var37 + var43 * var39;
                         var41 = var46;
@@ -2329,7 +2352,7 @@ public class JGeometry implements Cloneable, Serializable {
         int var2 = var0.length / var1 - 1;
         boolean var3 = true;
 
-        for(int var4 = 0; var4 < var1; ++var4) {
+        for (int var4 = 0; var4 < var1; ++var4) {
             if (var0[0 + var4] != var0[var2 * var1 + var4]) {
                 var3 = false;
             }
@@ -2342,7 +2365,7 @@ public class JGeometry implements Cloneable, Serializable {
             System.arraycopy(var0, 0, var6, 0, var0.length);
             ++var2;
 
-            for(int var5 = 0; var5 < var1; ++var5) {
+            for (int var5 = 0; var5 < var1; ++var5) {
                 var6[var2 * var1 + var5] = var6[var5];
             }
 
@@ -2369,13 +2392,13 @@ public class JGeometry implements Cloneable, Serializable {
         this.x = var1.readDouble();
         this.y = var1.readDouble();
         this.z = var1.readDouble();
-        this.elemInfo = (int[])((int[])var1.readObject());
-        this.ordinates = (double[])((double[])var1.readObject());
+        this.elemInfo = (int[]) ((int[]) var1.readObject());
+        this.ordinates = (double[]) ((double[]) var1.readObject());
         this.dim = var1.readInt();
     }
 
     public long getSize() {
-        return (long)(40 + (this.elemInfo == null ? 0 : 4 * this.elemInfo.length) + (this.ordinates == null ? 0 : 8 * this.ordinates.length));
+        return (long) (40 + (this.elemInfo == null ? 0 : 4 * this.elemInfo.length) + (this.ordinates == null ? 0 : 8 * this.ordinates.length));
     }
 
     public String toString() {
@@ -2401,15 +2424,15 @@ public class JGeometry implements Cloneable, Serializable {
                 var1 = var1 + ",  \n ElemInfo(";
 
                 int var2;
-                for(var2 = 0; var2 < this.elemInfo.length - 1; ++var2) {
+                for (var2 = 0; var2 < this.elemInfo.length - 1; ++var2) {
                     var1 = var1 + this.elemInfo[var2] + ",";
                 }
 
                 var1 = var1 + this.elemInfo[this.elemInfo.length - 1] + ")";
                 var1 = var1 + ",  \n Ordinates(";
 
-                for(var2 = 0; var2 < this.ordinates.length / this.dim; ++var2) {
-                    for(int var3 = 0; var3 < this.dim; ++var3) {
+                for (var2 = 0; var2 < this.ordinates.length / this.dim; ++var2) {
+                    for (int var3 = 0; var3 < this.dim; ++var3) {
                         var1 = var1 + this.ordinates[var3 + var2 * this.dim];
                         if (var3 < this.dim - 1) {
                             var1 = var1 + ",";
@@ -2449,15 +2472,15 @@ public class JGeometry implements Cloneable, Serializable {
                 var3 = var3 + ",  \n ElemInfo(";
 
                 int var4;
-                for(var4 = 0; var4 < this.elemInfo.length - 1; ++var4) {
+                for (var4 = 0; var4 < this.elemInfo.length - 1; ++var4) {
                     var3 = var3 + this.elemInfo[var4] + ",";
                 }
 
                 var3 = var3 + this.elemInfo[this.elemInfo.length - 1] + ")";
                 var3 = var3 + ",  \n Ordinates(";
 
-                for(var4 = 0; var4 < this.ordinates.length / this.dim; ++var4) {
-                    for(int var5 = 0; var5 < this.dim; ++var5) {
+                for (var4 = 0; var4 < this.ordinates.length / this.dim; ++var4) {
+                    for (int var5 = 0; var5 < this.dim; ++var5) {
                         double var6 = this.ordinates[var5 + var4 * this.dim];
                         String var8 = var2.format(var6).toString();
                         var3 = var3 + var8;
@@ -2482,8 +2505,9 @@ public class JGeometry implements Cloneable, Serializable {
         } else if (!(var1 instanceof JGeometry)) {
             return false;
         } else {
-            JGeometry var2 = (JGeometry)var1;
-            return this.getType() == var2.getType() && Arrays.equals(this.getPoint(), var2.getPoint()) && Arrays.equals(this.getElemInfo(), var2.getElemInfo()) && Arrays.equals(this.getOrdinatesArray(), var2.getOrdinatesArray());
+            JGeometry var2 = (JGeometry) var1;
+            return this.getType() == var2.getType() && Arrays.equals(this.getPoint(), var2.getPoint()) && Arrays.equals(this.getElemInfo(), var2.getElemInfo())
+                    && Arrays.equals(this.getOrdinatesArray(), var2.getOrdinatesArray());
         }
     }
 
@@ -2520,12 +2544,12 @@ public class JGeometry implements Cloneable, Serializable {
             String[] var3 = new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
 
             StringBuffer var4;
-            for(var4 = new StringBuffer(var0.length * 2); var2 < var0.length; ++var2) {
-                byte var6 = (byte)(var0[var2] & 240);
-                var6 = (byte)(var6 >>> 4);
-                var6 = (byte)(var6 & 15);
+            for (var4 = new StringBuffer(var0.length * 2); var2 < var0.length; ++var2) {
+                byte var6 = (byte) (var0[var2] & 240);
+                var6 = (byte) (var6 >>> 4);
+                var6 = (byte) (var6 & 15);
                 var4.append(var3[var6]);
-                var6 = (byte)(var0[var2] & 15);
+                var6 = (byte) (var0[var2] & 15);
                 var4.append(var3[var6]);
             }
 
@@ -2563,7 +2587,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var7 = new double[3 * (this.ordinates.length / 2)];
                 var9 = new double[3];
 
-                for(int var10 = 0; var10 < var7.length / 3; ++var10) {
+                for (int var10 = 0; var10 < var7.length / 3; ++var10) {
                     var9[0] = this.ordinates[2 * var10];
                     var9[1] = this.ordinates[2 * var10 + 1];
                     var9[2] = 0.0D;
@@ -2578,7 +2602,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var23[1] = var23[4] = var7[1];
                 var23[2] = var23[5] = var7[2];
 
-                for(int var11 = 0; var11 < var7.length / 3; ++var11) {
+                for (int var11 = 0; var11 < var7.length / 3; ++var11) {
                     if (var23[0] > var7[var11 * 3]) {
                         var23[0] = var7[var11 * 3];
                     }
@@ -2613,7 +2637,7 @@ public class JGeometry implements Cloneable, Serializable {
                 double var16 = 0.0D;
                 double var14 = 0.0D;
 
-                for(int var22 = 0; var22 < var7.length / 3; ++var22) {
+                for (int var22 = 0; var22 < var7.length / 3; ++var22) {
                     var9[0] = var7[var22 * 3];
                     var9[1] = var7[var22 * 3 + 1];
                     var9[2] = var7[var22 * 3 + 2];
@@ -2670,7 +2694,7 @@ public class JGeometry implements Cloneable, Serializable {
             double var5 = 0.0D;
 
             int var13;
-            for(var13 = 0; var13 < this.ordinates.length / 2; ++var13) {
+            for (var13 = 0; var13 < this.ordinates.length / 2; ++var13) {
                 if (this.ordinates[2 * var13] < var5) {
                     var5 = this.ordinates[2 * var13];
                 }
@@ -2689,7 +2713,7 @@ public class JGeometry implements Cloneable, Serializable {
             }
 
             if (var9 - var5 <= 1.274E7D && var11 - var7 <= 1.274E7D) {
-                for(var13 = 0; var13 < this.ordinates.length / 2; ++var13) {
+                for (var13 = 0; var13 < this.ordinates.length / 2; ++var13) {
                     var4[0] = this.ordinates[2 * var13];
                     var4[1] = this.ordinates[2 * var13 + 1];
                     var4[2] = 0.0D;
@@ -2713,7 +2737,7 @@ public class JGeometry implements Cloneable, Serializable {
         double[] var5 = this.getMBR();
         double[] var6 = new double[var5.length / 2];
 
-        for(int var7 = 0; var7 < var5.length / 2; ++var7) {
+        for (int var7 = 0; var7 < var5.length / 2; ++var7) {
             var6[var7] = (var5[var7 + var5.length / 2] + var5[var7]) / 2.0D;
         }
 
@@ -2736,7 +2760,7 @@ public class JGeometry implements Cloneable, Serializable {
         } else {
             var10 = new int[this.getElemInfo().length];
 
-            for(int var5 = 0; var5 < this.getElemInfo().length; ++var5) {
+            for (int var5 = 0; var5 < this.getElemInfo().length; ++var5) {
                 var10[var5] = this.getElemInfo()[var5];
             }
         }
@@ -2755,7 +2779,7 @@ public class JGeometry implements Cloneable, Serializable {
             var12 = new double[this.getOrdinatesArray().length];
             var11 = new double[this.getOrdinatesArray().length];
 
-            for(int var8 = 0; var8 < this.getOrdinatesArray().length; ++var8) {
+            for (int var8 = 0; var8 < this.getOrdinatesArray().length; ++var8) {
                 var11[var8] = this.getOrdinatesArray()[var8];
             }
         }
@@ -2763,7 +2787,7 @@ public class JGeometry implements Cloneable, Serializable {
         int var7 = 0;
         double[] var15 = this.getMBR();
 
-        for(int var6 = 0; var6 < var11.length / (var15.length / 2); ++var6) {
+        for (int var6 = 0; var6 < var11.length / (var15.length / 2); ++var6) {
             double var16 = 0.017453292519943295D * var11[var15.length / 2 * var6];
             double var18 = 0.017453292519943295D * var11[var15.length / 2 * var6 + 1];
             double var20 = 0.0D;
@@ -2815,7 +2839,7 @@ public class JGeometry implements Cloneable, Serializable {
         } else {
             var10 = new int[this.getElemInfo().length];
 
-            for(int var5 = 0; var5 < this.getElemInfo().length; ++var5) {
+            for (int var5 = 0; var5 < this.getElemInfo().length; ++var5) {
                 var10[var5] = this.getElemInfo()[var5];
             }
         }
@@ -2834,7 +2858,7 @@ public class JGeometry implements Cloneable, Serializable {
             var12 = new double[this.getOrdinatesArray().length];
             var11 = new double[this.getOrdinatesArray().length];
 
-            for(int var8 = 0; var8 < this.getOrdinatesArray().length; ++var8) {
+            for (int var8 = 0; var8 < this.getOrdinatesArray().length; ++var8) {
                 var11[var8] = this.getOrdinatesArray()[var8];
             }
         }
@@ -2842,7 +2866,7 @@ public class JGeometry implements Cloneable, Serializable {
         int var7 = 0;
         double[] var15 = this.getMBR();
 
-        for(int var6 = 0; var6 < var11.length / (var15.length / 2); ++var6) {
+        for (int var6 = 0; var6 < var11.length / (var15.length / 2); ++var6) {
             double var16 = var11[var15.length / 2 * var6] / var13;
             double var18 = var11[var15.length / 2 * var6 + 1] / var13;
             double var20 = 0.0D;
@@ -2901,24 +2925,25 @@ public class JGeometry implements Cloneable, Serializable {
             int var11;
             int var22;
             if (this.isCircle()) {
-                double[] var18 = expandCircle(this.ordinates[0], this.ordinates[1], this.ordinates[this.dim], this.ordinates[this.dim + 1], this.ordinates[2 * this.dim], this.ordinates[2 * this.dim + 1]);
+                double[] var18 = expandCircle(this.ordinates[0], this.ordinates[1], this.ordinates[this.dim], this.ordinates[this.dim + 1], this.ordinates[2 * this.dim], this.ordinates[2 * this.dim
+                        + 1]);
                 int[] var20 = new int[]{1, 1003, 1};
                 double[] var27 = linearizeArc(var18[0], var18[1], var18[2], var18[3], var18[4], var18[5], var1, var3);
 
-                for(var22 = 0; var22 < var27.length; ++var22) {
+                for (var22 = 0; var22 < var27.length; ++var22) {
                     var5.add(new Double(var27[var22]));
                 }
 
                 var10 = linearizeArc(var18[4], var18[5], var18[6], var18[7], var18[8], var18[9], var1, var3);
 
-                for(var11 = 2; var11 < var10.length; ++var11) {
+                for (var11 = 2; var11 < var10.length; ++var11) {
                     var5.add(new Double(var10[var11]));
                 }
 
                 double[] var23 = new double[var5.size()];
 
-                for(int var25 = 0; var25 < var5.size(); ++var25) {
-                    var23[var25] = (Double)var5.get(var25);
+                for (int var25 = 0; var25 < var5.size(); ++var25) {
+                    var23[var25] = (Double) var5.get(var25);
                 }
 
                 return new JGeometry(this.gtype, this.srid, var20, var23);
@@ -2926,7 +2951,7 @@ public class JGeometry implements Cloneable, Serializable {
                 JGeometry.ElementIterator var7 = new JGeometry.ElementIterator(this);
 
                 int var9;
-                while(var7.next()) {
+                while (var7.next()) {
                     int var8 = var7.ord_offset;
                     if (var7.isCompound && var7.isFirstElemOfCompound || !var7.isCompound) {
                         var4.add(new Integer(var5.size() + 1));
@@ -2947,7 +2972,7 @@ public class JGeometry implements Cloneable, Serializable {
                         }
                     }
 
-                    for(var9 = 0; var9 < var7.nCoord - 1; ++var9) {
+                    for (var9 = 0; var9 < var7.nCoord - 1; ++var9) {
                         if (var7.eitpr == 1) {
                             var5.add(new Double(this.ordinates[var8 + var9 * this.dim]));
                             var5.add(new Double(this.ordinates[var8 + var9 * this.dim + 1]));
@@ -2956,13 +2981,15 @@ public class JGeometry implements Cloneable, Serializable {
                                 var5.add(new Double(this.ordinates[var8 + var9 * this.dim + 3]));
                             }
                         } else if (var7.eitpr == 2) {
-                            if (var8 + var9 * this.dim >= var7.next_ord_offset || var7.lastElem && var8 + var9 * this.dim >= var7.next_ord_offset - this.dim || (var7.next_ord_offset - (var8 + var9 * this.dim)) / this.dim < 2) {
+                            if (var8 + var9 * this.dim >= var7.next_ord_offset || var7.lastElem && var8 + var9 * this.dim >= var7.next_ord_offset - this.dim
+                                    || (var7.next_ord_offset - (var8 + var9 * this.dim)) / this.dim < 2) {
                                 break;
                             }
 
-                            var10 = linearizeArc(this.ordinates[var8 + var9 * this.dim], this.ordinates[var8 + var9 * this.dim + 1], this.ordinates[var8 + (var9 + 1) * this.dim], this.ordinates[var8 + (var9 + 1) * this.dim + 1], this.ordinates[var8 + (var9 + 2) * this.dim], this.ordinates[var8 + (var9 + 2) * this.dim + 1], var1, var3);
+                            var10 = linearizeArc(this.ordinates[var8 + var9 * this.dim], this.ordinates[var8 + var9 * this.dim + 1], this.ordinates[var8 + (var9 + 1) * this.dim], this.ordinates[var8
+                                    + (var9 + 1) * this.dim + 1], this.ordinates[var8 + (var9 + 2) * this.dim], this.ordinates[var8 + (var9 + 2) * this.dim + 1], var1, var3);
 
-                            for(var11 = 0; var11 < var10.length - 2; ++var11) {
+                            for (var11 = 0; var11 < var10.length - 2; ++var11) {
                                 var5.add(new Double(var10[var11]));
                             }
 
@@ -2995,17 +3022,18 @@ public class JGeometry implements Cloneable, Serializable {
                                 break;
                             }
 
-                            var10 = expandCircle(this.ordinates[var8 + var9 * this.dim], this.ordinates[var8 + var9 * this.dim + 1], this.ordinates[var8 + (var9 + 1) * this.dim], this.ordinates[var8 + (var9 + 1) * this.dim + 1], this.ordinates[var8 + (var9 + 2) * this.dim], this.ordinates[var8 + (var9 + 2) * this.dim + 1]);
+                            var10 = expandCircle(this.ordinates[var8 + var9 * this.dim], this.ordinates[var8 + var9 * this.dim + 1], this.ordinates[var8 + (var9 + 1) * this.dim], this.ordinates[var8
+                                    + (var9 + 1) * this.dim + 1], this.ordinates[var8 + (var9 + 2) * this.dim], this.ordinates[var8 + (var9 + 2) * this.dim + 1]);
                             int[] var10000 = new int[]{1, 1003, 1};
                             double[] var12 = linearizeArc(var10[0], var10[1], var10[2], var10[3], var10[4], var10[5], var1, var3);
 
-                            for(int var13 = 0; var13 < var12.length; ++var13) {
+                            for (int var13 = 0; var13 < var12.length; ++var13) {
                                 var5.add(new Double(var12[var13]));
                             }
 
                             double[] var28 = linearizeArc(var10[4], var10[5], var10[6], var10[7], var10[8], var10[9], var1, var3);
 
-                            for(int var14 = 2; var14 < var28.length; ++var14) {
+                            for (int var14 = 2; var14 < var28.length; ++var14) {
                                 var5.add(new Double(var28[var14]));
                             }
 
@@ -3016,14 +3044,14 @@ public class JGeometry implements Cloneable, Serializable {
 
                 double[] var19 = new double[var5.size()];
 
-                for(var9 = 0; var9 < var5.size(); ++var9) {
-                    var19[var9] = (Double)var5.get(var9);
+                for (var9 = 0; var9 < var5.size(); ++var9) {
+                    var19[var9] = (Double) var5.get(var9);
                 }
 
                 int[] var26 = new int[var4.size()];
 
-                for(var22 = 0; var22 < var4.size(); ++var22) {
-                    var26[var22] = (Integer)var4.get(var22);
+                for (var22 = 0; var22 < var4.size(); ++var22) {
+                    var26[var22] = (Integer) var4.get(var22);
                 }
 
                 return new JGeometry(this.gtype, this.srid, var26, var19);
@@ -3059,7 +3087,7 @@ public class JGeometry implements Cloneable, Serializable {
                 int var23;
                 int var33;
                 if (var17 <= var2) {
-                    for(var33 = var8 + 1; var33 < var10; ++var33) {
+                    for (var33 = var8 + 1; var33 < var10; ++var33) {
                         var23 = 2 * var33;
                         var13 = var1[var23] - var1[var11];
                         var15 = var1[var23 + 1] - var1[var11 + 1];
@@ -3073,7 +3101,7 @@ public class JGeometry implements Cloneable, Serializable {
                     double var25 = var13 / var15;
                     double var29 = var25 * var1[var11 + 1];
 
-                    for(var33 = var8 + 1; var33 < var10; ++var33) {
+                    for (var33 = var8 + 1; var33 < var10; ++var33) {
                         var23 = 2 * var33;
                         var21 = Math.abs(var1[var23] - var1[var11] + var29 - var25 * var1[var23 + 1]);
                         if (var21 >= var19) {
@@ -3087,7 +3115,7 @@ public class JGeometry implements Cloneable, Serializable {
                     double var27 = var15 / var13;
                     double var31 = var27 * var1[var11];
 
-                    for(var33 = var8 + 1; var33 < var10; ++var33) {
+                    for (var33 = var8 + 1; var33 < var10; ++var33) {
                         var23 = 2 * var33;
                         var21 = Math.abs(var1[var23 + 1] - var1[var11 + 1] + var31 - var27 * var1[var23]);
                         if (var21 >= var19) {
@@ -3107,11 +3135,11 @@ public class JGeometry implements Cloneable, Serializable {
                     ++var9;
                     var8 = var10;
                 }
-            } while(var9 < var4);
+            } while (var9 < var4);
 
             var5 = new double[var34 * 2];
 
-            for(var9 = 0; var9 < var34; ++var9) {
+            for (var9 = 0; var9 < var34; ++var9) {
                 var8 = var6[var9];
                 var5[var9 * 2] = var1[2 * var8];
                 var5[var9 * 2 + 1] = var1[2 * var8 + 1];
@@ -3121,7 +3149,7 @@ public class JGeometry implements Cloneable, Serializable {
         } else {
             var5 = new double[var1.length];
 
-            for(var8 = 0; var8 < var1.length; ++var8) {
+            for (var8 = 0; var8 < var1.length; ++var8) {
                 var5[var8] = var1[var8];
             }
 
@@ -3155,13 +3183,13 @@ public class JGeometry implements Cloneable, Serializable {
         int var7;
         double[] var8;
         int var10;
-        for(var7 = 0; var7 < var3; ++var7) {
+        for (var7 = 0; var7 < var3; ++var7) {
             int var4 = var7 == var3 - 1 ? this.ordinates.length - 2 : this.elemInfo[3 * (var7 + 1)] - 3;
             int var5 = this.elemInfo[3 * var7] - 1;
             var8 = new double[var4 - var5 + 2];
             int var9 = 0;
 
-            for(var10 = this.elemInfo[3 * var7] - 1; var10 <= var4; ++var9) {
+            for (var10 = this.elemInfo[3 * var7] - 1; var10 <= var4; ++var9) {
                 var8[2 * var9] = this.ordinates[var10];
                 var8[2 * var9 + 1] = this.ordinates[var10 + 1];
                 var10 += 2;
@@ -3172,7 +3200,7 @@ public class JGeometry implements Cloneable, Serializable {
 
         var7 = 0;
 
-        for(int var16 = 0; var16 < var3; ++var16) {
+        for (int var16 = 0; var16 < var3; ++var16) {
             if (this.elemInfo[3 * var16 + 1] != 1003 && this.elemInfo[3 * var16 + 1] != 2003) {
                 var7 += var6[var16].length;
             } else if (var6[var16].length == 4) {
@@ -3190,13 +3218,13 @@ public class JGeometry implements Cloneable, Serializable {
 
         int var11;
         int var12;
-        for(var11 = 0; var11 < var3; ++var11) {
+        for (var11 = 0; var11 < var3; ++var11) {
             if (this.elemInfo[3 * var11 + 1] != 1003 && this.elemInfo[3 * var11 + 1] != 2003) {
                 var17[3 * var11] = var10;
                 var17[3 * var11 + 1] = this.elemInfo[3 * var11 + 1];
                 var17[3 * var11 + 2] = 1;
 
-                for(var12 = 0; var12 < var6[var11].length; ++var12) {
+                for (var12 = 0; var12 < var6[var11].length; ++var12) {
                     var8[var12 + var10 - 1] = var6[var11][var12];
                 }
 
@@ -3206,7 +3234,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var17[3 * var11 + 1] = 2;
                 var17[3 * var11 + 2] = 1;
 
-                for(var12 = 0; var12 < 2; ++var12) {
+                for (var12 = 0; var12 < 2; ++var12) {
                     var8[var12 + var10 - 1] = var6[var11][var12];
                 }
 
@@ -3219,7 +3247,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var17[3 * var11 + 1] = 2;
                 var17[3 * var11 + 2] = 1;
 
-                for(var12 = 0; var12 < 4; ++var12) {
+                for (var12 = 0; var12 < 4; ++var12) {
                     var8[var12 + var10 - 1] = var6[var11][var12];
                 }
 
@@ -3229,7 +3257,7 @@ public class JGeometry implements Cloneable, Serializable {
                 var17[3 * var11 + 1] = this.elemInfo[3 * var11 + 1];
                 var17[3 * var11 + 2] = 1;
 
-                for(var12 = 0; var12 < var6[var11].length; ++var12) {
+                for (var12 = 0; var12 < var6[var11].length; ++var12) {
                     var8[var12 + var10 - 1] = var6[var11][var12];
                 }
 
@@ -3242,7 +3270,7 @@ public class JGeometry implements Cloneable, Serializable {
         int var13 = 0;
 
         int var14;
-        for(var14 = 0; var14 < var3; ++var14) {
+        for (var14 = 0; var14 < var3; ++var14) {
             if (var17[3 * var14 + 1] == 1003) {
                 ++var12;
             } else if (var17[3 * var14 + 1] == 2) {
@@ -3291,8 +3319,8 @@ public class JGeometry implements Cloneable, Serializable {
     private static double[][] translation(int var0, double var1, double var3, double var5) {
         double[][] var9 = new double[var0 + 1][var0 + 1];
 
-        for(int var7 = 0; var7 < var0 + 1; ++var7) {
-            for(int var8 = 0; var8 < var0 + 1; ++var8) {
+        for (int var7 = 0; var7 < var0 + 1; ++var7) {
+            for (int var8 = 0; var8 < var0 + 1; ++var8) {
                 if (var7 == var8) {
                     var9[var7][var8] = 1.0D;
                 } else {
@@ -3318,15 +3346,15 @@ public class JGeometry implements Cloneable, Serializable {
 
         int var6;
         int var7;
-        for(var6 = 0; var6 < var2; ++var6) {
-            for(var7 = 0; var7 < var4; ++var7) {
+        for (var6 = 0; var6 < var2; ++var6) {
+            for (var7 = 0; var7 < var4; ++var7) {
                 var5[var6][var7] = 0.0D;
             }
         }
 
-        for(var6 = 0; var6 < var2; ++var6) {
-            for(var7 = 0; var7 < var4; ++var7) {
-                for(int var8 = 0; var8 < var3; ++var8) {
+        for (var6 = 0; var6 < var2; ++var6) {
+            for (var7 = 0; var7 < var4; ++var7) {
+                for (int var8 = 0; var8 < var3; ++var8) {
                     var5[var6][var7] += var0[var6][var8] * var1[var8][var7];
                 }
             }
@@ -3342,12 +3370,12 @@ public class JGeometry implements Cloneable, Serializable {
         double[] var7 = new double[var4];
 
         int var2;
-        for(var2 = 0; var2 < var4; ++var2) {
+        for (var2 = 0; var2 < var4; ++var2) {
             var7[var2] = 0.0D;
         }
 
-        for(var2 = 0; var2 < var4; ++var2) {
-            for(int var3 = 0; var3 < var5; ++var3) {
+        for (var2 = 0; var2 < var4; ++var2) {
+            for (int var3 = 0; var3 < var5; ++var3) {
                 var7[var2] += var0[var2][var3] * var1[var3];
             }
         }
@@ -3356,17 +3384,17 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private void convertOrientedPointsFw(int[] var1, double[] var2) {
-        for(int var3 = 0; var3 < var1.length; var3 += 3) {
+        for (int var3 = 0; var3 < var1.length; var3 += 3) {
             if (var1[var3 + 1] == 1 && var1[var3 + 2] == 0) {
                 int var4 = var1[var3 + 0];
                 int var5;
                 if (this.getSRID() == 8307) {
-                    for(var5 = 0; var5 < this.getDimensions(); ++var5) {
+                    for (var5 = 0; var5 < this.getDimensions(); ++var5) {
                         var2[var4 + var5] /= 100000.0D;
                     }
                 }
 
-                for(var5 = 0; var5 < this.getDimensions(); ++var5) {
+                for (var5 = 0; var5 < this.getDimensions(); ++var5) {
                     var2[var4 + var5] += var2[var4 + var5 - 3];
                 }
             }
@@ -3375,17 +3403,17 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private void convertOrientedPointsRv(int[] var1, double[] var2) {
-        for(int var3 = 0; var3 < var1.length; var3 += 3) {
+        for (int var3 = 0; var3 < var1.length; var3 += 3) {
             if (var1[var3 + 1] == 1 && var1[var3 + 2] == 0) {
                 int var4 = var1[var3 + 0];
 
-                for(int var5 = 0; var5 < this.getDimensions(); ++var5) {
+                for (int var5 = 0; var5 < this.getDimensions(); ++var5) {
                     var2[var4 + var5] -= var2[var4 + var5 - 3];
                 }
 
                 double var8 = Math.sqrt(var2[var4 + 0] * var2[var4 + 0] + var2[var4 + 1] * var2[var4 + 1]);
 
-                for(int var7 = 0; var7 < this.getDimensions(); ++var7) {
+                for (int var7 = 0; var7 < this.getDimensions(); ++var7) {
                     var2[var4 + var7] /= var8;
                 }
             }
@@ -3408,7 +3436,7 @@ public class JGeometry implements Cloneable, Serializable {
         }
 
         if (var2 != null) {
-            for(int var4 = 0; var4 < var2.length; var4 += this.getDimensions()) {
+            for (int var4 = 0; var4 < var2.length; var4 += this.getDimensions()) {
                 var2[var4 + 0] = this.tfm_8307_to_PopularMercator_x(var2[var4 + 0] * 3.141592653589793D / 180.0D);
                 var2[var4 + 1] = this.tfm_8307_to_PopularMercator_y(var2[var4 + 1] * 3.141592653589793D / 180.0D, var3);
             }
@@ -3427,7 +3455,7 @@ public class JGeometry implements Cloneable, Serializable {
             throw new RuntimeException("Circular Arcs not allowed in 8307.");
         } else {
             double[] var2 = this.getPoint();
-            this.tfm_8307_to_PopularMercator((int[])null, var2, var1);
+            this.tfm_8307_to_PopularMercator((int[]) null, var2, var1);
             this.x = var2[0];
             this.y = var2[1];
             this.tfm_8307_to_PopularMercator(this.getElemInfo(), this.getOrdinatesArray(), var1);
@@ -3441,7 +3469,9 @@ public class JGeometry implements Cloneable, Serializable {
 
     private double tfm_PopularMercator_to_8307_lat(double var1, boolean var3) {
         double var4 = var3 ? MERCATOR_e54004 : MERCATOR_e3785;
-        return var1 + (var4 * var4 / 2.0D + Math.pow(var4, 6.0D) / 12.0D + 5.0D * Math.pow(var4, 4.0D) / 24.0D + 13.0D * Math.pow(var4, 8.0D) / 360.0D) * Math.sin(2.0D * var1) + (7.0D * Math.pow(var4, 4.0D) / 48.0D + 29.0D * Math.pow(var4, 6.0D) / 240.0D + 811.0D * Math.pow(var4, 8.0D) / 11520.0D) * Math.sin(4.0D * var1) + (7.0D * Math.pow(var4, 6.0D) / 120.0D + 81.0D * Math.pow(var4, 8.0D) / 1120.0D) * Math.sin(6.0D * var1) + 4279.0D * Math.pow(var4, 8.0D) / 161280.0D * Math.sin(8.0D * var1);
+        return var1 + (var4 * var4 / 2.0D + Math.pow(var4, 6.0D) / 12.0D + 5.0D * Math.pow(var4, 4.0D) / 24.0D + 13.0D * Math.pow(var4, 8.0D) / 360.0D) * Math.sin(2.0D * var1)
+                + (7.0D * Math.pow(var4, 4.0D) / 48.0D + 29.0D * Math.pow(var4, 6.0D) / 240.0D + 811.0D * Math.pow(var4, 8.0D) / 11520.0D) * Math.sin(4.0D * var1)
+                + (7.0D * Math.pow(var4, 6.0D) / 120.0D + 81.0D * Math.pow(var4, 8.0D) / 1120.0D) * Math.sin(6.0D * var1) + 4279.0D * Math.pow(var4, 8.0D) / 161280.0D * Math.sin(8.0D * var1);
     }
 
     public void tfm_PopularMercator_to_8307(int[] var1, double[] var2, boolean var3) {
@@ -3450,7 +3480,7 @@ public class JGeometry implements Cloneable, Serializable {
         }
 
         if (var2 != null) {
-            for(int var4 = 0; var4 < var2.length; var4 += this.getDimensions()) {
+            for (int var4 = 0; var4 < var2.length; var4 += this.getDimensions()) {
                 double var5 = var2[var4 + 0];
                 double var7 = var2[var4 + 1];
                 double var9 = Math.pow(MERCATOR_B, (0.0D - var7) / 6378137.0D);
@@ -3473,7 +3503,7 @@ public class JGeometry implements Cloneable, Serializable {
             throw new RuntimeException("Circular Arcs not allowed in 8307.");
         } else {
             double[] var2 = this.getPoint();
-            this.tfm_PopularMercator_to_8307((int[])null, var2, var1);
+            this.tfm_PopularMercator_to_8307((int[]) null, var2, var1);
             this.x = var2[0];
             this.y = var2[1];
             this.tfm_PopularMercator_to_8307(this.getElemInfo(), this.getOrdinatesArray(), var1);
@@ -3482,6 +3512,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private class Ring {
+
         JGeometry.Vertex startVertex;
         int numVertices;
         int numArcs;
@@ -3497,12 +3528,13 @@ public class JGeometry implements Cloneable, Serializable {
             JGeometry.Vertex var6 = this.startVertex;
 
             do {
-                if (var6.x < var1 != var6.next.x < var1 && (var6.y >= var3 || var6.next.y >= var3) && (var6.y >= var3 && var6.next.y >= var3 || var6.y + (var1 - var6.x) * (var6.next.y - var6.y) / (var6.next.x - var6.x) >= var3)) {
+                if (var6.x < var1 != var6.next.x < var1 && (var6.y >= var3 || var6.next.y >= var3)
+                        && (var6.y >= var3 && var6.next.y >= var3 || var6.y + (var1 - var6.x) * (var6.next.y - var6.y) / (var6.next.x - var6.x) >= var3)) {
                     var5 = !var5;
                 }
 
                 var6 = var6.next;
-            } while(var6 != this.startVertex);
+            } while (var6 != this.startVertex);
 
             return var5;
         }
@@ -3513,6 +3545,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private class ArcVertex extends JGeometry.Vertex {
+
         JPoint2DD center;
         boolean blackout;
 
@@ -3523,6 +3556,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private class Vertex {
+
         public double x;
         public double y;
         boolean isInside = false;
@@ -3544,9 +3578,10 @@ public class JGeometry implements Cloneable, Serializable {
                 System.out.print("   ");
             }
 
-            System.out.print(" x " + this.x + " y " + this.y + " inside " + (this.isInside ? 't' : 'f') + " intscn " + (this.isIntersection ? 't' : 'f') + " starter " + (this.isStarterIntersection ? 't' : 'f') + " used " + (this.isUsed ? 't' : 'f'));
+            System.out.print(" x " + this.x + " y " + this.y + " inside " + (this.isInside ? 't' : 'f') + " intscn " + (this.isIntersection ? 't' : 'f') + " starter "
+                    + (this.isStarterIntersection ? 't' : 'f') + " used " + (this.isUsed ? 't' : 'f'));
             if (this instanceof JGeometry.ArcVertex) {
-                System.out.print(" blackout " + (((JGeometry.ArcVertex)this).blackout ? 't' : 'f'));
+                System.out.print(" blackout " + (((JGeometry.ArcVertex) this).blackout ? 't' : 'f'));
             }
 
             System.out.println();
@@ -3558,6 +3593,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     protected static class ElementIterator {
+
         public int ei = 0;
         public int nextei = 0;
         public int dim = 2;
@@ -3611,7 +3647,7 @@ public class JGeometry implements Cloneable, Serializable {
                     this.isCompound = false;
                 }
 
-                while(this.ei <= this.elemInfo.length - 3 && (this.ei != 3 || !this.isOrientedPoint)) {
+                while (this.ei <= this.elemInfo.length - 3 && (this.ei != 3 || !this.isOrientedPoint)) {
                     this.etype = this.elemInfo[this.ei + 1] % 10;
                     this.original_etype = this.elemInfo[this.ei + 1];
                     if (!this.isCompound) {
@@ -3668,6 +3704,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     public static class Point {
+
         double x;
         double y;
         double z;
@@ -3702,6 +3739,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private class LT_transform {
+
         double ne;
         double xc;
         double yc;
@@ -3735,6 +3773,7 @@ public class JGeometry implements Cloneable, Serializable {
     }
 
     private class Gc_trans {
+
         double smax;
         double smin;
         double flat;

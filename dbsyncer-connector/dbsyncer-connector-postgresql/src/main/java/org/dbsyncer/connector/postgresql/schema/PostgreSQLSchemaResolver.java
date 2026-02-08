@@ -28,24 +28,15 @@ import java.util.stream.Stream;
  * @Date 2025-06-25 23:01
  */
 public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
+
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(
-                new PostgreSQLStringType(),
-                new PostgreSQLIntType(),
-                new PostgreSQLLongType(),
-                new PostgreSQLDecimalType(),
-                new PostgreSQLFloatType(),
-                new PostgreSQLDoubleType(),
-                new PostgreSQLDateType(),
-                new PostgreSQLTimestampType(),
-                new PostgreSQLBooleanType(),
-                new PostgreSQLBytesType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
-            if (mapping.containsKey(typeName)) {
-                throw new PostgreSQLException("Duplicate type name: " + typeName);
-            }
-            mapping.put(typeName, t);
-        }));
+        Stream.of(new PostgreSQLStringType(), new PostgreSQLIntType(), new PostgreSQLLongType(), new PostgreSQLDecimalType(), new PostgreSQLFloatType(), new PostgreSQLDoubleType(), new PostgreSQLDateType(), new PostgreSQLTimestampType(), new PostgreSQLBooleanType(), new PostgreSQLBytesType())
+                .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
+                    if (mapping.containsKey(typeName)) {
+                        throw new PostgreSQLException("Duplicate type name: " + typeName);
+                    }
+                    mapping.put(typeName, t);
+                }));
     }
 }

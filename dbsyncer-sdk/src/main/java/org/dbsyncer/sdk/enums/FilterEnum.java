@@ -29,27 +29,27 @@ public enum FilterEnum {
     /**
      * 不等于
      */
-    NOT_EQUAL("!=", (value, filterValue) -> !StringUtil.equals(value, filterValue)),
+    NOT_EQUAL("!=", (value, filterValue)->!StringUtil.equals(value, filterValue)),
     /**
      * 大于
      */
-    GT(">", (value, filterValue) -> NumberUtil.toLong(value) > NumberUtil.toLong(filterValue)),
+    GT(">", (value, filterValue)->NumberUtil.toLong(value) > NumberUtil.toLong(filterValue)),
     /**
      * 小于
      */
-    LT("<", (value, filterValue) -> NumberUtil.toLong(value) < NumberUtil.toLong(filterValue)),
+    LT("<", (value, filterValue)->NumberUtil.toLong(value) < NumberUtil.toLong(filterValue)),
     /**
      * 大于等于
      */
-    GT_AND_EQUAL(">=", (value, filterValue) -> NumberUtil.toLong(value) >= NumberUtil.toLong(filterValue)),
+    GT_AND_EQUAL(">=", (value, filterValue)->NumberUtil.toLong(value) >= NumberUtil.toLong(filterValue)),
     /**
      * 小于等于
      */
-    LT_AND_EQUAL("<=", (value, filterValue) -> NumberUtil.toLong(value) <= NumberUtil.toLong(filterValue)),
+    LT_AND_EQUAL("<=", (value, filterValue)->NumberUtil.toLong(value) <= NumberUtil.toLong(filterValue)),
     /**
      * 模糊匹配
      */
-    LIKE("like", (value, filterValue) -> {
+    LIKE("like", (value, filterValue)-> {
         boolean startsWith = StringUtil.startsWith(filterValue, StringUtil.PERCENT) || StringUtil.startsWith(filterValue, StringUtil.STAR);
         boolean endsWith = StringUtil.endsWith(filterValue, StringUtil.PERCENT) || StringUtil.endsWith(filterValue, StringUtil.STAR);
         String compareValue = StringUtil.replace(filterValue, StringUtil.PERCENT, StringUtil.EMPTY);
@@ -71,20 +71,20 @@ public enum FilterEnum {
     /**
      * 集合匹配
      */
-    IN("in", (value, filterValue) -> {
+    IN("in", (value, filterValue)-> {
         if (StringUtil.isNotBlank(filterValue)) {
-            return Arrays.stream(StringUtil.split(filterValue, StringUtil.COMMA)).anyMatch(v -> StringUtil.equals(v, value));
+            return Arrays.stream(StringUtil.split(filterValue, StringUtil.COMMA)).anyMatch(v->StringUtil.equals(v, value));
         }
         return false;
     }),
     /**
      * Null值
      */
-    IS_NULL("is null", (value, filterValue) -> value == null),
+    IS_NULL("is null", (value, filterValue)->value == null),
     /**
      * 非Null值
      */
-    IS_NOT_NULL("is not null", (value, filterValue) -> value != null);
+    IS_NOT_NULL("is not null", (value, filterValue)->value != null);
 
     /**
      * 建立 name 与 FilterEnum 建立映射关系，用时便于快速查找
@@ -92,7 +92,7 @@ public enum FilterEnum {
     private static final Map<String, FilterEnum> MAPPING = new HashMap<>();
 
     static {
-        Arrays.stream(FilterEnum.values()).forEach((item) -> MAPPING.put(item.getName().toUpperCase(), item));
+        Arrays.stream(FilterEnum.values()).forEach((item)->MAPPING.put(item.getName().toUpperCase(), item));
     }
 
     // 运算符名称

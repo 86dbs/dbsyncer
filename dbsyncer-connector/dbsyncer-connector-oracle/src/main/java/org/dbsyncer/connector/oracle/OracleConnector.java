@@ -65,7 +65,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override
@@ -80,11 +80,8 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         // PARALLEL hint 利用多核 CPU 并行处理，提升性能但不影响准确性
         // 让 Oracle 优化器自动选择最佳访问路径（索引扫描或全表扫描）
         String query = "SELECT /*+ PARALLEL(t, 8) */ COUNT(*) FROM %s%s t %s";
-        
-        return String.format(query,
-                config.getSchema(),
-                database.buildWithQuotation(config.getTableName()),
-                queryFilter);
+
+        return String.format(query, config.getSchema(), database.buildWithQuotation(config.getTableName()), queryFilter);
     }
 
     @Override
@@ -186,32 +183,32 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     public String buildInsertSql(SqlBuilderConfig config) {
         // Oracle 使用 MERGE 实现 INSERT IGNORE 效果（主键冲突时忽略）
         MergeContext context = buildMergeContext(config);
-        
+
         StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
         // 构建 MERGE 头部
         buildMergeHeader(sql, config, context);
-        
+
         // 只有 WHEN NOT MATCHED 子句，主键冲突时什么都不做（INSERT IGNORE 行为）
         buildInsertClause(sql, context);
-        
+
         return sql.toString();
     }
 
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         MergeContext context = buildMergeContext(config);
-        
+
         StringBuilder sql = new StringBuilder(config.getDatabase().generateUniqueCode());
         // 构建 MERGE 头部
         buildMergeHeader(sql, config, context);
-        
+
         // WHEN MATCHED 子句 - 更新非主键字段
         sql.append("WHEN MATCHED THEN UPDATE SET ");
         sql.append(StringUtil.join(context.updateSets, StringUtil.COMMA)).append(" ");
-        
+
         // WHEN NOT MATCHED 子句 - 插入
         buildInsertClause(sql, context);
-        
+
         return sql.toString();
     }
 
@@ -221,11 +218,11 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     private MergeContext buildMergeContext(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         MergeContext context = new MergeContext();
-        
-        config.getFields().forEach(f -> {
+
+        config.getFields().forEach(f-> {
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
-            
+
             // 构建 SELECT 部分的字段别名
             List<String> fieldVs = new ArrayList<>();
             if (database.buildCustomValue(fieldVs, f)) {
@@ -233,14 +230,14 @@ public final class OracleConnector extends AbstractDatabaseConnector {
             } else {
                 context.selectFields.add("? AS " + fieldName);
             }
-            
+
             if (f.isPk()) {
                 context.pkFieldNames.add(fieldName);
             } else {
                 context.updateSets.add(String.format("t.%s = s.%s", fieldName, fieldName));
             }
         });
-        
+
         return context;
     }
 
@@ -249,15 +246,15 @@ public final class OracleConnector extends AbstractDatabaseConnector {
      */
     private void buildMergeHeader(StringBuilder sql, SqlBuilderConfig config, MergeContext context) {
         Database database = config.getDatabase();
-        
+
         sql.append("MERGE INTO ").append(config.getSchema());
         sql.append(database.buildWithQuotation(config.getTableName())).append(" t ");
-        
+
         // Oracle 使用 DUAL 表构造数据源
         sql.append("USING (SELECT ");
         sql.append(StringUtil.join(context.selectFields, StringUtil.COMMA));
         sql.append(" FROM DUAL) s ");
-        
+
         // 构建 ON 条件：t.pk = s.pk AND ...
         sql.append("ON (");
         for (int i = 0; i < context.pkFieldNames.size(); i++) {
@@ -276,10 +273,10 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     private void buildInsertClause(StringBuilder sql, MergeContext context) {
         sql.append("WHEN NOT MATCHED THEN INSERT (");
         sql.append(StringUtil.join(context.fieldNames, StringUtil.COMMA)).append(") VALUES (");
-        
+
         // VALUES 子句使用 s.fieldName
         List<String> sFieldNames = new ArrayList<>();
-        context.fieldNames.forEach(f -> sFieldNames.add("s." + f));
+        context.fieldNames.forEach(f->sFieldNames.add("s." + f));
         sql.append(StringUtil.join(sFieldNames, StringUtil.COMMA)).append(")");
     }
 
@@ -287,6 +284,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
      * MERGE 语句构建上下文
      */
     private static class MergeContext {
+
         List<String> fieldNames = new ArrayList<>();
         List<String> selectFields = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();

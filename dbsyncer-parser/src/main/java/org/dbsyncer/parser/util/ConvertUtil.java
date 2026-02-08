@@ -1,8 +1,8 @@
 package org.dbsyncer.parser.util;
 
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.parser.enums.ConvertEnum;
+import org.dbsyncer.parser.model.Convert;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +17,7 @@ public abstract class ConvertUtil {
      */
     public static void convert(List<Convert> convert, List<Map> data) {
         if (!CollectionUtils.isEmpty(convert) && !CollectionUtils.isEmpty(data)) {
-            data.forEach(row -> convert(convert, row));
+            data.forEach(row->convert(convert, row));
         }
     }
 
@@ -47,5 +47,4 @@ public abstract class ConvertUtil {
             }
         }
     }
-
 }

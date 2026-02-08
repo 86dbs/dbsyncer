@@ -15,6 +15,7 @@ import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.DatabaseUtil;
+
 import org.postgresql.PGConnection;
 import org.postgresql.PGProperty;
 import org.postgresql.replication.LogSequenceNumber;
@@ -46,26 +47,23 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String GET_SLOT = "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_RESTART_LSN = "select restart_lsn from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
-    private static final String GET_ROLE = "SELECT r.rolcanlogin                                                                        AS login,\n" +
-            "       r.rolreplication                                                                     AS replication,\n" +
-            "       u.usesuper as superuser,\n" +
-            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
-            "                                 FROM pg_catalog.pg_auth_members m\n" +
-            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
-            "                                 WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS rds_superuser,\n" +
-            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
-            "                                 FROM pg_catalog.pg_auth_members m\n" +
-            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
-            "                                 WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE      AS admin,\n" +
-            "       CAST(array_position(ARRAY(SELECT b.rolname\n" +
-            "                                 FROM pg_catalog.pg_auth_members m\n" +
-            "                                          JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)\n" +
-            "                                 WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE  AS rep_admin\n" +
-            "FROM pg_user u\n" +
-            "left join pg_roles r on u.usename=r.rolname\n" +
-            "WHERE u.usename = current_user";
+    // spotless:off
+    private static final String GET_SLOT =
+            "select count(1) from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
+    private static final String GET_RESTART_LSN =
+            "select restart_lsn from pg_replication_slots where database = ? and slot_name = ? and plugin = ?";
+    private static final String GET_ROLE =
+            "SELECT r.rolcanlogin AS login,r.rolreplication AS replication,u.usesuper as superuser,"
+                + "        CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)"
+                + "            WHERE m.member = r.oid), 'rds_superuser') AS BOOL) IS TRUE AS rds_superuser,"
+                + "        CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)"
+                + "            WHERE m.member = r.oid), 'rdsadmin') AS BOOL) IS TRUE AS admin,"
+                + "        CAST(array_position(ARRAY(SELECT b.rolname FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)"
+                + "            WHERE m.member = r.oid), 'rdsrepladmin') AS BOOL) IS TRUE AS rep_admin"
+                + "    FROM pg_user u left join pg_roles r on u.usename=r.rolname"
+                + "    WHERE u.usename = current_user";
+    // spotless:on
+
     private static final String GET_WAL_LEVEL = "SHOW WAL_LEVEL";
     private static final String DEFAULT_WAL_LEVEL = "logical";
     private static final String LSN_POSITION = "position";
@@ -92,19 +90,21 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
             instance = getConnectorInstance();
             config = instance.getConfig();
 
-            final String walLevel = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
+            final String walLevel = instance.execute(databaseTemplate->databaseTemplate.queryForObject(GET_WAL_LEVEL, String.class));
             if (!DEFAULT_WAL_LEVEL.equals(walLevel)) {
                 throw new PostgreSQLException(String.format("Postgres server wal_level property must be \"%s\" but is: %s", DEFAULT_WAL_LEVEL, walLevel));
             }
 
-            final boolean hasAuth = instance.execute(databaseTemplate -> {
+            final boolean hasAuth = instance.execute(databaseTemplate-> {
                 Map rs = databaseTemplate.queryForMap(GET_ROLE);
                 Boolean login = (Boolean) rs.getOrDefault("login", false);
                 Boolean replication = (Boolean) rs.getOrDefault("replication", false);
                 Boolean superuser = (Boolean) rs.getOrDefault("superuser", false);
+                // 阿里云 RDS from PostgreSQL
+                Boolean rds_superuser = (Boolean) rs.getOrDefault("rds_superuser", false);
                 Boolean admin = (Boolean) rs.getOrDefault("admin", false);
                 Boolean repAdmin = (Boolean) rs.getOrDefault("rep_admin", false);
-                return login && (replication || superuser || admin || repAdmin);
+                return login && (replication || superuser || rds_superuser || admin || repAdmin);
             });
             if (!hasAuth) {
                 throw new PostgreSQLException(String.format("Postgres roles LOGIN and REPLICATION are not assigned to user: %s", config.getUsername()));
@@ -176,12 +176,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     }
 
     private void createReplicationStream(PGConnection pgConnection) throws SQLException {
-        ChainedLogicalStreamBuilder streamBuilder = pgConnection
-                .getReplicationAPI()
-                .replicationStream()
-                .logical()
-                .withSlotName(messageDecoder.getSlotName())
-                .withStartPosition(startLsn)
+        ChainedLogicalStreamBuilder streamBuilder = pgConnection.getReplicationAPI().replicationStream().logical().withSlotName(messageDecoder.getSlotName()).withStartPosition(startLsn)
                 .withStatusInterval(10, TimeUnit.SECONDS);
 
         messageDecoder.withSlotOption(streamBuilder);
@@ -191,21 +186,17 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
     private void createReplicationSlot(PGConnection pgConnection) throws SQLException {
         String slotName = messageDecoder.getSlotName();
         String plugin = messageDecoder.getOutputPlugin();
-        boolean existSlot = instance.execute(databaseTemplate -> databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);
+        boolean existSlot = instance.execute(databaseTemplate->databaseTemplate.queryForObject(GET_SLOT, new Object[]{database, slotName, plugin}, Integer.class) > 0);
         if (!existSlot) {
-            pgConnection.getReplicationAPI()
-                    .createReplicationSlot()
-                    .logical()
-                    .withSlotName(slotName)
-                    .withOutputPlugin(plugin)
-                    .make();
+            pgConnection.getReplicationAPI().createReplicationSlot().logical().withSlotName(slotName).withOutputPlugin(plugin).make();
 
             // wait for create replication slot to have finished
             sleepInMills(300);
         }
 
         if (!snapshot.containsKey(LSN_POSITION)) {
-            LogSequenceNumber lsn = instance.execute(databaseTemplate -> LogSequenceNumber.valueOf(databaseTemplate.queryForObject(GET_RESTART_LSN, new Object[]{database, slotName, plugin}, String.class)));
+            LogSequenceNumber lsn = instance
+                    .execute(databaseTemplate->LogSequenceNumber.valueOf(databaseTemplate.queryForObject(GET_RESTART_LSN, new Object[]{database, slotName, plugin}, String.class)));
             if (null == lsn || lsn.asLong() == 0) {
                 throw new PostgreSQLException("No maximum LSN recorded in the database");
             }
@@ -225,7 +216,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
         final int ATTEMPTS = 3;
         for (int i = 0; i < ATTEMPTS; i++) {
             try {
-                instance.execute(databaseTemplate -> {
+                instance.execute(databaseTemplate-> {
                     databaseTemplate.execute(String.format("select pg_drop_replication_slot('%s')", slotName));
                     return true;
                 });
@@ -303,7 +294,7 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
                     RowChangedEvent event = messageDecoder.processMessage(msg);
                     if (event != null && filterTable.contains(event.getSourceTableName())) {
                         event.setPosition(lsn.asString());
-                        while (connected){
+                        while (connected) {
                             try {
                                 sendChangedEvent(event);
                                 break;

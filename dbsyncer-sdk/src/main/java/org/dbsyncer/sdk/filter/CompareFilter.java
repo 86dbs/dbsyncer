@@ -13,5 +13,4 @@ package org.dbsyncer.sdk.filter;
 public interface CompareFilter {
 
     boolean compare(String value, String filterValue);
-
 }

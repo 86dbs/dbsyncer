@@ -11,6 +11,7 @@ import java.math.BigDecimal;
  * @Date 2025-12-20 20:50
  */
 public final class DiskSpaceVO {
+
     private BigDecimal used;
     private BigDecimal free;
     private BigDecimal total;

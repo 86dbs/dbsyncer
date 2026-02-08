@@ -11,6 +11,7 @@ package org.dbsyncer.storage.enums;
  * @Date 2021-03-10 20:31
  */
 public enum StorageDataStatusEnum {
+
     /**
      * 失败
      */
@@ -36,5 +37,4 @@ public enum StorageDataStatusEnum {
     public String getMessage() {
         return message;
     }
-
 }

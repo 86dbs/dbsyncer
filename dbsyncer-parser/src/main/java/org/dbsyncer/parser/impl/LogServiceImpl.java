@@ -11,9 +11,11 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +57,7 @@ public class LogServiceImpl implements LogService {
     }
 
     private void asyncWrite(String type, String error) {
-        storageExecutor.execute(() -> {
+        storageExecutor.execute(()-> {
             Map<String, Object> params = new HashMap();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);

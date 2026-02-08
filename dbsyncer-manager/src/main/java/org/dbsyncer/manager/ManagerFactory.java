@@ -5,11 +5,13 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.Map;
 
@@ -78,5 +80,4 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         Assert.notNull(puller, String.format("未知的同步方式: %s", model));
         return puller;
     }
-
 }

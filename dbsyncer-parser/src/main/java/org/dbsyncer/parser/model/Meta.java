@@ -21,10 +21,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Meta extends ConfigModel {
 
     private String mappingId;
+
     /**
      * {@link MetaEnum}
      */
     private int state;
+
     private AtomicLong total;
     private AtomicLong success;
     private AtomicLong fail;
@@ -45,7 +47,7 @@ public class Meta extends ConfigModel {
         init();
     }
 
-    private void init(){
+    private void init() {
         this.state = MetaEnum.READY.getCode();
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);

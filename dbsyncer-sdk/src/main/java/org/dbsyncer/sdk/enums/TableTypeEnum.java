@@ -67,5 +67,4 @@ public enum TableTypeEnum {
     public String getCode() {
         return code;
     }
-
 }

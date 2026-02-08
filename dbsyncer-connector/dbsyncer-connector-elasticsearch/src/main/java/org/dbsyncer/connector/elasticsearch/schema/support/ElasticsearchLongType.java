@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 public final class ElasticsearchLongType extends LongType {
 
     private enum TypeEnum {
-        LONG("long"),
-        TOKEN_COUNT("token_count");
+
+        LONG("long"), TOKEN_COUNT("token_count");
 
         private final String value;
 

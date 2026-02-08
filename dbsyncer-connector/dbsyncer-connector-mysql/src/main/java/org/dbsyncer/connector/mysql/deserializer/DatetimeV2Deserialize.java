@@ -5,6 +5,8 @@ package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -74,5 +76,4 @@ public final class DatetimeV2Deserialize {
         long result = value >> payloadSize - (bitOffset + numberOfBits);
         return (int) (result & ((1 << numberOfBits) - 1));
     }
-
 }

@@ -35,5 +35,4 @@ public enum ListenerTypeEnum {
     public String getType() {
         return type;
     }
-
 }

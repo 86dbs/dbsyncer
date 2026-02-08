@@ -5,6 +5,7 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.manager.deployment.StandaloneProvider;
 import org.dbsyncer.sdk.spi.DeploymentService;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,5 +23,4 @@ public class ManagerSupportConfiguration {
     public DeploymentService deploymentService() {
         return new StandaloneProvider();
     }
-
 }

@@ -68,5 +68,4 @@ public class MetaInfo {
     public void setExtInfo(Properties extInfo) {
         this.extInfo = extInfo;
     }
-
 }

@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
  * @Date 2026-01-11 22:21
  */
 public final class SQLiteBytesType extends BytesType {
+
     private enum TypeEnum {
+
         BLOB("BLOB");
 
         private final String value;
@@ -39,5 +41,4 @@ public final class SQLiteBytesType extends BytesType {
     protected byte[] merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

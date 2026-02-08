@@ -15,6 +15,7 @@ import java.util.List;
  * @Date 2023-08-20 20:00
  */
 public final class ScanChangedEvent extends CommonChangedEvent {
+
     private final List<Object> changedRow;
 
     public ScanChangedEvent(String sourceTableName, String event, List<Object> data) {

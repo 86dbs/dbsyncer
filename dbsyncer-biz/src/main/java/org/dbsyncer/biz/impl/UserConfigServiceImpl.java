@@ -10,16 +10,18 @@ import org.dbsyncer.biz.enums.UserRoleEnum;
 import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -163,7 +165,7 @@ public class UserConfigServiceImpl implements UserConfigService {
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
         if (admin) {
-            return getUserConfig().getUserInfoList().stream().map(user -> convertUserInfo2Vo(user)).collect(Collectors.toList());
+            return getUserConfig().getUserInfoList().stream().map(user->convertUserInfo2Vo(user)).collect(Collectors.toList());
         }
 
         List<UserInfoVO> list = new ArrayList<>();

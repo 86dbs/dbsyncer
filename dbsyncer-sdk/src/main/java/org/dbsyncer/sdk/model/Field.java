@@ -69,7 +69,7 @@ public class Field {
         this.pk = pk;
     }
 
-    public Field(String name, String typeName, int type, boolean pk, int columnSize,int ratio) {
+    public Field(String name, String typeName, int type, boolean pk, int columnSize, int ratio) {
         this.name = name;
         this.typeName = typeName;
         this.type = type;

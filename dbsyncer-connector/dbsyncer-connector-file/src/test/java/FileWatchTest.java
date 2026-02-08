@@ -1,11 +1,10 @@
 import org.apache.commons.io.IOUtils;
+
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -79,5 +78,4 @@ public class FileWatchTest {
             IOUtils.closeQuietly(raf);
         }
     }
-
 }

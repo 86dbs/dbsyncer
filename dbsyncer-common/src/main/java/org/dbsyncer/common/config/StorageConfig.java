@@ -4,6 +4,7 @@
 package org.dbsyncer.common.config;
 
 import org.dbsyncer.common.util.ThreadPoolUtil;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,5 +64,4 @@ public class StorageConfig extends BufferActuatorConfig {
     public void setThreadQueueCapacity(int threadQueueCapacity) {
         this.threadQueueCapacity = threadQueueCapacity;
     }
-
 }

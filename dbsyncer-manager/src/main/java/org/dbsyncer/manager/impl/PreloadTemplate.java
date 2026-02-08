@@ -32,6 +32,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -123,13 +125,13 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
         // 版本信息检查
         Map versionInfo = map.get(DBS_VERSION_INFO);
-        Assert.isTrue(versionInfo!= null, "不支持导入低版本或配置不完整");
+        Assert.isTrue(versionInfo != null, "不支持导入低版本或配置不完整");
         VersionInfo info = JsonUtil.jsonToObj(versionInfo.toString(), VersionInfo.class);
         logger.info("upload config: appName={}, version={}, createTime={}", info.getAppName(), info.getVersion(), DateFormatUtil.timestampToString(new Timestamp(info.getCreateTime())));
 
         // Load configModels
-        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
-                CommandEnum.PRELOAD_META).forEach(commandEnum -> reload(map, commandEnum));
+        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
+                .forEach(commandEnum->reload(map, commandEnum));
 
         // Load connectorInstances
         loadConnectorInstance();
@@ -141,7 +143,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void launch() {
         List<Meta> metas = profileComponent.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
-            metas.forEach(m -> {
+            metas.forEach(m-> {
                 try {
                     // 重连
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
@@ -180,7 +182,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         int pageNum = 1;
         int pageSize = 20;
         long total = 0;
-        for (; ; ) {
+        for (;;) {
             query.setPageNum(pageNum);
             query.setPageSize(pageSize);
             Paging paging = storageService.query(query);
@@ -188,7 +190,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (CollectionUtils.isEmpty(data)) {
                 break;
             }
-            data.forEach(map -> {
+            data.forEach(map-> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
                 ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
                 if (null != model) {
@@ -229,17 +231,15 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void loadConnectorInstance() {
         List<Connector> list = profileComponent.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(connector ->
-                generalExecutor.execute(() -> {
-                    try {
-                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
-                        logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
-                    } catch (Exception e) {
-                        logger.error("连接配置异常", e);
-                        logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
-                    }
-                })
-            );
+            list.forEach(connector->generalExecutor.execute(()-> {
+                try {
+                    ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+                    logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
+                } catch (Exception e) {
+                    logger.error("连接配置异常", e);
+                    logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
+                }
+            }));
         }
     }
 }

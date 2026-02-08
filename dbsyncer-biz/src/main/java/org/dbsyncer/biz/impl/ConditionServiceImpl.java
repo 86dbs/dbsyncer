@@ -5,13 +5,15 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.vo.ConditionVO;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.util.List;
 
 /**

@@ -57,7 +57,7 @@ public interface Database {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return;
         }
-        List<String> pks = primaryKeys.stream().map(name -> buildWithQuotation(name) + "=?").collect(Collectors.toList());
+        List<String> pks = primaryKeys.stream().map(name->buildWithQuotation(name) + "=?").collect(Collectors.toList());
         sql.append(StringUtil.join(pks, " AND "));
     }
 

@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public final class ElasticsearchBooleanType extends BooleanType {
 
     private enum TypeEnum {
+
         BOOLEAN("boolean");
 
         private final String value;

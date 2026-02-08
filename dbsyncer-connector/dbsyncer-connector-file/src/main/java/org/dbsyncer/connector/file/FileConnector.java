@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.connector.file;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -30,6 +28,10 @@ import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -112,7 +114,7 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     @Override
     public List<MetaInfo> getMetaInfo(FileConnectorInstance connectorInstance, ConnectorServiceContext context) {
         List<MetaInfo> metaInfos = new ArrayList<>();
-        for (Table table : context.getTablePatterns()){
+        for (Table table : context.getTablePatterns()) {
             MetaInfo metaInfo = new MetaInfo();
             metaInfo.setTable(table.getName());
             metaInfo.setTableType(getExtendedTableType().getCode());
@@ -191,9 +193,9 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             final String separator = command.get(FILE_SEPARATOR);
             final String filePath = command.get(FILE_PATH);
             output = new FileOutputStream(filePath, true);
-            List<String> lines = data.stream().map(row -> {
+            List<String> lines = data.stream().map(row-> {
                 List<String> array = new ArrayList<>();
-                context.getTargetFields().forEach(field -> {
+                context.getTargetFields().forEach(field-> {
                     Object o = row.get(field.getName());
                     array.add(null != o ? String.valueOf(o) : "");
                 });

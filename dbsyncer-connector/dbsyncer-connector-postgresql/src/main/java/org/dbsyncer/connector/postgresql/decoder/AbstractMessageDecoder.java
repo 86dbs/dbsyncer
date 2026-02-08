@@ -3,9 +3,10 @@
  */
 package org.dbsyncer.connector.postgresql.decoder;
 
-import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.connector.postgresql.column.PgColumnValue;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+
 import org.postgresql.replication.LogSequenceNumber;
 import org.postgresql.util.PGmoney;
 
@@ -91,7 +92,8 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
         }
 
         switch (typeName) {
-            // include all types from https://www.postgresql.org/docs/current/static/datatype.html#DATATYPE-TABLE
+            // include all types from
+            // https://www.postgresql.org/docs/current/static/datatype.html#DATATYPE-TABLE
             case "boolean":
             case "bool":
                 return value.asBoolean();
@@ -159,8 +161,10 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
                 return value.asByteArray();
 
             // these are all PG-specific types and we use the JDBC representations
-            // note that, with the exception of point, no converters for these types are implemented yet,
-            // i.e. those values won't actually be propagated to the outbound message until that's the case
+            // note that, with the exception of point, no converters for these types are implemented
+            // yet,
+            // i.e. those values won't actually be propagated to the outbound message until that's
+            // the case
             case "box":
                 return value.asBox();
             case "circle":
@@ -214,6 +218,5 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
             default:
                 return null;
         }
-
     }
 }

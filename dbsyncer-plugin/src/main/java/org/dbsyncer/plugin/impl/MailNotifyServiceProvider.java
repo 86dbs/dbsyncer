@@ -1,16 +1,20 @@
 package org.dbsyncer.plugin.impl;
 
-import com.sun.mail.util.MailSSLSocketFactory;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.plugin.model.NotifyMessage;
 import org.dbsyncer.plugin.NotifyService;
+import org.dbsyncer.plugin.model.NotifyMessage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+
+import com.sun.mail.util.MailSSLSocketFactory;
+
+import com.sun.mail.util.MailSSLSocketFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -21,6 +25,7 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+
 import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Properties;
@@ -71,6 +76,7 @@ public final class MailNotifyServiceProvider implements NotifyService {
             props.put("mail.smtp.ssl.socketFactory", sf);
             // 构建授权信息，用于进行SMTP身份验证
             session = Session.getInstance(props, new Authenticator() {
+
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication(username, password);
@@ -117,16 +123,8 @@ public final class MailNotifyServiceProvider implements NotifyService {
     }
 
     private String createTemplate(String appName, String content) {
-        String temp = "<!DOCTYPE html>\n" +
-                "<html lang=\"en\">\n" +
-                "<meta charset=\"UTF-8\">\n" +
-                "<title>${appName}通知</title>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "${content}\n" +
-                "<p><a href=\"http://gitee.com/ghi/dbsyncer\">访问项目</a></p>\n" +
-                "</body>\n" +
-                "</html>";
+        String temp = "<!DOCTYPE html>\n" + "<html lang=\"en\">\n" + "<meta charset=\"UTF-8\">\n" + "<title>${appName}通知</title>\n" + "</head>\n" + "<body>\n" + "${content}\n"
+                + "<p><a href=\"http://gitee.com/ghi/dbsyncer\">访问项目</a></p>\n" + "</body>\n" + "</html>";
         String replace = StringUtil.replace(temp, "${appName}", appName);
         replace = StringUtil.replace(replace, "${content}", content);
         return replace;

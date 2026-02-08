@@ -6,6 +6,7 @@ package org.dbsyncer.plugin.impl;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.PluginService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -28,8 +29,8 @@ public final class DemoPluginServiceProvider implements PluginService {
     @Override
     public void convert(PluginContext context) {
         context.setTerminated(true);
-        logger.info("插件正在处理{}，数据源表:{}，目标源表:{}，事件:{}，条数:{}", context.getModelEnum().getName(), context.getSourceTableName(), context.getTargetTableName(),
-                context.getEvent(), context.getTargetList().size());
+        logger.info("插件正在处理{}，数据源表:{}，目标源表:{}，事件:{}，条数:{}", context.getModelEnum().getName(), context.getSourceTableName(), context.getTargetTableName(), context.getEvent(), context.getTargetList()
+                .size());
     }
 
     @Override

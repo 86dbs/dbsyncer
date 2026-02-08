@@ -29,27 +29,15 @@ import java.util.stream.Stream;
  * @Date 2026-01-11 22:18
  */
 public final class KafkaSchemaResolver extends AbstractSchemaResolver {
+
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(
-                new KafkaStringType(),
-                new KafkaIntType(),
-                new KafkaShortType(),
-                new KafkaLongType(),
-                new KafkaDecimalType(),
-                new KafkaFloatType(),
-                new KafkaDoubleType(),
-                new KafkaDateType(),
-                new KafkaTimestampType(),
-                new KafkaTimeType(),
-                new KafkaBooleanType(),
-                new KafkaBytesType(),
-                new KafkaByteType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
-            if (mapping.containsKey(typeName)) {
-                throw new KafkaException("Duplicate type name: " + typeName);
-            }
-            mapping.put(typeName, t);
-        }));
+        Stream.of(new KafkaStringType(), new KafkaIntType(), new KafkaShortType(), new KafkaLongType(), new KafkaDecimalType(), new KafkaFloatType(), new KafkaDoubleType(), new KafkaDateType(), new KafkaTimestampType(), new KafkaTimeType(), new KafkaBooleanType(), new KafkaBytesType(), new KafkaByteType())
+                .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
+                    if (mapping.containsKey(typeName)) {
+                        throw new KafkaException("Duplicate type name: " + typeName);
+                    }
+                    mapping.put(typeName, t);
+                }));
     }
 }

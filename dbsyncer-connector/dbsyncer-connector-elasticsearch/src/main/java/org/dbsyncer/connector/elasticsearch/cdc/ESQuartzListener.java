@@ -13,6 +13,7 @@ import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.QuartzFilter;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Point;
+
 import org.elasticsearch.ElasticsearchException;
 
 import java.util.ArrayList;

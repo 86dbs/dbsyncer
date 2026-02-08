@@ -2,6 +2,7 @@ import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.filter.impl.StringFilter;
+
 import org.junit.Test;
 
 public class PickerTest {

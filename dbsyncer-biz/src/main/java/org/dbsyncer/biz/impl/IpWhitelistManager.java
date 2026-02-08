@@ -5,6 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -206,10 +207,7 @@ public class IpWhitelistManager {
         }
 
         // 检查常见的localhost地址
-        return "127.0.0.1".equals(ip) ||
-               "0:0:0:0:0:0:0:1".equals(ip) ||
-               "::1".equals(ip) ||
-               "localhost".equalsIgnoreCase(ip);
+        return "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip) || "localhost".equalsIgnoreCase(ip);
     }
 
 }

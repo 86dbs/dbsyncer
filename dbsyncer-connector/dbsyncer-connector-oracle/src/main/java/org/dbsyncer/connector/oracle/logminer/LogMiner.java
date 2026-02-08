@@ -5,6 +5,7 @@ package org.dbsyncer.connector.oracle.logminer;
 
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.sdk.util.DatabaseUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,15 +241,13 @@ public class LogMiner {
             }
 
             // DML
-            if (operationCode == LogMinerHelper.LOG_MINER_OC_INSERT
-                    || operationCode == LogMinerHelper.LOG_MINER_OC_DELETE
-                    || operationCode == LogMinerHelper.LOG_MINER_OC_UPDATE) {
+            if (operationCode == LogMinerHelper.LOG_MINER_OC_INSERT || operationCode == LogMinerHelper.LOG_MINER_OC_DELETE || operationCode == LogMinerHelper.LOG_MINER_OC_UPDATE) {
                 // 内部维护 TransactionalBuffer，将每条DML注册到Buffer中
                 // 根据事务提交或者回滚情况决定如何处理
                 if (redoSql != null) {
                     final RedoEvent event = new RedoEvent(scn.longValue(), operationCode, redoSql, segOwner, tableName, changeTime, txId);
                     // Transactional Commit Callback
-                    TransactionalBuffer.CommitCallback commitCallback = (smallestScn, commitScn, counter) -> {
+                    TransactionalBuffer.CommitCallback commitCallback = (smallestScn, commitScn, counter)-> {
                         if (smallestScn == null || scn.compareTo(smallestScn) < 0) {
                             // 当前SCN 事务已经提交 并且 小于事务缓冲区中所有的开始SCN，所以可以更新offsetScn
                             startScn = scn.longValue();
@@ -284,8 +283,7 @@ public class LogMiner {
             // 只有在连续大量空查询时才降低 fetchSize
             if (consecutiveEmptyQueries > 20 && currentFetchSize > minFetchSize) {
                 currentFetchSize = Math.max(minFetchSize, (int) (currentFetchSize * 0.8));
-                logger.debug("Reduce fetchSize to {} after {} consecutive empty queries",
-                        currentFetchSize, consecutiveEmptyQueries);
+                logger.debug("Reduce fetchSize to {} after {} consecutive empty queries", currentFetchSize, consecutiveEmptyQueries);
             }
         } else {
             consecutiveEmptyQueries = 0;
@@ -295,8 +293,7 @@ public class LogMiner {
                 int newSize = Math.min(maxFetchSize, currentFetchSize * 2);
                 if (newSize != currentFetchSize) {
                     currentFetchSize = newSize;
-                    logger.info("Increase fetchSize to {} (utilization: {}%)",
-                            currentFetchSize, (lastQueryRows * 100 / currentFetchSize));
+                    logger.info("Increase fetchSize to {} (utilization: {}%)", currentFetchSize, (lastQueryRows * 100 / currentFetchSize));
                 }
             }
             // 移除了过早降低的逻辑，保持稳定的 fetchSize
@@ -314,16 +311,14 @@ public class LogMiner {
             long newRange = Math.min(MAX_SCN_RANGE, currentScnRange * 2);
             if (newRange != currentScnRange) {
                 currentScnRange = newRange;
-                logger.info("Increase SCN range to {} due to large backlog: {}",
-                        currentScnRange, backlog);
+                logger.info("Increase SCN range to {} due to large backlog: {}", currentScnRange, backlog);
             }
         } else if (backlog < MAX_SCN_RANGE && currentScnRange > MIN_SCN_RANGE) {
             // 积压不多，可以降低范围提高实时性
             long newRange = Math.max(MIN_SCN_RANGE, currentScnRange / 2);
             if (newRange != currentScnRange) {
                 currentScnRange = newRange;
-                logger.info("Decrease SCN range to {} (backlog: {})",
-                        currentScnRange, backlog);
+                logger.info("Decrease SCN range to {} (backlog: {})", currentScnRange, backlog);
             }
         }
 
@@ -333,8 +328,7 @@ public class LogMiner {
             long newRange = Math.max(MIN_SCN_RANGE, (long) (currentScnRange * 0.8));
             if (newRange != currentScnRange) {
                 currentScnRange = newRange;
-                logger.warn("Decrease SCN range to {} due to slow query ({}ms)",
-                        currentScnRange, queryDuration);
+                logger.warn("Decrease SCN range to {} due to slow query ({}ms)", currentScnRange, queryDuration);
             }
         }
     }
@@ -379,23 +373,18 @@ public class LogMiner {
         }
 
         long now = System.currentTimeMillis();
-        if (now - lastStatsTime > 60000) {  // 每分钟输出一次
+        if (now - lastStatsTime > 60000) { // 每分钟输出一次
             long avgRows = totalQueriesCount > 0 ? totalRowsProcessed / totalQueriesCount : 0;
             long emptyRate = totalQueriesCount > 0 ? totalEmptyQueries * 100 / totalQueriesCount : 0;
             long backlog = currentScn - startScn;
 
             logger.info("=== LogMiner Performance Stats (1min) ===");
-            logger.info("Queries: {}, Rows: {}, Empty: {}",
-                    totalQueriesCount, totalRowsProcessed, totalEmptyQueries);
+            logger.info("Queries: {}, Rows: {}, Empty: {}", totalQueriesCount, totalRowsProcessed, totalEmptyQueries);
             logger.info("Avg rows/query: {}, Empty rate: {}%", avgRows, emptyRate);
-            logger.info("Current fetchSize: {}, scnRange: {}, sleep: {}ms",
-                    currentFetchSize, currentScnRange, currentSleepMillis);
-            logger.info("SCN backlog: {}, processing speed: {}/min",
-                    backlog, totalQueriesCount > 0 ? (totalRowsProcessed * 60 / totalQueriesCount) : 0);
-            logger.info("Start SCN: {}, Current SCN: {}, Committed SCN: {}",
-                    startScn, currentScn, committedScn);
-            logger.info("Buffer size: {}, Last query: {}ms",
-                    transactionalBuffer.isEmpty() ? 0 : "non-zero", queryDuration);
+            logger.info("Current fetchSize: {}, scnRange: {}, sleep: {}ms", currentFetchSize, currentScnRange, currentSleepMillis);
+            logger.info("SCN backlog: {}, processing speed: {}/min", backlog, totalQueriesCount > 0 ? (totalRowsProcessed * 60 / totalQueriesCount) : 0);
+            logger.info("Start SCN: {}, Current SCN: {}, Committed SCN: {}", startScn, currentScn, committedScn);
+            logger.info("Buffer size: {}, Last query: {}ms", transactionalBuffer.isEmpty() ? 0 : "non-zero", queryDuration);
             logger.info("=========================================");
 
             // 重置统计（滚动窗口）
@@ -508,12 +497,7 @@ public class LogMiner {
 
     private PreparedStatement createStatement() throws SQLException {
         String minerViewQuery = LogMinerHelper.logMinerViewQuery(schema, username);
-        PreparedStatement statement = connection.prepareStatement(
-                minerViewQuery,
-                ResultSet.TYPE_FORWARD_ONLY,
-                ResultSet.CONCUR_READ_ONLY,
-                ResultSet.HOLD_CURSORS_OVER_COMMIT
-        );
+        PreparedStatement statement = connection.prepareStatement(minerViewQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
         statement.setFetchDirection(ResultSet.FETCH_FORWARD);
         statement.setQueryTimeout(queryTimeout);
         return statement;
@@ -545,8 +529,7 @@ public class LogMiner {
                     // 检测积压情况
                     long backlog = currentScn - startScn;
                     if (backlog > currentScnRange * 2) {
-                        logger.warn("SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE",
-                                backlog, currentScnRange);
+                        logger.warn("SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE", backlog, currentScnRange);
                     }
 
                     // 3. 检查 Redo Log 切换

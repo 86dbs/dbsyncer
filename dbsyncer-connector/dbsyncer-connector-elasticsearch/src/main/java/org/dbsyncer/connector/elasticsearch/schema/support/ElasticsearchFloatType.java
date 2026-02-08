@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 public final class ElasticsearchFloatType extends FloatType {
 
     private enum TypeEnum {
-        FLOAT("float"),
-        HALF_FLOAT("half_float");
+
+        FLOAT("float"), HALF_FLOAT("half_float");
 
         private final String value;
 

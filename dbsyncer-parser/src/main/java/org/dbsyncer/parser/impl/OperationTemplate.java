@@ -17,12 +17,14 @@ import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,14 +60,12 @@ public final class OperationTemplate {
     public <T> List<T> queryAll(QueryConfig<T> query) {
         String groupId = getGroupId(query.getConfigModel(), query.getGroupStrategyEnum());
         List<T> list = new ArrayList<>();
-        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
             Group group = (Group) v;
-            group.getIndex().forEach(id ->
-                cacheService.getCache().computeIfPresent(id, (x,y) -> {
-                    list.add((T) y);
-                    return y;
-                })
-            );
+            group.getIndex().forEach(id->cacheService.getCache().computeIfPresent(id, (x, y)-> {
+                list.add((T) y);
+                return y;
+            }));
             return group;
         });
         return list;
@@ -75,7 +75,7 @@ public final class OperationTemplate {
         ConfigModel model = query.getConfigModel();
         String groupId = getGroupId(model, query.getGroupStrategyEnum());
         AtomicInteger count = new AtomicInteger();
-        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
             Group group = (Group) v;
             count.set(group.size());
             return group;
@@ -114,7 +114,7 @@ public final class OperationTemplate {
 
         // 2、分组
         String groupId = getGroupId(model, strategy);
-        cacheService.getCache().compute(groupId, (k, v) -> {
+        cacheService.getCache().compute(groupId, (k, v)-> {
             Group group = (Group) v;
             if (group == null) {
                 group = new Group();
@@ -132,7 +132,7 @@ public final class OperationTemplate {
         // 删除分组
         ConfigModel model = cacheService.get(id, ConfigModel.class);
         String groupId = getGroupId(model, config.getGroupStrategyEnum());
-        cacheService.getCache().computeIfPresent(groupId, (k, v) -> {
+        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
             Group group = (Group) v;
             group.remove(id);
             return group.isEmpty() ? null : group;

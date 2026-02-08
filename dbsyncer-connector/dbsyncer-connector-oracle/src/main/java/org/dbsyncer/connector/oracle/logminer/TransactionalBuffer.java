@@ -20,6 +20,7 @@ import java.util.Set;
  * @Date 2023-12-09 20:26
  */
 public class TransactionalBuffer {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Map<String, Transaction> transactions;
     private BigInteger lastCommittedScn;
@@ -30,6 +31,7 @@ public class TransactionalBuffer {
     }
 
     public interface CommitCallback {
+
         void execute(BigInteger smallestScn, BigInteger commitScn, int callbackNumber) throws InterruptedException;
     }
 
@@ -39,11 +41,7 @@ public class TransactionalBuffer {
 
     private BigInteger calculateSmallestScn() {
         return transactions.isEmpty() ? null
-                : transactions.values()
-                .stream()
-                .map(transaction -> transaction.firstScn)
-                .min(BigInteger::compareTo)
-                .orElseThrow(() -> new RuntimeException("Cannot calculate smallest SCN"));
+                : transactions.values().stream().map(transaction->transaction.firstScn).min(BigInteger::compareTo).orElseThrow(()->new RuntimeException("Cannot calculate smallest SCN"));
     }
 
     /**
@@ -56,7 +54,7 @@ public class TransactionalBuffer {
     }
 
     public void registerCommitCallback(String txId, BigInteger scn, String operationId, CommitCallback callback) {
-        transactions.compute(txId, (k, transaction) -> {
+        transactions.compute(txId, (k, transaction)-> {
             if (transaction == null) {
                 transaction = new Transaction(scn);
             }
@@ -78,8 +76,7 @@ public class TransactionalBuffer {
             // 只有当TransactionalBuffer中没有该事务时，才检查是否已提交过
             // 如果committedScn或lastCommittedScn大于当前commitScn，说明该事务可能已经处理过（重复查询导致）
             if (committedScn > commitScn.longValue() || lastCommittedScn.longValue() > commitScn.longValue()) {
-                logger.info("txId {} not found in buffer and already committed (committedScn={}, lastCommittedScn={}, commitScn={}), ignore.",
-                        txId, committedScn, lastCommittedScn, commitScn);
+                logger.info("txId {} not found in buffer and already committed (committedScn={}, lastCommittedScn={}, commitScn={}), ignore.", txId, committedScn, lastCommittedScn, commitScn);
                 return false;
             }
             // 没有该事务的DML记录，可能是以下正常情况：
@@ -109,6 +106,7 @@ public class TransactionalBuffer {
     }
 
     private static final class Transaction {
+
         private final BigInteger firstScn;
         private BigInteger lastScn;
         private final List<CommitCallback> commitCallbacks;
@@ -123,10 +121,7 @@ public class TransactionalBuffer {
 
         @Override
         public String toString() {
-            return "Transaction{" +
-                    "firstScn=" + firstScn +
-                    ", lastScn=" + lastScn +
-                    '}';
+            return "Transaction{" + "firstScn=" + firstScn + ", lastScn=" + lastScn + '}';
         }
     }
 }

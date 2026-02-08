@@ -12,6 +12,7 @@ import java.util.List;
  * @Date 2025-01-26 21:36
  */
 public final class Group {
+
     private final List<String> index = new ArrayList<>();
 
     public synchronized void remove(String e) {

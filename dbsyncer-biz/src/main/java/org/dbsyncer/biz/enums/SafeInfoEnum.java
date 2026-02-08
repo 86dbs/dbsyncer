@@ -35,5 +35,4 @@ public enum SafeInfoEnum {
     public String getCode() {
         return code;
     }
-
 }

@@ -17,10 +17,12 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -112,11 +114,7 @@ public class SystemConfigChecker extends AbstractChecker {
         config.setAllowLocalhost(StringUtil.isNotBlank(params.get("ipWhitelistAllowLocalhost")));
         String ipWhitelist = params.get("ipWhitelist");
         if (StringUtil.isNotBlank(ipWhitelist)) {
-            List<String> list = Arrays.stream(ipWhitelist.split("[,\n\r]+"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .distinct()
-                    .collect(Collectors.toList());
+            List<String> list = Arrays.stream(ipWhitelist.split("[,\n\r]+")).map(String::trim).filter(s->!s.isEmpty()).distinct().collect(Collectors.toList());
             config.setWhitelist(list);
         }
         systemConfig.setIpWhitelistConfig(config);

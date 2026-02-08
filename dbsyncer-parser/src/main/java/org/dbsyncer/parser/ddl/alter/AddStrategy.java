@@ -3,11 +3,14 @@
  */
 package org.dbsyncer.parser.ddl.alter;
 
-import net.sf.jsqlparser.statement.alter.AlterExpression;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ddl.AlterStrategy;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.enums.DDLOperationEnum;
+
+import net.sf.jsqlparser.statement.alter.AlterExpression;
+
+import net.sf.jsqlparser.statement.alter.AlterExpression;
 
 /**
  * 新增字段

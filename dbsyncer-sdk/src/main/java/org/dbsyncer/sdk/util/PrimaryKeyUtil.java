@@ -67,7 +67,7 @@ public abstract class PrimaryKeyUtil {
         List<Field> list = new ArrayList<>();
         if (!CollectionUtils.isEmpty(fields)) {
             Set<String> mark = new HashSet<>();
-            fields.forEach(f -> {
+            fields.forEach(f-> {
                 if (f.isPk() && !mark.contains(f.getName())) {
                     list.add(f);
                     mark.add(f.getName());
@@ -97,7 +97,7 @@ public abstract class PrimaryKeyUtil {
         }
 
         Map<String, Integer> typeAliases = new HashMap<>();
-        fields.forEach(field -> {
+        fields.forEach(field-> {
             if (field.isPk()) {
                 typeAliases.put(field.getName(), field.getType());
             }
@@ -128,15 +128,12 @@ public abstract class PrimaryKeyUtil {
      */
     private static boolean isSupportedCursorType(Integer type) {
         // 数字类型（支持直接比较）
-        if (type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER 
-                || type == Types.TINYINT || type == Types.SMALLINT
-                || type == Types.DECIMAL || type == Types.FLOAT || type == Types.DOUBLE 
-                || type == Types.REAL) {
+        if (type == Types.NUMERIC || type == Types.BIGINT || type == Types.INTEGER || type == Types.TINYINT || type == Types.SMALLINT || type == Types.DECIMAL || type == Types.FLOAT
+                || type == Types.DOUBLE || type == Types.REAL) {
             return true;
         }
         // 字符类型（支持字典序比较）
-        if (type == Types.VARCHAR || type == Types.CHAR || type == Types.NCHAR 
-                || type == Types.NVARCHAR || type == Types.LONGVARCHAR) {
+        if (type == Types.VARCHAR || type == Types.CHAR || type == Types.NCHAR || type == Types.NVARCHAR || type == Types.LONGVARCHAR) {
             return true;
         }
         // 日期时间类型（支持时间顺序比较）
@@ -161,7 +158,7 @@ public abstract class PrimaryKeyUtil {
         if (last == null || last.isEmpty()) {
             return null;
         }
-        
+
         Object[] cursors = new Object[primaryKeys.size()];
         int i = 0;
         for (String pk : primaryKeys) {

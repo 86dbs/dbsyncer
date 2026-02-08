@@ -1,6 +1,5 @@
 package org.dbsyncer.parser.model;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -10,6 +9,9 @@ import org.dbsyncer.sdk.filter.CompareFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+
+import org.apache.commons.lang3.ObjectUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,7 @@ public class Picker {
 
     public Picker(TableGroup tableGroup) {
         if (!CollectionUtils.isEmpty(tableGroup.getFieldMapping())) {
-            tableGroup.getFieldMapping().forEach(m -> {
+            tableGroup.getFieldMapping().forEach(m-> {
                 sourceFields.add(m.getSource());
                 targetFields.add(m.getTarget());
             });
@@ -48,10 +50,10 @@ public class Picker {
         this.tFieldSize = targetFields.size();
         // 解析过滤条件
         List<Filter> filter = tableGroup.getFilter();
-        enabledFilter = !CollectionUtils.isEmpty(filter) && filter.stream().noneMatch(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName()));
+        enabledFilter = !CollectionUtils.isEmpty(filter) && filter.stream().noneMatch(f->StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName()));
         if (enabledFilter) {
-            add = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
-            or = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
+            add = filter.stream().filter(f->StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
+            or = filter.stream().filter(f->StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }
     }
 
@@ -103,7 +105,7 @@ public class Picker {
             exchange(tFieldSize, sFieldSize, targetFields, sourceFields, target, source);
         }
 
-        return getFields(sourceColumn).stream().map(field -> source.get(field.getName())).collect(Collectors.toList());
+        return getFields(sourceColumn).stream().map(field->source.get(field.getName())).collect(Collectors.toList());
     }
 
     public List<Field> getSourceFields() {
@@ -115,7 +117,7 @@ public class Picker {
     }
 
     public Map<String, Field> getTargetFieldMap() {
-        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f->f, (k1, k2)->k1));
     }
 
     private boolean filter(Map<String, Object> row) {
@@ -178,7 +180,7 @@ public class Picker {
             return compareFilter.compare(String.valueOf(comparedDate.getTime()), String.valueOf(filterDate.getTime()));
         }
 
-        String value = ObjectUtils.toString(comparedValue, () -> StringUtil.EMPTY);
+        String value = ObjectUtils.toString(comparedValue, ()->StringUtil.EMPTY);
         return compareFilter.compare(value, filter.getValue());
     }
 
@@ -213,7 +215,7 @@ public class Picker {
     private List<Field> getFields(List<Field> list) {
         List<Field> fields = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        list.forEach(f -> {
+        list.forEach(f-> {
             if (f != null && !keys.contains(f.getName())) {
                 fields.add(f);
                 keys.add(f.getName());

@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
  * @Date 2023-09-18 23:00
  */
 public final class DDLChangedEvent extends CommonChangedEvent {
+
     private final String sql;
 
     public DDLChangedEvent(String sourceTableName, String event, String sql, String nextFileName, Object position) {

@@ -93,5 +93,4 @@ public class RestResult implements Serializable {
     public String toString() {
         return "RestResult [success=" + success + ", data=" + data + ", message=" + message + ", status=" + status + "]";
     }
-
 }

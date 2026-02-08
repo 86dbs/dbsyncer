@@ -29,27 +29,15 @@ import java.util.stream.Stream;
  * @Date 2026-01-13 00:08
  */
 public final class FileSchemaResolver extends AbstractSchemaResolver {
+
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(
-                new FileStringType(),
-                new FileIntType(),
-                new FileShortType(),
-                new FileLongType(),
-                new FileDecimalType(),
-                new FileFloatType(),
-                new FileDoubleType(),
-                new FileDateType(),
-                new FileTimestampType(),
-                new FileTimeType(),
-                new FileBooleanType(),
-                new FileBytesType(),
-                new FileByteType()
-        ).forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
-            if (mapping.containsKey(typeName)) {
-                throw new FileException("Duplicate type name: " + typeName);
-            }
-            mapping.put(typeName, t);
-        }));
+        Stream.of(new FileStringType(), new FileIntType(), new FileShortType(), new FileLongType(), new FileDecimalType(), new FileFloatType(), new FileDoubleType(), new FileDateType(), new FileTimestampType(), new FileTimeType(), new FileBooleanType(), new FileBytesType(), new FileByteType())
+                .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
+                    if (mapping.containsKey(typeName)) {
+                        throw new FileException("Duplicate type name: " + typeName);
+                    }
+                    mapping.put(typeName, t);
+                }));
     }
 }

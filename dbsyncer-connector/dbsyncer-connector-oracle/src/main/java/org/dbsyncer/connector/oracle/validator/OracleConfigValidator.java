@@ -13,5 +13,4 @@ import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
  * @Date 2020-01-08 15:17
  */
 public class OracleConfigValidator extends AbstractDataBaseConfigValidator {
-
 }

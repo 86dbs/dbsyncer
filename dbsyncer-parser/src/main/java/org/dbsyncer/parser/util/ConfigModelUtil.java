@@ -24,5 +24,4 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(model));
         return params;
     }
-
 }
