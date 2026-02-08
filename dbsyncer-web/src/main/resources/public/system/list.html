@@ -192,7 +192,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="form-item">
+                <div class="form-item ip-whitelist-detail">
                     <label class="form-label">允许本地访问<i class="fa fa-question-circle" title="127.0.0.1、localhost等"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
@@ -205,7 +205,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="form-item">
+                <div class="form-item ip-whitelist-detail">
                     <label class="form-label">IP白名单</label>
                     <div class="form-control-area">
                         <textarea name="ipWhitelist" class="form-control" rows="5" placeholder="每行一个，支持：单个IP、CIDR(192.168.1.0/24)、范围(192.168.1.1-192.168.1.100)">[[${config?.ipWhitelistText}]]</textarea>
@@ -323,11 +323,22 @@
             bindCopyBtn(copyPrivateKeyBtn, rsaPrivateKey, "RSA私钥");
         }
 
+        const ipWhitelistDetail = $(".ip-whitelist-detail");
+        function toggleIpWhitelistDetail(checked) {
+            if (checked) {
+                ipWhitelistDetail.show();
+            } else {
+                ipWhitelistDetail.hide();
+            }
+        }
+        let ipWhitelistSwitch = initSwitch($("input[name='ipWhitelistEnabled']"), toggleIpWhitelistDetail);
+
         function toggleOpenApiItem(checked) {
             rsaKeyLength.prop('disabled', !checked);
             generateRSABtn.prop('disabled', !checked);
             if (checked) {
                 openApiItems.show();
+                toggleIpWhitelistDetail(ipWhitelistSwitch.isChecked());
                 // 显示区域后，延迟绑定事件，确保 DOM 元素已渲染
                 setTimeout(function() {
                     bindCopyButtons();
@@ -352,6 +363,8 @@
             }, 100);
         }
 
+        // 初始根据 IP白名单 开关显示/隐藏「允许本地访问」和「IP白名单」输入框
+        toggleIpWhitelistDetail(ipWhitelistSwitch.isChecked());
     })
 </script>
 </html>
