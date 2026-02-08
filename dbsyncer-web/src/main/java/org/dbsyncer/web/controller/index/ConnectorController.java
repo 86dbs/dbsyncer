@@ -98,6 +98,17 @@ public class ConnectorController extends BaseController {
         }
     }
 
+    @GetMapping("/get")
+    @ResponseBody
+    public RestResult get(HttpServletRequest request, String id) {
+        try {
+            return RestResult.restSuccess(connectorService.getConnector(id));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(HttpServletRequest request, @RequestParam(value = "id") String id) {

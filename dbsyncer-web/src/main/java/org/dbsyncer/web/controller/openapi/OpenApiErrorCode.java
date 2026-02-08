@@ -26,6 +26,9 @@ public final class OpenApiErrorCode {
     /** 资源或能力未开放（如未开放 API） */
     public static final int NOT_FOUND = 404;
 
+    /** 请求方法不允许（如用 POST 请求仅支持 GET 的接口） */
+    public static final int METHOD_NOT_ALLOWED = 405;
+
     /** 服务内部错误（如登录/刷新/处理异常） */
     public static final int INTERNAL_ERROR = 500;
 

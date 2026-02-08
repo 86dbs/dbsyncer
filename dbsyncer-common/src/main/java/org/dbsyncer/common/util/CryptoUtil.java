@@ -30,7 +30,7 @@ import java.util.Map;
  * @author AE86
  * @version 2.0.0
  */
-public class CryptoUtil {
+public final class CryptoUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(CryptoUtil.class);
 
