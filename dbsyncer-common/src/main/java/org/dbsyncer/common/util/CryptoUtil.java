@@ -1,11 +1,8 @@
 package org.dbsyncer.common.util;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson2.JSONObject;
-
-import com.alibaba.fastjson2.JSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -13,7 +10,6 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
@@ -44,15 +40,13 @@ public final class CryptoUtil {
     /**
      * 生成AES密钥对
      */
-    public static Map<String, String> generateAESKeyPair() {
+    public static String generateAESKeyPair() {
         try {
             KeyGenerator keyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM);
             keyGenerator.init(AES_KEY_SIZE);
             SecretKey secretKey = keyGenerator.generateKey();
 
-            Map<String, String> keyMap = new HashMap<>();
-            keyMap.put("aesKey", Base64.getEncoder().encodeToString(secretKey.getEncoded()));
-            return keyMap;
+            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
         } catch (Exception e) {
             logger.error("生成AES密钥失败", e);
             throw new RuntimeException("生成AES密钥失败", e);
@@ -145,8 +139,7 @@ public final class CryptoUtil {
     public static String buildEncryptedRequest(Object data, String rsaPublicKey, String rsaPrivateKey, String hmacSecret, boolean isPublicNetwork) {
         try {
             // 1. 生成临时AES密钥
-            Map<String, String> aesKeyPair = generateAESKeyPair();
-            String aesKey = aesKeyPair.get("aesKey");
+            String aesKey = generateAESKeyPair();
 
             // 2. 序列化数据
             String jsonData = JsonUtil.objToJson(data);

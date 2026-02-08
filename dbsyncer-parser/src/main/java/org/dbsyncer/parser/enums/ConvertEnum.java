@@ -3,6 +3,26 @@ package org.dbsyncer.parser.enums;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.convert.Handler;
+import org.dbsyncer.parser.convert.handler.AppendHandler;
+import org.dbsyncer.parser.convert.handler.BytesToStringHandler;
+import org.dbsyncer.parser.convert.handler.ClearHandler;
+import org.dbsyncer.parser.convert.handler.DateHandler;
+import org.dbsyncer.parser.convert.handler.DefaultHandler;
+import org.dbsyncer.parser.convert.handler.LongToTimestampHandler;
+import org.dbsyncer.parser.convert.handler.NumberToStringHandler;
+import org.dbsyncer.parser.convert.handler.PrependHandler;
+import org.dbsyncer.parser.convert.handler.RemStrFirstHandler;
+import org.dbsyncer.parser.convert.handler.RemStrLastHandler;
+import org.dbsyncer.parser.convert.handler.ReplaceHandler;
+import org.dbsyncer.parser.convert.handler.StringToFormatDateHandler;
+import org.dbsyncer.parser.convert.handler.StringToTimestampHandler;
+import org.dbsyncer.parser.convert.handler.SubStrFirstHandler;
+import org.dbsyncer.parser.convert.handler.SubStrLastHandler;
+import org.dbsyncer.parser.convert.handler.TimestampHandler;
+import org.dbsyncer.parser.convert.handler.TimestampToChineseStandardTimeHandler;
+import org.dbsyncer.parser.convert.handler.TimestampToDateHandler;
+import org.dbsyncer.parser.convert.handler.TimestampToLongHandler;
+import org.dbsyncer.parser.convert.handler.UUIDHandler;
 
 /**
  * 支持的转换类型

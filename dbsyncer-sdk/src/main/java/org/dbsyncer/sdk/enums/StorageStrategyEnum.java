@@ -5,6 +5,11 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
+import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
+import org.dbsyncer.sdk.storage.strategy.DataStrategy;
+import org.dbsyncer.sdk.storage.strategy.LogStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskDataVerificationDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
 
 /**
  * 存储策略枚举

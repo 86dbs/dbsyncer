@@ -1,5 +1,14 @@
 package org.dbsyncer.storage.util;
 
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import org.apache.lucene.util.BytesRef;

@@ -4,6 +4,18 @@
 package org.dbsyncer.connector.mysql.schema;
 
 import org.dbsyncer.connector.mysql.MySQLException;
+import org.dbsyncer.connector.mysql.schema.support.MySQLByteType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLBytesType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLDateType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLDecimalType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLDoubleType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLFloatType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLIntType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLLongType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLShortType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLStringType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLTimeType;
+import org.dbsyncer.connector.mysql.schema.support.MySQLTimestampType;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -22,13 +34,25 @@ public final class MySQLSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(new MySQLBytesType(), new MySQLByteType(), new MySQLDateType(), new MySQLDecimalType(), new MySQLDoubleType(), new MySQLFloatType(), new MySQLIntType(), new MySQLLongType(), new MySQLShortType(), new MySQLStringType(), new MySQLTimestampType(), new MySQLTimeType())
-                .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
-                    if (mapping.containsKey(typeName)) {
-                        throw new MySQLException("Duplicate type name: " + typeName);
-                    }
-                    mapping.put(typeName, t);
-                }));
+        Stream.of(
+            new MySQLBytesType(),
+            new MySQLByteType(),
+            new MySQLDateType(),
+            new MySQLDecimalType(),
+            new MySQLDoubleType(),
+            new MySQLFloatType(),
+            new MySQLIntType(),
+            new MySQLLongType(),
+            new MySQLShortType(),
+            new MySQLStringType(),
+            new MySQLTimestampType(),
+            new MySQLTimeType())
+        .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
+            if (mapping.containsKey(typeName)) {
+                throw new MySQLException("Duplicate type name: " + typeName);
+            }
+            mapping.put(typeName, t);
+        }));
     }
 
 }

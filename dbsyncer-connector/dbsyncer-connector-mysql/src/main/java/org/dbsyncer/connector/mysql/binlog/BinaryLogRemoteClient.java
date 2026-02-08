@@ -3,6 +3,50 @@
  */
 package org.dbsyncer.connector.mysql.binlog;
 
+import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.GtidEventData;
+import com.github.shyiko.mysql.binlog.event.QueryEventData;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.deserialization.AnnotateRowsEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.ChecksumType;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.EventHeaderV4Deserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.FormatDescriptionEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.GtidEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.IntVarEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.MariadbGtidEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.MariadbGtidListEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.NullEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.PreviousGtidSetDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.QueryEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.RotateEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.RowsQueryEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.TableMapEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.XAPrepareEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.event.deserialization.XidEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.network.Authenticator;
+import com.github.shyiko.mysql.binlog.network.ClientCapabilities;
+import com.github.shyiko.mysql.binlog.network.DefaultSSLSocketFactory;
+import com.github.shyiko.mysql.binlog.network.SSLMode;
+import com.github.shyiko.mysql.binlog.network.SSLSocketFactory;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+import com.github.shyiko.mysql.binlog.network.TLSHostnameVerifier;
+import com.github.shyiko.mysql.binlog.network.protocol.ErrorPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.GreetingPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.Packet;
+import com.github.shyiko.mysql.binlog.network.protocol.PacketChannel;
+import com.github.shyiko.mysql.binlog.network.protocol.ResultSetRowPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.command.Command;
+import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogGtidCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.command.PingCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.command.QueryCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.command.SSLRequestCommand;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.deserializer.DeleteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.ExtDeleteDeserializer;
@@ -13,10 +57,6 @@ import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.shyiko.mysql.binlog.GtidSet;
-import com.github.shyiko.mysql.binlog.MariadbGtidSet;
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import com.github.shyiko.mysql.binlog.GtidSet;
 import com.github.shyiko.mysql.binlog.MariadbGtidSet;
@@ -33,10 +73,18 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.github.shyiko.mysql.binlog.event.EventType.GTID;
 
 public class BinaryLogRemoteClient implements BinaryLogClient {
 
@@ -100,7 +148,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private Boolean isMariaDB;
 
     private static final long MYSQL_VERSION_8_4 = 8400000000L;
-    private final List<BinaryLogRemoteClient.EventListener> eventListeners = new CopyOnWriteArrayList<>();
+    private final List<EventListener> eventListeners = new CopyOnWriteArrayList<>();
     private final List<BinaryLogRemoteClient.LifecycleListener> lifecycleListeners = new CopyOnWriteArrayList<>();
 
     /**
@@ -314,7 +362,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         ensureEventDataDeserializerIfPresent(EventType.ROTATE, RotateEventDataDeserializer.class);
         synchronized (gtidSetAccessLock) {
             if (this.gtidEnabled) {
-                ensureEventDataDeserializerIfPresent(EventType.GTID, GtidEventDataDeserializer.class);
+                ensureEventDataDeserializerIfPresent(GTID, GtidEventDataDeserializer.class);
                 ensureEventDataDeserializerIfPresent(EventType.QUERY, QueryEventDataDeserializer.class);
                 ensureEventDataDeserializerIfPresent(EventType.ANNOTATE_ROWS, AnnotateRowsEventDataDeserializer.class);
                 ensureEventDataDeserializerIfPresent(EventType.MARIADB_GTID, MariadbGtidEventDataDeserializer.class);
@@ -561,8 +609,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             ErrorPacket errorPacket = new ErrorPacket(bytes);
             throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
-        while ((channel.read())[0] != (byte) 0xFE /* eof */) {
-            /* skip */ }
+        while ((channel.read())[0] != (byte) 0xFE /* eof */) { /* skip */ }
         for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */;) {
             resultSet.add(new ResultSetRowPacket(bytes));
         }

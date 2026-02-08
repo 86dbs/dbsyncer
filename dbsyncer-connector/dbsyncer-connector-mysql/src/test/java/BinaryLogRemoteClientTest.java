@@ -1,6 +1,12 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
+import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
 import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
 import org.dbsyncer.sdk.constant.ConnectorConstant;

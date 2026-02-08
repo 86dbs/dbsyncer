@@ -41,17 +41,15 @@ public class CryptoUtilTest {
     @Test
     public void testGenerateAESKey() {
         logger.info("=== 测试生成AES密钥 ===");
-        Map<String, String> keyPair = CryptoUtil.generateAESKeyPair();
-        Assert.assertNotNull("AES密钥不应为空", keyPair);
-        Assert.assertNotNull("AES密钥值不应为空", keyPair.get("aesKey"));
-        logger.info("生成的AES密钥: {}", keyPair.get("aesKey"));
+        String aesKey = CryptoUtil.generateAESKeyPair();
+        Assert.assertNotNull("AES密钥不应为空", aesKey);
+        logger.info("生成的AES密钥: {}", aesKey);
     }
 
     @Test
     public void testEncryptAndDecryptAESKey() {
         logger.info("=== 测试RSA加密/解密AES密钥 ===");
-        Map<String, String> aesKeyPair = CryptoUtil.generateAESKeyPair();
-        String aesKey = aesKeyPair.get("aesKey");
+        String aesKey = CryptoUtil.generateAESKeyPair();
 
         // RSA加密AES密钥
         String encryptedKey = CryptoUtil.encryptAESKey(aesKey, rsaConfig.getPublicKey());
@@ -67,8 +65,7 @@ public class CryptoUtilTest {
     @Test
     public void testEncryptAndDecryptData() {
         logger.info("=== 测试AES加密/解密数据 ===");
-        Map<String, String> aesKeyPair = CryptoUtil.generateAESKeyPair();
-        String aesKey = aesKeyPair.get("aesKey");
+        String aesKey = CryptoUtil.generateAESKeyPair();
 
         // 将testData序列化为JSON字符串
         String jsonData = JsonUtil.objToJson(testData);
@@ -178,8 +175,7 @@ public class CryptoUtilTest {
         }
         String largeDataStr = largeData.toString();
 
-        Map<String, String> aesKeyPair = CryptoUtil.generateAESKeyPair();
-        String aesKey = aesKeyPair.get("aesKey");
+        String aesKey = CryptoUtil.generateAESKeyPair();
 
         long startTime = System.currentTimeMillis();
         Map<String, String> encryptedResult = CryptoUtil.encryptData(largeDataStr, aesKey);

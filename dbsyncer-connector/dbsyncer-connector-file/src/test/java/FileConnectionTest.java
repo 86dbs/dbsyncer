@@ -4,9 +4,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -34,7 +40,7 @@ public class FileConnectionTest {
         }
         latch.await();
         file.close();
-        InputStream fileR = new FileInputStream(f);
+        InputStream fileR = Files.newInputStream(f.toPath());
         List<String> strings = IOUtils.readLines(fileR, Charset.defaultCharset());
         strings.forEach(line->logger.info("{}", line));
         fileR.close();
