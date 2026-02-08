@@ -16,7 +16,7 @@ import java.util.List;
 public class IpWhitelistConfig {
 
     /**
-     * 是否启用IP白名单
+     * 启用IP白名单
      */
     private boolean enabled = false;
 

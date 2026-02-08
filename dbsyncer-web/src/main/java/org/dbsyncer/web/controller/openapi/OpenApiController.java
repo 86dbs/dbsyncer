@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -168,7 +167,7 @@ public class OpenApiController implements InitializingBean {
 
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);
             // 加密返回
-            buildEncryptedRestResult(request, result);
+            encryptRestResult(request, result);
             return result;
         } catch (Exception e) {
             logger.error("OpenAPI adapter 执行失败", e);
@@ -228,30 +227,11 @@ public class OpenApiController implements InitializingBean {
     }
 
     /**
-     * 查看文档接口
-     * GET /openapi/api
-     *
-     * @param request 请求对象
-     * @return Token信息
-     */
-    @GetMapping("/api")
-    public OpenApiResponse<Object> api(HttpServletRequest request) {
-        try {
-            // TODO 实现具体逻辑
-            logger.info("查看文档");
-            return OpenApiResponse.success("查看文档", "success");
-        } catch (Exception e) {
-            logger.error("查看文档失败", e);
-            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "查看文档失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * TODO 单独放一个控制器 同步接口
+     * 同步接口
      * POST /openapi/data/sync
      *
      * @param request 请求对象
-     * @return Token信息
+     * @return 同步结果
      */
     @PostMapping("/data/sync")
     public OpenApiResponse<Object> sync(HttpServletRequest request) {
@@ -346,7 +326,10 @@ public class OpenApiController implements InitializingBean {
         }
     }
 
-    private void buildEncryptedRestResult(HttpServletRequest request, Object result) {
+    /**
+     * 加密请求结果
+     */
+    private void encryptRestResult(HttpServletRequest request, Object result) {
         if (!(result instanceof RestResult)) {
             return;
         }
