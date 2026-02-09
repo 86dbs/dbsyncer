@@ -1,15 +1,15 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.model;
+package org.dbsyncer.common.model;
 
 /**
- * OpenAPI统一请求格式
+ * OpenAPI统一数据模型
  *
  * @author 穿云
  * @version 1.0.0
  */
-public class OpenApiRequest {
+public class OpenApiData {
 
     /**
      * 时间戳

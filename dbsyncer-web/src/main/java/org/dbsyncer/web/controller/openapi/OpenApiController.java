@@ -3,19 +3,23 @@
  */
 package org.dbsyncer.web.controller.openapi;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
+import org.dbsyncer.web.security.TimestampValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -124,49 +128,38 @@ public class OpenApiController implements InitializingBean {
             ServletWebRequest webRequest = new ServletWebRequest(request, response);
             ModelAndViewContainer mavContainer = new ModelAndViewContainer();
             mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
-            // TODO 解密入参
-//            // 5. 解析加密请求（如果是加密接口）
-//            if (isEncryptedEndpoint(requestPath)) {
-//                String requestBody = readRequestBody(request);
-//                if (StringUtil.isBlank(requestBody)) {
-//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "请求体不能为空");
-//                    return false;
-//                }
-//
-//                try {
-//                    // 先解析为OpenApiRequest格式（包含时间戳和nonce）
-//                    OpenApiRequest encryptedRequest = JsonUtil.jsonToObj(requestBody, OpenApiRequest.class);
-//
-//                    // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
-//                    if (encryptedRequest.getTimestamp() != null &&
-//                        StringUtil.isNotBlank(encryptedRequest.getNonce())) {
-//                        if (!TimestampValidator.validate(encryptedRequest.getTimestamp(), encryptedRequest.getNonce())) {
-//                            writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "时间戳或Nonce验证失败");
-//                            return false;
-//                        }
-//                    }
-//
-//                    // 判断是否为公网场景
-//                    boolean isPublicNetwork = isPublicNetwork(request);
-//
-//                    // 解析加密请求（解密数据）
-//                    String decryptedData = rsaManager.decryptedData(systemConfig.getRsaConfig(), requestBody, isPublicNetwork);
-//
-//                    // 将解密后的数据存储到request attribute中，供Controller使用
-//                    request.setAttribute("decryptedData", decryptedData);
-//                } catch (Exception e) {
-//                    logger.error("解析加密请求失败", e);
-//                    writeErrorResponse(response, OpenApiErrorCode.BAD_REQUEST, "解析加密请求失败: " + e.getMessage());
-//                    return false;
-//                }
-//            }
+            // 解密入参
+            String requestBody = readRequestBody(request);
+            Assert.hasText(requestBody, "请求体不能为空");
+            // 先解析为OpenApiRequest格式（包含时间戳和nonce）
+            JSONObject encryptedRequest = JsonUtil.jsonToObj(requestBody, JSONObject.class);
+            // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
+            Long timestamp = encryptedRequest.getLong("timestamp");
+            String nonce = encryptedRequest.getString("nonce");
+            Assert.notNull(timestamp, "Timestamp is empty.");
+            Assert.hasText(nonce, "Nonce is empty.");
+            Assert.isTrue(TimestampValidator.validate(timestamp, nonce), "时间戳或Nonce验证失败");
+
+            // 解析加密请求（解密数据）
+            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+            // 判断是否为公网场景
+            boolean isPublicNetwork = isPublicNetwork(request);
+            String decryptedData = rsaManager.decryptData(rsaConfig, encryptedRequest, isPublicNetwork);
+
+            // 将解密后的数据存储到request attribute中，供Controller使用
+            request.setAttribute("decryptedData", decryptedData);
 
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);
             // 加密返回
-            encryptRestResult(request, result);
+            if (result instanceof RestResult) {
+                RestResult restResult = (RestResult) result;
+                if (restResult.getData() != null && restResult.isSuccess()) {
+                    restResult.setData(rsaManager.encryptData(rsaConfig, restResult.getData(), isPublicNetwork));
+                }
+            }
             return result;
         } catch (Exception e) {
-            logger.error("OpenAPI adapter 执行失败", e);
+            logger.error("OpenAPI 执行失败", e);
             return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "请求处理失败: " + e.getMessage());
         }
     }
@@ -232,12 +225,12 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/data/sync")
     public OpenApiResponse<Object> sync(HttpServletRequest request) {
         try {
-            String requestBody = readRequestBody(request);
-            boolean publicNetwork = isPublicNetwork(request);
-            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
-            String decryptedData = rsaManager.decryptData(rsaConfig, requestBody, publicNetwork);
+//            String requestBody = readRequestBody(request);
+//            boolean publicNetwork = isPublicNetwork(request);
+//            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+//            String decryptedData = rsaManager.decryptData(rsaConfig, requestBody, publicNetwork);
             // TODO 实现具体逻辑
-            logger.info("同步数据：{}", decryptedData);
+            logger.info("同步数据：{}", true);
             return OpenApiResponse.success("同步数据", "success");
         } catch (Exception e) {
             logger.error("同步失败", e);
@@ -310,22 +303,6 @@ public class OpenApiController implements InitializingBean {
             logger.error("刷新Token失败", e);
             return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "刷新Token失败: " + e.getMessage());
         }
-    }
-
-    /**
-     * 加密请求结果
-     */
-    private void encryptRestResult(HttpServletRequest request, Object result) {
-        if (!(result instanceof RestResult)) {
-            return;
-        }
-        RestResult restResult = (RestResult) result;
-        if (restResult.getData() == null || !restResult.isSuccess()) {
-            return;
-        }
-        boolean publicNetwork = isPublicNetwork(request);
-        RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
-        restResult.setData(rsaManager.encryptData(rsaConfig, restResult.getData(), publicNetwork));
     }
 
     /**
