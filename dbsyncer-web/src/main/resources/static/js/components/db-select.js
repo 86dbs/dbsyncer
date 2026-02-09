@@ -107,8 +107,11 @@
         const selectId = 'dbsyncer-select-' + timestamp + '-' + random;
         const dropdownId = 'dbsyncer-select-dropdown-' + timestamp + '-' + random;
         
+        // 从原生 select 的类名中提取 select-mini，传递到生成的组件
+        const miniClass = $select.hasClass('form-control-mini') ? 'dbsyncer-select-mini' : '';
+        
         const selectHTML = `
-            <div class="dbsyncer-select ${config.disabled ? 'disabled' : ''}" id="${selectId}">
+            <div class="dbsyncer-select ${config.disabled ? 'disabled' : ''} ${miniClass}" id="${selectId}">
                 <div class="dbsyncer-select-trigger" data-toggle>
                     <div class="dbsyncer-select-trigger-content">
                         <span class="dbsyncer-select-trigger-text">${config.type === 'single' ? '请选择' : '请选择'}</span>

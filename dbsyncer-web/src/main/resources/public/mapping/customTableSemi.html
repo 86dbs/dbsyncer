@@ -103,6 +103,23 @@
                         </div>
                     </div>`);
                 break;
+            case 'Http':
+                config.label = '名称';
+                let method = extInfo.method === undefined ? 'POST' : extInfo.method;
+                let api = extInfo.api === undefined ? '' : extInfo.api;
+                items.push(`
+                    <div class="form-item"></div>
+                    <div class="form-item">
+                        <label class="form-label">接口<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area flex">
+                            <select class="form-control form-control-mini" name="method">
+                                <option value="POST" ${method === 'POST' ? 'selected' : ''}>POST</option>
+                                <option value="GET" ${method === 'GET' ? 'selected' : ''}>GET</option>
+                            </select>
+                            <input class="form-control ml-2" name="api" type="text" placeholder="请输入请求接口，如：/api/users" value="${api}" required />
+                        </div>
+                    </div>`);
+                break;
             default:
                 config.label = '表名';
                 break;
@@ -345,6 +362,7 @@
                 items = renderSemiInfo('', {});
             }
             $("#customItems").html(items);
+            initSelect($('select[name="method"]'));
         }
 
         let customTableSelect = $("#custom_table_select").dbSelect({

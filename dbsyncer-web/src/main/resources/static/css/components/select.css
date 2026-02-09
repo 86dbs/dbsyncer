@@ -10,6 +10,23 @@
   font-size: var(--font-size-sm);
 }
 
+/* 迷你宽度：约 1/4 宽，用于与输入框并排时的下拉（如 GET/POST） */
+.dbsyncer-select-mini {
+  width: 25%;
+  min-width: 80px;
+  max-width: 140px;
+  flex: 0 0 auto;
+}
+
+/* mini 样式下的下拉菜单：确保下拉菜单有足够宽度，不受父元素宽度限制 */
+.dbsyncer-select-mini .dbsyncer-select-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 80px;
+  width: max-content;
+  max-width: 300px;
+}
+
 /* 触发按钮 */
 .dbsyncer-select-trigger {
   display: flex;

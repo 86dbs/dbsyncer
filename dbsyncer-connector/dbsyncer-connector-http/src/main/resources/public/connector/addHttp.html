@@ -10,7 +10,7 @@
                 <strong class="text-primary">*</strong>
             </label>
             <div class="form-control-area">
-                <input class="form-control" name="url" type="text" maxlength="1024" required placeholder="http://127.0.0.1/fetch_message" th:value="${connector?.config?.url}?:'http://127.0.0.1/fetch_message'"/>
+                <input class="form-control" name="url" type="text" maxlength="1024" required placeholder="http://127.0.0.1:8080/api" th:value="${connector?.config?.url}?:'http://127.0.0.1:8080/api'"/>
             </div>
         </div>
     </div>
@@ -26,5 +26,7 @@ request.timeout.ms=30000'}]]</textarea>
             </div>
         </div>
     </div>
+
+    <div class="blank-block"></div>
 
 </div>

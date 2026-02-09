@@ -40,13 +40,19 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
+        String method = params.get("method");
+        String api = params.get("api");
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
+        Assert.hasText(method, "请求方式 is empty");
+        Assert.hasText(api, "接口不能为空");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
         Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
+        table.getExtInfo().put("method", method);
+        table.getExtInfo().put("api", api);
         return table;
     }
 
