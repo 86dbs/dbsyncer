@@ -108,7 +108,7 @@ public class RsaManager {
      * @param keyLength  密钥长度
      * @return 新的配置
      */
-    public RsaConfig addCredential(RsaConfig config, String publicKey, String privateKey, int keyLength) {
+    public synchronized RsaConfig addCredential(RsaConfig config, String publicKey, String privateKey, int keyLength) {
         if (config == null) {
             config = new RsaConfig();
         }
@@ -116,28 +116,33 @@ public class RsaManager {
         // 获取现有密钥版本列表
         List<RsaVersion> versions = config.getRsaVersions();
 
-        // 不存在
-        Optional<RsaVersion> exist = versions.stream().filter(v->StringUtil.equals(v.getPublicKey(), publicKey) && StringUtil.equals(v.getPrivateKey(), privateKey)).findFirst();
-        if (!exist.isPresent()) {
-            // 计算新版本号
-            int newVersion = 1;
-            if (!versions.isEmpty()) {
-                int maxVersion = versions.stream().mapToInt(RsaVersion::getVersion).max().orElse(0);
-                newVersion = maxVersion + 1;
-            }
-            // 创建新版本
-            RsaVersion newVersionObj = new RsaVersion();
-            newVersionObj.setPublicKey(publicKey);
-            newVersionObj.setPrivateKey(privateKey);
-            newVersionObj.setKeyLength(keyLength);
-            newVersionObj.setVersion(newVersion);
-            newVersionObj.setCreateTime(Instant.now().toEpochMilli());
-            newVersionObj.setEnabled(true);
-            // 添加到版本列表
-            versions.add(newVersionObj);
-
-            logger.info("添加RSA密钥成功，版本: {}", newVersion);
+        // 已存在
+        Optional<RsaVersion> exist = versions.stream()
+                .filter(v->StringUtil.equals(v.getPublicKey(), publicKey)
+                        && StringUtil.equals(v.getPrivateKey(), privateKey))
+                .findFirst();
+        if (exist.isPresent()) {
+            return config;
         }
+
+        // 计算新版本号
+        int newVersion = 1;
+        if (!versions.isEmpty()) {
+            int maxVersion = versions.stream().mapToInt(RsaVersion::getVersion).max().orElse(0);
+            newVersion = maxVersion + 1;
+        }
+        // 创建新版本
+        RsaVersion newVersionObj = new RsaVersion();
+        newVersionObj.setPublicKey(publicKey);
+        newVersionObj.setPrivateKey(privateKey);
+        newVersionObj.setKeyLength(keyLength);
+        newVersionObj.setVersion(newVersion);
+        newVersionObj.setCreateTime(Instant.now().toEpochMilli());
+        newVersionObj.setEnabled(true);
+        // 添加到版本列表
+        versions.add(newVersionObj);
+
+        logger.info("添加RSA密钥成功，版本: {}", newVersion);
 
         // 清理过旧的版本
         cleanupOldVersions(versions);

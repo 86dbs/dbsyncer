@@ -95,7 +95,7 @@ public class ApiKeyManager {
      * @param config 当前配置
      * @param secret API密钥（原始密钥，会自动进行哈希存储）
      */
-    public ApiKeyConfig addCredential(ApiKeyConfig config, String secret) {
+    public synchronized ApiKeyConfig addCredential(ApiKeyConfig config, String secret) {
         Assert.hasText(secret, "secret为空");
 
         if (config == null) {
@@ -108,28 +108,29 @@ public class ApiKeyManager {
         // 对密钥进行哈希处理
         String hashedSecret = SHA1Util.b64_sha1(secret);
 
-        // 不存在
+        // 已存在
         Optional<SecretVersion> exist = versions.stream().filter(v->StringUtil.equals(v.getHashedSecret(), hashedSecret)).findFirst();
-        if (!exist.isPresent()) {
-            // 计算新版本号
-            int newVersion = 1;
-            if (!versions.isEmpty()) {
-                int maxVersion = versions.stream().mapToInt(SecretVersion::getVersion).max().orElse(0);
-                newVersion = maxVersion + 1;
-            }
-            // 创建新版本
-            SecretVersion newVersionObj = new SecretVersion();
-            newVersionObj.setSecret(secret);
-            newVersionObj.setHashedSecret(hashedSecret);
-            newVersionObj.setVersion(newVersion);
-            newVersionObj.setCreateTime(Instant.now().toEpochMilli());
-            newVersionObj.setEnabled(true);
-            // 添加到版本列表
-            versions.add(newVersionObj);
-
-            logger.info("添加API密钥成功，版本: {}", newVersion);
+        if (exist.isPresent()) {
+            return config;
         }
 
+        // 计算新版本号
+        int newVersion = 1;
+        if (!versions.isEmpty()) {
+            int maxVersion = versions.stream().mapToInt(SecretVersion::getVersion).max().orElse(0);
+            newVersion = maxVersion + 1;
+        }
+        // 创建新版本
+        SecretVersion newVersionObj = new SecretVersion();
+        newVersionObj.setSecret(secret);
+        newVersionObj.setHashedSecret(hashedSecret);
+        newVersionObj.setVersion(newVersion);
+        newVersionObj.setCreateTime(Instant.now().toEpochMilli());
+        newVersionObj.setEnabled(true);
+        // 添加到版本列表
+        versions.add(newVersionObj);
+
+        logger.info("添加API密钥成功，版本: {}", newVersion);
         // 清理过旧的版本
         cleanupOldVersions(versions);
 

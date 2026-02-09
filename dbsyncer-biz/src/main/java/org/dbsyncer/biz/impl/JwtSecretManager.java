@@ -141,7 +141,7 @@ public class JwtSecretManager {
         SystemConfig systemConfig = systemConfigService.getSystemConfig();
         Assert.notNull(systemConfig, "系统服务暂不可用，请重试");
         JwtSecretConfig config = systemConfig.getJwtSecretConfig();
-        if (config == null) {
+        if (config == null || CollectionUtils.isEmpty(config.getSecrets())) {
             generateAndSaveSecret(systemConfig);
             config = systemConfig.getJwtSecretConfig();
         }
