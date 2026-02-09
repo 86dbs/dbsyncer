@@ -42,6 +42,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册OpenAPI拦截器，拦截/openapi/**路径
-        registry.addInterceptor(openApiInterceptor).addPathPatterns("/openapi/**").excludePathPatterns("/openapi/auth/**"); // 排除认证接口
+        registry.addInterceptor(openApiInterceptor).addPathPatterns("/openapi/**");
     }
 }

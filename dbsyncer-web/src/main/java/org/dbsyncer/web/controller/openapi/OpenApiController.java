@@ -10,7 +10,6 @@ import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.web.model.OpenApiResponse;
 import org.slf4j.Logger;
@@ -76,9 +75,6 @@ public class OpenApiController implements InitializingBean {
 
     @Resource
     private ApplicationContext applicationContext;
-
-    @Resource
-    private PreloadTemplate preloadTemplate;
 
     private final Map<String, InvocableHandlerMethod> handlers = new ConcurrentHashMap<>();
     /**
@@ -259,20 +255,13 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/login")
     public OpenApiResponse<Map<String, String>> login(@RequestBody Map<String, String> requestBody) {
         try {
-            SystemConfig systemConfig = systemConfigService.getSystemConfig();
-            if (!systemConfig.isEnableOpenAPI() || systemConfig.getApiKeyConfig() == null) {
-                return OpenApiResponse.fail(OpenApiErrorCode.NOT_FOUND, "未开放API");
-            }
-            if (!preloadTemplate.isPreloadCompleted()) {
-                return OpenApiResponse.fail(OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
-            }
-
             String secret = requestBody.get("secret");
             if (StringUtil.isBlank(secret)) {
                 return OpenApiResponse.fail(OpenApiErrorCode.BAD_REQUEST, "secret不能为空");
             }
 
             // 验证API密钥
+            SystemConfig systemConfig = systemConfigService.getSystemConfig();
             if (!apiKeyManager.validate(systemConfig.getApiKeyConfig(), secret)) {
                 logger.error("无效凭证 {}", secret);
                 return OpenApiResponse.fail(OpenApiErrorCode.UNAUTHORIZED, "无效凭证");
@@ -299,9 +288,6 @@ public class OpenApiController implements InitializingBean {
     @PostMapping("/auth/refresh")
     public OpenApiResponse<Map<String, String>> refreshToken(HttpServletRequest request) {
         try {
-            if (!preloadTemplate.isPreloadCompleted()) {
-                return OpenApiResponse.fail(OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
-            }
             // 从请求头获取原Token
             String oldToken = request.getHeader("Authorization");
             if (oldToken != null && oldToken.startsWith("Bearer ")) {

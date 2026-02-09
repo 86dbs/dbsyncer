@@ -6,7 +6,6 @@ package org.dbsyncer.web.controller.openapi;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.IpWhitelistManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
-import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
@@ -48,9 +47,6 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     private JwtSecretManager jwtSecretManager;
 
     @Resource
-    private RsaManager rsaManager;
-
-    @Resource
     private IpWhitelistManager ipWhitelistManager;
 
     @Resource
@@ -61,14 +57,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         try {
-            // 1. 排除认证接口（登录、刷新token）- 这些接口不需要Token验证
-            // 获取请求路径，避免用户请求/.;之类的字符绕过权限判断，导致绕过权限检查风险。
-            String requestPath = urlPathHelper.getLookupPathForRequest(request);
-            if (isAuthEndpoint(requestPath)) {
-                return true;
-            }
-
-            // 2. 配置是否开启
+            // 1. 配置是否开启
             if (!preloadTemplate.isPreloadCompleted()) {
                 writeErrorResponse(response, OpenApiErrorCode.SERVICE_UNAVAILABLE, "服务暂不可用");
                 return false;
@@ -79,13 +68,20 @@ public class OpenApiInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // 3. 验证IP白名单（优先验证，避免无效请求消耗资源）
+            // 2. 验证IP白名单（优先验证，避免无效请求消耗资源）
             // 所有OpenAPI接口都需要验证IP白名单，包括登录接口
             String clientIp = getClientIp(request);
+            // 获取请求路径，避免用户请求/.;之类的字符绕过权限判断，导致绕过权限检查风险。
+            String requestPath = urlPathHelper.getLookupPathForRequest(request);
             if (!ipWhitelistManager.isAllowed(systemConfig.getIpWhitelistConfig(), clientIp)) {
                 logger.warn("IP {} 不在白名单中，拒绝访问 {}", clientIp, requestPath);
                 writeErrorResponse(response, OpenApiErrorCode.FORBIDDEN, "IP地址不在白名单中");
                 return false;
+            }
+
+            // 3. 排除认证接口（登录、刷新token）
+            if (isAuthEndpoint(requestPath)) {
+                return true;
             }
             
             // 4. 验证Token
@@ -107,7 +103,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
      * 判断是否为认证接口
      */
     private boolean isAuthEndpoint(String path) {
-        return path.endsWith("/openapi/auth/login") || 
+        return path.endsWith("/openapi/auth/login") ||
                path.endsWith("/openapi/auth/refresh");
     }
 
