@@ -94,6 +94,25 @@ public class OpenApiController implements InitializingBean {
     private static final String PUBLIC_NETWORK_HEADER = "X-Public-Network";
 
     /**
+     * 模拟客户端请求接口
+     *
+     * @param request 请求对象
+     * @return 同步结果
+     */
+    @PostMapping("/mock")
+    public OpenApiResponse<Object> mock(HttpServletRequest request) {
+        try {
+            String requestBody = readRequestBody(request);
+            boolean isPublicNetwork = isPublicNetwork(request);
+            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+            return OpenApiResponse.success("mock数据", rsaManager.encrypt(rsaConfig, requestBody, isPublicNetwork));
+        } catch (Exception e) {
+            logger.error("mock失败", e);
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "mock失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * OpenAPI v1 统一入口，将 /openapi/v1/xxx 转发到内部 Controller 的 /xxx
      * <p>
      * 示例：<br>
@@ -119,9 +138,8 @@ public class OpenApiController implements InitializingBean {
             if (allowedMethods != null && !allowedMethods.isEmpty()) {
                 RequestMethod requestMethod = parseRequestMethod(request.getMethod());
                 if (requestMethod == null || !allowedMethods.contains(requestMethod)) {
-                    String allow = allowedMethods.stream().map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("");
-                    logger.warn("OpenAPI v1 请求方法不允许: path={}, method={}, allowed={}", lookupPath, request.getMethod(), allow);
-                    return OpenApiResponse.fail(OpenApiErrorCode.METHOD_NOT_ALLOWED, request.getMethod() + "请求方法无效，只允许: " + allow);
+                    logger.warn("OpenAPI v1 Method Not Allowed: path={}", lookupPath);
+                    return OpenApiResponse.fail(OpenApiErrorCode.METHOD_NOT_ALLOWED, "Method Not Allowed");
                 }
             }
 
@@ -144,9 +162,9 @@ public class OpenApiController implements InitializingBean {
             RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
             // 判断是否为公网场景
             boolean isPublicNetwork = isPublicNetwork(request);
-            String decryptedData = rsaManager.decryptData(rsaConfig, encryptedRequest, isPublicNetwork);
+            String decryptedData = rsaManager.decrypt(rsaConfig, encryptedRequest, isPublicNetwork);
 
-            // 将解密后的数据存储到request attribute中，供Controller使用
+            // TODO 将解密后的数据存储到request attribute中，供Controller使用
             request.setAttribute("decryptedData", decryptedData);
 
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);
@@ -154,7 +172,7 @@ public class OpenApiController implements InitializingBean {
             if (result instanceof RestResult) {
                 RestResult restResult = (RestResult) result;
                 if (restResult.getData() != null && restResult.isSuccess()) {
-                    restResult.setData(rsaManager.encryptData(rsaConfig, restResult.getData(), isPublicNetwork));
+                    restResult.setData(rsaManager.encrypt(rsaConfig, restResult.getData(), isPublicNetwork));
                 }
             }
             return result;

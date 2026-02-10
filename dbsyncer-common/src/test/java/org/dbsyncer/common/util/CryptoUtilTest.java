@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.common.util;
 
+import org.dbsyncer.common.model.AesData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,11 +56,11 @@ public class CryptoUtilTest {
         String aesKey = CryptoUtil.generateAESKeyPair();
 
         long startTime = System.currentTimeMillis();
-        Map<String, String> encryptedResult = CryptoUtil.encryptData(largeDataStr, aesKey);
+        AesData encryptedResult = CryptoUtil.encryptData(largeDataStr, aesKey);
         long encryptTime = System.currentTimeMillis() - startTime;
 
         startTime = System.currentTimeMillis();
-        String decryptedData = CryptoUtil.decryptData(encryptedResult.get("encryptedData"), encryptedResult.get("iv"), aesKey);
+        String decryptedData = CryptoUtil.decryptData(encryptedResult.getEncryptedData(), encryptedResult.getIv(), aesKey);
         long decryptTime = System.currentTimeMillis() - startTime;
 
         Assert.assertEquals("大数据解密后应相同", largeDataStr, decryptedData);
