@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -129,7 +130,9 @@ public class ParserComponentImpl implements ParserComponent {
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(group);
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
+        // 游标分页时使用与构建 QUERY_CURSOR 一致的主键列表，避免 findTablePrimaryKeys 返回表上未参与游标的主键（如 id）导致 getLastCursors 多取游标值、参数个数与 SQL 占位符不一致
+        boolean enableCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
+        List<String> primaryKeys = getPrimaryKeysForCursor(command, sourceTable, enableCursor);
         final FullPluginContext context = new FullPluginContext();
 
         String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
@@ -146,7 +149,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setForceUpdate(mapping.isForceUpdate());
         context.setSourceTable(sourceTable);
         context.setTargetFields(picker.getTargetFields());
-        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
+        context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         picker.setSourceResolver(sourceConnector.getSchemaResolver());
@@ -273,6 +276,26 @@ public class ParserComponentImpl implements ParserComponent {
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+    }
+
+    /**
+     * 游标分页时使用与构建 QUERY_CURSOR 一致的主键列表；非游标或未配置时使用表主键。
+     * 避免 findTablePrimaryKeys(sourceTable) 返回表上全部主键（含未参与游标的 id）导致 getLastCursors 多取游标值、参数与 SQL 占位符不一致。
+     *
+     * @param command    执行命令（含 CURSOR_PK_NAMES 时表示游标实际使用的主键）
+     * @param sourceTable 源表
+     * @param enableCursor 是否支持游标
+     * @return 用于 getLastCursors 的主键名列表
+     */
+    private List<String> getPrimaryKeysForCursor(Map<String, String> command, Table sourceTable, boolean enableCursor) {
+        if (enableCursor) {
+            String cursorPkNames = command.get(ConnectorConstant.CURSOR_PK_NAMES);
+            if (StringUtil.isNotBlank(cursorPkNames)) {
+                return Arrays.stream(cursorPkNames.split(StringUtil.COMMA)).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            }
+        }
+        // 不支持游标查询，或非结构化连接器场景
+        return PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
     }
 
     /**
