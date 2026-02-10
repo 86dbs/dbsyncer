@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.common.util;
 
-import com.alibaba.fastjson2.JSONObject;
 import org.dbsyncer.common.model.AesData;
 import org.dbsyncer.common.model.OpenApiData;
 import org.slf4j.Logger;
@@ -114,10 +113,10 @@ public final class CryptoUtil {
      */
     public static OpenApiData encryptResponse(String data, RSAPrivateKey privateKey, String hmacSecret, boolean isPublicNetwork) {
         // 1. 生成临时AES密钥
-        String aesKey = CryptoUtil.generateAESKeyPair();
+        String aesKey = generateAESKeyPair();
 
         // 2. AES加密数据
-        AesData aesData = CryptoUtil.encryptData(data, aesKey);
+        AesData aesData = encryptData(data, aesKey);
 
         // 3. RSA加密AES密钥
         String encryptedAESKey = RSAUtil.privateEncrypt(aesKey, privateKey);
@@ -131,13 +130,8 @@ public final class CryptoUtil {
         request.setIv(aesData.getIv());
 
         // 5. 生成签名（根据场景选择不同算法）
-        String dataToSign = JsonUtil.objToJson(request);
-        String signature;
-        if (isPublicNetwork) {
-            signature = RSAUtil.signSHA256(dataToSign, privateKey);
-        } else {
-            signature = hmacSha256Sign(dataToSign, hmacSecret);
-        }
+        String dataToSign = buildUnifiedSignData(request.getEncryptedData(), request.getTimestamp(), request.getNonce());
+        String signature = isPublicNetwork ? RSAUtil.signSHA256(dataToSign, privateKey) : hmacSha256Sign(dataToSign, hmacSecret);
         logger.info("签名:{}", signature);
         request.setSignature(signature);
         return request;
@@ -152,39 +146,36 @@ public final class CryptoUtil {
      * @param isPublicNetwork 是否为公网场景
      * @return 解密数据
      */
-    public static String decryptRequest(JSONObject data, RSAPublicKey publicKey, String hmacSecret, boolean isPublicNetwork) {
-        String signature = data.getString("signature");
+    public static String decryptRequest(OpenApiData data, RSAPublicKey publicKey, String hmacSecret, boolean isPublicNetwork) {
+        String signature = data.getSignature();
         if (signature == null || signature.isEmpty()) {
             throw new RuntimeException("签名不能为空");
         }
-        // 创建副本用于验证签名（不包含signature字段）
-        JSONObject requestForVerify = new JSONObject(data);
-        requestForVerify.remove("signature");
-        String dataToVerify = requestForVerify.toJSONString();
 
         // 1. 验证签名
-        boolean verifySignature = false;
-        if (isPublicNetwork) {
-            verifySignature = RSAUtil.verifySHA256(dataToVerify, signature, publicKey);
-        } else {
-            String hmacSha256Sign = hmacSha256Sign(dataToVerify, hmacSecret);
-            logger.info("验证签名:{}", hmacSha256Sign);
-            verifySignature = signature.equals(hmacSha256Sign);
-        }
+        String dataToVerify = buildUnifiedSignData(data.getEncryptedData(), data.getTimestamp(), data.getNonce());
+        boolean verifySignature = isPublicNetwork ? RSAUtil.verifySHA256(dataToVerify, signature, publicKey) : signature.equals(hmacSha256Sign(dataToVerify, hmacSecret));
         if (!verifySignature) {
             throw new RuntimeException("签名验证失败");
         }
 
-        OpenApiData request = data.toJavaObject(OpenApiData.class);
-        String iv = request.getIv();
+        String iv = data.getIv();
         if (iv == null || iv.isEmpty()) {
             throw new RuntimeException("IV不能为空");
         }
         // 2. RSA解密AES密钥
-        String aesKey = RSAUtil.publicDecrypt(request.getEncryptedKey(), publicKey);
+        String aesKey = RSAUtil.publicDecrypt(data.getEncryptedKey(), publicKey);
 
         // 3. AES解密数据
-        return decryptData(request.getEncryptedData(), iv, aesKey);
+        return decryptData(data.getEncryptedData(), iv, aesKey);
+    }
+
+    /**
+     * 统一的签名字符串构建方法
+     * 加密和解鉴必须使用同一个方法
+     */
+    private static String buildUnifiedSignData(String encryptedData, long timestamp, String nonce) {
+        return String.format("%s|%d|%s", encryptedData, timestamp, nonce);
     }
 
     /**

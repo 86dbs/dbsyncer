@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.biz.impl;
 
-import com.alibaba.fastjson2.JSONObject;
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -49,7 +49,7 @@ public class RsaManager {
      * @param isPublicNetwork 是否公网请求
      * @return 验证是否通过
      */
-    public String decrypt(RsaConfig config, JSONObject data, boolean isPublicNetwork) {
+    public String decrypt(RsaConfig config, OpenApiData data, boolean isPublicNetwork) {
         if (config == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
             throw new BizException("RSA密钥配置未启用");
         }
@@ -80,9 +80,9 @@ public class RsaManager {
      * @param data            返回数据
      * @param isPublicNetwork 是否公网请求
      */
-    public Object encrypt(RsaConfig config, Object data, boolean isPublicNetwork) {
+    public OpenApiData encrypt(RsaConfig config, Object data, boolean isPublicNetwork) {
         if (config == null || data == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
-            return data;
+            return null;
         }
         String encryptedData = JsonUtil.objToJson(data);
 
