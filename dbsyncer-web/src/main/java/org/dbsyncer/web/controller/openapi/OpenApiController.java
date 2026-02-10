@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.web.controller.openapi;
 
+import com.alibaba.fastjson2.JSON;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
@@ -94,6 +95,25 @@ public class OpenApiController implements InitializingBean {
     private static final String PUBLIC_NETWORK_HEADER = "X-Public-Network";
 
     /**
+     * 模拟客户端请求接口
+     *
+     * @param request 请求对象
+     * @return 同步结果
+     */
+    @PostMapping("/mock")
+    public Object mock(HttpServletRequest request) {
+        try {
+            String requestBody = readRequestBody(request);
+            boolean isPublicNetwork = isPublicNetwork(request);
+            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+            return rsaManager.encrypt(rsaConfig, requestBody, isPublicNetwork);
+        } catch (Exception e) {
+            logger.error("mock失败", e);
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "mock失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * OpenAPI v1 统一入口，将 /openapi/v1/xxx 转发到内部 Controller 的 /xxx
      * <p>
      * 示例：<br>
@@ -142,7 +162,8 @@ public class OpenApiController implements InitializingBean {
             // 判断是否为公网场景
             boolean isPublicNetwork = isPublicNetwork(request);
             String decryptedData = rsaManager.decrypt(rsaConfig, apiData, isPublicNetwork);
-            ServletWebRequest webRequest = getServletWebRequest(request, response, decryptedData);
+            Object json = JSON.parse(decryptedData);
+            ServletWebRequest webRequest = getServletWebRequest(request, response, (String) json);
             ModelAndViewContainer mavContainer = new ModelAndViewContainer();
             mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);

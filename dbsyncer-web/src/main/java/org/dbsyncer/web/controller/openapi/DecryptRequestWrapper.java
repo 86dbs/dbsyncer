@@ -170,7 +170,7 @@ public final class DecryptRequestWrapper extends HttpServletRequestWrapper {
                 continue;
             }
 
-            // 处理不同类型
+            // 根据值的类型处理
             if (value instanceof JSONArray) {
                 // 数组类型
                 JSONArray jsonArray = (JSONArray) value;
@@ -186,12 +186,11 @@ public final class DecryptRequestWrapper extends HttpServletRequestWrapper {
                 params.put(key, new String[]{jsonValue});
 
             } else {
-                // 基本类型（String, Integer, Boolean等）
+                // 基本类型
                 String strValue = String.valueOf(value);
                 params.put(key, new String[]{strValue});
             }
         }
-
         return params;
     }
 
