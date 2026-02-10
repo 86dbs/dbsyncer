@@ -3,12 +3,13 @@
  */
 package org.dbsyncer.web.controller.openapi;
 
-import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSON;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.impl.ApiKeyManager;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.impl.RsaManager;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -94,6 +95,25 @@ public class OpenApiController implements InitializingBean {
     private static final String PUBLIC_NETWORK_HEADER = "X-Public-Network";
 
     /**
+     * 模拟客户端请求接口
+     *
+     * @param request 请求对象
+     * @return 同步结果
+     */
+    @PostMapping("/mock")
+    public Object mock(HttpServletRequest request) {
+        try {
+            String requestBody = readRequestBody(request);
+            boolean isPublicNetwork = isPublicNetwork(request);
+            RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
+            return rsaManager.encrypt(rsaConfig, requestBody, isPublicNetwork);
+        } catch (Exception e) {
+            logger.error("mock失败", e);
+            return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "mock失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * OpenAPI v1 统一入口，将 /openapi/v1/xxx 转发到内部 Controller 的 /xxx
      * <p>
      * 示例：<br>
@@ -102,7 +122,7 @@ public class OpenApiController implements InitializingBean {
      * </p>
      */
     @RequestMapping(value = "/v1/**")
-    public Object adapter(HttpServletRequest request, HttpServletResponse response) {
+    public Object gateway(HttpServletRequest request, HttpServletResponse response) {
         try {
             String lookupPath = getV1LookupPath(request);
             if (lookupPath == null) {
@@ -119,42 +139,39 @@ public class OpenApiController implements InitializingBean {
             if (allowedMethods != null && !allowedMethods.isEmpty()) {
                 RequestMethod requestMethod = parseRequestMethod(request.getMethod());
                 if (requestMethod == null || !allowedMethods.contains(requestMethod)) {
-                    String allow = allowedMethods.stream().map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("");
-                    logger.warn("OpenAPI v1 请求方法不允许: path={}, method={}, allowed={}", lookupPath, request.getMethod(), allow);
-                    return OpenApiResponse.fail(OpenApiErrorCode.METHOD_NOT_ALLOWED, request.getMethod() + "请求方法无效，只允许: " + allow);
+                    logger.warn("OpenAPI v1 Method Not Allowed: path={}", lookupPath);
+                    return OpenApiResponse.fail(OpenApiErrorCode.METHOD_NOT_ALLOWED, "Method Not Allowed");
                 }
             }
 
-            ServletWebRequest webRequest = new ServletWebRequest(request, response);
-            ModelAndViewContainer mavContainer = new ModelAndViewContainer();
-            mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
             // 解密入参
             String requestBody = readRequestBody(request);
             Assert.hasText(requestBody, "请求体不能为空");
             // 先解析为OpenApiRequest格式（包含时间戳和nonce）
-            JSONObject encryptedRequest = JsonUtil.jsonToObj(requestBody, JSONObject.class);
+            OpenApiData apiData = JsonUtil.jsonToObj(requestBody, OpenApiData.class);
+            Assert.notNull(apiData, "请求数据不能为空.");
             // 验证时间戳和Nonce（在解密之前验证，避免无效请求消耗资源）
-            Long timestamp = encryptedRequest.getLong("timestamp");
-            String nonce = encryptedRequest.getString("nonce");
+            Long timestamp = apiData.getTimestamp();
+            String nonce = apiData.getNonce();
             Assert.notNull(timestamp, "Timestamp is empty.");
             Assert.hasText(nonce, "Nonce is empty.");
             Assert.isTrue(TimestampValidator.validate(timestamp, nonce), "时间戳或Nonce验证失败");
 
-            // 解析加密请求（解密数据）
+            // 解析加密请求
             RsaConfig rsaConfig = systemConfigService.getSystemConfig().getRsaConfig();
             // 判断是否为公网场景
             boolean isPublicNetwork = isPublicNetwork(request);
-            String decryptedData = rsaManager.decryptData(rsaConfig, encryptedRequest, isPublicNetwork);
-
-            // 将解密后的数据存储到request attribute中，供Controller使用
-            request.setAttribute("decryptedData", decryptedData);
-
+            String decryptedData = rsaManager.decrypt(rsaConfig, apiData, isPublicNetwork);
+            Object json = JSON.parse(decryptedData);
+            ServletWebRequest webRequest = getServletWebRequest(request, response, (String) json);
+            ModelAndViewContainer mavContainer = new ModelAndViewContainer();
+            mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
             Object result = invocableMethod.invokeForRequest(webRequest, mavContainer);
             // 加密返回
             if (result instanceof RestResult) {
                 RestResult restResult = (RestResult) result;
                 if (restResult.getData() != null && restResult.isSuccess()) {
-                    restResult.setData(rsaManager.encryptData(rsaConfig, restResult.getData(), isPublicNetwork));
+                    restResult.setData(rsaManager.encrypt(rsaConfig, restResult.getData(), isPublicNetwork));
                 }
             }
             return result;
@@ -162,6 +179,11 @@ public class OpenApiController implements InitializingBean {
             logger.error("OpenAPI 执行失败", e);
             return OpenApiResponse.fail(OpenApiErrorCode.INTERNAL_ERROR, "请求处理失败: " + e.getMessage());
         }
+    }
+
+    private static ServletWebRequest getServletWebRequest(HttpServletRequest request, HttpServletResponse response, String decryptedData) {
+        DecryptRequestWrapper finalRequest = new DecryptRequestWrapper(request, decryptedData);
+        return new ServletWebRequest(finalRequest, response);
     }
 
     @Override
@@ -354,4 +376,5 @@ public class OpenApiController implements InitializingBean {
     private boolean isPublicNetwork(HttpServletRequest request) {
         return "true".equalsIgnoreCase(request.getHeader(PUBLIC_NETWORK_HEADER));
     }
+
 }

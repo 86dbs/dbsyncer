@@ -104,7 +104,6 @@ public class RSAUtil {
         }
     }
 
-
     /**
      * 私钥解密
      */
@@ -147,6 +146,26 @@ public class RSAUtil {
             return Base64.encodeBase64URLSafeString(signBytes);
         } catch (Exception e) {
             throw new RuntimeException("RSA-SHA256签名失败", e);
+        }
+    }
+
+    /**
+     * RSA-SHA256验证签名（使用公钥验证）
+     *
+     * @param data 原始数据
+     * @param signature Base64编码的签名
+     * @param publicKey RSA公钥
+     * @return 验证结果
+     */
+    public static boolean verifySHA256(String data, String signature, RSAPublicKey publicKey) {
+        try {
+            java.security.Signature sig = java.security.Signature.getInstance("SHA256withRSA");
+            sig.initVerify(publicKey);
+            sig.update(data.getBytes(CHARSET));
+            byte[] signBytes = Base64.decodeBase64(signature);
+            return sig.verify(signBytes);
+        } catch (Exception e) {
+            return false;
         }
     }
 

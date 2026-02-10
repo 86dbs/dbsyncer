@@ -3,12 +3,13 @@
  */
 package org.dbsyncer.biz.impl;
 
-import com.alibaba.fastjson2.JSONObject;
 import org.dbsyncer.biz.BizException;
+import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.CryptoUtil;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -47,7 +49,7 @@ public class RsaManager {
      * @param isPublicNetwork 是否公网请求
      * @return 验证是否通过
      */
-    public String decryptData(RsaConfig config, JSONObject data, boolean isPublicNetwork) {
+    public String decrypt(RsaConfig config, OpenApiData data, boolean isPublicNetwork) {
         if (config == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
             throw new BizException("RSA密钥配置未启用");
         }
@@ -62,8 +64,8 @@ public class RsaManager {
                 // 内网：未单独配置 hmacSecret 时，使用当前 RSA 公钥作为 HMAC 密钥（与客户端约定一致即可验签），性能方面影响可忽略不计。
                 // 公网：不使用 HMAC，传空即可。
                 String hmacSecret = isPublicNetwork ? StringUtil.EMPTY : version.getPublicKey();
-                RSAPrivateKey privateKey = RSAUtil.getPrivateKey(version.getPrivateKey());
-                return CryptoUtil.parseEncryptedRequest(data, privateKey, hmacSecret, isPublicNetwork);
+                RSAPublicKey publicKey = RSAUtil.getPublicKey(version.getPublicKey());
+                return CryptoUtil.decryptRequest(data, publicKey, hmacSecret, isPublicNetwork);
             } catch (Exception e) {
                 logger.error("解密失败，版本: {}", version.getVersion());
             }
@@ -78,10 +80,11 @@ public class RsaManager {
      * @param data            返回数据
      * @param isPublicNetwork 是否公网请求
      */
-    public Object encryptData(RsaConfig config, Object data, boolean isPublicNetwork) {
+    public OpenApiData encrypt(RsaConfig config, Object data, boolean isPublicNetwork) {
         if (config == null || data == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
-            return data;
+            return null;
         }
+        String encryptedData = JsonUtil.objToJson(data);
 
         // 尝试所有启用的密钥版本
         for (int i = config.getRsaVersions().size() - 1; i >= 0; i--) {
@@ -92,7 +95,7 @@ public class RsaManager {
             try {
                 String hmacSecret = isPublicNetwork ? StringUtil.EMPTY : version.getPublicKey();
                 RSAPrivateKey privateKey = RSAUtil.getPrivateKey(version.getPrivateKey());
-                return CryptoUtil.buildEncryptedRequest(data, privateKey, hmacSecret, isPublicNetwork);
+                return CryptoUtil.encryptResponse(encryptedData, privateKey, hmacSecret, isPublicNetwork);
             } catch (Exception e) {
                 logger.error("加密失败，版本: {}", version.getVersion());
             }

@@ -23,8 +23,8 @@ public class TimestampValidator {
     private static final long DEFAULT_TIME_WINDOW = 5 * 60 * 1000L;
 
     // Nonce缓存，用于防止重放攻击（key: nonce, value: timestamp）
-    // 缓存时间：10分钟，清理间隔：1分钟
-    private static final ExpiringCache<String, Long> nonceCache = new ExpiringCache<>(10 * 60 * 1000L, 60 * 1000L);
+    // 缓存时间：5分钟，清理间隔：30秒
+    private static final ExpiringCache<String, Long> nonceCache = new ExpiringCache<>(5 * 60 * 1000L, 30 * 1000L);
 
     // 静态初始化块，确保缓存清理任务启动
     static {

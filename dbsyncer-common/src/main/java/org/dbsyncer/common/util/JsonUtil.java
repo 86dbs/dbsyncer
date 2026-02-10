@@ -3,9 +3,6 @@ package org.dbsyncer.common.util;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONValidator;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONValidator;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Base64;
