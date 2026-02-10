@@ -43,6 +43,12 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_CURSOR = "QUERY_CURSOR";
 
     /**
+     * 游标分页实际使用的主键名列表（逗号分隔），与 QUERY_CURSOR 的 SQL 占位符一致。
+     * 执行时用该列表做 getLastCursors，避免用 findTablePrimaryKeys 取到表上未参与游标的主键（如 id）导致参数个数不一致。
+     */
+    public static final String CURSOR_PK_NAMES = "CURSOR_PK_NAMES";
+
+    /**
      * 查询过滤条件
      */
     public static final String OPERTION_QUERY_FILTER = "QUERY_FILTER";

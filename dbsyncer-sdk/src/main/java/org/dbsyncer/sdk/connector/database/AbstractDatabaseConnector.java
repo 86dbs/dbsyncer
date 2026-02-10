@@ -396,6 +396,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
         // 构建游标分页SQL
         buildSql(map, SqlBuilderEnum.QUERY_CURSOR, buildSqlConfig);
+        // 记录实际参与游标的主键列表，用于全量同步时获取游标占位符
+        map.put(ConnectorConstant.CURSOR_PK_NAMES, StringUtil.join(primaryKeys, StringUtil.COMMA));
 
         // 获取查询总数SQL
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), getQueryCountSql(buildSqlConfig));
