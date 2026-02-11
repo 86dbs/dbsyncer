@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public final class SqlServerFloatType extends FloatType {
 
     private enum TypeEnum {
+        FLOAT("float"),
         REAL("real");
 
         private final String value;
@@ -38,6 +39,9 @@ public final class SqlServerFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).floatValue();
+        }
         return throwUnsupportedException(val, field);
     }
 
