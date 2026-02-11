@@ -75,6 +75,65 @@
 
     <div class="blank-block"></div>
 <script>
+    // 生成http配置
+    function renderHttpInfo(extInfo, items) {
+        let connectorUrl = $("#connectorUrl").val();
+        let method = extInfo.method === undefined ? 'POST' : extInfo.method;
+        let api = extInfo.api === undefined ? '' : extInfo.api;
+        let contentType = extInfo.contentType === undefined ? '1' : extInfo.contentType;
+        let params = extInfo.params === undefined ? '' : extInfo.params;
+        let extractData = extInfo.extractData === undefined ? '$.data.user[*]' : extInfo.extractData;
+        let extractTotal = extInfo.extractTotal === undefined ? '$.data.total' : extInfo.extractTotal;
+        items.push(`
+            <div class="form-item"></div>
+            <div class="form-item">
+                <label class="form-label">URL</label>
+                <div class="bg-gray-100">
+                    <input class="form-control" disabled type="text" value="${connectorUrl}">
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">接口<strong class="text-primary">*</strong></label>
+                <div class="form-control-area flex">
+                    <select class="form-control form-control-mini" name="method">
+                        <option value="POST" ${method === 'POST' ? 'selected' : ''}>POST</option>
+                        <option value="GET" ${method === 'GET' ? 'selected' : ''}>GET</option>
+                    </select>
+                    <input class="form-control ml-2" name="api" type="text" placeholder="请输入请求接口，如：/api/users" value="${api}" required />
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">请求参数<strong class="text-primary">*</strong></label>
+                <div class="form-control-area">
+                    <input name="params" class="form-control" type="text" value="${params}" required />
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">Content-Type</label>
+                <div class="form-control-area">
+                    <select class="form-control" name="contentType">
+                        <option value="1" ${contentType === '1' ? 'selected' : ''}>application/json</option>
+                        <option value="2" ${contentType === '2' ? 'selected' : ''}>application/x-www-form-urlencoded</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">解析数据<strong class="text-primary">*</strong>
+                    <i class="fa fa-question-circle" title="解析接口返回的数据列表，表达式参考json"></i>
+                </label>
+                <div class="bg-gray-100">
+                    <input name="extractData" class="form-control" type="text" value="${extractData}" required />
+                </div>
+            </div>
+            <div class="form-item">
+                <label class="form-label">解析总数<strong class="text-primary">*</strong>
+                    <i class="fa fa-question-circle" title="解析接口返回的总数，表达式参考json"></i></label>
+                <div class="bg-gray-100">
+                    <input name="extractTotal" class="form-control" type="text" value="${extractTotal}" required />
+                </div>
+            </div>`);
+    }
+
     function renderSemiInfo(tableName, extInfo) {
         let connectorType = $("#connectorType").val();
         let customType = $("#customType").val();
@@ -105,20 +164,7 @@
                 break;
             case 'Http':
                 config.label = '名称';
-                let method = extInfo.method === undefined ? 'POST' : extInfo.method;
-                let api = extInfo.api === undefined ? '' : extInfo.api;
-                items.push(`
-                    <div class="form-item"></div>
-                    <div class="form-item">
-                        <label class="form-label">接口<strong class="text-primary">*</strong></label>
-                        <div class="form-control-area flex">
-                            <select class="form-control form-control-mini" name="method">
-                                <option value="POST" ${method === 'POST' ? 'selected' : ''}>POST</option>
-                                <option value="GET" ${method === 'GET' ? 'selected' : ''}>GET</option>
-                            </select>
-                            <input class="form-control ml-2" name="api" type="text" placeholder="请输入请求接口，如：/api/users" value="${api}" required />
-                        </div>
-                    </div>`);
+                renderHttpInfo(extInfo, items);
                 break;
             default:
                 config.label = '表名';
@@ -363,6 +409,7 @@
             }
             $("#customItems").html(items);
             initSelect($('select[name="method"]'));
+            initSelect($('select[name="contentType"]'));
         }
 
         let customTableSelect = $("#custom_table_select").dbSelect({

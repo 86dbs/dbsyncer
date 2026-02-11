@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
@@ -34,9 +35,9 @@ public class MappingCustomTableVO {
     private Meta meta;
 
     /**
-     * 连接类型
+     * 连接配置
      */
-    private String connectorType;
+    private ConnectorConfig connectorConfig;
 
     /**
      * 可扩展类型 {@link org.dbsyncer.sdk.enums.TableTypeEnum}
@@ -77,12 +78,12 @@ public class MappingCustomTableVO {
         this.meta = meta;
     }
 
-    public String getConnectorType() {
-        return connectorType;
+    public ConnectorConfig getConnectorConfig() {
+        return connectorConfig;
     }
 
-    public void setConnectorType(String connectorType) {
-        this.connectorType = connectorType;
+    public void setConnectorConfig(ConnectorConfig connectorConfig) {
+        this.connectorConfig = connectorConfig;
     }
 
     public String getExtendedType() {

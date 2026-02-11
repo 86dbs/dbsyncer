@@ -42,10 +42,18 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         String columnList = params.get("columnList");
         String method = params.get("method");
         String api = params.get("api");
+        String contentType = params.get("contentType");
+        String requestParams = params.get("params");
+        String extractData = params.get("extractData");
+        String extractTotal = params.get("extractTotal");
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
         Assert.hasText(method, "请求方式 is empty");
         Assert.hasText(api, "接口不能为空");
+        Assert.hasText(contentType, "ContentType不能为空");
+        Assert.hasText(requestParams, "动态参数不能为空");
+        Assert.hasText(extractData, "解析数据规则不能为空");
+        Assert.hasText(extractTotal, "解析总数规则不能为空");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
         Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
@@ -53,6 +61,10 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         table.setType(connectorService.getExtendedTableType().getCode());
         table.getExtInfo().put("method", method);
         table.getExtInfo().put("api", api);
+        table.getExtInfo().put("contentType", contentType);
+        table.getExtInfo().put("params", requestParams);
+        table.getExtInfo().put("extractData", extractData);
+        table.getExtInfo().put("extractTotal", extractTotal);
         return table;
     }
 

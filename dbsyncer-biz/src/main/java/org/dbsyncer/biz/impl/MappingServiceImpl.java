@@ -240,7 +240,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String connectorId = isSource ? mapping.getSourceConnectorId() : mapping.getTargetConnectorId();
         ConnectorConfig config = profileComponent.getConnector(connectorId).getConfig();
         ConnectorService<?, ?> connectorService = connectorFactory.getConnectorService(config);
-        vo.setConnectorType(connectorService.getConnectorType());
+        vo.setConnectorConfig(config);
         vo.setExtendedType(connectorService.getExtendedTableType().getCode());
 
         // 只返回自定义表类型

@@ -13,7 +13,8 @@
                     <div class="hidden">
                         <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
                         <input id="customType" name="type" type="text" th:value="${type}"/>
-                        <input id="connectorType" type="text" th:value="${mapping?.connectorType}"/>
+                        <input id="connectorType" type="text" th:value="${mapping?.connectorConfig?.connectorType}"/>
+                        <input id="connectorUrl" type="text" th:value="${mapping?.connectorConfig?.url}"/>
                     </div>
                 </div>
                 <div class="lg:col-span-2"></div>
