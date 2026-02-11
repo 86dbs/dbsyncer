@@ -24,6 +24,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -126,7 +127,9 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
     }
 
     @Override
-    public long getCount(FileConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(FileConnectorInstance connectorInstance, MetaContext metaContext) {
+        // TODO 待优化，读table扩展信息
+        Map<String, String> command = metaContext.getCommand();
         AtomicLong count = new AtomicLong();
         FileReader reader = null;
         try {

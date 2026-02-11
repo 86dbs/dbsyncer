@@ -10,6 +10,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.cdc.HttpQuartzListener;
 import org.dbsyncer.connector.http.config.HttpConfig;
+import org.dbsyncer.connector.http.constant.HttpConstant;
 import org.dbsyncer.connector.http.enums.HttpMethod;
 import org.dbsyncer.connector.http.model.HttpResponse;
 import org.dbsyncer.connector.http.model.RequestBuilder;
@@ -25,6 +26,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -33,6 +35,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,15 +121,24 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     }
 
     @Override
-    public long getCount(HttpConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(HttpConnectorInstance connectorInstance, MetaContext metaContext) {
         // TODO 待实现 拼接完整的url，获取method，解析总数表达式
-        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), "http://localhost:18686/mapping/search", HttpMethod.POST);
+        Table sourceTable = metaContext.getSourceTable();
+        String serviceUrl = connectorInstance.getServiceUrl();
+        String api = sourceTable.getExtInfo().getProperty(HttpConstant.API);
+        String method = sourceTable.getExtInfo().getProperty(HttpConstant.METHOD);
+        String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
+        // TODO 处理边界斜杠
+        String url = serviceUrl + api;
+        HttpMethod httpMethod = HttpMethod.valueOf(method);
+        Assert.notNull(httpMethod, "method can not be null");
+        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
         HttpResponse<String> execute = builder.execute();
         String data = execute.getBody();
         if (StringUtil.isNotBlank(data)) {
             Object rootObject = JSON.parse(data);
             if (rootObject != null) {
-                Object total = JSONPath.eval(rootObject, "$.data.total");
+                Object total = JSONPath.eval(rootObject, extractTotal);
                 if (total instanceof Number) {
                     return ((Number) total).longValue();
                 }

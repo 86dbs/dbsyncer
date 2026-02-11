@@ -28,6 +28,7 @@ import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.CustomData;
@@ -227,7 +228,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public long getCount(DatabaseConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(DatabaseConnectorInstance connectorInstance, MetaContext metaContext) {
+        Map<String, String> command = metaContext.getCommand();
         if (CollectionUtils.isEmpty(command)) {
             return 0L;
         }

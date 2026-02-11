@@ -13,6 +13,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.DefaultMetaContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -75,7 +76,13 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
         Assert.notNull(command, "command can not null");
         ConnectorService connectorService = connectorFactory.getConnectorService(config);
-        long count = connectorService.getCount(connectorInstance, command);
+
+        DefaultMetaContext metaContext = new DefaultMetaContext();
+        metaContext.setCommand(command);
+        metaContext.setSourceTable(group.getSourceTable());
+        metaContext.setSourceConnectorInstance(connectorInstance);
+
+        long count = connectorService.getCount(connectorInstance, metaContext);
         tableGroup.getSourceTable().setCount(count);
         profileComponent.editConfigModel(tableGroup);
         logger.info("{}表{}, 总数:{}, {}ms", mapping.getName(), tableGroup.getSourceTable().getName(), count, (Instant.now().toEpochMilli() - now));

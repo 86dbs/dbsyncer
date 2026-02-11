@@ -21,6 +21,7 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -130,7 +131,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     }
 
     @Override
-    public long getCount(KafkaConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(KafkaConnectorInstance connectorInstance, MetaContext metaContext) {
         return 0;
     }
 

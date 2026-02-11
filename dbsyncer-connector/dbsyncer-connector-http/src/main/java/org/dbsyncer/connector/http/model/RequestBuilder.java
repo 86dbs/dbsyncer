@@ -147,7 +147,7 @@ public final class RequestBuilder {
      */
     public RequestBuilder addParams(Map<String, Object> params) {
         if (params != null) {
-            params.forEach((key, value) -> addParam(key, value));
+            params.forEach(this::addParam);
         }
         return this;
     }
@@ -174,7 +174,7 @@ public final class RequestBuilder {
      */
     public RequestBuilder addBodyParams(Map<String, Object> params) {
         if (params != null) {
-            params.forEach((key, value) -> addBodyParam(key, value));
+            params.forEach(this::addBodyParam);
         }
         return this;
     }
@@ -229,7 +229,7 @@ public final class RequestBuilder {
      */
     public RequestBuilder addHeaders(Map<String, String> headers) {
         if (headers != null) {
-            headers.forEach((key, value) -> addHeader(key, value));
+            headers.forEach(this::addHeader);
         }
         return this;
     }

@@ -31,6 +31,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -260,8 +261,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     @Override
-    public long getCount(ESConnectorInstance connectorInstance, Map<String, String> command) {
+    public long getCount(ESConnectorInstance connectorInstance, MetaContext metaContext) {
         try {
+            // TODO 待优化，读table扩展信息
+            Map<String, String> command = metaContext.getCommand();
             SearchSourceBuilder builder = new SearchSourceBuilder();
             genSearchSourceBuilder(builder, command);
             // 7.x 版本以上
@@ -365,7 +368,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         command.put(_SOURCE_INDEX, table.getName());
         List<Field> column = table.getColumn();
         if (!CollectionUtils.isEmpty(column)) {
-            List<String> fieldNames = column.stream().map(c->c.getName()).collect(Collectors.toList());
+            List<String> fieldNames = column.stream().map(Field::getName).collect(Collectors.toList());
             command.put(ConnectorConstant.OPERTION_QUERY, StringUtil.join(fieldNames, ","));
         }
 

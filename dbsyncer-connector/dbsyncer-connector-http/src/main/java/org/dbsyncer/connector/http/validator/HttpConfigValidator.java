@@ -6,6 +6,7 @@ package org.dbsyncer.connector.http.validator;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.http.HttpConnector;
 import org.dbsyncer.connector.http.config.HttpConfig;
+import org.dbsyncer.connector.http.constant.HttpConstant;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
@@ -40,12 +41,12 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
-        String method = params.get("method");
-        String api = params.get("api");
-        String contentType = params.get("contentType");
-        String requestParams = params.get("params");
-        String extractData = params.get("extractData");
-        String extractTotal = params.get("extractTotal");
+        String method = params.get(HttpConstant.METHOD);
+        String api = params.get(HttpConstant.API);
+        String contentType = params.get(HttpConstant.CONTENT_TYPE);
+        String requestParams = params.get(HttpConstant.PARAMS);
+        String extractData = params.get(HttpConstant.EXTRACT_DATA);
+        String extractTotal = params.get(HttpConstant.EXTRACT_TOTAL);
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
         Assert.hasText(method, "请求方式 is empty");
@@ -59,12 +60,12 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
-        table.getExtInfo().put("method", method);
-        table.getExtInfo().put("api", api);
-        table.getExtInfo().put("contentType", contentType);
-        table.getExtInfo().put("params", requestParams);
-        table.getExtInfo().put("extractData", extractData);
-        table.getExtInfo().put("extractTotal", extractTotal);
+        table.getExtInfo().put(HttpConstant.METHOD, method);
+        table.getExtInfo().put(HttpConstant.API, api);
+        table.getExtInfo().put(HttpConstant.CONTENT_TYPE, contentType);
+        table.getExtInfo().put(HttpConstant.PARAMS, requestParams);
+        table.getExtInfo().put(HttpConstant.EXTRACT_DATA, extractData);
+        table.getExtInfo().put(HttpConstant.EXTRACT_TOTAL, extractTotal);
         return table;
     }
 
