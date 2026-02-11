@@ -14,12 +14,12 @@ public enum ContentTypeEnum {
     /**
      * JSON
      */
-    JSON("1","application/json;charset=UTF-8", "JSON格式"),
+    APPLICATION_JSON("1","application/json", "JSON格式"),
 
     /**
      * 表单
      */
-    FORM("2","application/x-www-form-urlencoded;charset=UTF-8", "表单格式");
+    APPLICATION_FORM_URLENCODED("2","application/x-www-form-urlencoded", "表单格式");
 
     private final String type;
     private final String code;
@@ -29,6 +29,23 @@ public enum ContentTypeEnum {
         this.type = type;
         this.code = code;
         this.message = message;
+    }
+    /**
+     * 根据 value 获取枚举
+     *
+     * @param type Content-Type 值
+     * @return 枚举对象
+     */
+    public static ContentTypeEnum fromValue(String type) {
+        if (type == null) {
+            return null;
+        }
+        for (ContentTypeEnum contentType : values()) {
+            if (contentType.getType().equalsIgnoreCase(type)) {
+                return contentType;
+            }
+        }
+        return null;
     }
 
     public String getType() {
@@ -42,4 +59,5 @@ public enum ContentTypeEnum {
     public String getMessage() {
         return message;
     }
+
 }

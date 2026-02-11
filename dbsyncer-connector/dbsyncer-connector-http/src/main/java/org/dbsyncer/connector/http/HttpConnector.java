@@ -3,10 +3,16 @@
  */
 package org.dbsyncer.connector.http;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONPath;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.cdc.HttpQuartzListener;
 import org.dbsyncer.connector.http.config.HttpConfig;
+import org.dbsyncer.connector.http.enums.HttpMethod;
+import org.dbsyncer.connector.http.model.HttpResponse;
+import org.dbsyncer.connector.http.model.RequestBuilder;
 import org.dbsyncer.connector.http.schema.HttpSchemaResolver;
 import org.dbsyncer.connector.http.validator.HttpConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
@@ -113,6 +119,19 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
     @Override
     public long getCount(HttpConnectorInstance connectorInstance, Map<String, String> command) {
+        // TODO 待实现 拼接完整的url，获取method，解析总数表达式
+        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), "http://localhost:18686/mapping/search", HttpMethod.POST);
+        HttpResponse<String> execute = builder.execute();
+        String data = execute.getBody();
+        if (StringUtil.isNotBlank(data)) {
+            Object rootObject = JSON.parse(data);
+            if (rootObject != null) {
+                Object total = JSONPath.eval(rootObject, "$.data.total");
+                if (total instanceof Number) {
+                    return ((Number) total).longValue();
+                }
+            }
+        }
         return 0;
     }
 
