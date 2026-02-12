@@ -39,22 +39,32 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
     @Override
     public Table modifyExtendedTable(HttpConnector connectorService, Map<String, String> params) {
         Table table = new Table();
+        String type = params.get("type");
+        if ("source".equals(type)) {
+            String extractPath = params.get(HttpConstant.EXTRACT_PATH);
+            String extractTotal = params.get(HttpConstant.EXTRACT_TOTAL);
+            Assert.hasText(extractPath, "解析数据规则不能为空");
+            Assert.hasText(extractTotal, "解析总数规则不能为空");
+            table.getExtInfo().put(HttpConstant.EXTRACT_PATH, extractPath);
+            table.getExtInfo().put(HttpConstant.EXTRACT_TOTAL, extractTotal);
+        } else {
+            String writePath = params.get(HttpConstant.WRITE_PATH);
+            Assert.hasText(writePath, "写入数据规则不能为空");
+            table.getExtInfo().put(HttpConstant.WRITE_PATH, writePath);
+        }
+
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
         String method = params.get(HttpConstant.METHOD);
         String api = params.get(HttpConstant.API);
         String contentType = params.get(HttpConstant.CONTENT_TYPE);
         String requestParams = params.get(HttpConstant.PARAMS);
-        String extractPath = params.get(HttpConstant.EXTRACT_PATH);
-        String extractTotal = params.get(HttpConstant.EXTRACT_TOTAL);
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
         Assert.hasText(method, "请求方式 is empty");
         Assert.hasText(api, "接口不能为空");
         Assert.hasText(contentType, "ContentType不能为空");
-        Assert.hasText(requestParams, "动态参数不能为空");
-        Assert.hasText(extractPath, "解析数据规则不能为空");
-        Assert.hasText(extractTotal, "解析总数规则不能为空");
+        Assert.hasText(requestParams, "请求参数不能为空");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
         Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
@@ -64,8 +74,6 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         table.getExtInfo().put(HttpConstant.API, api);
         table.getExtInfo().put(HttpConstant.CONTENT_TYPE, contentType);
         table.getExtInfo().put(HttpConstant.PARAMS, requestParams);
-        table.getExtInfo().put(HttpConstant.EXTRACT_PATH, extractPath);
-        table.getExtInfo().put(HttpConstant.EXTRACT_TOTAL, extractTotal);
         return table;
     }
 

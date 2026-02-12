@@ -76,14 +76,11 @@
     <div class="blank-block"></div>
 <script>
     // 生成http配置
-    function renderHttpInfo(extInfo, items) {
+    function renderHttpInfo(customType, extInfo, items) {
         let connectorUrl = $("#connectorUrl").val();
         let method = extInfo.method === undefined ? 'POST' : extInfo.method;
         let api = extInfo.api === undefined ? '' : extInfo.api;
         let contentType = extInfo.contentType === undefined ? '1' : extInfo.contentType;
-        let params = extInfo.params === undefined ? '' : extInfo.params;
-        let extractData = extInfo.extractData === undefined ? '$.data.user[*]' : extInfo.extractData;
-        let extractTotal = extInfo.extractTotal === undefined ? '$.data.total' : extInfo.extractTotal;
         items.push(`
             <div class="form-item"></div>
             <div class="form-item">
@@ -101,7 +98,14 @@
                     </select>
                     <input class="form-control ml-2" name="api" type="text" placeholder="请输入请求接口，如：/api/users" value="${api}" required />
                 </div>
-            </div>
+            </div>`);
+
+        // 源配置
+        if (customType === 'source') {
+            let params = extInfo.params === undefined ? 'pageNum=$pageIndex$&pageSize=$pageSize$' : extInfo.params;
+            let extractPath = extInfo.extractPath === undefined ? '$.data.data[*]' : extInfo.extractPath;
+            let extractTotal = extInfo.extractTotal === undefined ? '$.data.total' : extInfo.extractTotal;
+            items.push(`
             <div class="form-item">
                 <label class="form-label">请求参数<strong class="text-primary">*</strong></label>
                 <div class="form-control-area">
@@ -122,7 +126,7 @@
                     <i class="fa fa-question-circle" title="解析接口返回的数据列表，表达式参考json"></i>
                 </label>
                 <div class="bg-gray-100">
-                    <input name="extractData" class="form-control" type="text" value="${extractData}" required />
+                    <input name="extractPath" class="form-control" type="text" value="${extractPath}" required />
                 </div>
             </div>
             <div class="form-item">
@@ -132,6 +136,35 @@
                     <input name="extractTotal" class="form-control" type="text" value="${extractTotal}" required />
                 </div>
             </div>`);
+            return;
+        }
+
+        // 目标配置
+        let params = extInfo.params === undefined ? '[]' : extInfo.params;
+        let writePath = extInfo.writePath === undefined ? '$.[*]' : extInfo.writePath;
+        items.push(`
+        <div class="form-item">
+            <label class="form-label">请求参数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input name="params" class="form-control" type="text" value="${params}" required />
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">Body</label>
+            <div class="form-control-area">
+                <select class="form-control" name="contentType">
+                    <option value="1" ${contentType === '1' ? 'selected' : ''}>JSON</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">写入数据
+                <i class="fa fa-question-circle" title="根据请求参数格式，替换对应路径的数据列表，表达式参考json"></i>
+            </label>
+            <div class="bg-gray-100">
+                <input name="writePath" class="form-control" type="text" value="${writePath}" required />
+            </div>
+        </div>`);
     }
 
     function renderSemiInfo(tableName, extInfo) {
@@ -164,7 +197,7 @@
                 break;
             case 'Http':
                 config.label = '名称';
-                renderHttpInfo(extInfo, items);
+                renderHttpInfo(customType, extInfo, items);
                 break;
             default:
                 config.label = '表名';
