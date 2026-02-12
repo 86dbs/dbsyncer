@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.apache.commons.io.FileUtils;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
@@ -19,15 +20,11 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
-
-import org.apache.commons.io.FileUtils;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -64,9 +61,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
     private AppConfig appConfig;
-
-    @Resource
-    private ApiKeyManager apiKeyManager;
 
     @Override
     public String edit(Map<String, String> params) {

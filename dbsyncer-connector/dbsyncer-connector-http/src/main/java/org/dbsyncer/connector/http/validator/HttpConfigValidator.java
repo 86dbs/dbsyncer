@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.http.validator;
 
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.HttpConnector;
 import org.dbsyncer.connector.http.config.HttpConfig;
 import org.dbsyncer.connector.http.constant.HttpConstant;
@@ -34,6 +35,7 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Assert.hasText(url, "url is empty.");
         Assert.hasText(properties, "properties is empty.");
         connectorConfig.setUrl(url);
+        connectorConfig.setEnableEncrypt(StringUtil.isNotBlank(params.get("enableEncrypt")));
     }
 
     @Override

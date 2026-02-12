@@ -16,6 +16,8 @@ public class HttpConfig extends ConnectorConfig {
 
     private String url;
 
+    private boolean enableEncrypt;
+
     public String getUrl() {
         return url;
     }
@@ -24,4 +26,11 @@ public class HttpConfig extends ConnectorConfig {
         this.url = url;
     }
 
+    public boolean isEnableEncrypt() {
+        return enableEncrypt;
+    }
+
+    public void setEnableEncrypt(boolean enableEncrypt) {
+        this.enableEncrypt = enableEncrypt;
+    }
 }
