@@ -51,8 +51,9 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
             table.getExtInfo().put(HttpConstant.EXTRACT_TOTAL, extractTotal);
         } else {
             String writePath = params.get(HttpConstant.WRITE_PATH);
-            Assert.hasText(writePath, "写入数据规则不能为空");
-            table.getExtInfo().put(HttpConstant.WRITE_PATH, writePath);
+            if (StringUtil.isNotBlank(writePath)) {
+                table.getExtInfo().put(HttpConstant.WRITE_PATH, writePath);
+            }
         }
 
         String tableName = params.get("tableName");

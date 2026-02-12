@@ -141,7 +141,7 @@
 
         // 目标配置
         let params = extInfo.params === undefined ? '[]' : extInfo.params;
-        let writePath = extInfo.writePath === undefined ? '$.[*]' : extInfo.writePath;
+        let writePath = extInfo.writePath === undefined ? '' : extInfo.writePath;
         items.push(`
         <div class="form-item">
             <label class="form-label">请求参数<strong class="text-primary">*</strong></label>
@@ -162,7 +162,7 @@
                 <i class="fa fa-question-circle" title="根据请求参数格式，替换对应路径的数据列表，表达式参考json"></i>
             </label>
             <div class="bg-gray-100">
-                <input name="writePath" class="form-control" type="text" value="${writePath}" required />
+                <input name="writePath" class="form-control" type="text" value="${writePath}" />
             </div>
         </div>`);
     }
