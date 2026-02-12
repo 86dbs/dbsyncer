@@ -1,5 +1,5 @@
 package org.dbsyncer.connector.http.enums;
 
-public enum HttpMethod {
+public enum HttpMethodEnum {
     GET, POST, PUT, DELETE
 }

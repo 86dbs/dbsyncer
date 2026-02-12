@@ -14,12 +14,12 @@ public enum ContentTypeEnum {
     /**
      * JSON
      */
-    APPLICATION_JSON("1","application/json", "JSON格式"),
+    JSON("1", "application/json", "JSON格式"),
 
     /**
      * 表单
      */
-    APPLICATION_FORM_URLENCODED("2","application/x-www-form-urlencoded", "表单格式");
+    FORM_URLENCODED("2", "application/x-www-form-urlencoded", "表单格式");
 
     private final String type;
     private final String code;
@@ -30,6 +30,7 @@ public enum ContentTypeEnum {
         this.code = code;
         this.message = message;
     }
+
     /**
      * 根据 value 获取枚举
      *

@@ -21,7 +21,7 @@ import org.apache.http.util.EntityUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.enums.ContentTypeEnum;
-import org.dbsyncer.connector.http.enums.HttpMethod;
+import org.dbsyncer.connector.http.enums.HttpMethodEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,32 +52,32 @@ public final class RequestBuilder {
     /**
      * 请求URL
      */
-    private String url;
+    private final String url;
 
     /**
      * 请求方法
      */
-    private HttpMethod method;
+    private final HttpMethodEnum method;
+
+    /**
+     * 请求头
+     */
+    private final Map<String, String> headers = new HashMap<>();
 
     /**
      * 查询参数
      */
-    private Map<String, String> queryParams = new HashMap<>();
+    private final Map<String, String> queryParams = new HashMap<>();
 
     /**
      * 请求体参数（用于表单提交）
      */
-    private Map<String, String> bodyParams = new HashMap<>();
+    private final Map<String, String> bodyParams = new HashMap<>();
 
     /**
      * 请求体（JSON字符串）
      */
     private String jsonBody;
-
-    /**
-     * 请求头
-     */
-    private Map<String, String> headers = new HashMap<>();
 
     /**
      * Content-Type
@@ -116,7 +116,7 @@ public final class RequestBuilder {
      * @param url         请求URL
      * @param method      请求方法
      */
-    public RequestBuilder(CloseableHttpClient client, String url, HttpMethod method) {
+    public RequestBuilder(CloseableHttpClient client, String url, HttpMethodEnum method) {
         this.client = client;
         if (StringUtil.isBlank(url)) {
             throw new IllegalArgumentException("URL cannot be null or empty");
@@ -130,13 +130,11 @@ public final class RequestBuilder {
      *
      * @param key   参数名
      * @param value 参数值
-     * @return 当前构建器
      */
-    public RequestBuilder addParam(String key, Object value) {
+    public void addParam(String key, Object value) {
         if (key != null && value != null) {
             queryParams.put(key, String.valueOf(value));
         }
-        return this;
     }
 
     /**
@@ -157,40 +155,34 @@ public final class RequestBuilder {
      *
      * @param key   参数名
      * @param value 参数值
-     * @return 当前构建器
      */
-    public RequestBuilder addBodyParam(String key, Object value) {
+    public void addBodyParam(String key, Object value) {
         if (key != null && value != null) {
             bodyParams.put(key, String.valueOf(value));
         }
-        return this;
     }
 
     /**
      * 添加多个请求体参数
      *
      * @param params 参数Map
-     * @return 当前构建器
      */
-    public RequestBuilder addBodyParams(Map<String, Object> params) {
+    public void addBodyParams(Map<String, Object> params) {
         if (params != null) {
             params.forEach(this::addBodyParam);
         }
-        return this;
     }
 
     /**
      * 设置请求体为JSON
      *
      * @param body 请求体对象
-     * @return 当前构建器
      */
-    public RequestBuilder setBodyAsJson(Object body) {
+    public void setBodyAsJson(Object body) {
         if (body != null) {
             this.jsonBody = JsonUtil.objToJson(body);
-            this.contentType = ContentTypeEnum.APPLICATION_JSON;
+            this.contentType = ContentTypeEnum.JSON;
         }
-        return this;
     }
 
     /**
@@ -202,7 +194,7 @@ public final class RequestBuilder {
     public RequestBuilder setBodyAsJsonString(String jsonString) {
         if (StringUtil.isNotBlank(jsonString)) {
             this.jsonBody = jsonString;
-            this.contentType = ContentTypeEnum.APPLICATION_JSON;
+            this.contentType = ContentTypeEnum.JSON;
         }
         return this;
     }
@@ -212,13 +204,11 @@ public final class RequestBuilder {
      *
      * @param key   头名称
      * @param value 头值
-     * @return 当前构建器
      */
-    public RequestBuilder addHeader(String key, Object value) {
+    public void addHeader(String key, Object value) {
         if (key != null && value != null) {
             headers.put(key, String.valueOf(value));
         }
-        return this;
     }
 
     /**
@@ -238,13 +228,11 @@ public final class RequestBuilder {
      * 设置 Content-Type
      *
      * @param contentType Content-Type
-     * @return 当前构建器
      */
-    public RequestBuilder setContentType(ContentTypeEnum contentType) {
+    public void setContentType(ContentTypeEnum contentType) {
         if (contentType != null) {
             this.contentType = contentType;
         }
-        return this;
     }
 
     /**
@@ -510,7 +498,7 @@ public final class RequestBuilder {
      * @return Content-Type
      */
     private String jsonContentType() {
-        return ContentTypeEnum.APPLICATION_JSON.getCode() + "; charset=" + charset;
+        return ContentTypeEnum.JSON.getCode() + "; charset=" + charset;
     }
 
     /**

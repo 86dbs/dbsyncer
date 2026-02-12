@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.http;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONPath;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -11,7 +12,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.cdc.HttpQuartzListener;
 import org.dbsyncer.connector.http.config.HttpConfig;
 import org.dbsyncer.connector.http.constant.HttpConstant;
-import org.dbsyncer.connector.http.enums.HttpMethod;
+import org.dbsyncer.connector.http.enums.ContentTypeEnum;
+import org.dbsyncer.connector.http.enums.HttpMethodEnum;
+import org.dbsyncer.connector.http.model.HttpProperties;
 import org.dbsyncer.connector.http.model.HttpResponse;
 import org.dbsyncer.connector.http.model.RequestBuilder;
 import org.dbsyncer.connector.http.schema.HttpSchemaResolver;
@@ -32,7 +35,7 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
+import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -41,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Http连接器实现
@@ -122,22 +126,14 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
     @Override
     public long getCount(HttpConnectorInstance connectorInstance, MetaContext metaContext) {
-        // TODO 待实现 拼接完整的url，获取method，解析总数表达式
         Table sourceTable = metaContext.getSourceTable();
-        String serviceUrl = connectorInstance.getServiceUrl();
-        String api = sourceTable.getExtInfo().getProperty(HttpConstant.API);
-        String method = sourceTable.getExtInfo().getProperty(HttpConstant.METHOD);
-        String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
-        // TODO 处理边界斜杠
-        String url = serviceUrl + api;
-        HttpMethod httpMethod = HttpMethod.valueOf(method);
-        Assert.notNull(httpMethod, "method can not be null");
-        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
         HttpResponse<String> execute = builder.execute();
         String data = execute.getBody();
         if (StringUtil.isNotBlank(data)) {
             Object rootObject = JSON.parse(data);
             if (rootObject != null) {
+                String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
                 Object total = JSONPath.eval(rootObject, extractTotal);
                 if (total instanceof Number) {
                     return ((Number) total).longValue();
@@ -149,7 +145,22 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
     @Override
     public Result reader(HttpConnectorInstance connectorInstance, ReaderContext context) {
-        throw new HttpException("Http暂不支持全量读取");
+        Table sourceTable = context.getSourceTable();
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+        HttpResponse<String> execute = builder.execute();
+        String data = execute.getBody();
+        if (StringUtil.isNotBlank(data)) {
+            Object rootObject = JSON.parse(data);
+            if (rootObject != null) {
+                String extractData = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_DATA);
+                Object list = JSONPath.eval(rootObject, extractData);
+                if (list instanceof JSONArray) {
+                    JSONArray jsonArray = (JSONArray) list;
+                    return new Result(jsonArray.toList(Map.class));
+                }
+            }
+        }
+        return new Result();
     }
 
     @Override
@@ -195,5 +206,62 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable) {
+        String serviceUrl = connectorInstance.getServiceUrl();
+        String api = sourceTable.getExtInfo().getProperty(HttpConstant.API);
+        String method = sourceTable.getExtInfo().getProperty(HttpConstant.METHOD);
+        String params = sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+        String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
+        String url = serviceUrl;
+        if (!url.endsWith("/")) {
+            url += "/";
+        }
+        url += api.startsWith("/") ? api.substring(1) : api;
+        HttpMethodEnum httpMethod = HttpMethodEnum.valueOf(method);
+
+        ContentTypeEnum contentTypeEnum = ContentTypeEnum.fromValue(contentType);
+        Assert.notNull(contentTypeEnum, "content type can not be null");
+        Assert.notNull(httpMethod, "method can not be null");
+        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+        builder.setContentType(contentTypeEnum);
+        HttpProperties httpProperties = getHttpProperties(params);
+        if (contentTypeEnum == ContentTypeEnum.JSON) {
+            builder.setBodyAsJson(httpProperties.getParams());
+        } else {
+            builder.addBodyParams(httpProperties.getParams());
+        }
+        return builder;
+    }
+
+    private HttpProperties getHttpProperties(String params) {
+        HttpProperties prop = new HttpProperties();
+        Properties properties = PropertiesUtil.parse(params);
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            String key = (String) entry.getKey();
+            String val = (String) entry.getValue();
+            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_NUM, val)) {
+                prop.setPageNum(key);
+                continue;
+            }
+            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_SIZE, val)) {
+                prop.setPageSize(key);
+                continue;
+            }
+            if (StringUtil.equalsIgnoreCase(HttpConstant.CURSOR, val)) {
+                if (prop.getCursors() == null) {
+                    prop.setCursors(new ArrayList<>());
+                }
+                prop.getCursors().add(key);
+                continue;
+            }
+            if (prop.getParams() == null) {
+                prop.setParams(new HashMap<>());
+            }
+            prop.getParams().put(key, val);
+        }
+
+        return prop;
     }
 }
