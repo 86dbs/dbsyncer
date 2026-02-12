@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.sdk.plugin;
 
-import org.dbsyncer.sdk.model.Table;
-
 import java.util.List;
 
 /**
@@ -13,8 +11,6 @@ import java.util.List;
  * @Date 2024-12-05 00:28
  */
 public interface ReaderContext extends BaseContext {
-
-    Table getSourceTable();
 
     boolean isSupportedCursor();
 

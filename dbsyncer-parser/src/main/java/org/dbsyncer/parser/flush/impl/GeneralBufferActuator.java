@@ -209,8 +209,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
         context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
         context.setSourceTable(tableGroup.getSourceTable());
-        context.setSourceTableName(tableGroup.getSourceTable().getName());
-        context.setTargetTableName(tableGroup.getTargetTable().getName());
+        context.setTargetTable(tableGroup.getTargetTable());
         context.setTraceId(response.getTraceId());
         context.setEvent(response.getEvent());
         context.setTargetFields(tableGroupPicker.getTargetFields());

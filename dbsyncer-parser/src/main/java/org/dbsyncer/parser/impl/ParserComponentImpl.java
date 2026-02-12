@@ -126,31 +126,28 @@ public class ParserComponentImpl implements ParserComponent {
         Map<String, String> command = group.getCommand();
         Assert.notEmpty(command, "执行命令不能为空.");
         List<FieldMapping> fieldMapping = group.getFieldMapping();
-        Table sourceTable = group.getSourceTable();
-        String sTableName = sourceTable.getName();
+        String sTableName = group.getSourceTable().getName();
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(group);
         // 游标分页时使用与构建 QUERY_CURSOR 一致的主键列表，避免 findTablePrimaryKeys 返回表上未参与游标的主键（如 id）导致 getLastCursors 多取游标值、参数个数与 SQL 占位符不一致
         boolean enableCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
-        List<String> primaryKeys = getPrimaryKeysForCursor(command, sourceTable, enableCursor);
+        List<String> primaryKeys = getPrimaryKeysForCursor(command, group.getSourceTable(), enableCursor);
         final FullPluginContext context = new FullPluginContext();
 
         String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
         context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
         context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
-        context.setSourceTable(sourceTable);
-        context.setSourceTableName(sTableName);
-        context.setTargetTableName(tTableName);
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
         context.setCommand(command);
         context.setBatchSize(mapping.getBatchNum());
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setSourceTable(sourceTable);
+        context.setSourceTable(group.getSourceTable());
+        context.setTargetTable(group.getTargetTable());
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());

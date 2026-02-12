@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.Map;
 
@@ -13,6 +14,11 @@ import java.util.Map;
  * @Date 2024-12-05 00:59
  */
 public interface BaseContext {
+
+    /**
+     * 获取源表信息
+     */
+    Table getSourceTable();
 
     /**
      * 执行命令

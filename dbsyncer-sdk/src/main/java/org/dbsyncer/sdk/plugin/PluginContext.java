@@ -20,23 +20,18 @@ public interface PluginContext extends BaseContext {
 
     /**
      * 获取同步方式
-     *
-     * @return
      */
     ModelEnum getModelEnum();
 
     /**
      * 是否终止同步数据到目标源库
-     *
-     * @return
      */
     boolean isTerminated();
 
     /**
      * 是否终止同步数据到目标源库
-     * <p>true: 终止，默认值false
      *
-     * @param terminated
+     * @param terminated true: 终止，默认值false
      */
     void setTerminated(boolean terminated);
 
@@ -46,9 +41,9 @@ public interface PluginContext extends BaseContext {
     ConnectorInstance getTargetConnectorInstance();
 
     /**
-     * 获取源表信息
+     * 获取目标表信息
      */
-    Table getSourceTable();
+    Table getTargetTable();
 
     /**
      * 数据源表
@@ -60,7 +55,10 @@ public interface PluginContext extends BaseContext {
 
     /**
      * 目标源表
+     *
+     * <h3>已过时，请尽快替换为getTargetTable().getName()
      */
+    @Deprecated
     String getTargetTableName();
 
     /**
@@ -104,30 +102,21 @@ public interface PluginContext extends BaseContext {
 
     /**
      * 获取插件
-     *
-     * @return
      */
     Plugin getPlugin();
 
     /**
      * 获取插件参数
-     *
-     * @return
      */
     String getPluginExtInfo();
 
     /**
      * 获取TraceId
-     *
-     * @return
      */
     String getTraceId();
 
     /**
      * 浅拷贝
-     *
-     * @return
-     * @throws CloneNotSupportedException
      */
     Object clone() throws CloneNotSupportedException;
 }

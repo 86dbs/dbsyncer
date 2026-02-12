@@ -5,6 +5,8 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,8 @@ import java.util.Map;
  * @date 2022/6/30 16:00
  */
 public abstract class AbstractPluginContext extends AbstractBaseContext implements PluginContext, Cloneable {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 是否终止任务
@@ -28,19 +32,9 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private ConnectorInstance targetConnectorInstance;
 
     /**
-     * 源表信息
+     * 获取目标表信息
      */
-    private Table sourceTable;
-
-    /**
-     * 数据源表
-     */
-    private String sourceTableName;
-
-    /**
-     * 目标源表
-     */
-    private String targetTableName;
+    private Table targetTable;
 
     /**
      * 同步事件（INSERT/UPDATE/DELETE）
@@ -109,21 +103,24 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     }
 
     @Override
-    public String getSourceTableName() {
-        return sourceTableName;
+    public Table getTargetTable() {
+        return targetTable;
     }
 
-    public void setSourceTableName(String sourceTableName) {
-        this.sourceTableName = sourceTableName;
+    public void setTargetTable(Table targetTable) {
+        this.targetTable = targetTable;
+    }
+
+    @Override
+    public String getSourceTableName() {
+        logger.warn("方法已过时，请尽快替换为getSourceTable().getName()");
+        return getSourceTable().getName();
     }
 
     @Override
     public String getTargetTableName() {
-        return targetTableName;
-    }
-
-    public void setTargetTableName(String targetTableName) {
-        this.targetTableName = targetTableName;
+        logger.warn("方法已过时，请尽快替换为getTargetTable().getName()");
+        return getTargetTable().getName();
     }
 
     @Override

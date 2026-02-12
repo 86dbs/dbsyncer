@@ -14,7 +14,7 @@ import java.util.Map;
  * @Version 1.0.0
  * @Date 2025-02-08 02:17
  */
-public abstract class AbstractBaseContext implements BaseContext, ReaderContext {
+public abstract class AbstractBaseContext implements ReaderContext {
 
     /**
      * 数据源连接实例

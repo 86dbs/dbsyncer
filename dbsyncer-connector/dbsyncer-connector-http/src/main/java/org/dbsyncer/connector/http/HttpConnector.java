@@ -172,15 +172,14 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
         Result result = new Result();
         try {
-            Table sourceTable = context.getSourceTable();
-            sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+            Table targetTable = context.getTargetTable();
             // []
-            String params = sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+            String params = targetTable.getExtInfo().getProperty(HttpConstant.PARAMS);
             Assert.hasText(params, "params can not be empty.");
             // $.[*]
-            String writePath = sourceTable.getExtInfo().getProperty(HttpConstant.WRITE_PATH);
+            String writePath = targetTable.getExtInfo().getProperty(HttpConstant.WRITE_PATH);
             Assert.hasText(writePath, "writePath can not be empty.");
-            RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+            RequestBuilder builder = genRequestBuilder(connectorInstance, targetTable);
 
             // 解析请求体模板为 JSON 对象
             Object rootJSON = JSON.parse(params);
