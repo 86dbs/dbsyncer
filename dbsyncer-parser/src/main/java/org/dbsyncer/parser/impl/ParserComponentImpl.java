@@ -141,6 +141,7 @@ public class ParserComponentImpl implements ParserComponent {
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
         context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
         context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
+        context.setSourceTable(sourceTable);
         context.setSourceTableName(sTableName);
         context.setTargetTableName(tTableName);
         context.setEvent(ConnectorConstant.OPERTION_INSERT);

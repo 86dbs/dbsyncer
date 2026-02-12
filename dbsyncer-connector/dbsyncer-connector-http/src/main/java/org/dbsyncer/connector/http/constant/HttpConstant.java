@@ -18,9 +18,11 @@ public class HttpConstant {
 
     public static final String PARAMS = "params";
 
-    public static final String EXTRACT_DATA = "extractData";
+    public static final String EXTRACT_PATH = "extractPath";
 
     public static final String EXTRACT_TOTAL = "extractTotal";
+
+    public static final String WRITE_PATH = "writePath";
 
     /**
      * 系统变量
@@ -28,7 +30,7 @@ public class HttpConstant {
     // 页数
     public static final String PAGE_INDEX = "$pageIndex$";
     // 页大小
-    public static final String PAGE_SIZE = "pageSize";
+    public static final String PAGE_SIZE = "$pageSize$";
     // 游标参数
-    public static final String CURSOR = "cursor";
+    public static final String CURSOR = "$cursor$";
 }

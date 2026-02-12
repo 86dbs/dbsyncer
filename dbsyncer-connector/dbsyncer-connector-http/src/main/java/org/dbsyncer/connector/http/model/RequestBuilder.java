@@ -189,14 +189,12 @@ public final class RequestBuilder {
      * 设置请求体为JSON字符串
      *
      * @param jsonString JSON字符串
-     * @return 当前构建器
      */
-    public RequestBuilder setBodyAsJsonString(String jsonString) {
+    public void setBodyAsJsonString(String jsonString) {
         if (StringUtil.isNotBlank(jsonString)) {
             this.jsonBody = jsonString;
             this.contentType = ContentTypeEnum.JSON;
         }
-        return this;
     }
 
     /**

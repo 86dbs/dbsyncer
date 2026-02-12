@@ -45,7 +45,7 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         String api = params.get(HttpConstant.API);
         String contentType = params.get(HttpConstant.CONTENT_TYPE);
         String requestParams = params.get(HttpConstant.PARAMS);
-        String extractData = params.get(HttpConstant.EXTRACT_DATA);
+        String extractPath = params.get(HttpConstant.EXTRACT_PATH);
         String extractTotal = params.get(HttpConstant.EXTRACT_TOTAL);
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
@@ -53,7 +53,7 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Assert.hasText(api, "接口不能为空");
         Assert.hasText(contentType, "ContentType不能为空");
         Assert.hasText(requestParams, "动态参数不能为空");
-        Assert.hasText(extractData, "解析数据规则不能为空");
+        Assert.hasText(extractPath, "解析数据规则不能为空");
         Assert.hasText(extractTotal, "解析总数规则不能为空");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
         Assert.notEmpty(fields, "字段不能为空.");
@@ -64,7 +64,7 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         table.getExtInfo().put(HttpConstant.API, api);
         table.getExtInfo().put(HttpConstant.CONTENT_TYPE, contentType);
         table.getExtInfo().put(HttpConstant.PARAMS, requestParams);
-        table.getExtInfo().put(HttpConstant.EXTRACT_DATA, extractData);
+        table.getExtInfo().put(HttpConstant.EXTRACT_PATH, extractPath);
         table.getExtInfo().put(HttpConstant.EXTRACT_TOTAL, extractTotal);
         return table;
     }

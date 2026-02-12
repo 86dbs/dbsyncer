@@ -25,7 +25,6 @@ import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.MetaContext;
@@ -33,7 +32,6 @@ import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +151,7 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         if (StringUtil.isNotBlank(data)) {
             Object rootObject = JSON.parse(data);
             if (rootObject != null) {
-                String extractData = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_DATA);
+                String extractData = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_PATH);
                 Object list = JSONPath.eval(rootObject, extractData);
                 if (list instanceof JSONArray) {
                     JSONArray jsonArray = (JSONArray) list;
@@ -173,9 +171,32 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         }
 
         Result result = new Result();
-        final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
-            result.addSuccessData(data);
+            Table sourceTable = context.getSourceTable();
+            sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+            // []
+            String params = sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+            Assert.hasText(params, "params can not be empty.");
+            // $.[*]
+            String writePath = sourceTable.getExtInfo().getProperty(HttpConstant.WRITE_PATH);
+            Assert.hasText(writePath, "writePath can not be empty.");
+            RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+
+            // 解析请求体模板为 JSON 对象
+            Object rootJSON = JSON.parse(params);
+            // 将 data 转换为 JSONArray
+            JSONArray dataArray = JSON.parseArray(JSON.toJSONString(data));
+            // 使用 JSONPath.set 通过 writePath 路径设置值, 如 $.data 或 $.[*]，用于定位要替换的位置
+            JSONPath.set(rootJSON, writePath, dataArray);
+
+            builder.setBodyAsJsonString(JSON.toJSONString(rootJSON));
+            HttpResponse<String> execute = builder.execute();
+            if (execute.isSuccess()) {
+                result.addSuccessData(data);
+            } else {
+                // 记录错误数据
+                result.addFailData(data);
+            }
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
@@ -208,11 +229,10 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         return schemaResolver;
     }
 
-    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable, Map<String, Object> params) {
+    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable) {
         String serviceUrl = connectorInstance.getServiceUrl();
         String api = sourceTable.getExtInfo().getProperty(HttpConstant.API);
         String method = sourceTable.getExtInfo().getProperty(HttpConstant.METHOD);
-        String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
         String url = serviceUrl;
         if (!url.endsWith("/")) {
             url += "/";
@@ -220,10 +240,15 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         url += api.startsWith("/") ? api.substring(1) : api;
         HttpMethodEnum httpMethod = HttpMethodEnum.valueOf(method);
 
+        Assert.notNull(httpMethod, "method can not be null");
+        return new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+    }
+
+    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable, Map<String, Object> params) {
+        String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
         ContentTypeEnum contentTypeEnum = ContentTypeEnum.fromValue(contentType);
         Assert.notNull(contentTypeEnum, "content type can not be null");
-        Assert.notNull(httpMethod, "method can not be null");
-        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
         builder.setContentType(contentTypeEnum);
         if (contentTypeEnum == ContentTypeEnum.JSON) {
             builder.setBodyAsJson(params);

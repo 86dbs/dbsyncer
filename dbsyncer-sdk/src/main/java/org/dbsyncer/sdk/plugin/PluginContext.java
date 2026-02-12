@@ -4,6 +4,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Plugin;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -45,8 +46,16 @@ public interface PluginContext extends BaseContext {
     ConnectorInstance getTargetConnectorInstance();
 
     /**
-     * 数据源表
+     * 获取源表信息
      */
+    Table getSourceTable();
+
+    /**
+     * 数据源表
+     *
+     * <h3>已过时，请尽快替换为getSourceTable().getName()
+     */
+    @Deprecated
     String getSourceTableName();
 
     /**

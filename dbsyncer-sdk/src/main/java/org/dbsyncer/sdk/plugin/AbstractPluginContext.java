@@ -4,6 +4,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Plugin;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,11 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      * 目标源连接实例
      */
     private ConnectorInstance targetConnectorInstance;
+
+    /**
+     * 源表信息
+     */
+    private Table sourceTable;
 
     /**
      * 数据源表
