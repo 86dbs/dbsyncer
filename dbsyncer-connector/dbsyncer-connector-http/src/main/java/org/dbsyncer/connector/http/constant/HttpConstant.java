@@ -26,7 +26,7 @@ public class HttpConstant {
      * 系统变量
      */
     // 页数
-    public static final String PAGE_NUM = "$pageNum$";
+    public static final String PAGE_INDEX = "$pageIndex$";
     // 页大小
     public static final String PAGE_SIZE = "pageSize";
     // 游标参数

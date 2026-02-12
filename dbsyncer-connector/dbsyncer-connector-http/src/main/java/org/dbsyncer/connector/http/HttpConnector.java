@@ -14,7 +14,6 @@ import org.dbsyncer.connector.http.config.HttpConfig;
 import org.dbsyncer.connector.http.constant.HttpConstant;
 import org.dbsyncer.connector.http.enums.ContentTypeEnum;
 import org.dbsyncer.connector.http.enums.HttpMethodEnum;
-import org.dbsyncer.connector.http.model.HttpProperties;
 import org.dbsyncer.connector.http.model.HttpResponse;
 import org.dbsyncer.connector.http.model.RequestBuilder;
 import org.dbsyncer.connector.http.schema.HttpSchemaResolver;
@@ -127,7 +126,8 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public long getCount(HttpConnectorInstance connectorInstance, MetaContext metaContext) {
         Table sourceTable = metaContext.getSourceTable();
-        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+        Map<String, Object> params = getParams(sourceTable.getExtInfo(), 1, 1, null);
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable, params);
         HttpResponse<String> execute = builder.execute();
         String data = execute.getBody();
         if (StringUtil.isNotBlank(data)) {
@@ -146,7 +146,8 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public Result reader(HttpConnectorInstance connectorInstance, ReaderContext context) {
         Table sourceTable = context.getSourceTable();
-        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+        Map<String, Object> params = getParams(sourceTable.getExtInfo(), context.getPageIndex(), context.getPageSize(), context.getCursors());
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable, params);
         HttpResponse<String> execute = builder.execute();
         String data = execute.getBody();
         if (StringUtil.isNotBlank(data)) {
@@ -191,8 +192,7 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
-        Map<String, String> cmd = new HashMap<>();
-        return cmd;
+        return new HashMap<>();
     }
 
     @Override
@@ -208,11 +208,10 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         return schemaResolver;
     }
 
-    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable) {
+    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable, Map<String, Object> params) {
         String serviceUrl = connectorInstance.getServiceUrl();
         String api = sourceTable.getExtInfo().getProperty(HttpConstant.API);
         String method = sourceTable.getExtInfo().getProperty(HttpConstant.METHOD);
-        String params = sourceTable.getExtInfo().getProperty(HttpConstant.PARAMS);
         String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
         String url = serviceUrl;
         if (!url.endsWith("/")) {
@@ -226,42 +225,53 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         Assert.notNull(httpMethod, "method can not be null");
         RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
         builder.setContentType(contentTypeEnum);
-        HttpProperties httpProperties = getHttpProperties(params);
         if (contentTypeEnum == ContentTypeEnum.JSON) {
-            builder.setBodyAsJson(httpProperties.getParams());
+            builder.setBodyAsJson(params);
         } else {
-            builder.addBodyParams(httpProperties.getParams());
+            builder.addBodyParams(params);
         }
         return builder;
     }
 
-    private HttpProperties getHttpProperties(String params) {
-        HttpProperties prop = new HttpProperties();
-        Properties properties = PropertiesUtil.parse(params);
+    private Map<String, Object> getParams(Properties extInfo, int pageIndex, int pageSize, Object[] cursors) {
+        Properties properties = PropertiesUtil.parse(extInfo.getProperty(HttpConstant.PARAMS));
+        String pageIndexKey = "";
+        String pageSizeKey = "";
+        List<String> cursorKeys = null;
+        Map<String, Object> params = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String key = (String) entry.getKey();
             String val = (String) entry.getValue();
-            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_NUM, val)) {
-                prop.setPageNum(key);
+            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_INDEX, val)) {
+                pageIndexKey = key;
                 continue;
             }
             if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_SIZE, val)) {
-                prop.setPageSize(key);
+                pageSizeKey = key;
                 continue;
             }
             if (StringUtil.equalsIgnoreCase(HttpConstant.CURSOR, val)) {
-                if (prop.getCursors() == null) {
-                    prop.setCursors(new ArrayList<>());
+                if (cursorKeys == null) {
+                    cursorKeys = new ArrayList<>();
                 }
-                prop.getCursors().add(key);
+                cursorKeys.add(key);
                 continue;
             }
-            if (prop.getParams() == null) {
-                prop.setParams(new HashMap<>());
-            }
-            prop.getParams().put(key, val);
+            params.put(key, val);
         }
 
-        return prop;
+        if (StringUtil.isNotBlank(pageIndexKey)) {
+            params.put(pageIndexKey, pageIndex);
+        }
+        if (StringUtil.isNotBlank(pageSizeKey)) {
+            params.put(pageSizeKey, pageSize);
+        }
+        if (cursorKeys != null && cursors != null && cursors.length > 0) {
+            Assert.isTrue(cursorKeys.size() == cursors.length, "游标参数不一致");
+            for (int i = 0; i < cursors.length; i++) {
+                params.put(cursorKeys.get(i), cursors[i]);
+            }
+        }
+        return params;
     }
 }
