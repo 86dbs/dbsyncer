@@ -7,6 +7,7 @@ import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -40,7 +41,6 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -49,7 +49,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +97,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private TableGroupContext tableGroupContext;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @PostConstruct
     public void init() {
@@ -221,6 +223,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));
+        setRsaConfig(context);
         pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步
@@ -233,6 +236,13 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 6、执行后置处理
         pluginFactory.process(context, ProcessEnum.AFTER);
+    }
+
+    private void setRsaConfig(IncrementPluginContext context) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            context.setRsaManager(rsaManager);
+            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
     }
 
     /**

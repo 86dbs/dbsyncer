@@ -19,6 +19,8 @@ public class HttpConfig extends ConnectorConfig {
 
     private boolean enableEncrypt;
 
+    private boolean publicNetwork;
+
     public String getUrl() {
         return url;
     }
@@ -33,6 +35,14 @@ public class HttpConfig extends ConnectorConfig {
 
     public void setEnableEncrypt(boolean enableEncrypt) {
         this.enableEncrypt = enableEncrypt;
+    }
+
+    public boolean isPublicNetwork() {
+        return publicNetwork;
+    }
+
+    public void setPublicNetwork(boolean publicNetwork) {
+        this.publicNetwork = publicNetwork;
     }
 
     @Override

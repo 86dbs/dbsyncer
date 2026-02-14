@@ -1,9 +1,9 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.biz.impl;
+package org.dbsyncer.common.rsa;
 
-import org.dbsyncer.biz.BizException;
+import org.dbsyncer.common.CommonException;
 import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.model.RsaVersion;
@@ -51,7 +51,7 @@ public class RsaManager {
      */
     public String decrypt(RsaConfig config, OpenApiData data, boolean isPublicNetwork) {
         if (config == null || CollectionUtils.isEmpty(config.getRsaVersions())) {
-            throw new BizException("RSA密钥配置未启用");
+            throw new CommonException("RSA密钥配置未启用");
         }
 
         // 尝试所有启用的密钥版本
@@ -70,7 +70,7 @@ public class RsaManager {
                 logger.error("解密失败，版本: {}", version.getVersion());
             }
         }
-        throw new BizException("解密失败，密钥验证均不通过");
+        throw new CommonException("解密失败，密钥验证均不通过");
     }
 
     /**
@@ -100,7 +100,7 @@ public class RsaManager {
                 logger.error("加密失败，版本: {}", version.getVersion());
             }
         }
-        throw new BizException("加密失败");
+        throw new CommonException("加密失败");
     }
 
     /**

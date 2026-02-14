@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -74,6 +75,9 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Resource
     private ApplicationContext applicationContext;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Override
     public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
@@ -151,6 +155,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
+        setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         picker.setSourceResolver(sourceConnector.getSchemaResolver());
         // 0、插件前置处理
@@ -262,6 +267,13 @@ public class ParserComponentImpl implements ParserComponent {
             logger.error(e.getMessage());
         }
         return result;
+    }
+
+    private void setRsaConfig(FullPluginContext context) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            context.setRsaManager(rsaManager);
+            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
     }
 
     /**

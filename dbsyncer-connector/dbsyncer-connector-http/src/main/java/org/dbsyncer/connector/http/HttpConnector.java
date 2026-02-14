@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONPath;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -185,28 +186,11 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
         Result result = new Result();
         try {
-            Table targetTable = context.getTargetTable();
-            // []
-            String params = targetTable.getExtInfo().getProperty(HttpConstant.PARAMS);
-            Assert.hasText(params, "params can not be empty.");
-            RequestBuilder builder = genRequestBuilder(connectorInstance, targetTable);
+            RequestBuilder builder = genRequestBuilder(connectorInstance, context.getTargetTable());
 
             // 解析请求体模板为 JSON 对象
-            Object rootJSON = JSON.parse(params);
-            // 将 data 转换为 JSONArray
-            JSONArray dataArray = JSON.parseArray(JSON.toJSONString(data));
-            if (rootJSON instanceof JSONArray) {
-                // 特殊处理：如果模板是数组
-                ((JSONArray) rootJSON).clear();
-                ((JSONArray) rootJSON).addAll(dataArray);
-            } else {
-                // 一般情况：使用 JSONPath.set 通过 writePath 路径设置值, 如 $.data，用于定位要替换的位置
-                String writePath = targetTable.getExtInfo().getProperty(HttpConstant.WRITE_PATH);
-                Assert.hasText(writePath, "writePath can not be empty.");
-                JSONPath.set(rootJSON, writePath, dataArray);
-            }
-
-            builder.setBodyAsJsonString(JSON.toJSONString(rootJSON));
+            Object dataObj = writeData(connectorInstance, context, data);
+            builder.setBodyAsJsonString(JSON.toJSONString(dataObj));
             HttpResponse<String> execute = builder.execute();
             if (execute.isSuccess()) {
                 result.addSuccessData(data);
@@ -246,6 +230,33 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    private Object writeData(HttpConnectorInstance connectorInstance, PluginContext context, List<Map> data) {
+        RsaManager rsaManager = context.getRsaManager();
+        if (rsaManager != null && context.getRsaConfig() != null) {
+            boolean publicNetwork = connectorInstance.getConfig().isPublicNetwork();
+            return rsaManager.encrypt(context.getRsaConfig(), data, publicNetwork);
+        }
+
+        // []
+        Table targetTable = context.getTargetTable();
+        String params = targetTable.getExtInfo().getProperty(HttpConstant.PARAMS);
+        Assert.hasText(params, "params can not be empty.");
+        Object rootJSON = JSON.parse(params);
+        // 将 data 转换为 JSONArray
+        JSONArray dataArray = JSON.parseArray(JSON.toJSONString(data));
+        if (rootJSON instanceof JSONArray) {
+            // 特殊处理：如果模板是数组
+            ((JSONArray) rootJSON).clear();
+            ((JSONArray) rootJSON).addAll(dataArray);
+        } else {
+            // 一般情况：使用 JSONPath.set 通过 writePath 路径设置值, 如 $.data，用于定位要替换的位置
+            String writePath = targetTable.getExtInfo().getProperty(HttpConstant.WRITE_PATH);
+            Assert.hasText(writePath, "writePath can not be empty.");
+            JSONPath.set(rootJSON, writePath, dataArray);
+        }
+        return rootJSON;
     }
 
     private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable) {

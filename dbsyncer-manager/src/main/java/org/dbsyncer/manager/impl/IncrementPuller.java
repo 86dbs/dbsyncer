@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.connector.base.ConnectorFactory;
@@ -35,7 +36,6 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -44,7 +44,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -71,6 +70,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -196,6 +198,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             abstractListener.setConnectorInstance(connectorFactory.connect(sourceInstanceId));
             abstractListener.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
             abstractListener.setScheduledTaskService(scheduledTaskService);
+            setRsaConfig(abstractListener);
             abstractListener.setConnectorConfig(connectorConfig);
             abstractListener.setListenerConfig(listenerConfig);
             abstractListener.setFilterTable(filterTable);
@@ -207,6 +210,13 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         listener.init();
         return listener;
+    }
+
+    private void setRsaConfig(AbstractListener listener) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            listener.setRsaManager(rsaManager);
+            listener.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
     }
 
     private void addSourceTable(List<Table> sourceTable, List<Table> customTable, Set<String> filterTable, Table table) {

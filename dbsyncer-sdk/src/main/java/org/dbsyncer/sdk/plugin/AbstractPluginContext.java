@@ -1,5 +1,7 @@
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
@@ -82,6 +84,16 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     private String pluginExtInfo;
 
     private String traceId;
+
+    /**
+     * 获取RSA加密类
+     */
+    private RsaManager rsaManager;
+
+    /**
+     * 获取RSA配置
+     */
+    private RsaConfig rsaConfig;
 
     @Override
     public boolean isTerminated() {
@@ -217,5 +229,23 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    @Override
+    public RsaManager getRsaManager() {
+        return rsaManager;
+    }
+
+    public void setRsaManager(RsaManager rsaManager) {
+        this.rsaManager = rsaManager;
+    }
+
+    @Override
+    public RsaConfig getRsaConfig() {
+        return rsaConfig;
+    }
+
+    public void setRsaConfig(RsaConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
     }
 }

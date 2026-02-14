@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class Bucket {
 
-    private LongAdder longAdder = new LongAdder();
+    private final LongAdder longAdder = new LongAdder();
 
     private long time;
 

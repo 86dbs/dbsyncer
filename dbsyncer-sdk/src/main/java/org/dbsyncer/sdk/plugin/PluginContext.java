@@ -1,5 +1,7 @@
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
@@ -119,4 +121,14 @@ public interface PluginContext extends BaseContext {
      * 浅拷贝
      */
     Object clone() throws CloneNotSupportedException;
+
+    /**
+     * 获取RSA加密类
+     */
+    RsaManager getRsaManager();
+
+    /**
+     * 获取RSA配置
+     */
+    RsaConfig getRsaConfig();
 }

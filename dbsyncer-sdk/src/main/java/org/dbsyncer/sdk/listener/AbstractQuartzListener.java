@@ -147,6 +147,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         context.setPageSize(READ_NUM);
         context.setPlugin(cmd.getPlugin());
         context.setPluginExtInfo(cmd.getPluginExtInfo());
+        context.setRsaManager(rsaManager);
+        context.setRsaConfig(rsaConfig);
         changeEventBefore(context);
         while (running) {
             context.setArgs(point.getArgs());

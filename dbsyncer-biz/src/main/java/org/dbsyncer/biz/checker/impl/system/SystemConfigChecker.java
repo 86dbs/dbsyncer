@@ -5,7 +5,7 @@ package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.impl.ApiKeyManager;
-import org.dbsyncer.biz.impl.RsaManager;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.RsaConfig;

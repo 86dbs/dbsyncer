@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.listener;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.config.ListenerConfig;
@@ -38,6 +40,8 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     protected ConnectorInstance targetConnectorInstance;
     protected ConnectorService connectorService;
     protected ScheduledTaskService scheduledTaskService;
+    protected RsaManager rsaManager;
+    protected RsaConfig rsaConfig;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Set<String> filterTable;
@@ -158,6 +162,14 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     public void setScheduledTaskService(ScheduledTaskService scheduledTaskService) {
         this.scheduledTaskService = scheduledTaskService;
+    }
+
+    public void setRsaManager(RsaManager rsaManager) {
+        this.rsaManager = rsaManager;
+    }
+
+    public void setRsaConfig(RsaConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
     }
 
     public void setConnectorConfig(ConnectorConfig connectorConfig) {

@@ -103,9 +103,7 @@ public class OpenApiInterceptor implements HandlerInterceptor {
      * 判断是否为认证接口
      */
     private boolean isAuthEndpoint(String path) {
-        return path.endsWith("/openapi/auth/login") ||
-               path.endsWith("/openapi/auth/refresh")||
-               path.endsWith("/openapi/mock");
+        return path.endsWith("/openapi/auth/login") || path.endsWith("/openapi/auth/refresh");
     }
 
     /**
