@@ -127,16 +127,28 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         Map<String, Object> params = getParams(sourceTable.getExtInfo(), 1, 1, null);
         RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable, params);
         HttpResponse<String> execute = builder.execute();
+        if (!execute.isSuccess()) {
+            String errMsg = StringUtil.isNotBlank(execute.getMessage()) ? execute.getMessage()
+                    : (StringUtil.isNotBlank(execute.getBody()) ? execute.getBody() : "Request failed, status: " + execute.getStatusCode());
+            throw new HttpException(errMsg);
+        }
         String data = execute.getBody();
-        if (StringUtil.isNotBlank(data)) {
+        if (StringUtil.isBlank(data)) {
+            return 0;
+        }
+        try {
             Object rootObject = JSON.parse(data);
-            if (rootObject != null) {
-                String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
-                Object total = JSONPath.eval(rootObject, extractTotal);
-                if (total instanceof Number) {
-                    return ((Number) total).longValue();
-                }
+            if (rootObject == null) {
+                return 0;
             }
+            String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
+            Object total = JSONPath.eval(rootObject, extractTotal);
+            if (total instanceof Number) {
+                return ((Number) total).longValue();
+            }
+        } catch (Exception e) {
+            logger.error("Failed to extract total from response: {}", e.getMessage());
+            throw new HttpException("Failed to extract total: " + (e.getMessage() != null ? e.getMessage() : data));
         }
         return 0;
     }
@@ -197,10 +209,12 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
             HttpResponse<String> execute = builder.execute();
             if (execute.isSuccess()) {
                 result.addSuccessData(data);
-            } else {
-                // 记录错误数据
-                result.addFailData(data);
+                return result;
             }
+            // 异常信息可能在 message 或 body 中，优先使用有内容的
+            String errMsg = StringUtil.isNotBlank(execute.getMessage()) ? execute.getMessage()
+                    : (StringUtil.isNotBlank(execute.getBody()) ? execute.getBody() : "Request failed, status: " + execute.getStatusCode());
+            throw new HttpException(errMsg);
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);

@@ -14,6 +14,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -473,8 +474,9 @@ public final class RequestBuilder {
 
         // 如果有 JSON body，优先使用 JSON
         if (StringUtil.isNotBlank(jsonBody)) {
-            entity = new StringEntity(jsonBody, jsonContentType());
-            request.setHeader("Content-Type", jsonContentType());
+            ContentType contentType = ContentType.create(ContentTypeEnum.JSON.getCode(), charset);
+            entity = new StringEntity(jsonBody, contentType);
+            request.setHeader("Content-Type", contentType.toString());
         }
         // 如果设置了 bodyParams，使用表单提交
         else if (!bodyParams.isEmpty()) {
@@ -488,15 +490,6 @@ public final class RequestBuilder {
         if (entity != null) {
             request.setEntity(entity);
         }
-    }
-
-    /**
-     * 获取 JSON Content-Type
-     *
-     * @return Content-Type
-     */
-    private String jsonContentType() {
-        return ContentTypeEnum.JSON.getCode() + "; charset=" + charset;
     }
 
     /**

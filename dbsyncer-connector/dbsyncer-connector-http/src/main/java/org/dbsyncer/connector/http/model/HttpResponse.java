@@ -213,14 +213,4 @@ public class HttpResponse<T> {
         this.costTime = costTime;
     }
 
-    @Override
-    public String toString() {
-        return "HttpResponse{" +
-                "statusCode=" + statusCode +
-                ", success=" + success +
-                ", costTime=" + costTime +
-                ", body='" + (body != null && body.length() > 100 ? body.substring(0, 100) + "..." : body) + '\'' +
-                ", message='" + message + '\'' +
-                '}';
-    }
 }
