@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.http.config;
 
+import org.dbsyncer.connector.http.util.HttpUtil;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 
 /**
@@ -32,5 +33,10 @@ public class HttpConfig extends ConnectorConfig {
 
     public void setEnableEncrypt(boolean enableEncrypt) {
         this.enableEncrypt = enableEncrypt;
+    }
+
+    @Override
+    public String getPropertiesText() {
+        return HttpUtil.toString(getProperties());
     }
 }

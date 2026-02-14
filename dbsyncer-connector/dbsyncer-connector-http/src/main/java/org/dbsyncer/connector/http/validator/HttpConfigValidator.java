@@ -8,10 +8,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.HttpConnector;
 import org.dbsyncer.connector.http.config.HttpConfig;
 import org.dbsyncer.connector.http.constant.HttpConstant;
+import org.dbsyncer.connector.http.util.HttpUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
-
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -36,6 +36,7 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Assert.hasText(properties, "properties is empty.");
         connectorConfig.setUrl(url);
         connectorConfig.setEnableEncrypt(StringUtil.isNotBlank(params.get("enableEncrypt")));
+        connectorConfig.setProperties(HttpUtil.parse(properties));
     }
 
     @Override

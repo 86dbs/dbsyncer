@@ -24,9 +24,19 @@ public class HttpConstant {
 
     public static final String WRITE_PATH = "writePath";
 
-    /**
-     * 系统变量
-     */
+    /** 连接参数（连接器配置 properties） */
+    // 连接超时（毫秒）
+    public static final String CONNECTION_TIMEOUT_MS = "connection.timeout.ms";
+    // 读取超时（毫秒）
+    public static final String SOCKET_TIMEOUT_MS = "socket.timeout.ms";
+    // 从连接池获取连接超时（毫秒）
+    public static final String CONNECTION_REQUEST_TIMEOUT_MS = "connection.request.timeout.ms";
+    // 重试次数
+    public static final String RETRY_TIMES = "retry.times";
+    // 字符编码
+    public static final String CHARSET = "charset";
+
+    /** 系统变量 */
     // 页数
     public static final String PAGE_INDEX = "$pageIndex$";
     // 页大小

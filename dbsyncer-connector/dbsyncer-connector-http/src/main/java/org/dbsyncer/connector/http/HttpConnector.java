@@ -8,6 +8,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONPath;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.http.cdc.HttpQuartzListener;
 import org.dbsyncer.connector.http.config.HttpConfig;
@@ -255,11 +256,28 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         if (!url.endsWith("/")) {
             url += "/";
         }
-        url += api.startsWith("/") ? api.substring(1) : api;
+        url += api != null && api.startsWith("/") ? api.substring(1) : (api != null ? api : "");
         HttpMethodEnum httpMethod = HttpMethodEnum.valueOf(method);
 
         Assert.notNull(httpMethod, "method can not be null");
-        return new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+        RequestBuilder builder = new RequestBuilder(connectorInstance.getConnection(), url, httpMethod);
+
+        // 获取连接参数
+        HttpConfig config = connectorInstance.getConfig();
+        if (config != null && config.getProperties() != null) {
+            Properties props = config.getProperties();
+            int connectionTimeout = NumberUtil.toInt(props.getProperty(HttpConstant.CONNECTION_TIMEOUT_MS), 30000);
+            int socketTimeout = NumberUtil.toInt(props.getProperty(HttpConstant.SOCKET_TIMEOUT_MS), 30000);
+            int connectionRequestTimeout = NumberUtil.toInt(props.getProperty(HttpConstant.CONNECTION_REQUEST_TIMEOUT_MS), 30000);
+            int retryTimes = NumberUtil.toInt(props.getProperty(HttpConstant.RETRY_TIMES), 0);
+            String charset = props.getProperty(HttpConstant.CHARSET, "UTF-8");
+            builder.setConnectionTimeout(connectionTimeout);
+            builder.setSocketTimeout(socketTimeout);
+            builder.setConnectionRequestTimeout(connectionRequestTimeout);
+            builder.setRetryTimes(retryTimes);
+            builder.setCharset(charset);
+        }
+        return builder;
     }
 
     private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable, Map<String, Object> params) {

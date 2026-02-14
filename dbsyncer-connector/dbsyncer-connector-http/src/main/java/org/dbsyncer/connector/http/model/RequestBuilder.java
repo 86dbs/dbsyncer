@@ -238,57 +238,45 @@ public final class RequestBuilder {
      * 设置字符编码
      *
      * @param charset 字符编码
-     * @return 当前构建器
      */
-    public RequestBuilder setCharset(String charset) {
-        if (StringUtil.isNotBlank(charset)) {
-            this.charset = charset;
-        }
-        return this;
+    public void setCharset(String charset) {
+        this.charset = charset;
     }
 
     /**
      * 设置连接超时时间（毫秒）
      *
      * @param connectionTimeout 连接超时时间
-     * @return 当前构建器
      */
-    public RequestBuilder setConnectionTimeout(int connectionTimeout) {
+    public void setConnectionTimeout(int connectionTimeout) {
         this.connectionTimeout = connectionTimeout;
-        return this;
     }
 
     /**
      * 设置读取超时时间（毫秒）
      *
      * @param socketTimeout 读取超时时间
-     * @return 当前构建器
      */
-    public RequestBuilder setSocketTimeout(int socketTimeout) {
+    public void setSocketTimeout(int socketTimeout) {
         this.socketTimeout = socketTimeout;
-        return this;
     }
 
     /**
      * 设置从连接池获取连接的超时时间（毫秒）
      *
      * @param connectionRequestTimeout 连接请求超时时间
-     * @return 当前构建器
      */
-    public RequestBuilder setConnectionRequestTimeout(int connectionRequestTimeout) {
+    public void setConnectionRequestTimeout(int connectionRequestTimeout) {
         this.connectionRequestTimeout = connectionRequestTimeout;
-        return this;
     }
 
     /**
      * 设置重试次数
      *
      * @param retryTimes 重试次数
-     * @return 当前构建器
      */
-    public RequestBuilder setRetryTimes(int retryTimes) {
+    public void setRetryTimes(int retryTimes) {
         this.retryTimes = Math.max(0, retryTimes);
-        return this;
     }
 
     /**
