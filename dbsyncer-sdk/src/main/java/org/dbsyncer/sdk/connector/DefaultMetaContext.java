@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.connector;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.MetaContext;
 
@@ -17,6 +19,8 @@ public class DefaultMetaContext implements MetaContext {
     private Table sourceTable;
     private Map<String, String> command;
     private ConnectorInstance sourceConnectorInstance;
+    private RsaManager rsaManager;
+    private RsaConfig rsaConfig;
 
     @Override
     public Table getSourceTable() {
@@ -45,5 +49,23 @@ public class DefaultMetaContext implements MetaContext {
     @Override
     public void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance) {
         this.sourceConnectorInstance = sourceConnectorInstance;
+    }
+
+    @Override
+    public RsaManager getRsaManager() {
+        return rsaManager;
+    }
+
+    public void setRsaManager(RsaManager rsaManager) {
+        this.rsaManager = rsaManager;
+    }
+
+    @Override
+    public RsaConfig getRsaConfig() {
+        return rsaConfig;
+    }
+
+    public void setRsaConfig(RsaConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
     }
 }

@@ -6,8 +6,8 @@ package org.dbsyncer.connector.http;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONPath;
+import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.Result;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -29,6 +29,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.BaseContext;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -124,33 +125,21 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     }
 
     @Override
-    public long getCount(HttpConnectorInstance connectorInstance, MetaContext metaContext) {
-        Table sourceTable = metaContext.getSourceTable();
+    public long getCount(HttpConnectorInstance connectorInstance, MetaContext context) {
+        Table sourceTable = context.getSourceTable();
         Map<String, Object> params = getParams(sourceTable.getExtInfo(), 1, 1, null);
-        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable, params);
-        HttpResponse<String> execute = builder.execute();
-        if (!execute.isSuccess()) {
-            String errMsg = StringUtil.isNotBlank(execute.getMessage()) ? execute.getMessage()
-                    : (StringUtil.isNotBlank(execute.getBody()) ? execute.getBody() : "Request failed, status: " + execute.getStatusCode());
-            throw new HttpException(errMsg);
-        }
+        RequestBuilder builder = buildRequestBuilder(connectorInstance, context, sourceTable, params);
+        HttpResponse execute = builder.execute();
         String data = execute.getBody();
-        if (StringUtil.isBlank(data)) {
-            return 0;
-        }
-        try {
+        if (StringUtil.isNotBlank(data)) {
             Object rootObject = JSON.parse(data);
-            if (rootObject == null) {
-                return 0;
+            if (rootObject != null) {
+                String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
+                Object total = JSONPath.eval(rootObject, extractTotal);
+                if (total instanceof Number) {
+                    return ((Number) total).longValue();
+                }
             }
-            String extractTotal = sourceTable.getExtInfo().getProperty(HttpConstant.EXTRACT_TOTAL);
-            Object total = JSONPath.eval(rootObject, extractTotal);
-            if (total instanceof Number) {
-                return ((Number) total).longValue();
-            }
-        } catch (Exception e) {
-            logger.error("Failed to extract total from response: {}", e.getMessage());
-            throw new HttpException("Failed to extract total: " + (e.getMessage() != null ? e.getMessage() : data));
         }
         return 0;
     }
@@ -159,8 +148,8 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     public Result reader(HttpConnectorInstance connectorInstance, ReaderContext context) {
         Table sourceTable = context.getSourceTable();
         Map<String, Object> params = getParams(sourceTable.getExtInfo(), context.getPageIndex(), context.getPageSize(), context.getCursors());
-        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable, params);
-        HttpResponse<String> execute = builder.execute();
+        RequestBuilder builder = buildRequestBuilder(connectorInstance, context, sourceTable, params);
+        HttpResponse execute = builder.execute();
         String data = execute.getBody();
         if (StringUtil.isNotBlank(data)) {
             Object rootObject = JSON.parse(data);
@@ -191,15 +180,8 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
             // 解析请求体模板为 JSON 对象
             Object dataObj = writeData(connectorInstance, context, data);
             builder.setBodyAsJsonString(JSON.toJSONString(dataObj));
-            HttpResponse<String> execute = builder.execute();
-            if (execute.isSuccess()) {
-                result.addSuccessData(data);
-                return result;
-            }
-            // 异常信息可能在 message 或 body 中，优先使用有内容的
-            String errMsg = StringUtil.isNotBlank(execute.getMessage()) ? execute.getMessage()
-                    : (StringUtil.isNotBlank(execute.getBody()) ? execute.getBody() : "Request failed, status: " + execute.getStatusCode());
-            throw new HttpException(errMsg);
+            builder.execute();
+            result.addSuccessData(data);
         } catch (Exception e) {
             // 记录错误数据
             result.addFailData(data);
@@ -232,11 +214,23 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         return schemaResolver;
     }
 
-    private Object writeData(HttpConnectorInstance connectorInstance, PluginContext context, List<Map> data) {
-        RsaManager rsaManager = context.getRsaManager();
-        if (rsaManager != null && context.getRsaConfig() != null) {
+    private RequestBuilder buildRequestBuilder(HttpConnectorInstance connectorInstance, BaseContext context, Table sourceTable, Map<String, Object> params) {
+        RequestBuilder builder;
+        if (connectorInstance.getConfig().isEnableEncrypt() && context.getRsaManager() != null && context.getRsaConfig() != null) {
             boolean publicNetwork = connectorInstance.getConfig().isPublicNetwork();
-            return rsaManager.encrypt(context.getRsaConfig(), data, publicNetwork);
+            OpenApiData dataObj = context.getRsaManager().encrypt(context.getRsaConfig(), params, publicNetwork);
+            builder = genRequestBuilder(connectorInstance, sourceTable);
+            builder.setBodyAsJsonString(JSON.toJSONString(dataObj));
+        } else {
+            builder = genRequestBuilder(connectorInstance, sourceTable, params);
+        }
+        return builder;
+    }
+
+    private Object writeData(HttpConnectorInstance connectorInstance, PluginContext context, List<Map> data) {
+        if (connectorInstance.getConfig().isEnableEncrypt() && context.getRsaManager() != null && context.getRsaConfig() != null) {
+            boolean publicNetwork = connectorInstance.getConfig().isPublicNetwork();
+            return context.getRsaManager().encrypt(context.getRsaConfig(), data, publicNetwork);
         }
 
         // []

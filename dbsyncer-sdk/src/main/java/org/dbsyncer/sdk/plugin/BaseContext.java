@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Table;
 
@@ -33,4 +35,14 @@ public interface BaseContext {
     ConnectorInstance getSourceConnectorInstance();
 
     void setSourceConnectorInstance(ConnectorInstance sourceConnectorInstance);
+
+    /**
+     * 获取RSA加密类（http连接器场景）
+     */
+    RsaManager getRsaManager();
+
+    /**
+     * 获取RSA配置（http连接器场景）
+     */
+    RsaConfig getRsaConfig();
 }

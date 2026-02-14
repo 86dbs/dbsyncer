@@ -16,6 +16,7 @@ import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -109,6 +110,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private PreloadTemplate preloadTemplate;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Override
     public String add(Map<String, String> params) {
@@ -405,6 +409,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setProfileComponent(profileComponent);
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
+        task.setRsaManager(rsaManager);
         dispatchTaskService.execute(task);
     }
 

@@ -5,6 +5,7 @@ package org.dbsyncer.biz.task;
 
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.common.dispatch.AbstractDispatchTask;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -17,7 +18,6 @@ import org.dbsyncer.sdk.connector.DefaultMetaContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -46,6 +46,8 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     protected ConnectorFactory connectorFactory;
 
+    private RsaManager rsaManager;
+
     public void setMappingId(String mappingId) {
         this.mappingId = mappingId;
     }
@@ -66,6 +68,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         this.connectorFactory = connectorFactory;
     }
 
+    public void setRsaManager(RsaManager rsaManager) {
+        this.rsaManager = rsaManager;
+    }
+
     protected void updateTableGroupCount(Mapping mapping, TableGroup tableGroup) {
         long now = Instant.now().toEpochMilli();
         TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, tableGroup);
@@ -81,6 +87,7 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
         metaContext.setCommand(command);
         metaContext.setSourceTable(group.getSourceTable());
         metaContext.setSourceConnectorInstance(connectorInstance);
+        setRsaConfig(metaContext);
 
         long count = connectorService.getCount(connectorInstance, metaContext);
         tableGroup.getSourceTable().setCount(count);
@@ -90,5 +97,12 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     protected boolean shouldStop(Mapping mapping) {
         return !isRunning() || !ModelEnum.isFull(mapping.getModel());
+    }
+
+    private void setRsaConfig(DefaultMetaContext context) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            context.setRsaManager(rsaManager);
+            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
     }
 }

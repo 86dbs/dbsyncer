@@ -21,6 +21,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.http.HttpException;
 import org.dbsyncer.connector.http.enums.ContentTypeEnum;
 import org.dbsyncer.connector.http.enums.HttpMethodEnum;
 import org.slf4j.Logger;
@@ -284,21 +285,7 @@ public final class RequestBuilder {
      *
      * @return HTTP响应
      */
-    public HttpResponse<String> execute() {
-        return execute(String.class);
-    }
-
-    /**
-     * 执行请求并返回指定类型的响应
-     *
-     * @param clazz 响应类型
-     * @param <T>   泛型类型
-     * @return HTTP响应
-     */
-    public <T> HttpResponse<T> execute(Class<T> clazz) {
-        long startTime = System.currentTimeMillis();
-        HttpResponse<T> response = new HttpResponse<>();
-
+    public HttpResponse execute() {
         try {
             // 构建URL
             String requestUrl = buildUrl();
@@ -321,26 +308,17 @@ public final class RequestBuilder {
             CloseableHttpResponse httpResponse = executeWithRetry(httpRequest);
 
             // 处理响应
-            response = handleResponse(httpResponse, clazz);
+            HttpResponse response = handleResponse(httpResponse);
 
+            if (!response.isSuccess()) {
+                String errMsg = StringUtil.isNotBlank(response.getBody()) ? response.getBody() : "Request failed, status: " + response.getStatusCode();
+                throw new HttpException(errMsg);
+            }
+            return response;
         } catch (Exception e) {
             logger.error("HTTP request failed: {} {}", method, url, e);
-            response.setSuccess(false);
-            response.setMessage("HTTP request failed: " + e.getMessage());
+            throw new HttpException("HTTP request failed: " + e.getMessage());
         }
-
-        response.setCostTime(System.currentTimeMillis() - startTime);
-
-        // 记录请求耗时
-        if (response.isSuccess()) {
-            logger.debug("Request completed successfully: {} {}, status: {}, cost: {}ms",
-                    method, url, response.getStatusCode(), response.getCostTime());
-        } else {
-            logger.warn("Request failed: {} {}, status: {}, cost: {}ms, message: {}",
-                    method, url, response.getStatusCode(), response.getCostTime(), response.getMessage());
-        }
-
-        return response;
     }
 
     /**
@@ -517,27 +495,18 @@ public final class RequestBuilder {
     /**
      * 处理响应
      *
-     * @param httpResponse HTTP响应
-     * @param clazz        返回类型
-     * @param <T>          泛型类型
+     * @param httpResponse HTTP响应x
      * @return HttpResponse
      * @throws IOException IO异常
      */
-    private <T> HttpResponse<T> handleResponse(CloseableHttpResponse httpResponse, Class<T> clazz) throws IOException {
+    private HttpResponse handleResponse(CloseableHttpResponse httpResponse) throws IOException {
         try {
             int statusCode = httpResponse.getStatusLine().getStatusCode();
             HttpEntity entity = httpResponse.getEntity();
             String body = entity != null ? EntityUtils.toString(entity, charset) : null;
-
-            HttpResponse<T> response = new HttpResponse<>(statusCode, body);
-            response.setStatusCode(statusCode);
-            response.setBody(body);
-            response.setSuccess(statusCode >= 200 && statusCode < 300);
-
             // 消耗实体内容，确保连接可以释放
             EntityUtils.consumeQuietly(entity);
-
-            return response;
+            return new HttpResponse(statusCode, body);
         } finally {
             if (httpResponse != null) {
                 httpResponse.close();

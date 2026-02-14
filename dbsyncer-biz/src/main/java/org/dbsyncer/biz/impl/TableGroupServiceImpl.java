@@ -8,6 +8,7 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -57,6 +58,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Resource
     private ConnectorFactory connectorFactory;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Resource
     private DispatchTaskService dispatchTaskService;
@@ -254,6 +258,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
         task.setConnectorFactory(connectorFactory);
+        task.setRsaManager(rsaManager);
         task.setTableGroupService(this);
         dispatchTaskService.execute(task);
     }
