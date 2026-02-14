@@ -231,7 +231,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 5、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
-        result.setTargetTableGroupName(context.getTargetTableName());
+        result.setTargetTableGroupName(context.getTargetTable().getName());
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
         // 6、执行后置处理

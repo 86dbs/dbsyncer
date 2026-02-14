@@ -160,7 +160,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
                 cursors = new Object[0];
                 break;
             }
-            logger.info("{}[{}], data=[{}]", mappingName, context.getSourceTableName(), data.size());
+            logger.info("{}[{}], data=[{}]", mappingName, context.getSourceTable().getName(), data.size());
             for (Map<String, Object> row : data) {
                 if (customEvent) {
                     trySendEvent(new ScanChangedEvent(table.getName(), event, cmd.getChangedRow(row)));

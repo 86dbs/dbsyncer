@@ -33,7 +33,7 @@ public abstract class AbstractConnector {
                 try {
                     row.compute(f.getName(), (k, v)->targetResolver.convert(v, f));
                 } catch (Exception e) {
-                    logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTableName(), f.getName(), row.get(f.getName())), e);
+                    logger.error(String.format("convert value error: (%s, %s, %s)", context.getTargetTable().getName(), f.getName(), row.get(f.getName())), e);
                     throw new SdkException(e);
                 }
             }

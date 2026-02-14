@@ -883,10 +883,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (success) {
             // 仅开启traceId时才输出日志
             if (context.isEnablePrintTraceInfo()) {
-                logger.info("{} {}表事件{}, 执行{}成功, {}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, row);
+                logger.info("{} {}表事件{}, 执行{}成功, {}", context.getTraceId(), context.getTargetTable().getName(), context.getEvent(), event, row);
             }
             return;
         }
-        logger.error("{} {}表事件{}, 执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTableName(), context.getEvent(), event, message, row);
+        logger.error("{} {}表事件{}, 执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTable().getName(), context.getEvent(), event, message, row);
     }
 }
