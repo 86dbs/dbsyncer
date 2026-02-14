@@ -176,7 +176,6 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         Result result = new Result();
         try {
             RequestBuilder builder = genRequestBuilder(connectorInstance, context.getTargetTable());
-
             // 解析请求体模板为 JSON 对象
             Object dataObj = writeData(connectorInstance, context, data);
             builder.setBodyAsJsonString(JSON.toJSONString(dataObj));
@@ -215,14 +214,23 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     }
 
     private RequestBuilder buildRequestBuilder(HttpConnectorInstance connectorInstance, BaseContext context, Table sourceTable, Map<String, Object> params) {
-        RequestBuilder builder;
         if (connectorInstance.getConfig().isEnableEncrypt() && context.getRsaManager() != null && context.getRsaConfig() != null) {
             boolean publicNetwork = connectorInstance.getConfig().isPublicNetwork();
             OpenApiData dataObj = context.getRsaManager().encrypt(context.getRsaConfig(), params, publicNetwork);
-            builder = genRequestBuilder(connectorInstance, sourceTable);
+            RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
             builder.setBodyAsJsonString(JSON.toJSONString(dataObj));
+            return builder;
+        }
+
+        String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
+        ContentTypeEnum contentTypeEnum = ContentTypeEnum.fromValue(contentType);
+        Assert.notNull(contentTypeEnum, "content type can not be null");
+        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
+        builder.setContentType(contentTypeEnum);
+        if (contentTypeEnum == ContentTypeEnum.JSON) {
+            builder.setBodyAsJson(params);
         } else {
-            builder = genRequestBuilder(connectorInstance, sourceTable, params);
+            builder.addBodyParams(params);
         }
         return builder;
     }
@@ -281,20 +289,6 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
             builder.setConnectionRequestTimeout(connectionRequestTimeout);
             builder.setRetryTimes(retryTimes);
             builder.setCharset(charset);
-        }
-        return builder;
-    }
-
-    private RequestBuilder genRequestBuilder(HttpConnectorInstance connectorInstance, Table sourceTable, Map<String, Object> params) {
-        String contentType = sourceTable.getExtInfo().getProperty(HttpConstant.CONTENT_TYPE);
-        ContentTypeEnum contentTypeEnum = ContentTypeEnum.fromValue(contentType);
-        Assert.notNull(contentTypeEnum, "content type can not be null");
-        RequestBuilder builder = genRequestBuilder(connectorInstance, sourceTable);
-        builder.setContentType(contentTypeEnum);
-        if (contentTypeEnum == ContentTypeEnum.JSON) {
-            builder.setBodyAsJson(params);
-        } else {
-            builder.addBodyParams(params);
         }
         return builder;
     }
