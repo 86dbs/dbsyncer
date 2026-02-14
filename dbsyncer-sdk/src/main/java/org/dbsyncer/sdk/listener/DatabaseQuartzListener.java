@@ -8,7 +8,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.model.Point;
-
+import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -24,21 +24,17 @@ import java.util.stream.Stream;
  * 关系型数据库定时抽取
  *
  * @version 1.0.0
- * @Author AE86
- * @Date 2021-09-01 20:35
+ * @author AE86
+ * @date 2021-09-01 20:35
  */
 public final class DatabaseQuartzListener extends AbstractQuartzListener {
 
     @Override
-    protected Point checkLastPoint(Map<String, String> command, int index) {
+    protected Point checkLastPoint(TableGroupQuartzCommand cmd, int index) {
         // 检查是否存在系统参数
+        Map<String, String> command = cmd.getCommand();
         final String query = command.get(ConnectorConstant.OPERTION_QUERY);
 
-        /**
-         * 排序开始/结束时间，防止系统生成的开始时间大于结束时间，导致无法查询有效范围结果集
-         * <p>fixed：select * from user where end_time > $timestamp_end$ and begin_time <= $timestamp_begin$
-         * <p>normal：select * from user where begin_time > $timestamp_begin$ and end_time <= $timestamp_end$
-         */
         AtomicBoolean reversed = new AtomicBoolean();
         AtomicLong lastIndex = new AtomicLong();
         List<QuartzFilterEnum> filterEnums = Stream.of(QuartzFilterEnum.values()).sorted(Comparator.comparing(QuartzFilterEnum::getIndex)).filter(f-> {

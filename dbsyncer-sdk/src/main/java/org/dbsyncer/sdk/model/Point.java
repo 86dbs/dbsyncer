@@ -11,8 +11,8 @@ import java.util.Map;
 public class Point {
 
     private Map<String, String> position;
-    private Map<String, String> command;
-    private List<Object> args;
+    private final Map<String, String> command;
+    private final List<Object> args;
     private String beginKey;
     private String beginValue;
     private boolean refreshed;

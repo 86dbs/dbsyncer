@@ -54,12 +54,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     /**
      * 获取增量参数
-     *
-     * @param command
-     * @param index
-     * @return
      */
-    protected abstract Point checkLastPoint(Map<String, String> command, int index);
+    protected abstract Point checkLastPoint(TableGroupQuartzCommand command, int index);
 
     @Override
     public void start() {
@@ -116,9 +112,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
     private void flushPoint() {
         if (CollectionUtils.isEmpty(snapshot)) {
             for (int i = 0; i < commands.size(); i++) {
-                final Map<String, String> command = commands.get(i).getCommand();
                 // 更新最新增量点
-                Point point = checkLastPoint(command, i);
+                Point point = checkLastPoint(commands.get(i), i);
                 if (!CollectionUtils.isEmpty(point.getPosition())) {
                     snapshot.putAll(point.getPosition());
                 }
@@ -133,7 +128,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         final Table table = cmd.getTable();
 
         // 检查增量点
-        Point point = checkLastPoint(command, index);
+        Point point = checkLastPoint(cmd, index);
         int pageIndex = 1;
         Object[] cursors = PrimaryKeyUtil.getLastCursors((String) snapshot.get(index + CURSOR));
 

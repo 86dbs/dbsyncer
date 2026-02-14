@@ -62,10 +62,6 @@ public enum QuartzFilterEnum {
         this.quartzFilter = quartzFilter;
     }
 
-    /**
-     * @param type
-     * @return
-     */
     public static QuartzFilterEnum getQuartzFilterEnum(String type) {
         for (QuartzFilterEnum e : QuartzFilterEnum.values()) {
             if (StringUtil.equals(type, e.getType())) {

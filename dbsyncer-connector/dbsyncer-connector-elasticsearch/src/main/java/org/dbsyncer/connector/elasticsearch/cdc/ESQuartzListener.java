@@ -13,7 +13,7 @@ import org.dbsyncer.sdk.listener.AbstractQuartzListener;
 import org.dbsyncer.sdk.listener.QuartzFilter;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Point;
-
+import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.elasticsearch.ElasticsearchException;
 
 import java.util.ArrayList;
@@ -32,8 +32,9 @@ import java.util.Set;
 public final class ESQuartzListener extends AbstractQuartzListener {
 
     @Override
-    protected Point checkLastPoint(Map<String, String> command, int index) {
+    protected Point checkLastPoint(TableGroupQuartzCommand cmd, int index) {
         // 检查是否存在系统参数
+        Map<String, String> command = cmd.getCommand();
         String filterJson = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
         if (StringUtil.isBlank(filterJson)) {
             return new Point(command, new ArrayList<>());
