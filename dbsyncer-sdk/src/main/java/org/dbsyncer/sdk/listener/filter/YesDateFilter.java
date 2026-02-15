@@ -9,7 +9,7 @@ import java.time.ZoneId;
 
 public class YesDateFilter implements QuartzFilter<Date> {
 
-    private boolean begin;
+    private final boolean begin;
 
     public YesDateFilter(boolean begin) {
         this.begin = begin;

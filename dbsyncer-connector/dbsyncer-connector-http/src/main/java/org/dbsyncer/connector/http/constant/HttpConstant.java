@@ -43,4 +43,9 @@ public class HttpConstant {
     public static final String PAGE_SIZE = "$pageSize$";
     // 游标参数
     public static final String CURSOR = "$cursor$";
+
+    /**
+     * 统一增量参数：command 中存放“静态变量”的 key（时间/日期等由 checkLastPoint 写入的占位符替换值，JSON 序列化的 Map）
+     */
+    public static final String HTTP_INCREMENT_VARS = "HTTP_INCREMENT_VARS";
 }

@@ -22,6 +22,9 @@ public class TableGroupQuartzCommand {
 
     private final List<String> primaryKeys;
 
+    // http连接器场景使用
+    private List<String> cursorKeys;
+
     public TableGroupQuartzCommand(Table table, List<Field> fields, Table targetTable, Map<String, String> command, Plugin plugin, String pluginExtInfo) {
         this.table = table;
         this.fields = fields;
@@ -62,5 +65,13 @@ public class TableGroupQuartzCommand {
 
     public List<Object> getChangedRow(Map<String, Object> row) {
         return fields.stream().map(field->row.get(field.getName())).collect(Collectors.toList());
+    }
+
+    public List<String> getCursorKeys() {
+        return cursorKeys;
+    }
+
+    public void setCursorKeys(List<String> cursorKeys) {
+        this.cursorKeys = cursorKeys;
     }
 }

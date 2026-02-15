@@ -7,7 +7,7 @@ import java.time.Instant;
 
 public class TimestampFilter implements QuartzFilter<Timestamp> {
 
-    private boolean begin;
+    private final boolean begin;
 
     public TimestampFilter(boolean begin) {
         this.begin = begin;

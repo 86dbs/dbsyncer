@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 public class YesTimestampFilter implements QuartzFilter<Timestamp> {
 
-    private boolean begin;
+    private final boolean begin;
 
     public YesTimestampFilter(boolean begin) {
         this.begin = begin;

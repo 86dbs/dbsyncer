@@ -123,8 +123,6 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
     }
 
     private void execute(TableGroupQuartzCommand cmd, int index) {
-        final Map<String, String> command = cmd.getCommand();
-        final List<String> primaryKeys = cmd.getPrimaryKeys();
         final Table table = cmd.getTable();
 
         // 检查增量点
@@ -138,7 +136,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         context.setSourceTable(table);
         context.setTargetTable(cmd.getTargetTable());
         context.setCommand(point.getCommand());
-        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
+        context.setSupportedCursor(isSupportedCursor(cmd));
         context.setPageSize(READ_NUM);
         context.setPlugin(cmd.getPlugin());
         context.setPluginExtInfo(cmd.getPluginExtInfo());
@@ -176,7 +174,9 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
                 }
             }
             // 更新记录点
-            cursors = PrimaryKeyUtil.getLastCursors(data, primaryKeys);
+            if (context.isSupportedCursor()) {
+                cursors = getLastCursors(cmd, data);
+            }
             point.refresh();
 
             if (data.size() < READ_NUM) {
@@ -192,6 +192,15 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         if (context.isSupportedCursor() && cursors != null && cursors.length > 0) {
             snapshot.put(index + CURSOR, StringUtil.join(cursors, ","));
         }
+    }
+
+    protected boolean isSupportedCursor(TableGroupQuartzCommand cmd) {
+        final Map<String, String> command = cmd.getCommand();
+        return StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
+    }
+
+    protected Object[] getLastCursors(TableGroupQuartzCommand cmd, List<Map> data) {
+        return PrimaryKeyUtil.getLastCursors(data, cmd.getPrimaryKeys());
     }
 
     private void trySendEvent(ChangedEvent event) {
@@ -212,6 +221,10 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     public void setMappingName(String mappingName) {
         this.mappingName = mappingName;
+    }
+
+    public List<TableGroupQuartzCommand> getCommands() {
+        return commands;
     }
 
     public void setCommands(List<TableGroupQuartzCommand> commands) {

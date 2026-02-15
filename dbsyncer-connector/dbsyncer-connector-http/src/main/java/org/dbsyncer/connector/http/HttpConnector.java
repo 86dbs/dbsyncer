@@ -5,6 +5,7 @@ package org.dbsyncer.connector.http;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONPath;
 import org.dbsyncer.common.model.OpenApiData;
 import org.dbsyncer.common.model.Result;
@@ -19,11 +20,13 @@ import org.dbsyncer.connector.http.enums.HttpMethodEnum;
 import org.dbsyncer.connector.http.model.HttpResponse;
 import org.dbsyncer.connector.http.model.RequestBuilder;
 import org.dbsyncer.connector.http.schema.HttpSchemaResolver;
+import org.dbsyncer.connector.http.util.HttpUtil;
 import org.dbsyncer.connector.http.validator.HttpConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
@@ -35,7 +38,6 @@ import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
-import org.dbsyncer.sdk.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -127,7 +129,7 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public long getCount(HttpConnectorInstance connectorInstance, MetaContext context) {
         Table sourceTable = context.getSourceTable();
-        Map<String, Object> params = getParams(sourceTable.getExtInfo(), 1, 1, null);
+        Map<String, Object> params = getCountParams(sourceTable.getExtInfo());
         RequestBuilder builder = buildRequestBuilder(connectorInstance, context, sourceTable, params);
         HttpResponse execute = builder.execute();
         String data = execute.getBody();
@@ -147,7 +149,7 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
     @Override
     public Result reader(HttpConnectorInstance connectorInstance, ReaderContext context) {
         Table sourceTable = context.getSourceTable();
-        Map<String, Object> params = getParams(sourceTable.getExtInfo(), context.getPageIndex(), context.getPageSize(), context.getCursors());
+        Map<String, Object> params = getParams(context);
         RequestBuilder builder = buildRequestBuilder(connectorInstance, context, sourceTable, params);
         HttpResponse execute = builder.execute();
         String data = execute.getBody();
@@ -192,7 +194,9 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
 
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
-        return new HashMap<>();
+        Map<String, String> map = new HashMap<>();
+        map.put(ConnectorConstant.OPERTION_QUERY, "HTTP");
+        return map;
     }
 
     @Override
@@ -293,44 +297,83 @@ public class HttpConnector implements ConnectorService<HttpConnectorInstance, Ht
         return builder;
     }
 
-    private Map<String, Object> getParams(Properties extInfo, int pageIndex, int pageSize, Object[] cursors) {
-        Properties properties = PropertiesUtil.parse(extInfo.getProperty(HttpConstant.PARAMS));
+    /**
+     * 统一增量参数替换。从 context 的 command 中读取静态变量（时间/日期），
+     * 与 pageIndex、pageSize、cursors 一起做一次占位符替换。
+     */
+    private Map<String, Object> getParams(ReaderContext context) {
+        Properties extInfo = context.getSourceTable().getExtInfo();
+        String paramsTemplate = extInfo.getProperty(HttpConstant.PARAMS);
+        if (StringUtil.isBlank(paramsTemplate)) {
+            return new HashMap<>();
+        }
+        Properties template = HttpUtil.parse(paramsTemplate);
+        Map<String, Object> varMap = new HashMap<>();
+        varMap.put(HttpConstant.PAGE_INDEX, context.getPageIndex());
+        varMap.put(HttpConstant.PAGE_SIZE, context.getPageSize());
+        String staticVarsJson = context.getCommand() != null ? context.getCommand().get(HttpConstant.HTTP_INCREMENT_VARS) : null;
+        if (StringUtil.isNotBlank(staticVarsJson)) {
+            try {
+                JSONObject jo = JSON.parseObject(staticVarsJson);
+                if (jo != null) {
+                    for (String k : jo.keySet()) {
+                        varMap.put(k, jo.get(k));
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Parse HTTP_INCREMENT_VARS failed: {}", e.getMessage());
+            }
+        }
+
+        List<String> cursorKeys = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : template.entrySet()) {
+            String key = (String) entry.getKey();
+            String raw = (String) entry.getValue();
+            String val = raw != null ? StringUtil.trim(raw) : "";
+            if (HttpConstant.CURSOR.equals(val)) {
+                cursorKeys.add(key);
+                continue;
+            }
+            result.put(key, varMap.getOrDefault(val, val));
+        }
+        Object[] cursors = context.getCursors();
+        if (!cursorKeys.isEmpty() && cursors != null) {
+            for (int i = 0; i < cursorKeys.size() && i < cursors.length; i++) {
+                result.put(cursorKeys.get(i), cursors[i]);
+            }
+        }
+        return result;
+    }
+
+    /** 供 getCount 等无 ReaderContext 场景使用 */
+    private Map<String, Object> getCountParams(Properties extInfo) {
+        String paramsTemplate = extInfo.getProperty(HttpConstant.PARAMS);
+        if (StringUtil.isBlank(paramsTemplate)) {
+            return new HashMap<>();
+        }
+        Properties template = HttpUtil.parse(paramsTemplate);
         String pageIndexKey = "";
         String pageSizeKey = "";
-        List<String> cursorKeys = null;
         Map<String, Object> params = new HashMap<>();
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+        for (Map.Entry<Object, Object> entry : template.entrySet()) {
             String key = (String) entry.getKey();
             String val = (String) entry.getValue();
-            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_INDEX, val)) {
+            if (HttpConstant.PAGE_INDEX.equals(val)) {
                 pageIndexKey = key;
                 continue;
             }
-            if (StringUtil.equalsIgnoreCase(HttpConstant.PAGE_SIZE, val)) {
+            if (HttpConstant.PAGE_SIZE.equals(val)) {
                 pageSizeKey = key;
-                continue;
-            }
-            if (StringUtil.equalsIgnoreCase(HttpConstant.CURSOR, val)) {
-                if (cursorKeys == null) {
-                    cursorKeys = new ArrayList<>();
-                }
-                cursorKeys.add(key);
                 continue;
             }
             params.put(key, val);
         }
-
         if (StringUtil.isNotBlank(pageIndexKey)) {
-            params.put(pageIndexKey, pageIndex);
+            params.put(pageIndexKey, 1);
         }
         if (StringUtil.isNotBlank(pageSizeKey)) {
-            params.put(pageSizeKey, pageSize);
-        }
-        if (cursorKeys != null && cursors != null && cursors.length > 0) {
-            Assert.isTrue(cursorKeys.size() == cursors.length, "游标参数不一致");
-            for (int i = 0; i < cursors.length; i++) {
-                params.put(cursorKeys.get(i), cursors[i]);
-            }
+            params.put(pageSizeKey, 1);
         }
         return params;
     }
