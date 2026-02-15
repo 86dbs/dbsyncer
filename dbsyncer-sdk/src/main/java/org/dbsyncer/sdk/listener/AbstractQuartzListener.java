@@ -179,9 +179,9 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
             }
             point.refresh();
 
-            if (data.size() < READ_NUM) {
-                cursors = new Object[0];
-                break;
+            // 及时清理对象
+            if (!CollectionUtils.isEmpty(data)) {
+                data.clear();
             }
         }
 
