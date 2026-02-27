@@ -1615,10 +1615,10 @@
         $(selectId).html('<option value="">加载中...</option>');
 
         $.ajax({
-            url: $basePath + "/task/getDatabases",
+            url: $basePath + "/connector/getDatabase",
             type: "GET",
             dataType: "json",
-            data: { connectorId: connectorId },
+            data: { id: connectorId },
             success: function (result) {
                 console.log('[加载数据库] 响应结果:', result);
 
