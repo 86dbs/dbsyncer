@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">告警通知</h3>
+    </div>
+    <div class="card-body">
+        <form id="alert-form-edit">
+            <!-- 管理员操作区域 -->
+            <div class="form-actions mb-4">
+                <button id="updateAlertBtn" type="button" class="btn btn-primary">
+                    <span class="fa fa-save"></span> 保存
+                </button>
+            </div>
+
+            <!-- 告警通知配置区域 -->
+            <div class="grid grid-cols-2">
+
+                <!-- 企业微信配置区域 -->
+                <div class="form-item">
+                    <label class="form-label">企业微信</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableWechat" type="checkbox" th:checked="${config?.wechat != null}"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item"></div>
+
+                <div class="form-item wechat-config hidden">
+                    <label class="form-label">@所有人</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="wechatAtAll" type="checkbox" th:checked="${config?.wechat?.atAll}" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item wechat-config hidden">
+                    <label class="form-label">@用户</label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" maxlength="200" name="wechatAtUsers" placeholder="@用户1 @用户2" th:value="${config?.wechat?.atUsers}"/>
+                    </div>
+                </div>
+
+                <div class="form-item wechat-config hidden">
+                    <label class="form-label">webhook</label>
+                    <div class="form-control-area">
+                        <textarea name="wechatWebhook" class="form-control" maxlength="200" rows="3" placeholder="企业微信机器人webhook地址"></textarea>
+                    </div>
+                </div>
+                <div class="form-item wechat-config hidden"></div>
+
+                <!-- HTTP配置区域 -->
+                <div class="form-item">
+                    <label class="form-label">HTTP</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableHttp" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item"></div>
+                <div class="form-item http-config hidden">
+                    <label class="form-label">webhook</label>
+                    <div class="form-control-area">
+                        <textarea name="httpUrl" class="form-control" maxlength="200" rows="3" placeholder="回调http接口"></textarea>
+                    </div>
+                </div>
+                <div class="form-item http-config hidden"></div>
+
+                <!-- 邮件配置区域 -->
+                <div class="form-item">
+                    <label class="form-label">邮件</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableMail" type="checkbox" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item"></div>
+
+                <div class="form-item mail-config hidden">
+                    <label class="form-label">账号<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" maxlength="100" required name="mailAccount"/>
+                    </div>
+                </div>
+                <div class="form-item mail-config hidden">
+                    <label class="form-label">Code<strong class="text-primary">*</strong><i class="fa fa-question-circle" title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" maxlength="100" required name="mailCode"/>
+                    </div>
+                </div>
+
+            </div>
+
+        </form>
+        <div class="blank-block-md"></div>
+
+    </div>
+</div>
+
+<script>
+    $(function () {
+        // 定义切换显示/隐藏的函数
+        function toggleConfigItems(checked, items) {
+            if (checked) {
+                items.show();
+            } else {
+                items.hide();
+            }
+        }
+        function initSwitchToggle(switchName, config) {
+            const switchElement = $('input[name="'+switchName+'"]')
+            let switchApi = initSwitch(switchElement, function(checked) {
+                toggleConfigItems(checked, config);
+            });
+            toggleConfigItems(switchApi.isChecked(), config);
+        }
+        initSwitchToggle('enableMail', $('.mail-config'));
+        initSwitchToggle('enableHttp', $('.http-config'));
+        initSwitchToggle('enableWechat', $('.wechat-config'));
+
+        //保存
+        $("#updateAlertBtn").click(function () {
+            const $form = $("#alert-form-edit");
+            if (validateForm($form)) {
+                const submitBtn = $(this);
+                const originalText = submitBtn.html();
+                submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+                doPoster('/alert/edit', $form.serializeJson(), function (response) {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    if (response.success === true) {
+                        bootGrowl("修改成功!", "success");
+                        doLoader("/alert");
+                    } else {
+                        bootGrowl(response.message, "danger");
+                    }
+                });
+            }
+        });
+
+    })
+</script>
+</html>
