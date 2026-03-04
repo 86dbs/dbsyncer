@@ -48,7 +48,7 @@ public final class OracleDateType extends DateType {
         }
         if (val instanceof Timestamp) {
             Timestamp timestamp = (Timestamp) val;
-            return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
+            return new Date(timestamp.getTime());
         }
         if (val instanceof java.util.Date) {
             java.util.Date date = (java.util.Date) val;
@@ -56,14 +56,15 @@ public final class OracleDateType extends DateType {
         }
         if (val instanceof LocalDateTime) {
             LocalDateTime dateTime = (LocalDateTime) val;
-            return Date.valueOf(dateTime.toLocalDate());
+            Timestamp timestamp = Timestamp.valueOf(dateTime);
+            return new Date(timestamp.getTime());
         }
         if (val instanceof String) {
             String s = (String) val;
             // 先尝试解析为 Timestamp（支持带时间的字符串）
             Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
             if (timestamp != null) {
-                return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
+                return new Date(timestamp.getTime());
             }
             // 再尝试直接解析为 Date（仅日期格式）
             return DateFormatUtil.stringToDate(s);
