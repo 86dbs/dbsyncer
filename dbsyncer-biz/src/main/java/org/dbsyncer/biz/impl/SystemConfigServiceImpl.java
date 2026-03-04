@@ -54,6 +54,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private Checker systemConfigChecker;
 
     @Resource
+    private Checker alertConfigChecker;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -65,6 +68,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
+        profileComponent.editConfigModel(model);
+        return "修改成功.";
+    }
+
+    @Override
+    public String editAlertConfig(Map<String, String> params) {
+        ConfigModel model = alertConfigChecker.checkEditConfigModel(params);
         profileComponent.editConfigModel(model);
         return "修改成功.";
     }

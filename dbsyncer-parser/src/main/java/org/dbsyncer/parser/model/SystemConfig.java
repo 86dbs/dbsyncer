@@ -97,6 +97,11 @@ public class SystemConfig extends ConfigModel {
      */
     private IpWhitelistConfig ipWhitelistConfig;
 
+    /**
+     * 告警配置
+     */
+    private AlertConfig alertConfig;
+
     public int getExpireDataDays() {
         return expireDataDays;
     }
@@ -215,5 +220,13 @@ public class SystemConfig extends ConfigModel {
 
     public void setIpWhitelistConfig(IpWhitelistConfig ipWhitelistConfig) {
         this.ipWhitelistConfig = ipWhitelistConfig;
+    }
+
+    public AlertConfig getAlertConfig() {
+        return alertConfig;
+    }
+
+    public void setAlertConfig(AlertConfig alertConfig) {
+        this.alertConfig = alertConfig;
     }
 }
