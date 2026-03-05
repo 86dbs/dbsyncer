@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.biz.checker.impl.alert;
+package org.dbsyncer.biz.checker.impl.notice;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
@@ -9,10 +9,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.plugin.model.AlertChannelHttp;
-import org.dbsyncer.plugin.model.AlertChannelMail;
-import org.dbsyncer.plugin.model.AlertChannelWeChat;
-import org.dbsyncer.plugin.model.AlertConfig;
+import org.dbsyncer.plugin.model.HttpNoticeChannel;
+import org.dbsyncer.plugin.model.MailNoticeChannel;
+import org.dbsyncer.plugin.model.WeChatNoticeChannel;
+import org.dbsyncer.plugin.model.NoticeConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -20,14 +20,14 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * 告警配置校验器
+ * 通知配置校验器
  *
  * @Author AE86
  * @Version 1.0.0
  * @Date 2026-03-04 19:00
  */
 @Component
-public class AlertConfigChecker extends AbstractChecker {
+public class NoticeConfigChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
@@ -45,13 +45,13 @@ public class AlertConfigChecker extends AbstractChecker {
         Assert.notNull(systemConfig, "配置文件为空.");
 
         if (systemConfig.getAlertConfig() == null) {
-            systemConfig.setAlertConfig(new AlertConfig());
+            systemConfig.setAlertConfig(new NoticeConfig());
         }
-        AlertConfig alertConfig = systemConfig.getAlertConfig();
+        NoticeConfig alertConfig = systemConfig.getAlertConfig();
 
         // 是否启用企业微信告警
         boolean enableWechat = StringUtil.isNotBlank(params.get("enableWechat"));
-        AlertChannelWeChat weChat = alertConfig.getWechat();
+        WeChatNoticeChannel weChat = alertConfig.getWechat();
         weChat.setEnabled(enableWechat);
         if (enableWechat) {
             String webhookUrl = params.get("wechatWebhookUrl");
@@ -63,7 +63,7 @@ public class AlertConfigChecker extends AbstractChecker {
 
         // 是否启用HTTP告警
         boolean enableHttp = StringUtil.isNotBlank(params.get("enableHttp"));
-        AlertChannelHttp http = alertConfig.getHttp();
+        HttpNoticeChannel http = alertConfig.getHttp();
         http.setEnabled(enableHttp);
         if (enableHttp) {
             String url = params.get("httpUrl");
@@ -73,7 +73,7 @@ public class AlertConfigChecker extends AbstractChecker {
 
         // 是否启用邮件告警
         boolean enableMail = StringUtil.isNotBlank(params.get("enableMail"));
-        AlertChannelMail mail = alertConfig.getMail();
+        MailNoticeChannel mail = alertConfig.getMail();
         mail.setEnabled(enableMail);
         if (enableMail) {
             String account = params.get("mailAccount");

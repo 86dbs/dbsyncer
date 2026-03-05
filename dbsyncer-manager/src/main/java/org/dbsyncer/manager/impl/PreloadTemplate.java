@@ -30,9 +30,9 @@ import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
-import org.dbsyncer.plugin.impl.MailNotifyServiceProvider;
-import org.dbsyncer.plugin.impl.WeChatNotifyService;
-import org.dbsyncer.plugin.model.AlertConfig;
+import org.dbsyncer.plugin.impl.MailNoticeService;
+import org.dbsyncer.plugin.impl.WeChatNoticeService;
+import org.dbsyncer.plugin.model.NoticeConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -48,7 +48,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 
-import java.security.GeneralSecurityException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -125,14 +124,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     public void loadNotificationChannel() {
         try {
             SystemConfig systemConfig = profileComponent.getSystemConfig();
-            AlertConfig alertConfig = systemConfig.getAlertConfig();
+            NoticeConfig alertConfig = systemConfig.getAlertConfig();
             if (null == alertConfig) {
                 return;
             }
 
             // 邮件通知
             if (alertConfig.getMail().isEnabled()) {
-                MailNotifyServiceProvider service = new MailNotifyServiceProvider();
+                MailNoticeService service = new MailNoticeService();
                 service.setUsername(alertConfig.getMail().getAccount());
                 service.setPassword(alertConfig.getMail().getCode());
                 service.build();
@@ -143,7 +142,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
             // 企业微信通知
             if (alertConfig.getWechat().isEnabled()) {
-                WeChatNotifyService service = new WeChatNotifyService();
+                WeChatNoticeService service = new WeChatNoticeService();
                 messageService.registerNotifyService(NoticeChannelEnum.WE_CHAT, service);
             } else {
                 messageService.removeNotifyService(NoticeChannelEnum.WE_CHAT);

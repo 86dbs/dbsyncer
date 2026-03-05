@@ -13,7 +13,7 @@
         <form id="alert-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
-                <button id="testAlertBtn" type="button" class="btn btn-default" th:if="${config?.wechat?.enabled || config?.http?.enabled || config?.mail?.enabled}">
+                <button id="testAlertBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
                     <span class="fa fa-flash"></span> 测试
                 </button>
                 <button id="updateAlertBtn" type="button" class="btn btn-primary">
@@ -157,11 +157,11 @@
                 const submitBtn = $(this);
                 const originalText = submitBtn.html();
                 submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-                doPoster('/alert/edit', $form.serializeJson(), function (response) {
+                doPoster('/notice/edit', $form.serializeJson(), function (response) {
                     submitBtn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
                         bootGrowl("修改成功!", "success");
-                        doLoader("/alert");
+                        doLoader("/notice");
                     } else {
                         bootGrowl(response.message, "danger");
                     }
@@ -174,11 +174,11 @@
             const submitBtn = $(this);
             const originalText = submitBtn.html();
             submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 测试中...').prop('disabled', true);
-            doPoster('/alert/test', {}, function (response) {
+            doPoster('/notice/test', {}, function (response) {
                 submitBtn.html(originalText).prop('disabled', false);
                 if (response.success === true) {
                     bootGrowl("测试成功!", "success");
-                    doLoader("/alert");
+                    doLoader("/notice");
                 } else {
                     bootGrowl(response.message, "danger");
                 }

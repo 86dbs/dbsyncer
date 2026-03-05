@@ -7,7 +7,7 @@ import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RsaConfig;
-import org.dbsyncer.plugin.model.AlertConfig;
+import org.dbsyncer.plugin.model.NoticeConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
@@ -101,7 +101,7 @@ public class SystemConfig extends ConfigModel {
     /**
      * 告警配置
      */
-    private AlertConfig alertConfig;
+    private NoticeConfig alertConfig;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -223,11 +223,11 @@ public class SystemConfig extends ConfigModel {
         this.ipWhitelistConfig = ipWhitelistConfig;
     }
 
-    public AlertConfig getAlertConfig() {
+    public NoticeConfig getAlertConfig() {
         return alertConfig;
     }
 
-    public void setAlertConfig(AlertConfig alertConfig) {
+    public void setAlertConfig(NoticeConfig alertConfig) {
         this.alertConfig = alertConfig;
     }
 }

@@ -10,11 +10,11 @@ import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.plugin.AbstractNotificationService;
+import org.dbsyncer.plugin.AbstractNoticeService;
 import org.dbsyncer.plugin.NotificationService;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
-import org.dbsyncer.plugin.model.AlertConfig;
-import org.dbsyncer.plugin.model.NotificationMessage;
+import org.dbsyncer.plugin.model.NoticeConfig;
+import org.dbsyncer.plugin.model.NoticeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,11 +40,11 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public void sendMessage(String title, String content) {
-        AlertConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
+        NoticeConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
         if (alertConfig == null) {
             return;
         }
-        NotificationMessage message = NotificationMessage.newBuilder().setTitle(title).setContent(content);
+        NoticeMessage message = NoticeMessage.newBuilder().setTitle(title).setContent(content);
         message.setAlertConfig(alertConfig);
         notifyServiceMap.forEach((channel, service) -> {
             try {
@@ -60,7 +60,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public String testSendMessage() {
-        AlertConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
+        NoticeConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
         if (alertConfig == null) {
             throw new ParserException("请先保存告警配置");
         }
@@ -70,8 +70,8 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NotificationService notificationService) {
-        if (notificationService instanceof AbstractNotificationService) {
-            AbstractNotificationService ans = (AbstractNotificationService) notificationService;
+        if (notificationService instanceof AbstractNoticeService) {
+            AbstractNoticeService ans = (AbstractNoticeService) notificationService;
             ans.setAppConfig(appConfig);
         }
         this.notifyServiceMap.put(noticeChannelEnum, notificationService);
@@ -82,7 +82,7 @@ public class MessageServiceImpl implements MessageService {
         this.notifyServiceMap.remove(noticeChannelEnum);
     }
 
-    private void setMessageReceiversIfMail(NoticeChannelEnum channel, NotificationMessage message) {
+    private void setMessageReceiversIfMail(NoticeChannelEnum channel, NoticeMessage message) {
         if (channel != NoticeChannelEnum.EMAIL) {
             return;
         }

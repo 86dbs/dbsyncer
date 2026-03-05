@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.web.controller.alert;
+package org.dbsyncer.web.controller.notice;
 
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
@@ -20,8 +20,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @Controller
-@RequestMapping(value = "/alert")
-public class AlertController extends BaseController {
+@RequestMapping(value = "/notice")
+public class NoticeController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -34,7 +34,7 @@ public class AlertController extends BaseController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getSystemConfig().getAlertConfig());
-        return "alert/list";
+        return "notice/list";
     }
 
     @PostMapping("/edit")
@@ -42,7 +42,7 @@ public class AlertController extends BaseController {
     public RestResult edit(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(systemConfigService.editAlertConfig(params));
+            return RestResult.restSuccess(systemConfigService.editNoticeConfig(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

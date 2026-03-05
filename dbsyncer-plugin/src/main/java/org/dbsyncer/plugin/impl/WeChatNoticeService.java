@@ -6,9 +6,9 @@ package org.dbsyncer.plugin.impl;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.plugin.AbstractNotificationService;
-import org.dbsyncer.plugin.model.AlertChannelWeChat;
-import org.dbsyncer.plugin.model.NotificationMessage;
+import org.dbsyncer.plugin.AbstractNoticeService;
+import org.dbsyncer.plugin.model.WeChatNoticeChannel;
+import org.dbsyncer.plugin.model.NoticeMessage;
 
 /**
  * 企业微信通知服务实现
@@ -17,11 +17,11 @@ import org.dbsyncer.plugin.model.NotificationMessage;
  * @version 1.0.0
  * @date 2026/03/05 22:14
  */
-public final class WeChatNotifyService extends AbstractNotificationService {
+public final class WeChatNoticeService extends AbstractNoticeService {
 
     @Override
-    public void notify(NotificationMessage notificationMessage) {
-        AlertChannelWeChat wechat = notificationMessage.getAlertConfig().getWechat();
+    public void notify(NoticeMessage notificationMessage) {
+        WeChatNoticeChannel wechat = notificationMessage.getAlertConfig().getWechat();
         if (!wechat.isEnabled()) {
             return;
         }

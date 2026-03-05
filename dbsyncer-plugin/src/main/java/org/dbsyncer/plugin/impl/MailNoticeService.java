@@ -3,9 +3,9 @@ package org.dbsyncer.plugin.impl;
 import com.sun.mail.util.MailSSLSocketFactory;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.plugin.AbstractNotificationService;
-import org.dbsyncer.plugin.model.AlertChannelHttp;
-import org.dbsyncer.plugin.model.NotificationMessage;
+import org.dbsyncer.plugin.AbstractNoticeService;
+import org.dbsyncer.plugin.model.HttpNoticeChannel;
+import org.dbsyncer.plugin.model.NoticeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -28,7 +28,7 @@ import java.util.Properties;
  * @version 1.0.0
  * @date 2022/11/13 22:20
  */
-public final class MailNotifyServiceProvider extends AbstractNotificationService {
+public final class MailNoticeService extends AbstractNoticeService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -68,8 +68,8 @@ public final class MailNotifyServiceProvider extends AbstractNotificationService
     }
 
     @Override
-    public void notify(NotificationMessage notice) {
-        AlertChannelHttp http = notice.getAlertConfig().getHttp();
+    public void notify(NoticeMessage notice) {
+        HttpNoticeChannel http = notice.getAlertConfig().getHttp();
         if (!http.isEnabled()) {
             return;
         }
@@ -114,7 +114,7 @@ public final class MailNotifyServiceProvider extends AbstractNotificationService
         return replace;
     }
 
-    private void checkMail(NotificationMessage notice) {
+    private void checkMail(NoticeMessage notice) {
         Assert.notNull(notice, "通知请求不能为空");
         Assert.notNull(notice.getTitle(), "邮件主题不能为空");
         Assert.notNull(notice.getContent(), "邮件内容不能为空");

@@ -1,3 +1,6 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
 package org.dbsyncer.plugin.model;
 
 import java.util.List;
@@ -7,11 +10,9 @@ import java.util.List;
  *
  * @author AE86
  * @version 1.0.0
- * @date 2022/11/13 22:14
+ * @date 2026/03/05 22:14
  */
-@Deprecated
-public class NotifyMessage {
-
+public class NoticeMessage {
     /**
      * 消息标题
      */
@@ -27,15 +28,20 @@ public class NotifyMessage {
      */
     private List<String> receivers;
 
-    public static NotifyMessage newBuilder() {
-        return new NotifyMessage();
+    /**
+     * 告警配置
+     */
+    private NoticeConfig alertConfig;
+
+    public static NoticeMessage newBuilder() {
+        return new NoticeMessage();
     }
 
     public String getTitle() {
         return title;
     }
 
-    public NotifyMessage setTitle(String title) {
+    public NoticeMessage setTitle(String title) {
         this.title = title;
         return this;
     }
@@ -44,7 +50,7 @@ public class NotifyMessage {
         return content;
     }
 
-    public NotifyMessage setContent(String content) {
+    public NoticeMessage setContent(String content) {
         this.content = content;
         return this;
     }
@@ -53,8 +59,17 @@ public class NotifyMessage {
         return receivers;
     }
 
-    public NotifyMessage setReceivers(List<String> receivers) {
+    public NoticeMessage setReceivers(List<String> receivers) {
         this.receivers = receivers;
+        return this;
+    }
+
+    public NoticeConfig getAlertConfig() {
+        return alertConfig;
+    }
+
+    public NoticeMessage setAlertConfig(NoticeConfig alertConfig) {
+        this.alertConfig = alertConfig;
         return this;
     }
 }

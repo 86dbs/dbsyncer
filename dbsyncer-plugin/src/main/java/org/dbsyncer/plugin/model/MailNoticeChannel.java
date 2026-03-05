@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.parser.model;
+package org.dbsyncer.plugin.model;
 
 /**
  * 邮件告警配置
@@ -10,7 +10,12 @@ package org.dbsyncer.parser.model;
  * @Version 1.0.0
  * @Date 2026-03-04 19:00
  */
-public final class AlertChannelMail {
+public final class MailNoticeChannel {
+
+    /**
+     * 是否启用
+     */
+    private boolean enabled;
 
     /**
      * 邮件账号
@@ -21,6 +26,14 @@ public final class AlertChannelMail {
      * 发邮件的Code,不是邮箱密码
      */
     private String code;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public String getAccount() {
         return account;

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-public abstract class AbstractNotificationService implements NotificationService {
+public abstract class AbstractNoticeService implements NotificationService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private AppConfig appConfig;

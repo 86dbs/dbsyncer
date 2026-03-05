@@ -29,11 +29,11 @@ public interface SystemConfigService {
     String edit(Map<String, String> params);
 
     /**
-     * 修改告警配置
+     * 修改通知配置
      *
      * @param params
      */
-    String editAlertConfig(Map<String, String> params);
+    String editNoticeConfig(Map<String, String> params);
 
     /**
      * 获取系统配置
