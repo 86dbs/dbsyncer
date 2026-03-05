@@ -5,7 +5,7 @@ package org.dbsyncer.plugin;
 
 import org.dbsyncer.plugin.model.NoticeMessage;
 
-public interface NotificationService {
+public interface NoticeService {
 
     /**
      * 发送通知消息

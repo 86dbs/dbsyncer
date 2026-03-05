@@ -1,6 +1,6 @@
 package org.dbsyncer.parser;
 
-import org.dbsyncer.plugin.NotificationService;
+import org.dbsyncer.plugin.NoticeService;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
 
 public interface MessageService {
@@ -24,7 +24,7 @@ public interface MessageService {
      * @param noticeChannelEnum
      * @param notificationService
      */
-    void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NotificationService notificationService);
+    void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NoticeService notificationService);
 
     /**
      * 移除通知服务

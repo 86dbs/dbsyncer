@@ -11,7 +11,7 @@ import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.plugin.AbstractNoticeService;
-import org.dbsyncer.plugin.NotificationService;
+import org.dbsyncer.plugin.NoticeService;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
 import org.dbsyncer.plugin.model.NoticeConfig;
 import org.dbsyncer.plugin.model.NoticeMessage;
@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MessageServiceImpl implements MessageService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final Map<NoticeChannelEnum, NotificationService> notifyServiceMap = new ConcurrentHashMap<>();
+    private final Map<NoticeChannelEnum, NoticeService> notifyServiceMap = new ConcurrentHashMap<>();
 
     @Resource
     private ProfileComponent profileComponent;
@@ -69,7 +69,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NotificationService notificationService) {
+    public void registerNotifyService(NoticeChannelEnum noticeChannelEnum, NoticeService notificationService) {
         if (notificationService instanceof AbstractNoticeService) {
             AbstractNoticeService ans = (AbstractNoticeService) notificationService;
             ans.setAppConfig(appConfig);
