@@ -10,13 +10,13 @@
     <div class="card-body">
         <h3 class="card-title">触发条件</h3>
         <p class="text-xs text-tertiary">间隔10分钟触发一次通知：1、驱动有失败数据 2、手动停止驱动。</p>
-        <form id="alert-form-edit">
+        <form id="notice-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
-                <button id="testAlertBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
+                <button id="testNoticeBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
                     <span class="fa fa-flash"></span> 测试
                 </button>
-                <button id="updateAlertBtn" type="button" class="btn btn-primary">
+                <button id="updateNoticeBtn" type="button" class="btn btn-primary">
                     <span class="fa fa-save"></span> 保存
                 </button>
             </div>
@@ -151,8 +151,8 @@
         // 绑定多值输入框事件
         initMultipleInputTags();
         //保存
-        $("#updateAlertBtn").click(function () {
-            const $form = $("#alert-form-edit");
+        $("#updateNoticeBtn").click(function () {
+            const $form = $("#notice-form-edit");
             if (validateForm($form)) {
                 const submitBtn = $(this);
                 const originalText = submitBtn.html();
@@ -170,7 +170,7 @@
         });
 
         // 测试
-        $("#testAlertBtn").click(function () {
+        $("#testNoticeBtn").click(function () {
             const submitBtn = $(this);
             const originalText = submitBtn.html();
             submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 测试中...').prop('disabled', true);

@@ -33,7 +33,7 @@ public class NoticeController extends BaseController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("config", systemConfigService.getSystemConfig().getAlertConfig());
+        model.put("config", systemConfigService.getSystemConfig().getNoticeConfig());
         return "notice/list";
     }
 

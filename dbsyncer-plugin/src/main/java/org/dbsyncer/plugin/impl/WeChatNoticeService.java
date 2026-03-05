@@ -21,7 +21,7 @@ public final class WeChatNoticeService extends AbstractNoticeService {
 
     @Override
     public void notify(NoticeMessage notificationMessage) {
-        WeChatNoticeChannel wechat = notificationMessage.getAlertConfig().getWechat();
+        WeChatNoticeChannel wechat = notificationMessage.getNoticeConfig().getWechat();
         if (!wechat.isEnabled()) {
             return;
         }

@@ -29,9 +29,9 @@ public class NoticeMessage {
     private List<String> receivers;
 
     /**
-     * 告警配置
+     * 通知配置
      */
-    private NoticeConfig alertConfig;
+    private NoticeConfig noticeConfig;
 
     public static NoticeMessage newBuilder() {
         return new NoticeMessage();
@@ -59,17 +59,15 @@ public class NoticeMessage {
         return receivers;
     }
 
-    public NoticeMessage setReceivers(List<String> receivers) {
+    public void setReceivers(List<String> receivers) {
         this.receivers = receivers;
-        return this;
     }
 
-    public NoticeConfig getAlertConfig() {
-        return alertConfig;
+    public NoticeConfig getNoticeConfig() {
+        return noticeConfig;
     }
 
-    public NoticeMessage setAlertConfig(NoticeConfig alertConfig) {
-        this.alertConfig = alertConfig;
-        return this;
+    public void setNoticeConfig(NoticeConfig noticeConfig) {
+        this.noticeConfig = noticeConfig;
     }
 }

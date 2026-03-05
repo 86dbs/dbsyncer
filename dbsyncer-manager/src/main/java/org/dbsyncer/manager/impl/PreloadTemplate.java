@@ -124,16 +124,16 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     public void loadNotificationChannel() {
         try {
             SystemConfig systemConfig = profileComponent.getSystemConfig();
-            NoticeConfig alertConfig = systemConfig.getAlertConfig();
-            if (null == alertConfig) {
+            NoticeConfig noticeConfig = systemConfig.getNoticeConfig();
+            if (null == noticeConfig) {
                 return;
             }
 
             // 邮件通知
-            if (alertConfig.getMail().isEnabled()) {
+            if (noticeConfig.getMail().isEnabled()) {
                 MailNoticeService service = new MailNoticeService();
-                service.setUsername(alertConfig.getMail().getAccount());
-                service.setPassword(alertConfig.getMail().getCode());
+                service.setUsername(noticeConfig.getMail().getAccount());
+                service.setPassword(noticeConfig.getMail().getCode());
                 service.build();
                 messageService.registerNotifyService(NoticeChannelEnum.EMAIL, service);
             } else {
@@ -141,7 +141,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             }
 
             // 企业微信通知
-            if (alertConfig.getWechat().isEnabled()) {
+            if (noticeConfig.getWechat().isEnabled()) {
                 WeChatNoticeService service = new WeChatNoticeService();
                 messageService.registerNotifyService(NoticeChannelEnum.WE_CHAT, service);
             } else {

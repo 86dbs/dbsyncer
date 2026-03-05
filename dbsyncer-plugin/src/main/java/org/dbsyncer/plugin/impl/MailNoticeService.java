@@ -69,7 +69,7 @@ public final class MailNoticeService extends AbstractNoticeService {
 
     @Override
     public void notify(NoticeMessage notice) {
-        HttpNoticeChannel http = notice.getAlertConfig().getHttp();
+        HttpNoticeChannel http = notice.getNoticeConfig().getHttp();
         if (!http.isEnabled()) {
             return;
         }

@@ -40,12 +40,12 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public void sendMessage(String title, String content) {
-        NoticeConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
-        if (alertConfig == null) {
+        NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
+        if (noticeConfig == null) {
             return;
         }
         NoticeMessage message = NoticeMessage.newBuilder().setTitle(title).setContent(content);
-        message.setAlertConfig(alertConfig);
+        message.setNoticeConfig(noticeConfig);
         notifyServiceMap.forEach((channel, service) -> {
             try {
                 // 如果是邮件渠道，设置邮件接收人
@@ -60,8 +60,8 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public String testSendMessage() {
-        NoticeConfig alertConfig = profileComponent.getSystemConfig().getAlertConfig();
-        if (alertConfig == null) {
+        NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
+        if (noticeConfig == null) {
             throw new ParserException("请先保存告警配置");
         }
         sendMessage("手动测试消息", "告警通知配置成功");

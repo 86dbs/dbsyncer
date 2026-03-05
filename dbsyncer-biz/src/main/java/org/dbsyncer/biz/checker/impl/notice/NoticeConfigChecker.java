@@ -44,14 +44,14 @@ public class NoticeConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
 
-        if (systemConfig.getAlertConfig() == null) {
-            systemConfig.setAlertConfig(new NoticeConfig());
+        if (systemConfig.getNoticeConfig() == null) {
+            systemConfig.setNoticeConfig(new NoticeConfig());
         }
-        NoticeConfig alertConfig = systemConfig.getAlertConfig();
+        NoticeConfig noticeConfig = systemConfig.getNoticeConfig();
 
         // 是否启用企业微信告警
         boolean enableWechat = StringUtil.isNotBlank(params.get("enableWechat"));
-        WeChatNoticeChannel weChat = alertConfig.getWechat();
+        WeChatNoticeChannel weChat = noticeConfig.getWechat();
         weChat.setEnabled(enableWechat);
         if (enableWechat) {
             String webhookUrl = params.get("wechatWebhookUrl");
@@ -63,7 +63,7 @@ public class NoticeConfigChecker extends AbstractChecker {
 
         // 是否启用HTTP告警
         boolean enableHttp = StringUtil.isNotBlank(params.get("enableHttp"));
-        HttpNoticeChannel http = alertConfig.getHttp();
+        HttpNoticeChannel http = noticeConfig.getHttp();
         http.setEnabled(enableHttp);
         if (enableHttp) {
             String url = params.get("httpUrl");
@@ -73,7 +73,7 @@ public class NoticeConfigChecker extends AbstractChecker {
 
         // 是否启用邮件告警
         boolean enableMail = StringUtil.isNotBlank(params.get("enableMail"));
-        MailNoticeChannel mail = alertConfig.getMail();
+        MailNoticeChannel mail = noticeConfig.getMail();
         mail.setEnabled(enableMail);
         if (enableMail) {
             String account = params.get("mailAccount");
