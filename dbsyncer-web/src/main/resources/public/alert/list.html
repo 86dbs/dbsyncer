@@ -55,9 +55,9 @@
                 </div>
 
                 <div class="form-item wechat-config hidden">
-                    <label class="form-label">webhook</label>
+                    <label class="form-label">webhook<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <textarea name="wechatWebhook" class="form-control" maxlength="200" rows="3" placeholder="企业微信机器人webhook地址"></textarea>
+                        <textarea name="wechatWebhookUrl" required class="form-control" maxlength="200" rows="3" placeholder="企业微信机器人webhook地址">[[${config?.wechat?.webhookUrl}]]</textarea>
                     </div>
                 </div>
                 <div class="form-item wechat-config hidden"></div>
@@ -67,7 +67,7 @@
                     <label class="form-label">HTTP</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableHttp" type="checkbox" />
+                            <input name="enableHttp" type="checkbox" th:checked="${config?.http != null}"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -78,9 +78,9 @@
                 </div>
                 <div class="form-item"></div>
                 <div class="form-item http-config hidden">
-                    <label class="form-label">webhook</label>
+                    <label class="form-label">url<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <textarea name="httpUrl" class="form-control" maxlength="200" rows="3" placeholder="回调http接口"></textarea>
+                        <textarea name="httpUrl" required class="form-control" maxlength="200" rows="3" placeholder="回调http地址">[[${config?.http?.url}]]</textarea>
                     </div>
                 </div>
                 <div class="form-item http-config hidden"></div>
@@ -90,7 +90,7 @@
                     <label class="form-label">邮件</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableMail" type="checkbox" />
+                            <input name="enableMail" type="checkbox" th:checked="${config?.mail != null}"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -104,13 +104,13 @@
                 <div class="form-item mail-config hidden">
                     <label class="form-label">账号<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" required name="mailAccount"/>
+                        <input type="text" class="form-control" maxlength="100" name="mailAccount" required th:value="${config?.mail?.account}"/>
                     </div>
                 </div>
                 <div class="form-item mail-config hidden">
                     <label class="form-label">Code<strong class="text-primary">*</strong><i class="fa fa-question-circle" title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" required name="mailCode"/>
+                        <input type="text" class="form-control" maxlength="100" name="mailCode" required th:value="${config?.mail?.code}"/>
                     </div>
                 </div>
 

@@ -12,16 +12,16 @@ package org.dbsyncer.parser.model;
  */
 public class AlertConfig {
 
-    private AlertChannelWeChat weiXin;
+    private AlertChannelWeChat wechat;
     private AlertChannelHttp http;
     private AlertChannelMail mail;
 
-    public AlertChannelWeChat getWeiXin() {
-        return weiXin;
+    public AlertChannelWeChat getWechat() {
+        return wechat;
     }
 
-    public void setWeiXin(AlertChannelWeChat weiXin) {
-        this.weiXin = weiXin;
+    public void setWechat(AlertChannelWeChat wechat) {
+        this.wechat = wechat;
     }
 
     public AlertChannelHttp getHttp() {

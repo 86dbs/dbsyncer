@@ -53,19 +53,23 @@ public class AlertConfigChecker extends AbstractChecker {
         boolean enableWechat = StringUtil.isNotBlank(params.get("enableWechat"));
         if (enableWechat) {
             AlertChannelWeChat config = new AlertChannelWeChat();
-            config.setWebhookUrl(params.get("webhookUrl"));
+            String webhookUrl = params.get("wechatWebhookUrl");
+            Assert.hasText(webhookUrl, "企业微信告警Webhook地址不能为空.");
+            config.setWebhookUrl(webhookUrl);
             config.setAtAll(StringUtil.isNotBlank(params.get("wechatAtAll")));
             config.setAtUsers(params.get("wechatAtUsers"));
-            alertConfig.setWeiXin(config);
+            alertConfig.setWechat(config);
         } else {
-            alertConfig.setWeiXin(null);
+            alertConfig.setWechat(null);
         }
 
         // 是否启用HTTP告警
         boolean enableHttp = StringUtil.isNotBlank(params.get("enableHttp"));
         if (enableHttp) {
             AlertChannelHttp config = new AlertChannelHttp();
-            config.setUrl(params.get("httpUrl"));
+            String url = params.get("httpUrl");
+            Assert.hasText(url, "回调HTTP地址不能为空.");
+            config.setUrl(url);
             alertConfig.setHttp(config);
         } else {
             alertConfig.setHttp(null);
@@ -75,8 +79,12 @@ public class AlertConfigChecker extends AbstractChecker {
         boolean enableMail = StringUtil.isNotBlank(params.get("enableMail"));
         if (enableMail) {
             AlertChannelMail config = new AlertChannelMail();
-            config.setAccount(params.get("mailAccount"));
-            config.setCode(params.get("mailCode"));
+            String account = params.get("mailAccount");
+            String code = params.get("mailCode");
+            Assert.hasText(account, "账号不能为空.");
+            Assert.hasText(code, "Code不能为空.");
+            config.setAccount(account);
+            config.setCode(code);
             alertConfig.setMail(config);
         } else {
             alertConfig.setMail(null);

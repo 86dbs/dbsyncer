@@ -211,17 +211,30 @@ function validateForm($form) {
     $form.find('.form-error-msg').remove();
     $form.find('.is-invalid').removeClass('is-invalid');
 
-    $form.find('[required]').each(function(){
+    // 查找所有带有 required 属性且非隐藏状态的字段
+    $form.find('[required]:not([type="hidden"])').each(function(){
         var $field = $(this);
-        if ($field.is(':disabled')) { return; }
+
+        // 额外检查是否被隐藏 (例如通过 hidden 属性或 CSS display)
+        if ($field.is(':hidden')) {
+            return; // 跳过本次循环，继续验证下一个元素
+        }
+
+        if ($field.is(':disabled')) {
+            return;
+        }
+
         var value = $.trim($field.val());
         var invalid = false;
 
         if ($field.is(':checkbox') || $field.is(':radio')) {
+            // 对于复选框和单选按钮，检查是否被选中
             invalid = !$field.is(':checked');
         } else if ($field.is('select')) {
+            // 对于下拉选择框，检查值是否为空
             invalid = value === '' || value === null;
         } else {
+            // 对于其他输入框（文本、数字等），检查值长度
             invalid = value.length === 0;
         }
 
@@ -231,6 +244,8 @@ function validateForm($form) {
             if ($container.length === 0) {
                 $container = $field.parent();
             }
+
+            // 获取字段的标签文本用于错误提示
             var labelText = '';
             var $label = $field.closest('.form-item').find('.form-label').first();
             if ($label.length) {
@@ -241,9 +256,10 @@ function validateForm($form) {
                 labelText = '该字段';
             }
 
+            // 标记字段为无效，并添加错误信息
             $field.addClass('is-invalid');
             if ($container.length) {
-                $('<div class="form-error-msg"><i class="fa fa-exclamation-circle"></i>' + labelText + '不能为空</div>').appendTo($container);
+                $('<div class="form-error-msg"><i class="fa fa-exclamation-circle"></i> ' + labelText + '不能为空</div>').appendTo($container);
             }
         }
     });
