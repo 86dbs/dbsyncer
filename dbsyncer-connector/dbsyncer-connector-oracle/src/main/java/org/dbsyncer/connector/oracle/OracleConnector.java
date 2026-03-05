@@ -5,7 +5,6 @@ package org.dbsyncer.connector.oracle;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
-import org.dbsyncer.connector.oracle.dialect.OraclePreparedStatementStrategy;
 import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -14,7 +13,6 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
-import org.dbsyncer.sdk.connector.database.strategy.PreparedStatementSetterStrategy;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -42,7 +40,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
     private final OracleSchemaResolver schemaResolver = new OracleSchemaResolver();
-    private final OraclePreparedStatementStrategy preparedStatementSetterStrategy = new OraclePreparedStatementStrategy();
 
     @Override
     public String getConnectorType() {
@@ -52,11 +49,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
-    }
-
-    @Override
-    protected PreparedStatementSetterStrategy getPreparedStatementSetterStrategy() {
-        return preparedStatementSetterStrategy;
     }
 
     @Override
