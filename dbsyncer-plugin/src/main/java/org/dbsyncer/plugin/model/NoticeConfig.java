@@ -12,20 +12,31 @@ package org.dbsyncer.plugin.model;
  */
 public class NoticeConfig {
 
-    private final WeChatNoticeChannel wechat = new WeChatNoticeChannel();
-    private final HttpNoticeChannel http = new HttpNoticeChannel();
-    private final MailNoticeChannel mail = new MailNoticeChannel();
+    private WeChatNoticeChannel wechat = new WeChatNoticeChannel();
+    private HttpNoticeChannel http = new HttpNoticeChannel();
+    private MailNoticeChannel mail = new MailNoticeChannel();
 
     public WeChatNoticeChannel getWechat() {
         return wechat;
+    }
+
+    public void setWechat(WeChatNoticeChannel wechat) {
+        this.wechat = wechat;
     }
 
     public HttpNoticeChannel getHttp() {
         return http;
     }
 
+    public void setHttp(HttpNoticeChannel http) {
+        this.http = http;
+    }
+
     public MailNoticeChannel getMail() {
         return mail;
     }
 
+    public void setMail(MailNoticeChannel mail) {
+        this.mail = mail;
+    }
 }
