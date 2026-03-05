@@ -5,6 +5,7 @@ package org.dbsyncer.web.controller.alert;
 
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,9 @@ public class AlertController extends BaseController {
     @Resource
     private SystemConfigService systemConfigService;
 
+    @Resource
+    private MessageService messageService;
+
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getSystemConfig().getAlertConfig());
@@ -42,6 +46,17 @@ public class AlertController extends BaseController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    @PostMapping("/test")
+    @ResponseBody
+    public RestResult test(HttpServletRequest request) {
+        try {
+            return RestResult.restSuccess(messageService.testSendMessage());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail("测试失败，请检查配置是否正确");
         }
     }
 

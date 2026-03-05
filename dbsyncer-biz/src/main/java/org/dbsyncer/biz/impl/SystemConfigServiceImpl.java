@@ -76,6 +76,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public String editAlertConfig(Map<String, String> params) {
         ConfigModel model = alertConfigChecker.checkEditConfigModel(params);
         profileComponent.editConfigModel(model);
+        preloadTemplate.loadNotificationChannel();
         return "修改成功.";
     }
 

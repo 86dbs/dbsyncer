@@ -13,6 +13,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -25,8 +26,13 @@ import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.enums.NoticeChannelEnum;
+import org.dbsyncer.plugin.impl.MailNotifyServiceProvider;
+import org.dbsyncer.plugin.impl.WeChatNotifyService;
+import org.dbsyncer.plugin.model.AlertConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -42,6 +48,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 
+import java.security.GeneralSecurityException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -85,6 +92,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private StorageService storageService;
 
     @Resource
+    private MessageService messageService;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -100,6 +110,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load plugins
         pluginFactory.loadPlugins();
 
+        // Load Notification Channels
+        loadNotificationChannel();
+
         // Load connectorInstances
         loadConnectorInstance();
 
@@ -107,6 +120,37 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         launch();
 
         preloadCompleted = true;
+    }
+
+    public void loadNotificationChannel() {
+        try {
+            SystemConfig systemConfig = profileComponent.getSystemConfig();
+            AlertConfig alertConfig = systemConfig.getAlertConfig();
+            if (null == alertConfig) {
+                return;
+            }
+
+            // 邮件通知
+            if (alertConfig.getMail().isEnabled()) {
+                MailNotifyServiceProvider service = new MailNotifyServiceProvider();
+                service.setUsername(alertConfig.getMail().getAccount());
+                service.setPassword(alertConfig.getMail().getCode());
+                service.build();
+                messageService.registerNotifyService(NoticeChannelEnum.EMAIL, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.EMAIL);
+            }
+
+            // 企业微信通知
+            if (alertConfig.getWechat().isEnabled()) {
+                WeChatNotifyService service = new WeChatNotifyService();
+                messageService.registerNotifyService(NoticeChannelEnum.WE_CHAT, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.WE_CHAT);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     /**

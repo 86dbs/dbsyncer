@@ -9,6 +9,7 @@ import org.dbsyncer.plugin.model.NotifyMessage;
  * @version 1.0.0
  * @date 2022/11/13 22:07
  */
+@Deprecated
 public interface NotifyService {
 
     /**

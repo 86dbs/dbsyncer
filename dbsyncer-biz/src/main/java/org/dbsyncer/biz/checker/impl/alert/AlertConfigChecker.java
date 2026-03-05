@@ -7,12 +7,12 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.AlertChannelHttp;
-import org.dbsyncer.parser.model.AlertChannelMail;
-import org.dbsyncer.parser.model.AlertChannelWeChat;
-import org.dbsyncer.parser.model.AlertConfig;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.plugin.model.AlertChannelHttp;
+import org.dbsyncer.plugin.model.AlertChannelMail;
+import org.dbsyncer.plugin.model.AlertChannelWeChat;
+import org.dbsyncer.plugin.model.AlertConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -51,43 +51,37 @@ public class AlertConfigChecker extends AbstractChecker {
 
         // 是否启用企业微信告警
         boolean enableWechat = StringUtil.isNotBlank(params.get("enableWechat"));
+        AlertChannelWeChat weChat = alertConfig.getWechat();
+        weChat.setEnabled(enableWechat);
         if (enableWechat) {
-            AlertChannelWeChat config = new AlertChannelWeChat();
             String webhookUrl = params.get("wechatWebhookUrl");
             Assert.hasText(webhookUrl, "企业微信告警Webhook地址不能为空.");
-            config.setWebhookUrl(webhookUrl);
-            config.setAtAll(StringUtil.isNotBlank(params.get("wechatAtAll")));
-            config.setAtUsers(params.get("wechatAtUsers"));
-            alertConfig.setWechat(config);
-        } else {
-            alertConfig.setWechat(null);
+            weChat.setWebhookUrl(webhookUrl);
+            weChat.setAtAll(StringUtil.isNotBlank(params.get("wechatAtAll")));
+            weChat.setAtUserMobiles(params.get("wechatAtUserMobiles"));
         }
 
         // 是否启用HTTP告警
         boolean enableHttp = StringUtil.isNotBlank(params.get("enableHttp"));
+        AlertChannelHttp http = alertConfig.getHttp();
+        http.setEnabled(enableHttp);
         if (enableHttp) {
-            AlertChannelHttp config = new AlertChannelHttp();
             String url = params.get("httpUrl");
             Assert.hasText(url, "回调HTTP地址不能为空.");
-            config.setUrl(url);
-            alertConfig.setHttp(config);
-        } else {
-            alertConfig.setHttp(null);
+            http.setUrl(url);
         }
 
         // 是否启用邮件告警
         boolean enableMail = StringUtil.isNotBlank(params.get("enableMail"));
+        AlertChannelMail mail = alertConfig.getMail();
+        mail.setEnabled(enableMail);
         if (enableMail) {
-            AlertChannelMail config = new AlertChannelMail();
             String account = params.get("mailAccount");
             String code = params.get("mailCode");
             Assert.hasText(account, "账号不能为空.");
             Assert.hasText(code, "Code不能为空.");
-            config.setAccount(account);
-            config.setCode(code);
-            alertConfig.setMail(config);
-        } else {
-            alertConfig.setMail(null);
+            mail.setAccount(account);
+            mail.setCode(code);
         }
         return systemConfig;
     }
