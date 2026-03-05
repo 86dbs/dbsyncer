@@ -14,11 +14,7 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
-import org.dbsyncer.sdk.connector.database.dialect.DefaultPreparedStatementSetterStrategy;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
-import org.dbsyncer.sdk.connector.database.spring.EnhanceBatchPreparedStatementSetter;
-import org.dbsyncer.sdk.connector.database.spring.EnhancePreparedStatementSetter;
-import org.dbsyncer.sdk.connector.database.strategy.PreparedStatementSetterStrategy;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -35,14 +31,13 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.CustomData;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
@@ -74,8 +69,6 @@ import java.util.stream.Collectors;
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final DefaultPreparedStatementSetterStrategy preparedStatementSetterStrategy = new DefaultPreparedStatementSetterStrategy();
 
     public abstract String buildJdbcUrl(DatabaseConfig connectorConfig, String database);
 
@@ -340,8 +333,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 try {
                     // 手动提交事务
                     connection.setAutoCommit(false);
-                    BatchPreparedStatementSetter pss = new EnhanceBatchPreparedStatementSetter(getPreparedStatementSetterStrategy(), fields, data);
-                    int[] r = databaseTemplate.batchUpdate(executeSql, pss);
+                    int[] r = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
                     connection.commit();
                     return r;
                 } catch (Exception e) {
@@ -377,8 +369,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context, String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
         data.forEach(row-> {
             try {
-                PreparedStatementSetter pss = new EnhancePreparedStatementSetter(getPreparedStatementSetterStrategy(), fields, row);
-                int execute = connectorInstance.execute(databaseTemplate->databaseTemplate.update(executeSql, pss));
+                int execute = connectorInstance.execute(databaseTemplate->databaseTemplate.update(executeSql, batchRow(fields, row)));
                 if (execute == 0) {
                     throw new SdkException("数据不存在或执行异常");
                 }
@@ -696,13 +687,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * SQL语句参数设置策略
-     */
-    protected PreparedStatementSetterStrategy getPreparedStatementSetterStrategy() {
-        return preparedStatementSetterStrategy;
-    }
-
-    /**
      * 获取查询条件SQL
      *
      * @param commandConfig
@@ -874,6 +858,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             DatabaseUtil.close(rs);
         }
         return primaryKeys;
+    }
+
+    private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
+        return data.stream().map(row->batchRow(fields, row)).collect(Collectors.toList());
+    }
+
+    private Object[] batchRow(List<Field> fields, Map row) {
+        List<Object> args = new ArrayList<>();
+        for (Field f : fields) {
+            Object val = row.get(f.getName());
+            if (val instanceof CustomData) {
+                CustomData cd = (CustomData) val;
+                args.addAll(cd.apply());
+                continue;
+            }
+            args.add(val);
+        }
+        return args.toArray();
     }
 
     private void printTraceLog(PluginContext context, String event, Map row, boolean success, String message) {
