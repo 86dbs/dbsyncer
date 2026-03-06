@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.plugin.model;
 
+import org.dbsyncer.plugin.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 
 /**
@@ -17,6 +18,10 @@ public final class MappingStopContent extends NoticeContent {
     private String name;
 
     private ModelEnum model;
+
+    public MappingStopContent() {
+        setNoticeType(NoticeTypeEnum.MAPPING_STOP);
+    }
 
     public String getName() {
         return name;
@@ -33,4 +38,5 @@ public final class MappingStopContent extends NoticeContent {
     public void setModel(ModelEnum model) {
         this.model = model;
     }
+
 }

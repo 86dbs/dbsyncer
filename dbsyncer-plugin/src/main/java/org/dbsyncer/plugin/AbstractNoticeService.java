@@ -44,7 +44,7 @@ public abstract class AbstractNoticeService implements NoticeService {
             if (response.getStatusLine().getStatusCode() != 200) {
                 throw new IllegalArgumentException(msg);
             }
-            logger.info("Send message success, url: {}, message: {}", url, message);
+            logger.info("Send message:{}, result:{}", message, msg);
         } catch (HttpHostConnectException e) {
             throw new IllegalArgumentException("网络连接异常，无法连接");
         } catch (UnsupportedEncodingException e) {

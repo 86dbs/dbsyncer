@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.plugin.model;
 
+import org.dbsyncer.plugin.enums.NoticeTypeEnum;
+
 /**
  * 测试通知消息
  *
@@ -14,6 +16,10 @@ public class TestNoticeContent extends NoticeContent {
 
     private String content;
 
+    public TestNoticeContent() {
+        setNoticeType(NoticeTypeEnum.TEST_MESSAGE);
+    }
+
     public String getContent() {
         return content;
     }
@@ -21,4 +27,5 @@ public class TestNoticeContent extends NoticeContent {
     public void setContent(String content) {
         this.content = content;
     }
+
 }

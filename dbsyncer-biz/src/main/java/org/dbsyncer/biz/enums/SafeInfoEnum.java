@@ -24,7 +24,15 @@ public enum SafeInfoEnum {
     /**
      * RSA公钥
      */
-    RSA_PUBLIC_KEY("rsaPublicKey");
+    RSA_PUBLIC_KEY("rsaPublicKey"),
+    /**
+     * 企业微信@用户手机号
+     */
+    WECHAT_AT_USER_MOBILES("wechatAtUserMobiles"),
+    /**
+     * 企业微信Webhook地址
+     */
+    WECHAT_WebhookUrl("wechatWebhookUrl");
 
     private final String code;
 

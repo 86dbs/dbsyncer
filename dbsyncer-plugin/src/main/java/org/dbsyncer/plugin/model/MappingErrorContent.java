@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.plugin.model;
 
+import org.dbsyncer.plugin.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 
 import java.util.ArrayList;
@@ -19,6 +20,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class MappingErrorContent extends NoticeContent {
 
     private List<ErrorItem> errorItems;
+
+    public MappingErrorContent() {
+        setNoticeType(NoticeTypeEnum.MAPPING_ERROR);
+    }
 
     public void addErrorItem(ErrorItem item) {
         if (errorItems == null) {
