@@ -86,6 +86,10 @@ public abstract class DateFormatUtil {
         return LocalDateTime.now().format(HH_MM_SS);
     }
 
+    public static String now() {
+        return LocalDateTime.now().format(YYYY_MM_DD_HH_MM_SS);
+    }
+
     public static String dateToString(Date date) {
         return date.toLocalDate().format(YYYY_MM_DD);
     }

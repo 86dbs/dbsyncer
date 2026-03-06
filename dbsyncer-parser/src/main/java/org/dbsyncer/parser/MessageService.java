@@ -1,5 +1,6 @@
 package org.dbsyncer.parser;
 
+import org.dbsyncer.plugin.model.NoticeContent;
 import org.dbsyncer.plugin.NoticeService;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
 
@@ -8,10 +9,9 @@ public interface MessageService {
     /**
      * 发送消息
      *
-     * @param title
-     * @param content
+     * @param noticeContent
      */
-    void sendMessage(String title, String content);
+    void sendMessage(NoticeContent noticeContent);
 
     /**
      * 测试发送消息

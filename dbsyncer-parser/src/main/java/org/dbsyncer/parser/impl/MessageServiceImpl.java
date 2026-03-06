@@ -14,7 +14,9 @@ import org.dbsyncer.plugin.AbstractNoticeService;
 import org.dbsyncer.plugin.NoticeService;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
 import org.dbsyncer.plugin.model.NoticeConfig;
+import org.dbsyncer.plugin.model.NoticeContent;
 import org.dbsyncer.plugin.model.NoticeMessage;
+import org.dbsyncer.plugin.model.TestNoticeContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -39,20 +41,21 @@ public class MessageServiceImpl implements MessageService {
     private AppConfig appConfig;
 
     @Override
-    public void sendMessage(String title, String content) {
+    public void sendMessage(NoticeContent noticeContent) {
         NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
-        if (noticeConfig == null) {
+        if (noticeConfig == null || noticeContent == null) {
             return;
         }
-        NoticeMessage message = NoticeMessage.newBuilder().setTitle(title).setContent(content);
+        NoticeMessage message = new NoticeMessage();
         message.setNoticeConfig(noticeConfig);
+        message.setNoticeContent(noticeContent);
         notifyServiceMap.forEach((channel, service) -> {
             try {
                 // 如果是邮件渠道，设置邮件接收人
                 setMessageReceiversIfMail(channel, message);
                 service.notify(message);
             } catch (Exception e) {
-                logger.error("Send message error, channel: {}, content: {}", channel, content, e);
+                logger.error("Send message error, channel: {}", channel, e);
                 throw new ParserException(e);
             }
         });
@@ -64,7 +67,10 @@ public class MessageServiceImpl implements MessageService {
         if (noticeConfig == null) {
             throw new ParserException("请先保存告警配置");
         }
-        sendMessage("手动测试消息", "告警通知配置成功");
+        TestNoticeContent noticeContent = new TestNoticeContent();
+        noticeContent.setTitle("手动测试消息");
+        noticeContent.setContent("告警通知配置成功");
+        sendMessage(noticeContent);
         return "success";
     }
 

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
@@ -29,9 +30,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -42,9 +43,6 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
-import org.apache.lucene.index.IndexableField;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -53,7 +51,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -249,30 +246,33 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             return;
         }
 
-        StringBuilder content = new StringBuilder();
+        MappingErrorContent content = new MappingErrorContent();
         metaAll.forEach(meta-> {
             // 统计运行中和失败数
-            if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
+            if (meta.getFail().get() > 0) {
                 writeMappingReport(meta, content);
             }
         });
 
-        String msg = content.toString();
-        if (StringUtil.isNotBlank(msg)) {
-            sendNotifyMessage("同步失败", msg);
+        if (!CollectionUtils.isEmpty(content.getErrorItems())) {
+            content.setTitle("同步失败");
+            sendNotifyMessage(content);
         }
     }
 
-    private void writeMappingReport(Meta meta, StringBuilder content) {
+    private void writeMappingReport(Meta meta, MappingErrorContent content) {
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-            content.append("<p>");
-            content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
+            MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();
+            item.setName(mapping.getName());
+            item.setModel(modelEnum);
+            item.setFail(meta.getFail());
+            item.setSuccess(meta.getSuccess());
             if (ModelEnum.FULL == modelEnum) {
-                content.append(String.format(", 总数:%s", meta.getTotal()));
+                item.setTotal(meta.getTotal());
             }
-            content.append("<p>");
+            content.addErrorItem(item);
         }
     }
 

@@ -5,7 +5,12 @@ import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.AbstractNoticeService;
 import org.dbsyncer.plugin.model.HttpNoticeChannel;
+import org.dbsyncer.plugin.model.MappingErrorContent;
+import org.dbsyncer.plugin.model.MappingStopContent;
+import org.dbsyncer.plugin.model.NoticeContent;
 import org.dbsyncer.plugin.model.NoticeMessage;
+import org.dbsyncer.plugin.model.TestNoticeContent;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -77,8 +82,13 @@ public final class MailNoticeService extends AbstractNoticeService {
             checkMail(notice);
             // 统一应用标题
             AppConfig appConfig = getAppConfig();
-            String title = String.format("【%s通知】%s", appConfig.getName(), notice.getTitle());
-            String content = createTemplate(appConfig.getName(), notice.getContent());
+            NoticeContent noticeContent = notice.getNoticeContent();
+            String title = String.format("[%s] %s", appConfig.getName(), noticeContent.getTitle());
+            String content = createTemplate(appConfig.getName(), buildContent(noticeContent));
+            if (StringUtil.isBlank(content)) {
+                logger.warn("simple mail send content is blank, skip send, notice content:{}", noticeContent.getClass().getName());
+                return;
+            }
 
             // 创建邮件消息
             MimeMessage message = new MimeMessage(session);
@@ -107,6 +117,41 @@ public final class MailNoticeService extends AbstractNoticeService {
         }
     }
 
+    private String buildContent(NoticeContent noticeContent) {
+        // 运行异常
+        if (noticeContent instanceof MappingErrorContent) {
+            return getMappingErrorContent((MappingErrorContent) noticeContent);
+        }
+
+        // 停止驱动
+        if (noticeContent instanceof MappingStopContent) {
+            MappingStopContent meta = (MappingStopContent) noticeContent;
+            return String.format("驱动：%s(%s)", meta.getName(), meta.getModel().getName());
+        }
+
+        // 测试通知
+        if (noticeContent instanceof TestNoticeContent) {
+            TestNoticeContent meta = (TestNoticeContent) noticeContent;
+            return meta.getContent();
+        }
+        return null;
+    }
+
+    private static String getMappingErrorContent(MappingErrorContent noticeContent) {
+        MappingErrorContent meta = noticeContent;
+        StringBuilder c = new StringBuilder();
+        for (int i = 0; i < meta.getErrorItems().size(); i++) {
+            MappingErrorContent.ErrorItem item = meta.getErrorItems().get(i);
+            c.append("<p>");
+            c.append(String.format("%d. %s(%s) 失败:%s, 成功:%s", i+1, item.getName(), item.getModel().getName(), item.getFail(), item.getSuccess()));
+            if (ModelEnum.FULL == item.getModel()) {
+                c.append(String.format(", 总数:%s", item.getTotal()));
+            }
+            c.append("<p>");
+        }
+        return c.toString();
+    }
+
     private String createTemplate(String appName, String content) {
         String temp = "<!DOCTYPE html>\n" + "<html lang=\"en\">\n" + "<meta charset=\"UTF-8\">\n" + "<title>${appName}通知</title>\n" + "</head>\n" + "<body>\n" + "${content}\n" + "<p><a href=\"http://gitee.com/ghi/dbsyncer\">访问项目</a></p>\n" + "</body>\n" + "</html>";
         String replace = StringUtil.replace(temp, "${appName}", appName);
@@ -116,8 +161,8 @@ public final class MailNoticeService extends AbstractNoticeService {
 
     private void checkMail(NoticeMessage notice) {
         Assert.notNull(notice, "通知请求不能为空");
-        Assert.notNull(notice.getTitle(), "邮件主题不能为空");
-        Assert.notNull(notice.getContent(), "邮件内容不能为空");
+        Assert.notNull(notice.getNoticeContent(), "通知请求信息不能为空");
+        Assert.notNull(notice.getNoticeContent().getTitle(), "邮件主题不能为空");
         Assert.notEmpty(notice.getReceivers(), "邮件收件人不能为空");
     }
 

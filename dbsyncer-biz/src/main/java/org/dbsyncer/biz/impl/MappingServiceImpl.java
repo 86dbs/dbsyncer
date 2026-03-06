@@ -34,6 +34,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -338,8 +339,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.STOP, mapping);
 
             // 发送关闭驱动通知消息
-            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-            sendNotifyMessage("停止驱动", String.format("手动停止驱动：%s(%s)", mapping.getName(), model));
+            MappingStopContent content = new MappingStopContent();
+            content.setTitle("手动停止驱动");
+            content.setName(mapping.getName());
+            content.setModel(ModelEnum.getModelEnum(mapping.getModel()));
+            sendNotifyMessage(content);
         }
         return "驱动停止成功";
     }

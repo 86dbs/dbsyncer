@@ -13,15 +13,11 @@ import java.util.List;
  * @date 2026/03/05 22:14
  */
 public class NoticeMessage {
-    /**
-     * 消息标题
-     */
-    private String title;
 
     /**
-     * 消息内容
+     * 通知内容
      */
-    private String content;
+    private NoticeContent noticeContent;
 
     /**
      * 消息接收人
@@ -33,26 +29,12 @@ public class NoticeMessage {
      */
     private NoticeConfig noticeConfig;
 
-    public static NoticeMessage newBuilder() {
-        return new NoticeMessage();
+    public NoticeContent getNoticeContent() {
+        return noticeContent;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public NoticeMessage setTitle(String title) {
-        this.title = title;
-        return this;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public NoticeMessage setContent(String content) {
-        this.content = content;
-        return this;
+    public void setNoticeContent(NoticeContent noticeContent) {
+        this.noticeContent = noticeContent;
     }
 
     public List<String> getReceivers() {
