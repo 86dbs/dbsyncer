@@ -28,6 +28,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,14 +61,24 @@ public final class OperationTemplate {
     public <T> List<T> queryAll(QueryConfig<T> query) {
         String groupId = getGroupId(query.getConfigModel(), query.getGroupStrategyEnum());
         List<T> list = new ArrayList<>();
-        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
-            Group group = (Group) v;
-            group.getIndex().forEach(id->cacheService.getCache().computeIfPresent(id, (x, y)-> {
-                list.add((T) y);
-                return y;
-            }));
-            return group;
-        });
+
+        // 1. 获取 Group 对象，这是一个只读操作，安全
+        Object groupObj = cacheService.getCache().get(groupId);
+        if (groupObj != null) {
+            Group group = (Group) groupObj;
+
+            // 2. 遍历索引 ID，获取对应的值
+            // 为了保证最终返回列表的线程安全，依然使用 CopyOnWriteArrayList
+            List<T> result = new CopyOnWriteArrayList<>();
+            group.getIndex().parallelStream().forEach(id -> {
+                Object value = cacheService.getCache().get(id);
+                if (value != null) {
+                    result.add((T) value);
+                }
+            });
+            list = result;
+        }
+
         return list;
     }
 
