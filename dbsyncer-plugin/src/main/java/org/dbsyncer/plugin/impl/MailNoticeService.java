@@ -4,6 +4,7 @@ import com.sun.mail.util.MailSSLSocketFactory;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.AbstractNoticeService;
+import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.HttpNoticeChannel;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.plugin.model.MappingStopContent;
@@ -129,6 +130,11 @@ public final class MailNoticeService extends AbstractNoticeService {
             return String.format("驱动：%s(%s)", meta.getName(), meta.getModel().getName());
         }
 
+        // 连接离线
+        if (noticeContent instanceof ConnectorOfflineContent) {
+            return getConnectorOfflineContent((ConnectorOfflineContent) noticeContent);
+        }
+
         // 测试通知
         if (noticeContent instanceof TestNoticeContent) {
             TestNoticeContent meta = (TestNoticeContent) noticeContent;
@@ -137,11 +143,21 @@ public final class MailNoticeService extends AbstractNoticeService {
         return null;
     }
 
-    private static String getMappingErrorContent(MappingErrorContent noticeContent) {
-        MappingErrorContent meta = noticeContent;
+    private String getConnectorOfflineContent(ConnectorOfflineContent noticeContent) {
         StringBuilder c = new StringBuilder();
-        for (int i = 0; i < meta.getErrorItems().size(); i++) {
-            MappingErrorContent.ErrorItem item = meta.getErrorItems().get(i);
+        for (int i = 0; i < noticeContent.getErrorItems().size(); i++) {
+            ConnectorOfflineContent.ErrorItem item = noticeContent.getErrorItems().get(i);
+            c.append("<p>");
+            c.append(String.format("%d. %s(%s), %s", i+1, item.getName(), item.getType(), item.getUrl()));
+            c.append("<p>");
+        }
+        return c.toString();
+    }
+
+    private static String getMappingErrorContent(MappingErrorContent noticeContent) {
+        StringBuilder c = new StringBuilder();
+        for (int i = 0; i < noticeContent.getErrorItems().size(); i++) {
+            MappingErrorContent.ErrorItem item = noticeContent.getErrorItems().get(i);
             c.append("<p>");
             c.append(String.format("%d. %s(%s) 失败:%s, 成功:%s", i+1, item.getName(), item.getModel().getName(), item.getFail(), item.getSuccess()));
             if (ModelEnum.FULL == item.getModel()) {

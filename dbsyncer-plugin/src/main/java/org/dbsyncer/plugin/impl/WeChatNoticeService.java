@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.AbstractNoticeService;
+import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.plugin.model.NoticeContent;
@@ -67,11 +68,11 @@ public final class WeChatNoticeService extends AbstractNoticeService {
             StringBuilder c = new StringBuilder();
             c.append(String.format("[%s] %s，任务数：%s\n",
                     getAppConfig().getName(), noticeContent.getTitle(), meta.getErrorItems().size()));
-            c.append(String.format("时间:%s\n\n", DateFormatUtil.now()));
+            c.append(String.format("%s\n\n", DateFormatUtil.now()));
 
             for (int i = 0; i < meta.getErrorItems().size(); i++) {
                 MappingErrorContent.ErrorItem item = meta.getErrorItems().get(i);
-                c.append(String.format("%d. %s(%s) 失败:%s, 成功:%s", i+1, item.getName(), item.getModel().getName(), item.getFail(), item.getSuccess()));
+                c.append(String.format("%d. %s(%s) 失败:%s, 成功:%s", i + 1, item.getName(), item.getModel().getName(), item.getFail(), item.getSuccess()));
                 if (ModelEnum.FULL == item.getModel()) {
                     c.append(String.format("总数:%s", item.getTotal()));
                 }
@@ -85,6 +86,22 @@ public final class WeChatNoticeService extends AbstractNoticeService {
             MappingStopContent meta = (MappingStopContent) noticeContent;
             return String.format("[%s] %s %s(%s)", getAppConfig().getName(),
                     noticeContent.getTitle(), meta.getName(), meta.getModel().getName());
+        }
+
+        // 连接离线
+        if (noticeContent instanceof ConnectorOfflineContent) {
+            ConnectorOfflineContent meta = (ConnectorOfflineContent) noticeContent;
+            StringBuilder c = new StringBuilder();
+            c.append(String.format("[%s] %s，连接数：%s\n",
+                    getAppConfig().getName(), noticeContent.getTitle(), meta.getErrorItems().size()));
+            c.append(String.format("%s\n\n", DateFormatUtil.now()));
+
+            for (int i = 0; i < meta.getErrorItems().size(); i++) {
+                ConnectorOfflineContent.ErrorItem item = meta.getErrorItems().get(i);
+                c.append(String.format("%d. %s(%s), %s", i + 1, item.getName(), item.getType(), item.getUrl()));
+                c.append("\n");
+            }
+            return c.toString();
         }
 
         // 测试通知

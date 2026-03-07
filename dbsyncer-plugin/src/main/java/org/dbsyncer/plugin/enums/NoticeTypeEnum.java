@@ -16,13 +16,17 @@ public enum NoticeTypeEnum {
      */
     TEST_MESSAGE(0),
     /**
+     * 连接离线
+     */
+    CONNECTOR_OFFLINE(1),
+    /**
      * 驱动异常
      */
-    MAPPING_ERROR(1),
+    MAPPING_ERROR(2),
     /**
      * 驱动停止
      */
-    MAPPING_STOP(2);
+    MAPPING_STOP(3);
 
     private final int code;
 

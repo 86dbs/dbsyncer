@@ -4,6 +4,7 @@
 package org.dbsyncer.biz.impl;
 
 import org.apache.lucene.index.IndexableField;
+import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
@@ -32,6 +33,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -91,6 +93,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private LogService logService;
 
     @Resource
+    private ConnectorService connectorService;
+
+    @Resource
     private SystemConfigService systemConfigService;
 
     @Resource
@@ -99,6 +104,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private final Map<String, MetricDetailFormatter> metricMap = new ConcurrentHashMap<>();
 
     private MetricResponse systemInfo;
+
+    private LocalDateTime delayTime = LocalDateTime.now();
 
     @PostConstruct
     private void init() {
@@ -118,7 +125,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
 
         // 间隔10分钟预警
-        scheduledTaskService.start("0 */10 * * * ?", this);
+        scheduledTaskService.start("0 */1 * * * ?", this);
     }
 
     @Override
@@ -258,6 +265,31 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             content.setTitle("同步失败");
             sendNotifyMessage(content);
         }
+
+        // 采集连接离线状态
+        collectConnectorOffline();
+    }
+
+    private void collectConnectorOffline() {
+        // 防止首次启动，状态还未刷新
+        if (LocalDateTime.now().minusMinutes(1).isAfter(delayTime)) {
+            // 采集连接离线状态
+            ConnectorOfflineContent content = new ConnectorOfflineContent();
+            connectorService.getConnectorAll().forEach(connector -> {
+                if (!connector.isRunning()) {
+                    ConnectorOfflineContent.ErrorItem item = new ConnectorOfflineContent.ErrorItem();
+                    item.setName(connector.getName());
+                    item.setType(connector.getConfig().getConnectorType());
+                    item.setUrl(connector.getConfig().getUrl());
+                    content.addErrorItem(item);
+                }
+            });
+            if (!CollectionUtils.isEmpty(content.getErrorItems())) {
+                content.setTitle("连接离线");
+                sendNotifyMessage(content);
+            }
+        }
+        delayTime = LocalDateTime.now();
     }
 
     private void writeMappingReport(Meta meta, MappingErrorContent content) {
