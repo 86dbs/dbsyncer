@@ -125,7 +125,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         systemInfo.setGroup(MetricEnum.SYSTEM_ENV.getGroup());
 
         // 间隔10分钟预警
-        scheduledTaskService.start("0 */1 * * * ?", this);
+        scheduledTaskService.start("0 */10 * * * ?", this);
     }
 
     @Override
