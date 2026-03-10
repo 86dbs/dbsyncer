@@ -1,7 +1,7 @@
 /**
  * DBSyncer Copyright 2020-2025 All Rights Reserved.
  */
-package org.dbsyncer.web.controller.task;
+package org.dbsyncer.web.controller.validate.sync;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
@@ -33,7 +33,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/validate-sync")
-public class TaskController extends BaseController {
+public class ValidateSyncController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -52,7 +52,7 @@ public class TaskController extends BaseController {
     @RequestMapping("/list")
     public String index(ModelMap model) {
         // TODO 修改命名
-        return "task/list";
+        return "validate-sync/list";
     }
 
     /**
@@ -61,7 +61,7 @@ public class TaskController extends BaseController {
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
-        return "task/add";
+        return "validate-sync/add";
     }
 
     /**
@@ -70,7 +70,7 @@ public class TaskController extends BaseController {
     @GetMapping("/page/{page}")
     public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String taskId) {
         model.put("taskId", taskId);
-        return "task/" + page;
+        return "validate-sync/" + page;
     }
 
     /**
