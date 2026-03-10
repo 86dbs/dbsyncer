@@ -20,7 +20,7 @@ public class Version {
     public static final Version V_2_0_7 = new Version(20_00_07_2025_07_08_00L);
     public static final Version V_2_0_8 = new Version(20_00_08_2026_01_30_00L);
     public static final Version V_2_0_9 = new Version(20_00_08_2026_02_26_00L);
-    public static final Version CURRENT = new Version(20_00_08_2026_03_06_00L);
+    public static final Version CURRENT = new Version(20_00_08_2026_03_10_00L);
 
     public Version(long version) {
         this.version = version;
