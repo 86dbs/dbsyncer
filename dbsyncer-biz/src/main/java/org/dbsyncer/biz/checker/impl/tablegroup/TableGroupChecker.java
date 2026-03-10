@@ -233,8 +233,8 @@ public class TableGroupChecker extends AbstractChecker {
             List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
             List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
             Assert.isTrue(!CollectionUtils.isEmpty(sourceTablePrimaryKeys) && !CollectionUtils.isEmpty(targetTablePrimaryKeys), "数据源表和目标源表必须包含主键.");
-            String sPK = sourceTablePrimaryKeys.stream().findFirst().get();
-            String tPK = targetTablePrimaryKeys.stream().findFirst().get();
+            String sPK = sourceTablePrimaryKeys.stream().findFirst().get().toUpperCase();
+            String tPK = targetTablePrimaryKeys.stream().findFirst().get().toUpperCase();
             tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));
         }
     }
