@@ -31,7 +31,14 @@ public final class SqlServerStringType extends StringType {
 
     private enum TypeEnum {
 
-        CHAR("char"), VARCHAR("varchar"), NVARCHAR("nvarchar"), TEXT("text"), GEOMETRY("geometry"), GEOGRAPHY("geography");
+        CHAR("char"),
+        VARCHAR("varchar"),
+        NCHAR("nchar"),
+        NVARCHAR("nvarchar"),
+        TEXT("text"),
+        N_TEXT("ntext"),
+        GEOMETRY("geometry"),
+        GEOGRAPHY("geography");
 
         private final String value;
 

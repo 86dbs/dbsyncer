@@ -26,7 +26,14 @@ public final class SqlServerTimestampType extends TimestampType {
 
     private enum TypeEnum {
 
-        DATETIME("datetime"), DATETIME2("datetime2");
+        DATETIME("datetime"),
+
+        DATETIME2("datetime2"),
+
+        /**
+         * 带时区偏移的 datetime2，10 字节
+         */
+        DATETIMEOFFSET("datetimeoffset");
 
         private final String value;
 

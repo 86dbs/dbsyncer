@@ -20,7 +20,13 @@ public final class SqlServerDecimalType extends DecimalType {
 
     private enum TypeEnum {
 
-        DECIMAL("decimal");
+        DECIMAL("decimal"),
+
+        NUMERIC("numeric"),
+
+        MONEY("money"),
+
+        SMALL_MONEY("smallmoney");
 
         private final String value;
 

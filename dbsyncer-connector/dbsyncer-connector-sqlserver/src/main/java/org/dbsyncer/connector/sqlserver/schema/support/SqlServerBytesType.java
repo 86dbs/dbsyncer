@@ -19,7 +19,11 @@ public final class SqlServerBytesType extends BytesType {
 
     private enum TypeEnum {
 
-        IMAGE("image");
+        IMAGE("image"),
+
+        BINARY("binary"),
+
+        VARBINARY("varbinary");
 
         private final String value;
 
