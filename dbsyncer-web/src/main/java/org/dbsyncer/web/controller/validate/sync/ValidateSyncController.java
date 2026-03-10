@@ -101,7 +101,7 @@ public class ValidateSyncController extends BaseController {
     /**
      * 删除任务
      */
-    @GetMapping("/remove")
+    @PostMapping("/remove")
     @ResponseBody
     public RestResult remove(@RequestParam(value = "id") String id) {
         try {

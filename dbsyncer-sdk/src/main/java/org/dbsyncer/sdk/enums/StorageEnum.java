@@ -23,13 +23,13 @@ public enum StorageEnum {
      */
     DATA("data"),
     /**
-     * 任务：同步任务
+     * 任务
      */
     TASK("task"),
     /**
-     * 任务详情：同步任务详情
+     * 订正校验明细
      */
-    TASK_DATA_VERIFICATION_DETAIL("task_data_verification_detail");
+    VALIDATE_SYNC_DETAIL("validate_sync_detail");
 
     private final String type;
 

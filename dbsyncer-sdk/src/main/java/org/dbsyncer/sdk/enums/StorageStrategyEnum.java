@@ -8,15 +8,15 @@ import org.dbsyncer.sdk.storage.Strategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
 import org.dbsyncer.sdk.storage.strategy.DataStrategy;
 import org.dbsyncer.sdk.storage.strategy.LogStrategy;
-import org.dbsyncer.sdk.storage.strategy.TaskDataVerificationDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.ValidateSyncDetailStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
 
 /**
  * 存储策略枚举
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2023-12-12 00:51
+ * @author AE86
+ * @version 1.0.0
+ * @date 2023-12-12 00:51
  */
 public enum StorageStrategyEnum {
 
@@ -41,9 +41,9 @@ public enum StorageStrategyEnum {
     TASK(StorageEnum.TASK, new TaskStrategy()),
 
     /**
-     * 数据校验明细策略
+     * 订正校验明细策略
      */
-    TASK_DATA_VERIFICATION_DETAIL(StorageEnum.TASK_DATA_VERIFICATION_DETAIL, new TaskDataVerificationDetailStrategy());
+    VALIDATE_SYNC_DETAIL(StorageEnum.VALIDATE_SYNC_DETAIL, new ValidateSyncDetailStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;
