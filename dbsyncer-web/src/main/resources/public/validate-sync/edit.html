@@ -74,9 +74,9 @@
             <!-- 执行策略选择 -->
             <div class="grid grid-cols-4">
                 <div id="task-trigger" class="radio-group">
-                    <input type="radio" name="model" value="once" th:checked="${'once' eq task?.trigger}" />
+                    <input type="radio" name="trigger" value="once" th:checked="${'once' eq task?.trigger}" />
                     <label>执行一次</label>
-                    <input type="radio" name="model" value="timing" th:checked="${'timing' eq task?.trigger}" />
+                    <input type="radio" name="trigger" value="timing" th:checked="${'timing' eq task?.trigger}" />
                     <label>定时</label>
                 </div>
             </div>

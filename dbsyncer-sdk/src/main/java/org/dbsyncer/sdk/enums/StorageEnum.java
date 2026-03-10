@@ -4,14 +4,14 @@
 package org.dbsyncer.sdk.enums;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-11-12 20:29
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-11-12 20:29
  */
 public enum StorageEnum {
 
     /**
-     * 配置：连接器、驱动、映射关系、同步信息、分組配置、系统配置、用戶配置
+     * 配置：连接器、驱动、映射关系、同步信息、系统配置、用戶配置
      */
     CONFIG("config"),
     /**
