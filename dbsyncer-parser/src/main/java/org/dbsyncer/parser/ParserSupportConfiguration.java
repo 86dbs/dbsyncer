@@ -4,6 +4,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.spi.ServiceFactory;
@@ -20,9 +21,9 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2024-01-25 23:43
+ * @author AE86
+ * @version 1.0.0
+ * @date 2024-01-25 23:43
  */
 @Configuration
 public class ParserSupportConfiguration {
@@ -52,42 +53,42 @@ public class ParserSupportConfiguration {
         return new TaskService() {
 
             @Override
-            public void add(Map<String, String> params) {
+            public String add(Map<String, String> params) {
+                return StringUtil.EMPTY;
+            }
+
+            @Override
+            public String edit(Map<String, String> params) {
+                return StringUtil.EMPTY;
+            }
+
+            @Override
+            public void delete(String id) {
 
             }
 
             @Override
-            public void modify(Map<String, String> params) {
+            public void start(String id) {
 
             }
 
             @Override
-            public void delete(String taskId) {
+            public void stop(String id) {
 
             }
 
             @Override
-            public void start(String taskId) {
-
-            }
-
-            @Override
-            public void stop(String taskId) {
-
-            }
-
-            @Override
-            public CommonTask detail(String taskId) {
+            public CommonTask get(String id) {
                 return null;
             }
 
             @Override
-            public Paging list(Map<String, String> param) {
+            public Paging search(Map<String, String> param) {
                 return null;
             }
 
             @Override
-            public Paging result(Map<String, String> param) {
+            public Paging result(String id) {
                 return null;
             }
         };

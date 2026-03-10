@@ -5,7 +5,6 @@ package org.dbsyncer.web.controller.validate.sync;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -15,7 +14,6 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -27,9 +25,9 @@ import java.util.Map;
 /**
  * 订正校验管理
  *
- * @Author wuji
- * @Version 1.0.0
- * @Date 2025-10-18 19:52
+ * @author wuji
+ * @version 1.0.0
+ * @date 2025-10-18 19:52
  */
 @Controller
 @RequestMapping("/validate-sync")
@@ -42,9 +40,6 @@ public class ValidateSyncController extends BaseController {
 
     @Resource
     private ConnectorService connectorService;
-
-    @Resource
-    private ConnectorFactory connectorFactory;
 
     /**
      * 任务配置首页
@@ -65,11 +60,11 @@ public class ValidateSyncController extends BaseController {
     }
 
     /**
-     * 编辑任务页面
+     * 修改任务页面
      */
     @GetMapping("/page/{page}")
-    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String taskId) {
-        model.put("taskId", taskId);
+    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
+        model.put("task", taskService.get(id));
         return "validate-sync/" + page;
     }
 
@@ -78,10 +73,10 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/add")
     @ResponseBody
-    public RestResult add(@RequestBody Map<String, String> params) {
+    public RestResult add(HttpServletRequest request) {
         try {
-            taskService.add(params);
-            return RestResult.restSuccess("新增成功");
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(taskService.add(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -93,10 +88,10 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/edit")
     @ResponseBody
-    public RestResult edit(@RequestBody Map<String, String> params) {
+    public RestResult edit(HttpServletRequest request) {
         try {
-            taskService.modify(params);
-            return RestResult.restSuccess("修改成功");
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(taskService.edit(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -108,9 +103,9 @@ public class ValidateSyncController extends BaseController {
      */
     @GetMapping("/remove")
     @ResponseBody
-    public RestResult remove(String taskId) {
+    public RestResult remove(@RequestParam(value = "id") String id) {
         try {
-            taskService.delete(taskId);
+            taskService.delete(id);
             return RestResult.restSuccess("删除成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -123,9 +118,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/start")
     @ResponseBody
-    public RestResult start(@RequestParam("taskId") String taskId) {
+    public RestResult start(@RequestParam(value = "id") String id) {
         try {
-            taskService.start(taskId);
+            taskService.start(id);
             return RestResult.restSuccess("启动成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -138,9 +133,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/stop")
     @ResponseBody
-    public RestResult stop(@RequestParam("taskId") String taskId) {
+    public RestResult stop(@RequestParam(value = "id") String id) {
         try {
-            taskService.stop(taskId);
+            taskService.stop(id);
             return RestResult.restSuccess("停止成功");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
@@ -153,7 +148,7 @@ public class ValidateSyncController extends BaseController {
     public RestResult list(HttpServletRequest request) {
         try {
             Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(taskService.list(params));
+            return RestResult.restSuccess(taskService.search(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -161,14 +156,13 @@ public class ValidateSyncController extends BaseController {
     }
 
     /**
-     * 任务执行结果详情
+     * 查看执行结果
      */
     @PostMapping("/result")
     @ResponseBody
-    public RestResult result(HttpServletRequest request) {
+    public RestResult result(@RequestParam(value = "id") String id) {
         try {
-            Map<String, String> params = getParams(request);
-            return RestResult.restSuccess(taskService.result(params));
+            return RestResult.restSuccess(taskService.result(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

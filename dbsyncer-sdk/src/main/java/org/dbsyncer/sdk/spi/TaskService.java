@@ -11,71 +11,49 @@ import java.util.Map;
 /**
  * 任务调度服务
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-05-12 23:36
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-05-12 23:36
  */
 public interface TaskService {
 
     /**
      * 新增任务
-     *
-     * @param params
      */
-    void add(Map<String, String> params);
+    String add(Map<String, String> params);
 
     /**
      * 修改
-     *
-     * @param params
      */
-    void modify(Map<String, String> params);
+    String edit(Map<String, String> params);
 
     /**
      * 删除任务
-     *
-     * @param taskId
-     * @return
      */
-    void delete(String taskId);
+    void delete(String id);
 
     /**
      * 启动
-     *
-     * @param taskId
-     * @return
      */
-    void start(String taskId);
+    void start(String id);
 
     /**
      * 停止任务
-     *
-     * @param taskId
-     * @return
      */
-    void stop(String taskId);
+    void stop(String id);
 
     /**
-     * 详情任务
-     *
-     * @param taskId
-     * @return
+     * 获取任务详情
      */
-    CommonTask detail(String taskId);
+    CommonTask get(String id);
 
     /**
      * 任务列表
-     *
-     * @param param
-     * @return
      */
-    Paging list(Map<String, String> param);
+    Paging search(Map<String, String> param);
 
     /**
-     * 任务结果
-     *
-     * @param param
-     * @return
+     * 查看任务结果
      */
-    Paging result(Map<String, String> param);
+    Paging result(String id);
 }

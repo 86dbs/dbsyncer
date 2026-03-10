@@ -3,15 +3,17 @@
  */
 package org.dbsyncer.sdk.model;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 
 /**
  * 任务配置表实体类
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-10-18 21:18
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-10-18 21:18
  */
 public class CommonTask implements Serializable {
 
