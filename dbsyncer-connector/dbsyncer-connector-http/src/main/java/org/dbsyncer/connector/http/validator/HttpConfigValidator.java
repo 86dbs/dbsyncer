@@ -77,7 +77,6 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         Assert.hasText(method, "请求方式 is empty");
         Assert.hasText(api, "接口不能为空");
         Assert.hasText(contentType, "ContentType不能为空");
-        Assert.hasText(requestParams, "请求参数不能为空");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
         Assert.notEmpty(fields, "字段不能为空.");
         table.setName(tableName);
@@ -86,7 +85,9 @@ public class HttpConfigValidator implements ConfigValidator<HttpConnector, HttpC
         table.getExtInfo().put(HttpConstant.METHOD, method);
         table.getExtInfo().put(HttpConstant.API, api);
         table.getExtInfo().put(HttpConstant.CONTENT_TYPE, contentType);
-        table.getExtInfo().put(HttpConstant.PARAMS, requestParams);
+        if (StringUtil.isNotBlank(requestParams)) {
+            table.getExtInfo().put(HttpConstant.PARAMS, requestParams);
+        }
         return table;
     }
 
