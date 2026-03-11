@@ -6,27 +6,27 @@ package org.dbsyncer.plugin.impl;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.plugin.model.DingTalkNoticeChannel;
 import org.dbsyncer.plugin.model.NoticeContent;
 import org.dbsyncer.plugin.model.NoticeMessage;
-import org.dbsyncer.plugin.model.WeChatNoticeChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 企业微信通知服务实现
+ * 钉钉通知服务实现
  *
  * @author AE86
  * @version 1.0.0
  * @date 2026/03/05 22:14
  */
-public final class WeChatNoticeService extends AbstractWebHookNoticeService {
+public final class DingTalkNoticeService extends AbstractWebHookNoticeService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public void notify(NoticeMessage noticeMessage) {
-        WeChatNoticeChannel wechat = noticeMessage.getNoticeConfig().getWechat();
-        if (!wechat.isEnabled()) {
+        DingTalkNoticeChannel dingTalk = noticeMessage.getNoticeConfig().getDingTalk();
+        if (!dingTalk.isEnabled()) {
             return;
         }
         NoticeContent noticeContent = noticeMessage.getNoticeContent();
@@ -37,21 +37,22 @@ public final class WeChatNoticeService extends AbstractWebHookNoticeService {
         }
         MessageContent params = new MessageContent();
         params.setMsgType("text");
-        TextContent content = new TextContent();
-        content.setContent(c);
-
+        At at = new At();
         // @所有人
-        if (wechat.isAtAll()) {
-            content.setMentionedList(StringUtil.split("@all", StringUtil.COMMA));
+        if (dingTalk.isAtAll()) {
+            at.setAtAll(true);
         } else {
             // @某个人手机号
-            String atMobiles = wechat.getAtMobiles();
+            String atMobiles = dingTalk.getAtMobiles();
             if (StringUtil.isNotBlank(atMobiles)) {
-                content.setMentionedMobileList(StringUtil.split(atMobiles, StringUtil.COMMA));
+                at.setAtMobiles(StringUtil.split(atMobiles, StringUtil.COMMA));
             }
         }
+        params.setAt(at);
+        TextContent content = new TextContent();
+        content.setContent(c);
         params.setContent(content);
-        send(wechat.getWebhookUrl(), JsonUtil.objToJson(params));
+        send(dingTalk.getWebhookUrl(), JsonUtil.objToJson(params));
     }
 
     static final class MessageContent {
@@ -60,6 +61,11 @@ public final class WeChatNoticeService extends AbstractWebHookNoticeService {
 
         @JSONField(name = "text")
         private Object content;
+
+        /**
+         * @用户配置
+         */
+        private At at;
 
         public String getMsgType() {
             return msgType;
@@ -76,24 +82,51 @@ public final class WeChatNoticeService extends AbstractWebHookNoticeService {
         public void setContent(Object content) {
             this.content = content;
         }
+
+        public At getAt() {
+            return at;
+        }
+
+        public void setAt(At at) {
+            this.at = at;
+        }
+    }
+
+    static final class At {
+
+        /**
+         * At手机号列表
+         */
+        @JSONField(name = "atMobiles")
+        private String[] atMobiles;
+
+        /**
+         * At所有人
+         */
+        @JSONField(name = "isAtAll")
+        private boolean isAtAll;
+
+        public String[] getAtMobiles() {
+            return atMobiles;
+        }
+
+        public void setAtMobiles(String[] atMobiles) {
+            this.atMobiles = atMobiles;
+        }
+
+        public boolean isAtAll() {
+            return isAtAll;
+        }
+
+        public void setAtAll(boolean atAll) {
+            isAtAll = atAll;
+        }
     }
 
     static final class TextContent {
 
         @JSONField(name = "content")
         private String content;
-
-        /**
-         * At用户列表
-         */
-        @JSONField(name = "mentioned_list")
-        private String[] mentionedList;
-
-        /**
-         * At手机号列表
-         */
-        @JSONField(name = "mentioned_mobile_list")
-        private String[] mentionedMobileList;
 
         public String getContent() {
             return content;
@@ -103,21 +136,6 @@ public final class WeChatNoticeService extends AbstractWebHookNoticeService {
             this.content = content;
         }
 
-        public String[] getMentionedList() {
-            return mentionedList;
-        }
-
-        public void setMentionedList(String[] mentionedList) {
-            this.mentionedList = mentionedList;
-        }
-
-        public String[] getMentionedMobileList() {
-            return mentionedMobileList;
-        }
-
-        public void setMentionedMobileList(String[] mentionedMobileList) {
-            this.mentionedMobileList = mentionedMobileList;
-        }
     }
 
 }

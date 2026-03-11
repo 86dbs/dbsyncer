@@ -4,13 +4,13 @@
 package org.dbsyncer.plugin.model;
 
 /**
- * 企业微信告警配置
+ * 钉钉告警配置
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2026-03-04 19:00
+ * @author AE86
+ * @version 1.0.0
+ * @date 2026-03-04 19:00
  */
-public final class WeChatNoticeChannel extends NoticeChannel {
+public final class DingTalkNoticeChannel extends NoticeChannel {
 
     /**
      * 机器人webhook地址
@@ -18,7 +18,7 @@ public final class WeChatNoticeChannel extends NoticeChannel {
     private String webhookUrl;
 
     /**
-     * 是否@所有人
+     * 是否@所有人(与@用户手机号功能互斥)
      */
     private boolean atAll;
 

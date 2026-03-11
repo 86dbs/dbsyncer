@@ -22,6 +22,10 @@ public enum NoticeChannelEnum {
     /**
      * 企业微信
      */
-    WE_CHAT;
+    WE_CHAT,
+    /**
+     * 钉钉
+     */
+    DING_TALK;
 
 }

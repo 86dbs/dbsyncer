@@ -13,7 +13,7 @@
         <form id="notice-form-edit">
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
-                <button id="testNoticeBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
+                <button id="testNoticeBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
                     <span class="fa fa-flash"></span> 测试
                 </button>
                 <button id="updateNoticeBtn" type="button" class="btn btn-primary">
@@ -56,7 +56,7 @@
                 <div class="form-item wechat-config hidden">
                     <label class="form-label">@用户手机号</label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="200" name="wechatAtUserMobiles" data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.wechat?.atUserMobiles}"/>
+                        <input type="text" class="form-control" maxlength="200" name="wechatAtMobiles" data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.wechat?.atMobiles}"/>
                     </div>
                 </div>
 
@@ -67,6 +67,50 @@
                     </div>
                 </div>
                 <div class="form-item wechat-config hidden"></div>
+
+                <!-- 钉钉配置区域 -->
+                <div class="form-item">
+                    <label class="form-label">钉钉</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableDingTalk" type="checkbox" th:checked="${config?.dingTalk?.enabled}"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item"></div>
+
+                <div class="form-item dingtalk-config hidden">
+                    <label class="form-label">@所有人</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="dingTalkAtAll" type="checkbox" th:checked="${config?.dingTalk?.atAll}" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item dingtalk-config hidden">
+                    <label class="form-label">@用户手机号</label>
+                    <div class="form-control-area">
+                        <input type="text" class="form-control" maxlength="200" name="dingTalkAtMobiles" data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.dingTalk?.atMobiles}"/>
+                    </div>
+                </div>
+
+                <div class="form-item dingtalk-config hidden">
+                    <label class="form-label">webhook<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <textarea name="dingTalkWebhookUrl" required class="form-control" maxlength="200" rows="3" placeholder="钉钉机器人webhook地址">[[${config?.dingTalk?.webhookUrl}]]</textarea>
+                    </div>
+                </div>
+                <div class="form-item dingtalk-config hidden"></div>
 
                 <!-- HTTP配置区域 -->
                 <div class="form-item">
@@ -148,6 +192,7 @@
         initSwitchToggle('enableMail', $('.mail-config'));
         initSwitchToggle('enableHttp', $('.http-config'));
         initSwitchToggle('enableWechat', $('.wechat-config'));
+        initSwitchToggle('enableDingTalk', $('.dingtalk-config'));
         // 绑定多值输入框事件
         initMultipleInputTags();
         //保存

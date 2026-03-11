@@ -30,6 +30,7 @@ import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.NoticeChannelEnum;
+import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
 import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
@@ -147,6 +148,14 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 messageService.registerNotifyService(NoticeChannelEnum.WE_CHAT, service);
             } else {
                 messageService.removeNotifyService(NoticeChannelEnum.WE_CHAT);
+            }
+
+            // 钉钉通知
+            if (noticeConfig.getDingTalk().isEnabled()) {
+                DingTalkNoticeService service = new DingTalkNoticeService();
+                messageService.registerNotifyService(NoticeChannelEnum.DING_TALK, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.DING_TALK);
             }
 
             // HTTP通知

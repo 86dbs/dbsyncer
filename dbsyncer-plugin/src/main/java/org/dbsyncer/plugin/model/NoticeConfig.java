@@ -13,6 +13,7 @@ package org.dbsyncer.plugin.model;
 public class NoticeConfig {
 
     private WeChatNoticeChannel wechat = new WeChatNoticeChannel();
+    private DingTalkNoticeChannel dingTalk = new DingTalkNoticeChannel();
     private HttpNoticeChannel http = new HttpNoticeChannel();
     private MailNoticeChannel mail = new MailNoticeChannel();
 
@@ -22,6 +23,14 @@ public class NoticeConfig {
 
     public void setWechat(WeChatNoticeChannel wechat) {
         this.wechat = wechat;
+    }
+
+    public DingTalkNoticeChannel getDingTalk() {
+        return dingTalk;
+    }
+
+    public void setDingTalk(DingTalkNoticeChannel dingTalk) {
+        this.dingTalk = dingTalk;
     }
 
     public HttpNoticeChannel getHttp() {

@@ -28,11 +28,19 @@ public enum SafeInfoEnum {
     /**
      * 企业微信@用户手机号
      */
-    WECHAT_AT_USER_MOBILES("wechatAtUserMobiles"),
+    WECHAT_AT_MOBILES("wechatAtMobiles"),
     /**
      * 企业微信Webhook地址
      */
-    WECHAT_WebhookUrl("wechatWebhookUrl");
+    WECHAT_WebhookUrl("wechatWebhookUrl"),
+    /**
+     * 钉钉@用户手机号
+     */
+    DINGTALK_AT_MOBILES("dingTalkAtMobiles"),
+    /**
+     * 钉钉Webhook地址
+     */
+    DINGTALK_WebhookUrl("dingTalkWebhookUrl");
 
     private final String code;
 

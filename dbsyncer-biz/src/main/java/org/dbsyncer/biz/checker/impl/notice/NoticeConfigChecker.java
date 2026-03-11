@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.plugin.model.DingTalkNoticeChannel;
 import org.dbsyncer.plugin.model.HttpNoticeChannel;
 import org.dbsyncer.plugin.model.MailNoticeChannel;
 import org.dbsyncer.plugin.model.WeChatNoticeChannel;
@@ -58,7 +59,19 @@ public class NoticeConfigChecker extends AbstractChecker {
             Assert.hasText(webhookUrl, "企业微信告警Webhook地址不能为空.");
             weChat.setWebhookUrl(webhookUrl);
             weChat.setAtAll(StringUtil.isNotBlank(params.get("wechatAtAll")));
-            weChat.setAtUserMobiles(params.get("wechatAtUserMobiles"));
+            weChat.setAtMobiles(params.get("wechatAtMobiles"));
+        }
+
+        // 是否启用钉钉告警
+        boolean enableDingTalk = StringUtil.isNotBlank(params.get("enableDingTalk"));
+        DingTalkNoticeChannel dingTalk = noticeConfig.getDingTalk();
+        dingTalk.setEnabled(enableDingTalk);
+        if (enableDingTalk) {
+            String webhookUrl = params.get("dingTalkWebhookUrl");
+            Assert.hasText(webhookUrl, "钉钉告警Webhook地址不能为空.");
+            dingTalk.setWebhookUrl(webhookUrl);
+            dingTalk.setAtAll(StringUtil.isNotBlank(params.get("dingTalkAtAll")));
+            dingTalk.setAtMobiles(params.get("dingTalkAtMobiles"));
         }
 
         // 是否启用HTTP告警
