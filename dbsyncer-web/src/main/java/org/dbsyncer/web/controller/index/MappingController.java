@@ -79,6 +79,17 @@ public class MappingController extends BaseController {
         return "mapping/customTable";
     }
 
+    @RequestMapping("/get")
+    @ResponseBody
+    public RestResult get(@RequestParam(value = "id") String id) {
+        try {
+            return RestResult.restSuccess(mappingService.getMapping(id, 1));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/search")
     @ResponseBody
     public RestResult search(HttpServletRequest request) {
