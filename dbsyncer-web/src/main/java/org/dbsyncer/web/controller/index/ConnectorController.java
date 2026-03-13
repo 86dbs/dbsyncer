@@ -147,7 +147,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
-    @GetMapping("/getDatabase")
+    @RequestMapping("/getDatabase")
     @ResponseBody
     public RestResult getDatabase(String id) {
         try {
@@ -158,7 +158,7 @@ public class ConnectorController extends BaseController {
         }
     }
 
-    @GetMapping("/getSchema")
+    @RequestMapping("/getSchema")
     @ResponseBody
     public RestResult getSchema(String id, String database) {
         try {
