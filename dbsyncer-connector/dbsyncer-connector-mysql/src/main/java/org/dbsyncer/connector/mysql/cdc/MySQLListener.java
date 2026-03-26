@@ -3,6 +3,24 @@
  */
 package org.dbsyncer.connector.mysql.cdc;
 
+import org.dbsyncer.common.QueueOverflowException;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.mysql.MySQLException;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
+import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
+import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
+import org.dbsyncer.sdk.listener.ChangedEvent;
+import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
+import org.dbsyncer.sdk.listener.event.RowChangedEvent;
+import org.dbsyncer.sdk.model.ChangedOffset;
+import org.dbsyncer.sdk.util.SqlParserUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventHeader;
@@ -18,37 +36,31 @@ import com.github.shyiko.mysql.binlog.network.ServerException;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
-import org.dbsyncer.common.QueueOverflowException;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.mysql.MySQLException;
-import org.dbsyncer.connector.mysql.binlog.BinaryLogClient;
-import org.dbsyncer.connector.mysql.binlog.BinaryLogRemoteClient;
-import org.dbsyncer.sdk.config.DatabaseConfig;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
-import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
-import org.dbsyncer.sdk.listener.ChangedEvent;
-import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
-import org.dbsyncer.sdk.listener.event.RowChangedEvent;
-import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.util.DatabaseUtil;
-import org.dbsyncer.sdk.util.SqlParserUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 
-import java.util.ArrayList;
+import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.QueryEventData;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.regex.Pattern.compile;
 
 /**
  * @Author AE86
@@ -63,7 +75,6 @@ public class MySQLListener extends AbstractDatabaseListener {
     private final String BINLOG_POSITION = "position";
     private final Map<Long, TableMapEventData> tables = new HashMap<>();
     private BinaryLogClient client;
-    private String database;
     private final Lock connectLock = new ReentrantLock();
 
     @Override
@@ -99,24 +110,17 @@ public class MySQLListener extends AbstractDatabaseListener {
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
+        // 排除手动重试操作
+        if (StringUtil.isBlank(offset.getNextFileName()) && offset.getPosition() == null) {
+            return;
+        }
         refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
     }
 
     private void run() throws Exception {
         final DatabaseConfig config = getConnectorInstance().getConfig();
-        if (StringUtil.isBlank(config.getUrl())) {
-            throw new MySQLException("url is invalid");
-        }
-        database = DatabaseUtil.getDatabaseName(config.getUrl());
-        List<Host> cluster = readNodes(config.getUrl());
-        Assert.notEmpty(cluster, "MySQL连接地址有误.");
-
-        int MASTER = 0;
-        final Host host = cluster.get(MASTER);
-        final String username = config.getUsername();
-        final String password = config.getPassword();
         boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
-        client = new BinaryLogRemoteClient(host.getIp(), host.getPort(), username, password);
+        client = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
         client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
         client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
         client.setTableMapEventByTableId(tables);
@@ -129,24 +133,6 @@ public class MySQLListener extends AbstractDatabaseListener {
             refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
             super.forceFlushEvent();
         }
-    }
-
-    private List<Host> readNodes(String url) {
-        Matcher matcher = compile("(//)(?!(/)).+?(/)").matcher(url);
-        if (matcher.find()) {
-            url = matcher.group(0);
-        }
-        url = StringUtil.replace(url, "/", "");
-
-        List<Host> cluster = new ArrayList<>();
-        String[] arr = StringUtil.split(url, StringUtil.COMMA);
-        for (String s : arr) {
-            String[] host = StringUtil.split(s, ":");
-            if (2 == host.length) {
-                cluster.add(new Host(host[0], Integer.parseInt(host[1])));
-            }
-        }
-        return cluster;
     }
 
     private void refresh(EventHeader header) {
@@ -188,24 +174,6 @@ public class MySQLListener extends AbstractDatabaseListener {
         }
     }
 
-    static final class Host {
-        private final String ip;
-        private final int port;
-
-        public Host(String ip, int port) {
-            this.ip = ip;
-            this.port = port;
-        }
-
-        public String getIp() {
-            return ip;
-        }
-
-        public int getPort() {
-            return port;
-        }
-    }
-
     final class InnerLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
 
         @Override
@@ -219,20 +187,11 @@ public class MySQLListener extends AbstractDatabaseListener {
             if (!client.isConnected()) {
                 return;
             }
-            /**
-             * e:
-             * case1> Due to the automatic expiration and deletion mechanism of MySQL binlog files, the binlog file cannot be found.
-             * case2> Got fatal error 1236 from master when reading data from binary log.
-             * case3> Log event entry exceeded max_allowed_packet; Increase max_allowed_packet on master.
-             */
             if (e instanceof ServerException) {
                 ServerException serverException = (ServerException) e;
                 if (serverException.getErrorCode() == 1236) {
-                    String log = String.format("线程[%s]执行异常。由于MySQL配置了过期binlog文件自动删除机制，已无法找到原binlog文件%s。建议先保存驱动（加载最新的binlog文件），再启动驱动。",
-                            client.getWorkerThreadName(),
-                            client.getBinlogFilename());
-                    errorEvent(new MySQLException(log));
-                    close();
+                    String log = String.format("[%s]执行异常，建议重新保存驱动，再启动驱动。", client.getWorkerThreadName());
+                    errorEvent(new MySQLException(log + e.getMessage()));
                     return;
                 }
             }
@@ -271,7 +230,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 UpdateRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -282,7 +241,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 WriteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> after = Stream.of(m).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -293,7 +252,7 @@ public class MySQLListener extends AbstractDatabaseListener {
                 refresh(header);
                 DeleteRowsEventData data = event.getData();
                 if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m -> {
+                    data.getRows().forEach(m-> {
                         List<Object> before = Stream.of(m).collect(Collectors.toList());
                         trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
                     });
@@ -349,8 +308,7 @@ public class MySQLListener extends AbstractDatabaseListener {
             }
             databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
             if (isFilterTable(databaseName, tableName)) {
-                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER,
-                        data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
             }
         }
 

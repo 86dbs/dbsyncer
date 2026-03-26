@@ -7,9 +7,9 @@ package org.dbsyncer.common;
  */
 public class QueueOverflowException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public QueueOverflowException(String message) {
+    public QueueOverflowException(String message) {
         super(message);
     }
 

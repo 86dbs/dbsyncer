@@ -53,8 +53,6 @@ public class Result<T> {
 
     /**
      * 线程安全添加集合
-     *
-     * @param failData
      */
     public void addFailData(List failData) {
         synchronized (LOCK) {
@@ -64,8 +62,6 @@ public class Result<T> {
 
     /**
      * 线程安全添加集合
-     *
-     * @param successData
      */
     public void addSuccessData(List successData) {
         synchronized (LOCK) {

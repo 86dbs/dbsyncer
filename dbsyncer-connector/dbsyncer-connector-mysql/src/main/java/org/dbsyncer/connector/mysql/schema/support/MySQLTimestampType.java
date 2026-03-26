@@ -20,8 +20,7 @@ import java.util.stream.Collectors;
 public final class MySQLTimestampType extends TimestampType {
 
     private enum TypeEnum {
-        DATETIME,
-        TIMESTAMP;
+        DATETIME, TIMESTAMP;
     }
 
     @Override

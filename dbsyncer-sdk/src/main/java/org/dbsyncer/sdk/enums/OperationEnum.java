@@ -12,14 +12,12 @@ package org.dbsyncer.sdk.enums;
  */
 public enum OperationEnum {
 
-    AND("and", "并且"),
-    OR("or", "或者"),
-    SQL("sql", "自定义sql条件");
+    AND("and", "并且"), OR("or", "或者"), SQL("sql", "自定义sql条件");
 
     private final String name;
     private final String message;
 
-    OperationEnum(String name,String message) {
+    OperationEnum(String name, String message) {
         this.name = name;
         this.message = message;
     }
@@ -39,5 +37,4 @@ public enum OperationEnum {
     public String getMessage() {
         return message;
     }
-
 }

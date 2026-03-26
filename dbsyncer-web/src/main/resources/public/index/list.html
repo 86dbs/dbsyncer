@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="index">
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-4 mb-5">
+        <div class="card px-6" id="totalMeta"></div>
+
+        <div class="card px-6" id="runningMeta"></div>
+
+        <div class="card px-6">
+            <div class="flex items-center justify-between">
+                <p class="text-gray-500">失败任务</p>
+                <div class="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center text-error">
+                    <i class="fa fa-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="flex items-end">
+                <span class="text-xxl font-bold" id="failMeta"></span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">需要立即处理</p>
+        </div>
+
+        <div class="card px-6" id="allData"></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 mb-5">
+        <!-- 同步趋势图表 -->
+        <div class="form-container lg:col-span-2 px-3">
+            <div class="flex items-center justify-between mt-2">
+                <h3 class="font-bold text-lg">同步趋势</h3>
+                <div>
+                    <button class="btn btn-outline text-sm trend-item mr-1 text-primary" data-key="7">一周</button>
+                    <button class="btn btn-outline text-sm trend-item mr-1" data-key="15">半个月</button>
+                    <button class="btn btn-outline text-sm trend-item mr-3" data-key="30">一个月</button>
+                </div>
+            </div>
+            <canvas id="trendChart"></canvas>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="form-container lg:col-span-1 p-5">
+            <div id="statistic" class="mini-stats-grid mb-3"></div>
+
+            <!-- 任务状态分布柱状图 -->
+            <canvas id="statusDoughnutChart"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3">
+        <!-- 左侧：连接列表 -->
+        <div class="form-container p-5">
+            <div class="border-gray-100 flex justify-end mb-5">
+                <button class="btn btn-info" onclick="doLoader('/connector/page/add')">
+                    <i class="fa fa-plus"></i>
+                    <span>添加连接</span>
+                </button>
+            </div>
+            <div id="connectorTable"></div>
+            <div id="connectorPagination"></div>
+        </div>
+
+        <!-- 右侧：驱动列表 -->
+        <div class="form-container lg:col-span-2 p-5">
+            <div class="border-gray-100 flex items-center justify-end mb-5">
+                <button class="btn btn-info" onclick="doLoader('/mapping/pageAdd')">
+                    <i class="fa fa-plus"></i>
+                    <span>添加驱动</span>
+                </button>
+            </div>
+
+            <table class="table">
+                <thead>
+                <tr class="text-left">
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>结果</th>
+                    <th>状态</th>
+                    <th>最后同步</th>
+                </tr>
+                </thead>
+                <tbody id="mappingTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    $(function () {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/index');
+        };
+
+        // 同步趋势图表
+        const trendCanvas = document.getElementById('trendChart');
+        if (!trendCanvas) {
+            console.error('trendChart 元素未找到');
+        }
+        const trendCtx = trendCanvas ? trendCanvas.getContext('2d') : null;
+        const trendChart = trendCtx ? new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '同步成功',
+                        data: [],
+                        borderColor: '#165DFF',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: '同步失败',
+                        data: [],
+                        borderColor: '#fa8c16',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(250, 140, 22, 0.3)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2.1,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            }
+        }) : null;
+
+        // 任务状态分布柱状图
+        const statusDoughnutCanvas = document.getElementById('statusDoughnutChart');
+        const statusDoughnutCtx = statusDoughnutCanvas ? statusDoughnutCanvas.getContext('2d') : null;
+        const statusDoughnutChart = statusDoughnutCtx ? new Chart(statusDoughnutCtx, {
+            type: 'bar',
+            data: {
+                labels: ['总任务', '运行中', '已失败'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(24, 144, 255, 0.45)',   // #1890ff
+                        'rgba(82, 196, 26, 0.45)',   // #52c41a
+                        'rgba(245, 34, 45, 0.45)'   // #f5222d
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.9,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed.x;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        }) : null;
+        const trendConfig = {
+            'data':{},
+            'type': '7',
+            '7': function (data) {
+                if (!data || data.length === 0) {
+                    return [];
+                }
+                return data.length > 7 ? data.slice(-7) : data;
+            },
+            '15': function (data) {
+                if (!data || data.length === 0) {
+                    return [];
+                }
+                return data.length > 15 ? data.slice(-15) : data;
+            },
+            '30': function (data) {
+                return data || [];
+            }
+        };
+        function refreshLineChatData(trend) {
+            if (!trendChart) return;
+            trendConfig['data'] = trend;
+            let strategy = trendConfig[trendConfig.type];
+            trendChart.data.labels = strategy(trend.labels);
+            trendChart.data.datasets[0].data = strategy(trend.success);
+            trendChart.data.datasets[1].data = strategy(trend.fail);
+            trendChart.update('none');
+        }
+        $('.trend-item').unbind('click').bind('click', function(){
+            $('.trend-item').removeClass('text-primary');
+            $(this).addClass('text-primary');
+            trendConfig.type = $(this).data("key");
+            refreshLineChatData(trendConfig['data']);
+        })
+
+        function renderTotalMeta(r) {
+            const isIncrease = r.lastWeekMeta <= r.totalMeta;
+            const diff = isIncrease ? (r.totalMeta - r.lastWeekMeta) : (r.lastWeekMeta - r.totalMeta);
+            const percent = r.lastWeekMeta > 0 ? (diff / r.lastWeekMeta * 100) : 0;
+            const config = isIncrease ? {
+                class: 'fa-arrow-up',
+                text: '增长',
+                colorClass: 'text-success'
+            } : {
+                class: 'fa-arrow-down',
+                text: '降低',
+                colorClass: 'text-warning'
+            };
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">总任务数</p>
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <i class="fa fa-tasks"></i>
+                </div>
+            </div>
+            <div class="flex items-end success">
+                <span class="text-xxl font-bold">${r.totalMeta}</span>
+                <span class="${config.colorClass} text-sm mb-1 flex items-center ml-2">
+                    <i class="fa ${config.class} mr-1"></i> ${diff} 个
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较上周${config.text} ${percent.toFixed(2)}%</p>`;
+        }
+
+        function renderRunningMeta(r) {
+            const percent = r.totalMeta > 0 ? (r.runningMeta / r.totalMeta * 100) : 0;
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">运行中任务</p>
+                <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success">
+                    <i class="fa fa-play"></i>
+                </div>
+            </div>
+            <div class="flex items-end">
+                <span class="text-xxl font-bold">${r.runningMeta}</span>
+                <span class="text-success text-sm mb-1 flex items-center ml-2">
+                        <i class="fa fa-check mr-1"></i> 正常
+                    </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">占总任务数 ${percent.toFixed(2)}%</p>`;
+        }
+
+        function renderAllData(r) {
+            const total = r.success + r.fail;
+            const isIncrease = r.yesterdayData <= total;
+            const diff = isIncrease ? (total - r.yesterdayData) : (r.yesterdayData - total);
+            const percent = r.yesterdayData > 0 ? (diff / r.yesterdayData * 100) : 0;
+            const config = isIncrease ? {
+                class: 'fa-arrow-up',
+                text: '增长',
+                colorClass: 'text-success'
+            } : {
+                class: 'fa-arrow-down',
+                text: '降低',
+                colorClass: 'text-warning'
+            };
+            return `<div class="flex items-center justify-between">
+                <p class="text-gray-500">同步总数</p>
+                <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center text-info">
+                    <i class="fa fa-database"></i>
+                </div>
+            </div>
+            <div class="flex items-end success">
+                <span class="text-xxl font-bold">${total}</span>
+                <span class="${config.colorClass} text-sm mb-1 flex items-center ml-2">
+                    <i class="fa ${config.class} mr-1"></i> ${percent.toFixed(2)}%
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">较昨日${config.text}</p>`;
+        }
+
+        function renderStatistic(r) {
+            const statistic = [
+                { key: 'success', title: '成功', bgColor: 'success' },
+                { key: 'fail', title: '失败', bgColor: 'error' },
+                { key: 'insert', title: '新增', bgColor: 'primary' },
+                { key: 'update', title: '修改', bgColor: 'info' },
+                { key: 'delete', title: '删除', bgColor: 'warning' },
+                { key: 'ddl', title: 'DDL', bgColor: 'violet' }
+            ];
+
+            const html = statistic.map(item => `
+                <div class="mini-stat-card mini-stat-card--${item.bgColor}">
+                    <div class="mini-stat-info">
+                        <p class="mini-stat-title">${item.title}</p>
+                    </div>
+                    <span class="mini-stat-number text-${item.bgColor}" title="${r[item.key] || 0}">
+                        ${r[item.key] || 0}
+                    </span>
+                </div>
+            `).join('');
+
+            $("#statistic").html(html);
+        }
+
+        // 刷新仪表板数据
+        function refreshDashboardData() {
+            doGetter("/monitor/dashboard", {}, function (response) {
+                if (response.success === true) {
+                    const r = response.data;
+                    $("#totalMeta").html(renderTotalMeta(r));
+                    $("#runningMeta").html(renderRunningMeta(r));
+                    $("#failMeta").text(r.failMeta);
+                    $("#allData").html(renderAllData(r));
+                    // 生成迷你卡片
+                    renderStatistic(r);
+                    refreshLineChatData(r.trend);
+                    
+                    // 更新柱状图数据
+                    if (statusDoughnutChart) {
+                        statusDoughnutChart.data.datasets[0].data = [
+                            r.totalMeta || 0,
+                            r.runningMeta || 0,
+                            r.failMeta || 0
+                        ];
+                        statusDoughnutChart.update('none');
+                    }
+                }
+            });
+        }
+
+        // 初始化分页管理器
+        let searchConnector = new PaginationManager({
+            requestUrl: '/connector/search',
+            tableBodySelector: '#connectorTable',
+            paginationSelector: '#connectorPagination',
+            pageSize: 3,
+            renderRow: function(connector, index) {
+                return `<div class="card flex justify-between border rounded-md mb-3">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center ml-3">
+                        <img draggable="false" src="${$basePath}/img/${escapeHtml((connector.config && connector.config.connectorType) || '')}.png" style="width: 50px; height: 50px;" alt="${escapeHtml((connector.config && connector.config.connectorType) || '')}">
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium">${escapeHtml(connector.name)}</p>
+                        <p class="text-xs text-gray-500" title="${escapeHtml((connector.config && connector.config.url) || '')}">${escapeHtml((connector.config && connector.config.url) || '')}</p>
+                    </div>
+                </div>
+                <div class="flex items-center mr-2">
+                    ${connector.running ? '<span class="badge badge-success">在线</span>' : '<span class="badge badge-error">离线</span>'}
+                </div>
+            </div>`;
+            },
+            emptyHtml:'<div class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></div>'
+        });
+
+        // 初始化分页管理器
+        let searchMapping = new PaginationManager({
+            requestUrl: '/mapping/search',
+            tableBodySelector: '#mappingTable',
+            pageSize: 5,
+            renderRow: function(mapping, index) {
+                return `<tr>
+                    <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>
+                    <td>${renderModelText(mapping && mapping.model)}</td>
+                    <td>${renderSyncResult(mapping)}</td>
+                    <td>${renderStateText((mapping && mapping.meta && mapping.meta.state) || 0)}</td>
+                    <td>${formatRelativeTime((mapping && mapping.meta && mapping.meta.updateTime) || '')}</td>
+                </tr>`;
+            },
+            emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+        });
+
+        // 初始化时立即刷新一次
+        refreshDashboardData();
+        
+        // 注册到全局定时刷新管理器
+        PageRefreshManager.register(() => {
+            refreshDashboardData();
+            searchConnector.doSearch({}, searchConnector.currentPage);
+            searchMapping.doSearch({}, searchMapping.currentPage);
+        });
+
+    });
+</script>
+</div>
+</html>

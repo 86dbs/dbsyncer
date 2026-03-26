@@ -13,5 +13,5 @@ import org.dbsyncer.parser.model.ConfigModel;
 public interface GroupStrategy<M extends ConfigModel> {
 
     String getGroupId(M model);
-    
+
 }

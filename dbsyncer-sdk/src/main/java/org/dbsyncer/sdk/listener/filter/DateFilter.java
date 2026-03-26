@@ -8,7 +8,7 @@ import java.time.Instant;
 
 public class DateFilter implements QuartzFilter<Date> {
 
-    private boolean begin;
+    private final boolean begin;
 
     public DateFilter(boolean begin) {
         this.begin = begin;

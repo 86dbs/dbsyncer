@@ -7,19 +7,21 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.impl.user.UserConfigChecker;
 import org.dbsyncer.biz.enums.UserRoleEnum;
-import org.dbsyncer.biz.vo.UserInfoVo;
+import org.dbsyncer.biz.vo.UserInfoVO;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.model.UserInfo;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +146,7 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public UserInfoVo getUserInfoVo(String currentUserName, String username) {
+    public UserInfoVO getUserInfoVo(String currentUserName, String username) {
         // 管理员可以查看所有用户，普通用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
@@ -157,16 +159,16 @@ public class UserConfigServiceImpl implements UserConfigService {
     }
 
     @Override
-    public List<UserInfoVo> getUserInfoAll(String currentUserName) {
+    public List<UserInfoVO> getUserInfoAll(String currentUserName) {
         // 系统管理员可以查看所有用户，其他用户只能查看自己
         UserConfig userConfig = getUserConfig();
         UserInfo currentUser = userConfig.getUserInfo(currentUserName);
         boolean admin = null != currentUser && UserRoleEnum.isAdmin(currentUser.getRoleCode());
         if (admin) {
-            return getUserConfig().getUserInfoList().stream().map(user -> convertUserInfo2Vo(user)).collect(Collectors.toList());
+            return getUserConfig().getUserInfoList().stream().map(user->convertUserInfo2Vo(user)).collect(Collectors.toList());
         }
 
-        List<UserInfoVo> list = new ArrayList<>();
+        List<UserInfoVO> list = new ArrayList<>();
         UserInfo userInfo = userConfig.getUserInfo(currentUserName);
         list.add(convertUserInfo2Vo(userInfo));
         return list;
@@ -195,8 +197,8 @@ public class UserConfigServiceImpl implements UserConfigService {
         return new UserInfo(DEFAULT_USERNAME, DEFAULT_USERNAME, DEFAULT_PASSWORD, UserRoleEnum.ADMIN.getCode(), StringUtil.EMPTY, StringUtil.EMPTY);
     }
 
-    private UserInfoVo convertUserInfo2Vo(UserInfo userInfo) {
-        UserInfoVo userInfoVo = new UserInfoVo();
+    private UserInfoVO convertUserInfo2Vo(UserInfo userInfo) {
+        UserInfoVO userInfoVo = new UserInfoVO();
         if (null != userInfo) {
             BeanUtils.copyProperties(userInfo, userInfoVo);
             // 避免密码直接暴露

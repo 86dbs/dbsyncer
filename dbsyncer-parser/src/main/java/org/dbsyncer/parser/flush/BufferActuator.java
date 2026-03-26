@@ -37,5 +37,4 @@ public interface BufferActuator {
      * @return
      */
     Executor getExecutor();
-
 }

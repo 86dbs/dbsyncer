@@ -10,9 +10,9 @@ package org.dbsyncer.sdk;
  */
 public class SdkException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public SdkException(String message) {
+    public SdkException(String message) {
         super(message);
     }
 

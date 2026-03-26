@@ -8,14 +8,17 @@ package org.dbsyncer.sdk.model;
  * @Date 2023-08-23 20:00
  */
 public final class ChangedOffset {
+
     /**
      * 驱动ID
      */
     private String metaId;
+
     /**
      * 增量文件名称
      */
     private String nextFileName;
+
     /**
      * 增量偏移量
      */
@@ -44,5 +47,4 @@ public final class ChangedOffset {
     public void setPosition(Object position) {
         this.position = position;
     }
-
 }

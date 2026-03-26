@@ -7,6 +7,7 @@ import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.config.GeneralBufferConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -25,16 +26,20 @@ import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.parser.model.WriterResponse;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.IncrementPluginContext;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +98,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Resource
     private TableGroupContext tableGroupContext;
 
+    @Resource
+    private RsaManager rsaManager;
+
     @PostConstruct
     public void init() {
         setConfig(generalBufferConfig);
@@ -144,23 +152,25 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         switch (response.getTypeEnum()) {
             case DDL:
-                tableGroupContext.update(mapping, pickers.stream().map(picker -> {
+                tableGroupContext.update(mapping, pickers.stream().map(picker-> {
                     TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList()));
                 break;
             case SCAN:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
+                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getSourceFields(), false));
                 break;
             case ROW:
-                pickers.forEach(picker -> distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
+                pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
                 // 发布刷新增量点事件
                 applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
                 break;
             default:
                 break;
         }
+        // 及时清空列表引用，便于 GC 回收，减轻 parser 侧 LinkedList 保留内存
+        response.getDataList().clear();
     }
 
     @Override
@@ -181,12 +191,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private void distributeTableGroup(WriterResponse response, Mapping mapping, TableGroupPicker tableGroupPicker, List<Field> sourceFields, boolean enableFilter) {
         // 1、映射字段
-        boolean enableSchemaResolver = profileComponent.getSystemConfig().isEnableSchemaResolver();
         ConnectorConfig sourceConfig = getConnectorConfig(mapping.getSourceConnectorId());
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
         List<Map> sourceDataList = new ArrayList<>();
-        List<Map> targetDataList = tableGroupPicker.getPicker()
-                .setSourceResolver(enableSchemaResolver ? sourceConnector.getSchemaResolver() : null)
+        List<Map> targetDataList = tableGroupPicker.getPicker().setSourceResolver(sourceConnector.getSchemaResolver())
                 .pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
@@ -198,10 +206,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sourceConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(getConnectorConfig(mapping.getTargetConnectorId())));
-        context.setSourceTableName(tableGroup.getSourceTable().getName());
-        context.setTargetTableName(tableGroup.getTargetTable().getName());
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
+        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
+        context.setSourceTable(tableGroup.getSourceTable());
+        context.setTargetTable(tableGroup.getTargetTable());
         context.setTraceId(response.getTraceId());
         context.setEvent(response.getEvent());
         context.setTargetFields(tableGroupPicker.getTargetFields());
@@ -212,8 +222,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setPlugin(tableGroup.getPlugin());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setEnableSchemaResolver(enableSchemaResolver);
         context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));
+        setRsaConfig(context);
         pluginFactory.process(context, ProcessEnum.CONVERT);
 
         // 4、批量执行同步
@@ -221,11 +231,18 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 5、持久化同步结果
         result.setTableGroupId(tableGroup.getId());
-        result.setTargetTableGroupName(context.getTargetTableName());
+        result.setTargetTableGroupName(context.getTargetTable().getName());
         flushStrategy.flushIncrementData(mapping.getMetaId(), result, response.getEvent());
 
         // 6、执行后置处理
         pluginFactory.process(context, ProcessEnum.AFTER);
+    }
+
+    private void setRsaConfig(IncrementPluginContext context) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            context.setRsaManager(rsaManager);
+            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
     }
 
     /**
@@ -237,11 +254,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             ConnectorConfig tConnConfig = getConnectorConfig(mapping.getTargetConnectorId());
             String sConnType = sConnConfig.getConnectorType();
             String tConnType = tConnConfig.getConnectorType();
+            String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+            ConnectorInstance tConnectorInstance = connectorFactory.connect(instanceId);
             ConnectorService connectorService = connectorFactory.getConnectorService(tConnType);
-            DDLConfig targetDDLConfig = ddlParser.parse(connectorService, tableGroup, response.getSql());
+            DDLConfig targetDDLConfig = ddlParser.parse(tConnectorInstance, connectorService, tableGroup, response.getSql());
             // 1.生成目标表执行SQL(暂支持同源)
             if (mapping.getListener().isEnableDDL() && StringUtil.equals(sConnType, tConnType)) {
-                ConnectorInstance tConnectorInstance = connectorFactory.connect(tConnConfig);
                 Result result = connectorFactory.writerDDL(tConnectorInstance, targetDDLConfig);
                 // 2.持久化增量事件数据
                 result.setTableGroupId(tableGroup.getId());
@@ -250,10 +268,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             }
 
             // 3.更新表属性字段
-            MetaInfo sourceMetaInfo = parserComponent.getMetaInfo(mapping.getSourceConnectorId(), tableGroup.getSourceTable().getName());
-            MetaInfo targetMetaInfo = parserComponent.getMetaInfo(mapping.getTargetConnectorId(), tableGroup.getTargetTable().getName());
-            tableGroup.getSourceTable().setColumn(sourceMetaInfo.getColumn());
-            tableGroup.getTargetTable().setColumn(targetMetaInfo.getColumn());
+            updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, tableGroup.getSourceTable());
+            updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, tableGroup.getTargetTable());
 
             // 4.更新表字段映射关系
             ddlParser.refreshFiledMappings(tableGroup, targetDDLConfig);
@@ -271,6 +287,17 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
     }
 
+    private void updateTableColumn(Mapping mapping, String suffix, Table table) {
+        boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
+        context.addTablePattern(table);
+
+        List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
+        MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
+        Assert.notNull(metaInfo, "无法获取连接器表信息:" + table.getName());
+        table.setColumn(metaInfo.getColumn());
+    }
+
     /**
      * 获取连接器配置
      */
@@ -283,7 +310,8 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     private void printTraceInfo(WriterResponse response) {
         if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
-            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil.objToJson(response.getChangedOffset()), response.getDataList());
+            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil
+                    .objToJson(response.getChangedOffset()), response.getDataList());
         }
     }
 

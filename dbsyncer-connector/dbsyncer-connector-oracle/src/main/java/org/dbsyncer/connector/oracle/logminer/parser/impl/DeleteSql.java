@@ -3,9 +3,12 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
-import net.sf.jsqlparser.statement.delete.Delete;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 import org.dbsyncer.sdk.model.Field;
+
+import net.sf.jsqlparser.statement.delete.Delete;
+
+import net.sf.jsqlparser.statement.delete.Delete;
 
 import java.util.List;
 
@@ -28,5 +31,4 @@ public class DeleteSql extends AbstractParser {
         findColumn(delete.getWhere());
         return columnMapToData();
     }
-
 }

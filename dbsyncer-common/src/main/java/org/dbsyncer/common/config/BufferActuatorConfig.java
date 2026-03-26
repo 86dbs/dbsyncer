@@ -60,5 +60,4 @@ public abstract class BufferActuatorConfig {
     public void setBufferPeriodMillisecond(int bufferPeriodMillisecond) {
         this.bufferPeriodMillisecond = bufferPeriodMillisecond;
     }
-
 }

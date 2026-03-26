@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -44,7 +45,7 @@ public interface TableGroupService {
      * @param mappingId
      * @param ids
      */
-    boolean remove(String mappingId, String ids);
+    String remove(String mappingId, String ids);
 
     /**
      * 获取表关系
@@ -63,11 +64,18 @@ public interface TableGroupService {
     List<TableGroup> getTableGroupAll(String mappingId);
 
     /**
+     * 分页搜索
+     *
+     * @param params
+     * @return
+     */
+    Paging<TableGroup> search(Map<String, String> params);
+
+    /**
      * 更新元信息
      *
      * @param mapping
      * @param metaSnapshot
      */
     Meta updateMeta(Mapping mapping, String metaSnapshot);
-
 }

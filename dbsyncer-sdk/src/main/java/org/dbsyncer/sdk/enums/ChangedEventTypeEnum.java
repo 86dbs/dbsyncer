@@ -11,6 +11,7 @@ package org.dbsyncer.sdk.enums;
  * @Date 2023-12-09 20:34
  */
 public enum ChangedEventTypeEnum {
+
     /**
      * ddl变更
      */
@@ -27,5 +28,4 @@ public enum ChangedEventTypeEnum {
     public static boolean isDDL(ChangedEventTypeEnum event) {
         return DDL == event;
     }
-
 }

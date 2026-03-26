@@ -29,5 +29,4 @@ public interface Strategy {
      * @return
      */
     String createSharding(String separator, String collectionId);
-
 }

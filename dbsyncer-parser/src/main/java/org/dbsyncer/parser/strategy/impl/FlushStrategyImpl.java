@@ -19,12 +19,14 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -80,7 +82,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
         long now = Instant.now().toEpochMilli();
-        data.forEach(r -> {
+        data.forEach(r-> {
             Map<String, Object> row = new HashMap();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
@@ -93,7 +95,12 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
                 row.put(ConfigConstant.BINLOG_DATA, bytes);
             } catch (Exception e) {
-                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化:{}", r);
+                // 构建详细类型信息
+                StringBuilder typeInfo = new StringBuilder();
+                r.forEach((k, val) -> {
+                    typeInfo.append(k).append("=").append(val == null ? "null" : val.getClass().getName()).append("; ");
+                });
+                logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化。字段类型详情: {}", typeInfo, e);
             }
             storageBufferActuator.offer(new StorageRequest(metaId, row));
         });

@@ -31,7 +31,7 @@ public abstract class LongType extends AbstractDataType<Long> {
         }
         if (val instanceof Boolean) {
             Boolean b = (Boolean) val;
-            return new Long(b ? 1 : 0);
+            return (long) (b ? 1 : 0);
         }
         return throwUnsupportedException(val, field);
     }

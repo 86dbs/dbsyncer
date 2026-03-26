@@ -10,9 +10,9 @@ package org.dbsyncer.connector.sqlserver;
  */
 public class SqlServerException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public SqlServerException(String message) {
+    public SqlServerException(String message) {
         super(message);
     }
 

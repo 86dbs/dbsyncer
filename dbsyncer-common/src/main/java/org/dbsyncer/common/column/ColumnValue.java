@@ -4,7 +4,6 @@
 package org.dbsyncer.common.column;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -21,6 +20,8 @@ public interface ColumnValue {
     String asString();
 
     byte[] asByteArray();
+
+    Byte asByte();
 
     Short asShort();
 
@@ -41,8 +42,4 @@ public interface ColumnValue {
     Timestamp asTimestamp();
 
     Time asTime();
-
-    default BigInteger asBigInteger(){
-        return null;
-    }
 }

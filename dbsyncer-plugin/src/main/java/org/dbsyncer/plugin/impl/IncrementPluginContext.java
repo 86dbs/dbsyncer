@@ -1,7 +1,7 @@
 package org.dbsyncer.plugin.impl;
 
-import org.dbsyncer.sdk.plugin.AbstractPluginContext;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.plugin.AbstractPluginContext;
 
 /**
  * @author AE86

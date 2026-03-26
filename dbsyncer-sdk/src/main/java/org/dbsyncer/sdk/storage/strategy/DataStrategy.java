@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.storage.strategy;
 
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.Strategy;
+
 import org.springframework.util.Assert;
 
 /**

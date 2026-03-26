@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.schema;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.model.Field;
+
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -47,5 +48,4 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
         }
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
     }
-
 }

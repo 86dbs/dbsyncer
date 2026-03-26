@@ -2,67 +2,85 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-    <div class="container">
-        <form id="connectorAddForm" class="form-horizontal" role="form" method="post">
-            <!-- 标题 -->
-            <div class="row text-center">
-                <div class="page-header">
-                    <h3>添加连接</h3>
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">添加连接</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-actions mb-4">
+            <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button class="btn btn-outline" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
+
+        <form id="connectorAddForm" class="grid">
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">类型</label>
+                    <div class="form-control-area">
+                        <select id="connectorType" name="connectorType" class="form-control">
+                            <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}"></option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-
-            <!-- 操作 -->
-            <div class="form-group">
-                <div class="col-md-10"></div>
-                <div class="col-md-2 text-right">
-                    <button id="connectorSubmitBtn" type="button" class="btn btn-primary">
-                        <span class="fa fa-save"></span>保存
-                    </button>
-                    <button id="connectorBackBtn" type="button" class="btn btn-default">
-                        <span class="fa fa-reply"></span>返回
-                    </button>
-                </div>
-            </div>
-
-            <!-- 配置 -->
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="panel panel-info">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">连接配置</h3>
-                        </div>
-
-                        <div class="panel-body">
-                            <!-- 连接类型 -->
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">类型</label>
-                                <div class="col-sm-10">
-                                    <select id="connectorType" name="connectorType" class="form-control select-control">
-                                        <option th:each="t,s:${connectorTypes}" th:value="${t}" th:text="${t}" />
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- 名称 -->
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label">名称<strong class="text-primary">*</strong></label>
-                                <div class="col-sm-10">
-                                    <input class="form-control" name="name" type="text" maxlength="50" dbsyncer-valid="require" placeholder="名称"/>
-                                </div>
-                            </div>
-
-                            <!-- 连接配置 -->
-                            <div id="connectorConfig"></div>
-
-                        </div>
+                <div class="form-item">
+                    <label class="form-label">名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入连接名称"/>
                     </div>
                 </div>
             </div>
-
+            <div id="connectorConfig" class="mb-5"></div>
         </form>
+
     </div>
 </div>
 
-<script th:src="@{/js/connector/add.js}"></script>
+<script>
+$(document).ready(function() {
+    function changeConfig(selectedValues) {
+        // 初始化完成后，如果有默认选中值，触发加载配置
+        if (selectedValues && selectedValues.length > 0) {
+            const selectedValue = selectedValues[0];
+            const $connectorConfig = $("#connectorConfig");
+            $connectorConfig.html('<div class="loading"><div class="loading-spinner"></div>加载中...</div>');
+            $connectorConfig.load($basePath + "/connector/page/add" + selectedValue, function (response, status) {
+                if (status !== 'success') {
+                    $connectorConfig.html('<div class="empty"><div class="empty-icon"><i class="fa fa-warning"></i></div><div class="empty-text">加载连接失败</div></div>');
+                }
+            });
+        }
+    }
+    $('#connectorType').dbSelect({
+        type: 'single',
+        onSelect: changeConfig,
+        onReady: changeConfig
+    });
+
+    // 绑定保存按钮事件
+    $('#connectorSubmitBtn').off('click').on('click', function () {
+        const $form = $("#connectorAddForm");
+        // 验证表单
+        if (validateForm($form)) {
+            // 显示提交状态
+            const submitBtn = $(this);
+            const originalText = submitBtn.html();
+            submitBtn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster("/connector/add", $form.serializeJson(), function (response) {
+                submitBtn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    bootGrowl("保存成功!", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(response.message, "danger");
+                }
+            });
+        }
+    });
+})
+</script>
+
 </html>

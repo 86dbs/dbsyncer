@@ -2,144 +2,115 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-    <div class="container">
-        <form id="mappingModifyForm" class="form-horizontal" role="form" method="post">
-            <!-- 标题 -->
-            <div class="row text-center">
-                <h3>
-                    <span id="mappingModifyName">[[${mapping?.name}]]</span>&nbsp;
-                    <i th:onclick="mappingModifyName()" th:title="点击修改名称" class="fa fa-edit well-sign-green dbsyncer_pointer"></i>
-                </h3>
-                <p>[[${mapping?.id}]]</p>
-            </div>
-
-            <!-- 隐藏表单值 -->
-            <div class="form-group hidden">
-                <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
-                <input name="name" type="text" th:value="${mapping?.name}"/>
-            </div>
-
-            <!-- 驱动信息面板 -->
-            <div class="row">
-                <div class="panel panel-default">
-                    <div class="panel-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="row">
-                                    <div class="col-md-4 text-right">
-                                        <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <p class="driver_break_word">[[${mapping?.sourceConnector?.name}]]</p>
-                                        <p>数据源：[[${mapping?.sourceConnector?.config?.connectorType}]]</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4 text-center">
-                                <div class="row-fluid">
-                                    <div class="span4"><span class="fa fa-arrow-right fa-3x"></span></div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="row">
-                                    <div class="col-md-4 text-right">
-                                        <img draggable="false" class="dbsyncer_img" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <p class="driver_break_word">[[${mapping?.targetConnector?.name}]]</p>
-                                        <p>目标源：[[${mapping?.targetConnector?.config?.connectorType}]]</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="form-container">
+    <form id="mappingModifyForm" method="post">
+    <div class="card-header">
+        <div class="grid grid-cols-6 items-center">
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 card-title text-center">
+                <span id="mapping_name_modify" class="text-xxl">[[${mapping?.name}]]</span>
+                <i class="fa fa-edit text-info text-xl cursor-pointer" th:title="点击修改名称" th:onclick="mappingModifyName()"></i>
+                <p class="card-subtitle">[[${mapping?.id}]]</p>
+                <!-- 隐藏表单值 -->
+                <div class="hidden">
+                    <input id="mappingId" name="id" type="text" th:value="${mapping?.id}"/>
+                    <input name="name" type="text" th:value="${mapping?.name}"/>
                 </div>
             </div>
-
-            <!-- 驱动配置切换操作 -->
-            <div class="form-group" id="mappingModelChange">
-                <div class="row">
-                    <div class="col-sm-2">
-                        <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" /> 全量同步
-                    </div>
-                    <div class="col-sm-2">
-                        <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" /> 增量同步
-                    </div>
-                    <div class="col-sm-6"></div>
-                    <div class="col-md-2 text-right">
-                        <button id="mappingBackBtn" type="button" class="btn btn-default">
-                            <span class="fa fa-reply"></span>返回
-                        </button>
-                        <button id="mappingSubmitBtn" type="button" class="btn btn-primary">
-                            <span class="fa fa-save"></span>保存
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 映射关系区域 -->
-            <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-success">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingBaseConfig">映射关系</u>
-                            </h4>
-                        </div>
-                        <div id="mappingBaseConfig" class="panel-body panel-collapse collapse in">
-                            <!-- 表映射 -->
-                            <div th:replace="mapping/editTable :: content"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 高级配置区域 -->
-            <div class="row">
-                <div class="panel-group">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4 class="panel-title">
-                                <u data-toggle="collapse" class="dbsyncer_pointer" href="#mappingSuperConfig" title="该配置使所有映射关系都生效">高级配置</u>
-                            </h4>
-                        </div>
-                        <div id="mappingSuperConfig" class="panel-body panel-collapse collapse in">
-                            <!-- 全量配置 -->
-                            <div th:id="mappingFullConfig" class="hidden" th:fragment="content">
-                                <div th:replace="mapping/editFull :: content"></div>
-                            </div>
-
-                            <!-- 增量配置 -->
-                            <div th:id="mappingIncrementConfig" class="hidden" th:fragment="content">
-                                <div th:replace="mapping/editIncrement :: content"></div>
-                            </div>
-
-                            <!-- 过滤条件 -->
-                            <div th:replace="mapping/editFilter :: content"></div>
-
-                            <!-- 转换配置 -->
-                            <div th:replace="mapping/editConvert :: content"></div>
-
-                            <!-- 策略配置 -->
-                            <div th:replace="mapping/editParameter :: content"></div>
-
-                            <!-- 插件配置 -->
-                            <div th:replace="mapping/editPlugin :: content"></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </form>
+            <div class="lg:col-span-2"></div>
+        </div>
     </div>
+    <div class="card-body">
+        <!-- 驱动同步关系 -->
+        <div class="grid grid-cols-3">
+            <div class="flex items-center">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
+                <div class="ml-2">
+                    <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
+                    <p class="text-sm">
+                        源库：[[${mapping?.sourceDatabase}]]
+                        <span th:if="${!#strings.isEmpty(mapping?.sourceDatabase) and !#strings.isEmpty(mapping?.sourceSchema)}"> (</span>
+                        [[${mapping?.sourceSchema}]]
+                        <span th:if="${!#strings.isEmpty(mapping?.sourceDatabase) and !#strings.isEmpty(mapping?.sourceSchema)}"> )</span>
+                    </p>
+                </div>
+            </div>
+            <div class="text-info items-center text-center">
+                <p></p>
+                <i class="fa fa-arrow-right fa-3x"></i>
+            </div>
+            <div class="flex items-center">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
+                <div class="ml-2">
+                    <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
+                    <p class="text-sm">
+                        目标库：[[${mapping?.targetDatabase}]]
+                        <span th:if="${!#strings.isEmpty(mapping?.targetDatabase) and !#strings.isEmpty(mapping?.targetSchema)}"> (</span>
+                        [[${mapping?.targetSchema}]]
+                        <span th:if="${!#strings.isEmpty(mapping?.targetDatabase) and !#strings.isEmpty(mapping?.targetSchema)}"> )</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 同步模式选择 -->
+        <div class="flex items-center justify-between mt-4">
+            <div id="mapping_model" class="radio-group">
+                <input type="radio" name="model" value="full" th:checked="${'full' eq mapping?.model}" />
+                <label>全量</label>
+                <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
+                <label>增量</label>
+                <input type="radio" name="model" value="fullToIncrement" disabled />
+                <label>全量+增量</label>
+            </div>
+
+            <div class="form-actions">
+                <span th:if="${mapping?.meta?.state ne 0}">
+                    <button type="button" class="btn btn-info" disabled>
+                        <i class="fa fa-save"></i> 运行中
+                    </button>
+                </span>
+                <button th:if="${mapping?.meta?.state eq 0}" 
+                        id="mappingSubmitBtn" 
+                        type="button" 
+                        class="btn btn-primary">
+                    <i class="fa fa-save"></i> 保存
+                </button>
+                <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回
+                </button>
+            </div>
+        </div>
+
+        <!-- 映射关系区域 -->
+        <h3><i class="fa fa-table text-success"></i> 映射关系</h3>
+        <div th:replace="mapping/editTable :: content"></div>
+
+        <!-- 高级配置区域 -->
+        <h3><i class="fa fa-table text-info"></i> 高级配置</h3>
+        <p class="text-xs text-tertiary">对所有表映射关系都生效</p>
+        <!-- 全量配置 -->
+        <div th:replace="mapping/editFull :: content"></div>
+
+        <!-- 增量配置 -->
+        <div th:replace="mapping/editIncrement :: content"></div>
+
+        <!-- 策略配置 -->
+        <div th:replace="mapping/editStrategy :: content"></div>
+
+        <!-- 过滤条件 -->
+        <div th:replace="mapping/editFilter :: content"></div>
+
+        <!-- 转换配置 -->
+        <div th:replace="mapping/editConvert :: content"></div>
+
+        <!-- 插件配置 -->
+        <div th:replace="mapping/editPlugin :: content"></div>
+
+        <div class="blank-block-md"></div>
+    </div>
+    </form>
 </div>
 
 <script th:src="@{/js/mapping/edit.js}"></script>
-<script th:src="@{/js/mapping/editFilterAndConvert.js}"></script>
-<script th:src="@{/js/mapping/editIncrement.js}"></script>
-<script th:src="@{/js/mapping/editPlugin.js}"></script>
 </html>

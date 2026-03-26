@@ -16,12 +16,14 @@ import java.util.concurrent.TimeUnit;
  * @Date 2022-05-22 22:56
  */
 public class LsnPuller {
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * 间隔拉取最新LSN时间（毫秒）
      */
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 100;
+
     private static volatile LsnPuller instance = null;
     private final Map<String, SqlServerListener> map = new ConcurrentHashMap<>();
     private Worker worker;
@@ -84,7 +86,5 @@ public class LsnPuller {
                 }
             }
         }
-
     }
-
 }

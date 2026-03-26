@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.biz.metric.impl;
 
-import org.dbsyncer.biz.enums.DiskMetricEnum;
 import org.dbsyncer.biz.enums.MetricEnum;
 import org.dbsyncer.biz.metric.MetricGroupProcessor;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.common.util.StringUtil;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
@@ -19,20 +19,17 @@ import java.util.Map;
 public final class MetricGroupProcessorImpl implements MetricGroupProcessor {
 
     @Override
-    public List<MetricResponseVo> process(List<MetricResponseVo> metrics) {
-        Map<String, MetricResponseVo> group = new LinkedHashMap<>();
-        Iterator<MetricResponseVo> iterator = metrics.iterator();
+    public List<MetricResponseVO> process(List<MetricResponseVO> metrics) {
+        Map<String, MetricResponseVO> group = new LinkedHashMap<>();
+        Iterator<MetricResponseVO> iterator = metrics.iterator();
         while (iterator.hasNext()) {
-            MetricResponseVo metric = iterator.next();
+            MetricResponseVO metric = iterator.next();
             // 应用性能指标
             MetricEnum metricEnum = MetricEnum.getMetric(metric.getCode());
             if (metricEnum != null) {
                 switch (metricEnum) {
                     case THREADS_LIVE:
                     case THREADS_PEAK:
-                    case MEMORY_USED:
-                    case MEMORY_COMMITTED:
-                    case MEMORY_MAX:
                         buildMetricResponseVo(group, metricEnum.getGroup(), metricEnum.getMetricName(), metric.getDetail());
                         iterator.remove();
                         break;
@@ -40,28 +37,21 @@ public final class MetricGroupProcessorImpl implements MetricGroupProcessor {
                         break;
                 }
             }
-
-            // 硬盘
-            DiskMetricEnum diskEnum = DiskMetricEnum.getMetric(metric.getCode());
-            if (diskEnum != null) {
-                buildMetricResponseVo(group, diskEnum.getGroup(), diskEnum.getMetricName(), metric.getDetail());
-                iterator.remove();
-            }
         }
         metrics.addAll(0, group.values());
         group.clear();
         return metrics;
     }
 
-    private void buildMetricResponseVo(Map<String, MetricResponseVo> group, String groupName, String metricName, String detail) {
-        MetricResponseVo vo = getMetricResponseVo(group, groupName);
+    private void buildMetricResponseVo(Map<String, MetricResponseVO> group, String groupName, String metricName, String detail) {
+        MetricResponseVO vo = getMetricResponseVo(group, groupName);
         vo.setDetail(vo.getDetail() + metricName + StringUtil.COLON + detail + StringUtil.SPACE);
     }
 
-    private MetricResponseVo getMetricResponseVo(Map<String, MetricResponseVo> group, String groupName) {
-        return group.compute(groupName, (k, v) -> {
+    private MetricResponseVO getMetricResponseVo(Map<String, MetricResponseVO> group, String groupName) {
+        return group.compute(groupName, (k, v)-> {
             if (v == null) {
-                MetricResponseVo responseVo = new MetricResponseVo();
+                MetricResponseVO responseVo = new MetricResponseVO();
                 responseVo.setGroup(groupName);
                 responseVo.setMetricName(StringUtil.EMPTY);
                 responseVo.setDetail(StringUtil.EMPTY);

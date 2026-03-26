@@ -57,5 +57,4 @@ public class SqlServerChangeTable {
     public String toString() {
         return JsonUtil.objToJson(this);
     }
-
 }

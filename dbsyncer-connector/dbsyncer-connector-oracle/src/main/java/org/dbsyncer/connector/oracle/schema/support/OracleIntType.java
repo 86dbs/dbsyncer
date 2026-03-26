@@ -25,5 +25,4 @@ public final class OracleIntType extends IntType {
     protected Integer merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

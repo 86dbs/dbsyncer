@@ -3,118 +3,251 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <p class="text-muted">过滤条件</p>
+    <!-- 过滤条件标题 -->
+    <p><i class="fa fa-filter text-success"></i> 过滤条件</p>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">组合<i class="fa fa-question-circle fa_gray" aria-hidden="true" title="sql与and,or互斥，如果切换sql，将自动删除当前的条件，反之也会删除"></i></label>
-                <div class="col-sm-9">
-                    <select id="conditionOperation" class="form-control select-control">
-                        <!-- 全局页面 -->
-                        <option th:if="${tableGroup} == null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${mapping?.filter.size() gt 0 and mapping?.filter[0].operation eq 'sql'}"/>
-                        <!-- 表映射关系页面 -->
-                        <option th:if="${tableGroup} != null" th:each="o,s:${condition?.operation}" th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" th:selected="${tableGroup?.filter.size() gt 0 and tableGroup?.filter[0].operation eq 'sql'}"/>
-                    </select>
-                </div>
+    <!-- 第一行：组合、数据源表字段、条件 -->
+    <div class="grid grid-cols-3">
+        <!-- 组合 -->
+        <div class="form-item">
+            <label class="form-label">组合
+                <i class="fa fa-question-circle text-tertiary" title="sql与and,or互斥，如果切换sql，将自动删除当前的条件，反之也会删除"></i>
+            </label>
+            <div class="form-control-area">
+                <select id="conditionOperation" class="form-control">
+                    <!-- 全局页面 -->
+                    <option th:if="${tableGroup} == null" th:each="o,s:${condition?.operation}" 
+                            th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" 
+                            th:selected="${mapping?.filter.size() gt 0 and mapping?.filter[0].operation eq 'sql'}"/>
+                    <!-- 表映射关系页面 -->
+                    <option th:if="${tableGroup} != null" th:each="o,s:${condition?.operation}" 
+                            th:value="${o?.name}" th:text="${o?.name}" th:title="${o?.message}" 
+                            th:selected="${tableGroup?.filter.size() gt 0 and tableGroup?.filter[0].operation eq 'sql'}"/>
+                </select>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">数据源表字段</label>
-                <div class="col-sm-9">
-                    <select id="conditionSourceField" class="form-control select-control">
-                        <!-- 数据源表公共字段 -->
-                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.sourceColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+        </div>
 
-                        <!-- 数据源表字段 -->
-                        <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
-                    </select>
-                </div>
+        <!-- 数据源表字段 -->
+        <div class="form-item">
+            <label class="form-label">数据源表字段</label>
+            <div class="form-control-area">
+                <select id="conditionSourceField" class="form-control">
+                    <!-- 数据源表公共字段 -->
+                    <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.sourceColumn}" 
+                            th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                    <!-- 数据源表字段 -->
+                    <option th:each="c,s:${tableGroup?.sourceTable?.column}" 
+                            th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                </select>
             </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">条件</label>
-                <div class="col-sm-9">
-                    <select id="conditionFilter" class="form-control select-control">
-                        <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.name}" />
-                    </select>
-                </div>
-            </div>
+        </div>
+
+        <!-- 条件 -->
+        <div class="form-item">
+            <label class="form-label">条件</label>
+            <select id="conditionFilter" class="form-control">
+                <option th:each="f,s:${condition?.filter}" th:value="${f?.name}" th:text="${f?.name}" />
+            </select>
         </div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">参数</label>
-                <div class="col-sm-9">
-                    <textarea id="conditionArg" class="form-control dbsyncer_textarea_resize_none" rows="2" placeholder="请输入参数"></textarea>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">系统参数</label>
+    <!-- 第二行：参数、系统参数、添加按钮 -->
+    <div class="grid grid-cols-3 mt-4">
+        <!-- 参数 -->
+        <div class="form-item">
+            <label class="form-label">参数</label>
+            <input id="conditionArg" class="form-control" placeholder="请输入参数" />
+        </div>
 
-                <div class="col-sm-9">
-                    <div class="dropdown">
-                        <button type="button" th:title="（仅适用于增量同步）" class="btn btn-default dropdown-toggle" id="conditionDropdown" data-toggle="dropdown">
-                            <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu" role="menu" aria-labelledby="conditionDropdown">
-                            <li role="presentation" th:each="f,s:${condition?.quartzFilter}" >
-                                <a role="menuitem" class="conditionQuartzFilter" tabindex="-1" th:text="${f?.type}" th:title="${f?.message}" href="javascript:;"></a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3"></div>
-            <div class="col-md-1">
-                <button id="conditionAdd" type="button" class="btn btn-primary">
-                    <span class="fa fa-plus"></span>添加
-                </button>
-            </div>
+        <!-- 系统参数 -->
+        <div class="form-item">
+            <label class="form-label">系统参数</label>
+            <select id="systemArg" class="form-control">
+                <option value="" selected="selected">无</option>
+                <option th:each="f,s:${condition?.quartzFilter}" th:value="${f?.type}" th:text="${f?.type}" />
+            </select>
+        </div>
+
+        <!-- 添加按钮 -->
+        <div class="flex items-center justify-end">
+            <button id="conditionAdd" type="button" class="btn btn-info">
+                <i class="fa fa-plus"></i> 添加
+            </button>
         </div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-1"></div>
-            <div class="col-md-11">
-                <table id="conditionTable" class="table table-hover hidden">
-                    <thead>
-                        <tr>
-                            <th>组合</th>
-                            <th>数据源表字段</th>
-                            <th>条件</th>
-                            <th>参数</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="conditionList">
-                        <!-- Mapping convert -->
-                        <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
-                            <td>[[${f?.operation}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.filter}]]</td>
-                            <td>[[${f?.value}]]</td>
-                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                        <!-- TableGroup convert -->
-                        <tr th:each="f,s:${tableGroup?.filter}">
-                            <td>[[${f?.operation}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.filter}]]</td>
-                            <td>[[${f?.value}]]</td>
-                            <td><a class='fa fa-remove fa-2x conditionDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <!-- 条件列表表格 -->
+    <table id="conditionTable" class="table">
+        <thead>
+            <tr>
+                <th>组合</th>
+                <th>数据源表字段</th>
+                <th>条件</th>
+                <th>参数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="conditionList">
+            <!-- Mapping filter -->
+            <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.filter}">
+                <td>
+                    [[${f?.operation}]]
+                </td>
+                <td>[[${f?.name}]]</td>
+                <td>
+                    [[${f?.filter}]]
+                </td>
+                <td>[[${f?.value}]]</td>
+                <td>
+                    <button class='table-action-btn delete conditionDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            <!-- TableGroup filter -->
+            <tr th:each="f,s:${tableGroup?.filter}">
+                <td>
+                    [[${f?.operation}]]
+                </td>
+                <td>[[${f?.name}]]</td>
+                <td>
+                    [[${f?.filter}]]
+                </td>
+                <td>[[${f?.value}]]</td>
+                <td>
+                    <button class='table-action-btn delete conditionDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
     <!-- 隐藏表单值 -->
-    <div class="form-group hidden">
+    <div class="hidden">
         <input id="filter" name="filter" class="form-control" type="text"/>
     </div>
 
+<script>
+    // 初始化映射关系参数
+    function initFilterParams(){
+        // 生成JSON参数
+        const row = [];
+        const $conditionList = $("#conditionList");
+        $conditionList.find("tr").each(function(k,v){
+            const opt = $(this).find("td:eq(0)").text().trim();
+            const sf = $(this).find("td:eq(1)").text().trim();
+            const filter = $(this).find("td:eq(2)").text().trim();
+            const arg = $(this).find("td:eq(3)").text().trim();
+            row.push({
+               "name": sf,
+               "operation": opt,
+               "filter": filter,
+               "value": arg
+             });
+        });
+        $("#conditionTable").toggleClass("hidden", row.length <= 0);
+        $("#filter").val(JSON.stringify(row));
+    }
+
+    // 绑定新增条件点击事件
+    function bindFilterAdd() {
+        $("#conditionAdd").unbind("click").bind('click', function () {
+            const conditionOperation = $("#conditionOperation").val();
+            let conditionSourceField = $("#conditionSourceField").val();
+            let conditionFilter = $("#conditionFilter").val();
+            let $conditionArg = $("#conditionArg");
+            const conditionArg = $conditionArg.val();
+            const $conditionList = $("#conditionList");
+            // 自定义SQL
+            if (conditionOperation === 'sql') {
+                if (isBlank(conditionArg)) {
+                    bootGrowl("参数不能空.", "danger");
+                    return;
+                }
+                $conditionList.html('');
+                conditionSourceField = '';
+                conditionFilter = '';
+            }
+            // 非空检查
+            else {
+                if (isBlank(conditionSourceField)) {
+                    bootGrowl("数据源表字段不能空.", "danger");
+                    return;
+                }
+                // and or与sql互斥，需要清理sql类型的条件
+                $conditionList.find("tr").each(function() {
+                    const opr = $(this).find("td:eq(0)").text().trim();
+                    if (opr === 'sql') {
+                        $(this).remove();
+                    }
+                });
+            }
+
+            // 检查重复字段
+            let repeated = false;
+            $conditionList.find("tr").each(function (k, v) {
+                const opr = $(this).find("td:eq(0)").text();
+                const sf = $(this).find("td:eq(1)").text();
+                const filter = $(this).find("td:eq(2)").text();
+                const arg = $(this).find("td:eq(3)").text();
+                if (opr === conditionOperation && sf === conditionSourceField && filter === conditionFilter && arg === conditionArg) {
+                    repeated = true;
+                    return false;
+                }
+            });
+            if (repeated) {
+                bootGrowl("过滤条件已存在.", "danger");
+                return;
+            }
+
+            $conditionList.append(`<tr>
+                <td>${conditionOperation}</td>
+                <td>${conditionSourceField}</td>
+                <td>${conditionFilter}</td>
+                <td>${conditionArg}</td>
+                <td>
+                    <button class="table-action-btn delete conditionDelete" title="删除"">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`);
+            // 清空参数
+            $conditionArg.val("");
+            bindFilterListDelete();
+        });
+    }
+
+    // 绑定表格点击删除事件
+    function bindFilterListDelete(){
+        $(".conditionDelete").unbind("click").bind('click', function(){
+            // 阻止tr触发click事件
+            event.cancelBubble=true;
+            $(this).closest('tr').remove();
+            initFilterParams();
+        });
+        initFilterParams();
+    }
+
+    $(document).ready(function() {
+        initSelect($('#conditionOperation'));
+        initSelect($('#conditionSourceField'));
+        initSelect($('#conditionFilter'));
+        $('#systemArg').dbSelect({
+            type: 'single',
+            onSelect: function (values) {
+                const selectedValue = values && values.length > 0 ? values[0] : '';
+                if (!isBlank(selectedValue)) {
+                    const $tmpVal = $("#conditionArg");
+                    $tmpVal.val($tmpVal.val() + selectedValue);
+                }
+            }
+        });
+
+        bindFilterAdd();
+        bindFilterListDelete();
+    });
+</script>
 </div>
+
 </html>

@@ -3,16 +3,8 @@
  */
 package org.dbsyncer.web.controller.license;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
-import org.dbsyncer.biz.vo.ProductInfoVo;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -23,9 +15,21 @@ import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.sdk.model.Product;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
+import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -39,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -67,18 +72,20 @@ public class LicenseController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
+    @Value("${dbsyncer.web.license.server.address:http://101.132.145.213:9999/api/license/create}")
+    private String serverAddress;
+
     public static final Integer SUCCESS = 200;
     public static final String STATUS = "status";
     public static final String DATA = "data";
     public static final String MSG = "msg";
-    public static final String SERVER_ADDRESS = "http://101.132.145.213:8989/api/license/create";
 
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("key", licenseService.getKey());
-        model.put("userInfo", getUserInfo());
+        model.put("editionInfo", getEditionInfoVO());
         model.put("productInfo", licenseService.getProductInfo());
-        return "license/license";
+        return "license/list";
     }
 
     @PostMapping(value = "/upload")
@@ -144,22 +151,26 @@ public class LicenseController extends BaseController {
     @GetMapping("/query.json")
     @ResponseBody
     public RestResult query() {
-        ProductInfoVo infoVo = new ProductInfoVo();
-        if (StringUtil.isNotBlank(licenseService.getKey())) {
-            infoVo.setKey(licenseService.getKey());
-            ProductInfo productInfo = licenseService.getProductInfo();
-            if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
-                Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
-                if (first.isPresent()) {
-                    infoVo.setEffectiveTime(first.get().getEffectiveTime());
-                    formatEffectiveTimeContent(infoVo);
-                }
+        EditionInfoVO infoVo = getEditionInfoVO();
+        ProductInfo productInfo = licenseService.getProductInfo();
+        if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
+            Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
+            if (first.isPresent()) {
+                infoVo.setEffectiveTime(first.get().getEffectiveTime());
+                formatEffectiveTimeContent(infoVo);
             }
         }
         return RestResult.restSuccess(infoVo);
     }
 
-    private void formatEffectiveTimeContent(ProductInfoVo infoVo) {
+    private EditionInfoVO getEditionInfoVO() {
+        EditionInfoVO infoVo = new EditionInfoVO();
+        infoVo.setEdition(licenseService.getEditionEnum().getCode());
+        infoVo.setEditionName(licenseService.getEditionEnum().getMessage());
+        return infoVo;
+    }
+
+    private void formatEffectiveTimeContent(EditionInfoVO infoVo) {
         LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
         LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
         Period period = Period.between(startDateTime.toLocalDate(), endDateTime.toLocalDate());
@@ -187,6 +198,7 @@ public class LicenseController extends BaseController {
         info.setOsName(System.getProperty("os.name"));
         info.setPhone(StringUtil.isNotBlank(info.getPhone()) ? info.getPhone() : userInfo.getPhone());
         info.setEmail(StringUtil.isNotBlank(info.getEmail()) ? info.getEmail() : userInfo.getEmail());
+        info.setVersion(Version.CURRENT.getVersion());
         return invoke(info);
     }
 
@@ -195,7 +207,7 @@ public class LicenseController extends BaseController {
         StringEntity se = new StringEntity(data);
         se.setContentEncoding("UTF-8");
         se.setContentType("application/json");
-        HttpPost httpPost = new HttpPost(SERVER_ADDRESS);
+        HttpPost httpPost = new HttpPost(serverAddress);
         httpPost.setEntity(se);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
@@ -221,4 +233,7 @@ public class LicenseController extends BaseController {
         return userConfigService.getUserInfo(authentication.getName());
     }
 
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
 }

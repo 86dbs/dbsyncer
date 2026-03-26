@@ -7,7 +7,6 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.ShortType;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,8 +18,8 @@ import java.util.stream.Collectors;
 public final class MySQLShortType extends ShortType {
 
     private enum TypeEnum {
-        TINYINT_UNSIGNED("TINYINT UNSIGNED"),
-        SMALLINT("SMALLINT");
+
+        TINYINT_UNSIGNED("TINYINT UNSIGNED"), SMALLINT("SMALLINT");
 
         private final String value;
 

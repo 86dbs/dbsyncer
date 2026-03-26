@@ -1,15 +1,20 @@
 package org.dbsyncer.web.controller.config;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.common.config.AppConfig;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.dbsyncer.web.Version;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -22,10 +27,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/config")
@@ -52,35 +61,24 @@ public class ConfigController {
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getConfigModelAll());
         model.put("fileSize", JsonUtil.objToJson(cacheService.getAll()).getBytes(Charset.defaultCharset()).length);
-        return "config/config";
-    }
-
-    @PostMapping(value = "/getAll")
-    @ResponseBody
-    public RestResult getAll() {
-        try {
-            return RestResult.restSuccess("ok");
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
+        return "config/list";
     }
 
     @PostMapping(value = "/upload")
     @ResponseBody
     public RestResult upload(MultipartFile[] files) {
         try {
-            if (files != null && files.length > 0) {
-                for (int i = 0; i < files.length; i++) {
-                    if (files[i] == null) {
+            if (files != null) {
+                for (MultipartFile file : files) {
+                    if (file == null) {
                         continue;
                     }
-                    String filename = files[i].getOriginalFilename();
+                    String filename = file.getOriginalFilename();
                     systemConfigService.checkFileSuffix(filename);
                     String tmpdir = System.getProperty("java.io.tmpdir");
                     File dest = new File(tmpdir + filename);
                     FileUtils.deleteQuietly(dest);
-                    FileUtils.copyInputStreamToFile(files[i].getInputStream(), dest);
+                    FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     systemConfigService.refreshConfig(dest);
                     String msg = String.format("导入配置文件%s", filename);
                     logger.info(msg);
@@ -103,7 +101,7 @@ public class ConfigController {
         OutputStream outputStream = null;
         try {
             outputStream = response.getOutputStream();
-            String cache = JsonUtil.objToJson(cacheService.getAll());
+            String cache = JsonUtil.objToJson(getConfig());
             byte[] bytes = cache.getBytes(Charset.defaultCharset());
             int length = bytes.length;
             String msg = String.format("导出配置文件%s，大小%dKB", fileName, (length / 1024));
@@ -118,4 +116,14 @@ public class ConfigController {
         }
     }
 
+    private Map<String, Object> getConfig() {
+        Map<String, Object> map = new HashMap<>();
+        VersionInfo info = new VersionInfo();
+        info.setVersion(Version.CURRENT.getVersion());
+        info.setAppName(appConfig.getName());
+        info.setCreateTime(Instant.now().toEpochMilli());
+        map.put(PreloadTemplate.DBS_VERSION_INFO, info);
+        map.putAll(cacheService.getAll());
+        return map;
+    }
 }

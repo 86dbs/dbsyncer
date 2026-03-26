@@ -1,0 +1,215 @@
+/**
+ * DBSyncer 按钮组件样式
+ */
+
+/* 基础按钮样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+  min-height: 32px;
+}
+
+/* 按钮内图标间距 - 兼容旧版本浏览器 */
+.btn > i,
+.btn > .fa,
+.btn > span.fa {
+  margin-right: var(--spacing-xs);
+}
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 按钮尺寸 */
+.btn-sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+}
+.btn-lg {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-md);
+  min-height: 40px;
+}
+.btn-xl {
+  padding: var(--spacing-lg) var(--spacing-xl);
+  font-size: var(--font-size-lg);
+  min-height: 48px;
+}
+
+/* 主要按钮 */
+.btn-primary {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+  color: var(--bg-primary);
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--bg-primary);
+}
+.btn-primary:active {
+  background-color: var(--primary-active);
+  border-color: var(--primary-active);
+}
+
+/* 默认按钮 */
+.btn-outline {
+  background-color: var(--bg-primary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+.btn-outline:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.btn-outline:active {
+  background-color: var(--bg-quaternary);
+}
+
+/* 成功按钮（兼容 .btn-success） */
+.btn-success {
+  background-color: var(--success-color);
+  border-color: var(--success-color);
+  color: var(--bg-primary);
+}
+.btn-success:hover {
+  background-color: #73d13d;
+  border-color: #73d13d;
+  color: var(--bg-primary);
+}
+
+/* 警告按钮 */
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: var(--bg-primary);
+}
+.btn-warning:hover {
+  background-color: #ffc53d;
+  border-color: #ffc53d;
+  color: var(--bg-primary);
+}
+
+/* 危险按钮 */
+.btn-danger {
+  background-color: var(--error-color);
+  border-color: var(--error-color);
+  color: var(--bg-primary);
+}
+.btn-danger:hover {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+  color: var(--bg-primary);
+}
+
+/* 信息按钮 */
+.btn-info {
+  background-color: var(--info-color);
+  border-color: var(--info-color);
+  color: var(--bg-primary);
+}
+.btn-info:hover {
+  background-color: #69b1ff;
+  border-color: #69b1ff;
+  color: var(--bg-primary);
+}
+
+/* 文本按钮 */
+.btn-text {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--primary-color);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+.btn-text:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+  color: var(--primary-hover);
+}
+
+/* 链接按钮 */
+.btn-link {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--primary-color);
+  text-decoration: underline;
+  padding: 0;
+  min-height: auto;
+}
+.btn-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* 加载状态 */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+.btn-loading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-round);
+  animation: btn-spin 1s linear infinite;
+}
+.btn-loading .btn-text {
+  opacity: 0;
+}
+
+/* 按钮图标 */
+.btn-icon-left {
+  margin-right: var(--spacing-xs);
+}
+.btn-icon-right {
+  margin-left: var(--spacing-xs);
+}
+
+/* 响应式按钮 */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 36px;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .btn-sm {
+    min-height: 28px;
+  }
+  .btn-lg {
+    min-height: 44px;
+  }
+}
+
+/* 按钮状态 */
+.btn.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.btn.active:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}

@@ -7,9 +7,9 @@ package org.dbsyncer.manager;
  */
 public class ManagerException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public ManagerException(String message) {
+    public ManagerException(String message) {
         super(message);
     }
 

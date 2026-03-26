@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

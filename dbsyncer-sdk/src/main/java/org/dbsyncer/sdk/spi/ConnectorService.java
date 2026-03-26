@@ -10,16 +10,20 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +44,13 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     String getConnectorType();
 
     /**
+     * 可扩展的表类型
+     *
+     * @return
+     */
+    TableTypeEnum getExtendedTableType();
+
+    /**
      * 获取配置对象
      *
      * @return
@@ -50,9 +61,10 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 建立连接
      *
      * @param connectorConfig
+     * @param context
      * @return
      */
-    ConnectorInstance connect(C connectorConfig);
+    ConnectorInstance connect(C connectorConfig, ConnectorServiceContext context);
 
     /**
      * 连接器配置校验器
@@ -77,38 +89,52 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     boolean isAlive(I connectorInstance);
 
     /**
-     * 获取连接缓存key
+     * 获取所有的数据库
      *
-     * @param connectorConfig
+     * @param connectorInstance
      * @return
      */
-    String getConnectorInstanceCacheKey(C connectorConfig);
+    default List<String> getDatabases(I connectorInstance) {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 获取指定数据库名的Schema
+     *
+     * @param connectorInstance
+     * @param catalog
+     * @return
+     */
+    default List<String> getSchemas(I connectorInstance, String catalog) {
+        return Collections.emptyList();
+    }
 
     /**
      * 获取所有表名
      *
      * @param connectorInstance
+     * @param context
      * @return
      */
-    List<Table> getTable(I connectorInstance);
+    List<Table> getTable(I connectorInstance, ConnectorServiceContext context);
 
     /**
      * 获取表元信息
      *
      * @param connectorInstance
-     * @param tableNamePattern
+     * @param context
      * @return
      */
-    MetaInfo getMetaInfo(I connectorInstance, String tableNamePattern);
+    List<MetaInfo> getMetaInfo(I connectorInstance, ConnectorServiceContext context);
 
     /**
      * 获取总数
      *
      * @param connectorInstance
-     * @param command
+     * @param metaContext
      * @return
      */
-    long getCount(I connectorInstance, Map<String, String> command);
+    long getCount(I connectorInstance, MetaContext metaContext);
 
     /**
      * 分页获取数据源数据
@@ -177,9 +203,7 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      *
      * @return
      */
-    default SchemaResolver getSchemaResolver() {
-        return null;
-    }
+    SchemaResolver getSchemaResolver();
 
     /**
      * 获取指定时间的位点信息

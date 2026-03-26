@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=2.0.7_$(date +"%m%d")
+VERSION=2.0.9_$(date +"%m%d")
 read -p "Please enter a new version number($VERSION)：" APP_VERSION
 if [ -z "$APP_VERSION" ]; then
   APP_VERSION=$VERSION

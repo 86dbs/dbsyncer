@@ -56,5 +56,4 @@ public class J3D_Geometry extends JGeometry {
         var5[2][1] = var10;
         return var5;
     }
-
 }

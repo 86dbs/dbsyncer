@@ -12,12 +12,14 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
@@ -64,7 +66,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     public void pull(StorageResponse response) {
-        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList()));
+        storageExecutor.execute(()->storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList()));
     }
 
     @Override

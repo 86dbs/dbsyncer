@@ -1,8 +1,18 @@
 package org.dbsyncer.storage.util;
 
-import org.apache.lucene.document.*;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+
+import org.apache.lucene.util.BytesRef;
+
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -42,6 +52,7 @@ import java.util.Map;
  * @date 2019/11/19 22:07
  */
 public abstract class DocumentUtil {
+
     private DocumentUtil() {
     }
 
@@ -109,6 +120,9 @@ public abstract class DocumentUtil {
 
         // 同步数据
         byte[] bytes = (byte[]) params.get(ConfigConstant.BINLOG_DATA);
+        if (bytes == null) {
+            bytes = new byte[0];
+        }
         doc.add(new BinaryDocValuesField(ConfigConstant.BINLOG_DATA, new BytesRef(bytes)));
         doc.add(new StoredField(ConfigConstant.BINLOG_DATA, bytes));
 

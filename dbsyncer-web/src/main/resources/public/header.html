@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 顶部导航栏 -->
+<header th:fragment="header" class="h-14 border-b border-gray-200 flex items-center justify-end">
+    <div class="flex items-center">
+        <div id="licenseInfo" class="hidden">
+            <div class="flex items-center text-gray-500 text-sm">
+                <span class="items-center">专业版</span>
+                <img id="licenseCheck" class="hidden items-center m-1" draggable="false" title="已激活" width="18" height="18" th:src="@{'/img/license/check.png'}">
+                <img id="licenseRemind" class="hidden items-center m-1" draggable="false" title="即将过期, 请联系星河同步官方续期" width="18" height="18" th:src="@{'/img/license/remind.png'}">
+                <img id="licenseWarning" class="hidden items-center m-1" draggable="false" title="已过期, 请联系星河同步官方续期" width="18" height="18" th:src="@{'/img/license/warning.png'}">
+                <span id="effectiveContent" class="items-center"></span>
+            </div>
+        </div>
+        <div class="dropdown flex items-center m-2">
+            <button class="flex items-center text-gray-500" data-toggle>
+                <i class="fa fa-user-circle user-avatar badge-primary"></i>
+                <span id="currentUser" class="md:inline font-medium ml-2"></span>
+                <i class="fa fa-angle-down"></i>
+            </button>
+            <!-- 用户下拉菜单 -->
+            <ul class="dropdown-menu hidden">
+                <li><button onclick="doLoader('/user/page/edit')"><i class="fa fa-edit"></i> 修改</button></li>
+                <div class="dropdown-divider"></div>
+                <li><button onclick="logout()"><i class="fa fa-power-off"></i> 注销</button></li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+</html>

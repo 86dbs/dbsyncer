@@ -15,7 +15,8 @@ public class NotifySupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public NotifyService notifyService() {
-        return notifyMessage -> {};
+        return notifyMessage-> {
+        };
     }
 
 }

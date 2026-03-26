@@ -3,55 +3,55 @@
 
 package org.dbsyncer.storage.binlog.proto;
 
-public interface BinlogMessageOrBuilder extends
-        // @@protoc_insertion_point(interface_extends:BinlogMessage)
-        com.google.protobuf.MessageOrBuilder {
+public interface BinlogMessageOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:BinlogMessage)
+            com.google.protobuf.MessageOrBuilder {
 
-  /**
-   * <code>string table_group_id = 1;</code>
-   *
-   * @return The tableGroupId.
-   */
-  String getTableGroupId();
+    /**
+     * <code>string table_group_id = 1;</code>
+     *
+     * @return The tableGroupId.
+     */
+    String getTableGroupId();
 
-  /**
-   * <code>string table_group_id = 1;</code>
-   *
-   * @return The bytes for tableGroupId.
-   */
-  com.google.protobuf.ByteString
-  getTableGroupIdBytes();
+    /**
+     * <code>string table_group_id = 1;</code>
+     *
+     * @return The bytes for tableGroupId.
+     */
+    com.google.protobuf.ByteString getTableGroupIdBytes();
 
-  /**
-   * <code>.EventEnum event = 2;</code>
-   *
-   * @return The enum numeric value on the wire for event.
-   */
-  int getEventValue();
+    /**
+     * <code>.EventEnum event = 2;</code>
+     *
+     * @return The enum numeric value on the wire for event.
+     */
+    int getEventValue();
 
-  /**
-   * <code>.EventEnum event = 2;</code>
-   *
-   * @return The event.
-   */
-  EventEnum getEvent();
+    /**
+     * <code>.EventEnum event = 2;</code>
+     *
+     * @return The event.
+     */
+    EventEnum getEvent();
 
-  /**
-   * <code>.BinlogMap data = 3;</code>
-   *
-   * @return Whether the data field is set.
-   */
-  boolean hasData();
+    /**
+     * <code>.BinlogMap data = 3;</code>
+     *
+     * @return Whether the data field is set.
+     */
+    boolean hasData();
 
-  /**
-   * <code>.BinlogMap data = 3;</code>
-   *
-   * @return The data.
-   */
-  BinlogMap getData();
+    /**
+     * <code>.BinlogMap data = 3;</code>
+     *
+     * @return The data.
+     */
+    BinlogMap getData();
 
-  /**
-   * <code>.BinlogMap data = 3;</code>
-   */
-  BinlogMapOrBuilder getDataOrBuilder();
+    /**
+     * <code>.BinlogMap data = 3;</code>
+     */
+    BinlogMapOrBuilder getDataOrBuilder();
 }

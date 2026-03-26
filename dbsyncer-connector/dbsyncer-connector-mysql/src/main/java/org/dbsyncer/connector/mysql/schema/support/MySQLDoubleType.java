@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 public final class MySQLDoubleType extends DoubleType {
 
     private enum TypeEnum {
-        DOUBLE("DOUBLE"),
-        DOUBLE_UNSIGNED("DOUBLE UNSIGNED");
+
+        DOUBLE("DOUBLE"), DOUBLE_UNSIGNED("DOUBLE UNSIGNED");
 
         private final String value;
 

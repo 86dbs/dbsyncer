@@ -4,19 +4,20 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.event.FullRefreshEvent;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConvertUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -24,14 +25,15 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.plugin.impl.FullPluginContext;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.plugin.PluginContext;
-import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -39,8 +41,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -72,21 +76,14 @@ public class ParserComponentImpl implements ParserComponent {
     @Resource
     private ApplicationContext applicationContext;
 
+    @Resource
+    private RsaManager rsaManager;
+
     @Override
-    public MetaInfo getMetaInfo(String connectorId, String tableName) {
-        Connector connector = profileComponent.getConnector(connectorId);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-        MetaInfo metaInfo = connectorFactory.getMetaInfo(connectorInstance, tableName);
-        if (!CollectionUtils.isEmpty(connector.getTable())) {
-            for (Table t : connector.getTable()) {
-                if (t.getName().equals(tableName)) {
-                    metaInfo.setTableType(t.getType());
-                    metaInfo.setSql(t.getSql());
-                    break;
-                }
-            }
-        }
-        return metaInfo;
+    public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
+        String instanceId = ConnectorInstanceUtil.buildConnectorInstanceId(context.getMappingId(), context.getConnectorId(), context.getSuffix());
+        ConnectorInstance connectorInstance = connectorFactory.connect(instanceId);
+        return connectorFactory.getMetaInfo(connectorInstance, context);
     }
 
     @Override
@@ -99,7 +96,7 @@ public class ParserComponentImpl implements ParserComponent {
         Table tTable = targetTable.clone().setColumn(new ArrayList<>());
         List<FieldMapping> fieldMapping = tableGroup.getFieldMapping();
         if (!CollectionUtils.isEmpty(fieldMapping)) {
-            fieldMapping.forEach(m -> {
+            fieldMapping.forEach(m-> {
                 if (null != m.getSource()) {
                     sTable.getColumn().add(m.getSource());
                 }
@@ -108,16 +105,15 @@ public class ParserComponentImpl implements ParserComponent {
                 }
             });
         }
-        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), sTable, connectorFactory.connect(sConnConfig), tableGroup.getFilter());
-        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), tTable, connectorFactory.connect(tConnConfig), null);
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance sourceInstance = connectorFactory.connect(sourceInstanceId);
+        ConnectorInstance targetInstance = connectorFactory.connect(targetInstanceId);
+        final CommandConfig sourceConfig = new CommandConfig(sConnConfig.getConnectorType(), mapping.getSourceSchema(), sTable, sourceInstance, tableGroup.getFilter());
+        final CommandConfig targetConfig = new CommandConfig(tConnConfig.getConnectorType(), mapping.getTargetSchema(), tTable, targetInstance, null);
+        targetConfig.setForceUpdate(mapping.isForceUpdate());
         // 获取连接器同步参数
         return connectorFactory.getCommand(sourceConfig, targetConfig);
-    }
-
-    @Override
-    public long getCount(String connectorId, Map<String, String> command) {
-        ConnectorInstance connectorInstance = connectorFactory.connect(getConnectorConfig(connectorId));
-        return connectorFactory.getCount(connectorInstance, command);
     }
 
     @Override
@@ -134,35 +130,38 @@ public class ParserComponentImpl implements ParserComponent {
         Map<String, String> command = group.getCommand();
         Assert.notEmpty(command, "执行命令不能为空.");
         List<FieldMapping> fieldMapping = group.getFieldMapping();
-        Table sourceTable = group.getSourceTable();
-        String sTableName = sourceTable.getName();
+        String sTableName = group.getSourceTable().getName();
         String tTableName = group.getTargetTable().getName();
         Assert.notEmpty(fieldMapping, String.format("数据源表[%s]同步到目标源表[%s], 映射关系不能为空.", sTableName, tTableName));
         // 获取同步字段
         Picker picker = new Picker(group);
-        List<String> primaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
+        // 游标分页时使用与构建 QUERY_CURSOR 一致的主键列表，避免 findTablePrimaryKeys 返回表上未参与游标的主键（如 id）导致 getLastCursors 多取游标值、参数个数与 SQL 占位符不一致
+        boolean enableCursor = StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR));
+        List<String> primaryKeys = getPrimaryKeysForCursor(command, group.getSourceTable(), enableCursor);
         final FullPluginContext context = new FullPluginContext();
-        context.setSourceConnectorInstance(connectorFactory.connect(sConfig));
-        context.setTargetConnectorInstance(connectorFactory.connect(tConfig));
-        context.setSourceTableName(sTableName);
-        context.setTargetTableName(tTableName);
+
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
+        context.setSourceConnectorInstance(connectorFactory.connect(sourceInstanceId));
+        context.setTargetConnectorInstance(connectorFactory.connect(targetInstanceId));
         context.setEvent(ConnectorConstant.OPERTION_INSERT);
         context.setCommand(command);
         context.setBatchSize(mapping.getBatchNum());
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
-        context.setSourceTable(sourceTable);
+        context.setSourceTable(group.getSourceTable());
+        context.setTargetTable(group.getTargetTable());
         context.setTargetFields(picker.getTargetFields());
-        context.setSupportedCursor(StringUtil.isNotBlank(command.get(ConnectorConstant.OPERTION_QUERY_CURSOR)));
+        context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
-        context.setEnableSchemaResolver(profileComponent.getSystemConfig().isEnableSchemaResolver());
+        setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
-        picker.setSourceResolver(context.isEnableSchemaResolver() ? sourceConnector.getSchemaResolver() : null);
+        picker.setSourceResolver(sourceConnector.getSchemaResolver());
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
 
-        for (; ; ) {
+        for (;;) {
             if (!task.isRunning()) {
                 logger.warn("任务被中止:{}", metaId);
                 break;
@@ -203,10 +202,12 @@ public class ParserComponentImpl implements ParserComponent {
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
 
-            // 8、判断尾页
-            if (source.size() < context.getPageSize()) {
-                logger.info("完成全量:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
-                break;
+            // 8、释放本批数据引用，避免 context 长期持有大 List（如 10000 条），减轻 LinkedList 保留内存
+            if (context.getSourceList() != null) {
+                context.getSourceList().clear();
+            }
+            if (context.getTargetList() != null) {
+                context.getTargetList().clear();
             }
         }
     }
@@ -237,7 +238,7 @@ public class ParserComponentImpl implements ParserComponent {
                 PluginContext tmpContext = (PluginContext) context.clone();
                 tmpContext.setTargetList(context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
                 offset += batchSize;
-                executor.execute(() -> {
+                executor.execute(()-> {
                     try {
                         Result w = connectorFactory.writer(tmpContext);
                         result.addSuccessData(w.getSuccessData());
@@ -262,6 +263,13 @@ public class ParserComponentImpl implements ParserComponent {
         return result;
     }
 
+    private void setRsaConfig(FullPluginContext context) {
+        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+            context.setRsaManager(rsaManager);
+            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+        }
+    }
+
     /**
      * 更新缓存
      *
@@ -274,6 +282,26 @@ public class ParserComponentImpl implements ParserComponent {
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
         applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+    }
+
+    /**
+     * 游标分页时使用与构建 QUERY_CURSOR 一致的主键列表；非游标或未配置时使用表主键。
+     * 避免 findTablePrimaryKeys(sourceTable) 返回表上全部主键（含未参与游标的 id）导致 getLastCursors 多取游标值、参数与 SQL 占位符不一致。
+     *
+     * @param command    执行命令（含 CURSOR_PK_NAMES 时表示游标实际使用的主键）
+     * @param sourceTable 源表
+     * @param enableCursor 是否支持游标
+     * @return 用于 getLastCursors 的主键名列表
+     */
+    private List<String> getPrimaryKeysForCursor(Map<String, String> command, Table sourceTable, boolean enableCursor) {
+        if (enableCursor) {
+            String cursorPkNames = command.get(ConnectorConstant.CURSOR_PK_NAMES);
+            if (StringUtil.isNotBlank(cursorPkNames)) {
+                return Arrays.stream(cursorPkNames.split(StringUtil.COMMA)).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            }
+        }
+        // 不支持游标查询，或非结构化连接器场景
+        return PrimaryKeyUtil.findTablePrimaryKeys(sourceTable);
     }
 
     /**

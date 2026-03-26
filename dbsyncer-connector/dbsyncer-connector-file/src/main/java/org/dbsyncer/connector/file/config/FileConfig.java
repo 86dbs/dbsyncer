@@ -17,16 +17,6 @@ public class FileConfig extends ConnectorConfig {
      */
     private String fileDir;
 
-    /**
-     * 分隔符
-     */
-    private char separator;
-
-    /**
-     * 文件描述信息
-     */
-    private String schema;
-
     public String getFileDir() {
         return fileDir;
     }
@@ -35,19 +25,7 @@ public class FileConfig extends ConnectorConfig {
         this.fileDir = fileDir;
     }
 
-    public char getSeparator() {
-        return separator;
-    }
-
-    public void setSeparator(char separator) {
-        this.separator = separator;
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
+    public String getUrl() {
+        return fileDir;
     }
 }

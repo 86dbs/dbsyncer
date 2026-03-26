@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.DiskStorageService;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.origin.OriginTrackedValue;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,7 @@ import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 
 import javax.annotation.Resource;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -52,7 +54,7 @@ public class StorageSupportConfiguration {
                     continue;
                 }
                 Map<String, OriginTrackedValue> props = (Map<String, OriginTrackedValue>) propertySource.getSource();
-                props.forEach((k, v) -> {
+                props.forEach((k, v)-> {
                     if (StringUtil.startsWith(k, PREFIX_STORAGE)) {
                         properties.put(k, v.getValue());
                     }

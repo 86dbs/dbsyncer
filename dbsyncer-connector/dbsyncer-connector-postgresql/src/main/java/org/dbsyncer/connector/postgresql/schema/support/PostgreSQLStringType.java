@@ -3,14 +3,16 @@
  */
 package org.dbsyncer.connector.postgresql.schema.support;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKTReader;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
+import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
+
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.postgresql.geometric.PGpoint;
 import org.postgresql.util.PGobject;
 
@@ -25,16 +27,28 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:04
  */
-public class PostgreSQLStringType extends StringType {
+public final class PostgreSQLStringType extends StringType {
+
     private enum TypeEnum {
-        UUID("uuid"),
-        VARCHAR("varchar"),
-        TEXT("text"),
-        JSON("json"),
-        JSONB("jsonb"),
-        CHAR("char"),
-        BPCHAR("bpchar"),
-        POINT("point");
+
+        // 标准字符串类型
+        UUID("uuid"), VARCHAR("varchar"), TEXT("text"), CHAR("char"), BPCHAR("bpchar"), NAME("name"),
+        // JSON 类型
+        JSON("json"), JSONB("jsonb"),
+        // 几何类型
+        POINT("point"),
+        // PostGIS 扩展类型
+        GEOMETRY("geometry"), GEOGRAPHY("geography"),
+        // 网络类型
+        INET("inet"), CIDR("cidr"), MACADDR("macaddr"), MACADDR8("macaddr8"),
+        // 文本搜索类型
+        TSQUERY("tsquery"), TSVECTOR("tsvector"),
+        // 范围类型
+        TSRANGE("tsrange"), TSTZRANGE("tstzrange"), DATERANGE("daterange"), INT4RANGE("int4range"), INT8RANGE("int8range"), NUMRANGE("numrange"),
+        // 位串类型
+        BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
+        // 其他类型
+        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
 
         private final String value;
 
@@ -65,33 +79,123 @@ public class PostgreSQLStringType extends StringType {
             PGobject pgObject = (PGobject) val;
             return pgObject.getValue();
         }
+        if (val instanceof Boolean) {
+            return ((Boolean) val) ? "1" : "0";
+        }
         return throwUnsupportedException(val, field);
     }
 
     @Override
+    public Object getDefaultConvertedVal(Field field) {
+        try {
+            PGobject pgObject = new PGobject();
+            pgObject.setType(PostgreSQLSchemaResolver.normalizeTypeName(field.getTypeName()));
+            pgObject.setValue(null);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     protected Object convert(Object val, Field field) {
+        // 规范化类型名，处理带 schema 前缀（如 "public"."geometry"）的情况
+        String rawTypeName = PostgreSQLSchemaResolver.normalizeTypeName(field.getTypeName());
+        // 将类型名转大写并替换空格为下划线，以匹配 TypeEnum
+        String enumName = rawTypeName.toUpperCase().replace(" ", "_");
+        TypeEnum typeEnum = TypeEnum.valueOf(enumName);
+        // BIT 类型需要特殊处理：支持 Integer、Boolean、Number、String 等多种输入
+        if (typeEnum == TypeEnum.BIT) {
+            return convertToBit(val);
+        }
+
         if (val instanceof String) {
-            TypeEnum typeEnum = TypeEnum.valueOf(field.getTypeName().toUpperCase());
-            switch (typeEnum){
+            String strVal = (String) val;
+            switch (typeEnum) {
                 case UUID:
-                    return UUIDUtil.fromString((String) val);
+                    try {
+                        return UUIDUtil.fromString(strVal);
+                    } catch (IllegalArgumentException e) {
+                        // UUID 格式无效时返回 null，避免抛出异常
+                        return null;
+                    }
+                case POINT:
+                    return toPoint(strVal);
+                case VARCHAR:
+                case TEXT:
+                case CHAR:
+                case BPCHAR:
+                case NAME:
+                    // 标准字符串类型，直接返回
+                    return val;
+                // 以下类型需要用 PGobject 包装
                 case JSON:
                 case JSONB:
+                case GEOMETRY:
+                case GEOGRAPHY:
+                case CITEXT:
+                case XML:
+                case INET:
+                case CIDR:
+                case MACADDR:
+                case MACADDR8:
+                case TSQUERY:
+                case TSVECTOR:
+                case TSRANGE:
+                case TSTZRANGE:
+                case DATERANGE:
+                case INT4RANGE:
+                case INT8RANGE:
+                case NUMRANGE:
+                case BIT_VARYING:
+                case VARBIT:
+                case PG_LSN:
+                case TXID_SNAPSHOT:
                     try {
-                        PGobject json = new PGobject();
-                        json.setType(typeEnum.getValue());
-                        json.setValue((String) val);
-                        return json;
+                        PGobject pgObject = new PGobject();
+                        pgObject.setType(typeEnum.getValue());
+                        pgObject.setValue(strVal);
+                        return pgObject;
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
-                case POINT:
-                    return toPoint((String) val);
                 default:
                     return val;
             }
         }
         return super.convert(val, field);
+    }
+
+    /**
+     * 将值转换为 PostgreSQL bit 类型（PGobject 包装）。
+     * 支持 Integer、Boolean、Number、String 等输入，统一转换为 bit 字符串。
+     */
+    private Object convertToBit(Object val) {
+        String bitStr;
+        if (val instanceof Boolean) {
+            bitStr = ((Boolean) val) ? "1" : "0";
+        } else if (val instanceof Number) {
+            // Integer、Short、Long 等：非 0 为 "1"，0 为 "0"
+            bitStr = ((Number) val).intValue() != 0 ? "1" : "0";
+        } else if (val instanceof String) {
+            String s = (String) val;
+            // 字符串 "true"/"1" 等转为 "1"，其他转为 "0"
+            if ("true".equalsIgnoreCase(s) || "1".equals(s) || "t".equalsIgnoreCase(s)) {
+                bitStr = "1";
+            } else {
+                bitStr = "0";
+            }
+        } else {
+            throw new PostgreSQLException(String.format("Cannot convert %s to bit type, val [%s]", val.getClass(), val));
+        }
+        try {
+            PGobject pgObject = new PGobject();
+            pgObject.setType(TypeEnum.BIT.getValue());
+            pgObject.setValue(bitStr);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Object toPoint(String val) {

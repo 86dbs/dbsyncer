@@ -3,6 +3,10 @@
  */
 package org.dbsyncer.connector.elasticsearch.util;
 
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.elasticsearch.api.EasyRestHighLevelClient;
+import org.dbsyncer.connector.elasticsearch.config.ESConfig;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -12,9 +16,7 @@ import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.elasticsearch.api.EasyRestHighLevelClient;
-import org.dbsyncer.connector.elasticsearch.config.ESConfig;
+
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
@@ -22,6 +24,7 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 
 import javax.net.ssl.SSLContext;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -42,15 +45,14 @@ public abstract class ESUtil {
 
     public static EasyRestHighLevelClient getConnection(ESConfig config) {
         String[] ipAddress = StringUtil.split(config.getUrl(), StringUtil.COMMA);
-        HttpHost[] hosts = Arrays.stream(ipAddress).map(node -> HttpHost.create(node)).filter(Objects::nonNull).toArray(
-                HttpHost[]::new);
+        HttpHost[] hosts = Arrays.stream(ipAddress).map(node->HttpHost.create(node)).filter(Objects::nonNull).toArray(HttpHost[]::new);
         RestClientBuilder builder = RestClient.builder(hosts);
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
         try {
             SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(new TrustAllStrategy()).build();
             SSLIOSessionStrategy sessionStrategy = new SSLIOSessionStrategy(sslContext, NoopHostnameVerifier.INSTANCE);
-            builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider).setSSLStrategy(sessionStrategy));
+            builder.setHttpClientConfigCallback(httpClientBuilder->httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider).setSSLStrategy(sessionStrategy));
             final EasyRestHighLevelClient client = new EasyRestHighLevelClient(builder);
             client.ping(RequestOptions.DEFAULT);
             return client;

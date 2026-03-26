@@ -6,6 +6,7 @@ package org.dbsyncer.connector.oracle.geometry;
 import java.io.Serializable;
 
 public class JPoint2DD implements Serializable {
+
     public double x;
     public double y;
 

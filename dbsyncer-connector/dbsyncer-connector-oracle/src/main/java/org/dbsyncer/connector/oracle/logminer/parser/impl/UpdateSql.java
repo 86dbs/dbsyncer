@@ -3,11 +3,15 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
-import net.sf.jsqlparser.statement.update.Update;
-import net.sf.jsqlparser.statement.update.UpdateSet;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
 import org.dbsyncer.sdk.model.Field;
+
+import net.sf.jsqlparser.statement.update.Update;
+import net.sf.jsqlparser.statement.update.UpdateSet;
+
+import net.sf.jsqlparser.statement.update.Update;
+import net.sf.jsqlparser.statement.update.UpdateSet;
 
 import java.util.List;
 
@@ -38,5 +42,4 @@ public class UpdateSql extends AbstractParser {
             columnMap.put(columnName, updateSet.getValue(0));
         }
     }
-
 }

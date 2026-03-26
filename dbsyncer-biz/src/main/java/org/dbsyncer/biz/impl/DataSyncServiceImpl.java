@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.biz.impl;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
-import org.dbsyncer.biz.vo.BinlogColumnVo;
-import org.dbsyncer.biz.vo.MessageVo;
+import org.dbsyncer.biz.model.DataSyncEvent;
+import org.dbsyncer.biz.model.DataSyncRequest;
+import org.dbsyncer.biz.vo.BinlogColumnVO;
+import org.dbsyncer.biz.vo.MessageVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -16,6 +16,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
@@ -29,12 +30,20 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.dbsyncer.storage.util.BinlogMessageUtil;
+
+import org.apache.lucene.index.IndexableField;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,11 +76,11 @@ public class DataSyncServiceImpl implements DataSyncService {
     private StorageService storageService;
 
     @Override
-    public MessageVo getMessageVo(String metaId, String messageId) {
+    public MessageVO getMessageVo(String metaId, String messageId) {
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
 
-        MessageVo messageVo = new MessageVo();
+        MessageVO messageVo = new MessageVO();
         try {
             Map row = getData(metaId, messageId);
             Map binlogData = getBinlogData(row, true);
@@ -83,8 +92,8 @@ public class DataSyncServiceImpl implements DataSyncService {
 
             if (!CollectionUtils.isEmpty(binlogData)) {
                 Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
-                List<BinlogColumnVo> columns = new ArrayList<>();
-                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVo((String) k, v, columnMap.get(k))));
+                List<BinlogColumnVO> columns = new ArrayList<>();
+                binlogData.forEach((k, v)->columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
                 messageVo.setColumns(columns);
             }
         } catch (Exception e) {
@@ -117,14 +126,14 @@ public class DataSyncServiceImpl implements DataSyncService {
         BinlogMap message = BinlogMap.parseFrom(bytes);
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
         if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
-            message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
+            message.getRowMap().forEach((k, v)->target.put(k, v.toStringUtf8()));
             return target;
         }
 
         // 4、反序列
         final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
-        message.getRowMap().forEach((k, v) -> {
+        message.getRowMap().forEach((k, v)-> {
             if (fieldMap.containsKey(k)) {
                 try {
                     Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
@@ -142,8 +151,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     }
                     target.put(k, val);
                 } catch (Exception e) {
-                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(),
-                            (v == null ? null : v.getClass().getName()), v);
+                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(), (v == null ? null : v.getClass().getName()), v);
                 }
             }
         });
@@ -167,15 +175,15 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 有修改同步值
         String retryDataParams = params.get("retryDataParams");
         if (StringUtil.isNotBlank(retryDataParams)) {
-            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+            JsonUtil.parseMap(retryDataParams).forEach((k, v)->binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
 
         // 转换为源字段
         final Picker picker = new Picker(tableGroup);
-        List<Object> changedRow = picker.pickSourceData(binlogData);
-        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow);
+        List<Object> changedRow = picker.pickSourceData(tableGroup.getSourceTable().getColumn(), binlogData);
+        RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, event, changedRow, null, null);
 
         // 执行同步是否成功
         bufferActuatorRouter.execute(metaId, changedEvent);
@@ -189,10 +197,30 @@ public class DataSyncServiceImpl implements DataSyncService {
         return messageId;
     }
 
+    @Override
+    public void syncBatch(DataSyncRequest request) {
+        Mapping mapping = profileComponent.getMapping(request.getMappingId());
+        Assert.notNull(mapping, "Mapping can not be null.");
+        TableGroup tableGroup = profileComponent.getTableGroup(request.getTableGroupId());
+        Assert.notNull(tableGroup, "Meta can not be null.");
+        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Assert.notNull(meta, "Meta can not be null.");
+        List<DataSyncEvent> dataList = request.getDataList();
+        Assert.notEmpty(dataList, "DataList can not be null.");
+
+        for (DataSyncEvent changedData : dataList) {
+            String sourceTableName = tableGroup.getSourceTable().getName();
+            RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, changedData.getEvent(), changedData.getData(), null, null);
+
+            // 执行同步是否成功
+            bufferActuatorRouter.execute(meta.getId(), changedEvent);
+        }
+    }
+
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field->field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setMetaId(metaId);

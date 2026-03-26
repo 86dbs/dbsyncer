@@ -3,91 +3,200 @@
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
 <div th:fragment="content">
-    <p class="text-muted">转换配置</p>
+    <!-- 转换配置标题 -->
+    <p><i class="fa fa-magic text-primary"></i> 转换配置</p>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">转换</label>
-                <div class="col-sm-9">
-                    <select id="convertOperator" class="form-control select-control">
-                        <option th:value="${c?.code}" th:text="${c?.name}" th:argNum="${c?.argNum}" th:each="c,state : ${convert}"/ >
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-3 control-label text-right">目标源表字段</label>
-                <div class="col-sm-9">
-                    <select id="convertTargetField" class="form-control select-control">
-                        <!-- 目标源表公共字段 -->
-                        <option th:if="${tableGroup} == null" th:each="c,s:${mapping?.targetColumn}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+    <!-- 第一行：转换、目标源表字段 -->
+    <div class="grid grid-cols-3">
+        <!-- 转换 -->
+        <div class="form-item">
+            <label class="form-label">转换</label>
+            <select id="convertOperator" class="form-control">
+                <option th:value="${c?.code}" th:text="${c?.name}" th:argNum="${c?.argNum}" th:each="c,state : ${convert}"/>
+            </select>
+        </div>
 
-                        <!-- 目标源表字段 -->
-                        <option th:each="c,s:${tableGroup?.targetTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="col-sm-2 control-label text-right">参数</label>
-                <div class="col-sm-5">
-                    <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
-                </div>
-                <div class="col-sm-5">
-                    <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
-                </div>
-            </div>
+        <!-- 目标源表字段 -->
+        <div class="form-item">
+            <label class="form-label">目标源表字段</label>
+            <select id="convertTargetField" class="form-control">
+                <!-- 目标源表公共字段 -->
+                <option th:if="${tableGroup} == null"
+                        th:each="c,s:${mapping?.targetColumn}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+                <!-- 目标源表字段 -->
+                <option th:each="c,s:${tableGroup?.targetTable?.column}"
+                        th:value="${c?.name}"
+                        th:text="${c?.name} +' (' + ${c?.typeName} +')'" />
+            </select>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">参数</label>
+            <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
+        </div>
+
+    </div>
+
+    <div class="grid grid-cols-3 mt-4">
+        <div class="form-item">
+            <label class="form-label">参数</label>
+            <input class="form-control convertArg" type="text" maxlength="50" placeholder="参数" />
+        </div>
+        <div></div>
+        <div class="flex items-center justify-end">
+            <button id="convertAdd" type="button" class="btn btn-info">
+                <i class="fa fa-plus"></i> 添加
+            </button>
         </div>
     </div>
 
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-11"></div>
-            <div class="col-md-1">
-                <button id="convertAdd" type="button" class="btn btn-primary">
-                    <span class="fa fa-plus"></span>添加
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <div class="row">
-            <div class="col-md-1"></div>
-            <div class="col-md-11">
-                <table id="convertTable" class="table table-hover hidden">
-                    <thead>
-                        <tr>
-                            <th>转换</th>
-                            <th>目标源表字段</th>
-                            <th>参数</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="convertList">
-                        <!-- Mapping convert -->
-                        <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
-                            <td th:value="${f?.convertCode}">[[${f?.convertName}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.args}]]</td>
-                            <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                        <!-- TableGroup convert -->
-                        <tr th:each="f,s:${tableGroup?.convert}">
-                            <td th:value="${f?.convertCode}">[[${f?.convertName}]]</td>
-                            <td>[[${f?.name}]]</td>
-                            <td>[[${f?.args}]]</td>
-                            <td><a class='fa fa-remove fa-2x convertDelete dbsyncer_pointer' title='删除' ></a></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <!-- 转换列表表格 -->
+    <table id="convertTable" class="table">
+        <thead>
+            <tr>
+                <th>转换</th>
+                <th>目标源表字段</th>
+                <th>参数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="convertList">
+            <!-- Mapping convert -->
+            <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
+                <td>[[${f?.convertName}]]</td>
+                <td>[[${f?.name}]]</td>
+                <td>[[${f?.args}]]</td>
+                <td>
+                    <button class='table-action-btn delete convertDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            <!-- TableGroup convert -->
+            <tr th:each="f,s:${tableGroup?.convert}">
+                <td>[[${f?.convertName}]]</td>
+                <td>[[${f?.name}]]</td>
+                <td>[[${f?.args}]]</td>
+                <td>
+                    <button class='table-action-btn delete convertDelete' title="删除">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
     <!-- 隐藏表单值 -->
-    <div class="form-group hidden">
+    <div class="hidden">
         <input id="convert" name="convert" class="form-control" type="text"/>
     </div>
 
+<script>
+    // 初始化映射关系参数
+    function initConvertParams(){
+        // 生成JSON参数
+        var row = [];
+        var $convertList = $("#convertList");
+        $convertList.find("tr").each(function(k,v) {
+            var convert = $(this).find("td:eq(0)");
+            var convertCode = convert.attr("value");
+            var convertName = convert.text().trim();
+            var tf = $(this).find("td:eq(1)").text().trim();
+            var args = $(this).find("td:eq(2)").text().trim();
+            row.push({
+               "name": tf,
+               "convertName": convertName,
+               "convertCode": convertCode,
+               "args": args
+            });
+        });
+        var $convertTable = $("#convertTable");
+        if (0 >= row.length) {
+            $convertTable.addClass("hidden");
+        } else {
+            $convertTable.removeClass("hidden");
+        }
+        $("#convert").val(JSON.stringify(row));
+    }
+
+    // 绑定表格点击删除事件
+    function bindConvertListDelete(){
+        $(".convertDelete").unbind("click").bind('click', function(){
+            // 阻止tr触发click事件
+            event.cancelBubble=true;
+            $(this).closest('tr').remove();
+            initConvertParams();
+        });
+        initConvertParams();
+    }
+
+    // 绑定新增转换点击事件
+    function bindConvertAddClick() {
+        const $convertAdd = $("#convertAdd");
+        $convertAdd.unbind("click");
+        $convertAdd.bind('click', function () {
+            const $convertOperator = $("#convertOperator");
+            const convertOperatorVal = $convertOperator.val();
+            const convertOperatorText = $convertOperator.find("option:selected")[0].text;
+            const convertTargetField = $("#convertTargetField").val();
+            let convertArg = $(".convertArg:eq(0)").val();
+            const convertArg1 = $(".convertArg:eq(1)").val();
+            const argArr = [];
+            if (!isBlank(convertArg)) {
+                argArr.push(convertArg);
+            }
+            if (!isBlank(convertArg1)) {
+                argArr.push(convertArg1);
+            }
+            const argText = argArr.join(",")
+            // 非空检查
+            if (convertTargetField == null || convertTargetField === '') {
+                bootGrowl("目标源表字段不能空.", "danger");
+                return;
+            }
+
+            // 检查重复字段
+            let repeated = false;
+            const $convertList = $("#convertList");
+            $convertList.find("tr").each(function (k, v) {
+                const opr = $(this).find("td:eq(0)").text();
+                const tf = $(this).find("td:eq(1)").text();
+                const arg = $(this).find("td:eq(2)").text();
+                if (opr === convertOperatorText && tf === convertTargetField && arg === argText) {
+                    repeated = true;
+                    return false;
+                }
+            });
+            if (repeated) {
+                bootGrowl("转换配置已存在.", "danger");
+                return;
+            }
+
+            $convertList.append(`<tr>
+                <td value='${convertOperatorVal}'>${convertOperatorText}</td>
+                <td>${convertTargetField}</td>
+                <td>${argText}</td>
+                <td>
+                    <button class="table-action-btn delete convertDelete" title="删除"">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`);
+            // 清空参数
+            $(".convertArg").val("");
+            bindConvertListDelete();
+        });
+    }
+
+    $(document).ready(function() {
+        initSelect($('#convertOperator'));
+        initSelect($('#convertTargetField'));
+
+        bindConvertAddClick();
+        bindConvertListDelete();
+    });
+</script>
 </div>
 </html>

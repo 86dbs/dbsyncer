@@ -25,17 +25,27 @@ public class CommandConfig {
 
     private List<Filter> filter;
 
+    private String schema;
+
     private ConnectorInstance connectorInstance;
 
-    public CommandConfig(String connectorType, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
+    // 覆盖写入
+    private boolean forceUpdate;
+
+    public CommandConfig(String connectorType, String schema, Table table, ConnectorInstance connectorInstance, List<Filter> filter) {
         this.connectorType = connectorType;
+        this.schema = schema;
         this.table = table;
-        this.filter = filter;
         this.connectorInstance = connectorInstance;
+        this.filter = filter;
     }
 
     public String getConnectorType() {
         return connectorType;
+    }
+
+    public String getSchema() {
+        return schema;
     }
 
     public Table getTable() {
@@ -52,5 +62,13 @@ public class CommandConfig {
 
     public ConnectorInstance getConnectorInstance() {
         return connectorInstance;
+    }
+
+    public boolean isForceUpdate() {
+        return forceUpdate;
+    }
+
+    public void setForceUpdate(boolean forceUpdate) {
+        this.forceUpdate = forceUpdate;
     }
 }

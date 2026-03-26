@@ -9,6 +9,7 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
@@ -18,12 +19,14 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,12 +51,19 @@ public class MappingChecker extends AbstractChecker {
     @Resource
     private TableGroupChecker tableGroupChecker;
 
+    @Resource
+    private PreloadTemplate preloadTemplate;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
         String sourceConnectorId = params.get("sourceConnectorId");
+        String sourceDatabase = params.get("sourceDatabase");
+        String sourceSchema = params.get("sourceSchema");
         String targetConnectorId = params.get("targetConnectorId");
+        String targetDatabase = params.get("targetDatabase");
+        String targetSchema = params.get("targetSchema");
         Assert.hasText(name, "驱动名称不能为空");
         Assert.hasText(sourceConnectorId, "数据源不能为空.");
         Assert.hasText(targetConnectorId, "目标源不能为空.");
@@ -61,13 +71,19 @@ public class MappingChecker extends AbstractChecker {
         Mapping mapping = new Mapping();
         mapping.setName(name);
         mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setSourceDatabase(sourceDatabase);
+        mapping.setSourceSchema(sourceSchema);
         mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setTargetDatabase(targetDatabase);
+        mapping.setTargetSchema(targetSchema);
         mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
         mapping.setParams(new HashMap<>());
 
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
+
+        preloadTemplate.reConnect(mapping);
 
         // 创建meta
         addMeta(mapping);
@@ -110,6 +126,8 @@ public class MappingChecker extends AbstractChecker {
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
 
+        preloadTemplate.reConnect(mapping);
+
         // 合并关联的映射关系配置
         batchMergeConfig(mapping, params);
 
@@ -148,7 +166,7 @@ public class MappingChecker extends AbstractChecker {
             // 手动排序
             String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
             if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
-                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f->f, (k1, k2)->k1));
                 groupAll.clear();
                 int size = sortedTableGroupIds.length;
                 int i = size;

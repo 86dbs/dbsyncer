@@ -10,9 +10,9 @@ package org.dbsyncer.connector.sqlite;
  */
 public class SQLiteException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public SQLiteException(String message) {
+    public SQLiteException(String message) {
         super(message);
     }
 

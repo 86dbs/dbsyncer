@@ -17,5 +17,4 @@ public final class DefaultGroupStrategy implements GroupStrategy {
     public String getGroupId(ConfigModel model) {
         return model.getType();
     }
-
 }

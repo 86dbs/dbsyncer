@@ -15,25 +15,30 @@ import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -60,12 +65,16 @@ public class TableGroupChecker extends AbstractChecker {
         String mappingId = params.get("mappingId");
         String sourceTable = params.get("sourceTable");
         String targetTable = params.get("targetTable");
+        String sourceType = params.get("sourceType");
+        String targetType = params.get("targetType");
         String sourceTablePK = params.get("sourceTablePK");
         String targetTablePK = params.get("targetTablePK");
         String fieldMappings = params.get("fieldMappings");
         Assert.hasText(mappingId, "tableGroup mappingId is empty.");
         Assert.hasText(sourceTable, "tableGroup sourceTable is empty.");
         Assert.hasText(targetTable, "tableGroup targetTable is empty.");
+        Assert.hasText(sourceType, "tableGroup sourceType is empty.");
+        Assert.hasText(targetType, "tableGroup targetType is empty.");
         Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
@@ -75,8 +84,10 @@ public class TableGroupChecker extends AbstractChecker {
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
         tableGroup.setMappingId(mappingId);
-        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable, sourceTablePK));
-        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable, targetTablePK));
+        Table source = findTable(mapping.getSourceTable(), sourceTable, sourceType);
+        Table target = findTable(mapping.getTargetTable(), targetTable, targetType);
+        tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
+        tableGroup.setTargetTable(updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, targetTablePK, target));
 
         // 修改基本配置
         this.modifyConfigModel(tableGroup, params);
@@ -121,6 +132,16 @@ public class TableGroupChecker extends AbstractChecker {
         return tableGroup;
     }
 
+    private Table findTable(List<Table> tables, String tableName, String type) {
+        if (!CollectionUtils.isEmpty(tables)) {
+            Optional<Table> first = tables.stream().filter(table->table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
+            if (first.isPresent()) {
+                return first.get();
+            }
+        }
+        throw new BizException("TableName not found.");
+    }
+
     /**
      * 刷新表字段
      */
@@ -132,8 +153,8 @@ public class TableGroupChecker extends AbstractChecker {
         Table targetTable = tableGroup.getTargetTable();
         List<String> sourceTablePks = sourceTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
         List<String> targetTablePks = targetTable.getColumn().stream().filter(Field::isPk).map(Field::getName).collect(Collectors.toList());
-        tableGroup.setSourceTable(getTable(mapping.getSourceConnectorId(), sourceTable.getName(), StringUtil.join(sourceTablePks, ",")));
-        tableGroup.setTargetTable(getTable(mapping.getTargetConnectorId(), targetTable.getName(), StringUtil.join(targetTablePks, ",")));
+        updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, StringUtil.join(sourceTablePks, ","), sourceTable);
+        updateTableColumn(mapping, ConnectorInstanceUtil.TARGET_SUFFIX, StringUtil.join(targetTablePks, ","), targetTable);
     }
 
     public void mergeConfig(Mapping mapping, TableGroup tableGroup) {
@@ -143,13 +164,18 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setCommand(command);
     }
 
-    private Table getTable(String connectorId, String tableName, String primaryKeyStr) {
-        MetaInfo metaInfo = parserComponent.getMetaInfo(connectorId, tableName);
-        Assert.notNull(metaInfo, "无法获取连接器表信息:" + tableName);
+    private Table updateTableColumn(Mapping mapping, String suffix, String primaryKeyStr, Table table) {
+        boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
+        context.addTablePattern(table);
+
+        List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
+        MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
+        Assert.notNull(metaInfo, "无法获取连接器表信息");
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
             String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
-            Arrays.stream(pks).forEach(pk -> {
+            Arrays.stream(pks).forEach(pk-> {
                 for (Field field : metaInfo.getColumn()) {
                     if (StringUtil.equalsIgnoreCase(field.getName(), pk)) {
                         field.setPk(true);
@@ -158,7 +184,8 @@ public class TableGroupChecker extends AbstractChecker {
                 }
             });
         }
-        return new Table(tableName, metaInfo.getTableType(), metaInfo.getColumn(), metaInfo.getSql(), metaInfo.getIndexType());
+        table.setColumn(metaInfo.getColumn());
+        return table;
     }
 
     private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
@@ -182,40 +209,32 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        Map<String, Field> m1 = new HashMap<>();
-        Map<String, Field> m2 = new HashMap<>();
-        Set<String> sourceFieldNames = new LinkedHashSet<>();
-        Set<String> targetFieldNames = new LinkedHashSet<>();
-        shuffleColumn(sCol, sourceFieldNames, m1);
-        shuffleColumn(tCol, targetFieldNames, m2);
+        Map<String, Field> m1 = new LinkedHashMap<>();
+        Map<String, Field> m2 = new LinkedHashMap<>();
+        shuffleColumn(sCol, m1);
+        shuffleColumn(tCol, m2);
 
         // 模糊匹配相似字段
         AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
         AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
-        sourceFieldNames.forEach(s -> {
-            for (String t : targetFieldNames) {
-                if (StringUtil.equalsIgnoreCase(s, t)) {
-                    Field f1 = m1.get(s);
-                    Field f2 = m2.get(t);
-                    tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
-                    if (f1.isPk()) {
-                        existSourcePKFieldMapping.set(true);
-                    }
-                    if (f2.isPk()) {
-                        existTargetPKFieldMapping.set(true);
-                    }
-                    break;
-                }
+        m1.forEach((s, f1)->m2.computeIfPresent(s, (t, f2)-> {
+            tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
+            if (f1.isPk()) {
+                existSourcePKFieldMapping.set(true);
             }
-        });
+            if (f2.isPk()) {
+                existTargetPKFieldMapping.set(true);
+            }
+            return f2;
+        }));
 
         // 沒有主键映射关系，取第一个主键作为映射关系
         if (!existSourcePKFieldMapping.get() || !existTargetPKFieldMapping.get()) {
             List<String> sourceTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getSourceTable());
             List<String> targetTablePrimaryKeys = PrimaryKeyUtil.findTablePrimaryKeys(tableGroup.getTargetTable());
             Assert.isTrue(!CollectionUtils.isEmpty(sourceTablePrimaryKeys) && !CollectionUtils.isEmpty(targetTablePrimaryKeys), "数据源表和目标源表必须包含主键.");
-            String sPK = sourceTablePrimaryKeys.stream().findFirst().get();
-            String tPK = targetTablePrimaryKeys.stream().findFirst().get();
+            String sPK = sourceTablePrimaryKeys.stream().findFirst().get().toUpperCase();
+            String tPK = targetTablePrimaryKeys.stream().findFirst().get().toUpperCase();
             tableGroup.getFieldMapping().add(new FieldMapping(m1.get(sPK), m2.get(tPK)));
         }
     }
@@ -228,8 +247,8 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
-        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
+        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
         List<FieldMapping> fieldMappingList = tableGroup.getFieldMapping();
         Set<String> exist = new HashSet<>();
         String[] fieldMapping = StringUtil.split(fieldMappings, StringUtil.COMMA);
@@ -250,7 +269,7 @@ public class TableGroupChecker extends AbstractChecker {
                 String name = m[0];
                 if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                     if (!exist.contains(mapping)) {
-                        tMap.computeIfPresent(name, (k, field) -> {
+                        tMap.computeIfPresent(name, (k, field)-> {
                             fieldMappingList.add(new FieldMapping(null, field));
                             exist.add(mapping);
                             return field;
@@ -259,7 +278,7 @@ public class TableGroupChecker extends AbstractChecker {
                     continue;
                 }
                 if (!exist.contains(mapping)) {
-                    sMap.computeIfPresent(name, (k, field) -> {
+                    sMap.computeIfPresent(name, (k, field)-> {
                         fieldMappingList.add(new FieldMapping(field, null));
                         exist.add(mapping);
                         return field;
@@ -270,13 +289,8 @@ public class TableGroupChecker extends AbstractChecker {
         exist.clear();
     }
 
-    private void shuffleColumn(List<Field> col, Set<String> key, Map<String, Field> map) {
-        col.forEach(f -> {
-            if (!key.contains(f.getName())) {
-                key.add(f.getName());
-                map.put(f.getName(), f);
-            }
-        });
+    private void shuffleColumn(List<Field> col, Map<String, Field> map) {
+        col.forEach(f->map.putIfAbsent(f.getName().toUpperCase(), f));
     }
 
     /**

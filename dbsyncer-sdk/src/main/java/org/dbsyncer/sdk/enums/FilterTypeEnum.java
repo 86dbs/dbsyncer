@@ -9,6 +9,7 @@ package org.dbsyncer.sdk.enums;
  * @Date 2023-12-11 20:29
  */
 public enum FilterTypeEnum {
+
     /**
      * string
      */

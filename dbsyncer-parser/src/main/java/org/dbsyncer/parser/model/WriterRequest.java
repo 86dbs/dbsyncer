@@ -32,5 +32,4 @@ public class WriterRequest extends AbstractWriter implements BufferRequest {
     public List<Object> getRow() {
         return row;
     }
-
 }

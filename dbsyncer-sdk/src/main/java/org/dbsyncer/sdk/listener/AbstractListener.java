@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.listener;
 
+import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.config.ListenerConfig;
@@ -12,6 +14,7 @@ import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +34,19 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final int FLUSH_DELAYED_SECONDS = 20;
+    protected String database;
+    protected String schema;
     protected ConnectorInstance connectorInstance;
     protected ConnectorInstance targetConnectorInstance;
     protected ConnectorService connectorService;
     protected ScheduledTaskService scheduledTaskService;
+    protected RsaManager rsaManager;
+    protected RsaConfig rsaConfig;
     protected ConnectorConfig connectorConfig;
     protected ListenerConfig listenerConfig;
     protected Set<String> filterTable;
     protected List<Table> sourceTable;
+    protected List<Table> customTable;
     protected Map<String, String> snapshot;
     protected String metaId;
     private Watcher watcher;
@@ -128,6 +136,14 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         }
     }
 
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
     public void setConnectorInstance(ConnectorInstance connectorInstance) {
         this.connectorInstance = connectorInstance;
     }
@@ -148,6 +164,14 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         this.scheduledTaskService = scheduledTaskService;
     }
 
+    public void setRsaManager(RsaManager rsaManager) {
+        this.rsaManager = rsaManager;
+    }
+
+    public void setRsaConfig(RsaConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
+    }
+
     public void setConnectorConfig(ConnectorConfig connectorConfig) {
         this.connectorConfig = connectorConfig;
     }
@@ -160,9 +184,12 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
         this.filterTable = filterTable;
     }
 
-    public AbstractListener setSourceTable(List<Table> sourceTable) {
+    public void setSourceTable(List<Table> sourceTable) {
         this.sourceTable = sourceTable;
-        return this;
+    }
+
+    public void setCustomTable(List<Table> customTable) {
+        this.customTable = customTable;
     }
 
     public void setSnapshot(Map<String, String> snapshot) {
@@ -172,5 +199,4 @@ public abstract class AbstractListener<C extends ConnectorInstance> implements L
     public void setMetaId(String metaId) {
         this.metaId = metaId;
     }
-
 }

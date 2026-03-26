@@ -24,8 +24,7 @@ public class SqlBuilderConfig {
     // 过滤条件
     private String queryFilter;
 
-    public SqlBuilderConfig(Database database, String schema, String tableName, List<String> primaryKeys,
-                            List<Field> fields, String queryFilter) {
+    public SqlBuilderConfig(Database database, String schema, String tableName, List<String> primaryKeys, List<Field> fields, String queryFilter) {
         this.database = database;
         this.schema = schema;
         this.tableName = tableName;

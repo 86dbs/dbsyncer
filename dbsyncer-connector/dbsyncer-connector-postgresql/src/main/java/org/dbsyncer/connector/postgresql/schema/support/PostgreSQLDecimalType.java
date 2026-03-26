@@ -16,8 +16,10 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLDecimalType extends DecimalType {
+public final class PostgreSQLDecimalType extends DecimalType {
+
     private enum TypeEnum {
+
         NUMERIC("numeric");
 
         private final String value;
@@ -40,5 +42,4 @@ public class PostgreSQLDecimalType extends DecimalType {
     protected BigDecimal merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

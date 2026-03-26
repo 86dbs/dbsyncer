@@ -7,9 +7,9 @@ package org.dbsyncer.connector.base;
  */
 public class ConnectorException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public ConnectorException(String message) {
+    public ConnectorException(String message) {
         super(message);
     }
 

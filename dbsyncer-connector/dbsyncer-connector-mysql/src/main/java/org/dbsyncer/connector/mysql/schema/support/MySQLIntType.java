@@ -20,12 +20,8 @@ import java.util.stream.Collectors;
 public final class MySQLIntType extends IntType {
 
     private enum TypeEnum {
-        SMALLINT_UNSIGNED("SMALLINT UNSIGNED"),
-        MEDIUMINT("MEDIUMINT"),
-        MEDIUMINT_UNSIGNED("MEDIUMINT UNSIGNED"),
-        INT("INT"),
-        INTEGER("INTEGER"),
-        YEAR("YEAR");
+
+        SMALLINT_UNSIGNED("SMALLINT UNSIGNED"), MEDIUMINT("MEDIUMINT"), MEDIUMINT_UNSIGNED("MEDIUMINT UNSIGNED"), INT("INT"), INTEGER("INTEGER"), YEAR("YEAR");
 
         private final String value;
 

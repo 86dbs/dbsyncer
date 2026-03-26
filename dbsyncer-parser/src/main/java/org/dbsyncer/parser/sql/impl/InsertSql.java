@@ -3,13 +3,20 @@
  */
 package org.dbsyncer.parser.sql.impl;
 
+import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.parser.sql.SqlParser;
+
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.insert.Insert;
-import org.dbsyncer.parser.model.FieldMapping;
-import org.dbsyncer.parser.sql.SqlParser;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.insert.Insert;
 
 import java.util.List;
 
@@ -38,18 +45,15 @@ public final class InsertSql implements SqlParser {
     public String parse() {
         try {
             Insert insert = (Insert) CCJSqlParserUtil.parse(this.sql);
-            //替换表名
+            // 替换表名
             Table table = new Table();
             table.setName(targetTableName);
             insert.setTable(table);
-            //替换字段
+            // 替换字段
             List<Column> columns = insert.getColumns();
             for (Column column : columns) {
-                fieldMappingList.stream()
-                        .filter(x -> x.getSource().getName()
-                                .equals(column.getColumnName().replaceAll("\"", "")))
-                        .findFirst().ifPresent(
-                        fieldMapping -> column.setColumnName(fieldMapping.getTarget().getName()));
+                fieldMappingList.stream().filter(x->x.getSource().getName().equals(column.getColumnName().replaceAll("\"", ""))).findFirst()
+                        .ifPresent(fieldMapping->column.setColumnName(fieldMapping.getTarget().getName()));
             }
             return insert.toString();
         } catch (JSQLParserException e) {

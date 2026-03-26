@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.elasticsearch.api;
 
 import org.dbsyncer.connector.elasticsearch.api.bulk.BulkResponse;
+
 import org.elasticsearch.Version;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -56,11 +57,7 @@ public final class EasyRestHighLevelClient extends RestHighLevelClient {
      * @return the response
      */
     public final BulkResponse bulkWithVersion(BulkRequest bulkRequest, RequestOptions options) throws IOException {
-        return performRequest(bulkRequest,
-                request -> RequestConverters.bulk(request, version),
-                options,
-                response -> parseEntity(response.getEntity(), BulkResponse::fromXContent),
-                emptySet());
+        return performRequest(bulkRequest, request->RequestConverters.bulk(request, version), options, response->parseEntity(response.getEntity(), BulkResponse::fromXContent), emptySet());
     }
 
     /**
@@ -72,7 +69,7 @@ public final class EasyRestHighLevelClient extends RestHighLevelClient {
      * @return the response
      */
     public final SearchResponse searchWithVersion(SearchRequest searchRequest, RequestOptions options) throws IOException {
-        return performRequestAndParseEntity(searchRequest, r -> RequestConverters.search(r, "_search", version), options, SearchResponse::fromXContent, Collections.emptySet());
+        return performRequestAndParseEntity(searchRequest, r->RequestConverters.search(r, "_search", version), options, SearchResponse::fromXContent, Collections.emptySet());
     }
 
     /**
@@ -85,9 +82,8 @@ public final class EasyRestHighLevelClient extends RestHighLevelClient {
      * @return the response
      */
     public final SearchTemplateResponse searchTemplateWithVersion(SearchTemplateRequest searchTemplateRequest, RequestOptions options) throws IOException {
-        return performRequestAndParseEntity(searchTemplateRequest, r -> RequestConverters.searchTemplate(r, version), options, SearchTemplateResponse::fromXContent, emptySet());
+        return performRequestAndParseEntity(searchTemplateRequest, r->RequestConverters.searchTemplate(r, version), options, SearchTemplateResponse::fromXContent, emptySet());
     }
-
 
     /**
      * Asynchronously executes a request using the Search Template API.
@@ -98,8 +94,7 @@ public final class EasyRestHighLevelClient extends RestHighLevelClient {
      * @return cancellable that may be used to cancel the request
      */
     public final Cancellable searchTemplateAsyncWithVersion(SearchTemplateRequest searchTemplateRequest, RequestOptions options, ActionListener<SearchTemplateResponse> listener) {
-        return performRequestAsyncAndParseEntity(searchTemplateRequest, r -> RequestConverters.searchTemplate(r, version), options,
-                SearchTemplateResponse::fromXContent, listener, emptySet());
+        return performRequestAsyncAndParseEntity(searchTemplateRequest, r->RequestConverters.searchTemplate(r, version), options, SearchTemplateResponse::fromXContent, listener, emptySet());
     }
 
     public Version getVersion() {

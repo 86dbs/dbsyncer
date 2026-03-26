@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">用户管理</h3>
+    </div>
+    <div class="card-body">
+        <!-- 管理员操作区域 -->
+        <div class="form-actions mb-4" th:if="${currentUser?.roleCode eq 'admin'}">
+            <button class="btn btn-primary" onclick="doLoader('/user/page/add')">
+                <i class="fa fa-plus"></i> 添加
+            </button>
+        </div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>用户</th>
+                <th>角色</th>
+                <th>邮箱</th>
+                <th>手机</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="userList">
+            <tr th:if="${users == null or users.isEmpty()}">
+                <td colspan="5" class="text-center text-tertiary py-8">暂无用户数据</td>
+            </tr>
+            <tr th:each="u : ${users}">
+                <td>
+                    <div class="flex items-center">
+                        <div class="user-avatar badge-primary" th:if="${u?.roleCode eq 'admin'}" >
+                            <i class="fa fa-user-circle"></i>
+                        </div>
+                        <div class="ml-2">
+                            <div class="font-medium text-primary" th:text="${u?.username}"></div>
+                            <div class="text-xs text-tertiary" th:text="${u?.nickname}"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge"
+                          th:classappend="${u?.roleCode eq 'admin'} ? 'badge-success ' : ''"
+                          th:text="${u?.roleName}"></span>
+                </td>
+                <td>
+                    <div class="flex flex-wrap">
+                        <span class="badge"
+                              th:each="m : ${#strings.listSplit(u?.email, ',')}"
+                              th:text="${m}"></span>
+                    </div>
+                </td>
+                <td>
+                    <span class="text-sm text-secondary" th:text="${u?.phone ?: ''}"></span>
+                </td>
+                <td>
+                    <div class="flex items-center">
+                        <!-- 管理员或本人可以修改 -->
+                        <button class="table-action-btn view editUserBtn" title="修改" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' or currentUser?.username eq u?.username}">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <!-- 仅管理员可以删除其他用户 -->
+                        <button class="table-action-btn delete removeUserBtn" title="删除" th:data-username="${u?.username}" th:if="${currentUser?.roleCode eq 'admin' and currentUser?.username != u?.username}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/user');
+        };
+
+        // 绑定修改用户按钮事件
+        $(".editUserBtn").on('click', function () {
+            const username = $(this).data('username');
+            doLoader("/user/page/edit?username=" + username);
+        });
+
+        // 绑定删除用户按钮事件
+        $(".removeUserBtn").on('click', function () {
+            const username = $(this).data('username');
+            const $btn = $(this);
+            showConfirm({
+                title: '确定要删除用户？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'danger',
+                onConfirm: function () {
+                    // 禁用按钮，防止重复点击
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
+                    doPoster('/user/remove', {username: username}, function (data) {
+                        $btn.html(originalText).prop('disabled', false);
+                        if (data.success === true) {
+                            bootGrowl("删除成功！", "success");
+                            doLoader("/user?refresh=" + new Date().getTime());
+                        } else {
+                            bootGrowl(data.message || "删除失败", "danger");
+                        }
+                    });
+                }
+            });
+        });
+    })
+</script>
+</html>

@@ -4,9 +4,11 @@
 package org.dbsyncer.sdk;
 
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +33,12 @@ public class SdkSupportConfiguration {
             return s;
         }
         return new LicenseService() {
+
+            @Override
+            public EditionEnum getEditionEnum() {
+                return EditionEnum.COMMUNITY;
+            }
+
             @Override
             public String getLicensePath() {
                 return System.getProperty("user.dir") + File.separatorChar + "conf" + File.separatorChar;
@@ -48,7 +56,6 @@ public class SdkSupportConfiguration {
 
             @Override
             public void updateLicense() {
-
             }
         };
     }
@@ -62,11 +69,11 @@ public class SdkSupportConfiguration {
             return s;
         }
         return new ServiceFactory() {
+
             @Override
             public <T> T get(Class<T> serviceClass) {
                 return null;
             }
         };
     }
-
 }

@@ -21,5 +21,4 @@ public class TimestampToLongHandler extends AbstractHandler {
         }
         return value;
     }
-
 }

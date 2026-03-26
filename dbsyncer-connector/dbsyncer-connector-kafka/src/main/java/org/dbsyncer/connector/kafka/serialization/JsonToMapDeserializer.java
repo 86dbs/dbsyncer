@@ -3,13 +3,14 @@
  */
 package org.dbsyncer.connector.kafka.serialization;
 
-import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.common.serialization.Deserializer;
 import org.dbsyncer.common.util.JsonUtil;
 
+import org.apache.kafka.common.errors.SerializationException;
+import org.apache.kafka.common.serialization.Deserializer;
+
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author AE86
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2021-12-16 23:09
  */
 public class JsonToMapDeserializer implements Deserializer<Map> {
+
     private String encoding = "UTF8";
 
     @Override
@@ -26,7 +28,7 @@ public class JsonToMapDeserializer implements Deserializer<Map> {
         if (encodingValue == null) {
             encodingValue = configs.get("deserializer.encoding");
         }
-        if (encodingValue != null && encodingValue instanceof String) {
+        if (encodingValue instanceof String) {
             encoding = (String) encodingValue;
         }
     }
@@ -37,7 +39,7 @@ public class JsonToMapDeserializer implements Deserializer<Map> {
             if (data == null) {
                 return null;
             }
-            return JsonUtil.jsonToObj(new String(data, encoding), ConcurrentHashMap.class);
+            return JsonUtil.jsonToObj(new String(data, encoding), HashMap.class);
         } catch (UnsupportedEncodingException e) {
             throw new SerializationException("Error when deserializing byte[] to string due to unsupported encoding " + encoding);
         }

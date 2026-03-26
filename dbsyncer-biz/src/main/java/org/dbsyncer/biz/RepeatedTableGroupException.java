@@ -13,5 +13,4 @@ public class RepeatedTableGroupException extends BizException {
     public RepeatedTableGroupException(String message) {
         super(message);
     }
-
 }

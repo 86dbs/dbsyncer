@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.elasticsearch.api.bulk;
 
 import org.dbsyncer.common.util.StringUtil;
+
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.Version;
@@ -99,17 +100,17 @@ public class BulkItemResponse implements Writeable, StatusToXContentObject {
         if (opType == OpType.INDEX || opType == OpType.CREATE) {
             final IndexResponse.Builder indexResponseBuilder = new IndexResponse.Builder();
             builder = indexResponseBuilder;
-            itemParser = (indexParser) -> IndexResponse.parseXContentFields(indexParser, indexResponseBuilder);
+            itemParser = (indexParser)->IndexResponse.parseXContentFields(indexParser, indexResponseBuilder);
 
         } else if (opType == OpType.UPDATE) {
             final UpdateResponse.Builder updateResponseBuilder = new UpdateResponse.Builder();
             builder = updateResponseBuilder;
-            itemParser = (updateParser) -> UpdateResponse.parseXContentFields(updateParser, updateResponseBuilder);
+            itemParser = (updateParser)->UpdateResponse.parseXContentFields(updateParser, updateResponseBuilder);
 
         } else if (opType == OpType.DELETE) {
             final DeleteResponse.Builder deleteResponseBuilder = new DeleteResponse.Builder();
             builder = deleteResponseBuilder;
-            itemParser = (deleteParser) -> DeleteResponse.parseXContentFields(deleteParser, deleteResponseBuilder);
+            itemParser = (deleteParser)->DeleteResponse.parseXContentFields(deleteParser, deleteResponseBuilder);
         } else {
             throwUnknownField(currentFieldName, parser.getTokenLocation());
         }
@@ -153,6 +154,7 @@ public class BulkItemResponse implements Writeable, StatusToXContentObject {
      * Represents a failure.
      */
     public static class Failure implements Writeable, ToXContentFragment {
+
         public static final String INDEX_FIELD = "index";
         public static final String TYPE_FIELD = "type";
         public static final String ID_FIELD = "id";
@@ -168,20 +170,13 @@ public class BulkItemResponse implements Writeable, StatusToXContentObject {
         private final long term;
         private final boolean aborted;
 
-        public static final ConstructingObjectParser<BulkItemResponse.Failure, Void> PARSER =
-                new ConstructingObjectParser<>(
-                        "bulk_failures",
-                        true,
-                        a ->
-                                new BulkItemResponse.Failure(
-                                        (String)a[0], (String)a[1], (String)a[2], (Exception)a[3], RestStatus.fromCode((int)a[4])
-                                )
-                );
+        public static final ConstructingObjectParser<BulkItemResponse.Failure, Void> PARSER = new ConstructingObjectParser<>("bulk_failures", true,
+                a->new BulkItemResponse.Failure((String) a[0], (String) a[1], (String) a[2], (Exception) a[3], RestStatus.fromCode((int) a[4])));
         static {
             PARSER.declareString(constructorArg(), new ParseField(INDEX_FIELD));
             PARSER.declareString(constructorArg(), new ParseField(TYPE_FIELD));
             PARSER.declareString(optionalConstructorArg(), new ParseField(ID_FIELD));
-            PARSER.declareObject(constructorArg(), (p, c) -> ElasticsearchException.fromXContent(p), new ParseField(CAUSE_FIELD));
+            PARSER.declareObject(constructorArg(), (p, c)->ElasticsearchException.fromXContent(p), new ParseField(CAUSE_FIELD));
             PARSER.declareInt(constructorArg(), new ParseField(STATUS_FIELD));
         }
 
@@ -192,13 +187,11 @@ public class BulkItemResponse implements Writeable, StatusToXContentObject {
          * to record operation sequence no with failure
          */
         public Failure(String index, String type, String id, Exception cause) {
-            this(index, type, id, cause, ExceptionsHelper.status(cause), SequenceNumbers.UNASSIGNED_SEQ_NO,
-                    SequenceNumbers.UNASSIGNED_PRIMARY_TERM, false);
+            this(index, type, id, cause, ExceptionsHelper.status(cause), SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM, false);
         }
 
         public Failure(String index, String type, String id, Exception cause, boolean aborted) {
-            this(index, type, id, cause, ExceptionsHelper.status(cause), SequenceNumbers.UNASSIGNED_SEQ_NO,
-                    SequenceNumbers.UNASSIGNED_PRIMARY_TERM, aborted);
+            this(index, type, id, cause, ExceptionsHelper.status(cause), SequenceNumbers.UNASSIGNED_SEQ_NO, SequenceNumbers.UNASSIGNED_PRIMARY_TERM, aborted);
         }
 
         public Failure(String index, String type, String id, Exception cause, RestStatus status) {
@@ -353,7 +346,8 @@ public class BulkItemResponse implements Writeable, StatusToXContentObject {
 
     private BulkItemResponse.Failure failure;
 
-    BulkItemResponse() {}
+    BulkItemResponse() {
+    }
 
     BulkItemResponse(ShardId shardId, StreamInput in) throws IOException {
         id = in.readVInt();

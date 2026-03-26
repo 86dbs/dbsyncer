@@ -47,8 +47,7 @@ public enum BinlogByteEnum {
     /**
      * 1Byte
      */
-    BYTE(1),
-    ;
+    BYTE(1),;
 
     BinlogByteEnum(int byteLength) {
         this.byteLength = byteLength;
@@ -59,5 +58,4 @@ public enum BinlogByteEnum {
     public int getByteLength() {
         return byteLength;
     }
-
 }

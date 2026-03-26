@@ -1,0 +1,31 @@
+/**
+ * DBSyncer 色彩系统
+ */
+
+/* 主色调类 */
+.text-primary { color: var(--primary-color) !important; }
+.text-success { color: var(--success-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-error { color: var(--error-color) !important; }
+.text-info { color: var(--info-color) !important; }
+.text-violet { color: var(--violet-color) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-tertiary { color: var(--text-tertiary) !important; }
+.text-disabled { color: var(--text-disabled) !important; }
+
+/* 背景色类 */
+.bg-primary { background-color: var(--bg-primary) !important; }
+.bg-secondary { background-color: var(--bg-secondary) !important; }
+.bg-tertiary { background-color: var(--bg-tertiary) !important; }
+.bg-quaternary { background-color: var(--bg-quaternary) !important; }
+.bg-info { background-color: var(--info-color) !important; }
+.bg-success { background-color: var(--success-color) !important; }
+.bg-warning { background-color: var(--warning-color) !important; }
+.bg-error { background-color: var(--error-color) !important; }
+.bg-white { background-color: #fff; }
+.bg-transparent { background-color: transparent; }
+
+/* 边框色类 */
+.border-primary { border-color: var(--border-primary) !important; }
+.border-secondary { border-color: var(--border-secondary) !important; }
+.border-tertiary { border-color: var(--border-tertiary) !important; }

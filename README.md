@@ -18,23 +18,24 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
 
 ## 🌈应用场景
-| 连接器        | 数据源 | 目标源 | 支持版本(包含以下) |
-|------------|---|---|-----------------------|
-| MySQL      | ✔ |  ✔ | 5.7.19以上 |
-| Oracle     | ✔ |  ✔ | 10g-19c |
-| SqlServer  | ✔ |  ✔ | 2008以上 |
-| PostgreSQL | ✔ |  ✔ | 9.5.25以上 |
-| ES         | ✔ |  ✔ | 6.0.0-8.15.3 |
-| Kafka      | 开发中 |  ✔ | 2.10-0.9.0.0以上 |
-| File       | ✔ |  ✔ | *.txt, *.unl |
-| SQL        | ✔ |  | 支持以上关系型数据库 |
-| Sqlite     | ✔ |   | |
-| 后期计划       | Redis | | |
+| 连接器        | 数据源 | 目标源 | 支持版本(包含以下)    |
+|------------|---|---|---------------|
+| MySQL      | ✔ |  ✔ | 5.7.19以上      |
+| Oracle     | ✔ |  ✔ | 10g-19c       |
+| SqlServer  | ✔ |  ✔ | 2008以上        |
+| PostgreSQL | ✔ |  ✔ | 9.5.25以上      |
+| Sqlite     | ✔ |  ✔ | 2以上           |
+| ES         | ✔ |  ✔ | 6.0.0-8.15.3  |
+| Kafka      | ✔ |  ✔ | 2.10-0.9.0.0以上 |
+| File       | ✔ |  ✔ | *.txt, *.unl  |
+| Http       | ✔ |  ✔ |   |
+| SQL        | ✔ |  | 支持以上关系型数据库    |
+| 后期计划       | Redis | |               |
 
 ## ✨预览
-![连接器和驱动](https://images.gitee.com/uploads/images/2021/0903/003755_01016fc1_376718.png "驱动管理.png")
+![仪表盘](https://foruda.gitee.com/images/1769953561917318680/775e6928_376718.png "仪表盘")
 
-![监控](https://foruda.gitee.com/images/1694424923138969858/111e55e0_376718.png "监控")
+![监控](https://foruda.gitee.com/images/1769953915949399025/fc16d35b_376718.png "监控")
 
 ## 📚[使用手册 Wiki](https://gitee.com/ghi/dbsyncer/wikis "https://gitee.com/ghi/dbsyncer/wikis")
 
@@ -52,14 +53,51 @@
 #### 方式二 🐳 docker
 * 阿里云镜像
 ```shell
-docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
-docker pull registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
-docker pull registry.cn-hangzhou.aliyuncs.com/lifewang/dbsyncer:latest
+# 社区版
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer:latest
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer:2.0.8
+# 专业版
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.0.8
 ```
 
 * 运行命令
 ```shell
-docker run -d -p 18686:18686 -v ./your_path/data:/app/dbsyncer/data -v ./your_path/plugins:/app/dbsyncer/plugins --restart=unless-stopped -e TZ="Asia/Shanghai" --name=dbsyncer registry.cn-hangzhou.aliyuncs.com/xhtb/dbsyncer:latest
+docker run -d \
+  --name=dbsyncer \
+  --restart=unless-stopped \
+  -p 18686:18686 \
+  -e TZ="Asia/Shanghai" \
+  -m 5g \
+  --memory-swap=5g \
+  -v /opt/dbsyncer/data:/app/dbsyncer/data \
+  -v /opt/dbsyncer/logs:/app/dbsyncer/logs \
+  -v /opt/dbsyncer/plugins:/app/dbsyncer/plugins \
+  --log-driver json-file \
+  --log-opt max-size=100m \
+  --log-opt max-file=7 \
+  scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer:latest
+
+# 本地日志
+ls -la /opt/dbsyncer/logs
+
+# 容器日志
+docker logs --tail 20 dbsyncer
+# 容器实时日志（Ctrl+C退出）
+docker logs -f dbsyncer
+# 进入容器内部
+docker exec -it dbsyncer /bin/bash
+# 查看容器日志
+ls -la /app/dbsyncer/logs
+
+# 停止容器
+docker stop dbsyncer
+# 启动容器
+docker start dbsyncer
+# 重启容器
+docker restart dbsyncer
+# 删除容器（需先停止）
+docker rm dbsyncer
 ```
 
 ## ⚙️手动编译
@@ -104,9 +142,8 @@ $ ./build.sh
 * 欢迎大家提需求和建议[【新建issuses】](https://gitee.com/ghi/dbsyncer/issues/new?issue%5Bassignee_id%5D=0&issue%5Bmilestone_id%5D=0)!（详细描述你的原始需求，我们会帮你提供一些方案，节约大家的成本）
 1) **内推项目** 如您觉得项目不错，可推荐到公司，建立长期稳定的商业合作，提供更专业的技术服务。（入群联系群主）
 2) **参与开发** 项目成员有不同专业的大佬，相信一定能找到您比较感兴趣的方向，欢迎加入团队！（入群联系群主）
-3) 需要专业技术指导，欢迎加 [**会员粉丝服务群**](https://gitee.com/ghi/dbsyncer/wikis/%E4%BC%9A%E5%91%98%E7%B2%89%E4%B8%9D%E6%9C%8D%E5%8A%A1%E7%BE%A4?sort_id=9604090)。
-4) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
+3) 开源不易，感谢粉丝朋友们的支持！[【捐赠者名单】](https://gitee.com/ghi/dbsyncer/issues/I4HL3C) 
 
 <p>
-<img src="https://foruda.gitee.com/images/1736348493470674811/5761f9e8_13999669.png "二维码_01.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1736348568894927308/12fe6e2d_13999669.png "二维码_02.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1738991478241390049/8f566d69_13999669.png "哔站二维码.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1738991647697099987/ebfc3ca3_13999669.png "抖音二维码.png"" title="抖音扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="223.2px" height="286.4px" />
+<img src="https://foruda.gitee.com/images/1736348493470674811/5761f9e8_13999669.png "二维码_01.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1736348568894927308/12fe6e2d_13999669.png "二维码_02.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1738991478241390049/8f566d69_13999669.png "哔站二维码.png"" title="微信扫码" width="258px" height="283.8px" /><img src="https://foruda.gitee.com/images/1710433659737550167/452d76c9_376718.png" title="DBSyncer款项用于研发推广" width="223.2px" height="286.4px" />
 <p>

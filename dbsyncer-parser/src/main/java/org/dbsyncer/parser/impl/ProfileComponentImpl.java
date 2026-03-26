@@ -6,8 +6,6 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -17,19 +15,22 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.model.ProjectGroup;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -97,16 +98,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
-    public ProjectGroup getProjectGroup(String id) {
-        return operationTemplate.queryObject(ProjectGroup.class, id);
-    }
-
-    @Override
-    public List<ProjectGroup> getProjectGroupAll() {
-        return operationTemplate.queryAll(ProjectGroup.class);
-    }
-
-    @Override
     public Connector getConnector(String connectorId) {
         return operationTemplate.queryObject(Connector.class, connectorId);
     }
@@ -154,10 +145,7 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public List<TableGroup> getSortedTableGroupAll(String mappingId) {
-        return getTableGroupAll(mappingId)
-                .stream()
-                .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
-                .collect(Collectors.toList());
+        return getTableGroupAll(mappingId).stream().sorted(Comparator.comparing(TableGroup::getIndex).reversed()).collect(Collectors.toList());
     }
 
     @Override

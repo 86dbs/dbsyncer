@@ -31,8 +31,7 @@ public abstract class DateType extends AbstractDataType<Date> {
         }
 
         if (val instanceof Timestamp) {
-            Timestamp timestamp = (Timestamp) val;
-            return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
+            return val;
         }
 
         if (val instanceof LocalDateTime) {
@@ -44,7 +43,7 @@ public abstract class DateType extends AbstractDataType<Date> {
             String s = (String) val;
             Timestamp timestamp = DateFormatUtil.stringToTimestamp(s);
             if (null != timestamp) {
-                return Date.valueOf(timestamp.toLocalDateTime().toLocalDate());
+                return timestamp;
             }
         }
         return throwUnsupportedException(val, field);

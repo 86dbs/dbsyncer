@@ -12,12 +12,14 @@ import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,13 +57,13 @@ public final class BufferActuatorRouter implements DisposableBean {
         event.getChangedOffset().setMetaId(metaId);
         // 打印trace信息
         printTraceInfo(event);
-        router.compute(metaId, (k, processor) -> {
+        router.compute(metaId, (k, processor)-> {
             if (processor == null) {
                 offer(generalBufferActuator, event);
                 return null;
             }
 
-            processor.compute(event.getSourceTableName(), (x, actuator) -> {
+            processor.compute(event.getSourceTableName(), (x, actuator)-> {
                 if (actuator == null) {
                     offer(generalBufferActuator, event);
                     return null;
@@ -74,7 +76,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {
-        router.computeIfAbsent(metaId, k -> {
+        router.computeIfAbsent(metaId, k-> {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (TableGroup tableGroup : tableGroups) {
                 // 超过执行器上限
@@ -83,7 +85,7 @@ public final class BufferActuatorRouter implements DisposableBean {
                     break;
                 }
                 final String tableName = tableGroup.getSourceTable().getName();
-                processor.computeIfAbsent(tableName, name -> {
+                processor.computeIfAbsent(tableName, name-> {
                     TableGroupBufferActuator newBufferActuator = null;
                     try {
                         newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
@@ -100,7 +102,7 @@ public final class BufferActuatorRouter implements DisposableBean {
     }
 
     public void unbind(String metaId) {
-        router.computeIfPresent(metaId, (k, processor) -> {
+        router.computeIfPresent(metaId, (k, processor)-> {
             processor.values().forEach(TableGroupBufferActuator::stop);
             return null;
         });
@@ -127,19 +129,19 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     @Override
     public void destroy() {
-        router.values().forEach(map -> map.values().forEach(TableGroupBufferActuator::stop));
+        router.values().forEach(map->map.values().forEach(TableGroupBufferActuator::stop));
         router.clear();
     }
 
     public AtomicLong getQueueSize() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueue().size())));
+        router.values().forEach(map->map.values().forEach(actuator->total.addAndGet(actuator.getQueue().size())));
         return total;
     }
 
     public AtomicLong getQueueCapacity() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueueCapacity())));
+        router.values().forEach(map->map.values().forEach(actuator->total.addAndGet(actuator.getQueueCapacity())));
         return total;
     }
 
@@ -150,7 +152,8 @@ public final class BufferActuatorRouter implements DisposableBean {
     private void printTraceInfo(ChangedEvent event) {
         if (profileComponent.getSystemConfig().isEnablePrintTraceInfo()) {
             event.setTraceId(UUIDUtil.getUUID().toLowerCase());
-            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", event.getTraceId(), event.getSourceTableName(), event.getEvent(), JsonUtil.objToJson(event.getChangedOffset()), event.getChangedRow());
+            logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", event.getTraceId(), event.getSourceTableName(), event.getEvent(), JsonUtil.objToJson(event.getChangedOffset()), event
+                    .getChangedRow());
         }
     }
 

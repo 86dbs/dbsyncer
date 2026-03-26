@@ -47,5 +47,4 @@ public enum TableOperationEnum {
     public int getCode() {
         return code;
     }
-
 }

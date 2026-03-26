@@ -3,14 +3,6 @@
  */
 package org.dbsyncer.connector.oracle.cdc;
 
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.delete.Delete;
-import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.update.Update;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
@@ -27,8 +19,27 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.update.Update;
+
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.update.Update;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +60,8 @@ public class OracleListener extends AbstractDatabaseListener {
 
     @Override
     public void init() {
-        sourceTable.forEach(table -> tableFiledMap.put(table.getName(), table.getColumn()));
+        super.init();
+        sourceTable.forEach(table->tableFiledMap.put(table.getName(), table.getColumn()));
     }
 
     @Override
@@ -60,11 +72,10 @@ public class OracleListener extends AbstractDatabaseListener {
             String username = config.getUsername();
             String password = config.getPassword();
             String url = config.getUrl();
-            String schema = config.getSchema();
             boolean containsPos = snapshot.containsKey(REDO_POSITION);
             logMiner = new LogMiner(username, password, url, schema, driverClassName);
             logMiner.setStartScn(containsPos ? Long.parseLong(snapshot.get(REDO_POSITION)) : 0);
-            logMiner.registerEventListener((event) -> {
+            logMiner.registerEventListener((event)-> {
                 try {
                     parseEvent(event);
                 } catch (JSQLParserException e) {

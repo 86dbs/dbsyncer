@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 查询订正校验列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">订正校验</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="searchTask" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input id="searchKeyword" class="search-input" type="text" maxlength="32" placeholder="搜索任务名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" id="addTaskBtn">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>名称</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>结果</th>
+                <th>更新时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="taskTableBody">
+            <!-- 数据将通过 JavaScript 动态加载 -->
+            </tbody>
+        </table>
+
+        <!-- 分页信息 -->
+        <div id="taskPagination" class="p-5 border-t border-gray-100 flex items-center justify-between" style="display: none;">
+            <p class="text-sm text-gray-500">
+                共 <span id="totalCount" class="totalCount">0</span> 条，第 <span id="currentPage" class="currentPage">1</span> / <span id="totalPages" class="totalPages">1</span> 页
+            </p>
+            <div class="pagination-bar flex items-center">
+                <!-- 分页按钮将通过 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/task/index.js}"></script>
+<script th:inline="javascript">
+
+    $(document).ready(function() {
+        // 创建任务按钮点击事件
+        $('#addTaskBtn').click(function() {
+            console.log('[创建任务] 点击创建任务按钮');
+            doLoader('/task/page/add');
+        });
+        
+        // 刷新按钮点击事件
+        $('#refreshBtn').click(function() {
+            console.log('[刷新任务] 点击刷新按钮');
+            doLoader('/task?refresh=' + new Date().getTime());
+        });
+    });
+
+</script>
+</html>
+
+
+

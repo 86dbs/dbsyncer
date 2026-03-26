@@ -3,8 +3,10 @@
  */
 package org.dbsyncer.biz;
 
-import org.dbsyncer.biz.vo.MappingVo;
-import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.biz.vo.MappingCustomTableVO;
+import org.dbsyncer.biz.vo.MappingVO;
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,16 @@ public interface MappingService {
      * @param id
      * @return
      */
-    MappingVo getMapping(String id);
+    MappingVO getMapping(String id);
+
+    /**
+     * 获取驱动自定义表信息
+     *
+     * @param id
+     * @param type
+     * @return
+     */
+    MappingCustomTableVO getMappingCustomTable(String id, String type);
 
     /**
      * 获取驱动
@@ -59,14 +70,22 @@ public interface MappingService {
      * @param exclude 0-过滤已添加的表；1-显示所有表，包含已添加的表
      * @return
      */
-    MappingVo getMapping(String id, Integer exclude);
+    MappingVO getMapping(String id, Integer exclude);
 
     /**
      * 获取所有驱动
      *
      * @return
      */
-    List<MappingVo> getMappingAll();
+    List<MappingVO> getMappingAll();
+
+    /**
+     * 分页搜索
+     *
+     * @param params
+     * @return
+     */
+    Paging<MappingVO> search(Map<String, String> params);
 
     /**
      * 启动驱动
@@ -89,4 +108,27 @@ public interface MappingService {
      */
     String refreshMappingTables(String id);
 
+    /**
+     * 查询自定义表
+     *
+     * @param params
+     * @return
+     */
+    List<Table> searchCustomTable(Map<String, String> params);
+
+    /**
+     * 保存自定义表
+     *
+     * @param params
+     * @return
+     */
+    String saveCustomTable(Map<String, String> params);
+
+    /**
+     * 删除自定义表
+     *
+     * @param params
+     * @return
+     */
+    String removeCustomTable(Map<String, String> params);
 }

@@ -1,7 +1,8 @@
 package org.dbsyncer.parser.convert;
 
-import org.apache.commons.io.IOUtils;
 import org.dbsyncer.parser.ParserException;
+
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
@@ -29,7 +30,7 @@ public abstract class AbstractHandler implements Handler {
         return null;
     }
 
-    protected String getString(InputStream in, int length){
+    protected String getString(InputStream in, int length) {
         BufferedInputStream is = null;
         try {
             is = new BufferedInputStream(in);
@@ -47,5 +48,4 @@ public abstract class AbstractHandler implements Handler {
             IOUtils.closeQuietly(is);
         }
     }
-
 }

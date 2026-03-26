@@ -10,9 +10,9 @@ package org.dbsyncer.connector.oracle;
  */
 public class OracleException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public OracleException(String message) {
+    public OracleException(String message) {
         super(message);
     }
 

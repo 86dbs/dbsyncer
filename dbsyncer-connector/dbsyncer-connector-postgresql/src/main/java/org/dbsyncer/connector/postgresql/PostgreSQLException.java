@@ -10,9 +10,9 @@ package org.dbsyncer.connector.postgresql;
  */
 public class PostgreSQLException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public PostgreSQLException(String message) {
+    public PostgreSQLException(String message) {
         super(message);
     }
 

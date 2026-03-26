@@ -3,6 +3,7 @@ package org.dbsyncer.parser.convert.handler;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.convert.AbstractHandler;
+
 import org.springframework.util.Assert;
 
 /**

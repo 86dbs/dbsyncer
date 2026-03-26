@@ -99,7 +99,7 @@ public class UserInfo {
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof UserInfo){
+        if (obj instanceof UserInfo) {
             UserInfo userInfo = (UserInfo) obj;
             return userInfo.username.equals(this.username);
         }

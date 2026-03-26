@@ -17,10 +17,11 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLTimestampType extends TimestampType {
+public final class PostgreSQLTimestampType extends TimestampType {
+
     private enum TypeEnum {
-        TIMESTAMP("timestamp"),
-        TIMESTAMP_TZ("timestamptz");
+
+        TIMESTAMP("timestamp"), TIMESTAMP_TZ("timestamptz");
 
         private final String value;
 

@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-    <version>2.0.7</version>
+    <version>2.0.9</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
-    <url>https://gitee.com/ghi/dbsyncer</url>
 
     <modules>
         <module>dbsyncer-biz</module>
@@ -32,62 +30,35 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- maven 编译插件版本 -->
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
+
+        <!-- 编码规范 -->
+        <spotless-maven-plugin.version>2.29.0</spotless-maven-plugin.version>
+
         <java.version>1.8</java.version>
         <spring-boot.version>2.5.14</spring-boot.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <commons-io.version>2.7</commons-io.version>
+        <commons-codec.version>1.15</commons-codec.version>
         <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc8.version>21.6.0.0</ojdbc8.version>
         <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
-        <jts.version>1.13</jts.version>
+        <jts-core.version>1.19.0</jts-core.version>
         <mysql-binlog.version>0.30.1</mysql-binlog.version>
         <mssql-jdbc.version>8.4.1.jre8</mssql-jdbc.version>
         <antlr4-runtime.version>4.7.2</antlr4-runtime.version>
         <postgresql.version>42.3.3</postgresql.version>
         <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
-        <kafka.version>0.9.0.0</kafka.version>
+        <kafka.version>0.11.0.0</kafka.version>
         <fastjson2.version>2.0.22</fastjson2.version>
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.13.1</junit.version>
         <jsql-parse.version>4.9</jsql-parse.version>
+
+        <!-- 可选参数 -->
+        <skip.spotless>true</skip.spotless>
     </properties>
-
-    <!-- 镜像仓库地址 -->
-    <repositories>
-        <!-- DataNucleus仓库 -->
-        <repository>
-            <id>datanucleus</id>
-            <url>http://www.datanucleus.org/downloads/maven2/</url>
-        </repository>
-
-        <!-- 阿里云仓库 -->
-        <repository>
-            <id>ali</id>
-            <name>ali Repository</name>
-            <url>https://maven.aliyun.com/repository/google</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <!-- atlassian仓库 -->
-        <repository>
-            <id>atlassian-public</id>
-            <url>https://packages.atlassian.com/mvn/maven-external/</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-                <checksumPolicy>warn</checksumPolicy>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-        </repository>
-
-    </repositories>
 
     <!-- 统一管理第三方依赖jar -->
     <dependencyManagement>
@@ -111,6 +82,11 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
             </dependency>
 
             <!-- fastjson2 -->
@@ -141,9 +117,9 @@
                 <version>${mysql.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.vividsolutions</groupId>
-                <artifactId>jts</artifactId>
-                <version>${jts.version}</version>
+                <groupId>org.locationtech.jts</groupId>
+                <artifactId>jts-core</artifactId>
+                <version>${jts-core.version}</version>
             </dependency>
 
             <!-- oracle-driver -->
@@ -244,5 +220,122 @@
 
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <!-- https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md -->
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless-maven-plugin.version}</version>
+                    <configuration>
+                        <skip>${skip.spotless}</skip>
+                        <java>
+                            <excludes />
+                            <toggleOffOn />
+                            <!-- https://github.com/diffplug/spotless/tree/main/plugin-maven#eclipse-jdt -->
+                            <eclipse>
+                                <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/java.xml</file>
+                            </eclipse>
+                            <!-- 自动移除Java文件中未使用的导包 -->
+                            <removeUnusedImports />
+                            <!-- 标准化Java注解的格式（缩进/换行等） -->
+                            <formatAnnotations />
+                            <importOrder>
+                                <!-- 自定义Java导包的排序规则 -->
+                                <order>org.dbsyncer,org.apache,org,,jakarta,,javax,java,\#</order>
+                            </importOrder>
+                            <replaceRegex>
+                                <name>禁止通配符导入</name>
+                                <searchRegex>import\s+(static)*\s*[^\*\s]+\*;(\r\n|\r|\n)</searchRegex>
+                                <replacement>$1</replacement>
+                            </replaceRegex>
+                        </java>
+                        <pom>
+                            <!-- https://github.com/Ekryd/sortpom -->
+                            <sortPom>
+                                <encoding>UTF-8</encoding>
+                                <nrOfIndentSpace>4</nrOfIndentSpace>
+                                <keepBlankLines>true</keepBlankLines>
+                                <indentBlankLines>false</indentBlankLines>
+                                <indentSchemaLocation>true</indentSchemaLocation>
+                                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+                                <sortModules>false</sortModules>
+                                <sortExecutions>false</sortExecutions>
+                                <!-- https://github.com/Ekryd/sortpom/tree/master/sorter/src/main/resources -->
+                                <predefinedSortOrder>custom_1</predefinedSortOrder>
+                                <expandEmptyElements>false</expandEmptyElements>
+                                <sortProperties>false</sortProperties>
+                            </sortPom>
+                            <replace>
+                                <!-- 保留POM文件project节点前的首行空行 -->
+                                <name>保留首行空行</name>
+                                <search>project</search>
+                                <replacement>project</replacement>
+                            </replace>
+                        </pom>
+                        <upToDateChecking>
+                            <enabled>true</enabled>
+                            <!-- 开启检查，避免重复格式化已合规的文件 -->
+                        </upToDateChecking>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>spotless-check</id>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <phase>validate</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <!-- 全局公共插件 -->
+        <plugins>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+    <url>https://gitee.com/ghi/dbsyncer</url>
+
+    <!-- 镜像仓库地址 -->
+    <repositories>
+        <!-- DataNucleus仓库 -->
+        <repository>
+            <id>datanucleus</id>
+            <url>http://www.datanucleus.org/downloads/maven2/</url>
+        </repository>
+
+        <!-- 阿里云仓库 -->
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>ali</id>
+            <name>ali Repository</name>
+            <url>https://maven.aliyun.com/repository/google</url>
+        </repository>
+
+        <!-- atlassian仓库 -->
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+            <id>atlassian-public</id>
+            <url>https://packages.atlassian.com/mvn/maven-external/</url>
+        </repository>
+
+    </repositories>
 
 </project>

@@ -28,5 +28,4 @@ public interface FlushStrategy {
      * @param event
      */
     void flushIncrementData(String metaId, Result result, String event);
-
 }

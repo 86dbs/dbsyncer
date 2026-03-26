@@ -18,5 +18,4 @@ public final class PreloadTableGroupStrategy implements GroupStrategy<Mapping> {
     public String getGroupId(Mapping model) {
         return new StringBuilder(ConfigConstant.TABLE_GROUP).append("_").append(model.getId()).toString();
     }
-
 }

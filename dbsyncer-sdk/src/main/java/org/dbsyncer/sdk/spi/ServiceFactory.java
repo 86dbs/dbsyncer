@@ -13,5 +13,4 @@ package org.dbsyncer.sdk.spi;
 public interface ServiceFactory {
 
     <T> T get(Class<T> serviceClass);
-
 }

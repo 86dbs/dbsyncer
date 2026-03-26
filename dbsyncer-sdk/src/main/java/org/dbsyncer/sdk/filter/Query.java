@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.sdk.filter;
 
-import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.impl.IntFilter;
 import org.dbsyncer.sdk.filter.impl.StringFilter;
@@ -130,5 +130,4 @@ public class Query {
     public void setFieldResolverMap(Map<String, FieldResolver> fieldResolverMap) {
         this.fieldResolverMap = fieldResolverMap;
     }
-
 }

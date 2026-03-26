@@ -4,8 +4,11 @@
 package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogService;
@@ -22,19 +25,24 @@ import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +60,11 @@ import java.util.stream.Stream;
 public final class PreloadTemplate implements ApplicationListener<ContextRefreshedEvent> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 版本信息
+     */
+    public static final String DBS_VERSION_INFO = "versionInfo";
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -82,7 +95,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         // Load configModels
-        Arrays.stream(CommandEnum.values()).filter(commandEnum -> commandEnum.isPreload()).forEach(commandEnum -> execute(commandEnum));
+        Arrays.stream(CommandEnum.values()).filter(CommandEnum::isPreload).forEach(this::execute);
 
         // Load plugins
         pluginFactory.loadPlugins();
@@ -110,10 +123,15 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (CollectionUtils.isEmpty(map)) {
             return;
         }
+        // 版本信息检查
+        Map versionInfo = map.get(DBS_VERSION_INFO);
+        Assert.isTrue(versionInfo != null, "不支持导入低版本或配置不完整");
+        VersionInfo info = JsonUtil.jsonToObj(versionInfo.toString(), VersionInfo.class);
+        logger.info("upload config: appName={}, version={}, createTime={}", info.getAppName(), info.getVersion(), DateFormatUtil.timestampToString(new Timestamp(info.getCreateTime())));
 
         // Load configModels
-        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING,
-                CommandEnum.PRELOAD_META, CommandEnum.PRELOAD_PROJECT_GROUP).forEach(commandEnum -> reload(map, commandEnum));
+        Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
+                .forEach(commandEnum->reload(map, commandEnum));
 
         // Load connectorInstances
         loadConnectorInstance();
@@ -125,16 +143,34 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void launch() {
         List<Meta> metas = profileComponent.getMetaAll();
         if (!CollectionUtils.isEmpty(metas)) {
-            metas.forEach(m -> {
-                // 恢复驱动状态
-                if (MetaEnum.RUNNING.getCode() == m.getState()) {
+            metas.forEach(m-> {
+                try {
+                    // 重连
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
-                    managerFactory.start(mapping);
-                } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
-                    managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
+                    reConnect(mapping);
+
+                    // 恢复驱动状态
+                    if (MetaEnum.RUNNING.getCode() == m.getState()) {
+                        managerFactory.start(mapping);
+                    } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
+                        managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
+                    }
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
                 }
             });
         }
+    }
+
+    public void reConnect(Mapping mapping) {
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
+        Assert.notNull(instance, "Source connector instance can not null");
+        connector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), mapping.getTargetDatabase(), mapping.getTargetSchema());
+        Assert.notNull(instance, "Target connector instance can not null");
     }
 
     private void execute(CommandEnum commandEnum) {
@@ -146,7 +182,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         int pageNum = 1;
         int pageSize = 20;
         long total = 0;
-        for (; ; ) {
+        for (;;) {
             query.setPageNum(pageNum);
             query.setPageSize(pageSize);
             Paging paging = storageService.query(query);
@@ -154,7 +190,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (CollectionUtils.isEmpty(data)) {
                 break;
             }
-            data.forEach(map -> {
+            data.forEach(map-> {
                 String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
                 ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
                 if (null != model) {
@@ -195,18 +231,15 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private void loadConnectorInstance() {
         List<Connector> list = profileComponent.getConnectorAll();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(connector -> {
-                generalExecutor.execute(() -> {
-                    try {
-                        connectorFactory.disconnect(connector.getConfig());
-                        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getConfig());
-                        logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
-                    } catch (Exception e) {
-                        logger.error("连接配置异常", e);
-                        logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
-                    }
-                });
-            });
+            list.forEach(connector->generalExecutor.execute(()-> {
+                try {
+                    ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId(), connector.getConfig(), StringUtil.EMPTY, StringUtil.EMPTY);
+                    logger.info("Completed connection {} {}", connector.getConfig().getConnectorType(), connectorInstance.getServiceUrl());
+                } catch (Exception e) {
+                    logger.error("连接配置异常", e);
+                    logService.log(LogType.ConnectorLog.FAILED, e.getMessage());
+                }
+            }));
         }
     }
 }

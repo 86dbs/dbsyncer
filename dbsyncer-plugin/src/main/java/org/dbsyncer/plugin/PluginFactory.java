@@ -3,12 +3,14 @@
  */
 package org.dbsyncer.plugin;
 
-import org.apache.commons.io.FileUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.spi.PluginService;
+
+import org.apache.commons.io.FileUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -43,14 +46,12 @@ public class PluginFactory implements DisposableBean {
     /**
      * 插件路径dbsyncer/plugin/
      */
-    private final String PLUGIN_PATH = System.getProperty("user.dir") + File.separatorChar + "plugins" +
-            File.separatorChar;
+    private final String PLUGIN_PATH = System.getProperty("user.dir") + File.separatorChar + "plugins" + File.separatorChar;
 
     /**
      * 依赖路径dbsyncer/lib/
      */
-    private final String LIBRARY_PATH = System.getProperty("user.dir") + File.separatorChar + "lib" +
-            File.separatorChar;
+    private final String LIBRARY_PATH = System.getProperty("user.dir") + File.separatorChar + "lib" + File.separatorChar;
 
     private final List<Plugin> plugins = new LinkedList<>();
 
@@ -63,7 +64,7 @@ public class PluginFactory implements DisposableBean {
     private void init() {
         Map<String, PluginService> services = applicationContext.getBeansOfType(PluginService.class);
         if (!CollectionUtils.isEmpty(services)) {
-            services.forEach((k, s) -> {
+            services.forEach((k, s)-> {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
                 service.putIfAbsent(pluginId, s);
                 plugins.add(new Plugin(s.getName(), s.getClass().getName(), s.getVersion(), "", true));
@@ -116,7 +117,7 @@ public class PluginFactory implements DisposableBean {
         Plugin plugin = context.getPlugin();
         if (null != plugin) {
             String pluginId = createPluginId(plugin.getClassName(), plugin.getVersion());
-            service.computeIfPresent(pluginId, (k, c) -> {
+            service.computeIfPresent(pluginId, (k, c)-> {
                 switch (processEnum) {
                     case BEFORE:
                         c.postProcessBefore(context);
@@ -150,7 +151,7 @@ public class PluginFactory implements DisposableBean {
             ServiceLoader<PluginService> services = ServiceLoader.load(PluginService.class, loader);
             for (PluginService s : services) {
                 String pluginId = createPluginId(s.getClass().getName(), s.getVersion());
-                service.compute(pluginId, (k, pluginService) ->{
+                service.compute(pluginId, (k, pluginService)-> {
                     // 先释放历史版本
                     if (pluginService != null) {
                         pluginService.close();
@@ -169,7 +170,7 @@ public class PluginFactory implements DisposableBean {
 
     @Override
     public void destroy() {
-        service.values().forEach(s -> {
+        service.values().forEach(s-> {
             logger.info("{}_{} {}", s.getName(), s.getVersion(), s.getClass().getName());
             try {
                 s.close();

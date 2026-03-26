@@ -15,6 +15,7 @@ import java.util.Arrays;
  * @Date 2022-05-07 22:27
  */
 public class BufferedRandomAccessFile extends RandomAccessFile {
+
     static final int LogBuffSz_ = 16; // 64K buffer
     public static final int BuffSz_ = (1 << LogBuffSz_);
     static final long BuffMask_ = ~(((long) BuffSz_) - 1L);
@@ -22,8 +23,7 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     private String path_;
 
     /*
-     * This implementation is based on the buffer implementation in Modula-3's
-     * "Rd", "Wr", "RdClass", and "WrClass" interfaces.
+     * This implementation is based on the buffer implementation in Modula-3's "Rd", "Wr", "RdClass", and "WrClass" interfaces.
      */
     private boolean dirty_; // true iff unflushed bytes exist
     private boolean syncNeeded_; // dirty_ can be cleared by e.g. seek, so track sync separately
@@ -35,17 +35,12 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     private long diskPos_; // disk position
 
     /*
-     * To describe the above fields, we introduce the following abstractions for
-     * the file "f":
+     * To describe the above fields, we introduce the following abstractions for the file "f":
      *
-     * len(f) the length of the file curr(f) the current position in the file
-     * c(f) the abstract contents of the file disk(f) the contents of f's
-     * backing disk file closed(f) true iff the file is closed
+     * len(f) the length of the file curr(f) the current position in the file c(f) the abstract contents of the file disk(f) the contents of f's backing disk file closed(f) true iff the file is closed
      *
-     * "curr(f)" is an index in the closed interval [0, len(f)]. "c(f)" is a
-     * character sequence of length "len(f)". "c(f)" and "disk(f)" may differ if
-     * "c(f)" contains unflushed writes not reflected in "disk(f)". The flush
-     * operation has the effect of making "disk(f)" identical to "c(f)".
+     * "curr(f)" is an index in the closed interval [0, len(f)]. "c(f)" is a character sequence of length "len(f)". "c(f)" and "disk(f)" may differ if "c(f)" contains unflushed writes not reflected in
+     * "disk(f)". The flush operation has the effect of making "disk(f)" identical to "c(f)".
      *
      * A file is said to be *valid* if the following conditions hold:
      *
@@ -53,8 +48,7 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
      *
      * f.closed == closed(f) f.curr == curr(f)
      *
-     * V2. The current position is either contained in the buffer, or just past
-     * the buffer:
+     * V2. The current position is either contained in the buffer, or just past the buffer:
      *
      * f.lo <= f.curr <= f.hi
      *
@@ -64,27 +58,21 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
      *
      * V4. For all characters not covered by V3, c(f) and disk(f) agree:
      *
-     * (forall i in [f.lo, len(f)): i not in [f.lo, f.curr) => c(f)[i] ==
-     * disk(f)[i])
+     * (forall i in [f.lo, len(f)): i not in [f.lo, f.curr) => c(f)[i] == disk(f)[i])
      *
-     * V5. "f.dirty" is true iff the buffer contains bytes that should be
-     * flushed to the file; by V3 and V4, only part of the buffer can be dirty.
+     * V5. "f.dirty" is true iff the buffer contains bytes that should be flushed to the file; by V3 and V4, only part of the buffer can be dirty.
      *
      * f.dirty == (exists i in [f.lo, f.curr): c(f)[i] != f.buff[i - f.lo])
      *
      * V6. this.maxHi == this.lo + this.buff.length
      *
-     * Note that "f.buff" can be "null" in a valid file, since the range of
-     * characters in V3 is empty when "f.lo == f.curr".
+     * Note that "f.buff" can be "null" in a valid file, since the range of characters in V3 is empty when "f.lo == f.curr".
      *
-     * A file is said to be *ready* if the buffer contains the current position,
-     * i.e., when:
+     * A file is said to be *ready* if the buffer contains the current position, i.e., when:
      *
      * R1. !f.closed && f.buff != null && f.lo <= f.curr && f.curr < f.hi
      *
-     * When a file is ready, reading or writing a single byte can be performed
-     * by reading or writing the in-memory buffer without performing a disk
-     * operation.
+     * When a file is ready, reading or writing a single byte can be performed by reading or writing the in-memory buffer without performing a disk operation.
      */
 
     /**
@@ -138,11 +126,11 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
         }
     }
 
-//      public boolean isEOF() throws IOException
-//      {
-//          assert getFilePointer() <= length();
-//          return getFilePointer() == length();
-//      }
+    // public boolean isEOF() throws IOException
+    // {
+    // assert getFilePointer() <= length();
+    // return getFilePointer() == length();
+    // }
 
     public void close() throws IOException {
         this.flush();
@@ -171,9 +159,7 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     }
 
     /*
-     * Read at most "this.buff.length" bytes into "this.buff", returning the
-     * number of bytes read. If the return result is less than
-     * "this.buff.length", then EOF was read.
+     * Read at most "this.buff.length" bytes into "this.buff", returning the number of bytes read. If the return result is less than "this.buff.length", then EOF was read.
      */
     private int fillBuffer() throws IOException {
         int cnt = 0;
@@ -194,13 +180,9 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     }
 
     /*
-     * This method positions <code>this.curr</code> at position <code>pos</code>.
-     * If <code>pos</code> does not fall in the current buffer, it flushes the
-     * current buffer and loads the correct one.<p>
+     * This method positions <code>this.curr</code> at position <code>pos</code>. If <code>pos</code> does not fall in the current buffer, it flushes the current buffer and loads the correct one.<p>
      *
-     * On exit from this routine <code>this.curr == this.hi</code> iff <code>pos</code>
-     * is at or past the end-of-file, which can only happen if the file was
-     * opened in read-only mode.
+     * On exit from this routine <code>this.curr == this.hi</code> iff <code>pos</code> is at or past the end-of-file, which can only happen if the file was opened in read-only mode.
      */
     public void seek(long pos) throws IOException {
         if (pos >= this.hi_ || pos < this.lo_) {
@@ -229,7 +211,8 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     }
 
     public long length() throws IOException {
-        // max accounts for the case where we have written past the old file length, but not yet flushed our buffer
+        // max accounts for the case where we have written past the old file length, but not yet
+        // flushed our buffer
         return Math.max(this.curr_, super.length());
     }
 
@@ -308,8 +291,7 @@ public class BufferedRandomAccessFile extends RandomAccessFile {
     }
 
     /*
-     * Write at most "len" bytes to "b" starting at position "off", and return
-     * the number of bytes written.
+     * Write at most "len" bytes to "b" starting at position "off", and return the number of bytes written.
      */
     private int writeAtMost(byte[] b, int off, int len) throws IOException {
         if (this.curr_ >= this.hi_) {

@@ -2,62 +2,148 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
 xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="container-fluid">
-  <div class="container">
-    <form id="retryDataForm" class="form-horizontal" role="form" method="post">
-      <!-- 标题 -->
-      <div class="row text-center">
-        <div class="page-header">
-          <h3>重试[[${meta?.mappingName}]]</h3>
-          <input type="hidden" name="metaId" id="metaId" th:value="${meta?.id}"/>
-          <input type="hidden" name="messageId" th:value="${message?.id}"/>
-          <input type="hidden" id="retryDataParams" name="retryDataParams"/>
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">[[${meta?.mappingName}]]</h3>
+    </div>
+    <div class="card-body">
+        <!-- 驱动同步关系 -->
+        <div class="grid grid-cols-3">
+            <div class="flex items-center">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.sourceConnector?.config?.connectorType} + '.png'}" />
+                <div class="ml-2">
+                    <p class="text-md">[[${mapping?.sourceConnector?.name}]]</p>
+                    <p class="text-sm">数据源表：[[${message?.sourceTableName}]]</p>
+                </div>
+            </div>
+            <div class="text-info items-center text-center">
+                <p></p>
+                <i class="fa fa-arrow-right fa-3x"></i>
+            </div>
+            <div class="flex items-center">
+                <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${mapping?.targetConnector?.config?.connectorType} + '.png'}" />
+                <div class="ml-2">
+                    <p class="text-md">[[${mapping?.targetConnector?.name}]]</p>
+                    <p class="text-sm">目标源表：[[${message?.targetTableName}]]</p>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <!-- 操作 -->
-      <div class="form-group">
-        <div class="col-md-10"><h4>[[${message?.sourceTableName}]] <span class="fa fa-angle-double-right"></span> [[${message?.targetTableName}]]</h4></div>
-        <div class="col-md-2 text-right">
-          <button id="retryDataSubmitBtn" type="button" class="btn btn-primary">
-            <span class="fa fa-refresh"></span>执行
-          </button>
-          <button id="retryDataBackBtn" type="button" class="btn btn-default">
-            <span class="fa fa-reply"></span>返回
-          </button>
-        </div>
-      </div>
+        <form id="editDataForm">
+            <div>
+                <input type="hidden" name="metaId" th:value="${meta?.id}"/>
+                <input type="hidden" name="messageId" th:value="${message?.id}"/>
+                <input type="hidden" name="retryDataParams"/>
+            </div>
 
-      <!-- 配置 -->
-      <div class="row">
-        <div class="col-md-12">
-          <table class="table table-hover">
-            <caption>执行前，请先检查数据。字段类型是否支持当前值</caption>
+            <div class="flex items-center justify-between mt-4 mb-4">
+                <div>
+                    <i class="fa fa-info-circle text-warning"></i>
+                    <span class="text-sm text-secondary">请检查数据的<b>字段类型、长度、非空</b>等是否符合目标库的设计规范。</span>
+                </div>
+
+                <div class="form-actions">
+                    <button id="editDataSubmitBtn" type="button" class="btn btn-primary">
+                        <i class="fa fa-refresh"></i> 执行重试
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="backIndexPage()">
+                        <i class="fa fa-reply"></i> 返回
+                    </button>
+                </div>
+            </div>
+
+            <table class="table">
             <thead>
             <tr>
-              <th></th>
-              <th>目标表字段</th>
-              <th>值类型</th>
-              <th>值</th>
-              <th>操作</th>
+                <th></th>
+                <th>目标表字段</th>
+                <th>值类型</th>
+                <th>值</th>
+                <th>操作</th>
             </tr>
             </thead>
             <tbody>
-            <tr th:each="c,state : ${message?.columns}">
-              <td th:text="${state.index}+1"></td>
-              <td th:text="${c?.key + '(' + c?.keyType + ')'}"/>
-              <td th:text="${c?.valueType}"/>
-              <td th:text="${c?.value}"/>
-              <td><i th:type="${c?.key}" th:title="修改" class="fa fa-edit well-sign-green dbsyncer_pointer retryDataModify"></i></td>
-            </tr>
+                <tr th:each="c,state : ${message?.columns}">
+                    <td th:text="${state.index}+1"></td>
+                    <td>
+                        <span class="font-medium" th:text="${c?.key}"></span>
+                        <span class="text-sm text-tertiary" th:text="'(' + ${c?.keyType} + ')'"></span>
+                    </td>
+                    <td>
+                        <span class="badge badge-info" th:text="${c?.valueType}"></span>
+                    </td>
+                    <td class="font-mono text-sm" th:text="${c?.value}"></td>
+                    <td>
+                        <button type="button" th:data-key="${c?.key}" class="table-action-btn play editData" title="修改">
+                            <i class="fa fa-edit text-success"></i>
+                        </button>
+                    </td>
+                </tr>
             </tbody>
-          </table>
-        </div>
-      </div>
+            </table>
 
-    </form>
-  </div>
+        </form>
+    </div>
 </div>
 
-<script th:src="@{/js/monitor/retry.js}"></script>
+<script>
+    function bindEditData() {
+        const $paramsInput = $("input[name='retryDataParams']");
+        let originalParams = {};
+        let modifiedParams = {};
+
+        $(".editData").unbind('click').bind('click', function () {
+            const $btn = $(this);
+            const $tr = $btn.closest("tr");
+            const key = $btn.data("key");
+            const $valueCell = $tr.find("td").eq(3);
+            let currentValue = $valueCell.text().trim();
+            if (!originalParams[key]) {
+                originalParams[key] = currentValue;
+            }
+            $valueCell.text('').append("<input type='text' class='form-control'/>");
+            let $input = $valueCell.find("input");
+            $input.val(currentValue).focus();
+            $input.blur(function () {
+                const newValue = $(this).val().trim();
+                $valueCell.text(newValue);
+                // 更新值
+                if (newValue !== originalParams[key]) {
+                    modifiedParams[key] = newValue;
+                    $paramsInput.val(JSON.stringify(modifiedParams));
+                    $tr.addClass("badge-success").attr("title", "已修改");
+                } else {
+                    // 恢复原值，移除修改标记
+                    delete modifiedParams[key];
+                    $paramsInput.val(JSON.stringify(modifiedParams));
+                    $tr.removeClass("badge-success").removeAttr("title");
+                }
+                $input.remove();
+            });
+        })
+    }
+
+    $(function () {
+        // 绑定修改数据事件
+        bindEditData();
+
+        // 提交重试
+        $("#editDataSubmitBtn").on("click", function() {
+            doPoster("/monitor/sync", $("#editDataForm").serializeJson(), function(data) {
+                if (data.success) {
+                    bootGrowl("执行重试成功", "success");
+                    backIndexPage();
+                } else {
+                    bootGrowl(data.message, "danger");
+                }
+            });
+        });
+
+        // 返回函数
+        window.backIndexPage = () => {
+            const metaId = $("input[name='metaId']").val();
+            doLoader(`/monitor?id=${metaId}`);
+        };
+    });
+</script>
 </html>

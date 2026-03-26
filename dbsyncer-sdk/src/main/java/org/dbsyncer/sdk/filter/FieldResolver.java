@@ -12,5 +12,4 @@ package org.dbsyncer.sdk.filter;
 public interface FieldResolver<F> {
 
     Object getValue(F field);
-
 }

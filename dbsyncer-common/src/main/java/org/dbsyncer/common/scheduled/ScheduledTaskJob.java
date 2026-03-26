@@ -6,5 +6,4 @@ package org.dbsyncer.common.scheduled;
  * @Date 2020-05-24 22:18
  */
 public interface ScheduledTaskJob extends Runnable {
-
 }

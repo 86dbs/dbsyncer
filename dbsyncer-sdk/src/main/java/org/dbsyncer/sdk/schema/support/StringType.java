@@ -40,11 +40,11 @@ public abstract class StringType extends AbstractDataType<String> {
         }
 
         if (val instanceof LocalDateTime) {
-            return ((LocalDateTime) val).format(DateFormatUtil.CHINESE_STANDARD_TIME_FORMATTER);
+            return ((LocalDateTime) val).format(DateFormatUtil.YYYY_MM_DD_HH_MM_SS);
         }
 
         if (val instanceof LocalDate) {
-            return ((LocalDate) val).format(DateFormatUtil.DATE_FORMATTER);
+            return ((LocalDate) val).format(DateFormatUtil.YYYY_MM_DD);
         }
 
         if (val instanceof Timestamp) {

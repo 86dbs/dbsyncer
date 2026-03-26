@@ -1,122 +1,95 @@
 $(function () {
-    // 绑定多值输入框事件
+    // 初始化标签输入框
     initMultipleInputTags();
-    // 刷新授权信息
-    refreshLicenseInfo();
-
-    new QRCode("qrcode", {
-        text: "https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620",
-        width: 200,
-        height: 200
+    
+    // 初始化二维码悬浮提示
+    initQRCodePopover({
+        url: 'https://work.weixin.qq.com/u/vc7f073c9f993bc776?v=4.1.20.26620',
+        selector: '.qrcode-trigger',
+        size: 150,
+        position: 'top'
     });
-    let $myService = $("#myService");
-    $myService.hover(function () {
-        if(!$myService.attr('init') == true){
-            $myService.attr("init", true);
-            $myService.unbind('mouseenter').unbind('mouseleave');
-            $myService.popover({
-                title: "<span class='fa fa-wechat'></span> 微信扫码",
-                trigger: 'hover',
-                placement: 'bottom',
-                html: 'true',
-                content: "<img src='" + $("#qrcode").find("img:first").attr('src') + "' />"
-            }).on('shown.bs.popover', function (event) {
-                const that = this;
-                $(this).parent().find('div.popover').on('mouseenter', function () {
-                    $(that).attr('in', true);
-                }).on('mouseleave', function () {
-                    $(that).removeAttr('in');
-                    $(that).popover('hide');
-                });
-            }).on('hide.bs.popover', function (event) {
-                if ($(this).attr('in')) {
-                    event.preventDefault();
-                }
-            });
-            $myService.popover('show');
-        }
-    })
 
     // 删除激活码
-    $("#removeBtn").bind('click', function(){
-        // 如果当前为恢复状态
-        BootstrapDialog.show({
-            title: "警告",
-            type: BootstrapDialog.TYPE_DANGER,
-            message: "删除激活码后，产品功能将不可用，确认是否删除？",
-            size: BootstrapDialog.SIZE_NORMAL,
-            buttons: [{
-                label: "确定",
-                action: function (dialog) {
-                    doPoster("/license/remove", {}, function (data) {
-                        if (data.success == true) {
-                            bootGrowl("删除激活码成功！", "success");
-                            doLoader("/license");
-                        } else {
-                            bootGrowl(data.resultValue, "danger");
-                        }
-                    });
-                    dialog.close();
-                }
-            }, {
-                label: "取消",
-                action: function (dialog) {
-                    dialog.close();
-                }
-            }]
+    $("#removeBtn").on('click', function(){
+        const $btn = $(this);
+        showConfirm({
+            title: '删除激活码后，产品功能将不可用，确认是否删除？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function () {
+                // 禁用按钮，防止重复点击
+                const originalText = $btn.html();
+                $btn.html('<i class="fa fa-spinner fa-spin"></i> 删除中...').prop('disabled', true)
+                doPoster("/license/remove", {}, function (response) {
+                    $btn.prop('disabled', false);
+                    $btn.html(originalText);
+                    if (response.success === true) {
+                        bootGrowl("删除激活码成功！", "success");
+                        doLoader("/license");
+                    } else {
+                        bootGrowl(response.message || "删除失败", "danger");
+                    }
+                });
+            }
         });
     });
 
     // 在线激活
-    $("#activateBtn").bind('click', function(){
-        const $form = $("#licenseForm");
-        if ($form.formValidate() == true) {
-            const data = $form.serializeJson();
-            doPoster("/license/activate", data, function (data) {
-                if (data.success == true) {
-                    bootGrowl("在线激活成功！", "success");
-                    doLoader("/license");
-                } else {
-                    bootGrowl(data.resultValue, "danger");
-                }
-            });
+    $("#activateBtn").on('click', function(){
+        const $form = $("#license-form");
+        const $btn = $(this);
+        // 防止重复提交
+        if ($btn.prop('disabled')) {
+            return;
         }
-    });
+        if (!validateForm($form)) {
+            return;
+        }
 
-    $("#copyBtn").bind('click', function(){
-        //Get the copied text
-        let textArea = document.createElement("textarea");
-        textArea.value = document.getElementById("licenseKey").value;
-        textArea.style.height='0px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            let successful = document.execCommand('copy');
-            if (successful) {
-                bootGrowl("复制机器码成功！", "success");
+        const originalText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> 激活中...').prop('disabled', true);
+        doPoster("/license/activate", $form.serializeJson(), function (response) {
+            $btn.html(originalText).prop('disabled', false);
+
+            if (response.success === true) {
+                bootGrowl("在线激活成功！", "success");
+                doLoader("/license");
+            } else {
+                bootGrowl(response.message || "激活失败", "danger");
             }
-        } catch (err) {
-            console.error('复制失败', err);
-        }
-        document.body.removeChild(textArea);
+        });
     });
 
-    $("#fileLicense").fileinput({
-        theme: 'fas',
-        language: 'zh',
+    // 复制机器码
+    $("#copyBtn").on('click', function(){
+        const licenseKey = document.getElementById("licenseKey");
+        const $btn = $(this);
+        copyToClipboard(licenseKey.value, {
+            button: $btn,
+            successMessage: "复制机器码成功！",
+            originalText: "复制",
+            originalIcon: "fa-copy"
+        });
+    });
+
+    // 初始化文件上传组件
+    initFileUpload('#licenseUploader', {
         uploadUrl: $basePath + '/license/upload',
-        enctype: 'multipart/form-data',
-        removeFromPreviewOnError: true, //当选择的文件不符合规则时，例如不是指定后缀文件、大小超出配置等，选择的文件不会出现在预览框中，只会显示错误信息
-        minFileCount: 1, //每次多次上载允许的最小文件数。如果设置为0，则表示文件数是可选的
-        maxFileCount: 1, //表示允许同时上传的最大文件个数 如果设置为0，则表示允许的文件数不受限制
-        showUpload: true,//不展示上传按钮
-        validateInitialCount: true,//是否在验证minFileCount和包含初始预览文件计数（服务器上载文件）maxFileCount
-    }).on("fileuploaded", function (event, data, previewId, index) {
-        if (!data.response.success) {
-            bootGrowl(data.response.resultValue, "danger");
+        maxFiles: 1,
+        maxSize: 10 * 1024 * 1024, // 10MB
+        autoUpload: true,
+        onSuccess: function(file, response) {
+            if (response.success) {
+                bootGrowl("激活码上传成功！", "success");
+                doLoader("/license");
+            } else {
+                bootGrowl(response.message || "上传失败", "danger");
+            }
+        },
+        onError: function(file, error) {
+            bootGrowl(error || "上传失败", "danger");
         }
-        doLoader("/license");
     });
-
 });

@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 public final class OracleDecimalType extends DecimalType {
 
     private enum TypeEnum {
-        NUMBER("NUMBER"),
-        FLOAT("FLOAT");
+
+        NUMBER("NUMBER"), FLOAT("FLOAT");
 
         private final String value;
 
@@ -40,6 +40,27 @@ public final class OracleDecimalType extends DecimalType {
 
     @Override
     protected BigDecimal merge(Object val, Field field) {
+        if (val instanceof BigDecimal) {
+            return (BigDecimal) val;
+        }
+        if (val instanceof Number) {
+            return new BigDecimal(val.toString());
+        }
+        if (val instanceof String) {
+            String str = (String) val;
+            if (str.trim().isEmpty()) {
+                return BigDecimal.ZERO;
+            }
+            try {
+                return new BigDecimal(str.trim());
+            } catch (NumberFormatException e) {
+                return throwUnsupportedException(val, field);
+            }
+        }
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return new BigDecimal(b ? 1 : 0);
+        }
         return throwUnsupportedException(val, field);
     }
 

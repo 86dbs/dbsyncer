@@ -46,5 +46,4 @@ public enum ParserEnum {
     public int getDefaultValue() {
         return defaultValue;
     }
-
 }

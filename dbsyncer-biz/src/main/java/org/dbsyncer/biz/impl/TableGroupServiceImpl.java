@@ -3,13 +3,16 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.biz.task.TableGroupCountTask;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -19,10 +22,12 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +55,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Resource
     private ParserComponent parserComponent;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
+    private RsaManager rsaManager;
 
     @Resource
     private DispatchTaskService dispatchTaskService;
@@ -114,14 +125,14 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public boolean remove(String mappingId, String ids) {
+    public String remove(String mappingId, String ids) {
         Assert.hasText(mappingId, "Mapping id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
         Mapping mapping = profileComponent.getMapping(mappingId);
         assertRunning(mapping);
 
         // 批量删除表
-        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
+        Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id-> {
             TableGroup model = profileComponent.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
             profileComponent.removeTableGroup(id);
@@ -133,7 +144,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 重置排序
         resetTableGroupAllIndex(mappingId);
-        return true;
+        return mappingId;
     }
 
     @Override
@@ -146,6 +157,13 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
         return profileComponent.getSortedTableGroupAll(mappingId);
+    }
+
+    @Override
+    public Paging<TableGroup> search(Map<String, String> params) {
+        String mappingId = params.get("mappingId");
+        Assert.hasText(mappingId, "Mapping id can not be null");
+        return searchConfigModel(params, getTableGroupAll(mappingId));
     }
 
     @Override
@@ -221,8 +239,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         }
         List<Field> list = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        column.forEach(f -> keys.add(f.getName()));
-        target.forEach(f -> {
+        column.forEach(f->keys.add(f.getName()));
+        target.forEach(f-> {
             if (keys.contains(f.getName())) {
                 list.add(f);
             }
@@ -239,6 +257,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setTableGroups(list);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setConnectorFactory(connectorFactory);
+        task.setRsaManager(rsaManager);
         task.setTableGroupService(this);
         dispatchTaskService.execute(task);
     }

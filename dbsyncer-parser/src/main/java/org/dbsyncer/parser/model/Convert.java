@@ -2,8 +2,6 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.ConvertEnum;
 
-import java.util.List;
-
 /**
  * 字段转换
  *

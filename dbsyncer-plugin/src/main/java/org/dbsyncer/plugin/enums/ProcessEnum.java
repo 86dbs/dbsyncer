@@ -24,5 +24,4 @@ public enum ProcessEnum {
      * 全量同步/增量同步后置处理
      */
     AFTER;
-
 }

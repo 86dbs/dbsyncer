@@ -11,6 +11,7 @@ import java.sql.Timestamp;
  * @Date 2023-12-09 20:22
  */
 public final class RedoEvent {
+
     private long scn;
     private int operationCode;
     private String redoSql;
@@ -87,13 +88,7 @@ public final class RedoEvent {
 
     @Override
     public String toString() {
-        return "LogMinerDmlObject{" +
-                "redoSql='" + redoSql + '\'' +
-                ", objectOwner='" + objectOwner + '\'' +
-                ", objectName='" + objectName + '\'' +
-                ", sourceTime=" + sourceTime +
-                ", transactionId='" + transactionId + '\'' +
-                ", scn=" + scn +
-                '}';
+        return "LogMinerDmlObject{" + "redoSql='" + redoSql + '\'' + ", objectOwner='" + objectOwner + '\'' + ", objectName='" + objectName + '\'' + ", sourceTime=" + sourceTime + ", transactionId='"
+                + transactionId + '\'' + ", scn=" + scn + '}';
     }
 }

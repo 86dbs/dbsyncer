@@ -15,11 +15,8 @@ import java.util.List;
  * @Date 2020-06-15 20:00
  */
 public final class RowChangedEvent extends CommonChangedEvent {
-    private final List<Object> changedRow;
 
-    public RowChangedEvent(String sourceTableName, String event, List<Object> data) {
-        this(sourceTableName, event, data, null, null);
-    }
+    private final List<Object> changedRow;
 
     public RowChangedEvent(String sourceTableName, String event, List<Object> data, String nextFileName, Object position) {
         setSourceTableName(sourceTableName);

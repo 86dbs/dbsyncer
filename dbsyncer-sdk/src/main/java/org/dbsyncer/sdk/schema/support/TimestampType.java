@@ -66,5 +66,4 @@ public abstract class TimestampType extends AbstractDataType<Timestamp> {
         }
         return throwUnsupportedException(val, field);
     }
-
 }

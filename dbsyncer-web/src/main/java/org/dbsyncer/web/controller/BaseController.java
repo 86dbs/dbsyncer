@@ -3,10 +3,14 @@ package org.dbsyncer.web.controller;
 import org.dbsyncer.biz.ConditionService;
 import org.dbsyncer.biz.ConvertService;
 import org.dbsyncer.biz.PluginService;
+
 import org.springframework.ui.ModelMap;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,25 +32,34 @@ public abstract class BaseController {
 
     /**
      * 获取请求参数
-     *
-     * @param request
-     * @return
      */
     protected Map<String, String> getParams(HttpServletRequest request) {
         Map<String, String[]> map = request.getParameterMap();
         Map<String, String> res = new HashMap<>();
-        map.forEach((k, v) -> res.put(k, v[0]));
+        map.forEach((k, v)->res.put(k, v[0]));
         return res;
     }
 
     /**
      * 初始化: 条件/转换/插件
-     * @param model
      */
-    protected void initConfig(ModelMap model){
+    protected void initConfig(ModelMap model) {
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
         model.put("plugin", pluginService.getPluginAll());
     }
 
+    /**
+     * 读取请求体
+     */
+    protected String readRequestBody(HttpServletRequest request) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = request.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
+    }
 }

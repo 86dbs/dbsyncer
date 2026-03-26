@@ -15,8 +15,10 @@ import java.util.stream.Collectors;
  * @Version 1.0.0
  * @Date 2025-06-25 23:26
  */
-public class PostgreSQLBooleanType extends BooleanType {
+public final class PostgreSQLBooleanType extends BooleanType {
+
     private enum TypeEnum {
+
         BOOL("bool");
 
         private final String value;
@@ -37,14 +39,6 @@ public class PostgreSQLBooleanType extends BooleanType {
 
     @Override
     protected Boolean merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
-    }
-
-    @Override
-    protected Object convert(Object val, Field field) {
-        if (val instanceof Boolean) {
-            return val;
-        }
         return throwUnsupportedException(val, field);
     }
 }

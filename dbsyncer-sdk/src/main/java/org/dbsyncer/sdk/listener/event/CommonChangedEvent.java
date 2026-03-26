@@ -20,14 +20,17 @@ public abstract class CommonChangedEvent implements ChangedEvent {
      * traceId
      */
     private String traceId = StringUtil.EMPTY;
+
     /**
      * 变更表名称
      */
     private String sourceTableName;
+
     /**
      * 变更事件
      */
     private String event;
+
     /**
      * 增量偏移量
      */
@@ -73,5 +76,10 @@ public abstract class CommonChangedEvent implements ChangedEvent {
 
     public void setPosition(Object position) {
         changedOffset.setPosition(position);
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

@@ -51,5 +51,4 @@ public enum StatisticEnum {
     public String getTagValueRepresentation() {
         return tagValueRepresentation;
     }
-
 }

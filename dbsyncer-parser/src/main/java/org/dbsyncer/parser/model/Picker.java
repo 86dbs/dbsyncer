@@ -10,13 +10,26 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import org.apache.commons.lang3.ObjectUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Picker {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<Field> sourceFields = new ArrayList<>();
     private final List<Field> targetFields = new ArrayList<>();
     private final int sFieldSize;
@@ -28,7 +41,7 @@ public class Picker {
 
     public Picker(TableGroup tableGroup) {
         if (!CollectionUtils.isEmpty(tableGroup.getFieldMapping())) {
-            tableGroup.getFieldMapping().forEach(m -> {
+            tableGroup.getFieldMapping().forEach(m-> {
                 sourceFields.add(m.getSource());
                 targetFields.add(m.getTarget());
             });
@@ -37,10 +50,10 @@ public class Picker {
         this.tFieldSize = targetFields.size();
         // 解析过滤条件
         List<Filter> filter = tableGroup.getFilter();
-        enabledFilter = !CollectionUtils.isEmpty(filter) && filter.stream().noneMatch(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName()));
+        enabledFilter = !CollectionUtils.isEmpty(filter) && filter.stream().noneMatch(f->StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName()));
         if (enabledFilter) {
-            add = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
-            or = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
+            add = filter.stream().filter(f->StringUtil.equals(f.getOperation(), OperationEnum.AND.getName())).collect(Collectors.toList());
+            or = filter.stream().filter(f->StringUtil.equals(f.getOperation(), OperationEnum.OR.getName())).collect(Collectors.toList());
         }
     }
 
@@ -67,6 +80,7 @@ public class Picker {
         for (List<Object> row : rows) {
             // 排除下标不一致的数据
             if (row.size() != sourceOriginalFields.size()) {
+                logger.warn("源表结构发生变化，与当前表字段映射关系不一致，请检查重新配置");
                 continue;
             }
             source = new HashMap<>();
@@ -85,13 +99,13 @@ public class Picker {
         return targetMapList;
     }
 
-    public List<Object> pickSourceData(Map target) {
+    public List<Object> pickSourceData(List<Field> sourceColumn, Map target) {
         Map<String, Object> source = new HashMap<>();
         if (!CollectionUtils.isEmpty(target)) {
             exchange(tFieldSize, sFieldSize, targetFields, sourceFields, target, source);
         }
 
-        return getFields(sourceFields).stream().map(field -> source.get(field.getName())).collect(Collectors.toList());
+        return getFields(sourceColumn).stream().map(field->source.get(field.getName())).collect(Collectors.toList());
     }
 
     public List<Field> getSourceFields() {
@@ -103,7 +117,7 @@ public class Picker {
     }
 
     public Map<String, Field> getTargetFieldMap() {
-        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f -> f, (k1, k2) -> k1));
+        return targetFields.stream().filter(Objects::nonNull).collect(Collectors.toMap(Field::getName, f->f, (k1, k2)->k1));
     }
 
     private boolean filter(Map<String, Object> row) {
@@ -140,7 +154,7 @@ public class Picker {
      * @param comparedValue 比较值
      * @return
      */
-    private boolean compareValueWithFilter(Filter filter, Object comparedValue) {
+    public boolean compareValueWithFilter(Filter filter, Object comparedValue) {
         final FilterEnum filterEnum = FilterEnum.getFilterEnum(filter.getFilter());
         final CompareFilter compareFilter = filterEnum.getCompareFilter();
 
@@ -151,9 +165,6 @@ public class Picker {
                 // 此处传入 “not null” 表示有值，没必要对原始值进行转换
                 return compareFilter.compare(null == comparedValue ? null : "not null", filter.getValue());
             default:
-                if (comparedValue == null) {
-                    return false;
-                }
                 break;
         }
 
@@ -169,7 +180,8 @@ public class Picker {
             return compareFilter.compare(String.valueOf(comparedDate.getTime()), String.valueOf(filterDate.getTime()));
         }
 
-        return compareFilter.compare(String.valueOf(comparedValue), filter.getValue());
+        String value = ObjectUtils.toString(comparedValue, ()->StringUtil.EMPTY);
+        return compareFilter.compare(value, filter.getValue());
     }
 
     private void exchange(int sFieldSize, int tFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source, Map<String, Object> target) {
@@ -203,7 +215,7 @@ public class Picker {
     private List<Field> getFields(List<Field> list) {
         List<Field> fields = new ArrayList<>();
         Set<String> keys = new HashSet<>();
-        list.forEach(f -> {
+        list.forEach(f-> {
             if (f != null && !keys.contains(f.getName())) {
                 fields.add(f);
                 keys.add(f.getName());

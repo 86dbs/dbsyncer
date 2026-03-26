@@ -25,5 +25,4 @@ public final class OracleLongType extends LongType {
     protected Long merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

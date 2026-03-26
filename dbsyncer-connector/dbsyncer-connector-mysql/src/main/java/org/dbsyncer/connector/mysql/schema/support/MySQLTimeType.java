@@ -31,5 +31,4 @@ public final class MySQLTimeType extends TimeType {
     protected Time merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
-
 }

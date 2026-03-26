@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.Plugin;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,5 +68,4 @@ public abstract class AbstractConfigModel extends ConfigModel {
     public void setPluginExtInfo(String pluginExtInfo) {
         this.pluginExtInfo = pluginExtInfo;
     }
-
 }

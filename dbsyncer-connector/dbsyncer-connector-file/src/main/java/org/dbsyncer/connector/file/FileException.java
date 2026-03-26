@@ -10,21 +10,13 @@ package org.dbsyncer.connector.file;
  */
 public class FileException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public FileException(String message) {
+    public FileException(String message) {
         super(message);
-    }
-
-    public FileException(String message, Throwable cause) {
-        super(message, cause);
     }
 
     public FileException(Throwable cause) {
         super(cause);
-    }
-
-    protected FileException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

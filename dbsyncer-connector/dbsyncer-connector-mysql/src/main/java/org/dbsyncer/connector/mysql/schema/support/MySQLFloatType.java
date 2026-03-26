@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 public final class MySQLFloatType extends FloatType {
 
     private enum TypeEnum {
-        FLOAT("FLOAT"),
-        FLOAT_UNSIGNED("FLOAT UNSIGNED");
+
+        FLOAT("FLOAT"), FLOAT_UNSIGNED("FLOAT UNSIGNED");
 
         private final String value;
 

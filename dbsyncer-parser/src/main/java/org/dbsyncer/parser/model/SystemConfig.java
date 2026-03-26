@@ -1,9 +1,12 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.ApiKeyConfig;
+import org.dbsyncer.common.model.IpWhitelistConfig;
+import org.dbsyncer.common.model.JwtSecretConfig;
+import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 /**
@@ -22,17 +25,12 @@ public class SystemConfig extends ConfigModel {
     /**
      * 同步数据过期时间（天）
      */
-    private int expireDataDays = 7;
+    private int expireDataDays = 30;
 
     /**
      * 系统日志过期时间（天）
      */
     private int expireLogDays = 30;
-
-    /**
-     * 刷新页面间隔（秒）
-     */
-    private int refreshIntervalSeconds = 5;
 
     /**
      * 是否记录同步成功数据（false-关闭; true-开启）
@@ -47,17 +45,12 @@ public class SystemConfig extends ConfigModel {
     /**
      * 记录同步失败日志最大长度
      */
-    private int maxStorageErrorLength = 2048;
+    private int maxStorageErrorLength = 8192;
 
     /**
      * 是否记录全量数据（false-关闭; true-开启）
      */
     private boolean enableStorageWriteFull;
-
-    /**
-     * 是否启用CDN加速访问静态资源(false-关闭; true-开启）
-     */
-    private boolean enableCDN;
 
     /**
      * 是否启用水印
@@ -70,11 +63,6 @@ public class SystemConfig extends ConfigModel {
     private String watermark;
 
     /**
-     * 是否启用字段解析器
-     */
-    private boolean enableSchemaResolver = true;
-
-    /**
      * 表执行器上限数
      */
     private int maxBufferActuatorSize = 50;
@@ -83,6 +71,31 @@ public class SystemConfig extends ConfigModel {
      * 是否打印trace信息（false-关闭; true-开启）
      */
     private boolean enablePrintTraceInfo;
+
+    /**
+     * 是否开放API
+     */
+    private boolean enableOpenAPI;
+
+    /**
+     * RSA配置
+     */
+    private RsaConfig rsaConfig;
+
+    /**
+     * JWT密钥配置
+     */
+    private JwtSecretConfig jwtSecretConfig;
+
+    /**
+     * API密钥配置（客户端凭证）
+     */
+    private ApiKeyConfig apiKeyConfig;
+
+    /**
+     * IP白名单配置
+     */
+    private IpWhitelistConfig ipWhitelistConfig;
 
     public int getExpireDataDays() {
         return expireDataDays;
@@ -98,14 +111,6 @@ public class SystemConfig extends ConfigModel {
 
     public void setExpireLogDays(int expireLogDays) {
         this.expireLogDays = expireLogDays;
-    }
-
-    public int getRefreshIntervalSeconds() {
-        return refreshIntervalSeconds;
-    }
-
-    public void setRefreshIntervalSeconds(int refreshIntervalSeconds) {
-        this.refreshIntervalSeconds = refreshIntervalSeconds;
     }
 
     public boolean isEnableStorageWriteSuccess() {
@@ -140,14 +145,6 @@ public class SystemConfig extends ConfigModel {
         this.enableStorageWriteFull = enableStorageWriteFull;
     }
 
-    public boolean isEnableCDN() {
-        return enableCDN;
-    }
-
-    public void setEnableCDN(boolean enableCDN) {
-        this.enableCDN = enableCDN;
-    }
-
     public boolean isEnableWatermark() {
         return enableWatermark;
     }
@@ -164,14 +161,6 @@ public class SystemConfig extends ConfigModel {
         this.watermark = watermark;
     }
 
-    public boolean isEnableSchemaResolver() {
-        return enableSchemaResolver;
-    }
-
-    public void setEnableSchemaResolver(boolean enableSchemaResolver) {
-        this.enableSchemaResolver = enableSchemaResolver;
-    }
-
     public int getMaxBufferActuatorSize() {
         return maxBufferActuatorSize;
     }
@@ -186,5 +175,45 @@ public class SystemConfig extends ConfigModel {
 
     public void setEnablePrintTraceInfo(boolean enablePrintTraceInfo) {
         this.enablePrintTraceInfo = enablePrintTraceInfo;
+    }
+
+    public boolean isEnableOpenAPI() {
+        return enableOpenAPI;
+    }
+
+    public void setEnableOpenAPI(boolean enableOpenAPI) {
+        this.enableOpenAPI = enableOpenAPI;
+    }
+
+    public RsaConfig getRsaConfig() {
+        return rsaConfig;
+    }
+
+    public void setRsaConfig(RsaConfig rsaConfig) {
+        this.rsaConfig = rsaConfig;
+    }
+
+    public JwtSecretConfig getJwtSecretConfig() {
+        return jwtSecretConfig;
+    }
+
+    public void setJwtSecretConfig(JwtSecretConfig jwtSecretConfig) {
+        this.jwtSecretConfig = jwtSecretConfig;
+    }
+
+    public ApiKeyConfig getApiKeyConfig() {
+        return apiKeyConfig;
+    }
+
+    public void setApiKeyConfig(ApiKeyConfig apiKeyConfig) {
+        this.apiKeyConfig = apiKeyConfig;
+    }
+
+    public IpWhitelistConfig getIpWhitelistConfig() {
+        return ipWhitelistConfig;
+    }
+
+    public void setIpWhitelistConfig(IpWhitelistConfig ipWhitelistConfig) {
+        this.ipWhitelistConfig = ipWhitelistConfig;
     }
 }

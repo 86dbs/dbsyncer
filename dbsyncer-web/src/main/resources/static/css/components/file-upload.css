@@ -1,0 +1,311 @@
+/**
+ * DBSyncer 文件上传组件
+ * 支持拖拽上传、点击选择、预览、删除等功能
+ */
+
+/* 上传容器 */
+.upload-container {
+  width: 100%;
+  position: relative;
+}
+
+/* 上传区域 */
+.upload-area {
+  border: 2px dashed rgba(22, 93, 255, 0.25);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #f8faff 0%, #edf2ff 100%);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: rgba(22, 93, 255, 0.5);
+  background: linear-gradient(135deg, #f1f6ff 0%, #e3ebff 100%);
+  box-shadow: 0 4px 16px rgba(22, 93, 255, 0.12);
+}
+
+.upload-area.dragover {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, #e6f0ff 0%, #d4e5ff 100%);
+  box-shadow: 0 8px 24px rgba(22, 93, 255, 0.2);
+}
+
+.upload-area.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 上传图标 */
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.08) 0%, rgba(22, 93, 255, 0.15) 100%);
+  color: var(--primary-color);
+  font-size: 32px;
+  transition: all var(--transition-fast);
+}
+
+.upload-area:hover .upload-icon {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.15) 0%, rgba(22, 93, 255, 0.25) 100%);
+}
+
+/* 上传文本 */
+.upload-text {
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.upload-button {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: var(--primary-color);
+  color: #fff;
+  border-radius: 8px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 隐藏的文件输入框 */
+.upload-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* 文件列表 */
+.upload-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.upload-list > *:not(:first-child) { margin-top: 8px; }
+
+/* 文件项 */
+.upload-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  animation: slideInUp 0.3s ease-out;
+}
+.upload-item > *:not(:first-child) { margin-left: 12px; }
+
+.upload-item:hover {
+  border-color: var(--border-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 文件图标 */
+.upload-item-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+  color: var(--primary-color);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* 文件信息 */
+.upload-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.upload-item-info > *:not(:first-child) { margin-top: 4px; }
+
+.upload-item-name {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-item-size {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+/* 进度条 */
+.upload-item-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(22, 93, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.upload-item-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color) 0%, #4d88ff 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* 状态 */
+.upload-item-status {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.upload-item-status > *:not(:first-child) { margin-left: 8px; }
+
+.upload-item.uploading .upload-item-icon {
+  background: linear-gradient(135deg, #fff4e6 0%, #ffe7cc 100%);
+  color: #fa8c16;
+}
+
+.upload-item.success .upload-item-icon {
+  background: linear-gradient(135deg, #f0fff4 0%, #d9f7e0 100%);
+  color: #52c41a;
+}
+
+.upload-item.error .upload-item-icon {
+  background: linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%);
+  color: #ff4d4f;
+}
+
+/* 状态图标 */
+.upload-status-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.upload-status-icon.loading {
+  color: #fa8c16;
+  animation: spin 1s linear infinite;
+}
+
+.upload-status-icon.success {
+  color: #52c41a;
+}
+
+.upload-status-icon.error {
+  color: #ff4d4f;
+}
+
+/* 删除按钮 */
+.upload-item-remove {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 14px;
+}
+
+.upload-item-remove:hover {
+  background: rgba(255, 77, 79, 0.1);
+  color: #ff4d4f;
+}
+
+/* 空状态 */
+.upload-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 批量操作按钮 */
+.upload-actions {
+  display: flex;
+  margin-top: 12px;
+}
+.upload-actions > *:not(:first-child) { margin-left: 8px; }
+
+/* 淡出动画 */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .upload-area {
+    padding: 24px 16px;
+  }
+
+  .upload-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  .upload-item {
+    padding: 10px 12px;
+  }
+
+  .upload-item-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}

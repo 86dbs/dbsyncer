@@ -3,12 +3,16 @@
  */
 package org.dbsyncer.connector.oracle.geometry;
 
-import java.sql.SQLException;
+import oracle.sql.NUMBER;
 
 import oracle.sql.NUMBER;
 
+import java.sql.SQLException;
+
 class SdoPickler {
-    private static final double[][] powerTable = new double[][]{{128.0D, 1.0E256D, 1.0E-256D}, {64.0D, 1.0E128D, 1.0E-128D}, {32.0D, 1.0E64D, 1.0E-64D}, {16.0D, 1.0E32D, 1.0E-32D}, {8.0D, 1.0E16D, 1.0E-16D}, {4.0D, 1.0E8D, 1.0E-8D}, {2.0D, 10000.0D, 1.0E-4D}, {1.0D, 100.0D, 0.01D}};
+
+    private static final double[][] powerTable = new double[][]{{128.0D, 1.0E256D, 1.0E-256D}, {64.0D, 1.0E128D, 1.0E-128D}, {32.0D, 1.0E64D, 1.0E-64D}, {16.0D, 1.0E32D, 1.0E-32D},
+            {8.0D, 1.0E16D, 1.0E-16D}, {4.0D, 1.0E8D, 1.0E-8D}, {2.0D, 10000.0D, 1.0E-4D}, {1.0D, 100.0D, 0.01D}};
 
     SdoPickler() {
     }
@@ -130,7 +134,7 @@ class SdoPickler {
             } else {
                 int[] var3 = new int[var2];
 
-                for(int var4 = 0; var4 < var2; ++var4) {
+                for (int var4 = 0; var4 < var2; ++var4) {
                     var3[var4] = getInt(var0);
                 }
 
@@ -154,7 +158,7 @@ class SdoPickler {
                 double[] var4 = new double[var3];
                 int var5;
                 if (var1 % 1000 / 100 == 0) {
-                    for(var5 = 0; var5 < var3; ++var5) {
+                    for (var5 = 0; var5 < var3; ++var5) {
                         var4[var5] = getDouble(var0);
                     }
                 } else {
@@ -164,7 +168,7 @@ class SdoPickler {
                         throw new SQLException("An invalid sdo_gtype is found");
                     }
 
-                    for(int var7 = 0; var7 < var3; ++var7) {
+                    for (int var7 = 0; var7 < var3; ++var7) {
                         var4[var7] = getDouble0(var0);
                         if (var4[var7] == 0.0D / 0.0 && var7 % var6 != var5 - 1) {
                             throw new SQLException("An invalid null value is found in LRS sdo_ordinates");
@@ -219,9 +223,9 @@ class SdoPickler {
                     var11 = new byte[20 + var0.elemInfo.length * 22];
                     var12 = 20;
 
-                    for(var14 = 0; var14 < var0.elemInfo.length; ++var14) {
+                    for (var14 = 0; var14 < var0.elemInfo.length; ++var14) {
                         byte[] var13 = NUMBER.toBytes(var0.elemInfo[var14]);
-                        var11[var12] = (byte)var13.length;
+                        var11[var12] = (byte) var13.length;
                         System.arraycopy(var13, 0, var11, var12 + 1, var13.length);
                         var12 += var13.length + 1;
                     }
@@ -243,11 +247,11 @@ class SdoPickler {
                 var15[1] = 1;
                 writeLength5(var21 + var14, var15, 2);
                 byte var16 = 7;
-                var15[var16] = (byte)var2.length;
+                var15[var16] = (byte) var2.length;
                 System.arraycopy(var2, 0, var15, var16 + 1, var2.length);
                 int var22 = var16 + var2.length + 1;
                 if (var0.srid != 0) {
-                    var15[var22++] = (byte)var4.length;
+                    var15[var22++] = (byte) var4.length;
                 }
 
                 System.arraycopy(var4, 0, var15, var22, var4.length);
@@ -255,14 +259,14 @@ class SdoPickler {
                 if (var7 == 1) {
                     System.arraycopy(var6, 0, var15, var22++, 1);
                 } else {
-                    var15[var22++] = (byte)var6.length;
+                    var15[var22++] = (byte) var6.length;
                     System.arraycopy(var6, 0, var15, var22, var6.length);
                     var22 += var6.length;
-                    var15[var22++] = (byte)var9.length;
+                    var15[var22++] = (byte) var9.length;
                     System.arraycopy(var9, 0, var15, var22, var9.length);
                     var22 += var9.length;
                     if (var7 == 3) {
-                        var15[var22++] = (byte)var10.length;
+                        var15[var22++] = (byte) var10.length;
                         System.arraycopy(var10, 0, var15, var22, var10.length);
                         var22 += var10.length;
                     } else {
@@ -280,10 +284,10 @@ class SdoPickler {
                     int var20;
                     int var23;
                     if (var0.linfo == 0) {
-                        for(var20 = 0; var20 < var0.ordinates.length; ++var20) {
+                        for (var20 = 0; var20 < var0.ordinates.length; ++var20) {
                             var18 = toBytes(var0.ordinates[var20]);
                             var23 = var22 + var17;
-                            var15[var23] = (byte)var18.length;
+                            var15[var23] = (byte) var18.length;
                             System.arraycopy(var18, 0, var15, var23 + 1, var18.length);
                             var17 += var18.length + 1;
                         }
@@ -292,7 +296,7 @@ class SdoPickler {
                             throw new SQLException("An invalid gtype value for LRS is found.");
                         }
 
-                        for(var20 = 0; var20 < var0.ordinates.length; ++var20) {
+                        for (var20 = 0; var20 < var0.ordinates.length; ++var20) {
                             if (Double.isNaN(var0.ordinates[var20]) && var20 % var0.dim != var0.linfo - 1) {
                                 throw new SQLException("An invalid Double.NaN value is found in LRS ordinates");
                             }
@@ -303,7 +307,7 @@ class SdoPickler {
                             } else {
                                 var18 = toBytes(var0.ordinates[var20]);
                                 var23 = var22 + var17;
-                                var15[var23] = (byte)var18.length;
+                                var15[var23] = (byte) var18.length;
                                 System.arraycopy(var18, 0, var15, var23 + 1, var18.length);
                                 var17 += var18.length + 1;
                             }
@@ -331,13 +335,13 @@ class SdoPickler {
 
     private static void writeLength5(int var0, byte[] var1, int var2) {
         var1[var2] = -2;
-        var1[var2 + 1] = (byte)(var0 >> 24);
+        var1[var2 + 1] = (byte) (var0 >> 24);
         var0 &= 16777215;
-        var1[var2 + 2] = (byte)(var0 >> 16);
+        var1[var2 + 2] = (byte) (var0 >> 16);
         var0 &= 65535;
-        var1[var2 + 3] = (byte)(var0 >> 8);
+        var1[var2 + 3] = (byte) (var0 >> 8);
         var0 &= 255;
-        var1[var2 + 4] = (byte)var0;
+        var1[var2 + 4] = (byte) var0;
     }
 
     private static byte[] toBytes(double var0) throws SQLException {
@@ -384,49 +388,49 @@ class SdoPickler {
                 var4 = !var4;
             }
 
-            var6 = var4 ? (byte)(var25 / 2) : (byte)((var25 + 1) / 2);
+            var6 = var4 ? (byte) (var25 / 2) : (byte) ((var25 + 1) / 2);
             if (var17) {
-                var2[0] = (byte)Integer.parseInt(var18.substring(0, 1) + var18.substring(2, 3));
+                var2[0] = (byte) Integer.parseInt(var18.substring(0, 1) + var18.substring(2, 3));
                 var9 = 3;
             } else {
-                var2[0] = (byte)Integer.parseInt(var18.substring(0, 1));
+                var2[0] = (byte) Integer.parseInt(var18.substring(0, 1));
                 var9 = 2;
             }
 
             if (var25 <= 3) {
                 if (var6 == 2) {
-                    var2[1] = (byte)(Integer.parseInt(var18.substring(2, 3)) * 10);
+                    var2[1] = (byte) (Integer.parseInt(var18.substring(2, 3)) * 10);
                 }
             } else {
-                for(var8 = 1; var8 < var6 - 1; ++var8) {
-                    var2[var8] = (byte)Integer.parseInt(var18.substring(var9, var9 + 2));
+                for (var8 = 1; var8 < var6 - 1; ++var8) {
+                    var2[var8] = (byte) Integer.parseInt(var18.substring(var9, var9 + 2));
                     var9 += 2;
                 }
 
                 if (var4) {
-                    var2[var6 - 1] = (byte)Integer.parseInt(var18.substring(var25 - 2, var25));
+                    var2[var6 - 1] = (byte) Integer.parseInt(var18.substring(var25 - 2, var25));
                 } else {
-                    var2[var6 - 1] = (byte)(Integer.parseInt(var18.substring(var25 - 1, var25)) * 10);
+                    var2[var6 - 1] = (byte) (Integer.parseInt(var18.substring(var25 - 1, var25)) * 10);
                 }
             }
 
             var3 /= 2;
 
-            for(var8 = var6 - 1; var8 != 0 && var2[var8] == 0; --var8) {
+            for (var8 = var6 - 1; var8 != 0 && var2[var8] == 0; --var8) {
                 --var6;
             }
         } else if (var24 >= 17) {
             if (var0 >= 1.0D) {
-                for(var9 = 0; var9 < 8; ++var9) {
+                for (var9 = 0; var9 < 8; ++var9) {
                     if (powerTable[var9][1] <= var0) {
-                        var3 += (int)powerTable[var9][0];
+                        var3 += (int) powerTable[var9][0];
                         var0 *= powerTable[var9][2];
                     }
                 }
             } else {
-                for(var9 = 0; var9 < 8; ++var9) {
+                for (var9 = 0; var9 < 8; ++var9) {
                     if (powerTable[var9][2] >= var0) {
-                        var3 -= (int)powerTable[var9][0];
+                        var3 -= (int) powerTable[var9][0];
                         var0 *= powerTable[var9][1];
                     }
                 }
@@ -455,10 +459,10 @@ class SdoPickler {
             var4 = var9 == var9 / 2 * 2;
             StringBuffer var23 = new StringBuffer(20);
 
-            for(var9 = 0; var9 < var24 && (var9 == var10 || var18.charAt(var9) == '0'); ++var9) {
+            for (var9 = 0; var9 < var24 && (var9 == var10 || var18.charAt(var9) == '0'); ++var9) {
             }
 
-            for(; var9 < var24; ++var9) {
+            for (; var9 < var24; ++var9) {
                 if (var9 != var10) {
                     var23.append(var18.charAt(var9));
                 }
@@ -466,22 +470,22 @@ class SdoPickler {
 
             String var19 = var23.toString();
             var25 = var19.length();
-            var6 = (byte)((var25 + 1) / 2);
+            var6 = (byte) ((var25 + 1) / 2);
             if (var25 == 1) {
                 if (var22) {
-                    var2[0] = (byte)(Integer.parseInt(var19.substring(0, 1)) * 10);
+                    var2[0] = (byte) (Integer.parseInt(var19.substring(0, 1)) * 10);
                 } else {
-                    var2[0] = (byte)Integer.parseInt(var19.substring(0, 1));
+                    var2[0] = (byte) Integer.parseInt(var19.substring(0, 1));
                 }
             } else if (var25 == 2) {
                 if (var22) {
-                    var2[0] = (byte)Integer.parseInt(var19.substring(0, 2));
+                    var2[0] = (byte) Integer.parseInt(var19.substring(0, 2));
                 } else if (var19.charAt(1) == '0') {
-                    var2[0] = (byte)Integer.parseInt(var19.substring(0, 1));
+                    var2[0] = (byte) Integer.parseInt(var19.substring(0, 1));
                 } else {
                     ++var6;
-                    var2[0] = (byte)Integer.parseInt(var19.substring(0, 1));
-                    var2[1] = (byte)(Integer.parseInt(var19.substring(1, 2)) * 10);
+                    var2[0] = (byte) Integer.parseInt(var19.substring(0, 1));
+                    var2[1] = (byte) (Integer.parseInt(var19.substring(1, 2)) * 10);
                 }
             } else {
                 if (!var22 && var25 == var25 / 2 * 2) {
@@ -489,40 +493,40 @@ class SdoPickler {
                 }
 
                 if (var22) {
-                    var2[0] = (byte)Integer.parseInt(var19.substring(0, 2));
+                    var2[0] = (byte) Integer.parseInt(var19.substring(0, 2));
                     var9 = 2;
                 } else {
-                    var2[0] = (byte)Integer.parseInt(var18.substring(0, 1));
+                    var2[0] = (byte) Integer.parseInt(var18.substring(0, 1));
                     var9 = 1;
                 }
 
-                for(var8 = 1; var8 < var6 - 1; ++var8) {
-                    var2[var8] = (byte)Integer.parseInt(var19.substring(var9, var9 + 2));
+                for (var8 = 1; var8 < var6 - 1; ++var8) {
+                    var2[var8] = (byte) Integer.parseInt(var19.substring(var9, var9 + 2));
                     var9 += 2;
                 }
 
                 if (var4) {
-                    var2[var6 - 1] = (byte)Integer.parseInt(var18.substring(var24 - 2, var24));
+                    var2[var6 - 1] = (byte) Integer.parseInt(var18.substring(var24 - 2, var24));
                 } else {
-                    var2[var6 - 1] = (byte)(Integer.parseInt(var18.substring(var24 - 1, var24)) * 10);
+                    var2[var6 - 1] = (byte) (Integer.parseInt(var18.substring(var24 - 1, var24)) * 10);
                 }
 
-                for(var8 = var6 - 1; var8 != 0 && var2[var8] == 0; --var8) {
+                for (var8 = var6 - 1; var8 != 0 && var2[var8] == 0; --var8) {
                     --var6;
                 }
             }
         } else {
             if (var0 >= 1.0D) {
-                for(var9 = 0; var9 < 8; ++var9) {
+                for (var9 = 0; var9 < 8; ++var9) {
                     if (powerTable[var9][1] <= var0) {
-                        var3 += (int)powerTable[var9][0];
+                        var3 += (int) powerTable[var9][0];
                         var0 *= powerTable[var9][2];
                     }
                 }
             } else {
-                for(var9 = 0; var9 < 8; ++var9) {
+                for (var9 = 0; var9 < 8; ++var9) {
                     if (powerTable[var9][2] >= var0) {
-                        var3 -= (int)powerTable[var9][0];
+                        var3 -= (int) powerTable[var9][0];
                         var0 *= powerTable[var9][1];
                     }
                 }
@@ -548,10 +552,10 @@ class SdoPickler {
             var8 = 0;
 
             byte var7;
-            for(var7 = (byte)((int)var0); var8 < var6; ++var8) {
+            for (var7 = (byte) ((int) var0); var8 < var6; ++var8) {
                 var2[var8] = var7;
-                var0 = (var0 - (double)var7) * 100.0D;
-                var7 = (byte)((int)var0);
+                var0 = (var0 - (double) var7) * 100.0D;
+                var7 = (byte) ((int) var0);
             }
 
             var8 = 7;
@@ -560,12 +564,12 @@ class SdoPickler {
                     ++var2[var8];
                 }
             } else if (var3 == 62 && (var2[var8] + 5) / 10 * 10 == 100) {
-                var2[var8] = (byte)((var2[var8] - 5) / 10 * 10);
+                var2[var8] = (byte) ((var2[var8] - 5) / 10 * 10);
             } else {
-                var2[var8] = (byte)((var2[var8] + 5) / 10 * 10);
+                var2[var8] = (byte) ((var2[var8] + 5) / 10 * 10);
             }
 
-            while(var2[var8] == 100) {
+            while (var2[var8] == 100) {
                 if (var8 == 0) {
                     ++var3;
                     var2[var8] = 1;
@@ -577,7 +581,7 @@ class SdoPickler {
                 ++var2[var8];
             }
 
-            for(var8 = 7; var8 != 0 && var2[var8] == 0; --var8) {
+            for (var8 = 7; var8 != 0 && var2[var8] == 0; --var8) {
                 --var6;
             }
         }
@@ -586,13 +590,13 @@ class SdoPickler {
         if (var5) {
             var10 = var6 + 1;
             var26 = new byte[var10];
-            var26[0] = (byte)(var3 + 128 + 64 + 1);
+            var26[0] = (byte) (var3 + 128 + 64 + 1);
             if (var17) {
                 --var26[0];
             }
 
-            for(var9 = 1; var9 < var10; ++var9) {
-                var26[var9] = (byte)(var2[var9 - 1] + 1);
+            for (var9 = 1; var9 < var10; ++var9) {
+                var26[var9] = (byte) (var2[var9 - 1] + 1);
             }
 
             return var26;
@@ -604,13 +608,13 @@ class SdoPickler {
             }
 
             var26 = new byte[var10];
-            var26[0] = (byte)(~(var3 + 128 + 64 + 1));
+            var26[0] = (byte) (~(var3 + 128 + 64 + 1));
             if (var17) {
                 ++var26[0];
             }
 
-            for(var9 = 1; var9 < var10; ++var9) {
-                var26[var9] = (byte)(101 - var2[var9 - 1]);
+            for (var9 = 1; var9 < var10; ++var9) {
+                var26[var9] = (byte) (101 - var2[var9 - 1]);
             }
 
             if (var6 < 20) {
@@ -622,6 +626,7 @@ class SdoPickler {
     }
 
     private static final class UnpickleHelper {
+
         byte[] image = null;
         int offset = 0;
 
@@ -768,7 +773,7 @@ class SdoPickler {
                 }
 
                 this.readByte();
-                long var3 = (long)this.readLength();
+                long var3 = (long) this.readLength();
                 int var5 = this.readLength();
                 byte var6 = this.readByte();
                 this.readDataValue(var5 - 1);

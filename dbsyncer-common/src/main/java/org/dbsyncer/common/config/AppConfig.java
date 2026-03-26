@@ -4,6 +4,7 @@
 package org.dbsyncer.common.config;
 
 import org.dbsyncer.common.util.StringUtil;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -47,10 +48,10 @@ public class AppConfig {
             StringBuilder copy = new StringBuilder();
             copy.append("&copy;").append(LocalDate.now().getYear()).append(" ");
             copy.append(name);
-            copy.append("(").append(version).append(")");
-            copy.append("<footer>Designed By <a href='https://gitee.com/ghi/dbsyncer' target='_blank' >");
+            copy.append(" ").append(version);
+            copy.append("<br /><a href='https://gitee.com/ghi/dbsyncer' target='_blank' >");
             copy.append(company);
-            copy.append("</a></footer>");
+            copy.append("</a>");
             this.copyright = copy.toString();
         }
         return copyright;

@@ -1,10 +1,9 @@
 package org.dbsyncer.parser.event;
 
 import org.dbsyncer.sdk.model.ChangedOffset;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ApplicationContextEvent;
-
-import java.util.List;
 
 /**
  * 刷新偏移量事件

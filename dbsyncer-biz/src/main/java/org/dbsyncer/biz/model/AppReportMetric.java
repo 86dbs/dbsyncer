@@ -3,12 +3,15 @@
  */
 package org.dbsyncer.biz.model;
 
-import org.dbsyncer.biz.vo.HistoryStackVo;
-import org.dbsyncer.biz.vo.MetricResponseVo;
+import org.dbsyncer.biz.vo.CpuVO;
+import org.dbsyncer.biz.vo.DiskSpaceVO;
+import org.dbsyncer.biz.vo.MemoryVO;
+import org.dbsyncer.biz.vo.MetricResponseVO;
+import org.dbsyncer.biz.vo.TpsVO;
 
 import java.util.List;
 
-public class AppReportMetric extends MappingReportMetric {
+public class AppReportMetric {
 
     /**
      * 待处理数
@@ -33,13 +36,15 @@ public class AppReportMetric extends MappingReportMetric {
     /**
      * 统计执行器TPS
      */
-    private HistoryStackVo tps;
+    private TpsVO tps;
 
-    private HistoryStackVo cpu;
+    private CpuVO cpu;
 
-    private HistoryStackVo memory;
+    private MemoryVO memory;
 
-    private List<MetricResponseVo> metrics;
+    private DiskSpaceVO disk;
+
+    private List<MetricResponseVO> metrics;
 
     public long getQueueUp() {
         return queueUp;
@@ -73,35 +78,43 @@ public class AppReportMetric extends MappingReportMetric {
         this.storageQueueCapacity = storageQueueCapacity;
     }
 
-    public HistoryStackVo getTps() {
+    public TpsVO getTps() {
         return tps;
     }
 
-    public void setTps(HistoryStackVo tps) {
+    public void setTps(TpsVO tps) {
         this.tps = tps;
     }
 
-    public HistoryStackVo getCpu() {
+    public CpuVO getCpu() {
         return cpu;
     }
 
-    public void setCpu(HistoryStackVo cpu) {
+    public void setCpu(CpuVO cpu) {
         this.cpu = cpu;
     }
 
-    public HistoryStackVo getMemory() {
+    public MemoryVO getMemory() {
         return memory;
     }
 
-    public void setMemory(HistoryStackVo memory) {
+    public void setMemory(MemoryVO memory) {
         this.memory = memory;
     }
 
-    public List<MetricResponseVo> getMetrics() {
+    public DiskSpaceVO getDisk() {
+        return disk;
+    }
+
+    public void setDisk(DiskSpaceVO disk) {
+        this.disk = disk;
+    }
+
+    public List<MetricResponseVO> getMetrics() {
         return metrics;
     }
 
-    public void setMetrics(List<MetricResponseVo> metrics) {
+    public void setMetrics(List<MetricResponseVO> metrics) {
         this.metrics = metrics;
     }
 }

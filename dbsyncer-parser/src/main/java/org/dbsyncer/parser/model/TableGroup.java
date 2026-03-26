@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,5 +92,4 @@ public class TableGroup extends AbstractConfigModel {
         this.command = command;
         return this;
     }
-
 }

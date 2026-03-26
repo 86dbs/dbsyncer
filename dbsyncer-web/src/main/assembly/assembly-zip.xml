@@ -12,6 +12,7 @@
             <outputDirectory>conf</outputDirectory>
             <includes>
                 <include>application.properties</include>
+                <include>dbsyncer.p12</include>
             </includes>
             <fileMode>0644</fileMode>
         </fileSet>

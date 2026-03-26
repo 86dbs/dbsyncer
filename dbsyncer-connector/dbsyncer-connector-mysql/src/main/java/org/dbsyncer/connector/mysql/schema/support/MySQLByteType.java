@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
 public final class MySQLByteType extends ByteType {
 
     private enum TypeEnum {
-        BIT,
-        TINYINT
+        BIT, TINYINT
     }
 
     @Override
@@ -47,9 +46,13 @@ public final class MySQLByteType extends ByteType {
         }
         if (val instanceof byte[]) {
             byte[] bytes = (byte[]) val;
-            if (bytes.length > 1) {
-                return bytes[1];
+            if (bytes.length > 0) {
+                return bytes[0];
             }
+            return 0;
+        }
+        if (val instanceof String) {
+            return Byte.parseByte((String) val);
         }
         return throwUnsupportedException(val, field);
     }
@@ -61,5 +64,4 @@ public final class MySQLByteType extends ByteType {
         }
         return super.convert(val, field);
     }
-
 }
