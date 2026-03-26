@@ -39,7 +39,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String CURSOR = "cursor";
-    private final int READ_NUM = 5000;
+    private int readNum = 5000;
     private String mappingName;
     private List<TableGroupQuartzCommand> commands;
     private String eventFieldName;
@@ -137,7 +137,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         context.setTargetTable(cmd.getTargetTable());
         context.setCommand(point.getCommand());
         context.setSupportedCursor(isSupportedCursor(cmd));
-        context.setPageSize(READ_NUM);
+        context.setPageSize(readNum);
         context.setPlugin(cmd.getPlugin());
         context.setPluginExtInfo(cmd.getPluginExtInfo());
         context.setRsaManager(rsaManager);
@@ -221,6 +221,10 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     public void setMappingName(String mappingName) {
         this.mappingName = mappingName;
+    }
+
+    public void setReadNum(int readNum) {
+        this.readNum = readNum;
     }
 
     public List<TableGroupQuartzCommand> getCommands() {

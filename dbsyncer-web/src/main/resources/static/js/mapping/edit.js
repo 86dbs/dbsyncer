@@ -30,9 +30,7 @@ function showSuperConfig(model){
     const increment = $("#mapping_increment");
     if ('full' === model) {
         increment.addClass("hidden");
-        full.removeClass("hidden");
     } else {
-        full.addClass("hidden");
         increment.removeClass("hidden");
     }
 }

@@ -181,6 +181,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 return new TableGroupQuartzCommand(t.getSourceTable(), fields, t.getTargetTable(), t.getCommand(), group.getPlugin(), group.getPluginExtInfo());
             }).collect(Collectors.toList());
             quartzListener.setMappingName(mapping.getName());
+            quartzListener.setReadNum(mapping.getReadNum());
             quartzListener.setCommands(quartzCommands);
         }
 
