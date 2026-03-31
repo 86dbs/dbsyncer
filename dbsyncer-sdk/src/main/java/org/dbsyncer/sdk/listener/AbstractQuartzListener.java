@@ -39,7 +39,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final String CURSOR = "cursor";
-    private int readNum = 5000;
+    private  int readNum = 5000;
     private String mappingName;
     private List<TableGroupQuartzCommand> commands;
     private String eventFieldName;
