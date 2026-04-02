@@ -65,9 +65,9 @@
         <tbody id="convertList">
             <!-- Mapping convert -->
             <tr th:if="${tableGroup} == null" th:each="f,s:${mapping?.convert}">
-                <td>[[${f?.convertName}]]</td>
-                <td>[[${f?.name}]]</td>
-                <td>[[${f?.args}]]</td>
+                <td th:data-value="${f?.convertCode}" th:text="${f?.convertName}"></td>
+                <td th:text="${f?.name}"></td>
+                <td th:text="${f?.args}"></td>
                 <td>
                     <button class='table-action-btn delete convertDelete' title="删除">
                         <i class="fa fa-trash"></i>
@@ -76,9 +76,9 @@
             </tr>
             <!-- TableGroup convert -->
             <tr th:each="f,s:${tableGroup?.convert}">
-                <td>[[${f?.convertName}]]</td>
-                <td>[[${f?.name}]]</td>
-                <td>[[${f?.args}]]</td>
+                <td th:data-value="${f?.convertCode}" th:text="${f?.convertName}"></td>
+                <td th:text="${f?.name}"></td>
+                <td th:text="${f?.args}"></td>
                 <td>
                     <button class='table-action-btn delete convertDelete' title="删除">
                         <i class="fa fa-trash"></i>
@@ -101,7 +101,7 @@
         var $convertList = $("#convertList");
         $convertList.find("tr").each(function(k,v) {
             var convert = $(this).find("td:eq(0)");
-            var convertCode = convert.attr("value");
+            var convertCode = convert.data("value");
             var convertName = convert.text().trim();
             var tf = $(this).find("td:eq(1)").text().trim();
             var args = $(this).find("td:eq(2)").text().trim();
@@ -175,7 +175,7 @@
             }
 
             $convertList.append(`<tr>
-                <td value='${convertOperatorVal}'>${convertOperatorText}</td>
+                <td data-value='${convertOperatorVal}'>${convertOperatorText}</td>
                 <td>${convertTargetField}</td>
                 <td>${argText}</td>
                 <td>
