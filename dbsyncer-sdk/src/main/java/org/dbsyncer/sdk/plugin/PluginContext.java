@@ -3,6 +3,7 @@ package org.dbsyncer.sdk.plugin;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Table;
 
@@ -120,4 +121,22 @@ public interface PluginContext extends BaseContext {
      */
     Object clone() throws CloneNotSupportedException;
 
+    /**
+     * 获取插件回调
+     *
+     * @return
+     */
+    PluginCallback getPluginCallback();
+
+    /**
+     *
+     * @return
+     */
+    String getMappingId();
+
+    /**
+     * 获取上下文处理的字段映射关系
+     * @return
+     */
+     List<FieldMapping> getFieldMappings();
 }

@@ -5,6 +5,7 @@ import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
@@ -94,6 +95,13 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      * 获取RSA配置
      */
     private RsaConfig rsaConfig;
+
+
+    private PluginCallback pluginCallback;
+
+    private String mappingId;
+
+    private List<FieldMapping> fieldMappings;
 
     @Override
     public boolean isTerminated() {
@@ -247,5 +255,29 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
 
     public void setRsaConfig(RsaConfig rsaConfig) {
         this.rsaConfig = rsaConfig;
+    }
+
+    public PluginCallback getPluginCallback() {
+        return pluginCallback;
+    }
+
+    public void setPluginCallback(PluginCallback pluginCallback) {
+        this.pluginCallback = pluginCallback;
+    }
+
+    public String getMappingId() {
+        return mappingId;
+    }
+
+    public void setMappingId(String mappingId) {
+        this.mappingId = mappingId;
+    }
+
+    public List<FieldMapping> getFieldMappings() {
+        return fieldMappings;
+    }
+
+    public void setFieldMappings(List<FieldMapping> fieldMappings) {
+        this.fieldMappings = fieldMappings;
     }
 }

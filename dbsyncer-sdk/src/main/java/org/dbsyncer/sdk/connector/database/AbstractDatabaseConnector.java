@@ -18,6 +18,7 @@ import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
@@ -291,7 +292,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
         String event = context.getEvent();
         List<Map> data = context.getTargetList();
-        List<Field> targetFields = context.getTargetFields();
+        List<Field> targetFields = context.getTargetFields().stream().filter(f->!f.getTypeName().equals(DataTypeEnum.RELTABLE.name())).collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");

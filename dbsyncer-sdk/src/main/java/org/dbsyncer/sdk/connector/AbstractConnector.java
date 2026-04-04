@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
@@ -27,7 +28,7 @@ public abstract class AbstractConnector {
 
         for (Map row : context.getTargetList()) {
             for (Field f : context.getTargetFields()) {
-                if (null == f) {
+                if (null == f || f.getTypeName().equals(DataTypeEnum.RELTABLE.name())) {
                     continue;
                 }
                 try {

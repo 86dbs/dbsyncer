@@ -12,7 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -20,18 +20,18 @@ import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -315,18 +315,63 @@ public class TableGroupChecker extends AbstractChecker {
         Field t = null;
         for (int i = 0; i < length; i++) {
             row = mappings.get(i);
-            s = sMap.get(row.get("source"));
-            t = tMap.get(row.get("target"));
+            String srcKey = getFieldKey(row, "source");
+            String tgtKey = getFieldKey(row, "target");
+            s = StringUtil.isNotBlank(srcKey) ? sMap.get(srcKey) : null;
+            t = StringUtil.isNotBlank(tgtKey) ? tMap.get(tgtKey) : null;
+            if (s != null && isNestingSourceField(s) && t == null && StringUtil.isNotBlank(tgtKey)) {
+                t = resolveNestingTargetAsChildTableGroup(tableGroup, tgtKey);
+                if (t == null) {
+                    throw new BizException("嵌套字段映射目标无效，请选择同驱动下的子表映射: " + tgtKey);
+                }
+            }
             if (null == s && null == t) {
                 continue;
             }
 
             if (null != t) {
-                t.setPk((Boolean) row.get("pk"));
+                t.setPk(Boolean.TRUE.equals(row.get("pk")));
             }
             list.add(new FieldMapping(s, t));
         }
         tableGroup.setFieldMapping(list);
+    }
+
+    /**
+     * 抽取公共方法：从映射行中获取字段key
+     */
+    private String getFieldKey(Map mappingRow, String key) {
+        Object value = mappingRow.get(key);
+        return ObjectUtils.isEmpty(value) ? null : String.valueOf(value);
+    }
+
+    private boolean isNestingSourceField(Field field) {
+        if (field == null || field.getTypeName() == null) {
+            return false;
+        }
+        String tn = field.getTypeName();
+        return DataTypeEnum.RELTABLE.name().equalsIgnoreCase(tn) || "Nested".equalsIgnoreCase(tn);
+    }
+
+    /**
+     * NESTING 类型源字段的目标为同 mapping 下其它子表映射的 {@link TableGroup#getId()}，非当前表目标列。
+     * 兼容历史：曾把目标表名写入 target 的仍可匹配并规范为子表映射 id。
+     */
+    private Field resolveNestingTargetAsChildTableGroup(TableGroup tableGroup, String tgtKey) {
+        if (StringUtil.isBlank(tgtKey)) {
+            return null;
+        }
+        List<TableGroup> all = profileComponent.getTableGroupAll(tableGroup.getMappingId());
+        for (TableGroup g : all) {
+            if (g.getId().equals(tableGroup.getId())) {
+                continue;
+            }
+            if (tgtKey.equals(g.getId())) {
+
+                return new Field(g.getId(), DataTypeEnum.RELTABLE.name(), DataTypeEnum.RELTABLE.ordinal());
+            }
+        }
+        return null;
     }
 
 }

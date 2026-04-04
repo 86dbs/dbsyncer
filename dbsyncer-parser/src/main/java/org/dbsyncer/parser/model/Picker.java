@@ -1,16 +1,16 @@
 package org.dbsyncer.parser.model;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.filter.CompareFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
-
-import org.apache.commons.lang3.ObjectUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,6 +191,9 @@ public class Picker {
         String tFieldName = null;
         for (int k = 0; k < sFieldSize; k++) {
             sField = sFields.get(k);
+            if (sField.getTypeName().equals(DataTypeEnum.RELTABLE.name())) {
+                continue;
+            }
             if (k < tFieldSize) {
                 tField = tFields.get(k);
             }

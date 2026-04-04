@@ -17,6 +17,7 @@ import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
@@ -154,6 +155,9 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> dfs = new ArrayList<>();
         fields.forEach(f-> {
             String name = database.buildWithQuotation(f.getName());
+            if (f.getTypeName().equals(DataTypeEnum.RELTABLE.name())){
+                return;
+            }
             fs.add(name);
             vs.add("?");
             if (!f.isPk()) {
@@ -178,6 +182,9 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         fields.forEach(f-> {
+            if (f.getTypeName().equals(DataTypeEnum.RELTABLE.name())){
+                return;
+            }
             fs.add(database.buildWithQuotation(f.getName()));
             vs.add("?");
         });

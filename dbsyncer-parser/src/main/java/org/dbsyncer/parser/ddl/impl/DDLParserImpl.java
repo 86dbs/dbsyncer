@@ -16,7 +16,7 @@ import org.dbsyncer.parser.ddl.alter.AddStrategy;
 import org.dbsyncer.parser.ddl.alter.ChangeStrategy;
 import org.dbsyncer.parser.ddl.alter.DropStrategy;
 import org.dbsyncer.parser.ddl.alter.ModifyStrategy;
-import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;

@@ -36,6 +36,7 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.plugin.PluginCallback;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -100,6 +101,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Resource
     private RsaManager rsaManager;
+
+    @Resource
+    private PluginCallback pluginCallback;
+
 
     @PostConstruct
     public void init() {
@@ -204,6 +209,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         TableGroup tableGroup = tableGroupPicker.getTableGroup();
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
+
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();
         String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
@@ -220,6 +226,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         context.setSourceList(sourceDataList);
         context.setTargetList(targetDataList);
         context.setPlugin(tableGroup.getPlugin());
+        context.setPluginCallback(pluginCallback);
+        context.setMappingId(mapping.getId());
+        context.setFieldMappings(tableGroup.getFieldMapping());
         context.setPluginExtInfo(tableGroup.getPluginExtInfo());
         context.setForceUpdate(mapping.isForceUpdate());
         context.setEnablePrintTraceInfo(StringUtil.isNotBlank(response.getTraceId()));

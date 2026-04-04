@@ -3,14 +3,8 @@
  */
 package org.dbsyncer.parser.sql.impl;
 
-import org.dbsyncer.parser.model.FieldMapping;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.parser.sql.SqlParser;
-
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.insert.Insert;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;

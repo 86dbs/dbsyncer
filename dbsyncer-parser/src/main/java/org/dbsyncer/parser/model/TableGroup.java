@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.FieldMapping;
 import org.dbsyncer.sdk.model.Table;
 
 import java.util.ArrayList;

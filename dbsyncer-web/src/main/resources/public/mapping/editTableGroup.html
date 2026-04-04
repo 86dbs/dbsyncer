@@ -65,7 +65,10 @@
                     <label class="form-label">数据源字段</label>
                     <select id="source_table_field" class="form-control">
                         <option value="" selected="selected">无</option>
-                        <option th:each="c,s:${tableGroup?.sourceTable?.column}" th:value="${c?.name}" th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
+                        <option th:each="c,s:${tableGroup?.sourceTable?.column}"
+                                th:value="${c?.name}"
+                                th:attr="data-type-name=${c?.typeName}"
+                                th:text="${c?.name} +' (' + ${c?.typeName} +')'"/>
                     </select>
                 </div>
 
@@ -96,6 +99,14 @@
                 </div>
             </div>
 
+            <!-- 嵌套字段目标：提交子表映射 id；展示用目标表名 -->
+            <select id="tableGroupChildOptionsCloneSource" class="hidden" aria-hidden="true" tabindex="-1">
+                <option value="">无</option>
+                <option th:each="child : ${tableGroupChild}"
+                        th:value="${child?.id}"
+                        th:text="${child?.targetTable?.name}"></option>
+            </select>
+
             <table class="table">
                 <thead>
                 <tr>
@@ -112,7 +123,23 @@
                 <tr title='双击设置/取消主键 | 拖动排序' th:each="f,s:${tableGroup?.fieldMapping}">
                     <td th:text="${s.index + 1}"/>
                     <td th:text="${f?.source?.name}"></td>
-                    <td th:text="${f?.target?.name}"></td>
+
+                    <td>
+                        <!-- 数据源字段类型为 NESTING 时，目标为同驱动下其它表映射（子表） -->
+                        <select th:if="${f?.source?.typeName == 'RELTABLE'}"
+                                class="form-control field-mapping-target-nesting"
+                                style="width:100%;">
+                            <option value=""
+                                    th:selected="${f?.target == null or f?.target?.name == null or f?.target?.name == ''}">无</option>
+                            <option th:each="child : ${tableGroupChild}"
+                                    th:value="${child?.id}"
+                                    th:text="${child?.targetTable?.name}"
+                                    th:selected="${f?.target != null and (f?.target?.name == child?.id or f?.target?.name == child?.targetTable?.name)}"></option>
+                        </select>
+                        <span th:unless="${f?.source?.typeName == 'RELTABLE'}"
+                              th:text="${f?.target?.name}"></span>
+                    </td>
+
                     <td><i th:if="${f?.target?.pk}" title="主键" class="fa fa-key text-warning"></i></td>
                     <td onclick="event.stopPropagation();">
                         <input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />

@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/tableGroup")
@@ -41,7 +43,10 @@ public class TableGroupController extends BaseController {
         model.put("tableGroup", tableGroup);
         String mappingId = tableGroup.getMappingId();
         model.put("mapping", mappingService.getMapping(mappingId));
+        List<TableGroup> tableGroups = tableGroupService.getTableGroupAll(mappingId)
+                .stream().filter(item -> !item.getId().equals(tableGroup.getId())).collect(Collectors.toList());
         initConfig(model);
+        model.put("tableGroupChild", tableGroups);
         return "mapping/" + page;
     }
 

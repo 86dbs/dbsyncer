@@ -24,6 +24,8 @@ public enum DataTypeEnum {
     BOOLEAN,
     /** 时间 */
     DATE, TIME, TIMESTAMP,
+    /** 关联表 */
+    RELTABLE,
     /** 二进制 */
     BYTES;
 

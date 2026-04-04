@@ -5,16 +5,40 @@ const $fieldCheckboxAll = () => $('.fieldCheckboxAll');
 const $fieldDelBtn = () => $('#fieldDelBtn');
 const $fieldMapping = () => $("#fieldMapping");
 
+function getFieldMappingTargetFromRow($tr) {
+    const $sel = $tr.find("td:eq(2) select.field-mapping-target-nesting");
+    if ($sel.length) {
+        return $sel.val() || "";
+    }
+    return $tr.find("td:eq(2)").text().trim();
+}
+
+/** 数据源字段是否为 NESTING（嵌套），与 DataTypeEnum.NESTING 及 ES Nested 等兼容 */
+function isSourceFieldNestingByName(sourceFieldName) {
+    if (!sourceFieldName) {
+        return false;
+    }
+    const tn = $("#source_table_field option").filter(function () {
+        return $(this).val() === sourceFieldName;
+    }).first().attr("data-type-name");
+    if (!tn) {
+        return false;
+    }
+    const u = String(tn).toUpperCase();
+    return u === "RELTABLE";
+}
+
 // 初始化映射关系参数
 function initFieldMappingParams(){
     // 生成JSON参数
     let row = [];
     const $list = $fieldMappingList();
     $list.find("tr").each(function(k,v){
+        const $tr = $(this);
         row.push({
-            "source":$(this).find("td:eq(1)").text(),
-            "target":$(this).find("td:eq(2)").text(),
-            "pk": $(this).find("td:eq(3) i").length > 0
+            "source": $tr.find("td:eq(1)").text().trim(),
+            "target": getFieldMappingTargetFromRow($tr),
+            "pk": $tr.find("td:eq(3) i").length > 0
         });
     });
     
@@ -224,8 +248,9 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
         const $list = $fieldMappingList();
         const $tr = $list.find("tr");
         $tr.each(function (k, v) {
-            let sf = $(this).find("td:eq(1)").text();
-            let tf = $(this).find("td:eq(2)").text();
+            const $row = $(this);
+            let sf = $row.find("td:eq(1)").text().trim();
+            let tf = getFieldMappingTargetFromRow($row);
             if (sField === sf && tField === tf) {
                 repeated = true;
                 return false; // 跳出循环
@@ -236,20 +261,25 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
             return;
         }
 
-        // 转义HTML防止XSS攻击
-        const escapedSField = escapeHtml(sField);
-        const escapedTField = escapeHtml(tField);
         const rowIndex = $tr.length + 1;
-
-        $list.append(`<tr title='双击设置/取消主键 | 拖动排序'>
-                    <td>${rowIndex}</td>
-                    <td>${escapedSField}</td>
-                    <td>${escapedTField}</td>
-                    <td></td>
-                    <td onclick="event.stopPropagation();">
-                        <input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />
-                    </td>
-                </tr>`);
+        const $newRow = $("<tr title='双击设置/取消主键 | 拖动排序'></tr>");
+        $newRow.append($("<td></td>").text(rowIndex));
+        $newRow.append($("<td></td>").text(sField));
+        const $tdTarget = $("<td></td>");
+        if (isSourceFieldNestingByName(sField)) {
+            const $sel = $("#tableGroupChildOptionsCloneSource").clone();
+            $sel.removeAttr("id").removeClass("hidden").removeAttr("aria-hidden").removeAttr("tabindex")
+                .addClass("field-mapping-target-nesting").addClass("form-control").css("width", "100%");
+            $tdTarget.append($sel);
+        } else {
+            $tdTarget.text(tField);
+        }
+        $newRow.append($tdTarget);
+        $newRow.append($("<td></td>"));
+        $newRow.append($("<td onclick=\"event.stopPropagation();\"></td>").append(
+            $("<input type=\"checkbox\" class=\"fieldCheckbox\" onclick=\"event.stopPropagation();\" />")
+        ));
+        $list.append($newRow);
 
         initFieldMappingParams();
         bindFieldMappingDrop();
@@ -295,6 +325,10 @@ $(function() {
 
     // 绑定表字段关系点击事件
     initFieldMappingParams();
+    // 嵌套目标下拉变更时同步隐藏域
+    $fieldMappingList().off("change", "select.field-mapping-target-nesting").on("change", "select.field-mapping-target-nesting", function () {
+        initFieldMappingParams();
+    });
     // 绑定表格拖拽事件
     bindFieldMappingDrop();
     // 绑定删除表字段映射事件
