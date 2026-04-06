@@ -519,28 +519,7 @@ public class LogMiner {
         return statement;
     }
 
-    private Long findNextValidScn(Long previousScn) throws SQLException {
-        if (previousScn == null) {
-            return null;
-        }
 
-        String sql = LogMinerHelper.getNextValidScnAfter(schema, username);
-
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setQueryTimeout(queryTimeout);
-            pstmt.setLong(1, previousScn);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    long nextValidScn = rs.getLong(1);
-                    if (!rs.wasNull() && nextValidScn > previousScn) {
-                        return nextValidScn;
-                    }
-                }
-            }
-        }
-        return null;
-    }
 
     final class Worker extends Thread {
 
@@ -573,23 +552,12 @@ public class LogMiner {
 
                     // 4. 动态调整堆积偏移SCN
                     long queryStartTime = System.currentTimeMillis();
-                    long backlog = currentScn - startScn;
+
+                    long backlog;
                     try {
+                        backlog = findBacklogCount(startScn, currentScn);
                         if (backlog > currentScnRange * 2) {
-                            long oldStartScn = startScn;
-                            // 排除空处理，直接获取下一个有效的SCN值
-                            Long nextValidScn = findNextValidScn(startScn);
-                            if (nextValidScn != null) {
-                                startScn = nextValidScn;
-                                backlog = currentScn - startScn;
-                                if (backlog > currentScnRange * 2) {
-                                    logger.warn("start SCN: {}, currentScn: {}, SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE", startScn, currentScn, backlog, currentScnRange);
-                                } else {
-                                    logger.info("SCN jump! old start SCN: {}, new start SCN: {}, SCN backlog: {}, currentScn: {}", oldStartScn, startScn, backlog, currentScn);
-                                }
-                            } else {
-                                logger.warn("Could not find next valid SCN after {}, keeping current startScn, SCN backlog: {}", oldStartScn, backlog);
-                            }
+                            logger.warn("start SCN: {}, currentScn, {}, SCN backlog: {}, scnRange: {}, recommend increase MAX_SCN_RANGE", startScn, currentScn, backlog, currentScnRange);
                         }
 
                         // 5. 查询 LogMiner 视图（复用 PreparedStatement）
@@ -627,6 +595,14 @@ public class LogMiner {
                         startScn = newStartScn;
                     }
 
+                    // 当出现堆积时，快速推荐SCN，拿到下一个有效的SCN
+                    if (currentScn - startScn > backlog * 100 || currentScn - startScn > currentScnRange * 2) {
+                        newStartScn = findNextValidScn(startScn, connection);
+                        if (newStartScn != startScn) {
+                            startScn = newStartScn;
+                        }
+                    }
+
                     // 8. 性能统计和动态调整
                     collectStatistics(currentScn, queryDuration);
                     adjustFetchSize();
@@ -653,5 +629,43 @@ public class LogMiner {
                 close(cachedStatement);
             }
         }
+    }
+
+    public Long findNextValidScn(Long previousScn, Connection connection) throws SQLException {
+        // 获取SQL查询语句
+        String sql = LogMinerHelper.getNextValidScnAfter();
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            // 设置参数：传入上一个SCN
+            pstmt.setLong(1, previousScn);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Long nextValidScn = rs.getLong("NEXT_VALID_SCN");
+                    if (!rs.wasNull()) {
+                        return nextValidScn;
+                    }
+                }
+            }
+        }
+        return previousScn;
+    }
+
+    public Long findBacklogCount(Long startScn, Long currentScan) throws SQLException {
+        // 获取SQL查询语句
+        String sql = LogMinerHelper.getBacklogCount();
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            // 设置参数：传入上一个SCN
+            pstmt.setLong(1, startScn);
+            pstmt.setLong(2, currentScan);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong("BACKLOG_COUNT");
+                }
+            }
+        }
+        return currentScan - startScn;
     }
 }

@@ -122,34 +122,22 @@ public class LogMinerHelper {
         return query.toString();
     }
 
-    public static String getNextValidScnAfter(String schema, String logMinerUser) {
+    public static String getNextValidScnAfter() {
         StringBuilder query = new StringBuilder();
 
         query.append("SELECT MIN(SCN) AS NEXT_VALID_SCN ");
         query.append("FROM V$LOGMNR_CONTENTS ");
-        query.append("WHERE SCN > ? ");  // 这里就是参数占位符，需要传入上一个SCN
+        query.append("WHERE SCN >= ? AND operation IS NOT NULL");  // 这里就是参数占位符，需要传入上一个SCN
 
-        query.append("AND OPERATION IS NOT NULL ");
-        query.append("AND SQL_REDO IS NOT NULL ");
+        return query.toString();
+    }
 
-        query.append("AND (");
+    public static String getBacklogCount() {
+        StringBuilder query = new StringBuilder();
 
-        // MISSING_SCN/DDL only when not performed by excluded users
-        query.append("(OPERATION_CODE IN (5,34) AND USERNAME NOT IN (").append(getExcludedUsers(logMinerUser)).append(")) ");
-
-        // COMMIT/ROLLBACK
-        query.append("OR (OPERATION_CODE IN (7,36)) ");
-
-        // INSERT/UPDATE/DELETE
-        query.append("OR ");
-        query.append("(OPERATION_CODE IN (1,2,3) ");
-        query.append("AND SEG_OWNER NOT IN ('APPQOSSYS','AUDSYS','CTXSYS','DVSYS','DBSFWUSER','DBSNMP','GSMADMIN_INTERNAL','LBACSYS','MDSYS','OJVMSYS','OLAPSYS','ORDDATA','ORDSYS','OUTLN','SYS','SYSTEM','WMSYS','XDB') ");
-
-        if (StringUtil.isNotBlank(schema)) {
-            query.append(String.format(" AND (REGEXP_LIKE(SEG_OWNER,'^%s$','i')) ", schema));
-        }
-
-        query.append(" ))");
+        query.append("SELECT COUNT(SCN) AS BACKLOG_COUNT ");
+        query.append("FROM V$LOGMNR_CONTENTS ");
+        query.append("WHERE SCN >= ? AND SCN<= ? AND operation IS NOT NULL");  // 这里就是参数占位符，需要传入上一个SCN
 
         return query.toString();
     }

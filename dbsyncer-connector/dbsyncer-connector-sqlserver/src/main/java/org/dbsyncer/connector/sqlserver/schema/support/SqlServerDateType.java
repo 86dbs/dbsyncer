@@ -20,7 +20,9 @@ public final class SqlServerDateType extends DateType {
 
     private enum TypeEnum {
 
-        DATE("date");
+        DATE("date"),
+
+        SMALL_DATETIME("smalldatetime");
 
         private final String value;
 

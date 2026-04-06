@@ -3,6 +3,14 @@
  */
 package org.dbsyncer.web.controller.license;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
@@ -17,16 +25,6 @@ import org.dbsyncer.sdk.model.ProductInfo;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.Version;
 import org.dbsyncer.web.controller.BaseController;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,16 +41,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
@@ -171,22 +167,29 @@ public class LicenseController extends BaseController {
     }
 
     private void formatEffectiveTimeContent(EditionInfoVO infoVo) {
-        LocalDateTime startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
-        LocalDateTime endDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
-        Period period = Period.between(startDateTime.toLocalDate(), endDateTime.toLocalDate());
-        Duration duration = Duration.between(startDateTime, endDateTime);
-        long years = Math.max(period.getYears(), 0);
-        long months = Math.max(period.getMonths(), 0);
+        LocalDateTime before = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getCurrentTime()), ZoneId.systemDefault());
+        LocalDateTime after = LocalDateTime.ofInstant(Instant.ofEpochMilli(infoVo.getEffectiveTime()), ZoneId.systemDefault());
+        // 1. 先算整年
+        long years = ChronoUnit.YEARS.between(before, after);
+        before = before.plusYears(years);
+        // 2. 再算整月
+        long months = ChronoUnit.MONTHS.between(before, after);
         if (years > 0) {
             infoVo.setEffectiveContent(String.format("还剩%d年%d个月", years, months));
             return;
         }
-        long days = Math.max(period.getDays(), 0);
+        // 3. 再算整天
+        before = before.plusMonths(months);
+        long days = ChronoUnit.DAYS.between(before, after);
+        days = days <= 0 ? 0 : days;
         if (months > 0) {
             infoVo.setEffectiveContent(String.format("还剩%d个月%d天", months, days));
             return;
         }
-        long hours = Math.max(duration.toHours() % 24, 0);
+        // 4. 最后算小时
+        before = before.plusDays(days);
+        long hours = ChronoUnit.HOURS.between(before, after);
+        hours = hours <= 0 ? 0 : hours;
         infoVo.setEffectiveContent(String.format("还剩%d天%d小时", days, hours));
     }
 
