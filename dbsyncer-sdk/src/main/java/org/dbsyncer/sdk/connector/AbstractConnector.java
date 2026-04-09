@@ -28,7 +28,7 @@ public abstract class AbstractConnector {
 
         for (Map row : context.getTargetList()) {
             for (Field f : context.getTargetFields()) {
-                if (null == f || f.getTypeName().equals(DataTypeEnum.RELTABLE.name())) {
+                if (null == f || DataTypeEnum.isRelTable(f.getTypeName())) {
                     continue;
                 }
                 try {

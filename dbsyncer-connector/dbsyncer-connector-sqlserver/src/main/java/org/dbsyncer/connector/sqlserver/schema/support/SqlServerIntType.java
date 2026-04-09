@@ -19,7 +19,8 @@ public final class SqlServerIntType extends IntType {
 
     private enum TypeEnum {
 
-        INT("int");
+        INT("int"),
+        INT_IDENTITY("int identity");
 
         private final String value;
 

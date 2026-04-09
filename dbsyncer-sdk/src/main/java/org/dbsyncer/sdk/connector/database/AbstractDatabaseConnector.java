@@ -292,7 +292,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
         String event = context.getEvent();
         List<Map> data = context.getTargetList();
-        List<Field> targetFields = context.getTargetFields().stream().filter(f->!f.getTypeName().equals(DataTypeEnum.RELTABLE.name())).collect(Collectors.toList());
+        List<Field> targetFields = context.getTargetFields().stream().filter(f->!DataTypeEnum.isRelTable(f.getTypeName())).collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
@@ -700,7 +700,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         Table table = commandConfig.getTable();
         Map<String, Field> fieldMap = new HashMap<>();
-        table.getColumn().forEach(field->fieldMap.put(field.getName(), field));
+        table.getColumn().stream().filter(field -> !DataTypeEnum.isRelTable(field.getTypeName())).forEach(field->fieldMap.put(field.getName(), field));
 
         // 过滤条件SQL
         StringBuilder sql = new StringBuilder();

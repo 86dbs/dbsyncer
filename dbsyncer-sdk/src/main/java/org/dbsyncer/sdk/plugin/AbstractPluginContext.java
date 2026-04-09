@@ -96,11 +96,19 @@ public abstract class AbstractPluginContext extends AbstractBaseContext implemen
      */
     private RsaConfig rsaConfig;
 
-
+    /**
+     * 插件回调函数 适配关联多表场景
+     */
     private PluginCallback pluginCallback;
 
+    /**
+     * 同步任务id
+     */
     private String mappingId;
 
+    /**
+     * 字段映射关系
+     */
     private List<FieldMapping> fieldMappings;
 
     @Override

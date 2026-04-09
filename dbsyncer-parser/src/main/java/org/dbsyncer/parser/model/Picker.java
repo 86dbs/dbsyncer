@@ -8,10 +8,12 @@ import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.filter.CompareFilter;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,27 +72,44 @@ public class Picker {
         return targetMapList;
     }
 
-    public List<Map> pickTargetData(List<Field> sourceOriginalFields, boolean enableFilter, List<List<Object>> rows, List<Map> sourceMapList) {
+    public List<Map> pickTargetData(List<Field> sourceOriginalFields, boolean enableFilter, WriterResponse response, List<Map> sourceMapList) {
         List<Map> targetMapList = new ArrayList<>();
+        // 获取当前事件数据事件
+        boolean deleteEvent = ConnectorConstant.OPERTION_DELETE.equals(response.getEvent());
+        //获取源表主键列表
+        List<Field> pkSourceFields = deleteEvent ? PrimaryKeyUtil.findPrimaryKeyFields(sourceOriginalFields):null;
+
+        List<List<Object>> rows = response.getDataList();
         if (CollectionUtils.isEmpty(rows)) {
             return targetMapList;
         }
         Map<String, Object> source = null;
         Map<String, Object> target = null;
         for (List<Object> row : rows) {
-            // 排除下标不一致的数据
-            if (row.size() != sourceOriginalFields.size()) {
+            // 非删除事件才严格校验字段数量。
+            if (!deleteEvent && row.size() != sourceOriginalFields.size()) {
                 logger.warn("源表结构发生变化，与当前表字段映射关系不一致，请检查重新配置");
                 continue;
             }
             source = new HashMap<>();
-            for (int j = 0; j < sourceOriginalFields.size(); j++) {
-                source.put(sourceOriginalFields.get(j).getName(), row.get(j));
+            if (deleteEvent && !CollectionUtils.isEmpty(pkSourceFields)) {
+                if (row.size() != pkSourceFields.size()){
+                    logger.warn("删除事件，源表主键数量和当前字段映射关系不一致，请检查配置");
+                    continue;
+                }
+                for (int j = 0; j < pkSourceFields.size(); j++) {
+                    source.put(pkSourceFields.get(j).getName(), row.get(j));
+                }
+            } else {
+                // 非删除事件或返回了完整列：按下标对齐字段值。
+                for (int j = 0; j < sourceOriginalFields.size(); j++) {
+                    source.put(sourceOriginalFields.get(j).getName(), row.get(j));
+                }
             }
             target = new HashMap<>();
-            exchange(sFieldSize, tFieldSize, this.sourceFields, this.targetFields, source, target);
+            exchange(sFieldSize, tFieldSize, this.sourceFields, this.targetFields, source, target, deleteEvent);
             // 根据条件过滤数据
-            if (enableFilter && !filter(target)) {
+            if (enableFilter  && !filter(target)) {
                 continue;
             }
             sourceMapList.add(source);
@@ -185,6 +204,11 @@ public class Picker {
     }
 
     private void exchange(int sFieldSize, int tFieldSize, List<Field> sFields, List<Field> tFields, Map<String, Object> source, Map<String, Object> target) {
+        exchange(sFieldSize, tFieldSize, sFields, tFields, source, target, false);
+    }
+
+    private void exchange(int sFieldSize, int tFieldSize, List<Field> sFields, List<Field> tFields,
+                          Map<String, Object> source, Map<String, Object> target, boolean deleteEvent) {
         Field sField = null;
         Field tField = null;
         Object v = null;
@@ -192,6 +216,9 @@ public class Picker {
         for (int k = 0; k < sFieldSize; k++) {
             sField = sFields.get(k);
             if (sField.getTypeName().equals(DataTypeEnum.RELTABLE.name())) {
+                continue;
+            }
+            if (deleteEvent && !sField.isPk()) {
                 continue;
             }
             if (k < tFieldSize) {

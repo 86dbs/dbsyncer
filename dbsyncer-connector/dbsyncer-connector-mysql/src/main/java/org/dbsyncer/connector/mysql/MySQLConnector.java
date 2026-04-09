@@ -155,7 +155,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> dfs = new ArrayList<>();
         fields.forEach(f-> {
             String name = database.buildWithQuotation(f.getName());
-            if (f.getTypeName().equals(DataTypeEnum.RELTABLE.name())){
+            if (skipRelTableField(f)) {
                 return;
             }
             fs.add(name);
@@ -182,7 +182,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         fields.forEach(f-> {
-            if (f.getTypeName().equals(DataTypeEnum.RELTABLE.name())){
+            if (skipRelTableField(f)) {
                 return;
             }
             fs.add(database.buildWithQuotation(f.getName()));

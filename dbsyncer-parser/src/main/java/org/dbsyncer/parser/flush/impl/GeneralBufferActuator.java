@@ -105,7 +105,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     @Resource
     private PluginCallback pluginCallback;
 
-
     @PostConstruct
     public void init() {
         setConfig(generalBufferConfig);
@@ -200,7 +199,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         ConnectorService sourceConnector = connectorFactory.getConnectorService(sourceConfig.getConnectorType());
         List<Map> sourceDataList = new ArrayList<>();
         List<Map> targetDataList = tableGroupPicker.getPicker().setSourceResolver(sourceConnector.getSchemaResolver())
-                .pickTargetData(sourceFields, enableFilter, response.getDataList(), sourceDataList);
+                .pickTargetData(sourceFields, enableFilter, response, sourceDataList);
         if (CollectionUtils.isEmpty(targetDataList)) {
             return;
         }
@@ -208,7 +207,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         // 2、参数转换
         TableGroup tableGroup = tableGroupPicker.getTableGroup();
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
-
 
         // 3、插件转换
         final IncrementPluginContext context = new IncrementPluginContext();

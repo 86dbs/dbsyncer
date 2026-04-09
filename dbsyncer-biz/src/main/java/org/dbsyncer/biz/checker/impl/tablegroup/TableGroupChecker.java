@@ -134,7 +134,7 @@ public class TableGroupChecker extends AbstractChecker {
 
     private Table findTable(List<Table> tables, String tableName, String type) {
         if (!CollectionUtils.isEmpty(tables)) {
-            Optional<Table> first = tables.stream().filter(table->table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
+            Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
             if (first.isPresent()) {
                 return first.get();
             }
@@ -175,7 +175,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 自定义主键
         if (StringUtil.isNotBlank(primaryKeyStr) && !CollectionUtils.isEmpty(metaInfo.getColumn())) {
             String[] pks = StringUtil.split(primaryKeyStr, StringUtil.COMMA);
-            Arrays.stream(pks).forEach(pk-> {
+            Arrays.stream(pks).forEach(pk -> {
                 for (Field field : metaInfo.getColumn()) {
                     if (StringUtil.equalsIgnoreCase(field.getName(), pk)) {
                         field.setPk(true);
@@ -217,7 +217,7 @@ public class TableGroupChecker extends AbstractChecker {
         // 模糊匹配相似字段
         AtomicBoolean existSourcePKFieldMapping = new AtomicBoolean();
         AtomicBoolean existTargetPKFieldMapping = new AtomicBoolean();
-        m1.forEach((s, f1)->m2.computeIfPresent(s, (t, f2)-> {
+        m1.forEach((s, f1) -> m2.computeIfPresent(s, (t, f2) -> {
             tableGroup.getFieldMapping().add(new FieldMapping(f1, f2));
             if (f1.isPk()) {
                 existSourcePKFieldMapping.set(true);
@@ -247,8 +247,8 @@ public class TableGroupChecker extends AbstractChecker {
             return;
         }
 
-        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
-        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed->filed));
+        Map<String, Field> sMap = sCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
+        Map<String, Field> tMap = tCol.stream().collect(Collectors.toMap(Field::getName, filed -> filed));
         List<FieldMapping> fieldMappingList = tableGroup.getFieldMapping();
         Set<String> exist = new HashSet<>();
         String[] fieldMapping = StringUtil.split(fieldMappings, StringUtil.COMMA);
@@ -269,7 +269,7 @@ public class TableGroupChecker extends AbstractChecker {
                 String name = m[0];
                 if (StringUtil.startsWith(mapping, StringUtil.VERTICAL_LINE)) {
                     if (!exist.contains(mapping)) {
-                        tMap.computeIfPresent(name, (k, field)-> {
+                        tMap.computeIfPresent(name, (k, field) -> {
                             fieldMappingList.add(new FieldMapping(null, field));
                             exist.add(mapping);
                             return field;
@@ -278,7 +278,7 @@ public class TableGroupChecker extends AbstractChecker {
                     continue;
                 }
                 if (!exist.contains(mapping)) {
-                    sMap.computeIfPresent(name, (k, field)-> {
+                    sMap.computeIfPresent(name, (k, field) -> {
                         fieldMappingList.add(new FieldMapping(field, null));
                         exist.add(mapping);
                         return field;
@@ -290,7 +290,7 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     private void shuffleColumn(List<Field> col, Map<String, Field> map) {
-        col.forEach(f->map.putIfAbsent(f.getName().toUpperCase(), f));
+        col.forEach(f -> map.putIfAbsent(f.getName().toUpperCase(), f));
     }
 
     /**
@@ -319,18 +319,14 @@ public class TableGroupChecker extends AbstractChecker {
             String tgtKey = getFieldKey(row, "target");
             s = StringUtil.isNotBlank(srcKey) ? sMap.get(srcKey) : null;
             t = StringUtil.isNotBlank(tgtKey) ? tMap.get(tgtKey) : null;
-            if (s != null && isNestingSourceField(s) && t == null && StringUtil.isNotBlank(tgtKey)) {
-                t = resolveNestingTargetAsChildTableGroup(tableGroup, tgtKey);
-                if (t == null) {
-                    throw new BizException("嵌套字段映射目标无效，请选择同驱动下的子表映射: " + tgtKey);
-                }
+            if (isRelTableField(s) && StringUtil.isNotBlank(tgtKey)) {
+                t = createTargetChildField(tableGroup, tgtKey);
             }
             if (null == s && null == t) {
                 continue;
             }
-
             if (null != t) {
-                t.setPk(Boolean.TRUE.equals(row.get("pk")));
+                t.setPk((Boolean) row.get("pk"));
             }
             list.add(new FieldMapping(s, t));
         }
@@ -345,33 +341,29 @@ public class TableGroupChecker extends AbstractChecker {
         return ObjectUtils.isEmpty(value) ? null : String.valueOf(value);
     }
 
-    private boolean isNestingSourceField(Field field) {
+    private boolean isRelTableField(Field field) {
         if (field == null || field.getTypeName() == null) {
             return false;
         }
-        String tn = field.getTypeName();
-        return DataTypeEnum.RELTABLE.name().equalsIgnoreCase(tn) || "Nested".equalsIgnoreCase(tn);
+        return DataTypeEnum.isRelTable(field.getTypeName());
     }
 
     /**
-     * NESTING 类型源字段的目标为同 mapping 下其它子表映射的 {@link TableGroup#getId()}，非当前表目标列。
+     * RELTABLE 类型源字段的目标为同 mapping 下其它子表映射的 {@link TableGroup#getId()}，非当前表目标列。
      * 兼容历史：曾把目标表名写入 target 的仍可匹配并规范为子表映射 id。
      */
-    private Field resolveNestingTargetAsChildTableGroup(TableGroup tableGroup, String tgtKey) {
-        if (StringUtil.isBlank(tgtKey)) {
-            return null;
-        }
-        List<TableGroup> all = profileComponent.getTableGroupAll(tableGroup.getMappingId());
+    private Field createTargetChildField(TableGroup current, String childTableGroupId) {
+        List<TableGroup> all = profileComponent.getTableGroupAll(current.getMappingId());
         for (TableGroup g : all) {
-            if (g.getId().equals(tableGroup.getId())) {
+            //排除掉当前的映射主表，避免死循环
+            if (g.getId().equals(current.getId())) {
                 continue;
             }
-            if (tgtKey.equals(g.getId())) {
-
+            if (childTableGroupId.equals(g.getId())) {
                 return new Field(g.getId(), DataTypeEnum.RELTABLE.name(), DataTypeEnum.RELTABLE.ordinal());
             }
         }
-        return null;
+        throw new BizException("嵌套字段映射目标无效，请选择同驱动下的子表映射");
     }
 
 }

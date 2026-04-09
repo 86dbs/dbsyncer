@@ -123,20 +123,16 @@ public interface PluginContext extends BaseContext {
 
     /**
      * 获取插件回调
-     *
-     * @return
      */
     PluginCallback getPluginCallback();
 
     /**
-     *
-     * @return
+     * 任务id
      */
     String getMappingId();
 
     /**
      * 获取上下文处理的字段映射关系
-     * @return
      */
      List<FieldMapping> getFieldMappings();
 }

@@ -7,6 +7,7 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
@@ -114,6 +115,13 @@ public interface Database {
      * 生成upsert
      */
     String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config);
+
+    /**
+     * 跳过 关联表字段类型
+     */
+    default boolean skipRelTableField(Field field) {
+        return field.getTypeName().equals(DataTypeEnum.RELTABLE.name());
+    }
 
     /**
      * 生成insert

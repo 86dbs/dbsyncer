@@ -37,4 +37,13 @@ public enum DataTypeEnum {
         }
         throw new SdkException(String.format("DataTypeEnum type \"%s\" does not exist.", type));
     }
+
+    /**
+     * 判断是否是关联表类型
+     * @param type
+     * @return
+     */
+    public static boolean isRelTable(String type) {
+        return RELTABLE.name().equals(type);
+    }
 }

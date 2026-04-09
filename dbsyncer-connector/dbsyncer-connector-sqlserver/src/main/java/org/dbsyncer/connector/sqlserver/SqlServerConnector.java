@@ -76,12 +76,12 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_DATABASE, String.class));
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override
@@ -149,7 +149,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         String tableName = commandConfig.getTable().getName();
         // 判断表是否包含标识自增列
         DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
-        List<Integer> result = db.execute(databaseTemplate->databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
+        List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
             String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName) + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
@@ -169,7 +169,10 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         List<String> updateSets = new ArrayList<>();
         List<String> pkFieldNames = new ArrayList<>();
 
-        config.getFields().forEach(f-> {
+        config.getFields().forEach(f -> {
+            if (skipRelTableField(f)) {
+                return;
+            }
             String fieldName = database.buildWithQuotation(f.getName());
             fs.add(fieldName);
             sfs.add("s." + fieldName);
@@ -214,15 +217,15 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     @Override
     public Object getPosition(DatabaseConnectorInstance connectorInstance) {
         String sql = "SELECT * from cdc.lsn_time_mapping order by tran_begin_time desc";
-        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(sql));
+        List<Map<String, Object>> result = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql));
         if (!CollectionUtils.isEmpty(result)) {
             List<Object> list = new ArrayList<>();
-            result.forEach(r-> {
-                r.computeIfPresent("start_lsn", (k, lsn)->new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_lsn", (k, lsn)->new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_id", (k, lsn)->new Lsn((byte[]) lsn).toString());
-                r.computeIfPresent("tran_begin_time", (k, tranBeginTime)->DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
-                r.computeIfPresent("tran_end_time", (k, tranEndTime)->DateFormatUtil.timestampToString((Timestamp) tranEndTime));
+            result.forEach(r -> {
+                r.computeIfPresent("start_lsn", (k, lsn) -> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_lsn", (k, lsn) -> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_id", (k, lsn) -> new Lsn((byte[]) lsn).toString());
+                r.computeIfPresent("tran_begin_time", (k, tranBeginTime) -> DateFormatUtil.timestampToString((Timestamp) tranBeginTime));
+                r.computeIfPresent("tran_end_time", (k, tranEndTime) -> DateFormatUtil.timestampToString((Timestamp) tranEndTime));
                 list.add(r);
             });
             return list;
