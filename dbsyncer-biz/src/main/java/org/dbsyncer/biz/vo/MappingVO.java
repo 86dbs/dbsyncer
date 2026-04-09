@@ -2,6 +2,9 @@ package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.TableGroup;
+
+import java.util.List;
 
 /**
  * @author AE86
@@ -16,6 +19,8 @@ public class MappingVO extends Mapping {
 
     // 元信息
     private final MetaVO meta;
+    //表映射关系
+    private List<TableGroup> tableGroups;
 
     public MappingVO(Connector sourceConnector, Connector targetConnector, MetaVO meta) {
         this.sourceConnector = sourceConnector;
@@ -33,5 +38,13 @@ public class MappingVO extends Mapping {
 
     public MetaVO getMeta() {
         return meta;
+    }
+
+    public List<TableGroup> getTableGroups() {
+        return tableGroups;
+    }
+
+    public void setTableGroups(List<TableGroup> tableGroups) {
+        this.tableGroups = tableGroups;
     }
 }

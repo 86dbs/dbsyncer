@@ -158,7 +158,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 复制映射表关系
         List<TableGroup> groupList = profileComponent.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(tableGroup-> {
+            groupList.forEach(tableGroup -> {
                 String tableGroupJson = JsonUtil.objToJson(tableGroup);
                 TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
@@ -208,7 +208,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             // 删除tableGroup
             List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
             if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t->profileComponent.removeTableGroup(t.getId()));
+                groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
             }
 
             // 删除驱动表映射关系
@@ -234,6 +234,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
+    public MappingVO getMapping(String id, String tableGroupId) {
+        Mapping mapping = profileComponent.getMapping(id);
+        return convertMapping2Vo(mapping, tableGroupId);
+    }
+
+    @Override
     public MappingCustomTableVO getMappingCustomTable(String id, String type) {
         Mapping mapping = profileComponent.getMapping(id);
         MappingCustomTableVO vo = new MappingCustomTableVO();
@@ -251,7 +257,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (!CollectionUtils.isEmpty(tables)) {
             List<Table> mainTables = new ArrayList<>();
             List<TableVO> customTables = new ArrayList<>();
-            tables.forEach(t-> {
+            tables.forEach(t -> {
                 switch (TableTypeEnum.getTableType(t.getType())) {
                     case SQL:
                     case SEMI:
@@ -286,12 +292,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (!CollectionUtils.isEmpty(tableGroupAll)) {
             final Set<String> sTables = new HashSet<>();
             final Set<String> tTables = new HashSet<>();
-            tableGroupAll.forEach(tableGroup-> {
+            tableGroupAll.forEach(tableGroup -> {
                 sTables.add(tableGroup.getSourceTable().getName());
                 tTables.add(tableGroup.getTargetTable().getName());
             });
-            vo.setSourceTable(mapping.getSourceTable().stream().filter(t->!CollectionUtils.isEmpty(sTables) && !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.setTargetTable(mapping.getTargetTable().stream().filter(t->!CollectionUtils.isEmpty(tTables) && !tTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !CollectionUtils.isEmpty(sTables) && !sTables.contains(t.getName())).collect(Collectors.toList()));
+            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !CollectionUtils.isEmpty(tTables) && !tTables.contains(t.getName())).collect(Collectors.toList()));
             sTables.clear();
             tTables.clear();
         }
@@ -416,7 +422,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 合并自定义表
         List<Table> customTables = new ArrayList<>();
         List<Table> tables = getMappingTables(mapping, isSource);
-        tables.forEach(t-> {
+        tables.forEach(t -> {
             switch (TableTypeEnum.getTableType(t.getType())) {
                 case SQL:
                 case SEMI:
@@ -454,6 +460,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         return vo;
     }
 
+    private MappingVO convertMapping2Vo(Mapping mapping, String tableGroupId) {
+        MappingVO mappingVO = convertMapping2Vo(mapping);
+        List<TableGroup> tableGroups = tableGroupService.getTableGroupAll(mapping.getId())
+                .stream().filter(item -> !item.getId().equals(tableGroupId)).collect(Collectors.toList());
+        mappingVO.setTableGroups(tableGroups);
+        return mappingVO;
+    }
+
     /**
      * 检查是否存在驱动
      *
@@ -479,14 +493,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             return;
         }
         // 优化匹配性能
-        Map<String, Table> targetTableMap = targetTables.stream().collect(Collectors.toMap(table->table.getName().toUpperCase(), table->table));
+        Map<String, Table> targetTableMap = targetTables.stream().collect(Collectors.toMap(table -> table.getName().toUpperCase(), table -> table));
 
         // 匹配相似表
         for (Table sourceTable : sourceTables) {
             if (StringUtil.isBlank(sourceTable.getName())) {
                 continue;
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable)-> {
+            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
                 // 仅支持表类型
                 if (TableTypeEnum.isTable(targetTable.getType())) {
                     addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);

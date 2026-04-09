@@ -52,7 +52,13 @@ function initFieldMappingParams(){
     $fieldMapping().val(JSON.stringify(row));
 }
 
-function bindFieldSelect(selector, onChange){
+function bindFieldSelect(selector, onChange, defaultValue){
+    // 不传 defaultValue 时，保留 <select> 现有选中值（用于页面回显 th:selected）
+    let dv = defaultValue;
+    if (dv === undefined) {
+        const current = selector.val();
+        dv = current == null || current === "" ? [] : [current];
+    }
     return selector.dbSelect({
         type: 'single',
         onSelect: function (data) {
@@ -60,7 +66,7 @@ function bindFieldSelect(selector, onChange){
                 onChange(data);
             }
         },
-        defaultValue: [],// 默认选中
+        defaultValue: dv,// 默认选中
         customButtons: [ // 最多2个自定义按钮
             {
                 text: '刷新字段',
@@ -266,11 +272,14 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
         $newRow.append($("<td></td>").text(rowIndex));
         $newRow.append($("<td></td>").text(sField));
         const $tdTarget = $("<td></td>");
+        let $nestingSelectToInit = null;
         if (isSourceFieldNestingByName(sField)) {
             const $sel = $("#tableGroupChildOptionsCloneSource").clone();
             $sel.removeAttr("id").removeClass("hidden").removeAttr("aria-hidden").removeAttr("tabindex")
                 .addClass("field-mapping-target-nesting").addClass("form-control").css("width", "100%");
             $tdTarget.append($sel);
+            // 延后到挂载 DOM 后再初始化，否则可能出现下拉无数据
+            $nestingSelectToInit = $sel;
         } else {
             $tdTarget.text(tField);
         }
@@ -280,6 +289,11 @@ function bindFieldMappingAddClick(sourceSelector, targetSelector){
             $("<input type=\"checkbox\" class=\"fieldCheckbox\" onclick=\"event.stopPropagation();\" />")
         ));
         $list.append($newRow);
+        if ($nestingSelectToInit) {
+            bindFieldSelect($nestingSelectToInit, function () {
+                initFieldMappingParams();
+            });
+        }
 
         initFieldMappingParams();
         bindFieldMappingDrop();
@@ -321,6 +335,18 @@ $(function() {
     let targetTableSelect = bindFieldSelect($('#target_table_field'));
     let sourceTableSelect = bindFieldSelect($('#source_table_field'), function(data) {
         targetTableSelect.setValues(data);
+    });
+    
+    // 初始化页面已存在的“关联表(嵌套)”下拉为可搜索组件（Thymeleaf 渲染的行）
+    $("select.field-mapping-target-nesting").each(function () {
+        const $sel = $(this);
+        if ($sel.data("dbSelectInited")) {
+            return;
+        }
+        $sel.data("dbSelectInited", true);
+        bindFieldSelect($sel, function () {
+            initFieldMappingParams();
+        });
     });
 
     // 绑定表字段关系点击事件

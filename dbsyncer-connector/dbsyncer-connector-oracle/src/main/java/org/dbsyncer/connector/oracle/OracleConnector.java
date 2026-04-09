@@ -220,6 +220,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         MergeContext context = new MergeContext();
 
         config.getFields().forEach(f-> {
+            if (skipRelTableField(f)){
+                return;
+            }
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
 

@@ -55,6 +55,15 @@ public interface MappingService {
     MappingVO getMapping(String id);
 
     /**
+     * 获取当前驱动 包括表映射，不包括 tableGroupId 的其他表映射
+     * @param id
+     * @param tableGroupId
+     * @return
+     */
+    MappingVO getMapping(String id,String tableGroupId);
+
+
+    /**
      * 获取驱动自定义表信息
      *
      * @param id

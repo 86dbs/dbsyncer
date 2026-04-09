@@ -209,6 +209,9 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         UpsertContext context = new UpsertContext();
 
         config.getFields().forEach(f-> {
+            if (skipRelTableField(f)){
+                return;
+            }
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
 
