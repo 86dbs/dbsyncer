@@ -41,9 +41,13 @@
     <div id="customItems" class="grid grid-cols-2 mt-4"></div>
 
     <div class="flex justify-end mt-2">
+        <button id="importFieldBtn" type="button" class="btn btn-outline mr-2">
+            <i class="fa fa-upload"></i> 导入
+        </button>
         <button id="batchDeleteFieldBtn" type="button" class="btn btn-outline">
             <i class="fa fa-trash"></i> 删除字段
         </button>
+        <input id="fieldJsonFileInput" type="file" accept=".json,application/json" class="hidden"/>
     </div>
 
     <table class="table">
@@ -441,6 +445,89 @@
             return true;
         }
 
+        /**
+         * 解析导入JSON，兼容数组或对象包装结构
+         * @param {string} text JSON 文本
+         * @returns {Array<object>} 字段对象数组
+         */
+        function parseImportJson(text) {
+            const data = JSON.parse(text);
+            if (Array.isArray(data)) {
+                return data;
+            }
+            if (Array.isArray(data.columns)) {
+                return data.columns;
+            }
+            if (Array.isArray(data.fieldList)) {
+                return data.fieldList;
+            }
+            if (Array.isArray(data.fields)) {
+                return data.fields;
+            }
+            return [];
+        }
+
+        /**
+         * 规范化导入字段
+         * @param {object} item 原始对象
+         * @returns {{fieldName: string, fieldType: string}|null} 标准字段
+         */
+        function normalizeImportField(item) {
+            if (!item || typeof item !== 'object') {
+                return null;
+            }
+            const fieldName = String(item.name || item.fieldName || '').trim();
+            const fieldType = String(item.typeName || item.fieldType || item.type || '').trim().toUpperCase();
+            if (!fieldName || !fieldType) {
+                return null;
+            }
+            return { fieldName: fieldName, fieldType: fieldType };
+        }
+
+        /**
+         * 批量导入字段（自动去重）
+         * @param {Array<object>} rawFields 原始字段数组
+         */
+        function importFields(rawFields) {
+            const $typeOptions = $fieldList.find('.field-input-row .field-type-select option');
+            const validTypes = {};
+            $typeOptions.each(function () {
+                validTypes[String($(this).val() || '').toUpperCase()] = true;
+            });
+
+            const existingNames = {};
+            $fieldList.find('tr.field-data-row').each(function () {
+                const name = $(this).find('td:eq(2)').text().trim().toLowerCase();
+                if (name) {
+                    existingNames[name] = true;
+                }
+            });
+
+            let addedCount = 0;
+            let skippedCount = 0;
+            for (let i = 0; i < rawFields.length; i++) {
+                const normalized = normalizeImportField(rawFields[i]);
+                if (!normalized) {
+                    skippedCount++;
+                    continue;
+                }
+                const lowerName = normalized.fieldName.toLowerCase();
+                if (existingNames[lowerName] || !validTypes[normalized.fieldType]) {
+                    skippedCount++;
+                    continue;
+                }
+                addFieldRow(normalized.fieldName, normalized.fieldType, false);
+                existingNames[lowerName] = true;
+                addedCount++;
+            }
+
+            if (addedCount === 0) {
+                bootGrowl("导入完成，未新增字段（可能全部重复或格式不合法）", "warning");
+                return;
+            }
+            bootGrowl(`导入成功：新增 ${addedCount} 个，跳过 ${skippedCount} 个`, "success");
+        }
+
         // 收集所有字段数据
         function collectColumns() {
             const fieldData = [];
@@ -605,6 +692,35 @@
         // 添加字段按钮点击事件
         $(".fieldAdd").off('click').on('click', function () {
             handleAddField();
+        });
+
+        // 导入字段按钮
+        $("#importFieldBtn").off('click').on('click', function () {
+            $("#fieldJsonFileInput").val('').trigger('click');
+        });
+
+        // 导入字段文件变化
+        $("#fieldJsonFileInput").off('change').on('change', function (e) {
+            const file = (e.target.files || [])[0];
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                try {
+                    const text = String(evt.target && evt.target.result ? evt.target.result : '');
+                    const list = parseImportJson(text);
+                    if (!Array.isArray(list) || list.length === 0) {
+                        bootGrowl("JSON格式无效，请使用字段数组格式", "warning");
+                        return;
+                    }
+                    importFields(list);
+                } catch (err) {
+                    console.error("导入字段失败:", err);
+                    bootGrowl("导入失败，请检查JSON格式", "danger");
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
         });
 
         // 全选/取消全选
