@@ -18,6 +18,9 @@ public final class HttpShortType extends ShortType {
 
     @Override
     protected Short merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).shortValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

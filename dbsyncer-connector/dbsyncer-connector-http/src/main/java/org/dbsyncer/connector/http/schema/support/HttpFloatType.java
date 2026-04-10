@@ -6,6 +6,7 @@ package org.dbsyncer.connector.http.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.FloatType;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +19,9 @@ public final class HttpFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).floatValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

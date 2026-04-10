@@ -6,6 +6,7 @@ package org.dbsyncer.connector.http.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.LongType;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +19,9 @@ public final class HttpLongType extends LongType {
 
     @Override
     protected Long merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

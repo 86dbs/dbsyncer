@@ -19,6 +19,9 @@ public final class HttpDecimalType extends DecimalType {
 
     @Override
     protected BigDecimal merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return new BigDecimal(val.toString());
+        }
         return throwUnsupportedException(val, field);
     }
 

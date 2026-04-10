@@ -18,6 +18,9 @@ public final class HttpIntType extends IntType {
 
     @Override
     protected Integer merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

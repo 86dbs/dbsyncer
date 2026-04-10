@@ -18,6 +18,9 @@ public final class HttpDoubleType extends DoubleType {
 
     @Override
     protected Double merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).doubleValue();
+        }
         return throwUnsupportedException(val, field);
     }
 
