@@ -40,10 +40,18 @@
 
     <div id="customItems" class="grid grid-cols-2 mt-4"></div>
 
+    <div class="flex justify-end mt-2">
+        <button id="batchDeleteFieldBtn" type="button" class="btn btn-outline">
+            <i class="fa fa-trash"></i> 删除字段
+        </button>
+    </div>
+
     <table class="table">
         <thead>
         <tr>
-            <th></th>
+            <th>
+                <input id="selectAllFields" type="checkbox" title="全选/取消全选"/>
+            </th>
             <th>类型 <a class="text-sm" href="https://gitee.com/ghi/dbsyncer/wikis/%E9%A1%B9%E7%9B%AE%E8%AE%BE%E8%AE%A1/%E6%A0%87%E5%87%86%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/Standard%20Data%20Type#standard-data-type-mapping"
                         title="DBS标准数据类型" target='_blank'>
                 <i class="fa fa-external-link"></i>参考文档
@@ -218,8 +226,19 @@
         // 更新序号
         function updateRowNumbers() {
             $fieldList.find('tr:not(.field-input-row)').each(function(index) {
-                $(this).find('td:first').text(index + 1);
+                // 勾选框列不显示序号，保留函数用于结构兼容
+                $(this).find('.field-row-checkbox').attr('data-row-index', index + 1);
             });
+        }
+
+        /**
+         * 更新全选状态
+         */
+        function syncSelectAllState() {
+            const $rows = $fieldList.find('tr.field-data-row');
+            const total = $rows.length;
+            const checked = $rows.find('.field-row-checkbox:checked').length;
+            $("#selectAllFields").prop('checked', total > 0 && total === checked);
         }
 
         // 切换主键
@@ -247,6 +266,40 @@
         function clearInputRow() {
             const $inputRow = $fieldList.find('.field-input-row');
             $inputRow.find('.field-name-input').val('');
+        }
+
+        /**
+         * 获取行字段数据
+         * @param {jQuery} $row 行对象
+         * @returns {{fieldName: string, fieldType: string, isPrimaryKey: boolean}}
+         */
+        function getRowValues($row) {
+            return {
+                fieldType: $row.find('td:eq(1)').text().trim(),
+                fieldName: $row.find('td:eq(2)').text().trim(),
+                isPrimaryKey: $row.find('td:eq(3) .fa-key').length > 0
+            };
+        }
+
+        /**
+         * 校验字段名唯一（忽略当前行）
+         * @param {string} fieldName 字段名
+         * @param {jQuery} $currentRow 当前行
+         * @returns {boolean} 是否重复
+         */
+        function isDuplicateFieldName(fieldName, $currentRow) {
+            let duplicate = false;
+            $fieldList.find('.field-data-row').each(function() {
+                if ($currentRow && this === $currentRow[0]) {
+                    return true;
+                }
+                const existingField = $(this).find('td:eq(2)').text().trim();
+                if (existingField.toLowerCase() === fieldName.toLowerCase()) {
+                    duplicate = true;
+                    return false;
+                }
+            });
+            return duplicate;
         }
 
         // 绑定拖拽事件
@@ -312,11 +365,14 @@
                 .addClass('field-data-row')
                 .attr('title', '双击设置/取消主键 | 拖动排序')
                 .attr('draggable', 'true')
-                .append($('<td>'))
+                .append($('<td>').html('<input class="field-row-checkbox" type="checkbox" title="选择该字段"/>'))
                 .append($('<td>').text(fieldType))
                 .append($('<td>').text(fieldName))
                 .append($('<td>').html(isPrimaryKey ? '<i title="主键" class="fa fa-key text-warning"></i>' : ''))
-                .append($('<td>').html('<button class="table-action-btn delete fieldDelete" type="button" title="删除"><i class="fa fa-trash"></i></button>'));
+                .append($('<td>').html(
+                    '<button class="table-action-btn view fieldEdit" type="button" title="编辑"><i class="fa fa-edit"></i></button> ' +
+                    '<button class="table-action-btn delete fieldDelete" type="button" title="删除"><i class="fa fa-trash"></i></button>'
+                ));
 
             // 在输入行之前插入
             $fieldList.find('.field-input-row').before($newRow);
@@ -325,6 +381,18 @@
             $newRow.find('.fieldDelete').on('click', function(e) {
                 e.stopPropagation();
                 deleteFieldRow($newRow);
+            });
+
+            // 绑定编辑事件
+            $newRow.find('.fieldEdit').on('click', function(e) {
+                e.stopPropagation();
+                toggleEditFieldRow($newRow);
+            });
+
+            // 勾选状态变化
+            $newRow.find('.field-row-checkbox').on('change', function(e) {
+                e.stopPropagation();
+                syncSelectAllState();
             });
 
             // 绑定双击主键事件
@@ -343,6 +411,7 @@
         function deleteFieldRow($row) {
             $row.remove();
             updateRowNumbers();
+            syncSelectAllState();
         }
 
         // 添加字段的通用逻辑（避免重复校验）
@@ -360,14 +429,7 @@
             }
 
             // 检查字段名是否重复
-            let isDuplicate = false;
-            $fieldList.find('.field-data-row').each(function() {
-                const existingField = $(this).find('td:eq(2)').text().trim();
-                if (existingField.toLowerCase() === values.fieldName.toLowerCase()) {
-                    isDuplicate = true;
-                    return false;
-                }
-            });
+            let isDuplicate = isDuplicateFieldName(values.fieldName, null);
 
             if (isDuplicate) {
                 bootGrowl("字段名已存在", "warning");
@@ -397,6 +459,66 @@
                 }
             });
             return fieldData;
+        }
+
+        /**
+         * 切换行编辑状态
+         * @param {jQuery} $row 行对象
+         */
+        function toggleEditFieldRow($row) {
+            const $editBtn = $row.find('.fieldEdit');
+            const isEditing = $row.attr('data-editing') === '1';
+
+            if (!isEditing) {
+                const values = getRowValues($row);
+                $row.attr('data-editing', '1');
+                $row.data('originValues', values);
+                $row.attr('draggable', 'false');
+
+                const $typeCell = $row.find('td:eq(1)');
+                const $nameCell = $row.find('td:eq(2)');
+                $typeCell.html('<select class="form-control field-edit-type"></select>');
+                $nameCell.html('<input class="form-control field-edit-name" type="text" maxlength="64" />');
+                $nameCell.find('.field-edit-name').val(values.fieldName);
+
+                const $typeSelect = $typeCell.find('.field-edit-type');
+                const $inputTypeOptions = $fieldList.find('.field-input-row .field-type-select option').clone();
+                $typeSelect.append($inputTypeOptions);
+                initSelect($typeSelect);
+                const editTypeApi = $typeSelect.data('dbSelect');
+                if (editTypeApi) {
+                    editTypeApi.setValues([values.fieldType]);
+                } else {
+                    $typeSelect.val(values.fieldType);
+                }
+
+                $editBtn.attr('title', '保存').html('<i class="fa fa-check"></i>');
+                return;
+            }
+
+            const $typeSelect = $row.find('.field-edit-type');
+            const typeApi = $typeSelect.data('dbSelect');
+            const fieldType = typeApi ? (typeApi.getValues()[0] || '') : $typeSelect.val();
+            const fieldName = $row.find('.field-edit-name').val().trim();
+            if (!fieldName) {
+                bootGrowl("请输入字段名", "warning");
+                return;
+            }
+            if (!fieldType) {
+                bootGrowl("请选择字段类型", "warning");
+                return;
+            }
+            if (isDuplicateFieldName(fieldName, $row)) {
+                bootGrowl("字段名已存在", "warning");
+                return;
+            }
+
+            $row.attr('data-editing', '0');
+            $row.removeData('originValues');
+            $row.attr('draggable', 'true');
+            $row.find('td:eq(1)').text(fieldType);
+            $row.find('td:eq(2)').text(fieldName);
+            $editBtn.attr('title', '编辑').html('<i class="fa fa-edit"></i>');
         }
 
         function handleResponse(response, title) {
@@ -443,6 +565,7 @@
             $("#customItems").html(items);
             initSelect($('select[name="method"]'));
             initSelect($('select[name="contentType"]'));
+            syncSelectAllState();
         }
 
         let customTableSelect = $("#custom_table_select").dbSelect({
@@ -482,6 +605,25 @@
         // 添加字段按钮点击事件
         $(".fieldAdd").off('click').on('click', function () {
             handleAddField();
+        });
+
+        // 全选/取消全选
+        $("#selectAllFields").off('change').on('change', function () {
+            const checked = $(this).is(':checked');
+            $fieldList.find('tr.field-data-row .field-row-checkbox').prop('checked', checked);
+        });
+
+        // 批量删除
+        $("#batchDeleteFieldBtn").off('click').on('click', function () {
+            const $selectedRows = $fieldList.find('.field-row-checkbox:checked').closest('tr.field-data-row');
+            if ($selectedRows.length === 0) {
+                bootGrowl("请先勾选要删除的字段", "warning");
+                return;
+            }
+            $selectedRows.remove();
+            updateRowNumbers();
+            syncSelectAllState();
+            bootGrowl("删除字段成功", "success");
         });
 
         // 输入框回车键添加（直接调用处理函数，避免触发按钮点击事件）
