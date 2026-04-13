@@ -44,6 +44,9 @@
         <button id="importFieldBtn" type="button" class="btn btn-outline mr-2">
             <i class="fa fa-upload"></i> 导入
         </button>
+        <button id="exportFieldBtn" type="button" class="btn btn-outline mr-2">
+            <i class="fa fa-download"></i> 导出
+        </button>
         <button id="batchDeleteFieldBtn" type="button" class="btn btn-outline">
             <i class="fa fa-trash"></i> 删除字段
         </button>
@@ -53,8 +56,8 @@
     <table class="table">
         <thead>
         <tr>
-            <th>
-                <input id="selectAllFields" type="checkbox" title="全选/取消全选"/>
+            <th onclick="event.stopPropagation();">
+                <input id="selectAllFields" type="checkbox" class="fieldCheckboxAll" value="all" onclick="event.stopPropagation();" title="全选/取消全选"/>
             </th>
             <th>类型 <a class="text-sm" href="https://gitee.com/ghi/dbsyncer/wikis/%E9%A1%B9%E7%9B%AE%E8%AE%BE%E8%AE%A1/%E6%A0%87%E5%87%86%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/Standard%20Data%20Type#standard-data-type-mapping"
                         title="DBS标准数据类型" target='_blank'>
@@ -226,23 +229,89 @@
 
     $(function () {
         const $fieldList = $("#fieldList");
+        let isUpdatingSelectAll = false;
 
         // 更新序号
         function updateRowNumbers() {
             $fieldList.find('tr:not(.field-input-row)').each(function(index) {
                 // 勾选框列不显示序号，保留函数用于结构兼容
-                $(this).find('.field-row-checkbox').attr('data-row-index', index + 1);
+                $(this).find('.fieldCheckbox').attr('data-row-index', index + 1);
             });
         }
 
         /**
-         * 更新全选状态
+         * 获取数据行上的复选框集合（与 editTableGroup.js 中 fieldCheckbox 语义一致）
+         * @returns {jQuery}
+         */
+        function getSemiFieldRowCheckboxes() {
+            return $fieldList.find('tr.field-data-row .fieldCheckbox');
+        }
+
+        /**
+         * 同步表头「全选」与行勾选状态；全选框若已走 checkboxGroup，则通过 API 更新视觉
+         * 逻辑对齐 {@link file://./static/js/mapping/editTableGroup.js} 中 bindFieldMappingCheckbox 的 updateSelectAllState
          */
         function syncSelectAllState() {
-            const $rows = $fieldList.find('tr.field-data-row');
-            const total = $rows.length;
-            const checked = $rows.find('.field-row-checkbox:checked').length;
-            $("#selectAllFields").prop('checked', total > 0 && total === checked);
+            if (isUpdatingSelectAll) {
+                return;
+            }
+            isUpdatingSelectAll = true;
+            const $checkboxes = getSemiFieldRowCheckboxes();
+            const $checked = $checkboxes.filter(':checked');
+            const allChecked = $checkboxes.length > 0 && $checkboxes.length === $checked.length;
+            const $checkboxAll = $("#selectAllFields");
+            const checkboxAllApi = $checkboxAll.data('checkboxGroup');
+            if (checkboxAllApi) {
+                checkboxAllApi.setValue(allChecked);
+            } else {
+                $checkboxAll.prop('checked', allChecked);
+            }
+            setTimeout(function () {
+                isUpdatingSelectAll = false;
+            }, 0);
+        }
+
+        /**
+         * 初始化/补绑字段列表复选框：与 editTableGroup.js 中 bindFieldMappingCheckbox 相同，使用 checkboxGroup 组件
+         */
+        function bindCustomSemiFieldCheckboxes() {
+            const $checkboxAll = $("#selectAllFields");
+
+            $checkboxAll.off('change');
+            getSemiFieldRowCheckboxes().off('change');
+
+            if (!$checkboxAll.data('checkboxGroupInitialized')) {
+                $checkboxAll.checkboxGroup({
+                    theme: 'danger',
+                    size: 'md',
+                    onChange: function (values) {
+                        const isChecked = values.length > 0;
+                        getSemiFieldRowCheckboxes().each(function () {
+                            const api = $(this).data('checkboxGroup');
+                            if (api) {
+                                api.setValue(isChecked);
+                            } else {
+                                $(this).prop('checked', isChecked);
+                            }
+                        });
+                    }
+                });
+            }
+
+            getSemiFieldRowCheckboxes().each(function () {
+                const $cb = $(this);
+                if (!$cb.data('checkboxGroupInitialized')) {
+                    $cb.checkboxGroup({
+                        theme: 'danger',
+                        size: 'md',
+                        onChange: function () {
+                            syncSelectAllState();
+                        }
+                    });
+                }
+            });
+
+            syncSelectAllState();
         }
 
         // 切换主键
@@ -369,7 +438,9 @@
                 .addClass('field-data-row')
                 .attr('title', '双击设置/取消主键 | 拖动排序')
                 .attr('draggable', 'true')
-                .append($('<td>').html('<input class="field-row-checkbox" type="checkbox" title="选择该字段"/>'))
+                .append($('<td>').attr('onclick', 'event.stopPropagation();').html(
+                    '<input type="checkbox" class="fieldCheckbox" onclick="event.stopPropagation();" />'
+                ))
                 .append($('<td>').text(fieldType))
                 .append($('<td>').text(fieldName))
                 .append($('<td>').html(isPrimaryKey ? '<i title="主键" class="fa fa-key text-warning"></i>' : ''))
@@ -391,12 +462,6 @@
             $newRow.find('.fieldEdit').on('click', function(e) {
                 e.stopPropagation();
                 toggleEditFieldRow($newRow);
-            });
-
-            // 勾选状态变化
-            $newRow.find('.field-row-checkbox').on('change', function(e) {
-                e.stopPropagation();
-                syncSelectAllState();
             });
 
             // 绑定双击主键事件
@@ -441,6 +506,7 @@
             }
 
             addFieldRow(values.fieldName, values.fieldType, false);
+            bindCustomSemiFieldCheckboxes();
             clearInputRow();
             return true;
         }
@@ -525,6 +591,7 @@
                 bootGrowl("导入完成，未新增字段（可能全部重复或格式不合法）", "warning");
                 return;
             }
+            bindCustomSemiFieldCheckboxes();
             bootGrowl(`导入成功：新增 ${addedCount} 个，跳过 ${skippedCount} 个`, "success");
         }
 
@@ -652,7 +719,7 @@
             $("#customItems").html(items);
             initSelect($('select[name="method"]'));
             initSelect($('select[name="contentType"]'));
-            syncSelectAllState();
+            bindCustomSemiFieldCheckboxes();
         }
 
         let customTableSelect = $("#custom_table_select").dbSelect({
@@ -665,6 +732,7 @@
 
         // 初始化现有的字段类型选择器
         initSelect($('.field-type-select'));
+        bindCustomSemiFieldCheckboxes();
 
         //添加
         $("#addSemiTableBtn").off('click').on('click', function () {
@@ -699,6 +767,32 @@
             $("#fieldJsonFileInput").val('').trigger('click');
         });
 
+        /**
+         * 从数据行读取导出用字段（展示态或编辑态）
+         * @param {jQuery} $row 数据行
+         * @returns {{name: string, typeName: string, pk: boolean}|null}
+         */
+        function getExportRowPayload($row) {
+            if ($row.attr('data-editing') === '1') {
+                const $typeSelect = $row.find('.field-edit-type');
+                const typeApi = $typeSelect.data('dbSelect');
+                const typeName = typeApi ? (typeApi.getValues()[0] || '') : String($typeSelect.val() || '').trim();
+                const name = String($row.find('.field-edit-name').val() || '').trim();
+                const pk = $row.find('td:eq(3) .fa-key').length > 0;
+                if (!name || !typeName) {
+                    return null;
+                }
+                return { name: name, typeName: typeName, pk: pk };
+            }
+            const typeName = $row.find('td:eq(1)').text().trim();
+            const name = $row.find('td:eq(2)').text().trim();
+            const pk = $row.find('td:eq(3) .fa-key').length > 0;
+            if (!name) {
+                return null;
+            }
+            return { name: name, typeName: typeName, pk: pk };
+        }
+
         // 导入字段文件变化
         $("#fieldJsonFileInput").off('change').on('change', function (e) {
             const file = (e.target.files || [])[0];
@@ -723,15 +817,44 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        // 全选/取消全选
-        $("#selectAllFields").off('change').on('change', function () {
-            const checked = $(this).is(':checked');
-            $fieldList.find('tr.field-data-row .field-row-checkbox').prop('checked', checked);
+        // 导出已勾选字段为 JSON（与导入格式一致：name、typeName，主键带 pk）
+        $("#exportFieldBtn").off('click').on('click', function () {
+            const list = [];
+            $fieldList.find('tr.field-data-row').each(function () {
+                const $row = $(this);
+                if (!$row.find('.fieldCheckbox').is(':checked')) {
+                    return;
+                }
+                const payload = getExportRowPayload($row);
+                if (!payload) {
+                    return;
+                }
+                const item = { name: payload.name, typeName: payload.typeName };
+                if (payload.pk) {
+                    item.pk = true;
+                }
+                list.push(item);
+            });
+            if (list.length === 0) {
+                bootGrowl("请先勾选要导出的字段", "warning");
+                return;
+            }
+            const jsonStr = JSON.stringify(list, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'custom-table-fields.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            bootGrowl("已导出 " + list.length + " 个字段", "success");
         });
 
         // 批量删除
         $("#batchDeleteFieldBtn").off('click').on('click', function () {
-            const $selectedRows = $fieldList.find('.field-row-checkbox:checked').closest('tr.field-data-row');
+            const $selectedRows = $fieldList.find('.fieldCheckbox:checked').closest('tr.field-data-row');
             if ($selectedRows.length === 0) {
                 bootGrowl("请先勾选要删除的字段", "warning");
                 return;
