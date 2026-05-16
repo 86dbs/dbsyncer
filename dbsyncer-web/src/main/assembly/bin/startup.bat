@@ -7,6 +7,11 @@ for %%F in ("%~dp0\..\") do set "DBS_HOME=%%~dpF"
 echo DBS_HOME=%DBS_HOME%
 cd ../
 
+if "%JAVA_HOME%"=="" (
+  echo ERROR: JAVA_HOME is not set. Please set JAVA_HOME to your JDK 8 installation.
+  exit /b 1
+)
+
 set "JAVA_EXT_DIR=%JAVA_HOME%\jre\lib\ext"
 if not exist "%JAVA_EXT_DIR%" set "JAVA_EXT_DIR=%JAVA_HOME%\lib\ext"
 if not exist "%JAVA_EXT_DIR%" (
