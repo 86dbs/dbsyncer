@@ -31,6 +31,39 @@ if [[ -n "$PROCESS" ]]; then
 fi
 
 ###########################################################################
+# JRE 扩展目录：须包含 sunjce_provider，否则 TLS 报 SunTls12RsaPremasterSecret KeyGenerator not available
+resolve_jre_ext_dir() {
+  local java_home_prop
+  if ! command -v java >/dev/null 2>&1; then
+    echo ""
+    return
+  fi
+  java_home_prop=$(java -XshowSettings:properties -version 2>&1 | tr -d '\r' | sed -n 's/^ *java\.home = //p' | head -1)
+  if [[ -n "$java_home_prop" && -d "$java_home_prop/lib/ext" ]]; then
+    echo "$java_home_prop/lib/ext"
+    return
+  fi
+  if [[ -n "${JAVA_HOME:-}" ]]; then
+    if [[ -d "$JAVA_HOME/jre/lib/ext" ]]; then
+      echo "$JAVA_HOME/jre/lib/ext"
+      return
+    fi
+    if [[ -d "$JAVA_HOME/lib/ext" ]]; then
+      echo "$JAVA_HOME/lib/ext"
+      return
+    fi
+  fi
+  echo ""
+}
+
+JAVA_EXT_DIR=$(resolve_jre_ext_dir)
+if [[ -z "$JAVA_EXT_DIR" ]]; then
+  echo "ERROR: Cannot find JRE lib/ext (JCE required for SSL). Set JAVA_HOME or fix PATH to java." >&2
+  exit 1
+fi
+echo "JAVA_EXT_DIR=$JAVA_EXT_DIR"
+
+###########################################################################
 # set up environment for Java
 #JAVA_HOME=/opt/jdk1.8.0_202
 # 构建 JVM 参数
@@ -75,7 +108,7 @@ if [ -e "$DBS_HOME/bin/$ENCRYPT_FILE" ]; then
 fi
 
 # 4. 系统属性
-JAVA_OPTS+=("-Djava.ext.dirs=$JAVA_HOME/jre/lib/ext:$DBS_HOME/lib")
+JAVA_OPTS+=("-Djava.ext.dirs=$JAVA_EXT_DIR:$DBS_HOME/lib")
 JAVA_OPTS+=("-Dspring.config.location=$CONFIG_PATH")
 JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
 JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
