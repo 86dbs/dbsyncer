@@ -305,19 +305,4 @@ public class ValidateSyncController extends BaseController {
         }
     }
 
-    /**
-     * 一键订正差异明细（
-     */
-    @PostMapping("/correctResultDetail")
-    @ResponseBody
-    public RestResult correctResultDetail(@RequestParam("id") String id) {
-        try {
-            validateSyncService.correctResultDetail(id);
-            return RestResult.restSuccess(null);
-        } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            return RestResult.restFail(e.getMessage());
-        }
-    }
-
 }

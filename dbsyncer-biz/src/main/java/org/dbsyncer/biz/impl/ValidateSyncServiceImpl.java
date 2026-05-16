@@ -408,12 +408,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     @Override
-    public void correctResultDetail(String id) {
-        Assert.hasText(id, "id is required.");
-        taskService.correct(id);
-    }
-
-    @Override
     public String refreshTables(String id) {
         ValidateSyncTask task = taskService.get(id);
         Assert.notNull(task, "The task id is invalid.");

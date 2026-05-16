@@ -94,9 +94,6 @@
             </table>
         </div>
         <div style="padding:12px 20px; border-top:1px solid var(--border-color, #e5e7eb); text-align:right;">
-            <button class="btn btn-primary mr-2" id="oneClickCorrectBtn" style="display:none;">
-                <i class="fa fa-magic"></i> 一键订正
-            </button>
             <button class="btn btn-outline" id="closeDiffModalBtn"><i class="fa fa-times"></i> 关闭</button>
         </div>
     </div>
@@ -182,21 +179,6 @@
             }
         }
 
-        /**
-         * 判断差异项是否已被订正。
-         * @param {Object} diffItem 差异项
-         * @returns {boolean}
-         */
-        function isDiffItemFixed(diffItem) {
-            if (!diffItem) {
-                return false;
-            }
-            return diffItem.fixed === true || diffItem.fixed === 1 || diffItem.corrected === true || diffItem.corrected === 1;
-        }
-
-        var currentDiffDetailId = '';
-        var currentDiffType = '';
-
         // 获取差异总数（优先独立列 diffTotal，兼容旧 content）
         function getDiffTotal(row) {
             if (row.diffTotal !== undefined && row.diffTotal !== null && row.diffTotal !== '') {
@@ -264,8 +246,6 @@
                     return;
                 }
                 var type = row.type || '';
-                currentDiffDetailId = String(row.id || detailId);
-                currentDiffType = String(type);
                 var data = content.data || [];
                 var tableNameOuter = row.sourceTableName || (content.tableName || '-');
                 var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
@@ -283,7 +263,6 @@
                     $('#diffSummary').hide();
                 }
 
-                var isRowDataType = type === 'rowData';
                 var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
                 var bodyHtml = '';
                 data.forEach(function (d) {
@@ -291,11 +270,10 @@
                     var msgHtml = '<div class="diff-msg-cell">' + safeMsg + '</div>';
                     var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
                     var typeText = d.type || d.objType || '-';
-                    var fixed = isDiffItemFixed(d);
                     bodyHtml += '<tr>' +
                         '<td>' + sourceTableHtml + '</td>' +
                         '<td>' + escapeHtml(typeText) + '</td>' +
-                        '<td>' + escapeHtml(d.key || '-') + (fixed ? ' <span class="badge badge-success">已订正</span>' : '') + '</td>' +
+                        '<td>' + escapeHtml(d.key || '-') + '</td>' +
                         '<td style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;">' + msgHtml + '</td>' +
                         '</tr>';
                 });
@@ -304,37 +282,9 @@
                 }
                 $('#diffTableHead').html(headHtml);
                 $('#diffTableBody').html(bodyHtml);
-                if (isRowDataType) {
-                    $('#oneClickCorrectBtn').show();
-                } else {
-                    $('#oneClickCorrectBtn').hide();
-                }
                 $('#diffDetailOverlay').show();
             });
         };
-
-        /**
-         * 一键订正：仅提交当前任务详情 ID，后端对该明细下全部未订正项落库标记。
-         */
-        $('#oneClickCorrectBtn').click(function () {
-            if (currentDiffType !== 'rowData') {
-                bootGrowl('仅行数据校验支持一键订正', 'warning');
-                return;
-            }
-            if (!currentDiffDetailId) {
-                bootGrowl('缺少明细ID，无法订正', 'danger');
-                return;
-            }
-            doPoster('/validate-sync/correctResultDetail', { id: currentDiffDetailId }, function (res) {
-                if (!res.success) {
-                    bootGrowl(res.message || '订正失败', 'danger');
-                    return;
-                }
-                bootGrowl('订正成功', 'success');
-                window.showDiffDetail(currentDiffDetailId);
-                resultPagination.doSearch({taskId: currentTaskId});
-            });
-        });
 
         $(document).on('click', '.diff-detail-btn', function () {
             var id = $(this).data('detail-id');

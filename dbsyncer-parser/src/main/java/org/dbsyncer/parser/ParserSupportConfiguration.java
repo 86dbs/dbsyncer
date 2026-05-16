@@ -5,7 +5,6 @@ package org.dbsyncer.parser;
 
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.model.CommonTask;
@@ -102,11 +101,6 @@ public class ParserSupportConfiguration {
             @Override
             public boolean isRunning(String taskId) {
                 return false;
-            }
-
-            @Override
-            public Result correct(String taskDetailId) {
-                return null;
             }
 
         };
