@@ -3,13 +3,11 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
+import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
+import org.dbsyncer.connector.oracle.schema.OracleLobParameter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
-
-import oracle.sql.CLOB;
-
-import oracle.sql.CLOB;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,6 +38,12 @@ public final class OracleStringType extends StringType {
 
         public String getValue() {
             return value;
+        }
+
+        public static boolean isLobStringType(String type) {
+            return CLOB.value.equals(type)
+                    || NCLOB.value.equals(type)
+                    || LONG.value.equals(type);
         }
     }
 
@@ -78,7 +82,10 @@ public final class OracleStringType extends StringType {
         if (val instanceof Time) {
             return val.toString();
         }
-        return super.convert(val,field);
+        if (val instanceof String && TypeEnum.isLobStringType(field.getTypeName())) {
+            return new OracleLobParameter((String) val, field);
+        }
+        return super.convert(val, field);
     }
 
 }
