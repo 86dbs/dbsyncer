@@ -8,9 +8,7 @@
         <!-- 数据源表选择器 -->
         <div class="lg:col-span-4 flex items-center form-item">
             <label class="form-label">数据源表</label>
-            <select id="source_table_select" class="form-control">
-                <option th:each="t,s:${mapping?.sourceTable}" th:value="${t?.name}" th:data-type="${t?.type}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
-            </select>
+            <select id="source_table_select" class="form-control"></select>
         </div>
 
         <div class="text-info items-center text-center">
@@ -20,9 +18,7 @@
         <!-- 目标源表选择器 -->
         <div class="lg:col-span-4 flex items-center form-item">
             <label class="form-label">目标源表</label>
-            <select id="target_table_select" class="form-control">
-                <option th:each="t,s:${mapping?.targetTable}" th:value="${t?.name}" th:data-type="${t?.type}" th:text="${t?.name} + ' ('+${t?.type}+')'"/>
-            </select>
+            <select id="target_table_select" class="form-control"></select>
         </div>
     </div>
 
@@ -86,7 +82,7 @@
     </table>
     <input id="sortedTableGroupIds" name="sortedTableGroupIds" type="hidden" />
 
-<script>
+<script th:inline="javascript">
     // 刷新驱动编辑页面
     function refreshMappingEditPage(params) {
         let url = '/mapping/page/edit?id=' + $("#mappingId").val();
@@ -96,9 +92,58 @@
         doLoader(url);
     }
 
+    /**
+     * 远程绑定表下拉选择器（关键字搜索 + 滚动分页）。
+     *
+     * @param selector 下拉元素
+     * @param type source|target
+     * @param onChange 选中变更回调
+     * @returns {*}
+     */
     function bindTableSelect(selector, type, onChange){
-        return selector.dbSelect({
+        let currentExclude = 0;
+        let selectApi = null;
+        selectApi = selector.dbSelect({
             type: 'multiple',
+            remoteSearch: true,
+            pageSize: 100,
+            keywordDebounceMs: 300,
+            loadOptions: function(query, onSuccess, onError) {
+                doPoster("/mapping/searchTables", {
+                    id: $("#mappingId").val(),
+                    type: type,
+                    pageNum: query.pageNum,
+                    pageSize: query.pageSize,
+                    searchKey: query.searchKey || '',
+                    exclude: currentExclude
+                }, function (res) {
+                    if (res.success === true) {
+                        const paging = res.data || {};
+                        const rows = Array.isArray(paging.data) ? paging.data : [];
+                        const converted = rows.map(function(row) {
+                            const tableName = row.name || '';
+                            const tableType = row.type || 'TABLE';
+                            return {
+                                label: tableName + ' (' + tableType + ')',
+                                value: tableName,
+                                disabled: false,
+                                data: {type: tableType}
+                            };
+                        });
+                        onSuccess({
+                            pageNum: paging.pageNum || query.pageNum,
+                            pageSize: paging.pageSize || query.pageSize,
+                            total: paging.total || 0,
+                            data: converted
+                        });
+                    } else {
+                        bootGrowl(res.message || "加载表列表失败", "danger");
+                        if (onError) {
+                            onError();
+                        }
+                    }
+                });
+            },
             onSelect: function (data) {
                 if (onChange) {
                     onChange(data);
@@ -109,7 +154,8 @@
                 {
                     text: '取消过滤',
                     callback: function(values) {
-                        refreshMappingEditPage('&exclude=1');
+                        currentExclude = 1;
+                        selectApi.reloadRemote('');
                         bootGrowl("取消过滤成功!", "success");
                     }
                 },
@@ -120,6 +166,95 @@
                     }
                 }
             ]
+        });
+        return selectApi;
+    }
+
+    /**
+     * 将后端分页结果转换成 dbSelect 可识别的数据结构。
+     *
+     * @param {Object} paging 后端分页对象
+     * @returns {Array<{label: string, value: string, disabled: boolean, data: {type: string}}>}
+     */
+    function convertPagingToSelectData(paging) {
+        const rows = paging && Array.isArray(paging.data) ? paging.data : [];
+        return rows.map(function(row) {
+            const tableName = row && row.name ? row.name : '';
+            const tableType = row && row.type ? row.type : 'TABLE';
+            return {
+                label: tableName + ' (' + tableType + ')',
+                value: tableName,
+                disabled: false,
+                data: {type: tableType}
+            };
+        });
+    }
+
+    /**
+     * 源表勾选后，触发一次目标表加载并默认勾选同名表。
+     *
+     * @param {Array<string>} sourceNames 源表名数组
+     * @param {Object} targetTableSelect 目标下拉实例
+     */
+     function syncTargetSelectionBySource(sourceNames, targetTableSelect) {
+        if (!Array.isArray(sourceNames) || sourceNames.length === 0) {
+            targetTableSelect.setValues([]);
+            return;
+        }
+        doPoster("/mapping/searchTables", {
+            id: $("#mappingId").val(),
+            type: 'target',
+            pageNum: 1,
+            pageSize: sourceNames.length,
+            searchKey: '',
+            tableNames: sourceNames.join('|'),
+            exclude: 1
+        }, function (res) {
+            if (res.success !== true) {
+                bootGrowl(res.message || "加载目标表失败", "danger");
+                return;
+            }
+            const paging = res.data || {};
+            const targetData = convertPagingToSelectData(paging);
+            // 5. 合并新旧数据 + 去重（核心：避免重复添加选项）
+            const mergedMap = {}; // 用对象做去重：key=表名，value=选项
+
+            // 先把【下拉框已有的数据】放入map（保留历史选项）
+            (targetTableSelect.getData() || []).forEach(function(item) {
+                if (item && item.value) {
+                    mergedMap[item.value] = item;
+                }
+            });
+            // 再把【本次查询到的新目标表】放入map（重复会覆盖，保证最新）
+            targetData.forEach(function(item) {
+                if (item && item.value) {
+                    mergedMap[item.value] = item;
+                }
+            });
+            // 把去重后的map转回数组，更新到下拉框
+            const mergedData = Object.keys(mergedMap).map(function(key) {
+                return mergedMap[key];
+            });
+            targetTableSelect.setData(mergedData);
+            // 6. 自动选中：从目标表里，匹配出与源表对应的项
+            const targetNameMap = {}; // key=UPPERCASE_NAME, value=real_value
+            mergedData.forEach(function(item) {
+                if (item && item.value) {
+                    targetNameMap[String(item.value).toUpperCase()] = item.value;
+                }
+            });
+            // 筛选出源表名在目标表中存在的（大小写不敏感），并回填目标真实值
+            const matched = (sourceNames || []).map(function(name) {
+                if (!name) {
+                    return null;
+                }
+                return targetNameMap[String(name).toUpperCase()] || null;
+            }).filter(function(name) {
+                return !!name;
+            });
+            // 7. 设置下拉框选中项
+            targetTableSelect.setValues(matched);
+
         });
     }
 
@@ -159,8 +294,10 @@
             m.mappingId = $("#mappingId").val();
             m.sourceTable = sTables.join('|');
             m.targetTable = tTables.join('|');
-            m.sourceType = sourceSelector.getAttribute('type');
-            m.targetType = targetSelector.getAttribute('type');
+            let sourceItems = sourceSelector.getSelectedItems();
+            let targetItems = targetSelector.getSelectedItems();
+            m.sourceType = sourceItems.length > 0 ? (sourceItems[0].data.type || 'TABLE') : 'TABLE';
+            m.targetType = targetItems.length > 0 ? (targetItems[0].data.type || 'TABLE') : 'TABLE';
             m.sourceTablePK = $("#sourceTablePK").val();
             m.targetTablePK = $("#targetTablePK").val();
             const $btn = $(this);
@@ -365,8 +502,8 @@
     $(document).ready(function() {
         // 绑定下拉选择事件自动匹配相似表事件
         let targetTableSelect = bindTableSelect($('#target_table_select'), 'target');
-        let sourceTableSelect = bindTableSelect($('#source_table_select'), 'source' , function(data) {
-            targetTableSelect.setValues(data);
+        let sourceTableSelect = bindTableSelect($('#source_table_select'), 'source', function(data) {
+            syncTargetSelectionBySource(data, targetTableSelect);
         });
         // 绑定多值输入框事件
         initMultipleInputTags();

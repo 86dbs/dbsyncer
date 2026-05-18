@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 查询订正校验列表 -->
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">订正校验</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="validate-sync-search" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" onclick="doLoader('/validate-sync/pageAdd')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>任务名称</th>
+                <th>校验方案</th>
+                <th>触发方式</th>
+                <th>结果</th>
+                <th>状态</th>
+                <th>更新时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="validate-sync-table"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script>
+    function copyTask(id) {
+        doPoster("/validate-sync/copy", { id: id }, function (response) {
+            if (response.success) {
+                bootGrowl('复制成功', 'success');
+                backIndexPage();
+            } else {
+                bootGrowl('复制失败: ' + response.message, 'danger');
+            }
+        });
+    }
+
+    function changeTaskState(id, url, title) {
+        const btn = event.target.closest('.table-action-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
+        btn.disabled = true;
+        doPoster(url, {id: id}, function (response) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (response.success) {
+                bootGrowl(title +'成功', 'success');
+                backIndexPage();
+            } else {
+                bootGrowl(title +'失败: ' + response.message, 'danger');
+            }
+        })
+    }
+
+    function deleteTask(id) {
+        showConfirm({
+            title: '确定要删除任务？',
+            icon: 'warning',
+            size: 'large',
+            confirmType: 'danger',
+            onConfirm: function () {
+                // 禁用按钮，防止重复点击
+                doPoster('/validate-sync/remove', {id: id}, function (response) {
+                    if (response.success === true) {
+                        bootGrowl("删除成功！", "success");
+                        backIndexPage();
+                    } else {
+                        bootGrowl(response.message || "删除失败", "danger");
+                    }
+                });
+            }
+        });
+    }
+
+    function getTaskStateConfig(taskId) {
+        return {
+            0: { // 未运行
+                icon: 'fa-play',
+                title: '启动',
+                onclick: `changeTaskState('${taskId}', '/validate-sync/start', '启动')`,
+                disabled: false,
+                class: 'badge-info',
+                text: '未运行'
+            },
+            1: { // 运行中
+                icon: 'fa-pause',
+                title: '停止',
+                onclick: `changeTaskState('${taskId}', '/validate-sync/stop', '停止')`,
+                disabled: false,
+                class: 'badge-success',
+                text: '运行中'
+            },
+            2: { // 停止中
+                icon: 'fa-spinner fa-spin',
+                title: '停止中',
+                text: ' 停止中',
+                disabled: true,
+                class: 'badge-warning'
+            }
+        };
+    }
+
+    // 根据触发方式生成内容
+    function renderTaskTriggerText(type) {
+        const modelState = {
+            'timing': {
+                class: 'badge-primary',
+                text: '定时',
+            },
+            'once': {
+                class: 'badge-info',
+                text: '执行一次',
+            }
+        };
+        const config = modelState[type];
+        return `<span class="badge ${config.class}">${config.text}</span>`;
+    }
+
+    // 根据状态生成内容
+    function renderTaskStateText(state) {
+        const stateConfig = getTaskStateConfig();
+        const config = stateConfig[state] || stateConfig[0];
+        return `<span class="badge ${config.class}">${config.text}</span>`;
+    }
+
+    // 根据状态生成操作按钮
+    function renderTaskStateButton(state, mappingId) {
+        const stateConfig = getTaskStateConfig(mappingId);
+        const config = stateConfig[state] || stateConfig[0];
+        const disabledAttr = config.disabled ? ' disabled' : '';
+        const onclickAttr = config.onclick ? ` onclick="${config.onclick}"` : '';
+        const stateBtn = [];
+        stateBtn.push(`
+            <button class="table-action-btn play" data-id="${mappingId}" title="${config.title}"${onclickAttr}${disabledAttr}>
+                <i class="fa ${config.icon}"></i>
+            </button>
+        `);
+        // 未运行才显示删除按钮
+        if (state === 0) {
+            stateBtn.push(`
+            <button class="table-action-btn delete" title="删除" onclick="deleteTask('${mappingId}')">
+                <i class="fa fa-trash"></i>
+            </button>
+        `);
+        }
+        return stateBtn.join('');
+    }
+
+    /**
+     * 结果列：已有执行记录时，根据后端 errorCount（diffTotal&gt;0 的明细条数）展示「异常：n」或「正常」。
+     * @param {Object} task 列表行数据（含 errorCount、updateTime）
+     */
+    function renderResultColumn(task) {
+        var n = Number(task.errorCount);
+        if (isNaN(n) || n < 0) {
+            n = 0;
+        }
+        var isRunning = Number(task.status) === 1;
+        var progressRaw = task.progress;
+        if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
+            // 运行中允许 progress 短暂为空：用 0% 占位避免空白
+            if (isRunning) {
+                progressRaw = 0;
+            } else {
+                return "";
+            }
+        }
+        var progress = Number(progressRaw);
+        if (isNaN(progress) || progress < 0) {
+            progress = 0;
+        }
+        if (progress > 100) {
+            progress = 100;
+        }
+
+        // 非运行中：进度为 0 不展示；运行中：展示 0% 占位避免空白
+        if (progress === 0) {
+            if (!isRunning) {
+                return "";
+            }
+        }
+
+        var state = 'success';
+        if (isRunning) {
+            if (progress >= 80) {
+                state = 'danger';
+            } else if (progress >= 60) {
+                state = 'warning';
+            }
+        } else if (n > 0) {
+            state = 'danger';
+        }
+
+        var left = (n > 0)
+            ? ('异常：<span class="badge badge-error">' + n + '</span>')
+            : '<span class="badge badge-success">正常</span>';
+        var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
+        return ''
+            + '<div style="min-width: 160px;">'
+            + '  <div class="progress-header" style="margin-bottom: 6px;">'
+            + '    <span class="progress-title">' + left + '</span>'
+            + '    <span class="progress-value progress-value-' + state + '" style="font-size: 12px; font-weight: 600;">' + rightText + '</span>'
+            + '  </div>'
+            + '  <div class="progress-bar" style="height: 6px; margin-bottom: 0;">'
+            + '    <div class="progress-fill ' + state + '" style="width: ' + progress + '%"></div>'
+            + '  </div>'
+            + '</div>';
+
+    }
+
+    // 页面初始化
+    $(document).ready(function() {
+        // 定义返回函数，子页面返回
+        window.backIndexPage = function () {
+            doLoader('/validate-sync/list');
+        };
+
+        // 初始化分页管理器
+        const pagination = new PaginationManager({
+            requestUrl: '/validate-sync/search',
+            tableBodySelector: '#validate-sync-table',
+            renderRow: function(task, index) {
+                return `
+                    <tr>
+                        <td>${index}</td>
+                        <td>
+                            <a href="javascript:void(0)" class="text-primary hover:underline cursor-pointer" title="点击查看详情" onclick="doLoader('/validate-sync/page/detail?id=${String(task.id).replace(/"/g, '')}')">${escapeHtml(task.name)}</a>
+                        </td>
+                        <td title="${escapeHtml(task.sourceConnector.name || '')} > ${escapeHtml(task.targetConnector.name || '')}">
+                            <div class="flex items-center">
+                                <img draggable="false" class='mr-3' src="${$basePath}/img/${escapeHtml(task.sourceConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                                <span>${escapeHtml(task.sourceConnector.name || '')}</span>
+                            </div>
+                            <i class="fa fa-angle-double-down ml-3"></i>
+                            <div class="flex items-center">
+                                <img draggable="false" class='mr-3' src="${$basePath}/img/${escapeHtml(task.targetConnector.config.connectorType || '')}.png" style="width: 40px; height: 40px;">
+                                <span>${escapeHtml(task.targetConnector.name || '')}</span>
+                            </div>
+                        </td>
+                        <td>${renderTaskTriggerText(task.trigger)}</td>
+                        <td>${renderResultColumn(task)}</td>
+                        <td>${renderTaskStateText(task.status || 0)}</td>
+                        <td>${formatDate(task.updateTime || '')}</td>
+                        <td>
+                            <div class="flex items-center">
+                                <button class="table-action-btn view" title="修改" onclick="doLoader('/validate-sync/page/edit?id=${task.id}')">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                ${renderTaskStateButton(task.status || 0, task.id)}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            },
+            emptyHtml:'<td colspan="8" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
+            customPageSize:true
+        });
+
+        // 搜索框输入事件
+        let searchInput = initSearch('validate-sync-search', function (searchKey) {
+            pagination.doSearch({'searchKey': searchKey});
+        });
+
+        // 注册到全局定时刷新管理器
+        PageRefreshManager.register(() => {
+            pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+        });
+    });
+</script>
+</html>

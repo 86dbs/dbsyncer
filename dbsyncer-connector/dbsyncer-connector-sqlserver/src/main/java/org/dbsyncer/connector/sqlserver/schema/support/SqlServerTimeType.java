@@ -42,4 +42,9 @@ public final class SqlServerTimeType extends TimeType {
     protected Time merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
+
+    @Override
+    protected Object convert(Object val, Field field) {
+        return super.convert(val,field);
+    }
 }

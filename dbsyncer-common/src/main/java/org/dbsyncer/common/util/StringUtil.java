@@ -140,4 +140,11 @@ public abstract class StringUtil {
         return bytes;
     }
 
+    public static String trimToEmpty(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return "";
+        }
+        return str.trim();
+    }
+
 }

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 校验结果详情 -->
+<div class="form-container">
+    <style>
+        .diff-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .diff-table .diff-msg-cell {
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            line-height: 1.5;
+        }
+
+        .diff-table .diff-source-table-cell {
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+    </style>
+
+    <div class="card-header">
+        <h3 class="card-title text-center">校验结果详情</h3>
+    </div>
+    <div class="card-body">
+        <!-- 顶部操作区：任务选择 + 返回按钮 -->
+        <div class="grid grid-cols-6 items-center mb-4">
+            <div class="lg:col-span-3 flex items-center">
+                <label class="form-label mr-3" style="white-space: nowrap;">选择任务</label>
+                <select id="detailTaskSelect" class="form-control">
+                    <option th:each="t : ${taskList}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == taskId}"></option>
+                </select>
+            </div>
+            <div class="lg:col-span-1"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary mr-3" id="refreshBtn">
+                    <i class="fa fa-refresh"></i> 刷新
+                </button>
+                <button class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回列表
+                </button>
+            </div>
+        </div>
+
+        <!-- 结果列表 -->
+        <table class="table">
+            <thead>
+            <tr>
+                <th style="width: 50px;"></th>
+                <th>校验类型</th>
+                <th>数据源表</th>
+                <th>目标源表</th>
+                <th>总数</th>
+                <th>差异数</th>
+                <th>已订正</th>
+                <th>更新时间</th>
+                <th style="width: 80px;">查看详情</th>
+            </tr>
+            </thead>
+            <tbody id="detail-result-table"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<!-- 差异详情弹窗 -->
+<div id="diffDetailOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:var(--z-modal-backdrop, 1040);">
+    <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:8px; width:min(1100px, 92vw); max-height:80vh; display:flex; flex-direction:column; z-index:var(--z-modal, 1050);">
+        <div class="card-header flex items-center justify-between" style="padding:16px 20px;">
+            <h3 class="card-title" style="margin:0;"><i class="fa fa-list-alt mr-2"></i>差异详情</h3>
+            <button class="table-action-btn" id="closeDiffModal"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="card-body" style="overflow-y:auto; flex:1; padding:16px 20px;">
+            <!-- 汇总信息（行数据类型时显示） -->
+            <div id="diffSummary" class="mb-4" style="display:none;">
+                <div class="grid grid-cols-4">
+                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >源表</label><span id="summarySourceTotal" class="badge badge-info">-</span></div>
+                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >目标</label><span id="summaryTargetTotal" class="badge badge-info">-</span></div>
+                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >差异</label><span id="summaryDiffTotal" class="badge badge-error">-</span></div>
+                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >已订正</label><span id="summaryCorrectedTotal" class="badge badge-success">-</span></div>
+                </div>
+            </div>
+            <!-- 差异数据表格 -->
+            <table class="table diff-table">
+                <thead id="diffTableHead"></thead>
+                <tbody id="diffTableBody"></tbody>
+            </table>
+        </div>
+        <div style="padding:12px 20px; border-top:1px solid var(--border-color, #e5e7eb); text-align:right;">
+            <button class="btn btn-outline" id="closeDiffModalBtn"><i class="fa fa-times"></i> 关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        window.backIndexPage = function () {
+            doLoader('/validate-sync/list');
+        };
+
+        var currentTaskId = '[[${taskId}]]';
+
+        // 初始化任务下拉组件
+        var taskSelect = $('#detailTaskSelect').dbSelect({
+            type: 'single',
+            onSelect: function (selected) {
+                var selectedId = selected.value || selected;
+                if (selectedId && selectedId !== currentTaskId) {
+                    currentTaskId = selectedId;
+                    doLoader('/validate-sync/page/detail?id=' + currentTaskId);
+                }
+            }
+        });
+
+        // 刷新按钮：从下拉组件获取当前选中的任务ID
+        $('#refreshBtn').click(function () {
+            var api = $('#detailTaskSelect').data('dbSelect');
+            if (api && api.getValues().length > 0) {
+                currentTaskId = api.getValues()[0];
+            }
+            resultPagination.doSearch({taskId: currentTaskId});
+        });
+
+        // 清空结果按钮
+        $('#clearResultBtn').click(function () {
+            showConfirm({
+                title: '确定要清空当前任务的所有校验结果？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'danger',
+                onConfirm: function () {
+                    doPoster('/validate-sync/clearResult', {taskId: currentTaskId}, function (response) {
+                        if (response.success) {
+                            bootGrowl('清空成功', 'success');
+                            resultPagination.doSearch({taskId: currentTaskId});
+                        } else {
+                            bootGrowl('清空失败: ' + response.message, 'danger');
+                        }
+                    });
+                }
+            });
+        });
+
+        // 关闭弹窗
+        $('#closeDiffModal, #closeDiffModalBtn').click(function () {
+            $('#diffDetailOverlay').hide();
+        });
+        $('#diffDetailOverlay').click(function (e) {
+            if ($(e.target).is('#diffDetailOverlay')) {
+                $(this).hide();
+            }
+        });
+
+        // 校验类型中文映射
+        var typeTextMap = {
+            'rowData': '行数据',
+            'tableSchema': '表结构',
+            'index': '索引'
+        };
+        var typeBadgeMap = {
+            'rowData': 'badge-primary',
+            'tableSchema': 'badge-info',
+            'index': 'badge-warning'
+        };
+
+        // 解析 content JSON
+        function parseContent(contentStr) {
+            try {
+                return typeof contentStr === 'string' ? JSON.parse(contentStr) : contentStr;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 获取差异总数（优先独立列 diffTotal，兼容旧 content）
+        function getDiffTotal(row) {
+            if (row.diffTotal !== undefined && row.diffTotal !== null && row.diffTotal !== '') {
+                var n = Number(row.diffTotal);
+                if (n > 0) {
+                    return '<span class="badge badge-error">' + n + '</span>';
+                }
+                return '<span class="badge badge-success">0</span>';
+            }
+            var content = parseContent(row.content);
+            if (!content) return '-';
+            var total = content.diffTotal || 0;
+            if (total > 0) {
+                return '<span class="badge badge-error">' + total + '</span>';
+            }
+            return '<span class="badge badge-success">0</span>';
+        }
+
+        // 获取已订正数（独立列 fixedTotal；兼容旧 content.correctedTotal）
+        function getCorrectedTotal(row) {
+            var total = row.fixedTotal;
+            if (total === undefined || total === null) {
+                var content = parseContent(row.content);
+                total = content ? content.correctedTotal : 0;
+            }
+            total = Number(total) || 0;
+            if (total > 0) {
+                return '<span class="badge badge-success">' + total + '</span>';
+            }
+            return '<span class="text-gray-400">0</span>';
+        }
+
+        // 获取源/目标总记录数（独立列；兼容旧 content）
+        function getSourceTargetCounts(row) {
+            if (row.type !== 'rowData') return '<span class="text-gray-400">-</span>';
+            var sourceTotal = row.sourceTotal;
+            var targetTotal = row.targetTotal;
+            if (sourceTotal === undefined && targetTotal === undefined) {
+                var content = parseContent(row.content);
+                if (content) {
+                    sourceTotal = content.sourceTotal;
+                    targetTotal = content.targetTotal;
+                }
+            }
+            sourceTotal = (sourceTotal === undefined || sourceTotal === null) ? '-' : sourceTotal;
+            targetTotal = (targetTotal === undefined || targetTotal === null) ? '-' : targetTotal;
+            return '<span>源：' + sourceTotal + '</span><br><span>目：' + targetTotal + '</span>';
+        }
+
+        /**
+         * 按明细 ID 拉取完整记录（含 CONTENT）后展示弹窗。
+         * @param {string} detailId 明细主键
+         */
+        window.showDiffDetail = function (detailId) {
+            if (!detailId) return;
+            doPoster('/validate-sync/getResultDetail', {id: detailId}, function (res) {
+                if (!res.success) {
+                    bootGrowl(res.message || '加载失败', 'danger');
+                    return;
+                }
+                var row = res.data;
+                var content = parseContent(row.content);
+                if (!content) {
+                    bootGrowl('无差异数据！', 'warning');
+                    return;
+                }
+                var type = row.type || '';
+                var data = content.data || [];
+                var tableNameOuter = row.sourceTableName || (content.tableName || '-');
+                var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
+                var tgt = row.targetTotal != null ? row.targetTotal : (content.targetTotal != null ? content.targetTotal : 0);
+                var diff = row.diffTotal != null ? row.diffTotal : (content.diffTotal != null ? content.diffTotal : 0);
+                var fixed = row.fixedTotal != null ? row.fixedTotal : 0;
+
+                if (type === 'rowData') {
+                    $('#diffSummary').show();
+                    $('#summarySourceTotal').text(src);
+                    $('#summaryTargetTotal').text(tgt);
+                    $('#summaryDiffTotal').text(diff);
+                    $('#summaryCorrectedTotal').text(fixed);
+                } else {
+                    $('#diffSummary').hide();
+                }
+
+                var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
+                var bodyHtml = '';
+                data.forEach(function (d) {
+                    var safeMsg = escapeHtml(d.msg || '-');
+                    var msgHtml = '<div class="diff-msg-cell">' + safeMsg + '</div>';
+                    var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
+                    var typeText = d.type || d.objType || '-';
+                    bodyHtml += '<tr>' +
+                        '<td>' + sourceTableHtml + '</td>' +
+                        '<td>' + escapeHtml(typeText) + '</td>' +
+                        '<td>' + escapeHtml(d.key || '-') + '</td>' +
+                        '<td style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;">' + msgHtml + '</td>' +
+                        '</tr>';
+                });
+                if (data.length === 0) {
+                    bodyHtml = '<tr><td colspan="4" class="text-center text-gray-400">无差异数据</td></tr>';
+                }
+                $('#diffTableHead').html(headHtml);
+                $('#diffTableBody').html(bodyHtml);
+                $('#diffDetailOverlay').show();
+            });
+        };
+
+        $(document).on('click', '.diff-detail-btn', function () {
+            var id = $(this).data('detail-id');
+            if (id) {
+                window.showDiffDetail(String(id));
+            }
+        });
+
+        // 初始化分页
+        var resultPagination = new PaginationManager({
+            requestUrl: '/validate-sync/searchResult',
+            tableBodySelector: '#detail-result-table',
+            params: {taskId: currentTaskId},
+            renderRow: function (row, index) {
+                var typeCode = row.type || '';
+                var badgeClass = typeBadgeMap[typeCode] || 'badge-info';
+                var typeText = typeTextMap[typeCode] || typeCode;
+                var detailId = row.id != null ? row.id : '';
+                return '<tr>' +
+                    '<td>' + index + '</td>' +
+                    '<td><span class="badge ' + badgeClass + '">' + escapeHtml(typeText) + '</span></td>' +
+                    '<td>' + escapeHtml(row.sourceTableName || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.targetTableName || '-') + '</td>' +
+                    '<td>' + getSourceTargetCounts(row) + '</td>' +
+                    '<td>' + getDiffTotal(row) + '</td>' +
+                    '<td>' + getCorrectedTotal(row) + '</td>' +
+                    '<td>' + formatDate(row.updateTime || '') + '</td>' +
+                    '<td><button type="button" class="table-action-btn view diff-detail-btn" title="查看详情" data-detail-id="' + String(detailId).replace(/"/g, '') + '"><i class="fa fa-eye"></i></button></td>' +
+                    '</tr>';
+            },
+            emptyHtml: '<td colspan="9" class="text-center"><i class="fa fa-file-text-o empty-icon"></i><p class="empty-text">暂无校验结果</p><p class="empty-description">请先执行校验任务</p></td>',
+            customPageSize: true
+        });
+    });
+</script>
+</html>

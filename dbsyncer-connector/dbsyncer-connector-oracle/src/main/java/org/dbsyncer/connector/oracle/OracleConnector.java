@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.oracle;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
@@ -17,7 +18,9 @@ import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -26,6 +29,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Oracle连接器实现
@@ -35,7 +39,6 @@ import java.util.List;
  * @Date 2022-05-12 21:14
  */
 public final class OracleConnector extends AbstractDatabaseConnector {
-
     private final String QUERY_SCHEMA = "SELECT USERNAME FROM ALL_USERS where USERNAME not in('ANONYMOUS','APEX_030200','APEX_PUBLIC_USER','APPQOSSYS','BI','CTXSYS','DBSNMP','DIP','EXFSYS','FLOWS_FILES','HR','IX','MDDATA','MDSYS','MGMT_VIEW','OE','OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN','OWBSYS','OWBSYS_AUDIT','PM','SCOTT','SH','SI_INFORMTN_SCHEMA','SPATIAL_CSW_ADMIN_USR','SPATIAL_WFS_ADMIN_USR','SYS','SYSMAN','SYSTEM','WMSYS','XDB','XS$NULL') ORDER BY USERNAME";
 
     private final OracleConfigValidator configValidator = new OracleConfigValidator();
@@ -65,7 +68,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
     }
 
     @Override
@@ -137,6 +140,84 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         System.arraycopy(cursorArgs, 0, newCursors, 0, cursorArgs.length);
         newCursors[cursorArgs.length] = pageSize;
         return newCursors;
+    }
+
+    @Override
+    public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
+                                        String targetTableName, List<Field> sourceDefinitions,
+                                        List<String> targetColumnNames) {
+        if (CollectionUtils.isEmpty(sourceDefinitions) || CollectionUtils.isEmpty(targetColumnNames)) {
+            return StringUtil.EMPTY;
+        }
+        int loopSize = Math.min(sourceDefinitions.size(), targetColumnNames.size());
+
+        String qualifiedTable = qualifyTable(targetInstance, task, targetTableName);
+        List<String> alterStatements = new ArrayList<>(loopSize);
+        for (int i = 0; i < loopSize; i++) {
+            Field sourceField = sourceDefinitions.get(i);
+            String targetColumn = targetColumnNames.get(i);
+            if (sourceField == null || StringUtil.isBlank(targetColumn)) {
+                continue;
+            }
+            String col = buildWithQuotation(targetColumn);
+            String type = formatPhysicalType(sourceField);
+            if (isUnsupportedOnlineModifyType(type)) {
+                continue;
+            }
+            // 单列 MODIFY：多列写在一个 MODIFY(...) 中易触发 ORA-22859；writerDDL 仅一次 execute，故用 PL/SQL 批量 EXECUTE IMMEDIATE
+            alterStatements.add(String.format(Locale.ROOT, "ALTER TABLE %s MODIFY (%s %s)", qualifiedTable, col, type));
+        }
+        if (alterStatements.isEmpty()) {
+            return StringUtil.EMPTY;
+        }
+        if (alterStatements.size() == 1) {
+            return alterStatements.get(0);
+        }
+        StringBuilder plsql = new StringBuilder(alterStatements.size() * 80);
+        plsql.append("BEGIN\n");
+        for (String stmt : alterStatements) {
+            plsql.append("  EXECUTE IMMEDIATE '")
+                    .append(escapeForExecuteImmediate(stmt))
+                    .append("';\n");
+        }
+        plsql.append("END;");
+        return plsql.toString();
+    }
+
+    /**
+     * 将动态 SQL 嵌入 EXECUTE IMMEDIATE 的单引号字面量时，单引号需加倍转义。
+     */
+    private static String escapeForExecuteImmediate(String sql) {
+        if (sql == null) {
+            return "";
+        }
+        return sql.replace("'", "''");
+    }
+
+    /**
+     * Oracle LONG/LONG RAW 到 LOB 的转换不能通过 MODIFY 修改
+     */
+    private boolean isUnsupportedOnlineModifyType(String type) {
+        if (StringUtil.isBlank(type)) {
+            return false;
+        }
+        String normalized = type.trim().toUpperCase(Locale.ROOT);
+        return "CLOB".equals(normalized)
+                || "NCLOB".equals(normalized)
+                || "BLOB".equals(normalized)
+                || "LONG".equals(normalized)
+                || "LONG RAW".equals(normalized);
+    }
+
+    private String qualifyTable(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
+                                String tableName) {
+        String schema = StringUtil.isNotBlank(task.getTargetSchema())
+                ? task.getTargetSchema()
+                : targetInstance.getCatalog();
+        if (StringUtil.isBlank(schema)) {
+            return buildWithQuotation(tableName);
+        }
+        return buildWithQuotation(schema) + "." + buildWithQuotation(tableName);
     }
 
     @Override
@@ -279,8 +360,35 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
         // VALUES 子句使用 s.fieldName
         List<String> sFieldNames = new ArrayList<>();
-        context.fieldNames.forEach(f->sFieldNames.add("s." + f));
+        context.fieldNames.forEach(f -> sFieldNames.add("s." + f));
         sql.append(StringUtil.join(sFieldNames, StringUtil.COMMA)).append(")");
+    }
+
+    @Override
+    protected String formatPhysicalType(Field sourceDefinition) {
+        String typeName = sourceDefinition == null ? null : sourceDefinition.getTypeName();
+        if (StringUtil.isBlank(typeName)) {
+            return "VARCHAR2(255)";
+        }
+        String t = typeName.trim().toUpperCase(Locale.ROOT);
+        String oracleSpecific = mapOracleSpecialNumericAndTemporal(t, sourceDefinition);
+        if (oracleSpecific != null) {
+            return oracleSpecific;
+        }
+        return super.formatPhysicalType(sourceDefinition);
+    }
+
+    /**
+     * MODIFY 子句中 BINARY_FLOAT/DOUBLE、TIMESTAMP、RAW 与基类默认不兼容。
+     */
+    private static String mapOracleSpecialNumericAndTemporal(String t, Field sourceDefinition) {
+        if ("BINARY_FLOAT".equals(t) || t.startsWith("BINARY_FLOAT(")) {
+            return "BINARY_FLOAT";
+        }
+        if ("BINARY_DOUBLE".equals(t) || t.startsWith("BINARY_DOUBLE(")) {
+            return "BINARY_DOUBLE";
+        }
+        return null;
     }
 
     /**

@@ -43,6 +43,11 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_CURSOR = "QUERY_CURSOR";
 
     /**
+     * 目标端按主键批量IN查询
+     */
+    public static final String OPERTION_QUERY_TARGET = "QUERY_TARGET";
+
+    /**
      * 游标分页实际使用的主键名列表（逗号分隔），与 QUERY_CURSOR 的 SQL 占位符一致。
      * 执行时用该列表做 getLastCursors，避免用 findTablePrimaryKeys 取到表上未参与游标的主键（如 id）导致参数个数不一致。
      */
@@ -57,6 +62,11 @@ public class ConnectorConstant {
      * 查询总数
      */
     public static final String OPERTION_QUERY_COUNT = "QUERY_COUNT";
+
+    /**
+     * 目标表查询总数
+     */
+    public static final String TARGET_QUERY_COUNT = "TARGET_QUERY_COUNT";
 
     /**
      * 主表，扩展表映射关系

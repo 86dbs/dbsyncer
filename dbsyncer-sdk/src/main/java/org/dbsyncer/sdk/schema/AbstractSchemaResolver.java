@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.schema;
 
 import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 
 import org.springframework.util.Assert;
@@ -47,5 +48,14 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
             return dataType.convertValue(val, field);
         }
         throw new SdkException(String.format("%s does not support type [%s] convert to [%s], val [%s]", getClass().getSimpleName(), val.getClass(), field.getTypeName(), val));
+    }
+
+    @Override
+    public DataTypeEnum getFieldType(Field field) {
+        DataType dataType = getDataType(mapping, field);
+        if (dataType != null) {
+            return dataType.getType();
+        }
+        throw new SdkException(String.format("%s does not support field type [%s]", getClass().getSimpleName(), field.getTypeName()));
     }
 }

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.mysql.storage;
 
+import org.apache.commons.io.IOUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -12,6 +13,7 @@ import org.dbsyncer.connector.mysql.MySQLException;
 import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -24,9 +26,6 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
-
-import org.apache.commons.io.IOUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -37,10 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -98,7 +94,7 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         List<Object> queryCountArgs = new ArrayList<>();
         String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
-        Long total = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+        Long total = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
         paging.setTotal(total);
         if (query.isQueryTotal()) {
             return paging;
@@ -107,7 +103,7 @@ public class MySQLStorageService extends AbstractStorageService {
         List<AbstractFilter> highLightKeys = new ArrayList<>();
         List<Object> queryArgs = new ArrayList<>();
         String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
-        List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+        List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
         replaceHighLight(highLightKeys, data);
         paging.setData(data);
         return paging;
@@ -124,12 +120,12 @@ public class MySQLStorageService extends AbstractStorageService {
         buildQuerySqlWithParams(query, params, sql, new ArrayList<>());
         final List<Object[]> args = new ArrayList<>();
         args.add(params.toArray());
-        connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(sql.toString(), args));
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), args));
     }
 
     @Override
     protected void deleteAll(String sharding) {
-        tables.computeIfPresent(sharding, (k, executor)-> {
+        tables.computeIfPresent(sharding, (k, executor) -> {
             String sql = getExecutorSql(executor, k);
             executeSql(sql);
             // 非系统表
@@ -179,8 +175,8 @@ public class MySQLStorageService extends AbstractStorageService {
             return;
         }
         final String sql = executor.getDelete();
-        final List<Object[]> args = ids.stream().map(id->new Object[]{id}).collect(Collectors.toList());
-        connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(sql, args));
+        final List<Object[]> args = ids.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
     @Override
@@ -198,12 +194,12 @@ public class MySQLStorageService extends AbstractStorageService {
             return;
         }
         final String sql = mapper.getSql(executor);
-        final List<Object[]> args = list.stream().map(row->mapper.getArgs(executor, row)).collect(Collectors.toList());
-        connectorInstance.execute(databaseTemplate->databaseTemplate.batchUpdate(sql, args));
+        final List<Object[]> args = list.stream().map(row -> mapper.getArgs(executor, row)).collect(Collectors.toList());
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
     private Executor getExecutor(StorageEnum type, String sharding) {
-        return tables.computeIfAbsent(sharding, table-> {
+        return tables.computeIfAbsent(sharding, table -> {
             Executor executor = tables.get(type.getType());
             if (executor == null) {
                 throw new NullExecutorException("未知的存储类型");
@@ -219,7 +215,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private Object[] getInsertArgs(Executor executor, Map params) {
-        return executor.getFields().stream().map(f->params.get(f.getLabelName())).toArray();
+        return executor.getFields().stream().map(f -> params.get(f.getLabelName())).toArray();
     }
 
     private Object[] getUpdateArgs(Executor executor, Map params) {
@@ -238,19 +234,71 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private String buildQuerySql(Query query, Executor executor, List<Object> args, List<AbstractFilter> highLightKeys) {
-        StringBuilder sql = new StringBuilder(executor.getQuery());
+        StringBuilder sql = new StringBuilder(buildSelectFromSql(query, executor));
         buildQuerySqlWithParams(query, args, sql, highLightKeys);
-        // order by updateTime,createTime desc
         sql.append(" order by ");
+        if (query.hasCustomOrderBy()) {
+            buildCustomOrderBy(query, sql);
+        } else {
+            buildDefaultOrderBy(query, executor, sql);
+        }
+        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
+        args.add((query.getPageNum() - 1) * query.getPageSize());
+        args.add(query.getPageSize());
+        return sql.toString();
+    }
+
+    /**
+     * 可自定义 select 字段查询结果
+     */
+    private String buildSelectFromSql(Query query, Executor executor) {
+        if (!query.hasSelectField()) {
+            return executor.getQuery();
+        }
+        Set<String> includeLabels = query.getSelectFlied();
+
+        Database database = connector;
+        List<String> selectedFields = new ArrayList<>();
+        for (Field field : executor.getFields()) {
+            String label = field.getLabelName();
+
+            if (!CollectionUtils.isEmpty(includeLabels) && !includeLabels.contains(label)) {
+                continue;
+            }
+            // 自定义查询字段
+            if (StringUtil.isNotBlank(label)) {
+                selectedFields.add(database.buildWithQuotation(field.getName()) + " AS " + label);
+            } else if (!database.buildCustom(selectedFields, field)) {
+                selectedFields.add(database.buildWithQuotation(field.getName()));
+            }
+        }
+        if (selectedFields.isEmpty()) {
+            return executor.getQuery();
+        }
+        // 拼接最终SQL
+        return String.format("SELECT %s FROM %s",
+                StringUtil.join(selectedFields, StringUtil.COMMA),
+                database.buildWithQuotation(executor.getTable()));
+    }
+
+    private void buildCustomOrderBy(Query query, StringBuilder sql) {
+        List<Query.OrderBy> orderByList = query.getOrderByList();
+        for (int i = 0; i < orderByList.size(); i++) {
+            if (i > 0) {
+                sql.append(StringUtil.COMMA);
+            }
+            Query.OrderBy orderBy = orderByList.get(i);
+            sql.append(UnderlineToCamelUtils.camelToUnderline(orderBy.getFieldName()));
+            sql.append(" ").append(orderBy.getSort() != null ? orderBy.getSort().getCode() : query.getSort().getCode());
+        }
+    }
+
+    private void buildDefaultOrderBy(Query query, Executor executor, StringBuilder sql) {
         if (executor.isOrderByUpdateTime()) {
             sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)).append(StringUtil.COMMA);
         }
         sql.append(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_CREATE_TIME));
         sql.append(" ").append(query.getSort().getCode());
-        sql.append(DatabaseConstant.MYSQL_PAGE_SQL);
-        args.add((query.getPageNum() - 1) * query.getPageSize());
-        args.add(query.getPageSize());
-        return sql.toString();
     }
 
     private String buildQueryCountSql(Query query, Executor executor, List<Object> args) {
@@ -360,22 +408,22 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> dataFields = builder.getFields();
 
         // 任务
-        // builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON,
-        // ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        // List<Field> taskFields = builder.getFields();
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskFields = builder.getFields();
 
-        // 数据校验明细
-        // builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME,
-        // ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        // List<Field> dataVerifyDetailFields = builder.getFields();
+        // 数据校验明细（列顺序与 dbsyncer_mysql_task_validata_sync_detail.sql 一致）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME,
+                ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.TASK_TARGET_TOTAL, ConfigConstant.TASK_DIFF_TOTAL, ConfigConstant.TASK_FIXED_TOTAL,
+                ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> dataVerifyDetailFields = builder.getFields();
 
-        tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k->new Executor(k, configFields, true, true));
-        tables.computeIfAbsent(StorageEnum.LOG.getType(), k->new Executor(k, logFields, true, false));
-        tables.computeIfAbsent(StorageEnum.DATA.getType(), k->new Executor(k, dataFields, false, false));
-        // tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-        // tables.computeIfAbsent(StorageEnum.TASK_DATA_VERIFICATION_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
+        tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
+        tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
+        tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
+        tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        tables.computeIfAbsent(StorageEnum.VALIDATE_SYNC_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
         // 创建表
-        tables.forEach((tableName, e)-> {
+        tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
                 createTableIfNotExist(tableName, e);
             }
@@ -394,7 +442,7 @@ public class MySQLStorageService extends AbstractStorageService {
         // show tables where Tables_in_dbsyncer = "dbsyncer_config"
         String sql = String.format(SHOW_TABLE, database, table);
         try {
-            connectorInstance.execute(databaseTemplate->databaseTemplate.queryForMap(sql));
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(sql));
         } catch (EmptyResultDataAccessException e) {
             // 不存在表
             String ddl = readSql(executor.getType(), executor.isSystemTable(), table);
@@ -455,7 +503,7 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     private void executeSql(String ddl) {
-        connectorInstance.execute(databaseTemplate-> {
+        connectorInstance.execute(databaseTemplate -> {
             databaseTemplate.execute(ddl);
             logger.info(ddl);
             return true;
@@ -465,7 +513,7 @@ public class MySQLStorageService extends AbstractStorageService {
     private void replaceHighLight(List<AbstractFilter> highLightKeys, List<Map<String, Object>> list) {
         // 开启高亮
         if (!CollectionUtils.isEmpty(list) && !CollectionUtils.isEmpty(highLightKeys)) {
-            list.forEach(row->highLightKeys.forEach(paramFilter-> {
+            list.forEach(row -> highLightKeys.forEach(paramFilter -> {
                 String text = String.valueOf(row.get(paramFilter.getName()));
                 String replacement = "<span style='color:red'>" + paramFilter.getValue() + "</span>";
                 row.put(paramFilter.getName(), StringUtil.replace(text, paramFilter.getValue(), replacement));
@@ -480,20 +528,22 @@ public class MySQLStorageService extends AbstractStorageService {
 
         public FieldBuilder() {
             fieldMap = Stream.of(new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true), new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR), new Field(
-                    ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR",
-                    Types.VARCHAR), new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT",
-                            Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR), new Field(ConfigConstant.DATA_SUCCESS, "INTEGER",
+                                    ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR",
+                                    Types.VARCHAR), new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT",
+                                    Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR), new Field(ConfigConstant.DATA_SUCCESS, "INTEGER",
                                     Types.INTEGER), new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR), new Field(ConfigConstant.DATA_TARGET_TABLE_NAME, "VARCHAR",
-                                            Types.VARCHAR), new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR), new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR",
-                                                    Types.LONGVARCHAR), new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB), new Field(ConfigConstant.TASK_ID, "VARCHAR",
-                                                            Types.VARCHAR), new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER), new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR",
-                                                                    Types.VARCHAR), new Field(ConfigConstant.TASK_CONTENT, "VARCHAR", Types.VARCHAR))
-                    .peek(field-> {
+                                    Types.VARCHAR), new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR), new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR",
+                                    Types.LONGVARCHAR), new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB), new Field(ConfigConstant.TASK_ID, "VARCHAR",
+                                    Types.VARCHAR), new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER), new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR",
+                                    Types.VARCHAR), new Field(ConfigConstant.TASK_SOURCE_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_TARGET_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TASK_DIFF_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_FIXED_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TASK_CONTENT, "LONGVARCHAR", Types.LONGVARCHAR))
+                    .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线
                         String labelName = UnderlineToCamelUtils.camelToUnderline(field.getName());
                         field.setName(labelName);
-                    }).collect(Collectors.toMap(Field::getLabelName, field->field));
+                    }).collect(Collectors.toMap(Field::getLabelName, field -> field));
         }
 
         public List<Field> getFields() {
@@ -502,7 +552,7 @@ public class MySQLStorageService extends AbstractStorageService {
 
         public void build(String... fieldNames) {
             fields = new ArrayList<>(fieldNames.length);
-            Stream.of(fieldNames).parallel().forEach(k-> {
+            Stream.of(fieldNames).parallel().forEach(k -> {
                 if (fieldMap.containsKey(k)) {
                     Field field = fieldMap.get(k);
                     fields.add(field);

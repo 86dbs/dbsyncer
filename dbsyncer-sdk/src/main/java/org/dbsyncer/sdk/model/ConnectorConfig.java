@@ -27,6 +27,8 @@ public abstract class ConnectorConfig {
      */
     private Properties extInfo = new Properties();
 
+    public abstract String getUrl();
+
     public String getConnectorType() {
         return connectorType;
     }

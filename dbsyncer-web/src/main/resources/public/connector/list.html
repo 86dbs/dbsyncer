@@ -37,6 +37,7 @@
             </thead>
             <tbody id="connectorTableBody"></tbody>
         </table>
+        <div class="blank-block"></div>
 
     </div>
 </div>
@@ -82,7 +83,8 @@ $(document).ready(function() {
                 </tr>
             `;
         },
-        emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></td>'
+        emptyHtml:'<td colspan="5" class="text-center"><i class="fa fa-database empty-icon"></i><p class="empty-text">暂无连接</p><p class="empty-description">点击"添加"按钮创建第一个连接</p></td>',
+        customPageSize:true
     });
 
     // 搜索框输入事件

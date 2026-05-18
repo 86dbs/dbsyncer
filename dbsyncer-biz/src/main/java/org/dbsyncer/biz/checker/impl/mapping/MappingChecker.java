@@ -9,12 +9,14 @@ import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -54,28 +56,17 @@ public class MappingChecker extends AbstractChecker {
     @Resource
     private PreloadTemplate preloadTemplate;
 
+    @Resource
+    private ConnectorFactory connectorFactory;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
         String name = params.get(ConfigConstant.CONFIG_MODEL_NAME);
-        String sourceConnectorId = params.get("sourceConnectorId");
-        String sourceDatabase = params.get("sourceDatabase");
-        String sourceSchema = params.get("sourceSchema");
-        String targetConnectorId = params.get("targetConnectorId");
-        String targetDatabase = params.get("targetDatabase");
-        String targetSchema = params.get("targetSchema");
         Assert.hasText(name, "驱动名称不能为空");
-        Assert.hasText(sourceConnectorId, "数据源不能为空.");
-        Assert.hasText(targetConnectorId, "目标源不能为空.");
 
         Mapping mapping = new Mapping();
         mapping.setName(name);
-        mapping.setSourceConnectorId(sourceConnectorId);
-        mapping.setSourceDatabase(sourceDatabase);
-        mapping.setSourceSchema(sourceSchema);
-        mapping.setTargetConnectorId(targetConnectorId);
-        mapping.setTargetDatabase(targetDatabase);
-        mapping.setTargetSchema(targetSchema);
         mapping.setModel(ModelEnum.FULL.getCode());
         mapping.setListener(new ListenerConfig(ListenerTypeEnum.LOG.getType()));
         mapping.setParams(new HashMap<>());
@@ -83,7 +74,8 @@ public class MappingChecker extends AbstractChecker {
         // 修改基本配置
         this.modifyConfigModel(mapping, params);
 
-        preloadTemplate.reConnect(mapping);
+        // 修改连接配置
+        updateConnector(params, mapping);
 
         // 创建meta
         addMeta(mapping);
@@ -125,13 +117,46 @@ public class MappingChecker extends AbstractChecker {
 
         // 修改高级配置：过滤条件/转换配置/插件配置
         this.modifySuperConfigModel(mapping, params);
-
-        preloadTemplate.reConnect(mapping);
+        // 修改连接配置
+        updateConnector(params, mapping);
 
         // 合并关联的映射关系配置
         batchMergeConfig(mapping, params);
 
         return mapping;
+    }
+
+    private void updateConnector(Map<String, String> params, Mapping mapping) {
+        String sourceConnectorId = params.get("sourceConnectorId");
+        String sourceDatabase = params.get("sourceDatabase");
+        String sourceSchema = params.get("sourceSchema");
+        String targetConnectorId = params.get("targetConnectorId");
+        String targetDatabase = params.get("targetDatabase");
+        String targetSchema = params.get("targetSchema");
+        Assert.hasText(sourceConnectorId, "数据源不能为空.");
+        Assert.hasText(targetConnectorId, "目标源不能为空.");
+
+        // 如果连接发生变更, 释放源库连接资源
+        String sId = mapping.getSourceConnectorId();
+        if (StringUtil.isNotBlank(sId) && !StringUtil.equals(sId, sourceConnectorId)) {
+            String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), sId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+            connectorFactory.disconnect(sourceInstanceId);
+        }
+
+        // 如果连接发生变更, 释放目标库连接资源
+        String tId = mapping.getTargetConnectorId();
+        if (StringUtil.isNotBlank(tId) && !StringUtil.equals(tId, targetConnectorId)) {
+            String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), tId, ConnectorInstanceUtil.TARGET_SUFFIX);
+            connectorFactory.disconnect(targetInstanceId);
+        }
+
+        mapping.setSourceConnectorId(sourceConnectorId);
+        mapping.setSourceDatabase(sourceDatabase);
+        mapping.setSourceSchema(sourceSchema);
+        mapping.setTargetConnectorId(targetConnectorId);
+        mapping.setTargetDatabase(targetDatabase);
+        mapping.setTargetSchema(targetSchema);
+        preloadTemplate.reConnect(mapping);
     }
 
     public void addMeta(Mapping mapping) {
@@ -163,26 +188,29 @@ public class MappingChecker extends AbstractChecker {
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
         List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
-            // 手动排序
-            String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
-            if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
-                Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f->f, (k1, k2)->k1));
-                groupAll.clear();
-                int size = sortedTableGroupIds.length;
-                int i = size;
-                while (i > 0) {
-                    TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
-                    Assert.notNull(g, "Invalid sorted tableGroup.");
-                    g.setIndex(i);
-                    groupAll.add(g);
-                    i--;
-                }
-            }
-
+            sortTableGroup(groupAll, params);
             // 合并配置
             for (TableGroup g : groupAll) {
                 tableGroupChecker.mergeConfig(mapping, g);
                 profileComponent.editConfigModel(g);
+            }
+        }
+    }
+
+    public void sortTableGroup(List<TableGroup> groupAll, Map<String, String> params) {
+        // 手动排序
+        String[] sortedTableGroupIds = StringUtil.split(params.get("sortedTableGroupIds"), StringUtil.VERTICAL_LINE);
+        if (null != sortedTableGroupIds && sortedTableGroupIds.length > 0) {
+            Map<String, TableGroup> tableGroupMap = groupAll.stream().collect(Collectors.toMap(TableGroup::getId, f -> f, (k1, k2) -> k1));
+            groupAll.clear();
+            int size = sortedTableGroupIds.length;
+            int i = size;
+            while (i > 0) {
+                TableGroup g = tableGroupMap.get(sortedTableGroupIds[size - i]);
+                Assert.notNull(g, "Invalid sorted tableGroup.");
+                g.setIndex(i);
+                groupAll.add(g);
+                i--;
             }
         }
     }

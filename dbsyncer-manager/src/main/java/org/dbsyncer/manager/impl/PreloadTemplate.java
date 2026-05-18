@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -19,20 +21,24 @@ import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
-import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.*;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.plugin.impl.DingTalkNoticeService;
+import org.dbsyncer.plugin.impl.HttpNoticeService;
+import org.dbsyncer.plugin.impl.MailNoticeService;
+import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.sdk.model.NoticeConfig;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.notice.MessageService;
+import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.storage.StorageService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -41,7 +47,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -85,12 +90,18 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private StorageService storageService;
 
     @Resource
+    private MessageService messageService;
+
+    @Resource
     private LogService logService;
 
     @Resource
     private Executor generalExecutor;
 
     private boolean preloadCompleted;
+
+    @Resource
+    private TaskService<ValidateSyncTask> taskService;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -100,13 +111,69 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load plugins
         pluginFactory.loadPlugins();
 
+        // Load Notification Channels
+        loadNotificationChannel();
+
         // Load connectorInstances
         loadConnectorInstance();
+
+        //load ValidateSyncTasks
+        loadValidateSyncTasks();
 
         // Launch drivers
         launch();
 
         preloadCompleted = true;
+    }
+
+    public void loadNotificationChannel() {
+        try {
+            SystemConfig systemConfig = profileComponent.getSystemConfig();
+            if (null == systemConfig) {
+                return;
+            }
+            NoticeConfig noticeConfig = systemConfig.getNoticeConfig();
+            if (null == noticeConfig) {
+                return;
+            }
+
+            // 邮件通知
+            if (noticeConfig.getMail().isEnabled()) {
+                MailNoticeService service = new MailNoticeService();
+                service.setUsername(noticeConfig.getMail().getAccount());
+                service.setPassword(noticeConfig.getMail().getCode());
+                service.build();
+                messageService.registerNotifyService(NoticeChannelEnum.EMAIL, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.EMAIL);
+            }
+
+            // 企业微信通知
+            if (noticeConfig.getWechat().isEnabled()) {
+                WeChatNoticeService service = new WeChatNoticeService();
+                messageService.registerNotifyService(NoticeChannelEnum.WE_CHAT, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.WE_CHAT);
+            }
+
+            // 钉钉通知
+            if (noticeConfig.getDingTalk().isEnabled()) {
+                DingTalkNoticeService service = new DingTalkNoticeService();
+                messageService.registerNotifyService(NoticeChannelEnum.DING_TALK, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.DING_TALK);
+            }
+
+            // HTTP通知
+            if (noticeConfig.getHttp().isEnabled()) {
+                HttpNoticeService service = new HttpNoticeService();
+                messageService.registerNotifyService(NoticeChannelEnum.HTTP, service);
+            } else {
+                messageService.removeNotifyService(NoticeChannelEnum.HTTP);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     /**
@@ -163,13 +230,26 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     public void reConnect(Mapping mapping) {
-        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX);
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
-        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
-        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), mapping.getSourceDatabase(), mapping.getSourceSchema());
+        reConnect(mapping.getId(), mapping.getSourceConnectorId(), mapping.getSourceDatabase(), mapping.getSourceSchema(),
+                mapping.getTargetConnectorId(), mapping.getTargetDatabase(), mapping.getTargetSchema());
+    }
+
+    public void reConnect(ValidateSyncTask task) {
+        //源作为查询，目标也需要作为查询 生成sql语句
+        reConnect(task.getId(), task.getSourceConnectorId(), task.getSourceDatabase(), task.getSourceSchema(),
+                task.getTargetConnectorId(), task.getTargetDatabase(), task.getTargetSchema());
+
+    }
+
+    public void reConnect(String uniqueId, String sourceConnectorId, String sourceDatabase, String sourceSchema,
+                          String targetConnectorId, String targetDatabase, String targetSchema) {
+        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
+        Connector connector = profileComponent.getConnector(sourceConnectorId);
+        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), sourceDatabase, sourceSchema);
         Assert.notNull(instance, "Source connector instance can not null");
-        connector = profileComponent.getConnector(mapping.getTargetConnectorId());
-        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), mapping.getTargetDatabase(), mapping.getTargetSchema());
+        connector = profileComponent.getConnector(targetConnectorId);
+        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
         Assert.notNull(instance, "Target connector instance can not null");
     }
 
@@ -241,5 +321,23 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 }
             }));
         }
+    }
+
+    private void loadValidateSyncTasks() {
+        List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
+        if (CollectionUtils.isEmpty(taskAll)) {
+            return;
+        }
+        taskAll.forEach(task -> {
+            reConnect((ValidateSyncTask) task);
+        });
+
+        //启动任务
+        taskAll.stream()
+                .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
+                .forEach(task -> {
+                    task.setStatus(CommonTaskStatusEnum.READY.getCode());
+                    taskService.start(task.getId());
+                });
     }
 }

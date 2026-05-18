@@ -19,6 +19,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
@@ -34,6 +35,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -56,16 +58,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -344,8 +337,11 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MappingLog.STOP, mapping);
 
             // 发送关闭驱动通知消息
-            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-            sendNotifyMessage("停止驱动", String.format("手动停止驱动：%s(%s)", mapping.getName(), model));
+            MappingStopContent content = new MappingStopContent();
+            content.setTitle("手动停止驱动");
+            content.setName(mapping.getName());
+            content.setModel(ModelEnum.getModelEnum(mapping.getModel()));
+            sendNotifyMessage(content);
         }
         return "驱动停止成功";
     }
@@ -358,6 +354,72 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         mapping.setTargetTable(updateConnectorTables(mapping, ConnectorInstanceUtil.TARGET_SUFFIX));
         profileComponent.editConfigModel(mapping);
         return "刷新驱动表成功";
+    }
+
+    @Override
+    public Paging<Table> searchTables(Map<String, String> params) {
+        // 1. 参数获取
+        String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        String type = params.get(ConfigConstant.CONFIG_MODEL_TYPE);
+        String searchKey = params.get("searchKey");
+        String tableNames = params.get("tableNames");
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = Math.max(10, Math.min(200, NumberUtil.toInt(params.get("pageSize"), 50)));
+        //是否过滤
+        boolean excludeMapped = NumberUtil.toInt(params.get("exclude"), 0) != 1;
+
+        // 2. 获取基础数据
+        Mapping mapping = assertMappingExist(id);
+        boolean isSource = !"target".equals(type);
+        List<Table> tables = getMappingTables(mapping, isSource);
+
+        // 3. 已映射表名集合（需要排除的）
+        Set<String> mappedTableNames;
+        if (excludeMapped) {
+            mappedTableNames = tableGroupService.getTableGroupAll(id).stream()
+                    .map(g -> isSource ? g.getSourceTable() : g.getTargetTable())
+                    .filter(Objects::nonNull)
+                    .map(Table::getName)
+                    .filter(StringUtil::isNotBlank)
+                    .collect(Collectors.toSet());
+        } else {
+            mappedTableNames = Collections.emptySet();
+        }
+
+        // 4. 精准匹配（按源表名批量精确查询目标表）
+        Set<String> exactNames = new HashSet<>();
+        if (StringUtil.isNotBlank(tableNames)) {
+            String[] nameArray = StringUtil.split(tableNames, "\\|");
+            if (nameArray != null) {
+                Arrays.stream(nameArray)
+                        .filter(StringUtil::isNotBlank)
+                        .map(String::toUpperCase)
+                        .forEach(exactNames::add);
+            }
+        }
+
+        // 4. 流式过滤 + 搜索 + 排序
+        String key = StringUtil.isBlank(searchKey) ? StringUtil.EMPTY : searchKey.trim().toUpperCase();
+        List<Table> filtered = tables.stream()
+                .filter(Objects::nonNull)
+                .filter(t -> StringUtil.isNotBlank(t.getName()))
+                .filter(t -> !mappedTableNames.contains(t.getName()))
+                .filter(t -> exactNames.isEmpty() || exactNames.contains(t.getName().toUpperCase()))
+                .filter(t -> key.isEmpty() || t.getName().toUpperCase().contains(key))
+                .sorted(Comparator.comparing(Table::getName))
+                .collect(Collectors.toList());
+
+        // 5. 内存分页
+        Paging<Table> paging = new Paging<>(pageNum, pageSize);
+        paging.setTotal(filtered.size());
+
+        int offset = (pageNum - 1) * pageSize;
+        paging.setData(filtered.stream()
+                .skip(offset)
+                .limit(pageSize)
+                .collect(Collectors.toList()));
+
+        return paging;
     }
 
     @Override

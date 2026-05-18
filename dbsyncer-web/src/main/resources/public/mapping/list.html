@@ -5,20 +5,20 @@
 <!-- 查询驱动列表 -->
 <div class="form-container">
     <div class="card-header">
-        <h3 class="card-title text-center">驱动管理</h3>
+        <h3 class="card-title text-center">数据同步</h3>
     </div>
     <div class="card-body">
         <div class="grid grid-cols-6 items-center">
             <div id="searchMapping" class="lg:col-span-2 search-wrapper">
                 <i class="fa fa-search search-icon"></i>
-                <input class="search-input" type="text" maxlength="32" placeholder="搜索驱动名称">
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索名称">
                 <span class="search-clear" title="清除">
                     <i class="fa fa-times"></i>
                 </span>
             </div>
             <div class="lg:col-span-2"></div>
             <div class="lg:col-span-2 flex items-center justify-end">
-                <button class="btn btn-primary" id="addMappingBtn" onclick="doLoader('/mapping/pageAdd')">
+                <button class="btn btn-primary" onclick="doLoader('/mapping/pageAdd')">
                     <i class="fa fa-plus"></i> 添加
                 </button>
             </div>
@@ -39,7 +39,7 @@
             </thead>
             <tbody id="mappingTableBody"></tbody>
         </table>
-
+        <div class="blank-block"></div>
     </div>
 </div>
 
@@ -140,7 +140,8 @@ $(document).ready(function() {
                 </tr>
             `;
         },
-        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>'
+        emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>',
+        customPageSize:true
     });
 
     // 搜索框输入事件

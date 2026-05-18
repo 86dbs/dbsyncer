@@ -3,79 +3,75 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.CommonTask;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * 任务调度服务
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-05-12 23:36
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-05-12 23:36
  */
-public interface TaskService {
+public interface TaskService<T extends CommonTask> {
 
     /**
-     * 新增任务
-     *
-     * @param params
+     * 新增
      */
-    void add(Map<String, String> params);
+    String add(T task);
 
     /**
      * 修改
-     *
-     * @param params
      */
-    void modify(Map<String, String> params);
+    String edit(T task);
 
     /**
-     * 删除任务
-     *
-     * @param taskId
-     * @return
+     * 删除
      */
-    void delete(String taskId);
+    void delete(String id);
 
     /**
      * 启动
-     *
-     * @param taskId
-     * @return
      */
-    void start(String taskId);
+    void start(String id);
 
     /**
-     * 停止任务
-     *
-     * @param taskId
-     * @return
+     * 停止
      */
-    void stop(String taskId);
+    void stop(String id);
 
     /**
-     * 详情任务
-     *
-     * @param taskId
-     * @return
+     * 获取任务
      */
-    CommonTask detail(String taskId);
+    T get(String id);
 
     /**
      * 任务列表
-     *
-     * @param param
-     * @return
      */
-    Paging list(Map<String, String> param);
+    Paging search(Map<String, String> param, CommonTaskTypeEnum commonTaskTypeEnum);
 
     /**
-     * 任务结果
+     * 查看任务执行详情
+     */
+    Paging result(String id);
+
+    /**
+     * 获取所有任务 根据任务类型
      *
-     * @param param
      * @return
      */
-    Paging result(Map<String, String> param);
+    List<CommonTask> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum);
+
+    /**
+     * 检查任务状态
+     *
+     * @param taskId
+     * @return
+     */
+    boolean isRunning(String taskId);
+
 }

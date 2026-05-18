@@ -10,19 +10,8 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.OffsetTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.format.SignStyle;
-import java.time.format.TextStyle;
+import java.time.*;
+import java.time.format.*;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 
@@ -84,6 +73,10 @@ public abstract class DateFormatUtil {
 
     public static String getCurrentTime() {
         return LocalDateTime.now().format(HH_MM_SS);
+    }
+
+    public static String now() {
+        return LocalDateTime.now().format(YYYY_MM_DD_HH_MM_SS);
     }
 
     public static String dateToString(Date date) {

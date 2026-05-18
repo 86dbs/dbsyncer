@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.schema;
 
+import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 
 /**
@@ -31,4 +32,10 @@ public interface SchemaResolver {
      * @return Object
      */
     Object convert(Object val, Field field);
+
+    /**
+     * 获取标准字段类型
+     */
+    DataTypeEnum getFieldType(Field field);
+
 }

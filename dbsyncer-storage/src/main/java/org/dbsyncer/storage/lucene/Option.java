@@ -39,6 +39,12 @@ public class Option {
     private Map<String, FieldResolver> fieldResolverMap = new ConcurrentHashMap<>();
 
     /**
+     * 返回字段白名单（与 {@link org.dbsyncer.sdk.filter.Query#getSelectFlied()} 一致，驼峰字段名）。
+     * 为空时表示返回文档全部存储字段。
+     */
+    private Set<String> selectFields;
+
+    /**
      * 指定返回的值类型
      *
      * @param name
@@ -97,5 +103,23 @@ public class Option {
 
     public void setFieldResolverMap(Map<String, FieldResolver> fieldResolverMap) {
         this.fieldResolverMap = fieldResolverMap;
+    }
+
+    public Set<String> getSelectFields() {
+        return selectFields;
+    }
+
+    public void setSelectFields(Set<String> selectFields) {
+        this.selectFields = selectFields;
+    }
+
+    /**
+     * 是否在结果中包含该存储字段（自定义 SELECT 白名单）。
+     *
+     * @param name Lucene 字段名（与索引一致，一般为驼峰）
+     * @return 未配置白名单时为 true
+     */
+    public boolean includeField(String name) {
+        return selectFields == null || selectFields.isEmpty() || selectFields.contains(name);
     }
 }

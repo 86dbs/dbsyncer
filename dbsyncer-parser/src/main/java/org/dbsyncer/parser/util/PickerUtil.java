@@ -8,11 +8,15 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 
 import org.springframework.beans.BeanUtils;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class PickerUtil {
@@ -43,15 +47,43 @@ public abstract class PickerUtil {
         return group;
     }
 
+    /**
+     * 订正校验任务合并表组配置、过滤条件、转换配置、插件配置、目标源字段、数据源字段
+     */
+    public static TableGroup mergeTableGroupConfig(ValidateSyncTask task, TableGroup tableGroup) {
+        TableGroup group = new TableGroup();
+        BeanUtils.copyProperties(tableGroup, group);
+        group.setFilter(CollectionUtils.isEmpty(tableGroup.getFilter()) ? task.getFilter() : tableGroup.getFilter());
+        mapFieldsForSyncValidate(group);
+        return group;
+    }
+
     public static Map<String, Field> convert2Map(List<Field> col) {
         return col.stream().collect(Collectors.toMap(Field::getName, f->f, (k1, k2)->k1));
+    }
+
+    /**
+     * 订正校验做字段映射
+     */
+    private static void mapFieldsForSyncValidate(TableGroup group) {
+        final List<FieldMapping> fieldMapping = group.getFieldMapping();
+        List<Filter> filter = group.getFilter();
+        if (!CollectionUtils.isEmpty(filter)) {
+            Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
+            filter.forEach(f -> addFieldMapping(fieldMapping, f.getName(), fields, true));
+        }
+        List<Convert> convert = group.getConvert();
+        if (!CollectionUtils.isEmpty(convert)) {
+            Map<String, Field> fields = convert2Map(group.getTargetTable().getColumn());
+            convert.forEach(c -> addFieldMapping(fieldMapping, c.getName(), fields, false));
+        }
     }
 
     private static void appendFieldMapping(Mapping mapping, TableGroup group) {
         final List<FieldMapping> fieldMapping = group.getFieldMapping();
 
         // 检查增量字段是否在映射关系中
-        String eventFieldName = mapping.getListener().getEventFieldName();
+        String eventFieldName = mapping.getListener() != null ? mapping.getListener().getEventFieldName() : null;
         if (StringUtil.isNotBlank(eventFieldName)) {
             Map<String, Field> fields = convert2Map(group.getSourceTable().getColumn());
             addFieldMapping(fieldMapping, eventFieldName, fields, true);
@@ -90,5 +122,20 @@ public abstract class PickerUtil {
                 fieldMapping.add(fm);
             }
         }
+    }
+
+    public static List<Field> pickCommonFields(List<Field> column, List<Field> target) {
+        if (CollectionUtils.isEmpty(column) || CollectionUtils.isEmpty(target)) {
+            return target;
+        }
+        List<Field> list = new ArrayList<>();
+        Set<String> keys = new HashSet<>();
+        column.forEach(f->keys.add(f.getName()));
+        target.forEach(f-> {
+            if (keys.contains(f.getName())) {
+                list.add(f);
+            }
+        });
+        return list;
     }
 }

@@ -42,7 +42,11 @@ public enum SqlBuilderEnum {
     /**
      * 查询总数
      */
-    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount());
+    QUERY_COUNT(ConnectorConstant.OPERTION_QUERY_COUNT, new SqlBuilderQueryCount()),
+    /**
+     * 查询目标总数
+     */
+    TARGET_QUERY_COUNT(ConnectorConstant.TARGET_QUERY_COUNT, new SqlBuilderQueryCount());
 
     /**
      * SQL构造器名称

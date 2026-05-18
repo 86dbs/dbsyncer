@@ -9,7 +9,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.parser.MessageService;
+import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.ConfigModel;
@@ -17,6 +17,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
 
 import org.springframework.util.Assert;
@@ -95,8 +96,8 @@ public class BaseServiceImpl {
     /**
      * 发送通知消息
      */
-    protected void sendNotifyMessage(String title, String content) {
-        messageService.sendMessage(title, content);
+    protected void sendNotifyMessage(NoticeContent content) {
+        messageService.sendMessage(content);
     }
 
     protected <T> Paging<T> searchConfigModel(Map<String, String> params, List<T> list) {

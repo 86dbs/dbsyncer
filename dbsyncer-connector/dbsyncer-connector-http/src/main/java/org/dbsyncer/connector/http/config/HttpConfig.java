@@ -21,6 +21,7 @@ public class HttpConfig extends ConnectorConfig {
 
     private boolean publicNetwork;
 
+    @Override
     public String getUrl() {
         return url;
     }

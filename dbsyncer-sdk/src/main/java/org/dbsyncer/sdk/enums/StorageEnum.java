@@ -4,14 +4,14 @@
 package org.dbsyncer.sdk.enums;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-11-12 20:29
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-11-12 20:29
  */
 public enum StorageEnum {
 
     /**
-     * 配置：连接器、驱动、映射关系、同步信息、分組配置、系统配置、用戶配置
+     * 配置：连接器、驱动、映射关系、同步信息、系统配置、用戶配置
      */
     CONFIG("config"),
     /**
@@ -23,13 +23,13 @@ public enum StorageEnum {
      */
     DATA("data"),
     /**
-     * 任务：同步任务
+     * 任务
      */
     TASK("task"),
     /**
-     * 任务详情：同步任务详情
+     * 订正校验明细
      */
-    TASK_DATA_VERIFICATION_DETAIL("task_data_verification_detail");
+    VALIDATE_SYNC_DETAIL("task_validata_sync_detail");
 
     private final String type;
 

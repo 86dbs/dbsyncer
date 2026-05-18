@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -69,11 +70,15 @@ public class DiskStorageService extends AbstractStorageService {
             int pageNum = query.getPageNum() <= 0 ? 1 : query.getPageNum();
             int pageSize = query.getPageSize() <= 0 ? 20 : query.getPageSize();
             boolean desc = query.getSort().isDesc();
-            // 根据修改时间 > 创建时间排序
-            Sort sort = new Sort(new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, desc), new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, desc));
+            Sort sort = buildDiskSort(query, desc);
+
+            // 自定义
             Option option = new Option();
             option.setQueryTotal(query.isQueryTotal());
             option.setFieldResolverMap(query.getFieldResolverMap());
+            if (query.hasSelectField()) {
+                option.setSelectFields(query.getSelectFlied());
+            }
             // 设置参数
             BooleanFilter baseQuery = query.getBooleanFilter();
             List<AbstractFilter> filters = baseQuery.getFilters();
@@ -168,12 +173,16 @@ public class DiskStorageService extends AbstractStorageService {
                     builder.add(DiskQueryHelper.newEqual(p), occur);
                     break;
                 case LT:
+                    builder.add(DiskQueryHelper.newLessThan(p, FilterEnum.LT), occur);
+                    break;
                 case LT_AND_EQUAL:
-                    builder.add(DiskQueryHelper.newLessThan(p), occur);
+                    builder.add(DiskQueryHelper.newLessThan(p, FilterEnum.LT_AND_EQUAL), occur);
                     break;
                 case GT:
+                    builder.add(DiskQueryHelper.newGreaterThan(p, FilterEnum.GT), occur);
+                    break;
                 case GT_AND_EQUAL:
-                    builder.add(DiskQueryHelper.newGreaterThan(p), occur);
+                    builder.add(DiskQueryHelper.newGreaterThan(p, FilterEnum.GT_AND_EQUAL), occur);
                     break;
                 default:
                     throw new StorageException("Unsupported filter type: " + filterEnum.getName());
@@ -227,6 +236,12 @@ public class DiskStorageService extends AbstractStorageService {
                 case CONFIG:
                     docs.add(DocumentUtil.convertConfig2Doc(r));
                     break;
+                case TASK:
+                    docs.add(DocumentUtil.convertTask2Doc(r));
+                    break;
+                case VALIDATE_SYNC_DETAIL:
+                    docs.add(DocumentUtil.convertValidateSyncDetail2Doc(r));
+                    break;
                 default:
                     break;
             }
@@ -249,6 +264,54 @@ public class DiskStorageService extends AbstractStorageService {
      */
     private Shard getShard(String sharding) {
         return shards.computeIfAbsent(sharding, k->new Shard(PATH + k));
+    }
+
+    /**
+     * Lucene 排序：与 {@link org.dbsyncer.connector.mysql.storage.MySQLStorageService} 语义对齐，
+     * 自定义顺序优先；否则按 updateTime、createTime（与既有磁盘索引行为一致）。
+     *
+     * @param query   查询条件
+     * @param defaultDesc 默认降序（无自定义排序字段时用于时间与默认分支）
+     */
+    private Sort buildDiskSort(Query query, boolean defaultDesc) {
+        if (query.hasCustomOrderBy()) {
+            List<Query.OrderBy> orderByList = query.getOrderByList();
+            SortField[] sortFields = new SortField[orderByList.size()];
+            for (int i = 0; i < orderByList.size(); i++) {
+                Query.OrderBy orderBy = orderByList.get(i);
+                SortEnum effectiveSort = orderBy.getSort() != null ? orderBy.getSort() : query.getSort();
+                boolean reverse = effectiveSort.isDesc();
+                String fieldName = orderBy.getFieldName();
+                sortFields[i] = new SortField(fieldName, resolveSortFieldType(fieldName), reverse);
+            }
+            return new Sort(sortFields);
+        }
+        return new Sort(
+                new SortField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortField.Type.LONG, defaultDesc),
+                new SortField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, SortField.Type.LONG, defaultDesc));
+    }
+
+    /**
+     * 索引字段类型（用于 {@link SortField}）。未单独建 DocValues 的字段排序可能运行时失败，需与 {@link org.dbsyncer.storage.util.DocumentUtil} 保持一致。
+     */
+    private SortField.Type resolveSortFieldType(String fieldName) {
+        if (fieldName == null) {
+            return SortField.Type.STRING;
+        }
+        switch (fieldName) {
+            case ConfigConstant.CONFIG_MODEL_CREATE_TIME:
+            case ConfigConstant.CONFIG_MODEL_UPDATE_TIME:
+            case ConfigConstant.TASK_SOURCE_TOTAL:
+            case ConfigConstant.TASK_TARGET_TOTAL:
+            case ConfigConstant.TASK_DIFF_TOTAL:
+            case ConfigConstant.TASK_FIXED_TOTAL:
+                return SortField.Type.LONG;
+            case ConfigConstant.DATA_SUCCESS:
+            case ConfigConstant.TASK_STATUS:
+                return SortField.Type.INT;
+            default:
+                return SortField.Type.STRING;
+        }
     }
 
     interface ExecuteMapper {

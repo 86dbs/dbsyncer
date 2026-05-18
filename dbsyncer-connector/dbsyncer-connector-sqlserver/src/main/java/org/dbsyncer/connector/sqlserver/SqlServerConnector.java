@@ -24,6 +24,7 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -32,6 +33,7 @@ import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -42,7 +44,6 @@ import java.util.Map;
  * @Date 2022-05-22 22:56
  */
 public final class SqlServerConnector extends AbstractDatabaseConnector {
-
     private final String QUERY_DATABASE = "SELECT name FROM SYS.DATABASES WHERE database_id > 4 order by name";
     private final String QUERY_SCHEMA = "SELECT name FROM sys.schemas WHERE name NOT IN ('sys','INFORMATION_SCHEMA','db_owner','db_accessadmin','db_securityadmin','db_ddladmin','db_backupoperator','db_datareader','db_datawriter','db_denydatareader','db_denydatawriter') order by name";
     private final String QUERY_TABLE_IDENTITY = "select is_identity from sys.columns where object_id = object_id('%s') and is_identity > 0";
@@ -144,6 +145,68 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
+                                        String targetTableName, List<Field> sourceDefinitions,
+                                        List<String> targetColumnNames) {
+        if (CollectionUtils.isEmpty(sourceDefinitions) || CollectionUtils.isEmpty(targetColumnNames)) {
+            return StringUtil.EMPTY;
+        }
+        int size = Math.min(sourceDefinitions.size(), targetColumnNames.size());
+
+        String qualifiedTable = qualifyTable(task, targetTableName);
+        List<String> sqlList = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            Field sourceField = sourceDefinitions.get(i);
+            String targetColumn = targetColumnNames.get(i);
+            if (sourceField == null || StringUtil.isBlank(targetColumn)) {
+                continue;
+            }
+            String col = buildWithQuotation(targetColumn);
+            String type = formatPhysicalType(sourceField);
+            sqlList.add(String.format(Locale.ROOT, "ALTER TABLE %s ALTER COLUMN %s %s", qualifiedTable, col, type));
+        }
+        if (sqlList.isEmpty()) {
+            return StringUtil.EMPTY;
+        }
+        return StringUtil.join(sqlList, ";");
+    }
+
+    @Override
+    protected String formatPhysicalType(Field sourceDefinition) {
+        if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
+            return super.formatPhysicalType(sourceDefinition);
+        }
+        String t = sourceDefinition.getTypeName().trim().toUpperCase(Locale.ROOT);
+        int size = Math.max(0, sourceDefinition.getColumnSize());
+
+        if (t.contains("VARBINARY")) {
+            if (size > 8000) {
+                return "VARBINARY(MAX)";
+            }
+        }
+
+        if (t.contains("VARCHAR")) {
+            // 长度 > 8000 → 必须用 MAX
+            if (size > 8000) {
+                return "VARCHAR(MAX)";
+            }
+        }
+        return super.formatPhysicalType(sourceDefinition);
+    }
+
+    /**
+     * 可选库前缀 {@code [db].[schema].[table]}；仅 schema + 表名亦可。
+     */
+    private String qualifyTable(ValidateSyncTask task, String tableName) {
+        String schema = StringUtil.isNotBlank(task.getTargetSchema()) ? task.getTargetSchema() : "dbo";
+        String schemaTable = buildWithQuotation(schema) + "." + buildWithQuotation(tableName);
+        if (StringUtil.isBlank(task.getTargetDatabase())) {
+            return schemaTable;
+        }
+        return "[" + task.getTargetDatabase() + "]." + schemaTable;
+    }
+
+    @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
         String tableName = commandConfig.getTable().getName();
@@ -158,7 +221,6 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         return targetCommand;
     }
-
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
@@ -272,6 +334,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 // 使用 STAsText() 获取 WKT 格式，同时包含 SRID 信息，格式：POINT (...) | 4326
                 fs.add(String.format("CAST([%s].STAsText() AS NVARCHAR(MAX)) + ' | ' + CAST([%s].STSrid AS NVARCHAR(10)) AS [%s]", field.getName(), field.getName(), field.getName()));
                 return true;
+            case "hierarchyid":
+                fs.add(String.format("CAST([%s].ToString() AS NVARCHAR(MAX)) AS [%s]", field.getName(), field.getName()));
+                return true;
             default:
                 break;
         }
@@ -287,6 +352,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
                 return true;
             case "geography":
                 fs.add("geography::STGeomFromText(NULLIF(NULLIF(?, ''), 'NULL'),?)");
+                return true;
+            case "hierarchyid":
+                fs.add("hierarchyid::Parse(NULLIF(NULLIF(?, ''), 'NULL'))");
                 return true;
             default:
                 break;

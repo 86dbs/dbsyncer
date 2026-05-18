@@ -50,6 +50,13 @@ public abstract class BaseController {
     }
 
     /**
+     * 初始化: 条件
+     */
+    protected void initConditionConfig(ModelMap model) {
+        model.put("condition", filterService.getCondition());
+    }
+
+    /**
      * 读取请求体
      */
     protected String readRequestBody(HttpServletRequest request) throws IOException {

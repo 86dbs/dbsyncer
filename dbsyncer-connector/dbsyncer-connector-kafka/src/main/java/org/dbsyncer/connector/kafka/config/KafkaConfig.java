@@ -17,6 +17,7 @@ public class KafkaConfig extends ConnectorConfig {
 
     private String url;
 
+    @Override
     public String getUrl() {
         return url;
     }

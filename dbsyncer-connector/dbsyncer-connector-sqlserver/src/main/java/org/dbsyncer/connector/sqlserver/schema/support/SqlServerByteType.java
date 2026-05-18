@@ -41,6 +41,13 @@ public final class SqlServerByteType extends ByteType {
 
     @Override
     protected Byte merge(Object val, Field field) {
+        if (val instanceof Boolean) {
+            Boolean b = (Boolean) val;
+            return (byte) (b ? 1 : 0);
+        }
+        if (val instanceof Number) {
+            return ((Number) val).byteValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

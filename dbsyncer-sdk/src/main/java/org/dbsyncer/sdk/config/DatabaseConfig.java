@@ -132,6 +132,7 @@ public class DatabaseConfig extends ConnectorConfig {
         this.serviceName = serviceName;
     }
 
+    @Override
     public String getUrl() {
         return url;
     }

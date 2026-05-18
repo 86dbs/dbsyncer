@@ -27,6 +27,11 @@
   margin-bottom: 4px;
   user-select: none;
 }
+
+/* 确保 sidebar-item 与 hidden 同时存在时优先隐藏 */
+.sidebar-item.hidden {
+  display: none;
+}
 .sidebar-item > *:not(:first-child) { margin-left: 12px; }
 
 .sidebar-item:hover {

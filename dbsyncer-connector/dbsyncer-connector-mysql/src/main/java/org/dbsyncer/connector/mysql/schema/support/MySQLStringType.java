@@ -36,6 +36,7 @@ public final class MySQLStringType extends StringType {
         MEDIUMTEXT, // 可变长度，最多2的24次方-1个字符，16M
         LONGTEXT, // 可变长度，最多2的32次方-1个字符，4GB
         ENUM, // 2字节，最大可达65535个不同的枚举值
+        SET,//枚举型
         JSON, GEOMETRY; // POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING, MULTIPOLYGON,
         // GEOMETRYCOLLECTION
     }
@@ -51,6 +52,7 @@ public final class MySQLStringType extends StringType {
             case GEOMETRY:
                 return deserializeGeometry((byte[]) val);
             case ENUM:
+            case SET:
                 return String.valueOf(val);
             default:
                 break;

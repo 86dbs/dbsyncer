@@ -26,6 +26,9 @@ public abstract class TimeType extends AbstractDataType<Time> {
         if (val instanceof Time) {
             return val;
         }
+        if (val instanceof String) {
+            return Time.valueOf(((String) val).trim());
+        }
         return throwUnsupportedException(val, field);
     }
 }

@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.apache.lucene.index.IndexableField;
+import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
 import org.dbsyncer.biz.SystemConfigService;
@@ -29,9 +31,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.plugin.model.ConnectorOfflineContent;
+import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -42,9 +45,6 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
-import org.apache.lucene.index.IndexableField;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -53,7 +53,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -94,6 +93,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private LogService logService;
 
     @Resource
+    private ConnectorService connectorService;
+
+    @Resource
     private SystemConfigService systemConfigService;
 
     @Resource
@@ -103,14 +105,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private MetricResponse systemInfo;
 
+    private LocalDateTime delayTime = LocalDateTime.now();
+
     @PostConstruct
     private void init() {
         metricMap.putIfAbsent(BufferActuatorMetricEnum.GENERAL.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(BufferActuatorMetricEnum.STORAGE.getCode(), new ValueMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_LIVE.getCode(), new DoubleRoundMetricDetailFormatter());
         metricMap.putIfAbsent(MetricEnum.THREADS_PEAK.getCode(), new DoubleRoundMetricDetailFormatter());
-        // metricMap.putIfAbsent(MetricEnum.GC_PAUSE.getCode(), new GCMetricDetailFormatter());
-        metricMap.putIfAbsent(MetricEnum.SYSTEM_ENV.getCode(), vo-> {
+        metricMap.putIfAbsent(MetricEnum.SYSTEM_ENV.getCode(), vo -> {
             // 操作系统
             String osName = System.getProperty("os.name");
             // 架构
@@ -195,7 +198,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         query.setType(StorageEnum.LOG);
         Paging paging = storageService.query(query);
         List<Map> data = (List<Map>) paging.getData();
-        paging.setData(data.stream().map(m->convert2Vo(m, LogVO.class)).collect(Collectors.toList()));
+        paging.setData(data.stream().map(m -> convert2Vo(m, LogVO.class)).collect(Collectors.toList()));
         return paging;
     }
 
@@ -249,30 +252,57 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             return;
         }
 
-        StringBuilder content = new StringBuilder();
-        metaAll.forEach(meta-> {
+        MappingErrorContent content = new MappingErrorContent();
+        metaAll.forEach(meta -> {
             // 统计运行中和失败数
-            if (MetaEnum.isRunning(meta.getState()) && meta.getFail().get() > 0) {
+            if (meta.getFail().get() > 0) {
                 writeMappingReport(meta, content);
             }
         });
 
-        String msg = content.toString();
-        if (StringUtil.isNotBlank(msg)) {
-            sendNotifyMessage("同步失败", msg);
+        if (!CollectionUtils.isEmpty(content.getErrorItems())) {
+            content.setTitle("同步失败");
+            sendNotifyMessage(content);
         }
+        // 采集连接离线状态
+        collectConnectorOffline();
     }
 
-    private void writeMappingReport(Meta meta, StringBuilder content) {
+    private void collectConnectorOffline() {
+        // 防止首次启动，连接器状态还未刷新，默认还是离线状态，防止误判
+        if (LocalDateTime.now().minusMinutes(1).isAfter(delayTime)) {
+            // 采集连接离线状态
+            ConnectorOfflineContent content = new ConnectorOfflineContent();
+            connectorService.getConnectorAll().forEach(connector -> {
+                if (!connector.isRunning()) {
+                    ConnectorOfflineContent.ErrorItem item = new ConnectorOfflineContent.ErrorItem();
+                    item.setName(connector.getName());
+                    item.setType(connector.getConfig().getConnectorType());
+                    item.setUrl(connector.getConfig().getUrl());
+                    content.addErrorItem(item);
+                }
+            });
+            if (!CollectionUtils.isEmpty(content.getErrorItems())) {
+                content.setTitle("连接离线");
+                sendNotifyMessage(content);
+            }
+        }
+        delayTime = LocalDateTime.now();
+    }
+
+    private void writeMappingReport(Meta meta, MappingErrorContent content) {
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
-            content.append("<p>");
-            content.append(String.format("%s(%s) 失败:%s, 成功:%s", mapping.getName(), modelEnum.getName(), meta.getFail(), meta.getSuccess()));
+            MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();
+            item.setName(mapping.getName());
+            item.setModel(modelEnum);
+            item.setFail(meta.getFail());
+            item.setSuccess(meta.getSuccess());
             if (ModelEnum.FULL == modelEnum) {
-                content.append(String.format(", 总数:%s", meta.getTotal()));
+                item.setTotal(meta.getTotal());
             }
-            content.append("<p>");
+            content.addErrorItem(item);
         }
     }
 
@@ -283,7 +313,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
         Query query = new Query(pageNum, pageSize);
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field->field.binaryValue().bytes);
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
 
         // 查询异常信息
@@ -308,7 +338,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
             LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
             query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
-            metaAll.forEach(metaVo-> {
+            metaAll.forEach(metaVo -> {
                 query.setMetaId(metaVo.getId());
                 storageService.delete(query);
             });
@@ -349,13 +379,13 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private List<MetricResponseVO> metricResponseToVo(Collection<MetricResponse> metrics) {
-        return metrics.stream().map(metric-> {
+        return metrics.stream().map(metric -> {
             MetricResponseVO vo = new MetricResponseVO();
             vo.setCode(metric.getCode());
             vo.setGroup(metric.getGroup());
             vo.setMetricName(metric.getMetricName());
             vo.setMeasurements(metric.getMeasurements());
-            metricMap.computeIfPresent(vo.getCode(), (k, mdf)-> {
+            metricMap.computeIfPresent(vo.getCode(), (k, mdf) -> {
                 mdf.format(vo);
                 return mdf;
             });

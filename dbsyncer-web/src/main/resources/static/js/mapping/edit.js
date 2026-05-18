@@ -84,12 +84,83 @@ function createMetaSnapshotParams() {
     $("#metaSnapshot").val(JSON.stringify(snapshot));
 }
 
+
+function onDBChange(connectorId, schemaSelect, dbName) {
+    doGetter('/connector/getSchema', {id: connectorId, database: dbName}, function (response) {
+        if (response.success && response.data) {
+            let array = [];
+            const schemas = response.data;
+            if (schemas && schemas.length > 0) {
+                schemas.forEach(function (schema) {
+                    array.push({label: schema, value: schema, disabled: false})
+                });
+            }
+            schemaSelect.setData(array);
+        } else {
+            bootGrowl("获取Schema信息失败: " + response.message, "danger");
+        }
+    })
+}
+
+function onConnectorChange(connectorId, dbSelect) {
+    doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
+        if (response.success && response.data) {
+            const databases = response.data;
+            let db = [];
+            if (databases && databases.length > 0) {
+                databases.forEach(function (dbName) {
+                    db.push({label: dbName, value: dbName, disabled: false})
+                });
+            }
+            dbSelect.setData(db);
+        } else {
+            bootGrowl("获取数据库信息失败: " + response.message, "danger");
+        }
+    })
+}
+
+function initDBSelect($connector, $database, $schema) {
+    // 为每个 select 组维护独立的连接器ID，避免上下文串用
+    let currentConnectorId = null;
+
+    let connectorSelect = $connector.dbSelect({
+        type: 'single',
+        onSelect: function (connectorId) {
+            // 更新当前组的连接器ID
+            currentConnectorId = connectorId[0];
+            onConnectorChange(currentConnectorId, dbSelect);
+        }
+    });
+    const schemaSelect = $schema.dbSelect({
+        type: 'single',
+        defaultValue: [$schema.data("schema")]
+    });
+    const dbSelect = $database.dbSelect({
+        type: 'single',
+        defaultValue: [$database.data("database")],
+        onSelect: function (selected) {
+            if (currentConnectorId) {
+                onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '');
+            }
+        }
+    });
+
+    // 初始化：如果有默认选中的连接器，设置初始值
+    let selected = connectorSelect.getValues();
+    if (selected.length >= 1) {
+        currentConnectorId = selected[0];
+        onConnectorChange(currentConnectorId, dbSelect);
+    }
+}
+
 $(function () {
     // 定义返回函数，子页面返回
     window.backIndexPage = function () {
         doLoader('/mapping/list');
     };
 
+    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
+    initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
     // 绑定全量+增量切换事件
     bindMappingModelChange();
     // 绑定日志+定时切换事件

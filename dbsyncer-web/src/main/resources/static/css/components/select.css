@@ -17,9 +17,16 @@
   max-width: 140px;
   flex: 0 0 auto;
 }
+.dbsyncer-select-md {
+  width: 50%;
+  min-width: 80px;
+  max-width: 140px;
+  flex: 0 0 auto;
+}
 
 /* mini 样式下的下拉菜单：确保下拉菜单有足够宽度，不受父元素宽度限制 */
-.dbsyncer-select-mini .dbsyncer-select-dropdown {
+.dbsyncer-select-mini .dbsyncer-select-dropdown,
+.dbsyncer-select-md .dbsyncer-select-dropdown {
   left: 0;
   right: auto;
   min-width: 80px;

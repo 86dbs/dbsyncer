@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.postgresql;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.postgresql.cdc.PostgreSQLListener;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
@@ -17,7 +18,9 @@ import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -25,6 +28,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * PostgreSQL连接器实现
@@ -65,12 +69,12 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_DATABASE, String.class));
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
+        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
     }
 
     @Override
@@ -127,6 +131,38 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         newCursors[cursorArgs.length] = pageSize; // LIMIT
         newCursors[cursorArgs.length + 1] = 0; // OFFSET
         return newCursors;
+    }
+
+    @Override
+    public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
+                                        String targetTableName, List<Field> sourceDefinitions,
+                                        List<String> targetColumnNames) {
+        if (CollectionUtils.isEmpty(sourceDefinitions) || CollectionUtils.isEmpty(targetColumnNames)) {
+            return StringUtil.EMPTY;
+        }
+        int loopSize = Math.min(sourceDefinitions.size(), targetColumnNames.size());
+        String qualifiedTable = qualifyTable(task, targetTableName);
+        List<String> clauses = new ArrayList<>(loopSize);
+        for (int i = 0; i < loopSize; i++) {
+            Field sourceField = sourceDefinitions.get(i);
+            String targetColumn = targetColumnNames.get(i);
+            if (sourceField == null || StringUtil.isBlank(targetColumn)) {
+                continue;
+            }
+            String col = buildWithQuotation(targetColumn);
+            String type = formatPhysicalType(sourceField);
+            String usingExpr = buildUsingExpr(col, type);
+            clauses.add(String.format(Locale.ROOT, "ALTER COLUMN %s TYPE %s USING %s", col, type, usingExpr));
+        }
+        if (clauses.isEmpty()) {
+            return StringUtil.EMPTY;
+        }
+        return String.format(Locale.ROOT, "ALTER TABLE %s %s", qualifiedTable, StringUtil.join(clauses, ", "));
+    }
+
+    private String qualifyTable(ValidateSyncTask task, String tableName) {
+        String schema = StringUtil.isNotBlank(task.getTargetSchema()) ? task.getTargetSchema() : "public";
+        return buildWithQuotation(schema) + "." + buildWithQuotation(tableName);
     }
 
     @Override
@@ -199,6 +235,79 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         sql.append(" ON CONFLICT (");
         sql.append(StringUtil.join(context.pkFieldNames, StringUtil.COMMA));
         sql.append(")");
+    }
+
+    private String buildUsingExpr(String col, String type) {
+        String normalizedType = StringUtil.trim(type).toUpperCase(Locale.ROOT);
+        if (isIntegerType(normalizedType)) {
+            // 非整数字符串置为NULL，避免 timestamp/text -> int 直接报错中断整批DDL
+            return String.format(Locale.ROOT,
+                    "CASE WHEN %1$s IS NULL THEN NULL WHEN (%1$s)::text ~ '^-?[0-9]+$' THEN (%1$s)::text::%2$s ELSE NULL END",
+                    col, type);
+        }
+        if (isDecimalType(normalizedType)) {
+            // 小数目标类型同样做安全转换，无法解析时置为NULL
+            return String.format(Locale.ROOT,
+                    "CASE WHEN %1$s IS NULL THEN NULL WHEN (%1$s)::text ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (%1$s)::text::%2$s ELSE NULL END",
+                    col, type);
+        }
+        return String.format(Locale.ROOT, "%s::text::%s", col, type);
+    }
+
+    private boolean isIntegerType(String type) {
+        return "INT2".equals(type) || "INT4".equals(type) || "INT8".equals(type)
+                || "SMALLINT".equals(type) || "INTEGER".equals(type) || "BIGINT".equals(type);
+    }
+
+    private boolean isDecimalType(String type) {
+        return "REAL".equals(type) || "DOUBLE PRECISION".equals(type)
+                || type.startsWith("NUMERIC") || type.startsWith("DECIMAL");
+    }
+
+    @Override
+    protected String formatPhysicalType(Field sourceDefinition) {
+        if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
+            return super.formatPhysicalType(sourceDefinition);
+        }
+        String t = sourceDefinition.getTypeName().trim().toUpperCase(Locale.ROOT);
+        String serialMapped = mapPostgreSqlSerialToInteger(t);
+        if (serialMapped != null) {
+            return serialMapped;
+        }
+        String floatMapped = mapPostgreSqlFloatAliases(t);
+        if (floatMapped != null) {
+            return floatMapped;
+        }
+        return super.formatPhysicalType(sourceDefinition);
+    }
+
+    /**
+     * ALTER TYPE 不能使用 SERIAL 伪类型，映射为底层整数类型。
+     */
+    private static String mapPostgreSqlSerialToInteger(String t) {
+        if ("SERIAL".equals(t)) {
+            return "INT4";
+        }
+        if ("BIGSERIAL".equals(t)) {
+            return "INT8";
+        }
+        if ("SMALLSERIAL".equals(t)) {
+            return "INT2";
+        }
+        return null;
+    }
+
+    /**
+     * FLOAT4/8 等与基类带精度拼接冲突时，改为 DDL 中的规范名称。
+     */
+    private static String mapPostgreSqlFloatAliases(String t) {
+        if ("FLOAT4".equals(t) || "REAL".equals(t)) {
+            return "REAL";
+        }
+        if ("FLOAT8".equals(t) || "DOUBLE PRECISION".equals(t)) {
+            return "DOUBLE PRECISION";
+        }
+        return null;
     }
 
     /**

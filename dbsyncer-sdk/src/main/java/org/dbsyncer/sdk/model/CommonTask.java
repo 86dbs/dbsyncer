@@ -3,15 +3,16 @@
  */
 package org.dbsyncer.sdk.model;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+
 import java.io.Serializable;
-import java.sql.Timestamp;
 
 /**
- * 任务配置表实体类
+ * 通用任务配置
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-10-18 21:18
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-10-18 21:18
  */
 public class CommonTask implements Serializable {
 
@@ -25,12 +26,12 @@ public class CommonTask implements Serializable {
     /**
      * 创建时间
      */
-    private Timestamp createTime;
+    private Long createTime;
 
     /**
      * 更新时间
      */
-    private Timestamp updateTime;
+    private Long updateTime;
 
     /**
      * 任务名称
@@ -48,11 +49,6 @@ public class CommonTask implements Serializable {
      */
     private String type;
 
-    /**
-     * 配置信息
-     */
-    private String json;
-
     public String getId() {
         return id;
     }
@@ -61,19 +57,19 @@ public class CommonTask implements Serializable {
         this.id = id;
     }
 
-    public Timestamp getCreateTime() {
+    public Long getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(Timestamp createTime) {
+    public void setCreateTime(Long createTime) {
         this.createTime = createTime;
     }
 
-    public Timestamp getUpdateTime() {
+    public Long getUpdateTime() {
         return updateTime;
     }
 
-    public void setUpdateTime(Timestamp updateTime) {
+    public void setUpdateTime(Long updateTime) {
         this.updateTime = updateTime;
     }
 
@@ -101,11 +97,4 @@ public class CommonTask implements Serializable {
         this.type = type;
     }
 
-    public String getJson() {
-        return json;
-    }
-
-    public void setJson(String json) {
-        this.json = json;
-    }
 }

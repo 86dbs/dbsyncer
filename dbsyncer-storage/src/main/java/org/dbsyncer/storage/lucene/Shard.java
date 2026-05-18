@@ -80,18 +80,18 @@ public class Shard {
     }
 
     public void insertBatch(List<Document> docs) {
-        execute(docs, ()->indexWriter.addDocuments(docs));
+        execute(docs, () -> indexWriter.addDocuments(docs));
     }
 
     public void update(Term term, Document doc) {
         if (null != term) {
-            execute(doc, ()->indexWriter.updateDocument(term, doc));
+            execute(doc, () -> indexWriter.updateDocument(term, doc));
         }
     }
 
     public void deleteBatch(Term... terms) {
         if (null != terms) {
-            execute(terms, ()->indexWriter.deleteDocuments(terms));
+            execute(terms, () -> indexWriter.deleteDocuments(terms));
         }
     }
 
@@ -192,11 +192,14 @@ public class Shard {
             r = new ConcurrentHashMap();
             while (iterator.hasNext()) {
                 f = iterator.next();
+                final String key = f.name();
+                if (!option.includeField(key)) {
+                    continue;
+                }
 
                 // 开启高亮
                 if (option.isEnableHighLightSearch()) {
                     try {
-                        final String key = f.name();
                         if (option.getHighLightKeys().contains(key)) {
                             String content = doc.get(key);
                             TokenStream tokenStream = analyzer.tokenStream("", content);
