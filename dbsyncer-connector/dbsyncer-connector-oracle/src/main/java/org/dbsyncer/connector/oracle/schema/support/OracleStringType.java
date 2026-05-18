@@ -3,13 +3,11 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
-import org.dbsyncer.common.util.StringUtil;
+import oracle.sql.CLOB;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.connector.oracle.schema.OracleLobParameter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
-
-import oracle.sql.CLOB;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
