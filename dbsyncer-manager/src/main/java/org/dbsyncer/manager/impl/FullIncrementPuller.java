@@ -69,6 +69,7 @@ public final class FullIncrementPuller extends AbstractPuller {
         try {
             Meta meta = profileComponent.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
+                //重启恢复是如果是增量阶段直接启动增量任务
                 incrementPuller.start(mapping);
                 return;
             }
@@ -96,6 +97,7 @@ public final class FullIncrementPuller extends AbstractPuller {
             logger.info("恢复全量阶段：{}, {}", metaId, mapping.getName());
             return;
         }
+        //重新开始，获取增量位点信息
         incrementPuller.captureAndSaveOffset(mapping);
         markFullIncrementPhase(metaId, ModelEnum.FULL.getCode());
     }
@@ -113,17 +115,13 @@ public final class FullIncrementPuller extends AbstractPuller {
      */
     private boolean shouldResumeFullPhase(Meta meta) {
         String phase = getFullIncrementPhase(meta);
-        if (ModelEnum.isIncrement(phase)) {
+        //如果是空直接表示全量增量都没有跑
+        if (StringUtil.isBlank(phase)) {
             return false;
         }
-
         long total = meta.getTotal().get();
         long processed = meta.getSuccess().get() + meta.getFail().get();
         if (total > 0 && processed >= total) {
-            return false;
-        }
-
-        if (StringUtil.isNotBlank(phase) && !ModelEnum.isFullPhase(phase)) {
             return false;
         }
 
@@ -138,6 +136,9 @@ public final class FullIncrementPuller extends AbstractPuller {
                 || processed > 0;
     }
 
+    /**
+     * 标记状态
+     */
     private void markFullIncrementPhase(String metaId, String phase) {
         Meta meta = profileComponent.getMeta(metaId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
