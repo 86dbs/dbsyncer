@@ -32,6 +32,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -149,6 +151,24 @@ public class PostgreSQLListener extends AbstractDatabaseListener {
             dropReplicationSlot();
         } catch (Exception e) {
             logger.error("关闭失败:{}", e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        try {
+            DatabaseConnectorInstance captureInstance = getConnectorInstance();
+            String lsn = captureInstance.execute(databaseTemplate -> databaseTemplate.queryForObject("select pg_current_wal_lsn()::text", String.class));
+            if (lsn == null) {
+                return Collections.emptyMap();
+            }
+            snapshot.put(LSN_POSITION, lsn);
+            Map<String, String> captured = new HashMap<>(1);
+            captured.put(LSN_POSITION, lsn);
+            return captured;
+        } catch (Exception e) {
+            logger.error("捕获PostgreSQL LSN位点失败:{}", e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 

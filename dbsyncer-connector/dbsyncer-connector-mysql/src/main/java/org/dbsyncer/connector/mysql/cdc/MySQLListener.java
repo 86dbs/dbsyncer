@@ -53,6 +53,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.alter.Alter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,24 @@ public class MySQLListener extends AbstractDatabaseListener {
             logger.error("关闭失败:{}", e.getMessage());
         } finally {
             connectLock.unlock();
+        }
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        try {
+            final DatabaseConfig config = getConnectorInstance().getConfig();
+            BinaryLogRemoteClient captureClient = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
+            captureClient.connect();
+            refreshSnapshot(captureClient.getBinlogFilename(), captureClient.getBinlogPosition());
+            captureClient.disconnect();
+            Map<String, String> captured = new HashMap<>(2);
+            captured.put(BINLOG_FILENAME, snapshot.get(BINLOG_FILENAME));
+            captured.put(BINLOG_POSITION, snapshot.get(BINLOG_POSITION));
+            return captured;
+        } catch (Exception e) {
+            logger.error("捕获MySQL binlog位点失败:{}", e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 

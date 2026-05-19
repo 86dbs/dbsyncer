@@ -299,7 +299,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             item.setModel(modelEnum);
             item.setFail(meta.getFail());
             item.setSuccess(meta.getSuccess());
-            if (ModelEnum.FULL == modelEnum) {
+            if (ModelEnum.isFull(modelEnum.getCode())) {
                 item.setTotal(meta.getTotal());
             }
             content.addErrorItem(item);

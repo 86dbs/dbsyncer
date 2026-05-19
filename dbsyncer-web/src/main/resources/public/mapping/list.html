@@ -123,7 +123,7 @@ $(document).ready(function() {
                         </div>
                     </td>
                     <td>${renderModelText(mapping.model)}</td>
-                    <td>${renderSyncResult(mapping)}</td>
+                    <td class="sync-result-cell" style="min-width:140px;">${renderSyncResult(mapping)}</td>
                     <td>${renderStateText(mapping.meta.state || 0)}</td>
                     <td>${formatDate(mapping.meta.updateTime || '')}</td>
                     <td>

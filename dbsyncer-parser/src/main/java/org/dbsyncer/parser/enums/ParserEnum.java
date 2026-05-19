@@ -22,7 +22,12 @@ public enum ParserEnum {
     /**
      * 执行的表映射关系索引
      */
-    TABLE_GROUP_INDEX("tableGroupIndex", 0);
+    TABLE_GROUP_INDEX("tableGroupIndex", 0),
+
+    /**
+     * 全量+增量阶段: full(全量中) / increment(增量中)
+     */
+    FULL_INCREMENT_PHASE("fullIncrementPhase", 0);
 
     /**
      * 编码

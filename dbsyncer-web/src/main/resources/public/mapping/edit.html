@@ -86,8 +86,8 @@
                 <label>全量</label>
                 <input type="radio" name="model" value="increment" th:checked="${'increment' eq mapping?.model}" />
                 <label>增量</label>
-<!--                <input type="radio" name="model" value="fullToIncrement" disabled />-->
-<!--                <label>全量+增量</label>-->
+                <input type="radio" name="model" value="full_increment" th:checked="${'full_increment' eq mapping?.model}" />
+                <label>全量+增量</label>
             </div>
 
             <div class="form-actions">

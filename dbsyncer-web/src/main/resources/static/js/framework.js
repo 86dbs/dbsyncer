@@ -793,48 +793,149 @@ function formatPercent(value, maxFractionDigits) {
     return percent.toFixed(maxFractionDigits || 2) + '%';
 }
 
+// 格式化整数（千分位）
+function formatCount(value) {
+    const num = Number(value) || 0;
+    return num.toLocaleString('zh-CN');
+}
+
+// 追加耗时信息
+function appendElapsedTime(content, meta) {
+    const beginTime = meta.beginTime;
+    const endTime = meta.endTime;
+    if (!beginTime || !endTime) {
+        return;
+    }
+    const seconds = Math.floor((endTime - beginTime) / 1000);
+    if (seconds < 60) {
+        content.push(`<div class="text-xs text-tertiary">耗时: ${seconds}秒</div>`);
+    } else {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        content.push(`<div class="text-xs text-tertiary">耗时: ${minutes}分${remainingSeconds}秒</div>`);
+    }
+}
+
+// 迷你进度条
+function renderMiniProgressBar(current, total) {
+    const safeTotal = Number(total) || 0;
+    const safeCurrent = Number(current) || 0;
+    const percent = safeTotal > 0 ? Math.min(100, Math.round((safeCurrent / safeTotal) * 100)) : 0;
+    return `<div class="progress-bar" style="height:6px;margin:4px 0;">
+        <div class="progress-fill progress-fill-success" style="width:${percent}%"></div>
+    </div>`;
+}
+
+// 解析全量+增量当前阶段：full / increment / idle
+function resolveFullIncrementPhase(meta) {
+    const RUNNING = 1;
+    const STOPPING = 2;
+    const total = Number(meta.total) || 0;
+    const processed = (Number(meta.success) || 0) + (Number(meta.fail) || 0);
+    const snapshot = meta.snapshot || {};
+    const tableGroupIndex = parseInt(snapshot.tableGroupIndex || '0', 10);
+    const pageIndex = parseInt(snapshot.pageIndex || '1', 10);
+    const isActive = meta.state === RUNNING || meta.state === STOPPING;
+
+    if (!isActive) {
+        return 'idle';
+    }
+    if (meta.counting) {
+        return 'full';
+    }
+    const fullCursorActive = tableGroupIndex > 0 || pageIndex > 1 || !!snapshot.cursor;
+    if (total > 0 && processed < total) {
+        return 'full';
+    }
+    if (fullCursorActive && (total === 0 || processed <= total)) {
+        return 'full';
+    }
+    return 'increment';
+}
+
+// 全量同步进度展示（全量 / 全量+增量全量阶段共用）
+function renderFullPhaseSyncResult(meta) {
+    const total = Number(meta.total) || 0;
+    const success = Number(meta.success) || 0;
+    const processed = success + (Number(meta.fail) || 0);
+    const isFullInProgress = total > 0 && processed < total;
+    const content = [];
+
+    content.push('<div class="sync-result">');
+    if (meta.counting) {
+        content.push(`<div class="text-xs text-tertiary mt-1">正在统计表总数...</div>`);
+    } else {
+        content.push(`<div class="text-xs mt-1">总数: <strong>${formatCount(total)}</strong></div>`);
+        if (isFullInProgress) {
+            content.push(renderMiniProgressBar(processed, total));
+            content.push(`<div class="text-xs">全量进度: <strong>${formatCount(processed)}</strong> / ${formatCount(total)} (${formatPercent(processed / total, 1)})</div>`);
+        } else if (total === 0) {
+            content.push(`<div class="text-xs text-tertiary">等待全量任务启动...</div>`);
+        }
+    }
+    appendElapsedTime(content, meta);
+    content.push(`<div class="text-xs mt-1">成功: ${formatCount(success)}</div>`);
+    content.push('</div>');
+    return content.join('');
+}
+
+// 全量+增量：结果列展示
+function renderFullIncrementSyncResult(meta) {
+    const phase = resolveFullIncrementPhase(meta);
+    const total = Number(meta.total) || 0;
+    const success = Number(meta.success) || 0;
+    const content = [];
+
+    if (phase === 'full') {
+        return renderFullPhaseSyncResult(meta);
+    }
+
+    content.push('<div class="sync-result">');
+
+    if (phase === 'increment') {
+        if (total > 0) {
+            content.push(`<div class="text-xs mt-1">全量已完成: <strong>${formatCount(total)}</strong> 条</div>`);
+        }
+        content.push(`<div class="text-xs mt-1">累计成功: <strong>${formatCount(success)}</strong></div>`);
+    } else {
+        if (total > 0) {
+            content.push(`<div class="text-xs mt-1">全量总数: <strong>${formatCount(total)}</strong></div>`);
+        }
+        content.push(`<div class="text-xs mt-1">成功: ${formatCount(success)}</div>`);
+    }
+
+    content.push('</div>');
+    return content.join('');
+}
+
+// 全量模式：结果列展示
+function renderFullSyncResult(meta) {
+    return renderFullPhaseSyncResult(meta);
+}
+
 // 根据同步结果生成内容
 function renderSyncResult(mapping) {
     const meta = mapping.meta;
     if (!meta) return '';
+
+    if (mapping.model === 'full_increment') {
+        let html = renderFullIncrementSyncResult(meta);
+        if (meta.fail > 0) {
+            html += `<div class="text-xs">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
+        }
+        return html;
+    }
+
     const content = [];
-    // 全量模式显示总数
     if (mapping.model === 'full') {
-        const total = meta.total || 0;
-        content.push(`总数: ${total}`);
-        if (meta.counting) {
-            content.push(`(正在统计中)`);
-        }
-        const success = meta.success || 0;
-        const fail = meta.fail || 0;
-        // 执行中，显示进度
-        if (total > 0 && (success + fail) > 0) {
-            const progress = (success + fail) / total;
-            content.push(`<br />进度: ${formatPercent(progress, 2)}`);
-            const beginTime = meta.beginTime;
-            const endTime = meta.endTime;
-            if (beginTime && endTime) {
-                const seconds = Math.floor((endTime - beginTime) / 1000);
-                if (seconds < 60) {
-                    content.push(`<br />耗时: ${seconds}秒`);
-                } else {
-                    const minutes = Math.floor(seconds / 60);
-                    const remainingSeconds = seconds % 60;
-                    content.push(`<br />耗时: ${minutes}分${remainingSeconds}秒`);
-                }
-            }
-        }
-        // 成功数量
-        content.push(`<br />成功: ${meta.success}`);
+        content.push(renderFullSyncResult(meta));
     } else {
-        // 成功数量
-        content.push(`成功: ${meta.success}`);
+        content.push(`成功: ${formatCount(meta.success || 0)}`);
     }
-    // 失败数量
     if (meta.fail > 0) {
-        content.push(`失败: <span class="text-error">${meta.fail}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
+        content.push(`<br />失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
     }
-    return content.join(' ');
+    return content.join('');
 }
 
 // 根据任务类型生成内容
@@ -847,9 +948,13 @@ function renderModelText(model) {
         'increment': { // 增量
             class: 'badge-info',
             text: '增量同步',
+        },
+        'full_increment': {
+            class: 'badge-info',
+            text: '全量+增量',
         }
     };
-    const config = modelState[model];
+    const config = modelState[model] || { class: 'badge-secondary', text: model || '未知' };
     return `<span class="badge ${config.class}">${config.text}</span>`;
 }
 

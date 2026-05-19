@@ -27,6 +27,7 @@ import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
@@ -641,6 +642,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
             meta.getFail().set(0);
             meta.getSuccess().set(0);
+            meta.getSnapshot().remove(ParserEnum.FULL_INCREMENT_PHASE.getCode());
             profileComponent.editConfigModel(meta);
         }
     }

@@ -19,6 +19,8 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,6 +109,22 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
     public void close() {
         scheduledTaskService.stop(taskKey);
         running = false;
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        if (CollectionUtils.isEmpty(commands)) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> captured = new HashMap<>();
+        for (int i = 0; i < commands.size(); i++) {
+            Point point = checkLastPoint(commands.get(i), i);
+            if (!CollectionUtils.isEmpty(point.getPosition())) {
+                snapshot.putAll(point.getPosition());
+                captured.putAll(point.getPosition());
+            }
+        }
+        return captured;
     }
 
     private void flushPoint() {
