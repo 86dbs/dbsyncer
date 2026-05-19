@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -16,28 +17,16 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
-import com.microsoft.sqlserver.jdbc.SQLServerException;
-
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;

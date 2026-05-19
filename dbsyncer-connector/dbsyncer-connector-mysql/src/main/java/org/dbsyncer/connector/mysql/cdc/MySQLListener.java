@@ -3,6 +3,11 @@
  */
 package org.dbsyncer.connector.mysql.cdc;
 
+import com.github.shyiko.mysql.binlog.event.*;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.MySQLException;
@@ -17,41 +22,8 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.SqlParserUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.network.ServerException;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.network.ServerException;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
 
 import java.util.Collections;
 import java.util.HashMap;
