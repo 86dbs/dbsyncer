@@ -11,7 +11,6 @@ import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
@@ -60,7 +59,7 @@ public interface Database {
         if (CollectionUtils.isEmpty(primaryKeys)) {
             return;
         }
-        List<String> pks = primaryKeys.stream().map(name -> buildWithQuotation(name) + "=?").collect(Collectors.toList());
+        List<String> pks = primaryKeys.stream().map(name->buildWithQuotation(name) + "=?").collect(Collectors.toList());
         sql.append(StringUtil.join(pks, " AND "));
     }
 
@@ -97,21 +96,6 @@ public interface Database {
     Object[] getPageCursorArgs(ReaderContext context);
 
     /**
-     * 批量构建 MODIFY / ALTER COLUMN 语句。
-     * 默认实现回退为逐列拼接；建议各数据库方言覆盖为原生批量语法。
-     *
-     * @param targetInstance    目标连接实例
-     * @param task              校验任务
-     * @param targetTableName   目标表名
-     * @param sourceDefinitions 源端字段定义列表（期望形态）
-     * @param targetColumnNames 目标列名列表（与 sourceDefinitions 一一对应）
-     * @return 可执行批量 DDL
-     */
-    String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
-                                 String targetTableName, List<Field> sourceDefinitions,
-                                 List<String> targetColumnNames);
-
-    /**
      * 健康检查
      *
      * @return
@@ -125,13 +109,6 @@ public interface Database {
      */
     default String getQueryCountSql(SqlBuilderConfig sqlConfig) {
         return SqlBuilderEnum.QUERY_COUNT.getSqlBuilder().buildSql(sqlConfig);
-    }
-
-    /**
-     * 查询目标总数表
-     */
-    default String getQueryTargetCountSql(SqlBuilderConfig sqlConfig) {
-        return SqlBuilderEnum.TARGET_QUERY_COUNT.getSqlBuilder().buildSql(sqlConfig);
     }
 
     /**
@@ -159,13 +136,13 @@ public interface Database {
 
     /**
      * 为特殊字段类型构建自定义的值表达式
-     *
+     * 
      * <p>用于 INSERT/UPDATE 语句的 VALUES 部分，允许数据库连接器为特定字段类型（如 geometry、geography）
      * 提供自定义的 SQL 表达式，而不是简单的占位符 ?</p>
-     *
+     * 
      * <p>例如 SQL Server 的 geometry 类型需要使用 geometry::STGeomFromText(?, ?) 来转换</p>
-     *
-     * @param vs    值表达式列表（VALUES 部分）
+     * 
+     * @param vs 值表达式列表（VALUES 部分）
      * @param field 字段信息
      * @return true 表示已添加自定义值表达式，false 表示使用默认的 ? 占位符
      */
@@ -180,7 +157,7 @@ public interface Database {
      * @param alter
      * @return
      */
-    default String buildAlterCatalog(DatabaseConnectorInstance connectorInstance, Alter alter) {
+    default String buildAlterCatalog(DatabaseConnectorInstance connectorInstance, Alter alter){
         return alter.toString();
     }
 }

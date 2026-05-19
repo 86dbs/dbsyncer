@@ -27,7 +27,6 @@ public final class SqlServerTimestampType extends TimestampType {
 
         DATETIME2("datetime2"),
 
-        TIMESTAMP("timestamp"),
         /**
          * 带时区偏移的 datetime2，10 字节
          */

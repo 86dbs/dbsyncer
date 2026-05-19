@@ -25,7 +25,6 @@ public class FileConfig extends ConnectorConfig {
         this.fileDir = fileDir;
     }
 
-    @Override
     public String getUrl() {
         return fileDir;
     }

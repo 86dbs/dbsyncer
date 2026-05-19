@@ -24,7 +24,6 @@ import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +79,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系
-        checkRepeatedTable(profileComponent.getTableGroupAll(mappingId), sourceTable, targetTable);
+        checkRepeatedTable(mappingId, sourceTable, targetTable);
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
@@ -133,7 +132,7 @@ public class TableGroupChecker extends AbstractChecker {
         return tableGroup;
     }
 
-    public Table findTable(List<Table> tables, String tableName, String type) {
+    private Table findTable(List<Table> tables, String tableName, String type) {
         if (!CollectionUtils.isEmpty(tables)) {
             Optional<Table> first = tables.stream().filter(table -> table.getName().equals(tableName) && table.getType().equals(type)).findFirst();
             if (first.isPresent()) {
@@ -165,27 +164,11 @@ public class TableGroupChecker extends AbstractChecker {
         tableGroup.setCommand(command);
     }
 
-    /**
-     * 订正校验任务：合并任务级过滤等与表组配置后
-     *
-     * @param task       订正校验任务
-     * @param tableGroup 已持久化的表组
-     */
-    public void mergeConfig(ValidateSyncTask task, TableGroup tableGroup) {
-        TableGroup group = PickerUtil.mergeTableGroupConfig(task, tableGroup);
-        Map<String, String> command = parserComponent.getCommand(task, group);
-        tableGroup.setCommand(command);
-    }
-
     private Table updateTableColumn(Mapping mapping, String suffix, String primaryKeyStr, Table table) {
         boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
-        updateTableColumn(context, primaryKeyStr, table);
-        return table;
-    }
-
-    public Table updateTableColumn(DefaultConnectorServiceContext context, String primaryKeyStr, Table table) {
         context.addTablePattern(table);
+
         List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
         MetaInfo metaInfo = CollectionUtils.isEmpty(metaInfos) ? null : metaInfos.get(0);
         Assert.notNull(metaInfo, "无法获取连接器表信息");
@@ -205,7 +188,8 @@ public class TableGroupChecker extends AbstractChecker {
         return table;
     }
 
-    public void checkRepeatedTable(List<TableGroup> list, String sourceTable, String targetTable) {
+    private void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
+        List<TableGroup> list = profileComponent.getTableGroupAll(mappingId);
         if (!CollectionUtils.isEmpty(list)) {
             for (TableGroup g : list) {
                 // 数据源表和目标表都存在
@@ -218,7 +202,7 @@ public class TableGroupChecker extends AbstractChecker {
         }
     }
 
-    public void matchFieldMapping(TableGroup tableGroup) {
+    private void matchFieldMapping(TableGroup tableGroup) {
         List<Field> sCol = tableGroup.getSourceTable().getColumn();
         List<Field> tCol = tableGroup.getTargetTable().getColumn();
         if (CollectionUtils.isEmpty(sCol) || CollectionUtils.isEmpty(tCol)) {
@@ -255,7 +239,7 @@ public class TableGroupChecker extends AbstractChecker {
         }
     }
 
-    public void matchFieldMapping(TableGroup tableGroup, String fieldMappings) {
+    private void matchFieldMapping(TableGroup tableGroup, String fieldMappings) {
         // A1|A2,B1|B2,|C2
         List<Field> sCol = tableGroup.getSourceTable().getColumn();
         List<Field> tCol = tableGroup.getTargetTable().getColumn();
@@ -316,7 +300,7 @@ public class TableGroupChecker extends AbstractChecker {
      * @param json       [{"source":"id","target":"id"}]
      * @return
      */
-    public void setFieldMapping(TableGroup tableGroup, String json) {
+    private void setFieldMapping(TableGroup tableGroup, String json) {
         List<Map> mappings = JsonUtil.parseList(json);
         if (null == mappings) {
             throw new BizException("映射关系不能为空");

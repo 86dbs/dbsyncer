@@ -23,14 +23,16 @@ import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,10 +73,10 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             List<String> databases = databaseTemplate.queryForList("SHOW DATABASES", String.class);
             if (!CollectionUtils.isEmpty(databases)) {
-                return databases.stream().filter(name -> !SYSTEM_DATABASES.contains(name.toLowerCase())).collect(Collectors.toList());
+                return databases.stream().filter(name->!SYSTEM_DATABASES.contains(name.toLowerCase())).collect(Collectors.toList());
             }
             return Collections.emptyList();
         });
@@ -145,52 +147,13 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
-                                        String targetTableName, List<Field> sourceDefinitions,
-                                        List<String> targetColumnNames) {
-        if (CollectionUtils.isEmpty(sourceDefinitions) || CollectionUtils.isEmpty(targetColumnNames)) {
-            return StringUtil.EMPTY;
-        }
-        int loopSize = Math.min(sourceDefinitions.size(), targetColumnNames.size());
-        //拼接数据库和表名 db.table
-        String qualifiedTable = qualifyTable(targetInstance, task, targetTableName);
-        List<String> clauses = new ArrayList<>(loopSize);
-        for (int i = 0; i < loopSize; i++) {
-            Field sourceField = sourceDefinitions.get(i);
-            String targetColumn = targetColumnNames.get(i);
-            // 非法数据直接跳过
-            if (sourceField == null || StringUtil.isBlank(targetColumn)) {
-                continue;
-            }
-            String col = buildWithQuotation(targetColumn);
-            String type = formatPhysicalType(sourceField);
-            clauses.add(String.format(Locale.ROOT, "MODIFY COLUMN %s %s", col, type));
-        }
-        if (clauses.isEmpty()) {
-            return StringUtil.EMPTY;
-        }
-        return String.format(Locale.ROOT, "ALTER TABLE %s %s", qualifiedTable, StringUtil.join(clauses, ", "));
-    }
-
-    private String qualifyTable(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
-                                String tableName) {
-        String dbName = StringUtil.isNotBlank(targetInstance.getCatalog())
-                ? targetInstance.getCatalog()
-                : task.getTargetDatabase();
-        if (StringUtil.isBlank(dbName)) {
-            return buildWithQuotation(tableName);
-        }
-        return buildWithQuotation(dbName) + "." + buildWithQuotation(tableName);
-    }
-
-    @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();
         List<Field> fields = config.getFields();
         List<String> fs = new ArrayList<>();
         List<String> vs = new ArrayList<>();
         List<String> dfs = new ArrayList<>();
-        fields.forEach(f -> {
+        fields.forEach(f-> {
             String name = database.buildWithQuotation(f.getName());
             if (skipRelTableField(f)) {
                 return;
@@ -291,19 +254,4 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
         }
         return sql;
     }
-
-    @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
-        if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
-            return super.formatPhysicalType(sourceDefinition);
-        }
-        String t = sourceDefinition.getTypeName().trim().toUpperCase(Locale.ROOT);
-        // MODIFY COLUMN 下 ENUM/SET 若无枚举字面量列表则非法，改为 VARCHAR
-        if ("ENUM".equals(t) || "SET".equals(t)) {
-            int len = sourceDefinition.getColumnSize() > 0 ? sourceDefinition.getColumnSize() : 255;
-            return String.format(Locale.ROOT, "VARCHAR(%d)", len);
-        }
-        return super.formatPhysicalType(sourceDefinition);
-    }
-
 }

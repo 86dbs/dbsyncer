@@ -64,11 +64,6 @@
             data: options.data || [],
             defaultValue: defaultValue,
             disabled: options.disabled || false,
-            maxRenderOptions: options.maxRenderOptions || 1000,
-            remoteSearch: options.remoteSearch || false,
-            pageSize: options.pageSize || 100,
-            keywordDebounceMs: options.keywordDebounceMs || 300,
-            loadOptions: options.loadOptions || null,
             customButtons: (options.customButtons || []).slice(0, 2), // 最多2个
             onSelect: options.onSelect || function() {},
             onReady: options.onReady || function() {},
@@ -113,9 +108,8 @@
         const dropdownId = 'dbsyncer-select-dropdown-' + timestamp + '-' + random;
         
         // 从原生 select 的类名中提取 select-mini，传递到生成的组件
-        let miniClass = $select.hasClass('form-control-mini') ? 'dbsyncer-select-mini' : '';
-        miniClass = $select.hasClass('form-control-md') ? 'dbsyncer-select-md' : miniClass;
-
+        const miniClass = $select.hasClass('form-control-mini') ? 'dbsyncer-select-mini' : '';
+        
         const selectHTML = `
             <div class="dbsyncer-select ${config.disabled ? 'disabled' : ''} ${miniClass}" id="${selectId}">
                 <div class="dbsyncer-select-trigger" data-toggle>
@@ -155,12 +149,6 @@
         const $empty = $component.find('.dbsyncer-select-empty');
         const $tags = $component.find('.dbsyncer-select-trigger-tags');
         const $text = $component.find('.dbsyncer-select-trigger-text');
-        let hasRenderedOnce = false;
-        let loadingRemote = false;
-        let remotePageNum = 1;
-        let remoteHasMore = false;
-        let remoteKeyword = '';
-        let keywordTimer = null;
 
         // 已选值
         let selectedValues = config.defaultValue ? (Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue]) : [];
@@ -170,22 +158,12 @@
             $options.empty();
             const filterLower = filterText.toLowerCase();
             let hasVisible = false;
-            let renderedCount = 0;
-            const maxRender = Math.max(50, config.maxRenderOptions);
-            const enableLimit = !filterText;
 
             config.data.forEach(function(item, index) {
                 const matches = !filterText || item.label.toLowerCase().indexOf(filterLower) > -1;
                 if (matches) {
                     hasVisible = true;
                 }
-                if (!matches) {
-                    return;
-                }
-                if (enableLimit && renderedCount >= maxRender) {
-                    return;
-                }
-                renderedCount++;
 
                 const isSelected = selectedValues.indexOf(item.value) > -1;
                 const inputType = config.type === 'single' ? 'radio' : 'checkbox';
@@ -214,84 +192,6 @@
             });
 
             $empty.toggleClass('hidden', hasVisible);
-            if (enableLimit && hasVisible && config.data.length > renderedCount) {
-                $options.append(
-                    $('<div class="dbsyncer-select-option disabled"></div>')
-                        .text('数据较多，仅展示前 ' + renderedCount + ' 项，请输入关键字搜索')
-                );
-            }
-            if (config.remoteSearch && loadingRemote) {
-                $options.append(
-                    $('<div class="dbsyncer-select-option disabled"></div>')
-                        .text('加载中...')
-                );
-            }
-            if (config.remoteSearch && !loadingRemote && !hasVisible) {
-                $empty.removeClass('hidden').text('暂无数据');
-            }
-        }
-
-        /**
-         * 合并远程结果并去重。
-         *
-         * @param {Array} items
-         * @param {boolean} replace 是否覆盖现有数据
-         */
-        function mergeRemoteData(items, replace) {
-            const source = Array.isArray(items) ? items : [];
-            if (replace) {
-                config.data = [];
-            }
-            const map = {};
-            config.data.forEach(function(item) {
-                map[item.value] = item;
-            });
-            source.forEach(function(item) {
-                if (item && item.value !== undefined && item.value !== null) {
-                    map[item.value] = item;
-                }
-            });
-            config.data = Object.keys(map).map(function(key) {
-                return map[key];
-            });
-        }
-
-        /**
-         * 远程加载下拉选项。
-         *
-         * @param {number} pageNum 当前页
-         * @param {string} keyword 关键词
-         * @param {boolean} replace 是否替换现有数据
-         */
-        function loadRemoteOptions(pageNum, keyword, replace) {
-            if (!config.remoteSearch || typeof config.loadOptions !== 'function' || loadingRemote) {
-                return;
-            }
-            loadingRemote = true;
-            if (replace) {
-                remotePageNum = 1;
-                remoteHasMore = false;
-            }
-            renderOptions($searchInput.val());
-            config.loadOptions({
-                pageNum: pageNum,
-                pageSize: config.pageSize,
-                searchKey: keyword || ''
-            }, function(result) {
-                loadingRemote = false;
-                const payload = result || {};
-                const total = Number(payload.total || 0);
-                const page = Number(payload.pageNum || pageNum || 1);
-                const size = Number(payload.pageSize || config.pageSize || 50);
-                const rows = Array.isArray(payload.data) ? payload.data : [];
-                remotePageNum = page;
-                remoteHasMore = page * size < total;
-                mergeRemoteData(rows, replace);
-                renderOptions($searchInput.val());
-            }, function() {
-                loadingRemote = false;
-                renderOptions($searchInput.val());
-            });
         }
 
         // 处理选项变化
@@ -359,26 +259,23 @@
             $tags.empty();
 
             if (selectedValues.length > 0) {
-                const selectedItems = selectedValues.map(function(value) {
+                const labels = selectedValues.map(function(value) {
                     const item = config.data.find(d => d.value === value);
-                    return {
-                        value: value,
-                        label: item ? item.label : value
-                    };
+                    return item ? item.label : value;
                 });
 
                 if (config.type === 'single') {
-                    $text.text(selectedItems[0].label).show();
+                    $text.text(labels[0]).show();
                 } else {
                     // 多选：显示前3个标签 + 计数
                     $text.hide();
                     const displayCount = 3;
-                    if (selectedItems.length <= displayCount) {
-                        selectedItems.forEach(function(selectedItem) {
-                            const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(selectedItem.label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
+                    if (labels.length <= displayCount) {
+                        labels.forEach(function(label) {
+                            const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
                             $tag.find('.dbsyncer-select-tag-remove').on('click.dbSelect-' + selectId, function(e) {
                                 e.stopPropagation();
-                                const idx = selectedValues.indexOf(selectedItem.value);
+                                const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
                                 if (idx > -1) {
                                     selectedValues.splice(idx, 1);
                                     updateDisplay();
@@ -390,11 +287,11 @@
                         });
                     } else {
                         for (let i = 0; i < displayCount; i++) {
-                            const selectedItem = selectedItems[i];
-                            const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(selectedItem.label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
+                            const label = labels[i];
+                            const $tag = $(`<span class="dbsyncer-select-tag">${escapeHtml(label)}<i class="fa fa-times dbsyncer-select-tag-remove"></i></span>`);
                             $tag.find('.dbsyncer-select-tag-remove').on('click.dbSelect-' + selectId, function(e) {
                                 e.stopPropagation();
-                                const idx = selectedValues.indexOf(selectedItem.value);
+                                const idx = selectedValues.indexOf(config.data.find(d => d.label === label).value);
                                 if (idx > -1) {
                                     selectedValues.splice(idx, 1);
                                     updateDisplay();
@@ -404,7 +301,7 @@
                             });
                             $tags.append($tag);
                         }
-                        const count = selectedItems.length - displayCount;
+                        const count = labels.length - displayCount;
                         $tags.append(`<span class="dbsyncer-select-count">+${count}</span>`);
                     }
                 }
@@ -439,16 +336,7 @@
                 adjustDropdownPosition();
                 
                 $searchInput.focus();
-                if (config.remoteSearch) {
-                    // 远程模式：首次打开加载；如果当前无数据也允许再次加载（例如上次精准查询为空导致下拉空白）
-                    if (!hasRenderedOnce || !config.data || config.data.length === 0) {
-                        loadRemoteOptions(1, $searchInput.val() || '', true);
-                        hasRenderedOnce = true;
-                    }
-                } else if (!hasRenderedOnce) {
-                    renderOptions('');
-                    hasRenderedOnce = true;
-                }
+                renderOptions('');
                 
                 // 更新全局当前打开的实例
                 window.dbSelectCurrentOpenInstance = api;
@@ -479,6 +367,7 @@
             $dropdown.addClass('hidden');
             $searchInput.val('');
             $searchClear.removeClass('active');
+            renderOptions('');
             
             // 如果当前实例就是打开的实例，清空全局变量
             if (window.dbSelectCurrentOpenInstance === api) {
@@ -551,17 +440,7 @@
         $searchInput.on('input.dbSelect-' + selectId, function() {
             const text = $(this).val();
             $searchClear.toggleClass('active', text.length > 0);
-            if (config.remoteSearch) {
-                remoteKeyword = text;
-                if (keywordTimer) {
-                    clearTimeout(keywordTimer);
-                }
-                keywordTimer = setTimeout(function() {
-                    loadRemoteOptions(1, remoteKeyword, true);
-                }, config.keywordDebounceMs);
-            } else {
-                renderOptions(text);
-            }
+            renderOptions(text);
         });
 
         // 清除搜索
@@ -569,23 +448,7 @@
             e.stopPropagation();
             $searchInput.val('').focus();
             $searchClear.removeClass('active');
-            if (config.remoteSearch) {
-                loadRemoteOptions(1, '', true);
-            } else {
-                renderOptions('');
-            }
-        });
-
-        // 下拉滚动触底加载下一页
-        $options.on('scroll.dbSelect-' + selectId, function() {
-            if (!config.remoteSearch || loadingRemote || !remoteHasMore) {
-                return;
-            }
-            const el = this;
-            const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
-            if (nearBottom) {
-                loadRemoteOptions(remotePageNum + 1, remoteKeyword, false);
-            }
+            renderOptions('');
         });
 
         // 点击外部关闭
@@ -636,6 +499,7 @@
         });
 
         // 初始化显示
+        renderOptions('');
         updateDisplay();
 
         // 如果没有设置默认值，检查是否有 selected 属性或默认选中第一个
@@ -676,19 +540,12 @@
             getValues: function() { return selectedValues; },
             setValues: function(values) {
                 const inputValues = Array.isArray(values) ? values : [values];
-                if (config.remoteSearch) {
-                    // 远程模式下允许先选值，避免目标项未加载导致值丢失
-                    selectedValues = inputValues.filter(function(value) {
-                        return value !== undefined && value !== null && value !== '';
+                // 过滤掉无效值（只保留在 config.data 中存在的值）
+                selectedValues = inputValues.filter(function(value) {
+                    return config.data.some(function(item) {
+                        return item.value === value;
                     });
-                } else {
-                    // 过滤掉无效值（只保留在 config.data 中存在的值）
-                    selectedValues = inputValues.filter(function(value) {
-                        return config.data.some(function(item) {
-                            return item.value === value;
-                        });
-                    });
-                }
+                });
                 updateDisplay();
                 // 无论下拉菜单是否打开，都更新选项状态
                 renderOptions($searchInput.val());
@@ -698,7 +555,6 @@
             setData: function(newData) {
                 // 更新选项数据
                 config.data = newData || [];
-                const oldSelectedValues = (selectedValues || []).slice();
                 
                 // 如果是原始 select 元素，清空并重新填充 options
                 if ($select.is('select')) {
@@ -716,29 +572,15 @@
                 
                 // 清空搜索框
                 $searchInput.val('');
-                remoteKeyword = '';
-                remotePageNum = 1;
-                remoteHasMore = false;
-                // 远程模式保留已有选中，避免重新搜索后丢失勾选
-                if (config.remoteSearch) {
-                    selectedValues = oldSelectedValues.filter(function(value) {
-                        return value !== undefined && value !== null && value !== '';
-                    });
+                // 清空已选值（因为数据已经变了）
+                selectedValues = [];
+                // 重新初始化默认值
+                if (config.defaultValue) {
+                    selectedValues = Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue];
                 } else {
-                    // 非远程模式按本地数据重建选中值
-                    selectedValues = oldSelectedValues.filter(function(value) {
-                        return config.data.some(function(item) {
-                            return item && item.value === value;
-                        });
-                    });
-                    // 重新初始化默认值
-                    if (selectedValues.length === 0 && config.defaultValue) {
-                        selectedValues = Array.isArray(config.defaultValue) ? config.defaultValue : [config.defaultValue];
-                    }
-                    if (selectedValues.length === 0 && config.data.length > 0 && config.type === 'single') {
-                        const firstItem = config.data.find(function(d) {
-                            return d && d.value && d.value !== '';
-                        });
+                    // 如果没有默认值，自动选中第一个非空选项
+                    if (config.data.length > 0) {
+                        const firstItem = config.data.find(d => d.value && d.value !== '');
                         if (firstItem) {
                             selectedValues = [firstItem.value];
                         }
@@ -788,23 +630,6 @@
             },
             close: function() {
                 closeDropdown();
-                return this;
-            },
-            /**
-             * 远程模式下手动刷新数据（用于外部触发取消过滤/重载）。
-             *
-             * @param {string} keyword 搜索关键字，空串表示清空搜索
-             * @returns {*}
-             */
-            reloadRemote: function(keyword) {
-                if (!config.remoteSearch) {
-                    return this;
-                }
-                const nextKeyword = keyword === undefined || keyword === null ? '' : String(keyword);
-                remoteKeyword = nextKeyword;
-                $searchInput.val(nextKeyword);
-                $searchClear.toggleClass('active', nextKeyword.length > 0);
-                loadRemoteOptions(1, nextKeyword, true);
                 return this;
             },
             destroy: function() {

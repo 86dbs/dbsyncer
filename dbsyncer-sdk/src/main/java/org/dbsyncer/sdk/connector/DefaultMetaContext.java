@@ -5,9 +5,7 @@ package org.dbsyncer.sdk.connector;
 
 import org.dbsyncer.common.model.RsaConfig;
 import org.dbsyncer.common.rsa.RsaManager;
-import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.plugin.CustomContext;
 import org.dbsyncer.sdk.plugin.MetaContext;
 
 import java.util.Map;
@@ -17,12 +15,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-02-12 00:46
  */
-public class DefaultMetaContext implements MetaContext, CustomContext {
-
-    private BooleanFilter booleanFilter = new BooleanFilter();
-
-    private boolean targetConnector = false;
-
+public class DefaultMetaContext implements MetaContext {
     private Table sourceTable;
     private Map<String, String> command;
     private ConnectorInstance sourceConnectorInstance;
@@ -74,27 +67,5 @@ public class DefaultMetaContext implements MetaContext, CustomContext {
 
     public void setRsaConfig(RsaConfig rsaConfig) {
         this.rsaConfig = rsaConfig;
-    }
-
-    @Override
-    public boolean isTargetConnector() {
-        return targetConnector;
-    }
-
-    @Override
-    public BooleanFilter getFilter() {
-        return booleanFilter;
-    }
-
-    public BooleanFilter getBooleanFilter() {
-        return booleanFilter;
-    }
-
-    public void setBooleanFilter(BooleanFilter booleanFilter) {
-        this.booleanFilter = booleanFilter;
-    }
-
-    public void setTargetConnector(boolean targetConnector) {
-        this.targetConnector = targetConnector;
     }
 }

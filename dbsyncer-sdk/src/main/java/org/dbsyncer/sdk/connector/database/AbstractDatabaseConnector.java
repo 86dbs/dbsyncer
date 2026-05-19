@@ -11,7 +11,9 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
-import org.dbsyncer.sdk.connector.*;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -22,9 +24,6 @@ import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.filter.AbstractFilter;
-import org.dbsyncer.sdk.filter.BooleanFilter;
-import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -49,7 +48,14 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -89,13 +95,13 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public boolean isAlive(DatabaseConnectorInstance connectorInstance) {
-        Integer count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
+        Integer count = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForObject(getValidationQuery(), Integer.class));
         return null != count && count > 0;
     }
 
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             // 兼容处理 schema 和 catalog
@@ -120,7 +126,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public List<MetaInfo> getMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             SimpleConnection connection = databaseTemplate.getSimpleConnection();
             Connection conn = connection.getConnection();
             final String catalog = getCatalog(context.getCatalog(), conn);
@@ -162,7 +168,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         Result result = new Result();
         try {
             Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
-            connectorInstance.execute(databaseTemplate -> {
+            connectorInstance.execute(databaseTemplate-> {
                 // 执行ddl时, 带上dbs唯一标识码，防止双向同步导致死循环
                 databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
                 return true;
@@ -237,7 +243,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (CollectionUtils.isEmpty(pk)) {
             return false;
         }
-        return pk.stream().anyMatch(key -> key.equalsIgnoreCase(name));
+        return pk.stream().anyMatch(key->key.equalsIgnoreCase(name));
     }
 
     @Override
@@ -246,20 +252,16 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (CollectionUtils.isEmpty(command)) {
             return 0L;
         }
-        // 2. 根据是否目标连接器选择SQL
-        DefaultMetaContext context = (metaContext instanceof DefaultMetaContext) ? (DefaultMetaContext) metaContext : null;
-        boolean isTarget = Objects.nonNull(context) && context.isTargetConnector();
 
-        String queryCountSql = isTarget ? command.get(ConnectorConstant.TARGET_QUERY_COUNT) : command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
-
-        // 3. SQL为空直接返回
+        // 1、获取select SQL
+        String queryCountSql = command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
         if (StringUtil.isBlank(queryCountSql)) {
-            return 0L;
+            return 0;
         }
 
         // 2、返回结果集
         try {
-            return connectorInstance.execute(databaseTemplate -> {
+            return connectorInstance.execute(databaseTemplate-> {
                 Long count = databaseTemplate.queryForObject(queryCountSql, Long.class);
                 return count == null ? 0 : count;
             });
@@ -273,25 +275,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 1、获取查询SQL
         boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
-        String querySql;
-        if (context instanceof FullPluginContext && ((FullPluginContext) context).isTargetConnector()) {
-            queryKey = ConnectorConstant.OPERTION_QUERY_TARGET;
-            querySql = context.getCommand().get(queryKey);
-            Assert.hasText(querySql, "查询语句不能为空.");
-            BooleanFilter filter = ((FullPluginContext) context).getFilter();
-            String condition = buildQueryCondition(filter, context.getArgs());
-            querySql = buildTargetReaderSql(querySql, condition);
-        } else {
-            querySql = context.getCommand().get(queryKey);
-            Assert.hasText(querySql, "查询语句不能为空.");
-            // 2、设置参数
-            Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
-        }
+        final String querySql = context.getCommand().get(queryKey);
+        Assert.hasText(querySql, "查询语句不能为空.");
 
-        final String finalQuerySql = querySql;
+        // 2、设置参数
+        Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
 
         // 3、执行SQL
-        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(finalQuerySql, context.getArgs().toArray()));
+        List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(querySql, context.getArgs().toArray()));
 
         // 4、返回结果集
         return new Result(list);
@@ -301,7 +292,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
         String event = context.getEvent();
         List<Map> data = context.getTargetList();
-        List<Field> targetFields = context.getTargetFields();
+        List<Field> targetFields = context.getTargetFields().stream().filter(f->!DataTypeEnum.isRelTable(f.getTypeName())).collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(targetFields)) {
             logger.error("writer fields can not be empty.");
@@ -338,7 +329,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorInstance.execute(databaseTemplate -> {
+            execute = connectorInstance.execute(databaseTemplate-> {
                 SimpleConnection connection = databaseTemplate.getSimpleConnection();
                 try {
                     // 手动提交事务
@@ -377,9 +368,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context, String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
-        data.forEach(row -> {
+        data.forEach(row-> {
             try {
-                int execute = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(executeSql, batchRow(fields, row)));
+                int execute = connectorInstance.execute(databaseTemplate->databaseTemplate.update(executeSql, batchRow(fields, row)));
                 if (execute == 0) {
                     throw new SdkException("数据不存在或执行异常");
                 }
@@ -428,6 +419,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         buildSql(map, SqlBuilderEnum.QUERY_CURSOR, buildSqlConfig);
         // 记录实际参与游标的主键列表，用于全量同步时获取游标占位符
         map.put(ConnectorConstant.CURSOR_PK_NAMES, StringUtil.join(primaryKeys, StringUtil.COMMA));
+
         // 获取查询总数SQL
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), getQueryCountSql(buildSqlConfig));
         return map;
@@ -452,6 +444,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
+
         // 获取查询总数SQL
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), "SELECT COUNT(*) FROM (" + querySql + ") DBS_T");
         return map;
@@ -475,7 +468,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         String schema = buildSchemaWithQuotation(commandConfig.getSchema());
         // 同步字段
         List<Field> column = filterColumn(table.getColumn());
-        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, "");
+        SqlBuilderConfig config = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, null);
 
         // 获取增删改SQL
         Map<String, String> map = new HashMap<>();
@@ -487,13 +480,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             buildSql(map, SqlBuilderEnum.UPDATE, config);
         }
         buildSql(map, SqlBuilderEnum.DELETE, config);
-
-        map.put(ConnectorConstant.OPERTION_QUERY_TARGET, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
-
-        //查询目标总数SQL
-        final String queryFilterSql = getQueryFilterSql(commandConfig);
-        SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, queryFilterSql);
-        map.put(SqlBuilderEnum.TARGET_QUERY_COUNT.getName(), getQueryTargetCountSql(buildSqlConfig));
         return map;
     }
 
@@ -702,123 +688,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     /**
-     * 根据当前运行的参数，动态拼接 WHERE 查询条件
-     *
-     */
-    private String buildQueryCondition(BooleanFilter baseQuery, List<Object> args) {
-        if (baseQuery == null) {
-            return null;
-        }
-        List<BooleanFilter> clauses = baseQuery.getClauses();
-        List<AbstractFilter> rootFilters = baseQuery.getFilters();
-        if (CollectionUtils.isEmpty(clauses) && CollectionUtils.isEmpty(rootFilters)) {
-            return null;
-        }
-        StringBuilder sql = new StringBuilder();
-        if (!CollectionUtils.isEmpty(rootFilters)) {
-            createFilterSql(rootFilters, args, sql);
-            return sql.length() > 0 ? sql.toString() : null;
-        }
-        appendConditionSql(clauses, args, sql);
-        return sql.length() > 0 ? sql.toString() : null;
-    }
-
-    /**
-     * 解析/处理【目标端读取器】的查询 SQL，动态拼接查询条件
-     */
-    private String buildTargetReaderSql(String querySql, String condition) {
-        // 无查询条件，直接返回原SQL
-        if (StringUtil.isBlank(condition)) {
-            return trimTrailingAndOrWhere(querySql);
-        }
-        // 自动判断追加 WHERE 或 AND
-        String keyword = querySql.toUpperCase(Locale.ROOT).contains(" WHERE ") ? " AND " : " WHERE ";
-        return querySql + keyword + condition;
-    }
-
-    /**
-     * 清理SQL尾部多余的 WHERE / AND 关键字
-     */
-    private String trimTrailingAndOrWhere(String sql) {
-        String result = sql.replaceAll("(?i)\\s+AND\\s*$", "");
-        result = result.replaceAll("(?i)\\s+WHERE\\s*$", "");
-        return result;
-    }
-
-    /**
-     * 根据条件 动态组装 sql 和参数
-     */
-    private void createFilterSql(List<AbstractFilter> filters, List<Object> args, StringBuilder sql) {
-        int size = filters.size();
-        for (int i = 0; i < size; i++) {
-            AbstractFilter abstractFilter = filters.get(i);
-            if (i > 0) {
-                sql.append(" ").append(abstractFilter.getOperation().toUpperCase()).append(" ");
-            }
-            if (abstractFilter instanceof InFilter) {
-                InFilter inList = (InFilter) abstractFilter;
-                List<Object> binds = inList.getBindValues();
-                if (CollectionUtils.isEmpty(binds)) {
-                    throw new SdkException("InListFilter bindValues can not be empty.");
-                }
-                sql.append(buildWithQuotation(inList.getName())).append(" IN (");
-                for (int j = 0; j < binds.size(); j++) {
-                    if (j > 0) {
-                        sql.append(StringUtil.COMMA);
-                    }
-                    sql.append("?");
-                }
-                sql.append(")");
-                args.addAll(binds);
-                continue;
-            }
-            FilterEnum filterEnum = FilterEnum.getFilterEnum(abstractFilter.getFilter());
-            sql.append(abstractFilter.getName());
-            if (filterEnum == FilterEnum.IS_NULL || filterEnum == FilterEnum.IS_NOT_NULL) {
-                sql.append(" ").append(filterEnum.getName().toUpperCase());
-                continue;
-            }
-            sql.append(String.format(" %s ?", filterEnum.getName()));
-            switch (filterEnum) {
-                case EQUAL:
-                case NOT_EQUAL:
-                case LT:
-                case LT_AND_EQUAL:
-                case GT:
-                case GT_AND_EQUAL:
-                    args.add(abstractFilter.getValue());
-                    break;
-                default:
-                    throw new SdkException("Unsupported filter type: " + filterEnum.getName());
-            }
-        }
-    }
-
-    /**
-     * 将嵌套的 {@link BooleanFilter} 子句拼为参数化条件（子句之间用子句上的 {@link OperationEnum} 连接）。
-     *
-     * @param clauses 子句列表
-     * @param args    参数列表
-     * @param sql     输出 SQL 片段
-     */
-    private void appendConditionSql(List<BooleanFilter> clauses, List<Object> args, StringBuilder sql) {
-        int size = clauses.size();
-        for (int i = 0; i < size; i++) {
-            BooleanFilter booleanFilter = clauses.get(i);
-            List<AbstractFilter> filters = booleanFilter.getFilters();
-            if (CollectionUtils.isEmpty(filters)) {
-                continue;
-            }
-            if (i > 0) {
-                sql.append(" ").append(booleanFilter.getOperationEnum().name().toUpperCase()).append(" ");
-            }
-            sql.append("(");
-            createFilterSql(filters, args, sql);
-            sql.append(")");
-        }
-    }
-
-    /**
      * 获取查询条件SQL
      *
      * @param commandConfig
@@ -831,7 +700,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         Table table = commandConfig.getTable();
         Map<String, Field> fieldMap = new HashMap<>();
-        table.getColumn().forEach(field -> fieldMap.put(field.getName(), field));
+        table.getColumn().stream().filter(field -> !DataTypeEnum.isRelTable(field.getTypeName())).forEach(field->fieldMap.put(field.getName(), field));
 
         // 过滤条件SQL
         StringBuilder sql = new StringBuilder();
@@ -852,8 +721,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         sql.append(orSql);
 
         // 自定义SQL
-        Optional<Filter> sqlFilter = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName())).findFirst();
-        sqlFilter.ifPresent(f -> sql.append(f.getValue()));
+        Optional<Filter> sqlFilter = filter.stream().filter(f->StringUtil.equals(f.getOperation(), OperationEnum.SQL.getName())).findFirst();
+        sqlFilter.ifPresent(f->sql.append(f.getValue()));
 
         // 如果有条件加上 WHERE
         if (StringUtil.isNotBlank(sql.toString())) {
@@ -894,7 +763,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
      * @return
      */
     private String buildFilterSql(Map<String, Field> fieldMap, String operator, List<Filter> filter) {
-        List<Filter> list = filter.stream().filter(f -> StringUtil.equals(f.getOperation(), operator)).collect(Collectors.toList());
+        List<Filter> list = filter.stream().filter(f->StringUtil.equals(f.getOperation(), operator)).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(list)) {
             return "";
         }
@@ -993,7 +862,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
-        return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
+        return data.stream().map(row->batchRow(fields, row)).collect(Collectors.toList());
     }
 
     private Object[] batchRow(List<Field> fields, Map row) {
@@ -1020,49 +889,4 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         logger.error("{} {}表事件{}, 执行{}失败:{}, DATA:{}", context.getTraceId(), context.getTargetTable().getName(), context.getEvent(), event, message, row);
     }
-
-    /**
-     * 生成列定义中的类型片段（不含列名），用于同构订正等 DDL。
-     */
-    protected String formatPhysicalType(Field sourceDefinition) {
-        String raw = sourceDefinition.getTypeName();
-        // 空类型按 VARCHAR 兜底，避免下游拼接非法 DDL
-        if (StringUtil.isBlank(raw)) {
-            return "VARCHAR(255)";
-        }
-        String t = raw.trim().toUpperCase(Locale.ROOT);
-        int size = Math.max(0, sourceDefinition.getColumnSize());
-        int ratio = Math.max(0, sourceDefinition.getRatio());
-        //需要设置精度的类型
-        if ("DECIMAL".equals(t) || "NUMERIC".equals(t) || "NUMBER".equals(t)) {
-            return formatDecimalTypeFragment(t, size, ratio);
-        }
-        //CHAR / VARCHAR / NCHAR / NVARCHAR / 二进制(BINARY/VARBINARY/RAW)
-        if (t.contains("CHAR") || t.contains("BINARY") || t.contains("RAW") || t.contains("BYTEA")) {
-            return formatCharOrBinaryTypeFragment(t, size);
-        }
-        return t;
-    }
-
-    private static String formatDecimalTypeFragment(String t, int size, int ratio) {
-        if (size > 0 && ratio > 0) {
-            return String.format(Locale.ROOT, "%s(%d,%d)", t, size, ratio);
-        } else if (size > 0 && ratio == 0) {
-            return String.format(Locale.ROOT, "%s(%d)", t, size);
-        }
-        return t;
-    }
-
-    private String formatCharOrBinaryTypeFragment(String t, int size) {
-        int len = size > 0 ? size : defaultLengthForCharFamily(t);
-        return String.format(Locale.ROOT, "%s(%d)", t, len);
-    }
-
-    private int defaultLengthForCharFamily(String t) {
-        if (t.contains("TEXT") || "CLOB".equals(t) || "NCLOB".equals(t)) {
-            return 65535;
-        }
-        return 255;
-    }
-
 }

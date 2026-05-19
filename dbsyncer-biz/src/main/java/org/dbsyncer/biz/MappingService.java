@@ -118,14 +118,6 @@ public interface MappingService {
     String refreshMappingTables(String id);
 
     /**
-     * 分页搜索驱动表（用于下拉框远程搜索）
-     *
-     * @param params
-     * @return
-     */
-    Paging<Table> searchTables(Map<String, String> params);
-
-    /**
      * 查询自定义表
      *
      * @param params

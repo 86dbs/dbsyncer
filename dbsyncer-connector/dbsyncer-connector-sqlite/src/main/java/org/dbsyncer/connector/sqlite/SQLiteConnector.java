@@ -19,10 +19,8 @@ import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
-import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
@@ -34,7 +32,6 @@ import java.util.stream.Collectors;
 
 /**
  * SQLite连接器实现
- *
  * @Author bble
  * @Version 1.0.0
  * @Date 2023-11-28 16:22
@@ -81,7 +78,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
 
     @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
-        return connectorInstance.execute(databaseTemplate -> {
+        return connectorInstance.execute(databaseTemplate-> {
             Map<String, Object> result = databaseTemplate.queryForMap(QUERY_DATABASE);
             List<String> list = new ArrayList<>();
             if (!CollectionUtils.isEmpty(result)) {
@@ -148,11 +145,6 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task, String targetTableName, List<Field> sourceDefinitions, List<String> targetColumnNames) {
-        throw new SQLiteException("sqlLite暂时不支持该功能");
-    }
-
-    @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
     }
@@ -210,7 +202,7 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
         Database database = config.getDatabase();
         UpsertContext context = new UpsertContext();
 
-        config.getFields().forEach(f -> {
+        config.getFields().forEach(f-> {
             String fieldName = database.buildWithQuotation(f.getName());
             context.fieldNames.add(fieldName);
 
@@ -246,9 +238,9 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     private List<Table> getTables(DatabaseConnectorInstance connectorInstance, String sql, TableTypeEnum type) {
-        List<String> tableNames = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(sql, String.class));
+        List<String> tableNames = connectorInstance.execute(databaseTemplate->databaseTemplate.queryForList(sql, String.class));
         if (!CollectionUtils.isEmpty(tableNames)) {
-            return tableNames.stream().map(name -> {
+            return tableNames.stream().map(name-> {
                 Table table = new Table();
                 table.setName(name);
                 table.setType(type.getCode());

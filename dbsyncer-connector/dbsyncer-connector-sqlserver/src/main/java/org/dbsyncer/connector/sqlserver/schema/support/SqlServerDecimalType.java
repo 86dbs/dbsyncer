@@ -24,8 +24,6 @@ public final class SqlServerDecimalType extends DecimalType {
 
         NUMERIC("numeric"),
 
-        numeric_identity("numeric() identity"),
-
         MONEY("money"),
 
         SMALL_MONEY("smallmoney");

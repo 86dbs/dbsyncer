@@ -6,7 +6,6 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.model.MetaInfo;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
 import java.util.List;
@@ -40,11 +39,6 @@ public interface ParserComponent {
      * @return
      */
     Map<String, String> getCommand(Mapping mapping, TableGroup tableGroup);
-
-    /**
-     * 订正校验任务：按源/目标连接器生成表组执行命令
-     */
-    Map<String, String> getCommand(ValidateSyncTask task, TableGroup tableGroup);
 
     /**
      * 全量同步

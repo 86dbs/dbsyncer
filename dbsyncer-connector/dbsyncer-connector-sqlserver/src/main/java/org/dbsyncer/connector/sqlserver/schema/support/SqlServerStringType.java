@@ -5,7 +5,6 @@ package org.dbsyncer.connector.sqlserver.schema.support;
 
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
-import org.dbsyncer.connector.sqlserver.schema.HierarchyIdBinaryCode;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeographyData;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeometryData;
 import org.dbsyncer.sdk.model.Field;
@@ -22,7 +21,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.util.StringUtils;
 
 /**
  * @Author 穿云
@@ -39,8 +37,6 @@ public final class SqlServerStringType extends StringType {
         NVARCHAR("nvarchar"),
         TEXT("text"),
         N_TEXT("ntext"),
-        HIERARCHY_ID("hierarchyid"),
-        UNIQUE_IDENTIFIER("uniqueidentifier"),
         GEOMETRY("geometry"),
         GEOGRAPHY("geography");
 
@@ -78,8 +74,6 @@ public final class SqlServerStringType extends StringType {
                     case GEOMETRY:
                     case GEOGRAPHY:
                         return parseToWKTWithSRID((byte[]) val);
-                    case HIERARCHY_ID:
-                        return HierarchyIdBinaryCode.parseToHierarchyPath((byte[]) val);
                     default:
                         break;
                 }
@@ -125,16 +119,9 @@ public final class SqlServerStringType extends StringType {
     @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof String) {
-            String stringValue = (String) val;
             TypeEnum type = TypeEnum.getType(field.getTypeName());
             if (type != null) {
                 switch (type) {
-                    case HIERARCHY_ID:
-                    case UNIQUE_IDENTIFIER:
-                        if (!StringUtils.hasText(stringValue) || "NULL".equalsIgnoreCase(stringValue)) {
-                            return null;
-                        }
-                        return stringValue;
                     case GEOMETRY:
                         return new SqlServerGeometryData(val);
                     case GEOGRAPHY:

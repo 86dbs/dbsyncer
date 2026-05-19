@@ -44,7 +44,6 @@ import org.springframework.jdbc.core.SqlReturnUpdateCount;
 import org.springframework.jdbc.core.SqlRowSetResultSetExtractor;
 import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.jdbc.core.StatementCallback;
-import org.dbsyncer.sdk.schema.BindParameter;
 import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.jdbc.datasource.ConnectionProxy;
 import org.springframework.jdbc.support.JdbcUtils;
@@ -1002,7 +1001,7 @@ public class DatabaseTemplate implements JdbcOperations {
                     colIndex++;
                     if (value instanceof SqlParameterValue) {
                         SqlParameterValue paramValue = (SqlParameterValue) value;
-                        setBindAwareParameterValue(ps, colIndex, paramValue, paramValue.getValue());
+                        StatementCreatorUtils.setParameterValue(ps, colIndex, paramValue, paramValue.getValue());
                     } else {
                         int colType;
                         if (argTypes.length < colIndex) {
@@ -1010,7 +1009,7 @@ public class DatabaseTemplate implements JdbcOperations {
                         } else {
                             colType = argTypes[colIndex - 1];
                         }
-                        setBindAwareParameterValue(ps, colIndex, colType, value);
+                        StatementCreatorUtils.setParameterValue(ps, colIndex, colType, value);
                     }
                 }
             }
@@ -1358,30 +1357,7 @@ public class DatabaseTemplate implements JdbcOperations {
      * @return the new PreparedStatementSetter to use
      */
     protected PreparedStatementSetter newArgPreparedStatementSetter(@Nullable Object[] args) {
-        return ps -> {
-            if (args == null) {
-                return;
-            }
-            for (int i = 0; i < args.length; i++) {
-                setBindAwareParameterValue(ps, i + 1, SqlTypeValue.TYPE_UNKNOWN, args[i]);
-            }
-        };
-    }
-
-    private static void setBindAwareParameterValue(PreparedStatement ps, int paramIndex, int sqlType, Object value) throws SQLException {
-        if (value instanceof BindParameter) {
-            ((BindParameter) value).setValue(ps, paramIndex, ps.getConnection());
-            return;
-        }
-        StatementCreatorUtils.setParameterValue(ps, paramIndex, sqlType, value);
-    }
-
-    private static void setBindAwareParameterValue(PreparedStatement ps, int paramIndex, SqlParameterValue paramValue, Object value) throws SQLException {
-        if (value instanceof BindParameter) {
-            ((BindParameter) value).setValue(ps, paramIndex, ps.getConnection());
-            return;
-        }
-        StatementCreatorUtils.setParameterValue(ps, paramIndex, paramValue, value);
+        return new ArgumentPreparedStatementSetter(args);
     }
 
     /**

@@ -34,7 +34,6 @@ public class ESConfig extends ConnectorConfig {
      */
     private int timeoutSeconds = 10;
 
-    @Override
     public String getUrl() {
         return url;
     }
