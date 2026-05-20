@@ -15,15 +15,10 @@ import org.dbsyncer.sdk.model.Point;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -107,7 +102,9 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     @Override
     public void close() {
-        scheduledTaskService.stop(taskKey);
+        if (StringUtil.isNotBlank(taskKey)) {
+            scheduledTaskService.stop(taskKey);
+        }
         running = false;
     }
 
@@ -119,8 +116,8 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
         Map<String, String> captured = new HashMap<>();
         for (int i = 0; i < commands.size(); i++) {
             Point point = checkLastPoint(commands.get(i), i);
+            point.refresh();
             if (!CollectionUtils.isEmpty(point.getPosition())) {
-                snapshot.putAll(point.getPosition());
                 captured.putAll(point.getPosition());
             }
         }

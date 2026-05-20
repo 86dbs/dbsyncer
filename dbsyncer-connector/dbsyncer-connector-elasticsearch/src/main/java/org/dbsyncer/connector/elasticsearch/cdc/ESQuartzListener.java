@@ -17,6 +17,8 @@ import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.elasticsearch.ElasticsearchException;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,50 @@ import java.util.Set;
  * @Date 2021-09-01 20:35
  */
 public final class ESQuartzListener extends AbstractQuartzListener {
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        List<TableGroupQuartzCommand> cmdList = getCommands();
+        if (CollectionUtils.isEmpty(cmdList)) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> captured = new HashMap<>();
+        for (int i = 0; i < cmdList.size(); i++) {
+            collectBeginQuartzPoint(cmdList.get(i), i, captured);
+        }
+        return captured;
+    }
+
+    /**
+     * 全量+增量：以当前时刻冻结 begin 类系统参数（如 $timestamp_begin$），全量结束后增量从该水位继续拉取
+     */
+    private void collectBeginQuartzPoint(TableGroupQuartzCommand cmd, int index, Map<String, String> captured) {
+        Map<String, String> command = cmd.getCommand();
+        String filterJson = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
+        if (StringUtil.isBlank(filterJson)) {
+            return;
+        }
+        List<Filter> filters = JsonUtil.jsonToArray(filterJson, Filter.class);
+        if (CollectionUtils.isEmpty(filters)) {
+            return;
+        }
+        Set<String> seen = new HashSet<>();
+        for (Filter f : filters) {
+            String placeholder = f.getValue();
+            if (!seen.add(placeholder)) {
+                throw new ElasticsearchException(String.format("系统参数%s存在多个.", placeholder));
+            }
+            QuartzFilterEnum filterEnum = QuartzFilterEnum.getQuartzFilterEnum(placeholder);
+            if (filterEnum == null || !filterEnum.getQuartzFilter().begin()) {
+                continue;
+            }
+            QuartzFilter quartzFilter = filterEnum.getQuartzFilter();
+            String key = index + filterEnum.getType();
+            String value = quartzFilter.toString(quartzFilter.getObject());
+            captured.put(key, value);
+            snapshot.put(key, value);
+        }
+    }
 
     @Override
     protected Point checkLastPoint(TableGroupQuartzCommand cmd, int index) {

@@ -71,6 +71,13 @@ public enum QuartzFilterEnum {
         return null;
     }
 
+    /**
+     * 是否为定时增量系统占位符（全量/count 等未经监听器替换时须排除）
+     */
+    public static boolean isSystemPlaceholder(String value) {
+        return StringUtil.isNotBlank(value) && getQuartzFilterEnum(value.trim()) != null;
+    }
+
     public int getIndex() {
         return index;
     }
