@@ -97,10 +97,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public ElasticsearchConnector() {
         filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v) -> builder.must(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v) -> builder.mustNot(QueryBuilders.matchQuery(k, v)));
-        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gt(v)));
-        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lt(v)));
-        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gte(v)));
-        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lte(v)));
+        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.GT, v)));
+        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.LT, v)));
+        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.GT_AND_EQUAL, v)));
+        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.LT_AND_EQUAL, v)));
         filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v) -> builder.filter(QueryBuilders.wildcardQuery(k, v)));
     }
 
@@ -552,13 +552,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             case NOT_EQUAL:
                 return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchQuery(field, val));
             case GT:
-                return QueryBuilders.rangeQuery(field).gt(val);
             case LT:
-                return QueryBuilders.rangeQuery(field).lt(val);
             case GT_AND_EQUAL:
-                return QueryBuilders.rangeQuery(field).gte(val);
             case LT_AND_EQUAL:
-                return QueryBuilders.rangeQuery(field).lte(val);
+                return ESUtil.buildRangeQuery(field, fe, val);
             case IS_NULL:
                 return QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(field));
             case IS_NOT_NULL:
