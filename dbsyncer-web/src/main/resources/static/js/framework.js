@@ -720,6 +720,7 @@ function refreshLicense() {
             // 专业版
             const licenseInfo = response.data;
             const $content = $("#effectiveContent");
+            const $editionName = $("#editionName");
             if (licenseInfo["edition"] !== "community") {
                 $validateMenu.removeClass("hidden");
             }
@@ -745,6 +746,7 @@ function refreshLicense() {
             else if ($currentTime > $effectiveTime) {
                 $("#licenseWarning").removeClass("hidden");
             }
+            $editionName.text(licenseInfo.editionName)
             $content.text(licenseInfo.effectiveContent);
         }
     });

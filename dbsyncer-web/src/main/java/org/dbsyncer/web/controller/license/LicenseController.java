@@ -153,6 +153,7 @@ public class LicenseController extends BaseController {
             Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
             if (first.isPresent()) {
                 infoVo.setEffectiveTime(first.get().getEffectiveTime());
+                infoVo.setEditionName(first.get().getName());
                 formatEffectiveTimeContent(infoVo);
             }
         }
