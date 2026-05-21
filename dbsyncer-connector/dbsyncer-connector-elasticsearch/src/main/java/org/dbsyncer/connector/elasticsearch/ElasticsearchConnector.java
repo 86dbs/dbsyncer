@@ -445,7 +445,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     /**
      * 全量同步 / count 不走定时监听器替换，系统占位符不能作为 ES 字面量下发
      */
-    private List<Filter> omitQuartzPlaceholderFilters(List<Filter> filters) {
+    private List<Filter> excludeQuartzPlaceholderFilters(List<Filter> filters) {
         if (CollectionUtils.isEmpty(filters)) {
             return filters;
         }
@@ -591,7 +591,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         String filterJson = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
         List<Filter> filters = null;
         if (!StringUtil.isBlank(filterJson)) {
-            filters = omitQuartzPlaceholderFilters(JsonUtil.jsonToArray(filterJson, Filter.class));
+            filters = excludeQuartzPlaceholderFilters(JsonUtil.jsonToArray(filterJson, Filter.class));
         }
         if (CollectionUtils.isEmpty(filters)) {
             builder.query(QueryBuilders.matchAllQuery());
