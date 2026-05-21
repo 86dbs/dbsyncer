@@ -6,7 +6,6 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
@@ -26,6 +25,7 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
@@ -138,28 +138,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
         Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
-        try {
-            listener.init();
-            Map<String, String> captured = listener.captureSnapshot();
-            if (CollectionUtils.isEmpty(captured)) {
-                throw new ManagerException("无法捕获当前增量位点，请检查数据源连接与增量配置.");
-            }
-            Map<String, String> snapshot = meta.getSnapshot();
-            snapshot.putAll(captured);
-            resetFullSyncProgress(snapshot);
-            meta.getSuccess().set(0);
-            meta.getFail().set(0);
-            profileComponent.editConfigModel(meta);
-            logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, captured);
-        } finally {
-            listener.close();
-        }
-    }
-
-    private void resetFullSyncProgress(Map<String, String> snapshot) {
+        Map<String, String> snapshot = meta.getSnapshot();
+        snapshot.putAll(listener.captureSnapshot());
+        snapshot.put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), ModelEnum.FULL.getCode());
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+        meta.getSuccess().set(0);
+        meta.getFail().set(0);
+        profileComponent.editConfigModel(meta);
+        logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, snapshot);
     }
 
     @Override

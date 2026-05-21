@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @version 1.0.0
  * @date 2026-05-18 15:02
  */
-@Component("full_incrementPuller")
+@Component
 public final class FullIncrementPuller extends AbstractPuller {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -74,13 +74,13 @@ public final class FullIncrementPuller extends AbstractPuller {
                 return;
             }
             prepareFullPhase(mapping, meta, metaId);
-            logger.info("开始全量+增量同步：{}, {}", metaId, mapping.getName());
+            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
             fullPuller.runSync(mapping, false);
             if (!isRunning(metaId)) {
                 return;
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            logger.info("全量阶段完成，开始增量同步：{}, {}", metaId, mapping.getName());
+            logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
             incrementPuller.start(mapping);
         } catch (Exception e) {
             logger.error("全量+增量同步失败：{}, {}", metaId, e.getMessage(), e);
@@ -99,7 +99,6 @@ public final class FullIncrementPuller extends AbstractPuller {
         }
         //重新开始，获取增量位点信息
         incrementPuller.captureAndSaveOffset(mapping);
-        markFullIncrementPhase(metaId, ModelEnum.FULL.getCode());
     }
 
     private boolean isRunning(String metaId) {

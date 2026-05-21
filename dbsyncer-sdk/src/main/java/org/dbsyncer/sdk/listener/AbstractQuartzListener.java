@@ -102,9 +102,7 @@ public abstract class AbstractQuartzListener extends AbstractListener implements
 
     @Override
     public void close() {
-        if (StringUtil.isNotBlank(taskKey)) {
-            scheduledTaskService.stop(taskKey);
-        }
+        scheduledTaskService.stop(taskKey);
         running = false;
     }
 

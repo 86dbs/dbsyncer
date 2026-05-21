@@ -83,7 +83,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
-            throw e;
         } finally {
             try {
                 executor.shutdown();
@@ -154,6 +153,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         if (meta.getTotal().get() < finished) {
             meta.getTotal().set(finished);
         }
+
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
         meta.setUpdateTime(Instant.now().toEpochMilli());

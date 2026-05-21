@@ -59,14 +59,17 @@ public final class ESQuartzListener extends AbstractQuartzListener {
         if (CollectionUtils.isEmpty(filters)) {
             return;
         }
-        Set<String> seen = new HashSet<>();
+        Set<String> seenBeginPlaceholder = new HashSet<>();
         for (Filter f : filters) {
             String placeholder = f.getValue();
-            if (!seen.add(placeholder)) {
+            QuartzFilterEnum filterEnum = QuartzFilterEnum.getQuartzFilterEnum(placeholder);
+            if (filterEnum == null) {
+                continue;
+            }
+            if (!seenBeginPlaceholder.add(placeholder)) {
                 throw new ElasticsearchException(String.format("系统参数%s存在多个.", placeholder));
             }
-            QuartzFilterEnum filterEnum = QuartzFilterEnum.getQuartzFilterEnum(placeholder);
-            if (filterEnum == null || !filterEnum.getQuartzFilter().begin()) {
+            if (!filterEnum.getQuartzFilter().begin()) {
                 continue;
             }
             QuartzFilter quartzFilter = filterEnum.getQuartzFilter();

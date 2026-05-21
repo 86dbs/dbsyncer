@@ -741,13 +741,14 @@ function refreshLicense() {
             // 即将过期
             else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
                 $("#licenseRemind").removeClass("hidden");
+                $editionName.text(licenseInfo.editionName)
+                $content.text(licenseInfo.effectiveContent);
             }
             // 已过期
             else if ($currentTime > $effectiveTime) {
                 $("#licenseWarning").removeClass("hidden");
             }
-            $editionName.text(licenseInfo.editionName)
-            $content.text(licenseInfo.effectiveContent);
+
         }
     });
 }
@@ -832,27 +833,52 @@ function renderMiniProgressBar(current, total) {
 function resolveFullIncrementPhase(meta) {
     const RUNNING = 1;
     const STOPPING = 2;
-    const total = Number(meta.total) || 0;
-    const processed = (Number(meta.success) || 0) + (Number(meta.fail) || 0);
     const snapshot = meta.snapshot || {};
-    const tableGroupIndex = parseInt(snapshot.tableGroupIndex || '0', 10);
-    const pageIndex = parseInt(snapshot.pageIndex || '1', 10);
+    const phaseCode = snapshot.fullIncrementPhase;
     const isActive = meta.state === RUNNING || meta.state === STOPPING;
 
     if (!isActive) {
+        // 停止后仍保留阶段语义，避免已完成全量却展示成全量进度条样式
+        if (phaseCode === 'increment') {
+            return 'increment';
+        }
         return 'idle';
     }
+
+    // 以后端 snapshot 阶段为准（增量阶段 success 常小于全量 total，不能再用 processed < total 推断）
+    if (phaseCode === 'increment') {
+        return 'increment';
+    }
+
     if (meta.counting) {
         return 'full';
     }
+
+    if (phaseCode === 'full') {
+        if (meta.counting || isFullPhaseInProgress(meta, snapshot)) {
+            return 'full';
+        }
+        // 全量已标记为 full 但尚未统计出 total，仍按全量阶段展示
+        if ((Number(meta.total) || 0) === 0) {
+            return 'full';
+        }
+        return 'increment';
+    }
+
+    // 兼容旧数据：无 fullIncrementPhase 时回退到进度启发式
+    return isFullPhaseInProgress(meta, snapshot) ? 'full' : 'increment';
+}
+
+function isFullPhaseInProgress(meta, snapshot) {
+    const total = Number(meta.total) || 0;
+    const processed = (Number(meta.success) || 0) + (Number(meta.fail) || 0);
+    const tableGroupIndex = parseInt(snapshot.tableGroupIndex || '0', 10);
+    const pageIndex = parseInt(snapshot.pageIndex || '1', 10);
     const fullCursorActive = tableGroupIndex > 0 || pageIndex > 1 || !!snapshot.cursor;
     if (total > 0 && processed < total) {
-        return 'full';
+        return true;
     }
-    if (fullCursorActive && (total === 0 || processed <= total)) {
-        return 'full';
-    }
-    return 'increment';
+    return fullCursorActive && (total === 0 || processed <= total);
 }
 
 // 全量同步进度展示（全量 / 全量+增量全量阶段共用）
@@ -891,14 +917,9 @@ function renderFullIncrementSyncResult(meta) {
     if (phase === 'full') {
         return renderFullPhaseSyncResult(meta);
     }
-
     content.push('<div class="sync-result">');
-
     if (phase === 'increment') {
-        if (total > 0) {
-            content.push(`<div class="text-xs mt-1">全量已完成: <strong>${formatCount(total)}</strong> 条</div>`);
-        }
-        content.push(`<div class="text-xs mt-1">累计成功: <strong>${formatCount(success)}</strong></div>`);
+        content.push(`<div class="text-xs mt-1">成功: <strong>${formatCount(success)}</strong></div>`);
     } else {
         if (total > 0) {
             content.push(`<div class="text-xs mt-1">全量总数: <strong>${formatCount(total)}</strong></div>`);
@@ -920,7 +941,7 @@ function renderSyncResult(mapping) {
     const meta = mapping.meta;
     if (!meta) return '';
 
-    if (mapping.model === 'full_increment') {
+    if (mapping.model === 'fullIncrement') {
         let html = renderFullIncrementSyncResult(meta);
         if (meta.fail > 0) {
             html += `<div class="text-xs">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
@@ -951,7 +972,7 @@ function renderModelText(model) {
             class: 'badge-info',
             text: '增量同步',
         },
-        'full_increment': {
+        'fullIncrement': {
             class: 'badge-info',
             text: '全量+增量',
         }
