@@ -44,7 +44,7 @@ public final class OracleDoubleType extends DoubleType {
             return ((Number) val).doubleValue();
         }
         if (val instanceof String) {
-          return Double.valueOf(StringUtil.trimToEmpty(val.toString()));
+            return Double.valueOf(StringUtil.trimToEmpty(val.toString()));
         }
         return throwUnsupportedException(val, field);
     }
