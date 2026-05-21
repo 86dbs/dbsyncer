@@ -3,7 +3,11 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.dbsyncer.biz.*;
+import org.dbsyncer.biz.BizException;
+import org.dbsyncer.biz.MappingService;
+import org.dbsyncer.biz.MonitorService;
+import org.dbsyncer.biz.RepeatedTableGroupException;
+import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
@@ -24,7 +28,11 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.plugin.model.MappingStopContent;
@@ -48,7 +56,18 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**

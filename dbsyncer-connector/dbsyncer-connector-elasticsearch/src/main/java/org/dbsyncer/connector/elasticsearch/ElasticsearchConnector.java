@@ -17,9 +17,18 @@ import org.dbsyncer.connector.elasticsearch.schema.ElasticsearchSchemaResolver;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.connector.*;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultMetaContext;
+import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.enums.*;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.impl.InFilter;
@@ -67,7 +76,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -530,23 +547,22 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         return acc;
     }
 
-
     private QueryBuilder convertFilterToQuery(AbstractFilter p) {
         if (p instanceof InFilter) {
-        InFilter inList = (InFilter) p;
-        List<Object> raw = inList.getBindValues();
-        if (CollectionUtils.isEmpty(raw)) {
-            return null;
-        }
+            InFilter inList = (InFilter) p;
+            List<Object> raw = inList.getBindValues();
+            if (CollectionUtils.isEmpty(raw)) {
+                return null;
+            }
             List<?> terms = raw.stream()
                     .filter(Objects::nonNull)
                     .filter(v -> !QuartzFilterEnum.isSystemPlaceholder(String.valueOf(v).trim()))
                     .collect(Collectors.toList());
-        if (terms.isEmpty()) {
-            return null;
-        }
-        String field = p.getName();
-        return QueryBuilders.termsQuery(field, terms);
+            if (terms.isEmpty()) {
+                return null;
+            }
+            String field = p.getName();
+            return QueryBuilders.termsQuery(field, terms);
         }
         FilterEnum fe;
         try {
