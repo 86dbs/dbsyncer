@@ -3,9 +3,11 @@
  */
 package org.dbsyncer.connector.elasticsearch.util;
 
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.elasticsearch.api.EasyRestHighLevelClient;
 import org.dbsyncer.connector.elasticsearch.config.ESConfig;
+import org.dbsyncer.sdk.enums.FilterEnum;
 
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -22,11 +24,15 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 
 import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -69,6 +75,37 @@ public abstract class ESUtil {
                 throw new ElasticsearchException(e.getMessage());
             }
         }
+    }
+
+    /**
+     * 构建 range 查询。7.x 客户端的 {@code RangeQueryBuilder#gt()} 等会序列化为 from/to，
+     * ES 8+ 已不支持该写法，需直接使用 gt/gte/lt/lte。
+     */
+    public static QueryBuilder buildRangeQuery(String field, FilterEnum filterEnum, String value) {
+        String boundKey;
+        switch (filterEnum) {
+            case GT:
+                boundKey = "gt";
+                break;
+            case LT:
+                boundKey = "lt";
+                break;
+            case GT_AND_EQUAL:
+                boundKey = "gte";
+                break;
+            case LT_AND_EQUAL:
+                boundKey = "lte";
+                break;
+            default:
+                throw new IllegalArgumentException("unsupported range filter: " + filterEnum);
+        }
+        Map<String, Object> bounds = new LinkedHashMap<>(1);
+        bounds.put(boundKey, value);
+        Map<String, Object> rangeBody = new LinkedHashMap<>(1);
+        rangeBody.put(field, bounds);
+        Map<String, Object> query = new LinkedHashMap<>(1);
+        query.put("range", rangeBody);
+        return QueryBuilders.wrapperQuery(JsonUtil.objToJson(query));
     }
 
 }

@@ -6,6 +6,7 @@ package org.dbsyncer.manager.impl;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
@@ -14,6 +15,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.consumer.ParserConsumer;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Connector;
@@ -27,6 +29,7 @@ import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.AbstractQuartzListener;
@@ -109,16 +112,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
 
-        Thread worker = new Thread(()-> {
+        Thread worker = new Thread(() -> {
             try {
-                map.computeIfAbsent(metaId, k-> {
+                map.computeIfAbsent(metaId, k -> {
                     logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setBeginTime(now);
                     meta.setEndTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
-                    return getListener(mapping, connector, targetConnector, list, meta);
+                    return buildListener(mapping, connector, targetConnector, list, meta);
                 }).start();
             } catch (Exception e) {
                 close(metaId);
@@ -129,6 +132,34 @@ public final class IncrementPuller extends AbstractPuller implements Application
         worker.setName("increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
+    }
+
+    /**
+     * 捕获并保存当前增量位点，同时重置全量进度（全量+增量模式使用）
+     *
+     * @param mapping 驱动
+     */
+    public void captureAndSaveOffset(Mapping mapping) {
+        final String metaId = mapping.getMetaId();
+        Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
+        Assert.notNull(connector, "连接器不能为空.");
+        Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
+        Assert.notNull(targetConnector, "目标连接器不能为空.");
+        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
+        Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
+        Meta meta = profileComponent.getMeta(metaId);
+        Assert.notNull(meta, "Meta不能为空.");
+        Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
+        Map<String, String> snapshot = meta.getSnapshot();
+        snapshot.putAll(listener.captureSnapshot());
+        snapshot.put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), ModelEnum.FULL.getCode());
+        snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
+        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
+        snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+        meta.getSuccess().set(0);
+        meta.getFail().set(0);
+        profileComponent.editConfigModel(meta);
+        logger.info("全量+增量模式已保存增量位点：{}, {}", metaId, snapshot);
     }
 
     @Override
@@ -159,7 +190,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         map.values().forEach(Listener::flushEvent);
     }
 
-    private Listener getListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) {
+    private Listener buildListener(Mapping mapping, Connector connector, Connector targetConnector, List<TableGroup> list, Meta meta) {
         ConnectorConfig connectorConfig = connector.getConfig();
         ListenerConfig listenerConfig = mapping.getListener();
         String listenerType = listenerConfig.getListenerType();

@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.oracle.schema.support;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DoubleType;
 
@@ -39,6 +40,12 @@ public final class OracleDoubleType extends DoubleType {
 
     @Override
     protected Double merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).doubleValue();
+        }
+        if (val instanceof String) {
+            return Double.valueOf(StringUtil.trimToEmpty(val.toString()));
+        }
         return throwUnsupportedException(val, field);
     }
 }

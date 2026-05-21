@@ -5,6 +5,9 @@ package org.dbsyncer.sdk.listener;
 
 import org.dbsyncer.sdk.model.ChangedOffset;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * 监听器接口，提供实现增量同步功能，支持定时和日志解析
  *
@@ -19,6 +22,15 @@ public interface Listener {
      */
     default void init() {
     };
+
+    /**
+     * 捕获当前增量位点（全量+增量模式启动全量前调用）
+     *
+     * @return 捕获到的位点键值，未捕获返回空 Map
+     */
+    default Map<String, String> captureSnapshot() {
+        return Collections.emptyMap();
+    }
 
     /**
      * 启动定时/日志抽取任务

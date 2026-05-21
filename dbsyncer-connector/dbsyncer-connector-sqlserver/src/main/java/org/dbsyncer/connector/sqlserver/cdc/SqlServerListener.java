@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.sqlserver.cdc;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.sqlserver.SqlServerException;
@@ -16,14 +17,9 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
-import com.microsoft.sqlserver.jdbc.SQLServerException;
-
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,9 +27,12 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -124,6 +123,24 @@ public class SqlServerListener extends AbstractDatabaseListener {
                 worker = null;
             }
             connected = false;
+        }
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        try {
+            connect();
+            Lsn lsn = queryAndMap(GET_MAX_LSN, rs -> new Lsn(rs.getBytes(1)));
+            if (lsn == null || !lsn.isAvailable()) {
+                return Collections.emptyMap();
+            }
+            snapshot.put(LSN_POSITION, lsn.toString());
+            Map<String, String> captured = new HashMap<>(1);
+            captured.put(LSN_POSITION, lsn.toString());
+            return captured;
+        } catch (Exception e) {
+            logger.error("捕获SqlServer LSN位点失败:{}", e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 

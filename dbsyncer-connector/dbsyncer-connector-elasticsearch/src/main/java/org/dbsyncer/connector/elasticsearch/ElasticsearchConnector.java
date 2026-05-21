@@ -17,11 +17,17 @@ import org.dbsyncer.connector.elasticsearch.schema.ElasticsearchSchemaResolver;
 import org.dbsyncer.connector.elasticsearch.util.ESUtil;
 import org.dbsyncer.connector.elasticsearch.validator.ESConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
-import org.dbsyncer.sdk.connector.*;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultMetaContext;
+import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -37,7 +43,6 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -54,7 +59,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.ml.EvaluateDataFrameRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.unit.TimeValue;
@@ -72,7 +76,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -97,10 +109,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     public ElasticsearchConnector() {
         filters.putIfAbsent(FilterEnum.EQUAL.getName(), (builder, k, v) -> builder.must(QueryBuilders.matchQuery(k, v)));
         filters.putIfAbsent(FilterEnum.NOT_EQUAL.getName(), (builder, k, v) -> builder.mustNot(QueryBuilders.matchQuery(k, v)));
-        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gt(v)));
-        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lt(v)));
-        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).gte(v)));
-        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(QueryBuilders.rangeQuery(k).lte(v)));
+        filters.putIfAbsent(FilterEnum.GT.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.GT, v)));
+        filters.putIfAbsent(FilterEnum.LT.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.LT, v)));
+        filters.putIfAbsent(FilterEnum.GT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.GT_AND_EQUAL, v)));
+        filters.putIfAbsent(FilterEnum.LT_AND_EQUAL.getName(), (builder, k, v) -> builder.filter(ESUtil.buildRangeQuery(k, FilterEnum.LT_AND_EQUAL, v)));
         filters.putIfAbsent(FilterEnum.LIKE.getName(), (builder, k, v) -> builder.filter(QueryBuilders.wildcardQuery(k, v)));
     }
 
@@ -448,6 +460,18 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     /**
+     * 全量同步 / count 不走定时监听器替换，系统占位符不能作为 ES 字面量下发
+     */
+    private List<Filter> excludeQuartzPlaceholderFilters(List<Filter> filters) {
+        if (CollectionUtils.isEmpty(filters)) {
+            return filters;
+        }
+        return filters.stream()
+                .filter(f -> !QuartzFilterEnum.isSystemPlaceholder(f.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 根据BooleanFilter 构建查询语句
      */
     private QueryBuilder buildFilterToQuery(BooleanFilter root) {
@@ -500,14 +524,15 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         if (CollectionUtils.isEmpty(filters)) {
             return null;
         }
-        QueryBuilder acc = convertFilterToQuery(filters.get(0));
-        if (acc == null) {
-            return null;
-        }
-        for (int i = 1; i < filters.size(); i++) {
+        QueryBuilder acc = null;
+        for (int i = 0; i < filters.size(); i++) {
             AbstractFilter p = filters.get(i);
             QueryBuilder q = convertFilterToQuery(p);
             if (q == null) {
+                continue;
+            }
+            if (acc == null) {
+                acc = q;
                 continue;
             }
             BoolQueryBuilder b = QueryBuilders.boolQuery();
@@ -522,20 +547,22 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         return acc;
     }
 
-
     private QueryBuilder convertFilterToQuery(AbstractFilter p) {
         if (p instanceof InFilter) {
-        InFilter inList = (InFilter) p;
-        List<Object> raw = inList.getBindValues();
-        if (CollectionUtils.isEmpty(raw)) {
-            return null;
-        }
-            List<?> terms = raw.stream().filter(v -> v != null).collect(Collectors.toList());
-        if (terms.isEmpty()) {
-            return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchAllQuery());
-        }
-        String field = p.getName();
-        return QueryBuilders.termsQuery(field, terms);
+            InFilter inList = (InFilter) p;
+            List<Object> raw = inList.getBindValues();
+            if (CollectionUtils.isEmpty(raw)) {
+                return null;
+            }
+            List<?> terms = raw.stream()
+                    .filter(Objects::nonNull)
+                    .filter(v -> !QuartzFilterEnum.isSystemPlaceholder(String.valueOf(v).trim()))
+                    .collect(Collectors.toList());
+            if (terms.isEmpty()) {
+                return null;
+            }
+            String field = p.getName();
+            return QueryBuilders.termsQuery(field, terms);
         }
         FilterEnum fe;
         try {
@@ -546,19 +573,19 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         }
         String field = p.getName();
         String val = p.getValue();
+        if (QuartzFilterEnum.isSystemPlaceholder(val)) {
+            return null;
+        }
         switch (fe) {
             case EQUAL:
                 return QueryBuilders.matchQuery(field, val);
             case NOT_EQUAL:
                 return QueryBuilders.boolQuery().mustNot(QueryBuilders.matchQuery(field, val));
             case GT:
-                return QueryBuilders.rangeQuery(field).gt(val);
             case LT:
-                return QueryBuilders.rangeQuery(field).lt(val);
             case GT_AND_EQUAL:
-                return QueryBuilders.rangeQuery(field).gte(val);
             case LT_AND_EQUAL:
-                return QueryBuilders.rangeQuery(field).lte(val);
+                return ESUtil.buildRangeQuery(field, fe, val);
             case IS_NULL:
                 return QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(field));
             case IS_NOT_NULL:
@@ -580,7 +607,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         String filterJson = command.get(ConnectorConstant.OPERTION_QUERY_FILTER);
         List<Filter> filters = null;
         if (!StringUtil.isBlank(filterJson)) {
-            filters = JsonUtil.jsonToArray(filterJson, Filter.class);
+            filters = excludeQuartzPlaceholderFilters(JsonUtil.jsonToArray(filterJson, Filter.class));
         }
         if (CollectionUtils.isEmpty(filters)) {
             builder.query(QueryBuilders.matchAllQuery());
@@ -589,6 +616,10 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
 
         List<Filter> and = filters.stream().filter(f -> OperationEnum.isAnd(f.getOperation())).collect(Collectors.toList());
         List<Filter> or = filters.stream().filter(f -> OperationEnum.isOr(f.getOperation())).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(and) && CollectionUtils.isEmpty(or)) {
+            builder.query(QueryBuilders.matchAllQuery());
+            return;
+        }
         // where (id = 1 and name = 'tom') or id = 2 or id = 3
         BoolQueryBuilder q = QueryBuilders.boolQuery();
         if (!CollectionUtils.isEmpty(and) && !CollectionUtils.isEmpty(or)) {
@@ -619,6 +650,9 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
     }
 
     private void addFilter(BoolQueryBuilder builder, Filter f) {
+        if (QuartzFilterEnum.isSystemPlaceholder(f.getValue())) {
+            return;
+        }
         if (filters.containsKey(f.getFilter())) {
             filters.get(f.getFilter()).apply(builder, f.getName(), f.getValue());
         }

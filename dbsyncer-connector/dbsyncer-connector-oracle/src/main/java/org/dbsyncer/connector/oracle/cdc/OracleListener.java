@@ -3,10 +3,19 @@
  */
 package org.dbsyncer.connector.oracle.cdc;
 
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
+import net.sf.jsqlparser.statement.delete.Delete;
+import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.update.Update;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
 import org.dbsyncer.connector.oracle.logminer.LogMiner;
+import org.dbsyncer.connector.oracle.logminer.LogMinerHelper;
 import org.dbsyncer.connector.oracle.logminer.RedoEvent;
 import org.dbsyncer.connector.oracle.logminer.parser.impl.DeleteSql;
 import org.dbsyncer.connector.oracle.logminer.parser.impl.InsertSql;
@@ -19,28 +28,13 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.Field;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.delete.Delete;
-import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.update.Update;
-
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-import net.sf.jsqlparser.statement.delete.Delete;
-import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.update.Update;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -155,6 +149,23 @@ public class OracleListener extends AbstractDatabaseListener {
                 logger.info("sql:{}", event.getRedoSql());
                 trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, event.getRedoSql(), null, event.getScn()));
             }
+        }
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        try {
+            final DatabaseConfig config = getConnectorInstance().getConfig();
+            try (Connection connection = DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())) {
+                long scn = LogMinerHelper.getCurrentScn(connection);
+                snapshot.put(REDO_POSITION, String.valueOf(scn));
+                Map<String, String> captured = new HashMap<>(1);
+                captured.put(REDO_POSITION, String.valueOf(scn));
+                return captured;
+            }
+        } catch (Exception e) {
+            logger.error("捕获Oracle SCN位点失败:{}", e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 

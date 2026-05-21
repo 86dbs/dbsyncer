@@ -59,32 +59,42 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void start(Mapping mapping) {
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
-        Assert.notEmpty(list, "映射关系不能为空");
-        Thread worker = new Thread(()-> {
-            final String metaId = mapping.getMetaId();
-            ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
-            try {
-                Task task = map.computeIfAbsent(metaId, k->new Task(metaId));
-                logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
-                doTask(task, mapping, list, executor);
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                logService.log(LogType.SystemLog.ERROR, e.getMessage());
-            } finally {
-                try {
-                    executor.shutdown();
-                } catch (Exception e) {
-                    logService.log(LogType.SystemLog.ERROR, e.getMessage());
-                }
-                map.remove(metaId);
-                publishClosedEvent(metaId);
-                logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
-            }
-        });
+        Thread worker = new Thread(() -> runSync(mapping, true));
         worker.setName("full-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
+    }
+
+    /**
+     * 同步执行全量任务
+     *
+     * @param mapping       驱动
+     * @param publishClosed 完成后是否发布关闭事件
+     */
+    public void runSync(Mapping mapping, boolean publishClosed) {
+        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
+        Assert.notEmpty(list, "映射关系不能为空");
+        final String metaId = mapping.getMetaId();
+        ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
+        try {
+            Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
+            logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
+            doTask(task, mapping, list, executor);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            logService.log(LogType.SystemLog.ERROR, e.getMessage());
+        } finally {
+            try {
+                executor.shutdown();
+            } catch (Exception e) {
+                logService.log(LogType.SystemLog.ERROR, e.getMessage());
+            }
+            map.remove(metaId);
+            if (publishClosed) {
+                publishClosedEvent(metaId);
+            }
+            logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
+        }
     }
 
     @Override

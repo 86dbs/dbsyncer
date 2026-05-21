@@ -48,7 +48,6 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -56,9 +55,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**

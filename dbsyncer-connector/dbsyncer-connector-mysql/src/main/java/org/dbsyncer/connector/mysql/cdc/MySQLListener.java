@@ -3,6 +3,21 @@
  */
 package org.dbsyncer.connector.mysql.cdc;
 
+import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.event.Event;
+import com.github.shyiko.mysql.binlog.event.EventHeader;
+import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.event.EventType;
+import com.github.shyiko.mysql.binlog.event.QueryEventData;
+import com.github.shyiko.mysql.binlog.event.RotateEventData;
+import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
+import com.github.shyiko.mysql.binlog.event.TableMapEventData;
+import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
+import com.github.shyiko.mysql.binlog.network.ServerException;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.MySQLException;
@@ -17,42 +32,10 @@ import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.util.SqlParserUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.network.ServerException;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.network.ServerException;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
-
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +88,24 @@ public class MySQLListener extends AbstractDatabaseListener {
             logger.error("关闭失败:{}", e.getMessage());
         } finally {
             connectLock.unlock();
+        }
+    }
+
+    @Override
+    public Map<String, String> captureSnapshot() {
+        try {
+            final DatabaseConfig config = getConnectorInstance().getConfig();
+            BinaryLogRemoteClient captureClient = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
+            captureClient.connect();
+            refreshSnapshot(captureClient.getBinlogFilename(), captureClient.getBinlogPosition());
+            captureClient.disconnect();
+            Map<String, String> captured = new HashMap<>(2);
+            captured.put(BINLOG_FILENAME, snapshot.get(BINLOG_FILENAME));
+            captured.put(BINLOG_POSITION, snapshot.get(BINLOG_POSITION));
+            return captured;
+        } catch (Exception e) {
+            logger.error("捕获MySQL binlog位点失败:{}", e.getMessage(), e);
+            return Collections.emptyMap();
         }
     }
 
