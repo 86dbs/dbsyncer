@@ -6,6 +6,8 @@ package org.dbsyncer.sdk.model;
 import java.util.List;
 
 /**
+ * 库级映射配置
+ *
  * @author wuji
  * @version 1.0.0
  * @date 2026-05-22 11:14
@@ -13,9 +15,19 @@ import java.util.List;
 public class DatabaseMapping {
 
     /**
+     * 序号（从小到大，任务执行/恢复时按此顺序处理）
+     */
+    private int index;
+
+    /**
      * 源库名
      */
     private String sourceDatabase;
+
+    /**
+     * 源 Schema
+     */
+    private String sourceSchema;
 
     /**
      * 目标库名
@@ -27,12 +39,28 @@ public class DatabaseMapping {
      */
     private List<TableMapping> tableMappings;
 
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
     public String getSourceDatabase() {
         return sourceDatabase;
     }
 
     public void setSourceDatabase(String sourceDatabase) {
         this.sourceDatabase = sourceDatabase;
+    }
+
+    public String getSourceSchema() {
+        return sourceSchema;
+    }
+
+    public void setSourceSchema(String sourceSchema) {
+        this.sourceSchema = sourceSchema;
     }
 
     public String getTargetDatabase() {
@@ -51,9 +79,26 @@ public class DatabaseMapping {
         this.tableMappings = tableMappings;
     }
 
+    /**
+     * 表级映射
+     */
     public static class TableMapping {
+
+        /**
+         * 序号（从小到大，同一库映射内按此顺序处理）
+         */
+        private int index;
+
         private String sourceTable;
         private String targetTable;
+
+        public int getIndex() {
+            return index;
+        }
+
+        public void setIndex(int index) {
+            this.index = index;
+        }
 
         public String getSourceTable() {
             return sourceTable;

@@ -42,12 +42,48 @@
 </div>
 
 <script>
+    function databaseSyncStart(taskId) {
+        doPoster('/database-syncer/start', { id: taskId }, function (response) {
+            if (response.success) {
+                bootGrowl(response.data || '启动成功', 'success');
+                PageRefreshManager.refresh();
+            } else {
+                bootGrowl(response.message || '启动失败', 'danger');
+            }
+        });
+    }
+
+    function databaseSyncStop(taskId) {
+        doPoster('/database-syncer/stop', { id: taskId }, function (response) {
+            if (response.success) {
+                bootGrowl(response.data || '停止成功', 'success');
+                PageRefreshManager.refresh();
+            } else {
+                bootGrowl(response.message || '停止失败', 'danger');
+            }
+        });
+    }
+
+    function databaseSyncRemove(taskId) {
+        if (!confirm('确定删除该任务？')) {
+            return;
+        }
+        doPoster('/database-syncer/remove', { id: taskId }, function (response) {
+            if (response.success) {
+                bootGrowl(response.data || '删除成功', 'success');
+                PageRefreshManager.refresh();
+            } else {
+                bootGrowl(response.message || '删除失败', 'danger');
+            }
+        });
+    }
+
     function getTaskStateConfig(taskId) {
         return {
             0: {
                 icon: 'fa-play',
                 title: '启动',
-                onclick: "bootGrowl('启动功能开发中', 'info')",
+                onclick: "databaseSyncStart('" + taskId + "')",
                 disabled: false,
                 class: 'badge-info',
                 text: '未运行'
@@ -55,7 +91,7 @@
             1: {
                 icon: 'fa-pause',
                 title: '停止',
-                onclick: "bootGrowl('停止功能开发中', 'info')",
+                onclick: "databaseSyncStop('" + taskId + "')",
                 disabled: false,
                 class: 'badge-success',
                 text: '运行中'
@@ -84,7 +120,7 @@
         let html = '<button class="table-action-btn play" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
             + '<i class="fa ' + config.icon + '"></i></button>';
         if (state === 0) {
-            html += '<button class="table-action-btn delete" title="删除" onclick="bootGrowl(\'删除功能开发中\', \'info\')">'
+            html += '<button class="table-action-btn delete" title="删除" onclick="databaseSyncRemove(\'' + taskId + '\')">'
                 + '<i class="fa fa-trash"></i></button>';
         }
         return html;

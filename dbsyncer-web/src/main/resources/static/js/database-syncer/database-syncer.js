@@ -435,7 +435,20 @@
         return names;
     }
 
+    /**
+     * 按当前列表顺序为库映射、表映射生成连续序号（从 1 开始），保存时与后端一致。
+     */
+    function reindexMappings() {
+        state.mappings.forEach(function (block, dbIdx) {
+            block.index = dbIdx + 1;
+            (block.tableMappings || []).forEach(function (row, tblIdx) {
+                row.index = tblIdx + 1;
+            });
+        });
+    }
+
     function syncMappingsJson() {
+        reindexMappings();
         $('#databaseMappingsJson').val(JSON.stringify(state.mappings));
     }
 
@@ -489,7 +502,7 @@
                 + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
                 + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"/>'
                 + '</div>'
-                + '<div class="mapping-card-footer">共 ' + count + ' 个对象</div>'
+                + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>'
                 + '</div>';
         });
         $list.html(html);
@@ -533,6 +546,7 @@
 
     function buildDetailTableRowHtml(block, row, rowIndex, blockIndex) {
         return '<tr data-r="' + rowIndex + '">'
+            + '<td class="text-center text-tertiary">' + (row.index || (rowIndex + 1)) + '</td>'
             + '<td class="text-primary">' + escapeHtml(row.sourceTable || '') + '</td>'
             + '<td><input type="text" class="form-control form-control-sm db-tgt-tbl"'
             + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" value="' + escapeHtml(row.targetTable || '') + '"/></td>'
@@ -608,7 +622,7 @@
             html += buildDetailTableRowHtml(block, rows[i], i, idx);
         }
         if (!html) {
-            html = '<tr><td colspan="3" class="text-center text-tertiary py-4">暂无表映射</td></tr>';
+            html = '<tr><td colspan="4" class="text-center text-tertiary py-4">暂无表映射</td></tr>';
         }
         $('#mappingDetailTableBody').html(html);
         renderDetailPagination(page, totalPages, total);
