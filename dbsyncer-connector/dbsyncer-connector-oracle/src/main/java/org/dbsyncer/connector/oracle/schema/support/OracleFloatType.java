@@ -39,6 +39,12 @@ public final class OracleFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).floatValue();
+        }
+        if (val instanceof String) {
+            return Float.parseFloat((String) val);
+        }
         return throwUnsupportedException(val, field);
     }
 }
