@@ -141,6 +141,11 @@ public final class FullIncrementPuller extends AbstractPuller {
     private void markFullIncrementPhase(String metaId, String phase) {
         Meta meta = profileComponent.getMeta(metaId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
+
+        //清除全量标记
+        meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
+        meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
+        meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
         profileComponent.editConfigModel(meta);
     }
 }
