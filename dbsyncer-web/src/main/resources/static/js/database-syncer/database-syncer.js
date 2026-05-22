@@ -1,7 +1,8 @@
 /**
- * 整库迁移 - 新增页
+ * 整库迁移 - 新增/编辑页
  */
 (function () {
+    const page = window.DATABASE_SYNC_PAGE || { mode: 'add', readOnly: false, task: null };
     const TABLE_PAGE_SIZE = 100;
     const TABLE_DISPLAY_MAX = 2000;
     /** 右侧表映射详情每页条数 */
@@ -32,7 +33,19 @@
 
     let sourceDbSelect = null;
     let sourceSchemaSelect = null;
+    let sourceConnectorSelect = null;
+    let targetConnectorSelect = null;
     let tableTreeScrollBound = false;
+    let initializing = false;
+    let lastSourceConnectorId = '';
+
+    function isReadOnly() {
+        return !!page.readOnly;
+    }
+
+    function isEditMode() {
+        return page.mode === 'edit';
+    }
 
     function onDBChange(connectorId, schemaSelect, dbName) {
         if (!connectorId) {
@@ -64,8 +77,11 @@
             clearMappings();
             return;
         }
+        if (lastSourceConnectorId && lastSourceConnectorId !== connectorId && !initializing) {
+            clearMappings();
+        }
+        lastSourceConnectorId = connectorId;
         state.source.connectorId = connectorId;
-        clearMappings();
         doGetter('/connector/getDatabase', { id: connectorId }, function (response) {
             if (response.success && response.data) {
                 const db = (response.data || []).map(function (dbName) {
@@ -460,6 +476,9 @@
     }
 
     function openTablePickerModal() {
+        if (isReadOnly()) {
+            return;
+        }
         if (!state.source.connectorId || !state.target.connectorId) {
             bootGrowl('请先选择源端、目标端连接器', 'warning');
             return;
@@ -471,14 +490,25 @@
         $('#tablePickerModal').addClass('hidden');
     }
 
+    /**
+     * 无库映射时清空右侧表映射展示区
+     */
+    function resetMappingDetailView() {
+        state.activeMappingIndex = -1;
+        state.detailPageNum = 1;
+        $('#mappingDetailPanel').addClass('hidden');
+        $('#mappingDetailTableCount').text('0');
+        $('#mappingDetailTableBody').empty();
+        $('#mappingDetailPagination').addClass('hidden');
+    }
+
     function renderMappingSidebar() {
         const $list = $('#mappingCardList');
         const $empty = $('#mappingSidebarEmpty');
         if (!state.mappings.length) {
             $list.empty();
             $empty.removeClass('hidden');
-            state.activeMappingIndex = -1;
-            $('#mappingDetailPanel').addClass('hidden');
+            resetMappingDetailView();
             syncMappingsJson();
             return;
         }
@@ -490,17 +520,20 @@
         state.mappings.forEach(function (block, idx) {
             const count = (block.tableMappings || []).length;
             const active = idx === state.activeMappingIndex ? ' is-active' : '';
-            html += '<div class="mapping-card' + active + '" data-index="' + idx + '">'
-                + '<button type="button" class="mapping-card-remove" data-index="' + idx + '" title="删除">'
-                + '<i class="fa fa-times"></i></button>'
-                + '<div class="mapping-card-row">'
+            html += '<div class="mapping-card' + active + '" data-index="' + idx + '">';
+            if (!isReadOnly()) {
+                html += '<button type="button" class="mapping-card-remove" data-index="' + idx + '" title="删除">'
+                    + '<i class="fa fa-times"></i></button>';
+            }
+            html += '<div class="mapping-card-row">'
                 + '<span class="mapping-card-label">源库</span>'
                 + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
                 + escapeHtml(block.sourceDatabase || '') + '</span></div>'
                 + '<div class="mapping-card-row">'
                 + '<span class="mapping-card-label">目标</span>'
                 + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
-                + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"/>'
+                + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
+                + (isReadOnly() ? ' readonly' : '') + '/>'
                 + '</div>'
                 + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>'
                 + '</div>';
@@ -525,13 +558,17 @@
             e.stopPropagation();
             const idx = Number($(this).data('index'));
             state.mappings.splice(idx, 1);
-            if (state.activeMappingIndex >= state.mappings.length) {
-                state.activeMappingIndex = state.mappings.length - 1;
+            if (!state.mappings.length) {
+                renderMappingSidebar();
+                return;
+            }
+            if (state.activeMappingIndex === idx) {
+                state.activeMappingIndex = Math.min(idx, state.mappings.length - 1);
+            } else if (state.activeMappingIndex > idx) {
+                state.activeMappingIndex--;
             }
             renderMappingSidebar();
-            if (state.mappings.length) {
-                renderMappingDetail(true);
-            }
+            renderMappingDetail(true);
         });
 
         $('.mapping-card-tgt-db').off('change.cardTgtDb').on('change.cardTgtDb', function () {
@@ -545,15 +582,19 @@
     }
 
     function buildDetailTableRowHtml(block, row, rowIndex, blockIndex) {
-        return '<tr data-r="' + rowIndex + '">'
+        let html = '<tr data-r="' + rowIndex + '">'
             + '<td class="text-center text-tertiary">' + (row.index || (rowIndex + 1)) + '</td>'
-            + '<td class="text-primary">' + escapeHtml(row.sourceTable || '') + '</td>'
-            + '<td><input type="text" class="form-control form-control-sm db-tgt-tbl"'
-            + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" value="' + escapeHtml(row.targetTable || '') + '"/></td>'
-            + '<td><button type="button" class="table-action-btn delete btn-rm-detail-row"'
-            + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" title="删除">'
-            + '<i class="fa fa-times"></i></button></td>'
-            + '</tr>';
+            + '<td class="text-primary">' + escapeHtml(row.sourceTable || '') + '</td>';
+        if (isReadOnly()) {
+            html += '<td>' + escapeHtml(row.targetTable || '') + '</td>';
+        } else {
+            html += '<td><input type="text" class="form-control form-control-sm db-tgt-tbl"'
+                + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" value="' + escapeHtml(row.targetTable || '') + '"/></td>'
+                + '<td><button type="button" class="table-action-btn delete btn-rm-detail-row"'
+                + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" title="删除">'
+                + '<i class="fa fa-times"></i></button></td>';
+        }
+        return html + '</tr>';
     }
 
     function getDetailDisplayRows(block) {
@@ -622,7 +663,8 @@
             html += buildDetailTableRowHtml(block, rows[i], i, idx);
         }
         if (!html) {
-            html = '<tr><td colspan="4" class="text-center text-tertiary py-4">暂无表映射</td></tr>';
+            const colSpan = isReadOnly() ? 3 : 4;
+            html = '<tr><td colspan="' + colSpan + '" class="text-center text-tertiary py-4">暂无表映射</td></tr>';
         }
         $('#mappingDetailTableBody').html(html);
         renderDetailPagination(page, totalPages, total);
@@ -633,7 +675,7 @@
         const idx = state.activeMappingIndex;
         const block = state.mappings[idx];
         if (!block) {
-            $('#mappingDetailPanel').addClass('hidden');
+            resetMappingDetailView();
             return;
         }
         $('#mappingDetailPanel').removeClass('hidden');
@@ -666,13 +708,20 @@
             block.tableMappings.splice(r, 1);
             if (!block.tableMappings.length) {
                 state.mappings.splice(b, 1);
-                state.activeMappingIndex = state.mappings.length ? Math.min(state.activeMappingIndex, state.mappings.length - 1) : -1;
-                renderMappingSidebar();
-                if (state.mappings.length) {
-                    renderMappingDetail(true);
-                } else {
-                    $('#mappingDetailPanel').addClass('hidden');
+                if (!state.mappings.length) {
+                    renderMappingSidebar();
+                    syncMappingsJson();
+                    return;
                 }
+                if (state.activeMappingIndex >= state.mappings.length) {
+                    state.activeMappingIndex = state.mappings.length - 1;
+                } else if (state.activeMappingIndex > b) {
+                    state.activeMappingIndex--;
+                } else if (state.activeMappingIndex === b) {
+                    state.activeMappingIndex = Math.min(b, state.mappings.length - 1);
+                }
+                renderMappingSidebar();
+                renderMappingDetail(true);
             } else {
                 renderMappingSidebar();
                 const totalPages = Math.ceil(getDetailDisplayRows(block).length / DETAIL_PAGE_SIZE) || 1;
@@ -736,8 +785,37 @@
 
     function clearMappings() {
         state.mappings = [];
-        state.activeMappingIndex = -1;
         renderMappingSidebar();
+    }
+
+    function initEditFromTask(task) {
+        if (!task) {
+            return;
+        }
+        initializing = true;
+        state.mappings = JSON.parse(JSON.stringify(task.databaseMappings || []));
+        reindexMappings();
+        lastSourceConnectorId = task.sourceConnectorId || '';
+        state.source.connectorId = lastSourceConnectorId;
+        state.target.connectorId = task.targetConnectorId || '';
+        state.activeMappingIndex = state.mappings.length ? 0 : -1;
+
+        const $form = $('#database-syncer-form');
+        $form.find('input[name="name"]').val(task.name || '');
+        $form.find('input[name="id"]').val(task.id || '');
+
+        if (sourceConnectorSelect && task.sourceConnectorId) {
+            sourceConnectorSelect.setValues([task.sourceConnectorId]);
+        }
+        if (targetConnectorSelect && task.targetConnectorId) {
+            targetConnectorSelect.setValues([task.targetConnectorId]);
+        }
+
+        renderMappingSidebar();
+        if (state.mappings.length) {
+            renderMappingDetail(true);
+        }
+        initializing = false;
     }
 
     $(document).ready(function () {
@@ -764,15 +842,17 @@
             }
         });
 
-        $('#sourceConnectorId').dbSelect({
+        sourceConnectorSelect = $('#sourceConnectorId').dbSelect({
             type: 'single',
+            disabled: isReadOnly(),
             onSelect: function (ids) {
                 onSourceConnectorChange(ids.length ? ids[0] : '');
             }
         });
 
-        $('#targetConnectorId').dbSelect({
+        targetConnectorSelect = $('#targetConnectorId').dbSelect({
             type: 'single',
+            disabled: isReadOnly(),
             onSelect: function (ids) {
                 state.target.connectorId = ids.length ? ids[0] : '';
             }
@@ -796,7 +876,7 @@
 
         $('#database-syncer-submit-btn').on('click', function () {
             syncMappingsJson();
-            const $form = $('#database-syncer-add-form');
+            const $form = $('#database-syncer-form');
             if (!validateForm($form)) {
                 return;
             }
@@ -806,11 +886,12 @@
             }
             const btn = $(this);
             const original = btn.html();
+            const saveUrl = isEditMode() ? '/database-syncer/edit' : '/database-syncer/add';
             btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-            doPoster('/database-syncer/add', $form.serializeJson(), function (response) {
+            doPoster(saveUrl, $form.serializeJson(), function (response) {
                 btn.html(original).prop('disabled', false);
                 if (response.success) {
-                    bootGrowl(response.data || '保存成功', 'success');
+                    bootGrowl(isEditMode() ? '修改成功' : '保存成功', 'success');
                     backIndexPage();
                 } else {
                     bootGrowl(response.message || '保存失败', 'danger');
@@ -818,6 +899,10 @@
             });
         });
 
-        renderMappingSidebar();
+        if (isEditMode() && page.task) {
+            initEditFromTask(page.task);
+        } else {
+            renderMappingSidebar();
+        }
     });
 })();

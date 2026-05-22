@@ -3,13 +3,19 @@
 
 <div class="form-container">
     <div class="card-header">
-        <h3 class="card-title text-center">添加整库迁移</h3>
+        <h3 class="card-title text-center">修改整库迁移</h3>
+        <p th:if="${readOnly}" class="text-center text-warning mt-2 mb-0">
+            <i class="fa fa-info-circle"></i> 任务运行中，仅可查看配置，请先停止任务后再修改
+        </p>
     </div>
 
     <div class="card-body">
         <div class="form-actions mb-4">
-            <button id="database-syncer-submit-btn" type="button" class="btn btn-primary">
+            <button th:if="${!readOnly}" id="database-syncer-submit-btn" type="button" class="btn btn-primary">
                 <i class="fa fa-save"></i> 保存
+            </button>
+            <button th:if="${readOnly}" type="button" class="btn btn-info" disabled>
+                <i class="fa fa-spinner fa-spin"></i> 运行中
             </button>
             <button class="btn btn-outline" type="button" onclick="backIndexPage()">
                 <i class="fa fa-reply"></i> 返回
@@ -17,22 +23,26 @@
         </div>
 
         <form id="database-syncer-form">
+            <input type="hidden" name="id" id="database-syncer-task-id" th:value="${task?.id}"/>
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="form-item">
                     <label class="form-label">任务名称<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="name" type="text" maxlength="50" required placeholder="请输入任务名称"/>
+                        <input class="form-control" name="name" type="text" maxlength="50" required
+                               placeholder="请输入任务名称" th:value="${task?.name}"
+                               th:readonly="${readOnly}"/>
                     </div>
                 </div>
             </div>
 
-            <!-- 源端 / 目标端连接器 -->
             <div class="ds-bar dbsyncer-select-panel">
                 <div class="ds-bar-item">
                     <span class="ds-bar-label text-primary">源端</span>
-                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control">
+                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control"
+                            th:disabled="${readOnly}">
                         <option value="">请选择连接器</option>
                         <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                th:selected="${c?.id == task?.sourceConnectorId}"
                                 th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                     </select>
                 </div>
@@ -41,18 +51,19 @@
                 </div>
                 <div class="ds-bar-item">
                     <span class="ds-bar-label text-success">目标端</span>
-                    <select name="targetConnectorId" id="targetConnectorId" class="form-control">
+                    <select name="targetConnectorId" id="targetConnectorId" class="form-control"
+                            th:disabled="${readOnly}">
                         <option value="">请选择连接器</option>
                         <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                th:selected="${c?.id == task?.targetConnectorId}"
                                 th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                     </select>
                 </div>
             </div>
 
-            <!-- 主从布局：左侧库映射列表 + 右侧表映射详情 -->
             <div class="mapping-workspace mt-4">
                 <aside class="mapping-sidebar">
-                    <button type="button" id="btnAddDbMapping" class="btn btn-info w-full mb-3">
+                    <button th:if="${!readOnly}" type="button" id="btnAddDbMapping" class="btn btn-info w-full mb-3">
                         <i class="fa fa-plus"></i> 添加库映射
                     </button>
                     <div id="mappingCardList" class="mapping-card-list"></div>
@@ -75,7 +86,7 @@
                                     <th style="width: 56px;">序号</th>
                                     <th>源表名</th>
                                     <th>目标表名 <i class="fa fa-pencil text-tertiary"></i></th>
-                                    <th style="width: 120px;">操作</th>
+                                    <th th:if="${!readOnly}" style="width: 120px;">操作</th>
                                 </tr>
                                 </thead>
                                 <tbody id="mappingDetailTableBody"></tbody>
@@ -99,7 +110,6 @@
     <div class="blank-block"></div>
 </div>
 
-<!-- 选择源库表弹窗 -->
 <div id="tablePickerModal" class="picker-modal hidden">
     <div class="picker-modal-backdrop" id="tablePickerModalBackdrop"></div>
     <div class="picker-modal-dialog dbsyncer-select-panel">
@@ -143,9 +153,9 @@
 
 <script th:inline="javascript">
     window.DATABASE_SYNC_PAGE = {
-        mode: 'add',
-        readOnly: false,
-        task: null
+        mode: 'edit',
+        readOnly: /*[[${readOnly}]]*/ false,
+        task: /*[[${task}]]*/ null
     };
 </script>
 <script th:src="@{/js/database-syncer/database-syncer.js}"></script>

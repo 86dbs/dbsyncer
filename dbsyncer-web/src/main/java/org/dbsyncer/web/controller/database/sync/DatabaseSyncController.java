@@ -5,13 +5,17 @@ package org.dbsyncer.web.controller.database.sync;
 
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,10 +48,29 @@ public class DatabaseSyncController extends BaseController {
         return "database-syncer/list";
     }
 
+    /**
+     * 添加任务页面
+     */
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
         return "database-syncer/add";
+    }
+
+    /**
+     * 任务子页面（与订正校验一致：/page/{page}?id=xxx）
+     */
+    @GetMapping("/page/{page}")
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
+        model.put("connectors", connectorService.getConnectorAll());
+        if ("edit".equals(page)) {
+            Assert.hasText(id, "任务 ID 不能为空");
+            DatabaseSyncTaskVO task = databaseSyncService.get(id);
+            model.put("task", task);
+            int status = task.getStatus() != null ? task.getStatus() : CommonTaskStatusEnum.READY.getCode();
+            model.put("readOnly", status != CommonTaskStatusEnum.READY.getCode());
+        }
+        return "database-syncer/" + page;
     }
 
     @PostMapping("/search")

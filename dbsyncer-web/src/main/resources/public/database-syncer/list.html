@@ -160,7 +160,8 @@
                     + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
-                    + '<button class="table-action-btn view" title="修改" onclick="bootGrowl(\'编辑页开发中\', \'info\')">'
+                    + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-syncer/page/edit?id='
+                    + (task.id || '') + '\')">'
                     + '<i class="fa fa-edit"></i></button>'
                     + renderTaskStateButton(task.status || 0, task.id)
                     + '</div></td>'
