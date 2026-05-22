@@ -711,9 +711,11 @@ function refreshLicense() {
     doGetter("/license/query.json", {}, function (response) {
         if (response.success === true) {
             const $validateMenu = $('.sidebar-item[url="/validate-sync/list"]');
+            const $databaseSyncMenu = $('.sidebar-item[url="/database-syncer/list"]');
             // 社区版
             if (response.data.edition === "community") {
                 $validateMenu.addClass("hidden");
+                $databaseSyncMenu.addClass("hidden");
                 return;
             }
             $("#licenseInfo").show();
@@ -723,6 +725,7 @@ function refreshLicense() {
             const $editionName = $("#editionName");
             if (licenseInfo["edition"] !== "community") {
                 $validateMenu.removeClass("hidden");
+                $databaseSyncMenu.removeClass("hidden");
             }
 
             const $effectiveTime = licenseInfo.effectiveTime;

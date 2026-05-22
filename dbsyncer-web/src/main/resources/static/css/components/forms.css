@@ -93,6 +93,26 @@ select.form-control.is-invalid,
   margin-top: 4px; 
 }
 
+/* 标签在上、控件占满宽（面板内表单项） */
+.form-item-stack {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+.form-item-stack .form-label {
+  display: block;
+  text-align: left;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.form-item-stack .form-control-area,
+.form-item-stack > select,
+.form-item-stack > .dbsyncer-select {
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .form-item { 
     grid-template-columns: 1fr; 

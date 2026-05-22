@@ -11,7 +11,8 @@
     align-items: center;
 }
 
-.checkbox-group {
+/* 表格内仅显示复选框，不展示标签文本（如 mapping 表关系列表） */
+table .checkbox-group {
     display: inline-flex !important;
     gap: 0 !important;
     margin: 0 !important;
@@ -20,7 +21,7 @@
     min-width: auto !important;
 }
 
-.checkbox-group-item {
+table .checkbox-group-item {
     display: inline-flex !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -29,12 +30,13 @@
     height: 20px !important;
     line-height: 20px !important;
 }
-.checkbox-group-item-label {
-    display: none !important; /* 表格中不显示标签文本 */
+
+table .checkbox-group-item-label {
+    display: none !important;
 }
 
-.checkbox-group-item::before {
-    margin-right: 0 !important; /* 表格中不需要右边距 */
+table .checkbox-group-item::before {
+    margin-right: 0 !important;
     display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
