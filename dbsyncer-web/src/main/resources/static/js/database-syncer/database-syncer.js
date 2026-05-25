@@ -818,10 +818,43 @@
         initializing = false;
     }
 
+    function bindSyncStrategyEvents() {
+        $('.db-sync-strategy-enable').each(function () {
+            const $enable = $(this);
+            const overwriteName = $enable.data('overwrite');
+            const $overwrite = $('input[name="' + overwriteName + '"]');
+            if (!$overwrite.length) {
+                return;
+            }
+            function refresh() {
+                const on = $enable.is(':checked');
+                $overwrite.prop('disabled', !on || isReadOnly());
+                if (!on) {
+                    $overwrite.prop('checked', false);
+                }
+            }
+            $enable.off('change.syncStrategy').on('change.syncStrategy', refresh);
+            refresh();
+        });
+    }
+
+    function initSyncStrategyFromTask(task) {
+        if (!task) {
+            return;
+        }
+        $('input[name="enableCopySchema"]').prop('checked', !!task.enableCopySchema);
+        $('input[name="overwriteSchema"]').prop('checked', !!task.overwriteSchema);
+        $('input[name="enableCopyData"]').prop('checked', !!task.enableCopyData);
+        $('input[name="overwriteData"]').prop('checked', !!task.overwriteData);
+        bindSyncStrategyEvents();
+    }
+
     $(document).ready(function () {
         window.backIndexPage = function () {
             doLoader('/database-syncer/list');
         };
+
+        bindSyncStrategyEvents();
 
         sourceSchemaSelect = $('#sourceSchema').dbSelect({
             type: 'single',
@@ -900,6 +933,7 @@
         });
 
         if (isEditMode() && page.task) {
+            initSyncStrategyFromTask(page.task);
             initEditFromTask(page.task);
         } else {
             renderMappingSidebar();

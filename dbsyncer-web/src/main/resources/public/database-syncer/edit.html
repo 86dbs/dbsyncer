@@ -60,7 +60,7 @@
                     </select>
                 </div>
             </div>
-
+            <div th:replace="database-syncer/syncStrategy :: content"></div>
             <div class="mapping-workspace mt-4">
                 <aside class="mapping-sidebar">
                     <button th:if="${!readOnly}" type="button" id="btnAddDbMapping" class="btn btn-info w-full mb-3">

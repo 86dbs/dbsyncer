@@ -54,6 +54,7 @@ public class DatabaseSyncController extends BaseController {
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
+        model.put("readOnly", false);
         return "database-syncer/add";
     }
 

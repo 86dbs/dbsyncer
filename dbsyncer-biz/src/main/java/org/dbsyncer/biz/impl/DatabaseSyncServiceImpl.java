@@ -288,6 +288,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setCreateTime(task.getCreateTime() == null ? now : task.getCreateTime());
         task.setUpdateTime(now);
         task.setName(params.get("name"));
+        fillSyncStrategy(task, params);
     }
 
     private void fillTaskOnEdit(DatabaseSyncTask task, Map<String, String> params) {
@@ -305,6 +306,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         task.setName(name);
         task.setUpdateTime(Instant.now().toEpochMilli());
+        fillSyncStrategy(task, params);
+    }
+
+    private void fillSyncStrategy(DatabaseSyncTask task, Map<String, String> params) {
+        task.setEnableCopySchema(StringUtil.isNotBlank(params.get("enableCopySchema")));
+        task.setEnableCopyData(StringUtil.isNotBlank(params.get("enableCopyData")));
+        task.setOverwriteSchema(task.isEnableCopySchema() && StringUtil.isNotBlank(params.get("overwriteSchema")));
+        task.setOverwriteData(task.isEnableCopyData() && StringUtil.isNotBlank(params.get("overwriteData")));
     }
 
     private void assertNotRunning(String taskId) {

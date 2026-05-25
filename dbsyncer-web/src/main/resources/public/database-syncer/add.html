@@ -49,6 +49,8 @@
                 </div>
             </div>
 
+            <div th:replace="database-syncer/syncStrategy :: content"></div>
+
             <!-- 主从布局：左侧库映射列表 + 右侧表映射详情 -->
             <div class="mapping-workspace mt-4">
                 <aside class="mapping-sidebar">
