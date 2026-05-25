@@ -65,7 +65,7 @@ function changeMappingState(id, url, title) {
         btn.disabled = false;
         if (response.success) {
             bootGrowl(title +'成功', 'success');
-            backIndexPage();
+            refreshIndexList();
         } else {
             bootGrowl(title +'失败: ' + response.message, 'danger');
         }
@@ -104,6 +104,8 @@ $(document).ready(function() {
     const pagination = new PaginationManager({
         requestUrl: '/mapping/search',
         tableBodySelector: '#mappingTableBody',
+        storageKey: 'mapping-list',
+        pageSize: 20,
         renderRow: function(mapping, index) {
             return `
                 <tr>
@@ -141,13 +143,18 @@ $(document).ready(function() {
             `;
         },
         emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>',
-        customPageSize:true
+        customPageSize: true,
     });
 
     // 搜索框输入事件
     let searchInput = initSearch('searchMapping', function (searchKey) {
-        pagination.doSearch({'searchKey': searchKey});
+        pagination.doSearch({'searchKey': searchKey}, 1);
     });
+
+    // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
+    window.refreshIndexList = function () {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    };
 
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
