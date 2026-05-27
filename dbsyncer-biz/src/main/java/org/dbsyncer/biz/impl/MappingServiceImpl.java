@@ -534,6 +534,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private Mapping assertMappingExist(String mappingId) {
         Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "驱动不存在.");
+
+        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
+        Assert.notEmpty(list, "映射关系不能为空");
         return mapping;
     }
 

@@ -67,6 +67,11 @@ function changeMappingState(id, url, title) {
             bootGrowl(title +'成功', 'success');
             refreshIndexList();
         } else {
+            // 映射关系不存在：后端会抛出 BizException（例如：映射关系不能为空）
+            if (url === '/mapping/start' && response.message && response.message.indexOf('映射关系') !== -1) {
+                bootGrowl('映射关系不存在，不允许启动', 'warning');
+                return;
+            }
             bootGrowl(title +'失败: ' + response.message, 'danger');
         }
     })
@@ -92,6 +97,11 @@ function deleteMapping(id) {
     });
 }
 
+// 启动按钮渲染：交由后端兜底校验（避免误判：统计任务未完成 total 可能为 0）
+function renderStateButtonWithMappingCheck(state, mapping) {
+    return renderStateButton(state, mapping.id);
+}
+
 
 // 页面初始化
 $(document).ready(function() {
@@ -99,13 +109,12 @@ $(document).ready(function() {
     window.backIndexPage = function () {
         doLoader('/mapping/list');
     };
-
     // 初始化分页管理器
     const pagination = new PaginationManager({
         requestUrl: '/mapping/search',
         tableBodySelector: '#mappingTableBody',
         storageKey: 'mapping-list',
-        pageSize: 20,
+        pageSize: 5,
         renderRow: function(mapping, index) {
             return `
                 <tr>
@@ -133,7 +142,7 @@ $(document).ready(function() {
                             <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            ${renderStateButton(mapping.meta.state || 0, mapping.id)}
+                            ${renderStateButtonWithMappingCheck(mapping.meta.state || 0, mapping)}
                             <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
                                 <i class="fa fa-copy"></i>
                             </button>

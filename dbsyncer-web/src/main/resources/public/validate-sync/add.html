@@ -311,6 +311,12 @@
                     btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
                         bootGrowl("保存订正校验成功!", "success");
+                        const rawStr = localStorage.getItem("dbsyncer.pagination.validate-sync-list");
+                        const raw = JSON.parse(rawStr);
+                        raw.pageNum = 1;
+                        console.log(raw)
+                        localStorage.setItem('dbsyncer.pagination.validate-sync-list', JSON.stringify(raw));
+
                         backIndexPage();
                     } else {
                         bootGrowl(response.message, "danger");

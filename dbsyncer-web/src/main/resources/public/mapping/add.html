@@ -193,7 +193,11 @@
                     btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
                         bootGrowl("保存驱动成功!", "success");
-                        backIndexPage();
+                        const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
+                        const raw = JSON.parse(rawStr);
+                        raw.pageNum = 1;
+                        localStorage.setItem('dbsyncer.pagination.mapping-list', JSON.stringify(raw));
+                        doLoader('/mapping/list');
                     } else {
                         bootGrowl(response.message, "danger");
                     }
