@@ -83,6 +83,29 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName) {
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT COUNT(1) FROM pg_database WHERE datname = ?", Integer.class, databaseName));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+        if (ifNotExists) {
+            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
+        }
+        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）

@@ -77,6 +77,41 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName) {
+        // Oracle 不支持在普通会话内直接创建 database；以 schema(user) 作为迁移命名空间
+        return StringUtil.EMPTY;
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM ALL_USERS WHERE USERNAME = UPPER(?)",
+                        Integer.class,
+                        databaseName
+                ));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+        String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+        if (!ifNotExists) {
+            return createSql;
+        }
+        String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
+        String escapedName = upper.replace("'", "''");
+        String escapedCreateSql = createSql.replace("'", "''");
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + escapedName + "'; " +
+                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; " +
+                "END;";
+    }
+
+    @Override
     public String getQueryCountSql(SqlBuilderConfig config) {
         Database database = config.getDatabase();
         String queryFilter = config.getQueryFilter();

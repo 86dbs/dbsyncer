@@ -29,7 +29,11 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,6 +96,28 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public String buildSqlWithQuotation() {
         return "`";
+    }
+
+    @Override
+    public String buildCreateDatabaseSql(String databaseName) {
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        return connectorInstance.execute(databaseTemplate ->
+                !CollectionUtils.isEmpty(databaseTemplate.queryForList("SHOW DATABASES LIKE ?", String.class, databaseName)));
+    }
+
+    @Override
+    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+        if (ifNotExists) {
+            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
+        }
+        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
     }
 
     @Override

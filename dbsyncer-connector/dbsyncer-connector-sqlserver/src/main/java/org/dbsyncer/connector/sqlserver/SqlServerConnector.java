@@ -91,6 +91,31 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName) {
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT COUNT(1) FROM sys.databases WHERE name = ?", Integer.class, databaseName));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+        String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+        if (!ifNotExists) {
+            return createSql;
+        }
+        String escapedTableName = tableName.replace("'", "''");
+        return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NULL BEGIN " + createSql + " END";
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
         String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);

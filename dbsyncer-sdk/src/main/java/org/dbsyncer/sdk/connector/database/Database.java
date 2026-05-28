@@ -40,6 +40,32 @@ public interface Database {
     }
 
     /**
+     * 生成创建数据库（或同级命名空间）的 DDL。
+     *
+     */
+    default String buildCreateDatabaseSql(String databaseName) {
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+    }
+
+    /**
+     * 判断数据库（或同级命名空间）是否存在。
+     */
+    default boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+        return false;
+    }
+
+    /**
+     * 生成创建表 DDL。
+     *
+     */
+    default String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+        if (ifNotExists) {
+            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
+        }
+        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    /**
      * 获取主键字段名称
      */
     default List<String> buildPrimaryKeys(List<String> primaryKeys) {
