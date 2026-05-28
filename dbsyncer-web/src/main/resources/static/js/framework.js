@@ -519,6 +519,11 @@ function doLoader(url) {
     if ($mainContent.length) {
         // 清除之前页面的刷新函数注册
         PageRefreshManager.unregister();
+
+        // 销毁当前内容区 dbSelect，避免页面切换后滚动监听访问已移除的 DOM
+        if (typeof window.destroyDbSelectsIn === 'function') {
+            window.destroyDbSelectsIn($mainContent);
+        }
         
         // 显示加载状态
         showLoading();

@@ -131,8 +131,19 @@
         const confirmBtn = dialog.querySelector('button:first-child');
         const cancelBtn = dialog.querySelector('button:last-child');
 
+        let closed = false;
+
+        function removeKeydownListener() {
+            document.removeEventListener('keydown', handleKeydown, true);
+        }
+
         // 关闭对话框
         function closeConfirm() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            removeKeydownListener();
             dialog.classList.add('hidden');
             overlay.classList.add('hidden');
             setTimeout(function() {
@@ -142,48 +153,68 @@
             }, 200);
         }
 
-        // 确认按钮事件
-        confirmBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        function triggerConfirm() {
             closeConfirm();
             if (typeof config.onConfirm === 'function') {
                 config.onConfirm();
             }
+        }
+
+        function triggerCancel() {
+            closeConfirm();
+            if (typeof config.onCancel === 'function') {
+                config.onCancel();
+            }
+        }
+
+        // 确认按钮事件
+        confirmBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerConfirm();
         });
 
         // 取消按钮事件
         cancelBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            closeConfirm();
-            if (typeof config.onCancel === 'function') {
-                config.onCancel();
-            }
+            triggerCancel();
         });
 
         // 点击非对话框区域关闭
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) {
                 e.preventDefault();
-                closeConfirm();
-                if (typeof config.onCancel === 'function') {
-                    config.onCancel();
-                }
+                triggerCancel();
             }
         });
 
-        // ESC键关闭（可选）
-        function handleEsc(e) {
-            if (e.key === 'Escape') {
-                closeConfirm();
-                if (typeof config.onCancel === 'function') {
-                    config.onCancel();
+        // Enter 确认、Esc 取消（捕获阶段，避免触发底层按钮的默认行为）
+        function handleKeydown(e) {
+            if (e.key === 'Enter') {
+                if (e.isComposing) {
+                    return;
                 }
-                document.removeEventListener('keydown', handleEsc);
+                e.preventDefault();
+                e.stopPropagation();
+                if (document.activeElement === cancelBtn) {
+                    triggerCancel();
+                } else {
+                    triggerConfirm();
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerCancel();
             }
         }
-        document.addEventListener('keydown', handleEsc);
+        document.addEventListener('keydown', handleKeydown, true);
+
+        // 避免回车再次触发打开弹窗的按钮（如删除）
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+        confirmBtn.focus();
 
         return {
             close: closeConfirm,

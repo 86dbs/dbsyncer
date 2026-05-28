@@ -9,9 +9,41 @@
  *   - totalPagesSelector: 总页数显示元素的选择器（可选，默认：.totalPages）
  *   - renderRow: 自定义行渲染函数(item, index)（必需）
  *   - emptyHtml: 无数据时的HTML（可选）
+ *   - storageKey: localStorage 缓存键，持久化 pageNum、pageSize（可选）
  */
 (function(window, $) {
     'use strict';
+
+    const PAGINATION_STORAGE_PREFIX = 'dbsyncer.pagination.';
+
+    function loadPaginationState(storageKey) {
+        if (!storageKey) {
+            return null;
+        }
+        try {
+            const raw = localStorage.getItem(PAGINATION_STORAGE_PREFIX + storageKey);
+            if (raw) {
+                return JSON.parse(raw);
+            }
+        } catch (e) {
+            console.warn('[PaginationManager] 读取分页缓存失败', e);
+        }
+        return null;
+    }
+
+    function savePaginationState(storageKey, pageNum, pageSize) {
+        if (!storageKey) {
+            return;
+        }
+        try {
+            localStorage.setItem(PAGINATION_STORAGE_PREFIX + storageKey, JSON.stringify({
+                pageNum: pageNum,
+                pageSize: pageSize
+            }));
+        } catch (e) {
+            console.warn('[PaginationManager] 保存分页缓存失败', e);
+        }
+    }
     
     // 依赖检查
     if (typeof window.doPoster !== 'function') {
@@ -24,6 +56,10 @@
     }
     
     function PaginationManager(options) {
+        const storageKey = options.storageKey || '';
+        const stored = loadPaginationState(storageKey);
+        const defaultPageSize = options.pageSize || 5;
+        const defaultPageIndex = options.pageIndex || 1;
         const config = {
             requestUrl: options.requestUrl,
             tableBodySelector: options.tableBodySelector,
@@ -34,11 +70,16 @@
             renderRow: options.renderRow,
             emptyHtml: options.emptyHtml || '',
             params: options.params || {},
-            pageIndex: options.pageIndex || 1,
-            pageSize: options.pageSize || 5,
+            pageIndex: (stored && stored.pageNum) ? stored.pageNum : defaultPageIndex,
+            pageSize: (stored && stored.pageSize) ? stored.pageSize : defaultPageSize,
+            storageKey: storageKey,
             customPageSize: options.customPageSize || false,
-            customPageSizeItems: options.customPageSizeItems || [5, 10, 50, 100, 200],
+            customPageSizeItems: options.customPageSizeItems ||  [5, 10, 50, 100, 200],
             refreshCompleted: options.refreshCompleted || function() {}
+        };
+
+        const persistState = function(pageNum) {
+            savePaginationState(config.storageKey, pageNum, config.pageSize);
         };
 
         // 自动创建分页容器和结构
@@ -108,7 +149,8 @@
         this.doSearch = function(params, pageNum) {
             const searchParams = $.extend({}, this.lastSearchParams || {}, params || {});
             this.lastSearchParams = $.extend({}, searchParams);
-            searchParams.pageNum = pageNum || config.pageIndex;
+            const targetPage = pageNum || this.currentPage || config.pageIndex;
+            searchParams.pageNum = targetPage;
             searchParams.pageSize = config.pageSize;
             const pagination = this;
             window.doPoster(config.requestUrl, searchParams, function(data) {
@@ -127,7 +169,9 @@
             const pageNum = result.pageNum || config.pageIndex;
             // 更新分页管理器状态
             this.currentPage = pageNum;
+            config.pageIndex = pageNum;
             this.total = total;
+            persistState(pageNum);
             // 渲染表格
             this.renderTable(items);
             // 更新分页信息
@@ -191,14 +235,26 @@
                                 const newSize = parseInt(selectedValue);
                                 // 更新配置中的 pageSize
                                 config.pageSize = newSize;
+                                persistState(1);
                                 // 重置到第一页并重新搜索
                                 $this.doSearch({}, 1);
                             }
                         }
                     });
                 } else {
-                    // 如果下拉框已存在，仅更新选中值 (防止定时刷新导致选中状态丢失)
-                    $sizeSelect.val(config.pageSize);
+                    // 定时刷新时仅同步显示，不可触发 onSelect（否则会 doSearch 死循环并重置到第 1 页）
+                    const pageSizeApi = $sizeSelect.data('dbSelect');
+                    const nextVal = String(config.pageSize);
+                    const currentVal = pageSizeApi && typeof pageSizeApi.getValues === 'function'
+                        ? String((pageSizeApi.getValues()[0] || ''))
+                        : String($sizeSelect.val() || '');
+                    if (currentVal !== nextVal) {
+                        if (pageSizeApi && typeof pageSizeApi.setValues === 'function') {
+                            pageSizeApi.setValues(nextVal, true);
+                        } else {
+                            $sizeSelect.val(config.pageSize);
+                        }
+                    }
                 }
             }
 
