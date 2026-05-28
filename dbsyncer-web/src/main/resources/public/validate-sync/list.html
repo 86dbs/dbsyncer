@@ -33,7 +33,6 @@
                 <th>触发方式</th>
                 <th>结果</th>
                 <th>状态</th>
-                <th>更新时间</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -65,7 +64,7 @@
             btn.disabled = false;
             if (response.success) {
                 bootGrowl(title +'成功', 'success');
-                backIndexPage();
+                refreshIndexList();
             } else {
                 bootGrowl(title +'失败: ' + response.message, 'danger');
             }
@@ -239,6 +238,8 @@
         const pagination = new PaginationManager({
             requestUrl: '/validate-sync/search',
             tableBodySelector: '#validate-sync-table',
+            storageKey: 'validate-sync-list',
+            pageSize: 20,
             renderRow: function(task, index) {
                 return `
                     <tr>
@@ -260,7 +261,6 @@
                         <td>${renderTaskTriggerText(task.trigger)}</td>
                         <td>${renderResultColumn(task)}</td>
                         <td>${renderTaskStateText(task.status || 0)}</td>
-                        <td>${formatDate(task.updateTime || '')}</td>
                         <td>
                             <div class="flex items-center">
                                 <button class="table-action-btn view" title="修改" onclick="doLoader('/validate-sync/page/edit?id=${task.id}')">
@@ -278,8 +278,13 @@
 
         // 搜索框输入事件
         let searchInput = initSearch('validate-sync-search', function (searchKey) {
-            pagination.doSearch({'searchKey': searchKey});
+            pagination.doSearch({'searchKey': searchKey}, 1);
         });
+
+        // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
+        window.refreshIndexList = function () {
+            pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+        };
 
         // 注册到全局定时刷新管理器
         PageRefreshManager.register(() => {

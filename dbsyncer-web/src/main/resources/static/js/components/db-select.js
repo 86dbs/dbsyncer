@@ -15,6 +15,25 @@
     
     // 全局变量：跟踪当前打开的 dbSelect 实例
     window.dbSelectCurrentOpenInstance = null;
+
+    /**
+     * 销毁容器内已初始化的 dbSelect（页面切换前调用，避免残留滚动监听）
+     */
+    window.destroyDbSelectsIn = function(container) {
+        const $container = container ? $(container) : $(document.body);
+        if (!$container.length) {
+            return;
+        }
+        if (window.dbSelectCurrentOpenInstance && typeof window.dbSelectCurrentOpenInstance.close === 'function') {
+            window.dbSelectCurrentOpenInstance.close();
+        }
+        $container.find('select').each(function() {
+            const api = $(this).data('dbSelect');
+            if (api && typeof api.destroy === 'function') {
+                api.destroy();
+            }
+        });
+    };
     
     // HTML转义
     function escapeHtml(text) {
@@ -455,10 +474,27 @@
             }
         }
 
+        function isComponentAttached() {
+            const el = $component[0];
+            return !!(el && document.body && document.body.contains(el));
+        }
+
+        function unbindWindowEvents() {
+            $(window).off('scroll.dbSelect-' + selectId);
+            $(window).off('resize.dbSelect-' + selectId);
+        }
+
         // 调整下拉菜单位置（智能向上/向下展开）
         function adjustDropdownPosition() {
+            if (!isComponentAttached()) {
+                return;
+            }
             const $trigger = $component.find('.dbsyncer-select-trigger');
-            const triggerRect = $trigger[0].getBoundingClientRect();
+            const triggerEl = $trigger[0];
+            if (!triggerEl) {
+                return;
+            }
+            const triggerRect = triggerEl.getBoundingClientRect();
             const dropdownHeight = $dropdown.outerHeight() || 300; // 默认最大高度
             const viewportHeight = window.innerHeight;
             const spaceBelow = viewportHeight - triggerRect.bottom;
@@ -488,6 +524,11 @@
 
         // 监听窗口滚动和大小改变，重新调整下拉菜单位置
         function handleWindowEvents() {
+            if (!isComponentAttached()) {
+                closeDropdown();
+                unbindWindowEvents();
+                return;
+            }
             if (!$dropdown.hasClass('hidden')) {
                 adjustDropdownPosition();
             }
@@ -499,8 +540,7 @@
         
         // 组件销毁时移除事件监听
         $select.on('remove', function() {
-            $(window).off('scroll.dbSelect-' + selectId);
-            $(window).off('resize.dbSelect-' + selectId);
+            unbindWindowEvents();
         });
 
         // 全选
@@ -674,7 +714,7 @@
             $element: $select,
             $component: $component,
             getValues: function() { return selectedValues; },
-            setValues: function(values) {
+            setValues: function(values, silent) {
                 const inputValues = Array.isArray(values) ? values : [values];
                 if (config.remoteSearch) {
                     // 远程模式下允许先选值，避免目标项未加载导致值丢失
@@ -692,7 +732,9 @@
                 updateDisplay();
                 // 无论下拉菜单是否打开，都更新选项状态
                 renderOptions($searchInput.val());
-                triggerSelectEvent();
+                if (!silent) {
+                    triggerSelectEvent();
+                }
                 return this;
             },
             setData: function(newData) {
@@ -815,8 +857,7 @@
                 $(document).off('click.dbselect_' + selectId);
                 
                 // 移除窗口事件监听
-                $(window).off('scroll.dbSelect-' + selectId);
-                $(window).off('resize.dbSelect-' + selectId);
+                unbindWindowEvents();
                 
                 // 移除组件内所有使用命名空间的事件监听（包括所有子元素）
                 if ($component && $component.length) {

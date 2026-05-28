@@ -65,8 +65,13 @@ function changeMappingState(id, url, title) {
         btn.disabled = false;
         if (response.success) {
             bootGrowl(title +'成功', 'success');
-            backIndexPage();
+            refreshIndexList();
         } else {
+            // 映射关系不存在：后端会抛出 BizException（例如：映射关系不能为空）
+            if (url === '/mapping/start' && response.message && response.message.indexOf('映射关系') !== -1) {
+                bootGrowl('映射关系不存在，不允许启动', 'warning');
+                return;
+            }
             bootGrowl(title +'失败: ' + response.message, 'danger');
         }
     })
@@ -92,6 +97,11 @@ function deleteMapping(id) {
     });
 }
 
+// 启动按钮渲染：交由后端兜底校验（避免误判：统计任务未完成 total 可能为 0）
+function renderStateButtonWithMappingCheck(state, mapping) {
+    return renderStateButton(state, mapping.id);
+}
+
 
 // 页面初始化
 $(document).ready(function() {
@@ -99,11 +109,12 @@ $(document).ready(function() {
     window.backIndexPage = function () {
         doLoader('/mapping/list');
     };
-
     // 初始化分页管理器
     const pagination = new PaginationManager({
         requestUrl: '/mapping/search',
         tableBodySelector: '#mappingTableBody',
+        storageKey: 'mapping-list',
+        pageSize: 5,
         renderRow: function(mapping, index) {
             return `
                 <tr>
@@ -131,7 +142,7 @@ $(document).ready(function() {
                             <button class="table-action-btn view" title="修改" onclick="doLoader('/mapping/page/edit?id=${mapping.id}')">
                                 <i class="fa fa-edit"></i>
                             </button>
-                            ${renderStateButton(mapping.meta.state || 0, mapping.id)}
+                            ${renderStateButtonWithMappingCheck(mapping.meta.state || 0, mapping)}
                             <button class="table-action-btn copy" title="复制" onclick="copyMapping('${mapping.id}')">
                                 <i class="fa fa-copy"></i>
                             </button>
@@ -141,13 +152,18 @@ $(document).ready(function() {
             `;
         },
         emptyHtml:'<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无驱动</p><p class="empty-description">点击"添加"按钮创建第一个驱动</p></td>',
-        customPageSize:true
+        customPageSize: true,
     });
 
     // 搜索框输入事件
     let searchInput = initSearch('searchMapping', function (searchKey) {
-        pagination.doSearch({'searchKey': searchKey});
+        pagination.doSearch({'searchKey': searchKey}, 1);
     });
+
+    // 列表局部刷新（启动/停止等操作后保持当前页与分页大小）
+    window.refreshIndexList = function () {
+        pagination.doSearch({'searchKey': searchInput.getValue()}, pagination.currentPage);
+    };
 
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
