@@ -36,7 +36,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -417,11 +421,22 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> dataVerifyDetailFields = builder.getFields();
 
+        // 整库迁移明细（列顺序与 dbsyncer_mysql_task_database_sync_detail.sql 一致）
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE,
+                ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE,
+                ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE,
+                ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL,
+                ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> databaseSyncDetailFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
         tables.computeIfAbsent(StorageEnum.VALIDATE_SYNC_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
+        tables.computeIfAbsent(StorageEnum.DATABASE_SYNC_DETAIL.getType(), k -> new Executor(k, databaseSyncDetailFields, true, true));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
@@ -537,7 +552,15 @@ public class MySQLStorageService extends AbstractStorageService {
                                     Types.VARCHAR), new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER), new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR",
                                     Types.VARCHAR), new Field(ConfigConstant.TASK_SOURCE_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_TARGET_TOTAL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.TASK_DIFF_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_FIXED_TOTAL, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.TASK_CONTENT, "LONGVARCHAR", Types.LONGVARCHAR))
+                            new Field(ConfigConstant.TASK_CONTENT, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, "BIGINT", Types.BIGINT))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线
@@ -552,12 +575,12 @@ public class MySQLStorageService extends AbstractStorageService {
 
         public void build(String... fieldNames) {
             fields = new ArrayList<>(fieldNames.length);
-            Stream.of(fieldNames).parallel().forEach(k -> {
-                if (fieldMap.containsKey(k)) {
-                    Field field = fieldMap.get(k);
+            for (String fieldName : fieldNames) {
+                Field field = fieldMap.get(fieldName);
+                if (field != null) {
                     fields.add(field);
                 }
-            });
+            }
         }
     }
 

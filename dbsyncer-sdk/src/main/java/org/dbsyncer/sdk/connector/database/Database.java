@@ -40,11 +40,13 @@ public interface Database {
     }
 
     /**
-     * 生成创建数据库（或同级命名空间）的 DDL。
-     *
+     * 生成创建数据库（或同级命名空间）的 DDL；已存在时不报错（各库方言由连接器覆盖）。
      */
     default String buildCreateDatabaseSql(String databaseName) {
-        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
+        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
     }
 
     /**
@@ -63,6 +65,23 @@ public interface Database {
             return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
         }
         return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    /**
+     * 生成删除表 DDL。
+     *
+     * @param tableName 表名（不含库/schema 前缀，由连接上下文指定命名空间）
+     * @param ifExists  为 true 时表不存在不报错
+     */
+    default String buildDropTableSql(String tableName, boolean ifExists) {
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        String quoted = buildWithQuotation(tableName);
+        if (ifExists) {
+            return "DROP TABLE IF EXISTS " + quoted;
+        }
+        return "DROP TABLE " + quoted;
     }
 
     /**

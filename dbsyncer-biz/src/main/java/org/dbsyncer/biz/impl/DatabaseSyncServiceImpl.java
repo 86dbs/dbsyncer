@@ -16,16 +16,23 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.SortEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseMapping;
-import org.dbsyncer.sdk.model.DatabaseSyncTask;
+import org.dbsyncer.sdk.model.DatabaseMigrationProgressComputer;
+import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -33,15 +40,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -66,11 +75,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private TaskService<DatabaseSyncTask> taskService;
+    private TaskService<DatabaseMigrationSyncTask> taskService;
+
+    @Resource
+    private StorageService storageService;
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseMigrationSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
     }
@@ -96,7 +108,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         normalizeAndSortMappings(mappings);
 
-        DatabaseSyncTask task = new DatabaseSyncTask();
+        DatabaseMigrationSyncTask task = new DatabaseMigrationSyncTask();
         fillTaskOnAdd(task, params);
         task.setSourceConnectorId(sourceConnectorId);
         task.setTargetConnectorId(targetConnectorId);
@@ -111,7 +123,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseMigrationSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         assertNotRunning(id);
 
@@ -139,7 +151,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseMigrationSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
@@ -164,15 +176,42 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         List<DatabaseSyncTaskVO> list = new ArrayList<>();
         data.forEach(item -> {
-            if (item instanceof DatabaseSyncTask) {
-                DatabaseSyncTaskVO vo = convertTask2Vo((DatabaseSyncTask) item);
+            if (item instanceof DatabaseMigrationSyncTask) {
+                DatabaseMigrationSyncTask task = (DatabaseMigrationSyncTask) item;
+                DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
+                    List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
+                    int tableCount = CollectionUtils.isEmpty(tableGroups) ? 0 : tableGroups.size();
+                    vo.setProgress(DatabaseMigrationProgressComputer.calculateProgressPercent(task, tableCount));
+                    vo.setErrorCount(countMigrationDetailErrors(task.getId()));
                     list.add(vo);
                 }
             }
         });
         paging.setData(list);
         return paging;
+    }
+
+    @Override
+    public List<DatabaseSyncTaskVO> getAll() {
+        return taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC).stream()
+                .filter(DatabaseMigrationSyncTask.class::isInstance)
+                .map(t -> convertTask2Vo((DatabaseMigrationSyncTask) t))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Paging searchResult(Map<String, String> params) {
+        String taskId = params.get("taskId");
+        Assert.hasText(taskId, "taskId 不能为空");
+        Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
+        query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
+        query.addFilter(ConfigConstant.TASK_ID, taskId);
+        query.setSelectFlied(getMigrationDetailSelect());
+        query.addOrderBy(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, SortEnum.DESC);
+        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+        return storageService.query(query);
     }
 
     @Override
@@ -278,7 +317,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
     }
 
-    private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
+    private void fillTaskOnAdd(DatabaseMigrationSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
             task.setStatus(CommonTaskStatusEnum.READY.getCode());
@@ -291,7 +330,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillSyncStrategy(task, params);
     }
 
-    private void fillTaskOnEdit(DatabaseSyncTask task, Map<String, String> params) {
+    private void fillTaskOnEdit(DatabaseMigrationSyncTask task, Map<String, String> params) {
         String name = params.get("name");
         if (StringUtil.isBlank(name)) {
             throw new BizException("任务名称不能为空");
@@ -309,7 +348,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillSyncStrategy(task, params);
     }
 
-    private void fillSyncStrategy(DatabaseSyncTask task, Map<String, String> params) {
+    private void fillSyncStrategy(DatabaseMigrationSyncTask task, Map<String, String> params) {
         task.setEnableCopySchema(StringUtil.isNotBlank(params.get("enableCopySchema")));
         task.setEnableCopyData(StringUtil.isNotBlank(params.get("enableCopyData")));
         task.setOverwriteSchema(task.isEnableCopySchema() && StringUtil.isNotBlank(params.get("overwriteSchema")));
@@ -322,7 +361,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
     }
 
-    private DatabaseSyncTaskVO convertTask2Vo(DatabaseSyncTask task) {
+    private DatabaseSyncTaskVO convertTask2Vo(DatabaseMigrationSyncTask task) {
         if (task == null) {
             return null;
         }
@@ -345,5 +384,34 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         int to = Math.min(from + limit, total);
         result.put("hasMore", to < total);
         return result;
+    }
+
+    private long countMigrationDetailErrors(String taskId) {
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
+        query.addFilter(ConfigConstant.TASK_ID, taskId);
+        query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.GT, 0);
+        query.setQueryTotal(true);
+        Paging paging = storageService.query(query);
+        return paging != null ? paging.getTotal() : 0;
+    }
+
+    private static Set<String> getMigrationDetailSelect() {
+        Set<String> fields = new HashSet<>();
+        fields.add(ConfigConstant.CONFIG_MODEL_ID);
+        fields.add(ConfigConstant.TASK_ID);
+        fields.add(ConfigConstant.CONFIG_MODEL_TYPE);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE);
+        fields.add(ConfigConstant.TASK_SOURCE_TOTAL);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
+        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        fields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        fields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        return fields;
     }
 }

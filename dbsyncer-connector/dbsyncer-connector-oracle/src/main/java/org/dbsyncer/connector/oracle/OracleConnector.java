@@ -76,24 +76,51 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return "\"";
     }
 
+    /**
+     * Oracle 无 database 概念，迁移任务中的 databaseName 即 schema（用户）名。
+     */
     @Override
-    public String buildCreateDatabaseSql(String databaseName) {
-        // Oracle 不支持在普通会话内直接创建 database；以 schema(user) 作为迁移命名空间
-        return StringUtil.EMPTY;
+    public String buildCreateDatabaseSql(String schemaName) {
+        if (StringUtil.isBlank(schemaName)) {
+            return StringUtil.EMPTY;
+        }
+        String user = schemaName.trim().toUpperCase(Locale.ROOT);
+        String escapedUser = escapeOracleLiteral(user);
+        String escapedPassword = escapeOracleLiteral(defaultSchemaPassword(user));
+        String createUserSql = "CREATE USER " + user + " IDENTIFIED BY \"" + escapedPassword + "\" " +
+                "DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS";
+        String grantSql = "GRANT CONNECT, RESOURCE TO " + user;
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_USERS WHERE USERNAME = '" + escapedUser + "'; " +
+                "IF v_cnt = 0 THEN " +
+                "EXECUTE IMMEDIATE '" + escapeOracleLiteral(createUserSql) + "'; " +
+                "EXECUTE IMMEDIATE '" + escapeOracleLiteral(grantSql) + "'; " +
+                "END IF; END;";
     }
 
+    /**
+     * 判断 schema（用户）是否存在。
+     */
     @Override
-    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
-        if (StringUtil.isBlank(databaseName)) {
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String schemaName) {
+        if (StringUtil.isBlank(schemaName)) {
             return false;
         }
         Integer count = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject(
                         "SELECT COUNT(1) FROM ALL_USERS WHERE USERNAME = UPPER(?)",
                         Integer.class,
-                        databaseName
+                        schemaName
                 ));
         return count != null && count > 0;
+    }
+
+    private static String defaultSchemaPassword(String schemaName) {
+        return schemaName + "_DBSYNCER1";
+    }
+
+    private static String escapeOracleLiteral(String value) {
+        return value.replace("'", "''");
     }
 
     @Override
@@ -108,6 +135,22 @@ public final class OracleConnector extends AbstractDatabaseConnector {
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
                 "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + escapedName + "'; " +
                 "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; " +
+                "END;";
+    }
+
+    @Override
+    public String buildDropTableSql(String tableName, boolean ifExists) {
+        String quoted = buildWithQuotation(tableName);
+        String dropSql = "DROP TABLE " + quoted + " CASCADE CONSTRAINTS";
+        if (!ifExists) {
+            return dropSql;
+        }
+        String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
+        String escapedName = upper.replace("'", "''");
+        String escapedDropSql = dropSql.replace("'", "''");
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + escapedName + "'; " +
+                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; " +
                 "END;";
     }
 

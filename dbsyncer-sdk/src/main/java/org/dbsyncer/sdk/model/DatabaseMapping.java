@@ -35,6 +35,11 @@ public class DatabaseMapping {
     private String targetDatabase;
 
     /**
+     * 目标 Schema（可选）
+     */
+    private String targetSchema;
+
+    /**
      * 表映射（源表 -> 目标表）
      */
     private List<TableMapping> tableMappings;
@@ -69,6 +74,14 @@ public class DatabaseMapping {
 
     public void setTargetDatabase(String targetDatabase) {
         this.targetDatabase = targetDatabase;
+    }
+
+    public String getTargetSchema() {
+        return targetSchema;
+    }
+
+    public void setTargetSchema(String targetSchema) {
+        this.targetSchema = targetSchema;
     }
 
     public List<TableMapping> getTableMappings() {
