@@ -185,6 +185,38 @@
                     </div>`);
                 }
                 break;
+            case 'Redis':
+                config.label = 'Stream';
+                if (customType === 'source') {
+                    let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
+                    let consumerName = extInfo.consumerName === undefined ? 'dbsyncer-consumer' : extInfo.consumerName;
+                    items.push(`<div class="form-item">
+                        <label class="form-label">消费组 groupId<strong class="text-primary">*</strong></label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="groupId" type="text" maxlength="128" value="${groupId}" required placeholder="dbsyncer-group"/>
+                        </div>
+                    </div>`);
+                    items.push(`<div class="form-item">
+                        <label class="form-label">消费者名称</label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="consumerName" type="text" maxlength="128" value="${consumerName}" placeholder="dbsyncer-consumer"/>
+                        </div>
+                    </div>`);
+                    items.push(`<div class="form-item">
+                        <label class="form-label">消息字段说明</label>
+                        <div class="form-control-area text-muted" style="padding-top:8px;font-size:12px;">
+                            Stream 消息建议使用字段 <code>payload</code> 存放 JSON；无 payload 时按字段名映射。
+                        </div>
+                    </div>`);
+                } else {
+                    items.push(`<div class="form-item">
+                        <label class="form-label">Key 前缀说明</label>
+                        <div class="form-control-area text-muted" style="padding-top:8px;font-size:12px;">
+                            目标写入 Key 为「Stream名:主键值」，值为行数据 JSON。
+                        </div>
+                    </div>`);
+                }
+                break;
             case 'File':
                 config.label = '文件名';
                 let separator = extInfo.separator === undefined ? '|' : extInfo.separator;
