@@ -30,6 +30,7 @@
                 <th>任务名称</th>
                 <th>迁移方案</th>
                 <th>库映射数</th>
+                <th>结果</th>
                 <th>状态</th>
                 <th>更新时间</th>
                 <th>操作</th>
@@ -46,7 +47,7 @@
         doPoster('/database-syncer/start', { id: taskId }, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '启动成功', 'success');
-                PageRefreshManager.refresh();
+                refreshIndexList();
             } else {
                 bootGrowl(response.message || '启动失败', 'danger');
             }
@@ -57,7 +58,7 @@
         doPoster('/database-syncer/stop', { id: taskId }, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '停止成功', 'success');
-                PageRefreshManager.refresh();
+                refreshIndexList();
             } else {
                 bootGrowl(response.message || '停止失败', 'danger');
             }
@@ -71,7 +72,7 @@
         doPoster('/database-syncer/remove', { id: taskId }, function (response) {
             if (response.success) {
                 bootGrowl(response.data || '删除成功', 'success');
-                PageRefreshManager.refresh();
+                refreshIndexList();
             } else {
                 bootGrowl(response.message || '删除失败', 'danger');
             }
@@ -141,6 +142,61 @@
             + '<span>' + escapeHtml(target.name || '-') + '</span></div>';
     }
 
+    /**
+     * 结果列：进度 + 异常条数（failTotal > 0 的明细数）
+     */
+    function renderResultColumn(task) {
+        var n = Number(task.errorCount);
+        if (isNaN(n) || n < 0) {
+            n = 0;
+        }
+        var isRunning = Number(task.status) === 1;
+        var progressRaw = task.progress;
+        if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
+            if (isRunning) {
+                progressRaw = 0;
+            } else {
+                return '';
+            }
+        }
+        var progress = Number(progressRaw);
+        if (isNaN(progress) || progress < 0) {
+            progress = 0;
+        }
+        if (progress > 100) {
+            progress = 100;
+        }
+        if (progress === 0 && !isRunning) {
+            return '';
+        }
+
+        var state = 'success';
+        if (isRunning) {
+            if (progress >= 80) {
+                state = 'danger';
+            } else if (progress >= 60) {
+                state = 'warning';
+            }
+        } else if (n > 0) {
+            state = 'danger';
+        }
+
+        var left = (n > 0)
+            ? ('异常：<span class="badge badge-error">' + n + '</span>')
+            : '<span class="badge badge-success">正常</span>';
+        var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
+        return ''
+            + '<div style="min-width: 160px;">'
+            + '  <div class="progress-header" style="margin-bottom: 6px;">'
+            + '    <span class="progress-title">' + left + '</span>'
+            + '    <span class="progress-value progress-value-' + state + '" style="font-size: 12px; font-weight: 600;">' + rightText + '</span>'
+            + '  </div>'
+            + '  <div class="progress-bar" style="height: 6px; margin-bottom: 0;">'
+            + '    <div class="progress-fill ' + state + '" style="width: ' + progress + '%"></div>'
+            + '  </div>'
+            + '</div>';
+    }
+
     $(document).ready(function () {
         window.backIndexPage = function () {
             doLoader('/database-syncer/list');
@@ -149,25 +205,32 @@
         const pagination = new PaginationManager({
             requestUrl: '/database-syncer/search',
             tableBodySelector: '#database-syncer-table',
+            storageKey: 'database-syncer-list',
             renderRow: function (task, index) {
                 const mappingCount = task.mappingCount != null ? task.mappingCount : 0;
+                const taskId = String(task.id || '').replace(/"/g, '');
                 return ''
                     + '<tr>'
                     + '<td>' + index + '</td>'
-                    + '<td>' + escapeHtml(task.name || '') + '</td>'
+                    + '<td>'
+                    + '<a href="javascript:void(0)" class="text-primary hover:underline cursor-pointer" title="点击查看迁移结果" '
+                    + 'onclick="doLoader(\'/database-syncer/page/detail?id=' + taskId + '\')">'
+                    + escapeHtml(task.name || '') + '</a>'
+                    + '</td>'
                     + '<td style="min-width:180px;">' + renderConnectorPlan(task) + '</td>'
                     + '<td>' + mappingCount + '</td>'
+                    + '<td>' + renderResultColumn(task) + '</td>'
                     + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
                     + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-syncer/page/edit?id='
-                    + (task.id || '') + '\')">'
+                    + taskId + '\')">'
                     + '<i class="fa fa-edit"></i></button>'
                     + renderTaskStateButton(task.status || 0, task.id)
                     + '</div></td>'
                     + '</tr>';
             },
-            emptyHtml: '<td colspan="7" class="text-center">'
+            emptyHtml: '<td colspan="8" class="text-center">'
                 + '<i class="fa fa-database empty-icon"></i>'
                 + '<p class="empty-text">暂无整库迁移任务</p>'
                 + '<p class="empty-description">点击「添加」创建第一个整库迁移任务</p></td>',
@@ -175,8 +238,12 @@
         });
 
         const searchInput = initSearch('database-syncer-search', function (searchKey) {
-            pagination.doSearch({ searchKey: searchKey });
+            pagination.doSearch({ searchKey: searchKey }, 1);
         });
+
+        window.refreshIndexList = function () {
+            pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);
+        };
 
         PageRefreshManager.register(function () {
             pagination.doSearch({ searchKey: searchInput.getValue() }, pagination.currentPage);

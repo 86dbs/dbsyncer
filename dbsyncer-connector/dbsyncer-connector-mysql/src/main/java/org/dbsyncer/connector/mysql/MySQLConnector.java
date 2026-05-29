@@ -100,7 +100,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildCreateDatabaseSql(String databaseName) {
-        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
     }
 
     @Override
@@ -118,6 +118,15 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
         }
         return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    @Override
+    public String buildDropTableSql(String tableName, boolean ifExists) {
+        String quoted = buildWithQuotation(tableName);
+        if (ifExists) {
+            return "DROP TABLE IF EXISTS " + quoted;
+        }
+        return "DROP TABLE " + quoted;
     }
 
     @Override

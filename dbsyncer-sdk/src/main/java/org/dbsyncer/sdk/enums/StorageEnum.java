@@ -29,7 +29,11 @@ public enum StorageEnum {
     /**
      * 订正校验明细
      */
-    VALIDATE_SYNC_DETAIL("task_validata_sync_detail");
+    VALIDATE_SYNC_DETAIL("task_validata_sync_detail"),
+    /**
+     * 整库迁移明细
+     */
+    DATABASE_SYNC_DETAIL("task_database_sync_detail");
 
     private final String type;
 

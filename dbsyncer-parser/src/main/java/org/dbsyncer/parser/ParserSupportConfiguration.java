@@ -8,6 +8,9 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.sdk.model.DatabaseMigrationDetailResult;
+import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
+import org.dbsyncer.sdk.spi.DataBaseSyncerDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.dbsyncer.sdk.spi.TaskService;
@@ -106,4 +109,27 @@ public class ParserSupportConfiguration {
         };
     }
 
+    /**
+     * 商业版由 {@code TaskServiceImpl} 在 {@code taskService} 初始化时注册实现类单例；此处仅提供开源空实现。
+     */
+    @Bean
+    @DependsOn("taskService")
+    public DataBaseSyncerDetailService dataBaseSyncerDetailService() {
+        return new DataBaseSyncerDetailService() {
+            @Override
+            public void saveResult(DatabaseMigrationSyncTask task, DatabaseMigrationDetailResult detail) {
+
+            }
+
+            @Override
+            public Paging queryByTaskId(String taskId) {
+                return null;
+            }
+
+            @Override
+            public void deleteByTaskId(String taskId) {
+
+            }
+        };
+    }
 }

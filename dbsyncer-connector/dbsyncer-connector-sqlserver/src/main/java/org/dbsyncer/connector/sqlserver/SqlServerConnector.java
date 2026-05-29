@@ -92,7 +92,9 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildCreateDatabaseSql(String databaseName) {
-        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+        String quoted = buildWithQuotation(databaseName);
+        String escapedName = databaseName.replace("'", "''");
+        return "IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = N'" + escapedName + "') CREATE DATABASE " + quoted;
     }
 
     @Override
@@ -113,6 +115,17 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         String escapedTableName = tableName.replace("'", "''");
         return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NULL BEGIN " + createSql + " END";
+    }
+
+    @Override
+    public String buildDropTableSql(String tableName, boolean ifExists) {
+        String quoted = buildWithQuotation(tableName);
+        String dropSql = "DROP TABLE " + quoted;
+        if (!ifExists) {
+            return dropSql;
+        }
+        String escapedTableName = tableName.replace("'", "''");
+        return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NOT NULL " + dropSql;
     }
 
     @Override

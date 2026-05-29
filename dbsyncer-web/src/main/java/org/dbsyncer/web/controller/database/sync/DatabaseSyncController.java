@@ -64,7 +64,11 @@ public class DatabaseSyncController extends BaseController {
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
         model.put("connectors", connectorService.getConnectorAll());
-        if ("edit".equals(page)) {
+        if ("detail".equals(page)) {
+            Assert.hasText(id, "任务 ID 不能为空");
+            model.put("taskId", id);
+            model.put("taskList", databaseSyncService.getAll());
+        } else if ("edit".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
             model.put("task", task);
@@ -143,6 +147,17 @@ public class DatabaseSyncController extends BaseController {
     /**
      * 预览连接器下表列表（新增页树形选择，滚动分页；offset/limit 由前端传入）
      */
+    @PostMapping("/searchResult")
+    @ResponseBody
+    public RestResult searchResult(HttpServletRequest request) {
+        try {
+            return RestResult.restSuccess(databaseSyncService.searchResult(getParams(request)));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
     @PostMapping("/previewTables")
     @ResponseBody
     public RestResult previewTables(HttpServletRequest request) {

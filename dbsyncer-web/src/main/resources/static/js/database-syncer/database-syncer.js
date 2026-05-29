@@ -47,6 +47,20 @@
         return page.mode === 'edit';
     }
 
+    function getConnectorTypeBySelect(selectId, connectorId) {
+        if (!connectorId) {
+            return '';
+        }
+        const text = $('#' + selectId + ' option[value="' + connectorId + '"]').text() || '';
+        const match = text.match(/\(([^()]+)\)\s*$/);
+        return match && match[1] ? match[1].trim() : '';
+    }
+
+    function isOracleSourceConnector() {
+        const connectorType = getConnectorTypeBySelect('sourceConnectorId', state.source.connectorId);
+        return connectorType.toLowerCase() === 'oracle';
+    }
+
     function onDBChange(connectorId, schemaSelect, dbName) {
         if (!connectorId) {
             schemaSelect.setData([]);
@@ -529,12 +543,26 @@
                 + '<span class="mapping-card-label">源库</span>'
                 + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
                 + escapeHtml(block.sourceDatabase || '') + '</span></div>'
+                + (block.sourceSchema
+                    ? ('<div class="mapping-card-row">'
+                        + '<span class="mapping-card-label">源Schema</span>'
+                        + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceSchema || '') + '">'
+                        + escapeHtml(block.sourceSchema || '') + '</span></div>')
+                    : '')
                 + '<div class="mapping-card-row">'
                 + '<span class="mapping-card-label">目标</span>'
                 + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
                 + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
                 + (isReadOnly() ? ' readonly' : '') + '/>'
                 + '</div>'
+                + (block.sourceSchema
+                    ? ('<div class="mapping-card-row">'
+                        + '<span class="mapping-card-label">目标Schema</span>'
+                        + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-schema"'
+                        + ' data-index="' + idx + '" value="' + escapeHtml(block.targetSchema || '') + '"'
+                        + (isReadOnly() ? ' readonly' : '') + '/>'
+                        + '</div>')
+                    : '')
                 + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>'
                 + '</div>';
         });
@@ -545,7 +573,7 @@
 
     function bindMappingSidebarEvents() {
         $('#mappingCardList .mapping-card').off('click.selectCard').on('click.selectCard', function (e) {
-            if ($(e.target).closest('.mapping-card-remove, .mapping-card-tgt-db').length) {
+            if ($(e.target).closest('.mapping-card-remove, .mapping-card-tgt-db, .mapping-card-tgt-schema').length) {
                 return;
             }
             const idx = Number($(this).data('index'));
@@ -577,6 +605,15 @@
                 return;
             }
             state.mappings[idx].targetDatabase = $(this).val();
+            syncMappingsJson();
+        });
+
+        $('.mapping-card-tgt-schema').off('change.cardTgtSchema').on('change.cardTgtSchema', function () {
+            const idx = Number($(this).data('index'));
+            if (!state.mappings[idx]) {
+                return;
+            }
+            state.mappings[idx].targetSchema = $(this).val();
             syncMappingsJson();
         });
     }
@@ -740,8 +777,9 @@
             bootGrowl('请先选择源端、目标端连接器', 'warning');
             return;
         }
-        if (!state.source.database) {
-            bootGrowl('请先选择源库', 'warning');
+        const sourceIsOracle = isOracleSourceConnector();
+        if (!state.source.database && !(sourceIsOracle && state.source.schema)) {
+            bootGrowl(sourceIsOracle ? '请先选择源 Schema' : '请先选择源库', 'warning');
             return;
         }
         if (!sourceTables.length) {
@@ -751,6 +789,7 @@
         const sourceDb = state.source.database;
         const sourceSchema = state.source.schema || '';
         const defaultTargetDb = sourceDb;
+        const defaultTargetSchema = sourceSchema;
         const existIdx = findMappingIndex(sourceDb, sourceSchema);
         const newRows = sourceTables.map(function (srcName) {
             return { sourceTable: srcName, targetTable: srcName };
@@ -772,6 +811,7 @@
                 sourceDatabase: sourceDb,
                 sourceSchema: sourceSchema,
                 targetDatabase: defaultTargetDb,
+                targetSchema: defaultTargetSchema,
                 tableMappings: newRows
             });
             state.activeMappingIndex = state.mappings.length - 1;

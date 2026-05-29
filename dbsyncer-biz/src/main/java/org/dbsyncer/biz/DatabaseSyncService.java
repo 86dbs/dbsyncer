@@ -6,6 +6,7 @@ package org.dbsyncer.biz;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.common.model.Paging;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -80,4 +81,14 @@ public interface DatabaseSyncService {
      * @return 分页数据及类型统计
      */
     Map<String, Object> previewTables(Map<String, String> params);
+
+    /**
+     * 全部任务（详情页任务下拉）
+     */
+    List<DatabaseSyncTaskVO> getAll();
+
+    /**
+     * 分页查询迁移结果明细
+     */
+    Paging searchResult(Map<String, String> params);
 }

@@ -213,7 +213,8 @@
 .mapping-card-label {
   flex-shrink: 0;
   color: var(--text-tertiary);
-  width: 36px;
+  width: 90px;
+  white-space: nowrap;
 }
 
 .mapping-card-value {
