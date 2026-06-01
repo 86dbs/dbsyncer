@@ -76,7 +76,7 @@ public final class DatabaseMigrationProgressComputer {
         }
         int count = 0;
         for (DatabaseMapping mapping : task.getDatabaseMappings()) {
-            if (mapping != null && StringUtil.isNotBlank(mapping.getTargetDatabase())) {
+            if (mapping != null && hasTargetNamespace(mapping)) {
                 count++;
             }
         }
@@ -118,5 +118,10 @@ public final class DatabaseMigrationProgressComputer {
 
     private static boolean isStepDone(int status) {
         return MigrationStepStatusEnum.isDone(status);
+    }
+
+    private static boolean hasTargetNamespace(DatabaseMapping mapping) {
+        return StringUtil.isNotBlank(mapping.getTargetDatabase())
+                || StringUtil.isNotBlank(mapping.getTargetSchema());
     }
 }
