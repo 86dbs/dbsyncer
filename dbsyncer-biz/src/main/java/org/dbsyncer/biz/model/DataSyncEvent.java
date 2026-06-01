@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.biz.model;
 
-import java.util.List;
-
 /**
  * @author 穿云
  * @version 1.0.0
@@ -20,7 +18,7 @@ public class DataSyncEvent {
     /**
      * 变更的行数据
      */
-    private List<Object> data;
+    private Object data;
 
     public String getEvent() {
         return event;
@@ -30,11 +28,11 @@ public class DataSyncEvent {
         this.event = event;
     }
 
-    public List<Object> getData() {
+    public Object getData() {
         return data;
     }
 
-    public void setData(List<Object> data) {
+    public void setData(Object data) {
         this.data = data;
     }
 }
