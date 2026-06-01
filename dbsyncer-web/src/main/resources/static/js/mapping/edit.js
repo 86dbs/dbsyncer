@@ -179,6 +179,10 @@ $(function () {
                 $btn.html(originalText).prop('disabled', false);
                 if (response.success === true) {
                     bootGrowl("保存成功!", "success");
+                    const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
+                    const raw = JSON.parse(rawStr);
+                    raw.pageNum = 1;
+                    localStorage.setItem('dbsyncer.pagination.mapping-list', JSON.stringify(raw));
                     // 返回到默认主页
                     backIndexPage();
                 } else {
