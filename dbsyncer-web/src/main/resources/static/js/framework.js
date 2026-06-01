@@ -715,20 +715,10 @@ function refreshLicense() {
     // 刷新授权信息
     doGetter("/license/query.json", {}, function (response) {
         if (response.success === true) {
-            const $validateMenu = $('.sidebar-item[url="/validate-sync/list"]');
-            // 社区版
-            if (response.data.edition === "community") {
-                $validateMenu.addClass("hidden");
-                return;
-            }
             $("#licenseInfo").show();
-            // 专业版
             const licenseInfo = response.data;
             const $content = $("#effectiveContent");
             const $editionName = $("#editionName");
-            if (licenseInfo["edition"] !== "community") {
-                $validateMenu.removeClass("hidden");
-            }
 
             const $effectiveTime = licenseInfo.effectiveTime;
             if ($effectiveTime <= 0) {
