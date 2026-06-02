@@ -25,6 +25,7 @@ public class DatabaseMigrationDetailResult {
     private Long sourceTotal;
     private long successTotal;
     private long failTotal;
+    private String content;
 
     public static DatabaseMigrationDetailResult of(DatabaseMigrationDetailTypeEnum type, int tableIndex) {
         DatabaseMigrationDetailResult result = new DatabaseMigrationDetailResult();
@@ -73,6 +74,11 @@ public class DatabaseMigrationDetailResult {
         return this;
     }
 
+    public DatabaseMigrationDetailResult content(String content) {
+        this.content = content;
+        return this;
+    }
+
     public DatabaseMigrationDetailTypeEnum getType() {
         return type;
     }
@@ -115,5 +121,9 @@ public class DatabaseMigrationDetailResult {
 
     public long getFailTotal() {
         return failTotal;
+    }
+
+    public String getContent() {
+        return content;
     }
 }

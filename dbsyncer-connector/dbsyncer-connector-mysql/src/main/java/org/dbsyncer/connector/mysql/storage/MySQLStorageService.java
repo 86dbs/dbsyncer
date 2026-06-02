@@ -427,7 +427,7 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE,
                 ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE,
                 ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL,
-                ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL,
+                ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, ConfigConstant.TASK_CONTENT,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> databaseSyncDetailFields = builder.getFields();
 

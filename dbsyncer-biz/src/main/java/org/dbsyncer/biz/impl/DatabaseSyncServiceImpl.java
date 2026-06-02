@@ -410,6 +410,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fields.add(ConfigConstant.TASK_SOURCE_TOTAL);
         fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
         fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        fields.add(ConfigConstant.TASK_CONTENT);
         fields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         fields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
         return fields;

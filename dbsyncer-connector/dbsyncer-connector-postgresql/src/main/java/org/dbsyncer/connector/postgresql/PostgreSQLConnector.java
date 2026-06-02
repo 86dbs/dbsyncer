@@ -87,7 +87,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         if (StringUtil.isBlank(databaseName)) {
             return StringUtil.EMPTY;
         }
-        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
     }
 
     @Override
@@ -112,9 +112,9 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     public String buildDropTableSql(String tableName, boolean ifExists) {
         String quoted = buildWithQuotation(tableName);
         if (ifExists) {
-            return "DROP TABLE IF EXISTS " + quoted;
+            return "DROP TABLE IF EXISTS " + quoted + " CASCADE";
         }
-        return "DROP TABLE " + quoted;
+        return "DROP TABLE " + quoted + " CASCADE";
     }
 
     @Override

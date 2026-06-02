@@ -38,11 +38,24 @@
                 <th>成功数</th>
                 <th>失败数</th>
                 <th>更新时间</th>
+                <th style="width: 100px;">操作</th>
             </tr>
             </thead>
             <tbody id="detail-result-table"></tbody>
         </table>
         <div class="blank-block"></div>
+    </div>
+</div>
+
+<div id="migrationDetailOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:var(--z-modal-backdrop, 1040);">
+    <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:8px; width:min(980px, 92vw); max-height:80vh; display:flex; flex-direction:column; z-index:var(--z-modal, 1050);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee;">
+            <h4 style="margin:0; font-size:16px;">错误详情</h4>
+            <button type="button" id="closeMigrationDetailBtn" class="btn btn-outline btn-sm">关闭</button>
+        </div>
+        <div style="padding:16px; overflow:auto;">
+            <pre id="migrationDetailContent" style="margin:0; white-space:pre-wrap; word-break:break-word; background:#f7f7f8; border:1px solid #eee; border-radius:6px; padding:12px;"></pre>
+        </div>
     </div>
 </div>
 
@@ -99,6 +112,29 @@
             return '<span class="badge badge-success">0</span>';
         }
 
+        function closeMigrationDetail() {
+            $('#migrationDetailOverlay').hide();
+            $('#migrationDetailContent').text('');
+        }
+
+        window.showMigrationDetail = function (encodedContent) {
+            var text = '';
+            try {
+                text = decodeURIComponent(encodedContent || '');
+            } catch (e) {
+                text = encodedContent || '';
+            }
+            $('#migrationDetailContent').text(text || '暂无错误详情');
+            $('#migrationDetailOverlay').show();
+        };
+
+        $('#closeMigrationDetailBtn').on('click', closeMigrationDetail);
+        $('#migrationDetailOverlay').on('click', function (e) {
+            if (e.target === this) {
+                closeMigrationDetail();
+            }
+        });
+
         var resultPagination = new PaginationManager({
             requestUrl: '/database-syncer/searchResult',
             tableBodySelector: '#detail-result-table',
@@ -111,6 +147,7 @@
                 if (sourceTotal === undefined || sourceTotal === null || sourceTotal === '') {
                     sourceTotal = typeCode === 'rowData' ? '-' : '<span class="text-gray-400">-</span>';
                 }
+                var encodedContent = encodeURIComponent(row.content || '');
                 return '<tr>'
                     + '<td>' + index + '</td>'
                     + '<td><span class="badge ' + badgeClass + '">' + escapeHtml(typeText) + '</span></td>'
@@ -122,9 +159,10 @@
                     + '<td>' + (row.successTotal != null ? row.successTotal : '-') + '</td>'
                     + '<td>' + formatFailTotal(row.failTotal) + '</td>'
                     + '<td>' + formatDate(row.updateTime || '') + '</td>'
+                    + '<td><button type="button" class="btn btn-link p-0" onclick="showMigrationDetail(\'' + encodedContent + '\')">查看详情</button></td>'
                     + '</tr>';
             },
-            emptyHtml: '<td colspan="10" class="text-center"><i class="fa fa-database empty-icon"></i>'
+            emptyHtml: '<td colspan="11" class="text-center"><i class="fa fa-database empty-icon"></i>'
                 + '<p class="empty-text">暂无迁移结果</p>'
                 + '<p class="empty-description">任务执行完成后将在此展示各表迁移明细</p></td>'
         });
