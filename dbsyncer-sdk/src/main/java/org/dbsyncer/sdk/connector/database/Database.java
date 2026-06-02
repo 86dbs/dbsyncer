@@ -42,7 +42,7 @@ public interface Database {
     /**
      * 生成创建数据库（或同级命名空间）的 DDL；已存在时不报错（各库方言由连接器覆盖）。
      */
-    default String buildCreateDatabaseSql(String databaseName) {
+    default String buildCreateDatabaseSql(String databaseName, String schemaName) {
         if (StringUtil.isBlank(databaseName)) {
             return StringUtil.EMPTY;
         }
@@ -50,9 +50,12 @@ public interface Database {
     }
 
     /**
-     * 判断数据库（或同级命名空间）是否存在。
+     * 判断目标命名空间是否存在（库名 + Schema 由连接器方言解释）。
      */
-    default boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+    default boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
         return false;
     }
 
@@ -65,6 +68,13 @@ public interface Database {
             return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
         }
         return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    /**
+     * 从源库获取建表 DDL（支持时返回完整 CREATE TABLE 语句，不支持返回空串）。
+     */
+    default String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+        return StringUtil.EMPTY;
     }
 
     /**

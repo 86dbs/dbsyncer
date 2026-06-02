@@ -83,12 +83,15 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateDatabaseSql(String databaseName) {
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
         return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
     }
 
     @Override
-    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
         if (StringUtil.isBlank(databaseName)) {
             return false;
         }
@@ -112,6 +115,11 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
             return "DROP TABLE IF EXISTS " + quoted;
         }
         return "DROP TABLE " + quoted;
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+        return null;
     }
 
     @Override
