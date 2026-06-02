@@ -9,7 +9,6 @@ import org.dbsyncer.sdk.enums.MigrationStepStatusEnum;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -88,11 +87,9 @@ public final class DatabaseMigrationProgressComputer {
         if (CollectionUtils.isEmpty(snapshots)) {
             return 0;
         }
-        int minIndex = snapshots.keySet().stream().min(Comparator.naturalOrder()).orElse(0);
-        long doneInMap = snapshots.values().stream()
+        return snapshots.values().stream()
                 .filter(s -> s != null && isStepDone(s.getStatus()))
                 .count();
-        return Math.max(0, minIndex - 1L) + doneInMap;
     }
 
     private static long countCompletedTableSteps(DatabaseMigrationSyncTask task, int stepsPerTable) {
@@ -100,7 +97,6 @@ public final class DatabaseMigrationProgressComputer {
         if (CollectionUtils.isEmpty(snapshots) || stepsPerTable == 0) {
             return 0;
         }
-        int minIndex = snapshots.keySet().stream().min(Comparator.naturalOrder()).orElse(0);
         long doneInMap = 0;
         for (DatabaseMigrationTableSnapshot snapshot : snapshots.values()) {
             if (snapshot == null) {
@@ -113,7 +109,7 @@ public final class DatabaseMigrationProgressComputer {
                 doneInMap++;
             }
         }
-        return Math.max(0, (long) (minIndex - 1) * stepsPerTable) + doneInMap;
+        return doneInMap;
     }
 
     private static boolean isStepDone(int status) {
