@@ -38,7 +38,7 @@
                 <th>成功数</th>
                 <th>失败数</th>
                 <th>更新时间</th>
-                <th style="width: 100px;">操作</th>
+                <th style="width: 100px;">查看详情</th>
             </tr>
             </thead>
             <tbody id="detail-result-table"></tbody>
@@ -139,6 +139,10 @@
             requestUrl: '/database-syncer/searchResult',
             tableBodySelector: '#detail-result-table',
             params: { taskId: currentTaskId },
+            pageSize: 10,
+            customPageSize: true,
+            customPageSizeItems: [5, 10, 20, 50, 100, 200],
+            storageKey: 'database-syncer-detail',
             renderRow: function (row, index) {
                 var typeCode = row.type || '';
                 var badgeClass = typeBadgeMap[typeCode] || 'badge-info';
@@ -159,7 +163,7 @@
                     + '<td>' + (row.successTotal != null ? row.successTotal : '-') + '</td>'
                     + '<td>' + formatFailTotal(row.failTotal) + '</td>'
                     + '<td>' + formatDate(row.updateTime || '') + '</td>'
-                    + '<td><button type="button" class="btn btn-link p-0" onclick="showMigrationDetail(\'' + encodedContent + '\')">查看详情</button></td>'
+                    + '<td><button type="button" class="table-action-btn view diff-detail-btn" title="查看详情"  onclick="showMigrationDetail(\'' + encodedContent + '\')"><i class="fa fa-eye"></i></button></td>'
                     + '</tr>';
             },
             emptyHtml: '<td colspan="11" class="text-center"><i class="fa fa-database empty-icon"></i>'
