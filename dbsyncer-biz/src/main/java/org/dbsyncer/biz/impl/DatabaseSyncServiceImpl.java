@@ -113,6 +113,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setSourceConnectorId(sourceConnectorId);
         task.setTargetConnectorId(targetConnectorId);
         task.setDatabaseMappings(mappings);
+        clearTableGroups(task.getId());
 
         String taskId = taskService.add(task);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
@@ -137,6 +138,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setSourceConnectorId(params.get("sourceConnectorId"));
         task.setTargetConnectorId(params.get("targetConnectorId"));
         task.setDatabaseMappings(mappings);
+        clearTableGroups(task.getId());
         return taskService.edit(task);
     }
 
@@ -144,6 +146,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
         assertNotRunning(id);
+        clearTableGroups(id);
         taskService.delete(id);
         return "删除成功";
     }
@@ -208,6 +211,19 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
         query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
         query.addFilter(ConfigConstant.TASK_ID, taskId);
+
+        String detailType = StringUtil.trimToEmpty(params.get("detailType"));
+        if (StringUtil.isNotBlank(detailType)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, detailType);
+        }
+
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        if ("success".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.EQUAL, 0);
+        } else if ("fail".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.GT, 0);
+        }
+
         query.setSelectFlied(getMigrationDetailSelect());
         query.addOrderBy(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, SortEnum.DESC);
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
@@ -361,6 +377,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
     }
 
+    private void clearTableGroups(String taskId) {
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(taskId);
+        if (CollectionUtils.isEmpty(tableGroups)) {
+            return;
+        }
+        tableGroups.forEach(group -> profileComponent.removeTableGroup(group.getId()));
+    }
+
     private DatabaseSyncTaskVO convertTask2Vo(DatabaseMigrationSyncTask task) {
         if (task == null) {
             return null;
@@ -410,6 +434,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fields.add(ConfigConstant.TASK_SOURCE_TOTAL);
         fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
         fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        fields.add(ConfigConstant.TASK_CONTENT);
         fields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         fields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
         return fields;

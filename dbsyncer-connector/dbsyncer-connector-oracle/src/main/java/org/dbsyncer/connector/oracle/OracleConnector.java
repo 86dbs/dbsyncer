@@ -25,7 +25,9 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,35 +79,28 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     /**
-     * Oracle 无 database 概念，迁移任务中的 databaseName 即 schema（用户）名。
+     * Oracle 以 schema（用户）为迁移命名空间；优先 {@code schemaName}，兼容仅填 {@code databaseName} 的旧数据。
      */
     @Override
-    public String buildCreateDatabaseSql(String schemaName) {
-        if (StringUtil.isBlank(schemaName)) {
-            return StringUtil.EMPTY;
-        }
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
         String user = schemaName.trim().toUpperCase(Locale.ROOT);
-        String escapedUser = escapeOracleLiteral(user);
-        String escapedPassword = escapeOracleLiteral(defaultSchemaPassword(user));
-        String createUserSql = "CREATE USER " + user + " IDENTIFIED BY \"" + escapedPassword + "\" " +
+        String password = defaultSchemaPassword(user);
+        String createUserSql = "CREATE USER " + user + " IDENTIFIED BY \"" + password + "\" " +
                 "DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS";
         String grantSql = "GRANT CONNECT, RESOURCE TO " + user;
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM ALL_USERS WHERE USERNAME = '" + escapedUser + "'; " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_USERS WHERE USERNAME = '" + user + "'; " +
                 "IF v_cnt = 0 THEN " +
-                "EXECUTE IMMEDIATE '" + escapeOracleLiteral(createUserSql) + "'; " +
-                "EXECUTE IMMEDIATE '" + escapeOracleLiteral(grantSql) + "'; " +
+                "EXECUTE IMMEDIATE '" + createUserSql + "'; " +
+                "EXECUTE IMMEDIATE '" + grantSql + "'; " +
                 "END IF; END;";
     }
 
     /**
-     * 判断 schema（用户）是否存在。
+     * 判断 schema（用户）是否存在；优先 {@code schemaName}，兼容仅填 {@code databaseName} 的旧数据。
      */
     @Override
-    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String schemaName) {
-        if (StringUtil.isBlank(schemaName)) {
-            return false;
-        }
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
         Integer count = connectorInstance.execute(databaseTemplate ->
                 databaseTemplate.queryForObject(
                         "SELECT COUNT(1) FROM ALL_USERS WHERE USERNAME = UPPER(?)",
@@ -116,11 +111,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     private static String defaultSchemaPassword(String schemaName) {
-        return schemaName + "_DBSYNCER1";
-    }
-
-    private static String escapeOracleLiteral(String value) {
-        return value.replace("'", "''");
+        return schemaName + "@1234";
     }
 
     @Override
@@ -130,11 +121,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
             return createSql;
         }
         String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
-        String escapedName = upper.replace("'", "''");
-        String escapedCreateSql = createSql.replace("'", "''");
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + escapedName + "'; " +
-                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; " +
+                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
+                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + createSql + "'; END IF; " +
                 "END;";
     }
 
@@ -146,12 +135,57 @@ public final class OracleConnector extends AbstractDatabaseConnector {
             return dropSql;
         }
         String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
-        String escapedName = upper.replace("'", "''");
-        String escapedDropSql = dropSql.replace("'", "''");
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + escapedName + "'; " +
-                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; " +
+                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
+                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + dropSql + "'; END IF; " +
                 "END;";
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            String schema = connectorInstance.getSchema();
+            try {
+                String ddl = databaseTemplate.queryForObject(
+                        "SELECT DBMS_METADATA.GET_DDL('TABLE', ?, ?) FROM DUAL",
+                        (ResultSet rs, int rowNum) -> {
+                            Clob clob = rs.getClob(1);
+                            if (clob == null || clob.length() == 0) {
+                                return StringUtil.EMPTY;
+                            }
+                            return clob.getSubString(1, (int) clob.length());
+                        },
+                        tableName, schema);
+                if (StringUtil.isBlank(ddl)) {
+                    return StringUtil.EMPTY;
+                }
+                ddl = ddl.trim();
+
+                //去掉 schema 前缀
+                String quotedSchema = "\"" + schema + "\"";
+                ddl = ddl.replace(quotedSchema + ".", "");
+
+                if (ddl.endsWith(";")) {
+                    ddl = ddl.substring(0, ddl.length() - 1).trim();
+                }
+                if (!ifNotExists) {
+                    return ddl;
+                }
+                return "DECLARE v_cnt NUMBER := 0; BEGIN "
+                        + "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableName + "'; "
+                        + "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapeForExecuteImmediate(ddl) + "'; END IF; "
+                        + "END;";
+            } catch (Exception e) {
+                String msg = e.getMessage();
+                if (msg != null && msg.contains("ORA-31603")) {
+                    return StringUtil.EMPTY;
+                }
+                throw new RuntimeException("Failed to get DDL for table: " + tableName, e);
+            }
+        });
     }
 
     @Override

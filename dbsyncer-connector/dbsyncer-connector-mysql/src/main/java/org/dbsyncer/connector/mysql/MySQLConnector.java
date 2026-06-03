@@ -99,12 +99,15 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateDatabaseSql(String databaseName) {
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
         return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
     }
 
     @Override
-    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
         if (StringUtil.isBlank(databaseName)) {
             return false;
         }
@@ -118,6 +121,40 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
         }
         return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        String sql = "SHOW CREATE TABLE " + buildWithQuotation(tableName);
+        return connectorInstance.execute(databaseTemplate -> {
+            List<java.util.Map<String, Object>> rows = databaseTemplate.queryForList(sql);
+            if (CollectionUtils.isEmpty(rows)) {
+                return StringUtil.EMPTY;
+            }
+            java.util.Map<String, Object> ddlRow = rows.get(0);
+            if (ddlRow == null || ddlRow.isEmpty()) {
+                return StringUtil.EMPTY;
+            }
+            String ddl = StringUtil.EMPTY;
+            for (java.util.Map.Entry<String, Object> entry : ddlRow.entrySet()) {
+                // 获取 create table 不区分大消息
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("create table")
+                        && entry.getValue() != null) {
+                    ddl = String.valueOf(entry.getValue());
+                    break;
+                }
+            }
+            if (StringUtil.isBlank(ddl)) {
+                return StringUtil.EMPTY;
+            }
+            if (ifNotExists) {
+                return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
+            }
+            return ddl;
+        });
     }
 
     @Override

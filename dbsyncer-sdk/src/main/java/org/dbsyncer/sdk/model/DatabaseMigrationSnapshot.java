@@ -8,7 +8,7 @@ import org.dbsyncer.sdk.enums.MigrationStepStatusEnum;
 import java.io.Serializable;
 
 /**
- * 库级迁移快照（按 {@link DatabaseMapping#index} 索引）。
+ * 库级迁移快照（按 {@link DatabaseMapping} 索引）。
  * <p>记录目标库/Schema 创建进度，状态见 {@link MigrationStepStatusEnum}。</p>
  *
  * @author wuji

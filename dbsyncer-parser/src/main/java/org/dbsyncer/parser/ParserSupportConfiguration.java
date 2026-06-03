@@ -48,7 +48,7 @@ public class ParserSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = {"serviceFactory", "dataBaseSyncerDetailService"})
+    @DependsOn(value = "serviceFactory")
     public TaskService taskService() {
         TaskService taskService = serviceFactory.get(TaskService.class);
         if (taskService != null) {
@@ -109,9 +109,6 @@ public class ParserSupportConfiguration {
         };
     }
 
-    /**
-     * 商业版由 {@code DatabaseSyncDetailServiceImpl} 经 {@code ServiceFactory} 注册；此处仅提供开源空实现。
-     */
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")

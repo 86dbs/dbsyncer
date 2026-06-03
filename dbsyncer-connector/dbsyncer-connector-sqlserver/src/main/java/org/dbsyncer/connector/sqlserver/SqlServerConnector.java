@@ -91,14 +91,17 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateDatabaseSql(String databaseName) {
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
         String quoted = buildWithQuotation(databaseName);
         String escapedName = databaseName.replace("'", "''");
         return "IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = N'" + escapedName + "') CREATE DATABASE " + quoted;
     }
 
     @Override
-    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName) {
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
         if (StringUtil.isBlank(databaseName)) {
             return false;
         }
@@ -126,6 +129,11 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         String escapedTableName = tableName.replace("'", "''");
         return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NOT NULL " + dropSql;
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+        return null;
     }
 
     @Override
