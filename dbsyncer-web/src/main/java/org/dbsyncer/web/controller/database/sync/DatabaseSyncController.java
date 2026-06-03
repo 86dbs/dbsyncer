@@ -62,12 +62,16 @@ public class DatabaseSyncController extends BaseController {
      * 任务子页面（与订正校验一致：/page/{page}?id=xxx）
      */
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
+                      @RequestParam(value = "detailStatus", required = false) String detailStatus,
+                      @RequestParam(value = "detailType", required = false) String detailType) {
         model.put("connectors", connectorService.getConnectorAll());
         if ("detail".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
             model.put("taskId", id);
             model.put("taskList", databaseSyncService.getAll());
+            model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
+            model.put("detailType", detailType == null ? "" : detailType.trim());
         } else if ("edit".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);

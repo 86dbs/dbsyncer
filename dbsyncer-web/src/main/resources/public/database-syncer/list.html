@@ -150,6 +150,7 @@
         if (isNaN(n) || n < 0) {
             n = 0;
         }
+        var taskId = String(task.id || '').replace(/'/g, '');
         var isRunning = Number(task.status) === 1;
         var progressRaw = task.progress;
         if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
@@ -182,7 +183,9 @@
         }
 
         var left = (n > 0)
-            ? ('异常：<span class="badge badge-error">' + n + '</span>')
+            ? ('异常：<a href="javascript:void(0)" class="hover:underline cursor-pointer" title="查看失败迁移结果" '
+                + 'onclick="doLoader(\'/database-syncer/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
+                + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
         var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
         return ''

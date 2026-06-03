@@ -211,6 +211,19 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
         query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
         query.addFilter(ConfigConstant.TASK_ID, taskId);
+
+        String detailType = StringUtil.trimToEmpty(params.get("detailType"));
+        if (StringUtil.isNotBlank(detailType)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, detailType);
+        }
+
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        if ("success".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.EQUAL, 0);
+        } else if ("fail".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.GT, 0);
+        }
+
         query.setSelectFlied(getMigrationDetailSelect());
         query.addOrderBy(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, SortEnum.DESC);
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
