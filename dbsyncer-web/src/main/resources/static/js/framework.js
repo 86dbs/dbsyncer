@@ -719,7 +719,12 @@ function refreshLicense() {
             const licenseInfo = response.data;
             const $content = $("#effectiveContent");
             const $editionName = $("#editionName");
-
+            const edition = licenseInfo.edition;
+            if (edition === "community") {
+                $editionName.text("社区版");
+                $content.text('');
+                return;
+            }
             const $effectiveTime = licenseInfo.effectiveTime;
             if ($effectiveTime <= 0) {
                 $content.text('未激活');
