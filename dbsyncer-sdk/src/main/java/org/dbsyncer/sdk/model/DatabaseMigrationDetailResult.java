@@ -6,8 +6,8 @@ package org.dbsyncer.sdk.model;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
 
 /**
- * 整库迁移单表阶段终态结果（落库 {@code dbsyncer_task_database_sync_detail}）。
- * <p>库表名与计数列由迁移执行器 {@code saveResult} 统一写入。</p>
+ * 整库迁移单表阶段终态结果
+ *
  *
  * @author wuji
  * @version 1.0.0

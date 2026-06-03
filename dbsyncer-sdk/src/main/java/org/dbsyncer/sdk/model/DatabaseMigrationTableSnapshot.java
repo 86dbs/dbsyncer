@@ -19,14 +19,24 @@ public class DatabaseMigrationTableSnapshot implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 结构迁移状态，见 {@link MigrationStepStatusEnum} */
+    /**
+     * 结构迁移状态，见 {@link MigrationStepStatusEnum}
+     */
     private int schemaStatus;
 
-    /** 数据迁移分页游标（页码，从 1 开始） */
+    /**
+     * 数据迁移分页游标（页码，从 1 开始）
+     */
     private long dataCursor;
 
-    /** 数据迁移状态，见 {@link MigrationStepStatusEnum} */
+    /**
+     * 数据迁移状态，见 {@link MigrationStepStatusEnum}
+     */
     private int dataStatus;
+
+    private long successTotal;
+
+    private long failTotal;
 
     public DatabaseMigrationTableSnapshot() {
     }
@@ -67,6 +77,22 @@ public class DatabaseMigrationTableSnapshot implements Serializable {
 
     public void setDataStatus(MigrationStepStatusEnum dataStatus) {
         this.dataStatus = dataStatus == null ? MigrationStepStatusEnum.PENDING.getCode() : dataStatus.getCode();
+    }
+
+    public long getSuccessTotal() {
+        return successTotal;
+    }
+
+    public void setSuccessTotal(long successTotal) {
+        this.successTotal = successTotal;
+    }
+
+    public long getFailTotal() {
+        return failTotal;
+    }
+
+    public void setFailTotal(long failTotal) {
+        this.failTotal = failTotal;
     }
 
     /**

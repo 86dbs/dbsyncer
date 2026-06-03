@@ -20,9 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class DatabaseMigrationProgressComputer {
 
-    private DatabaseMigrationProgressComputer() {
-    }
-
     /**
      * @param task           迁移任务
      * @param tableGroupSize 参与迁移的表映射总数（TableGroup 条数）
@@ -117,7 +114,6 @@ public final class DatabaseMigrationProgressComputer {
     }
 
     private static boolean hasTargetNamespace(DatabaseMapping mapping) {
-        return StringUtil.isNotBlank(mapping.getTargetDatabase())
-                || StringUtil.isNotBlank(mapping.getTargetSchema());
+        return StringUtil.isNotBlank(mapping.getTargetDatabase()) || StringUtil.isNotBlank(mapping.getTargetSchema());
     }
 }
