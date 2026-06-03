@@ -719,10 +719,8 @@ function refreshLicense() {
             const licenseInfo = response.data;
             const $content = $("#effectiveContent");
             const $editionName = $("#editionName");
-
-            const version= licenseInfo.edition;
-            console.log(version)
-            if (version === "community") {
+            const edition = licenseInfo.edition;
+            if (edition === "community") {
                 $editionName.text("社区版");
                 $content.text('');
                 return;
