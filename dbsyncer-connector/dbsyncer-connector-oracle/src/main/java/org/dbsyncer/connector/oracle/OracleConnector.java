@@ -25,7 +25,9 @@ import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -141,7 +143,49 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
-        return null;
+        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            String schema = connectorInstance.getSchema();
+            try {
+                String ddl = databaseTemplate.queryForObject(
+                        "SELECT DBMS_METADATA.GET_DDL('TABLE', ?, ?) FROM DUAL",
+                        (ResultSet rs, int rowNum) -> {
+                            Clob clob = rs.getClob(1);
+                            if (clob == null || clob.length() == 0) {
+                                return StringUtil.EMPTY;
+                            }
+                            return clob.getSubString(1, (int) clob.length());
+                        },
+                        tableName, schema);
+                if (StringUtil.isBlank(ddl)) {
+                    return StringUtil.EMPTY;
+                }
+                ddl = ddl.trim();
+
+                //去掉 schema 前缀
+                String quotedSchema = "\"" + schema + "\"";
+                ddl = ddl.replace(quotedSchema + ".", "");
+
+                if (ddl.endsWith(";")) {
+                    ddl = ddl.substring(0, ddl.length() - 1).trim();
+                }
+                if (!ifNotExists) {
+                    return ddl;
+                }
+                return "DECLARE v_cnt NUMBER := 0; BEGIN "
+                        + "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableName + "'; "
+                        + "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapeForExecuteImmediate(ddl) + "'; END IF; "
+                        + "END;";
+            } catch (Exception e) {
+                String msg = e.getMessage();
+                if (msg != null && msg.contains("ORA-31603")) {
+                    return StringUtil.EMPTY;
+                }
+                throw new RuntimeException("Failed to get DDL for table: " + tableName, e);
+            }
+        });
     }
 
     @Override
