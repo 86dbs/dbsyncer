@@ -2,8 +2,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+    <p class="text-secondary mb-6">
+        暂未开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+    <div class="mb-6">
+        <img width="383px" height="127px" draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
+    </div>
+</div>
+
 <!-- 查询订正校验列表 -->
-<div class="form-container">
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center">订正校验</h3>
     </div>
@@ -42,7 +59,7 @@
     </div>
 </div>
 
-<script>
+<script th:if="${editionInfo.edition ne 'community'}">
     function copyTask(id) {
         doPoster("/validate-sync/copy", { id: id }, function (response) {
             if (response.success) {
@@ -82,6 +99,10 @@
                 doPoster('/validate-sync/remove', {id: id}, function (response) {
                     if (response.success === true) {
                         bootGrowl("删除成功！", "success");
+                        const rawStr = localStorage.getItem("dbsyncer.pagination.validate-sync-list");
+                        const raw = JSON.parse(rawStr);
+                        raw.pageNum = 1;
+                        localStorage.setItem('dbsyncer.pagination.validate-sync-list', JSON.stringify(raw));
                         backIndexPage();
                     } else {
                         bootGrowl(response.message || "删除失败", "danger");

@@ -6,7 +6,9 @@ package org.dbsyncer.web.controller.validate.sync;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -41,11 +43,18 @@ public class ValidateSyncController extends BaseController {
     @Resource
     private TableGroupService tableGroupService;
 
+    @Resource
+    private LicenseService licenseService;
+
     /**
      * 任务配置首页
      */
     @RequestMapping("/list")
     public String index(ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
         return "validate-sync/list";
     }
 
