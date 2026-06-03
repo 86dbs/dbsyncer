@@ -21,7 +21,7 @@ import java.util.Objects;
  * @Version 1.0.0
  * @Date 2023-11-28 16:22
  */
-public class SQLiteConfigValidator extends AbstractDataBaseConfigValidator {
+public final class SQLiteConfigValidator extends AbstractDataBaseConfigValidator {
 
     @Override
     public void modify(AbstractDatabaseConnector connectorService, DatabaseConfig connectorConfig, Map<String, String> params) {

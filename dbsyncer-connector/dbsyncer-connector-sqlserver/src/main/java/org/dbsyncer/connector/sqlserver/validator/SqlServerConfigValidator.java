@@ -12,5 +12,5 @@ import org.dbsyncer.sdk.connector.AbstractDataBaseConfigValidator;
  * @Version 1.0.0
  * @Date 2023-11-25 23:10
  */
-public class SqlServerConfigValidator extends AbstractDataBaseConfigValidator {
+public final class SqlServerConfigValidator extends AbstractDataBaseConfigValidator {
 }
