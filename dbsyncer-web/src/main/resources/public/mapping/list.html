@@ -88,6 +88,10 @@ function deleteMapping(id) {
             doPoster('/mapping/remove', {id: id}, function (response) {
                 if (response.success === true) {
                     bootGrowl("删除成功！", "success");
+                    const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
+                    const raw = JSON.parse(rawStr);
+                    raw.pageNum = 1;
+                    localStorage.setItem('dbsyncer.pagination.mapping-list', JSON.stringify(raw));
                     backIndexPage();
                 } else {
                     bootGrowl(response.message || "删除失败", "danger");
