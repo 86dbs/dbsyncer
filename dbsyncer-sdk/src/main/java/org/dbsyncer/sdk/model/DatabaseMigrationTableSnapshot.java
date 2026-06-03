@@ -9,7 +9,7 @@ import java.io.Serializable;
 
 /**
  * 表级迁移快照（按表映射 index 索引）。
- * <p>整库迁移分结构、数据两阶段；数据阶段用 {@link #dataCursor} 断点续传。</p>
+ *
  *
  * @author wuji
  * @version 1.0.0
