@@ -113,6 +113,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setSourceConnectorId(sourceConnectorId);
         task.setTargetConnectorId(targetConnectorId);
         task.setDatabaseMappings(mappings);
+        clearTableGroups(task.getId());
 
         String taskId = taskService.add(task);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
@@ -137,6 +138,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setSourceConnectorId(params.get("sourceConnectorId"));
         task.setTargetConnectorId(params.get("targetConnectorId"));
         task.setDatabaseMappings(mappings);
+        clearTableGroups(task.getId());
         return taskService.edit(task);
     }
 
@@ -144,6 +146,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
         assertNotRunning(id);
+        clearTableGroups(id);
         taskService.delete(id);
         return "删除成功";
     }
@@ -359,6 +362,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (taskService.isRunning(taskId)) {
             throw new BizException("任务正在运行，请先停止");
         }
+    }
+
+    private void clearTableGroups(String taskId) {
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(taskId);
+        if (CollectionUtils.isEmpty(tableGroups)) {
+            return;
+        }
+        tableGroups.forEach(group -> profileComponent.removeTableGroup(group.getId()));
     }
 
     private DatabaseSyncTaskVO convertTask2Vo(DatabaseMigrationSyncTask task) {
