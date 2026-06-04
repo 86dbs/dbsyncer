@@ -29,11 +29,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.zendesk</groupId>
-            <artifactId>mysql-binlog-connector-java</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>provided</scope>
