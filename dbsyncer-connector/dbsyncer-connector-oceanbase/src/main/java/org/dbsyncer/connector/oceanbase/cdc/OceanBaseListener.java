@@ -3,74 +3,76 @@
  */
 package org.dbsyncer.connector.oceanbase.cdc;
 
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.RowsQueryEventData;
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.network.ServerException;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.alter.Alter;
+import com.oceanbase.clogproxy.client.LogProxyClient;
+import com.oceanbase.clogproxy.client.config.ClientConf;
+import com.oceanbase.clogproxy.client.config.ObReaderConfig;
+import com.oceanbase.clogproxy.client.exception.LogProxyClientException;
+import com.oceanbase.clogproxy.client.listener.RecordListener;
+import com.oceanbase.oms.logmessage.DataMessage;
+import com.oceanbase.oms.logmessage.LogMessage;
 import org.dbsyncer.common.QueueOverflowException;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oceanbase.OceanBaseException;
-import org.dbsyncer.connector.oceanbase.binlog.BinaryLogClient;
-import org.dbsyncer.connector.oceanbase.binlog.BinaryLogRemoteClient;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
-import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.listener.AbstractDatabaseListener;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.DDLChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.ChangedOffset;
-import org.dbsyncer.sdk.util.SqlParserUtil;
+import org.dbsyncer.sdk.model.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
- * @author AE86
+ * OceanBase 增量监听，基于 LogProxyClient
+ *
+ * @author 穿云
  * @version 1.0.0
- * @date 2026-06-04 00:20
+ * @date 2026-06-05 00:20
  */
 public class OceanBaseListener extends AbstractDatabaseListener {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String BINLOG_FILENAME = "fileName";
-    private final String BINLOG_POSITION = "position";
-    private final Map<Long, TableMapEventData> tables = new HashMap<>();
-    private BinaryLogClient client;
     private final Lock connectLock = new ReentrantLock();
+    private final List<LogMessage> logMessageBuffer = new LinkedList<>();
+    private final Map<String, Table> tableMap = new HashMap<>();
+
+    private volatile boolean running;
+    private LogProxyClient client;
+    private Worker worker;
+    private String safeTimestamp;
 
     @Override
     public void start() {
+        connectLock.lock();
         try {
-            connectLock.lock();
-            if (client != null && client.isConnected()) {
-                logger.error("OceanBaseExtractor is already started");
+            if (running) {
+                logger.warn("OceanBase LogProxy 监听器已启动");
                 return;
             }
-            run();
+            initTableMap();
+            running = true;
+            worker = new Worker();
+            worker.setName("oceanbase-logproxy-" + hashCode());
+            worker.setDaemon(false);
+            worker.start();
         } catch (Exception e) {
-            logger.error("启动失败:{}", e.getMessage());
+            running = false;
+            logger.error("启动 OceanBase LogProxy 监听器失败: {}", e.getMessage(), e);
             throw new OceanBaseException(e);
         } finally {
             connectLock.unlock();
@@ -79,13 +81,25 @@ public class OceanBaseListener extends AbstractDatabaseListener {
 
     @Override
     public void close() {
+        connectLock.lock();
         try {
-            connectLock.lock();
-            if (client != null && client.isConnected()) {
-                client.disconnect();
+            running = false;
+            if (client != null) {
+                try {
+                    client.stop();
+                } catch (Exception e) {
+                    logger.warn("停止 LogProxyClient 异常: {}", e.getMessage());
+                }
             }
-        } catch (Exception e) {
-            logger.error("关闭失败:{}", e.getMessage());
+            if (worker != null && worker.isAlive()) {
+                worker.interrupt();
+                try {
+                    worker.join(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            logMessageBuffer.clear();
         } finally {
             connectLock.unlock();
         }
@@ -93,81 +107,138 @@ public class OceanBaseListener extends AbstractDatabaseListener {
 
     @Override
     public Map<String, String> captureSnapshot() {
-        try {
-            final DatabaseConfig config = getConnectorInstance().getConfig();
-            BinaryLogRemoteClient captureClient = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
-            captureClient.connect();
-            refreshSnapshot(captureClient.getBinlogFilename(), captureClient.getBinlogPosition());
-            captureClient.disconnect();
-            Map<String, String> captured = new HashMap<>(2);
-            captured.put(BINLOG_FILENAME, snapshot.get(BINLOG_FILENAME));
-            captured.put(BINLOG_POSITION, snapshot.get(BINLOG_POSITION));
-            return captured;
-        } catch (Exception e) {
-            logger.error("捕获OceanBase binlog位点失败:{}", e.getMessage(), e);
-            return Collections.emptyMap();
-        }
+        Map<String, String> captured = new HashMap<>(1);
+        String timestamp = snapshot.get(OceanBaseCdcConstants.SNAPSHOT_TIMESTAMP);
+        captured.put(OceanBaseCdcConstants.SNAPSHOT_TIMESTAMP, StringUtil.isBlank(timestamp) ? "0" : timestamp);
+        return captured;
     }
 
     @Override
     public void refreshEvent(ChangedOffset offset) {
-        // 排除手动重试操作
-        if (StringUtil.isBlank(offset.getNextFileName()) && offset.getPosition() == null) {
+        if (offset.getPosition() != null) {
+            refreshSnapshot(String.valueOf(offset.getPosition()));
+        }
+    }
+
+    private void initTableMap() {
+        tableMap.clear();
+        if (CollectionUtils.isEmpty(sourceTable)) {
             return;
         }
-        refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
-    }
-
-    private void run() throws Exception {
-        final DatabaseConfig config = getConnectorInstance().getConfig();
-        boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
-        client = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
-        client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
-        client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
-        client.setTableMapEventByTableId(tables);
-        client.registerEventListener(new InnerEventListener());
-        client.registerLifecycleListener(new InnerLifecycleListener());
-
-        client.connect();
-
-        if (!containsPos) {
-            refreshSnapshot(client.getBinlogFilename(), client.getBinlogPosition());
-            super.forceFlushEvent();
+        for (Table table : sourceTable) {
+            if (filterTable.contains(table.getName())) {
+                tableMap.put(table.getName(), table);
+            }
         }
     }
 
-    private void refresh(EventHeader header) {
-        EventHeaderV4 eventHeaderV4 = (EventHeaderV4) header;
-        refresh(null, eventHeaderV4.getNextPosition());
+    private void runLogProxy() throws Exception {
+        DatabaseConfig config = getConnectorInstance().getConfig();
+        OceanBaseCdcConfig cdcConfig = new OceanBaseCdcConfig(config);
+        Assert.hasText(cdcConfig.getLogProxyHost(), "LogProxy 主机不能为空");
+        Assert.isTrue(cdcConfig.getLogProxyPort() > 0, "LogProxy 端口无效");
+
+        ObReaderConfig obReaderConfig = buildObReaderConfig(config, cdcConfig);
+        if (StringUtil.isNotBlank(safeTimestamp)) {
+            obReaderConfig.updateCheckpoint(safeTimestamp);
+        }
+
+        ClientConf clientConf = ClientConf.builder()
+                .transferQueueSize(1000)
+                .connectTimeoutMs(60000)
+                .ignoreUnknownRecordType(true)
+                .build();
+
+        client = new LogProxyClient(cdcConfig.getLogProxyHost(), cdcConfig.getLogProxyPort(), obReaderConfig, clientConf);
+        client.addListener(new InnerRecordListener());
+        client.start();
+        client.join();
     }
 
-    private void refresh(String binlogFilename, long nextPosition) {
-        if (StringUtil.isNotBlank(binlogFilename)) {
-            client.setBinlogFilename(binlogFilename);
+    private ObReaderConfig buildObReaderConfig(DatabaseConfig config, OceanBaseCdcConfig cdcConfig) throws Exception {
+        ObReaderConfig obReaderConfig = new ObReaderConfig();
+        String rsList = cdcConfig.getRsList();
+        if (StringUtil.isBlank(rsList)) {
+            rsList = queryRsList(config);
         }
-        if (0 < nextPosition) {
-            client.setBinlogPosition(nextPosition);
+        if (StringUtil.isNotBlank(rsList)) {
+            obReaderConfig.setRsList(rsList);
+        }
+        if (StringUtil.isNotBlank(cdcConfig.getConfigUrl())) {
+            obReaderConfig.setClusterUrl(cdcConfig.getConfigUrl());
+        }
+        obReaderConfig.setUsername(cdcConfig.resolveUsername());
+        obReaderConfig.setPassword(cdcConfig.getPassword());
+        if (StringUtil.isNotBlank(cdcConfig.getSysUsername())) {
+            obReaderConfig.setSysUsername(cdcConfig.getSysUsername());
+        }
+        if (StringUtil.isNotBlank(cdcConfig.getSysPassword())) {
+            obReaderConfig.setSysPassword(cdcConfig.getSysPassword());
+        }
+        obReaderConfig.setWorkingMode(cdcConfig.getWorkingMode());
+        obReaderConfig.setTimezone(cdcConfig.getTimezone());
+        obReaderConfig.setTableWhiteList(buildTableWhiteList(cdcConfig));
+        obReaderConfig.setStartTimestamp(parseStartTimestamp());
+        return obReaderConfig;
+    }
+
+    private long parseStartTimestamp() {
+        String timestamp = snapshot.get(OceanBaseCdcConstants.SNAPSHOT_TIMESTAMP);
+        if (StringUtil.isBlank(timestamp)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(timestamp);
+        } catch (NumberFormatException e) {
+            logger.warn("非法增量位点 timestamp={}, 将从当前位点开始", timestamp);
+            return 0L;
         }
     }
 
-    private void refreshSnapshot(String binlogFilename, long nextPosition) {
-        snapshot.put(BINLOG_FILENAME, binlogFilename);
-        snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
+    private String buildTableWhiteList(OceanBaseCdcConfig cdcConfig) {
+        Assert.hasText(cdcConfig.getTenantName(), "租户名称不能为空");
+        Assert.hasText(database, "数据库名不能为空");
+        if (CollectionUtils.isEmpty(filterTable)) {
+            return cdcConfig.getTenantName() + "." + database + ".*";
+        }
+        return filterTable.stream()
+                .map(table -> cdcConfig.getTenantName() + "." + database + "." + table)
+                .collect(Collectors.joining(";"));
+    }
+
+    private String queryRsList(DatabaseConfig config) {
+        try {
+            return getConnectorInstance().execute(databaseTemplate -> {
+                List<Map<String, Object>> rows = databaseTemplate.queryForList("SHOW PARAMETERS LIKE 'rootservice_list'");
+                if (CollectionUtils.isEmpty(rows)) {
+                    return null;
+                }
+                Map<String, Object> row = rows.get(0);
+                Object value = row.get("VALUE");
+                if (value == null) {
+                    value = row.get("value");
+                }
+                return value == null ? null : value.toString();
+            });
+        } catch (Exception e) {
+            logger.warn("自动查询 rootservice_list 失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void refreshSnapshot(String timestamp) {
+        snapshot.put(OceanBaseCdcConstants.SNAPSHOT_TIMESTAMP, timestamp);
+        safeTimestamp = timestamp;
     }
 
     private void trySendEvent(ChangedEvent event) {
         try {
-            // 如果消费事件失败，重试
-            while (client.isConnected()) {
+            while (running) {
                 try {
                     sendChangedEvent(event);
                     break;
                 } catch (QueueOverflowException e) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(1);
-                    } catch (InterruptedException ex) {
-                        logger.error(ex.getMessage(), ex);
-                    }
+                    TimeUnit.MILLISECONDS.sleep(1);
                 }
             }
         } catch (Exception e) {
@@ -175,160 +246,138 @@ public class OceanBaseListener extends AbstractDatabaseListener {
         }
     }
 
-    final class InnerLifecycleListener implements BinaryLogRemoteClient.LifecycleListener {
-
-        @Override
-        public void onConnect(BinaryLogRemoteClient client) {
-            // 记录binlog增量点
-            refresh(client.getBinlogFilename(), client.getBinlogPosition());
+    private void flushBuffer() {
+        List<LogMessage> messages = new ArrayList<>(logMessageBuffer);
+        logMessageBuffer.clear();
+        for (LogMessage message : messages) {
+            processLogMessage(message);
         }
-
-        @Override
-        public void onException(BinaryLogRemoteClient client, Exception e) {
-            if (!client.isConnected()) {
-                return;
-            }
-            if (e instanceof ServerException) {
-                ServerException serverException = (ServerException) e;
-                if (serverException.getErrorCode() == 1236) {
-                    String log = String.format("[%s]执行异常，建议重新保存驱动，再启动驱动。", client.getWorkerThreadName());
-                    errorEvent(new OceanBaseException(log + e.getMessage()));
-                    return;
-                }
-            }
-            errorEvent(new OceanBaseException(e.getMessage()));
-        }
-
-        @Override
-        public void onDisconnect(BinaryLogRemoteClient client) {
-        }
-
     }
 
-    final class InnerEventListener implements BinaryLogRemoteClient.EventListener {
+    private void processLogMessage(LogMessage message) {
+        DataMessage.Record.Type type = message.getOpt();
+        if (type == null) {
+            return;
+        }
+        String dbName = OceanBaseLogMessageParser.parseDatabaseName(message.getDbName());
+        String tableName = message.getTableName();
+        if (!isFilterTable(dbName, tableName)) {
+            return;
+        }
 
-        /**
-         * 只处理非dbs写入事件（单线程消费，不存在并发竞争）
-         */
-        private boolean notUniqueCodeEvent = true;
+        Table table = tableMap.get(tableName);
+        if (table == null) {
+            logger.warn("未找到表 {} 的列元数据，跳过事件 {}", tableName, type);
+            return;
+        }
+
+        String offset = message.getSafeTimestamp();
+        safeTimestamp = offset;
+        refreshSnapshot(offset);
+
+        switch (type) {
+            case INSERT:
+                dispatchRowEvent(tableName, ConnectorConstant.OPERTION_INSERT,
+                        OceanBaseLogMessageParser.toRowList(table.getColumn(), OceanBaseLogMessageParser.toValueMap(message, false)), offset);
+                break;
+            case UPDATE:
+                dispatchRowEvent(tableName, ConnectorConstant.OPERTION_UPDATE,
+                        OceanBaseLogMessageParser.toRowList(table.getColumn(), OceanBaseLogMessageParser.toValueMap(message, false)), offset);
+                break;
+            case DELETE:
+                dispatchRowEvent(tableName, ConnectorConstant.OPERTION_DELETE,
+                        OceanBaseLogMessageParser.toRowList(table.getColumn(), OceanBaseLogMessageParser.toValueMap(message, true)), offset);
+                break;
+            case DDL:
+                String ddl = OceanBaseLogMessageParser.readDdlSql(message);
+                if (StringUtil.isNotBlank(ddl)) {
+                    trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, ddl,
+                            OceanBaseCdcConstants.OFFSET_LABEL, offset));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void dispatchRowEvent(String tableName, String operation, List<Object> rowData, String offset) {
+        if (CollectionUtils.isEmpty(rowData)) {
+            return;
+        }
+        trySendEvent(new RowChangedEvent(tableName, operation, rowData, OceanBaseCdcConstants.OFFSET_LABEL, offset));
+    }
+
+    private boolean isFilterTable(String dbName, String tableName) {
+        return StringUtil.equalsIgnoreCase(database, dbName) && filterTable.contains(tableName);
+    }
+
+    final class InnerRecordListener implements RecordListener {
 
         @Override
-        public void onEvent(Event event) {
-            // ROTATE > FORMAT_DESCRIPTION > TABLE_MAP > WRITE_ROWS > UPDATE_ROWS > DELETE_ROWS > XID
-            EventHeader header = event.getHeader();
-            if (header.getEventType() == EventType.XID) {
-                refresh(header);
-                return;
-            }
-
-            if (header.getEventType() == EventType.ROWS_QUERY) {
-                RowsQueryEventData data = event.getData();
-                notUniqueCodeEvent = isNotUniqueCodeEvent(data.getQuery());
-                return;
-            }
-
-            if (notUniqueCodeEvent && EventType.isUpdate(header.getEventType())) {
-                refresh(header);
-                UpdateRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m-> {
-                        List<Object> after = Stream.of(m.getValue()).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_UPDATE, after, client.getBinlogFilename(), client.getBinlogPosition()));
-                    });
+        public void notify(LogMessage message) {
+            if (!running) {
+                if (client != null) {
+                    client.stop();
                 }
                 return;
             }
-            if (notUniqueCodeEvent && EventType.isWrite(header.getEventType())) {
-                refresh(header);
-                WriteRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m-> {
-                        List<Object> after = Stream.of(m).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_INSERT, after, client.getBinlogFilename(), client.getBinlogPosition()));
-                    });
-                }
+            if (message == null || message.getOpt() == null) {
                 return;
             }
-            if (notUniqueCodeEvent && EventType.isDelete(header.getEventType())) {
-                refresh(header);
-                DeleteRowsEventData data = event.getData();
-                if (isFilterTable(data.getTableId())) {
-                    data.getRows().forEach(m-> {
-                        List<Object> before = Stream.of(m).collect(Collectors.toList());
-                        trySendEvent(new RowChangedEvent(getTableName(data.getTableId()), ConnectorConstant.OPERTION_DELETE, before, client.getBinlogFilename(), client.getBinlogPosition()));
-                    });
-                }
-                return;
-            }
-
-            if (EventType.QUERY == header.getEventType()) {
-                refresh(header);
-                parseDDL(event.getData());
-                return;
-            }
-
-            // 切换binlog
-            if (header.getEventType() == EventType.ROTATE) {
-                RotateEventData data = event.getData();
-                refresh(data.getBinlogFilename(), data.getBinlogPosition());
+            switch (message.getOpt()) {
+                case HEARTBEAT:
+                case BEGIN:
+                    break;
+                case INSERT:
+                case UPDATE:
+                case DELETE:
+                    logMessageBuffer.add(message);
+                    break;
+                case COMMIT:
+                    flushBuffer();
+                    break;
+                case DDL:
+                    logMessageBuffer.add(message);
+                    flushBuffer();
+                    break;
+                default:
+                    logger.debug("忽略 LogProxy 事件类型: {}", message.getOpt());
+                    break;
             }
         }
 
-        private void parseDDL(QueryEventData data) {
-            if (isNotUniqueCodeEvent(data.getSql())) {
-                Statement statement = parseStatement(data.getSql());
-                if (statement instanceof Alter) {
-                    parseAlter(data, (Alter) statement);
-                }
+        @Override
+        public void onException(LogProxyClientException e) {
+            logger.error("LogProxyClient 异常: {}", e.getMessage(), e);
+            if (running) {
+                errorEvent(new OceanBaseException(e));
+            }
+            if (client != null) {
+                client.stop();
             }
         }
+    }
 
-        private Statement parseStatement(String sql) {
+    final class Worker extends Thread {
+
+        @Override
+        public void run() {
             try {
-                // skip BEGIN
-                if (!StringUtil.equalsIgnoreCase("BEGIN", sql)) {
-                    return SqlParserUtil.parse(sql);
+                runLogProxy();
+            } catch (Exception e) {
+                if (running) {
+                    logger.error("OceanBase LogProxy 监听线程异常: {}", e.getMessage(), e);
+                    errorEvent(new OceanBaseException(e));
                 }
-            } catch (JSQLParserException e) {
-                logger.warn("不支持的ddl:{}", sql);
-            }
-            return null;
-        }
-
-        private void parseAlter(QueryEventData data, Alter alter) {
-            // ALTER TABLE `test`.`my_user` MODIFY COLUMN `name` varchar(128) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL AFTER `id`
-            String tableName = StringUtil.replace(alter.getTable().getName(), StringUtil.BACK_QUOTE, StringUtil.EMPTY);
-            // databaseName 的取值不能为 QueryEventData#getDatabase, getDatabase 获取的是执行 SQL 语句时所在的数据库上下文,
-            // 不是 alter 语句修改的表所在的数据库
-            // 依次执行下面两条语句 use db1; alter table db2.my_user add column name varchar(128);
-            // data.getDatabase() 的值为 db1, 不是 db2, 必须从 alter 中获取 databaseName
-            String databaseName = alter.getTable().getSchemaName();
-            // alter 中没有 databaseName 说明是 alter table my_user xxx 这种格式, 直接在上下文中获取即可
-            if (StringUtil.isBlank(databaseName)) {
-                databaseName = data.getDatabase();
-            }
-            databaseName = StringUtil.replace(databaseName, StringUtil.BACK_QUOTE, StringUtil.EMPTY);
-            if (isFilterTable(databaseName, tableName)) {
-                trySendEvent(new DDLChangedEvent(tableName, ConnectorConstant.OPERTION_ALTER, data.getSql(), client.getBinlogFilename(), client.getBinlogPosition()));
+            } finally {
+                boolean hasTimestamp = snapshot.containsKey(OceanBaseCdcConstants.SNAPSHOT_TIMESTAMP);
+                if (!hasTimestamp && StringUtil.isNotBlank(safeTimestamp)) {
+                    refreshSnapshot(safeTimestamp);
+                }
+                if (hasTimestamp || StringUtil.isNotBlank(safeTimestamp)) {
+                    forceFlushEvent();
+                }
             }
         }
-
-        private String getTableName(long tableId) {
-            return tables.get(tableId).getTable();
-        }
-
-        private boolean isFilterTable(long tableId) {
-            final TableMapEventData tableMap = tables.get(tableId);
-            return isFilterTable(tableMap.getDatabase(), tableMap.getTable());
-        }
-
-        private boolean isFilterTable(String dbName, String tableName) {
-            return StringUtil.equalsIgnoreCase(database, dbName) && filterTable.contains(tableName);
-        }
-
-        private boolean isNotUniqueCodeEvent(String sql) {
-            return !StringUtil.startsWith(sql, DatabaseConstant.DBS_UNIQUE_CODE);
-        }
-
     }
 }

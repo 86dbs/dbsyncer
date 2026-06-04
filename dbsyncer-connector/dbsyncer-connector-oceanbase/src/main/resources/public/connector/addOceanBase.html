@@ -19,13 +19,39 @@
         <div class="form-item">
             <label class="form-label">用户名<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
-                <input class="form-control" name="username" type="text" maxlength="32" required placeholder="root" th:value="${connector?.config?.username}"/>
+                <input class="form-control" name="username" type="text" maxlength="64" required placeholder="root 或 root@tenant" th:value="${connector?.config?.username}"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">密码<strong class="text-primary">*</strong></label>
             <div class="form-control-area">
                 <input class="form-control" name="password" type="password" maxlength="64" required placeholder="请输入密码" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">租户名称<strong class="text-primary">*</strong>
+                <i class="fa fa-question-circle" title="OceanBase 租户名，CDC 订阅格式为 tenant.db.table；若用户名已包含 @tenant 可只填租户名用于白名单"></i>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="tenantName" type="text" maxlength="64" required placeholder="test_tenant"
+                       th:value="${connector?.config?.extInfo?.tenantName}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">LogProxy 主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="logProxyHost" type="text" maxlength="100" required placeholder="127.0.0.1"
+                       th:value="${connector?.config?.extInfo?.logProxyHost}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">LogProxy 端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="logProxyPort" type="number" required min="1" max="65535" placeholder="2983"
+                       th:value="${connector?.config?.extInfo?.logProxyPort}?: '2983'"/>
             </div>
         </div>
 
@@ -50,6 +76,57 @@
             <div class="form-control-area">
                 <input class="form-control" readonly="readonly" name="driverClassName" type="text"
                        th:value="${connector?.config?.driverClassName} ?: 'com.oceanbase.jdbc.Driver'"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5 grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">RootServer 列表
+                <i class="fa fa-question-circle" title="社区版可选，格式 ip:rpc_port:sql_port; 留空则自动查询 SHOW PARAMETERS"></i>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="rsList" type="text" maxlength="512" placeholder="127.0.0.1:2882:2881;"
+                       th:value="${connector?.config?.extInfo?.rsList}"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">Config Server URL
+                <i class="fa fa-question-circle" title="企业版可选，社区版留空"></i>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="configUrl" type="text" maxlength="512" placeholder=""
+                       th:value="${connector?.config?.extInfo?.configUrl}"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">Working Mode</label>
+            <div class="form-control-area">
+                <select class="form-control" name="workingMode">
+                    <option value="storage" th:selected="${connector?.config?.extInfo?.workingMode == null or connector?.config?.extInfo?.workingMode == 'storage'}">storage</option>
+                    <option value="memory" th:selected="${connector?.config?.extInfo?.workingMode == 'memory'}">memory</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">时区</label>
+            <div class="form-control-area">
+                <input class="form-control" name="timezone" type="text" maxlength="32" placeholder="+08:00"
+                       th:value="${connector?.config?.extInfo?.timezone} ?: '+08:00'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">系统租户用户名</label>
+            <div class="form-control-area">
+                <input class="form-control" name="sysUsername" type="text" maxlength="64" placeholder="root（可选）"
+                       th:value="${connector?.config?.extInfo?.sysUsername}"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">系统租户密码</label>
+            <div class="form-control-area">
+                <input class="form-control" name="sysPassword" type="password" maxlength="64" placeholder="可选"
+                       th:value="${connector?.config?.extInfo?.sysPassword}"/>
             </div>
         </div>
     </div>
