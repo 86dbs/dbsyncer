@@ -337,7 +337,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (CollectionUtils.isEmpty(taskAll)) {
             return;
         }
-
+        taskAll.forEach(task -> {
+            reConnect((ValidateSyncTask) task);
+        });
         //启动任务
         taskAll.stream()
                 .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
