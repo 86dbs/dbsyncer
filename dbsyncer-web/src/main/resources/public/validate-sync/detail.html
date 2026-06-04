@@ -32,13 +32,20 @@
     <div class="card-body">
         <!-- 顶部操作区：任务选择 + 返回按钮 -->
         <div class="grid grid-cols-6 items-center mb-4">
-            <div class="lg:col-span-3 flex items-center">
+            <div class="lg:col-span-2 flex items-center">
                 <label class="form-label mr-3" style="white-space: nowrap;">选择任务</label>
                 <select id="detailTaskSelect" class="form-control">
                     <option th:each="t : ${taskList}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == taskId}"></option>
                 </select>
             </div>
-            <div class="lg:col-span-1"></div>
+            <div class="lg:col-span-2 flex items-center">
+                <label class="form-label mr-3" style="white-space: nowrap;">状态</label>
+                <select id="detailStatusFilter" class="form-control">
+                    <option value="" th:selected="${detailStatus == null or detailStatus == ''}">全部</option>
+                    <option value="success" th:selected="${detailStatus == 'success'}">正常</option>
+                    <option value="fail" th:selected="${detailStatus == 'fail'}">异常</option>
+                </select>
+            </div>
             <div class="lg:col-span-2 flex items-center justify-end">
                 <button class="btn btn-primary mr-3" id="refreshBtn">
                     <i class="fa fa-refresh"></i> 刷新
@@ -119,13 +126,43 @@
             }
         });
 
+        function getFilterValue(selector) {
+            var api = $(selector).data('dbSelect');
+            if (api && typeof api.getValues === 'function' && api.getValues().length > 0) {
+                return api.getValues()[0] || '';
+            }
+            return $(selector).val() || '';
+        }
+
+        function buildSearchParams() {
+            return {
+                taskId: currentTaskId,
+                detailStatus: getFilterValue('#detailStatusFilter')
+            };
+        }
+
+        function triggerSearch() {
+            resultPagination.doSearch(buildSearchParams(), 1);
+        }
+
+        function initFilterSelect(selector) {
+            $(selector).dbSelect({
+                type: 'single',
+                onSelect: function () {
+                    triggerSearch();
+                }
+            });
+        }
+
+        initFilterSelect('#detailStatusFilter');
+
         // 刷新按钮：从下拉组件获取当前选中的任务ID
         $('#refreshBtn').click(function () {
             var api = $('#detailTaskSelect').data('dbSelect');
             if (api && api.getValues().length > 0) {
                 currentTaskId = api.getValues()[0];
             }
-            resultPagination.doSearch({taskId: currentTaskId});
+            resultPagination.doSearch(buildSearchParams());
         });
 
         // 清空结果按钮
@@ -139,7 +176,7 @@
                     doPoster('/validate-sync/clearResult', {taskId: currentTaskId}, function (response) {
                         if (response.success) {
                             bootGrowl('清空成功', 'success');
-                            resultPagination.doSearch({taskId: currentTaskId});
+                            resultPagination.doSearch(buildSearchParams());
                         } else {
                             bootGrowl('清空失败: ' + response.message, 'danger');
                         }
@@ -297,7 +334,7 @@
         var resultPagination = new PaginationManager({
             requestUrl: '/validate-sync/searchResult',
             tableBodySelector: '#detail-result-table',
-            params: {taskId: currentTaskId},
+            params: buildSearchParams(),
             renderRow: function (row, index) {
                 var typeCode = row.type || '';
                 var badgeClass = typeBadgeMap[typeCode] || 'badge-info';

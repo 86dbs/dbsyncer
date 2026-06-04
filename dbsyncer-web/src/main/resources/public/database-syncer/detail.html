@@ -34,9 +34,6 @@
         <div class="grid grid-cols-6 items-center mb-4">
             <div class="lg:col-span-4"></div>
             <div class="lg:col-span-2 flex items-center justify-end">
-                <button class="btn btn-primary mr-3" id="refreshBtn">
-                    <i class="fa fa-refresh"></i> 刷新
-                </button>
                 <button class="btn btn-outline" onclick="backIndexPage()">
                     <i class="fa fa-reply"></i> 返回列表
                 </button>
@@ -115,13 +112,7 @@
             }
         });
 
-        $('#refreshBtn').click(function () {
-            var api = $('#detailTaskSelect').data('dbSelect');
-            if (api && api.getValues().length > 0) {
-                currentTaskId = api.getValues()[0];
-            }
-            resultPagination.doSearch(buildSearchParams());
-        });
+
 
         function getFilterValue(selector) {
             var api = $(selector).data('dbSelect');

@@ -387,6 +387,13 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
         query.addFilter(ConfigConstant.TASK_ID, taskId);
 
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        if ("success".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.EQUAL, 0);
+        } else if ("fail".equalsIgnoreCase(detailStatus)) {
+            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
+        }
+
         Set<String> selectFiled = getTaskDetailSelect();
 
         query.setSelectFlied(selectFiled);

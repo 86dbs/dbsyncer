@@ -30,6 +30,16 @@ public class DatabaseMapping {
     private String sourceSchema;
 
     /**
+     * 源端连接器 ID
+     */
+    private String sourceConnectorId;
+
+    /**
+     * 目标端连接器 ID
+     */
+    private String targetConnectorId;
+
+    /**
      * 目标库名
      */
     private String targetDatabase;
@@ -66,6 +76,22 @@ public class DatabaseMapping {
 
     public void setSourceSchema(String sourceSchema) {
         this.sourceSchema = sourceSchema;
+    }
+
+    public String getSourceConnectorId() {
+        return sourceConnectorId;
+    }
+
+    public void setSourceConnectorId(String sourceConnectorId) {
+        this.sourceConnectorId = sourceConnectorId;
+    }
+
+    public String getTargetConnectorId() {
+        return targetConnectorId;
+    }
+
+    public void setTargetConnectorId(String targetConnectorId) {
+        this.targetConnectorId = targetConnectorId;
     }
 
     public String getTargetDatabase() {

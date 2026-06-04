@@ -71,10 +71,12 @@ public class ValidateSyncController extends BaseController {
      * 修改任务页面
      */
     @GetMapping("/page/{page}")
-    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
+    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
+                           @RequestParam(value = "detailStatus", required = false) String detailStatus) {
         if (page.equals("detail")) {
             model.put("taskId", id);
             model.put("taskList", validateSyncService.getAll());
+            model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
         } else if (page.equals("editTableGroup")) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);

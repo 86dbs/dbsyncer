@@ -35,9 +35,11 @@
     let sourceSchemaSelect = null;
     let sourceConnectorSelect = null;
     let targetConnectorSelect = null;
+    let pickerTargetConnectorSelect = null;
     let tableTreeScrollBound = false;
     let initializing = false;
     let lastSourceConnectorId = '';
+    let detailPanelBound = false;
 
     function isReadOnly() {
         return !!page.readOnly;
@@ -56,9 +58,446 @@
         return match && match[1] ? match[1].trim() : '';
     }
 
+    function normalizeConnectorType(connectorType) {
+        return (connectorType || '').trim().toLowerCase();
+    }
+
+    function connectorSupportsSchema(connectorType) {
+        const t = normalizeConnectorType(connectorType);
+        return t === 'oracle'
+            || t === 'postgresql'
+            || t === 'postgres'
+            || t === 'sqlserver'
+            || t === 'sql server';
+    }
+
+    function isPostgresConnectorType(connectorType) {
+        const t = normalizeConnectorType(connectorType);
+        return t === 'postgresql' || t === 'postgres';
+    }
+
+    function isOracleConnector(connectorId) {
+        return normalizeConnectorType(getConnectorTypeById(connectorId)) === 'oracle';
+    }
+
     function isOracleSourceConnector() {
-        const connectorType = getConnectorTypeBySelect('sourceConnectorId', state.source.connectorId);
-        return connectorType.toLowerCase() === 'oracle';
+        return isOracleConnector(state.source.connectorId);
+    }
+
+    function isOracleTargetConnector(connectorId) {
+        return isOracleConnector(connectorId != null ? connectorId : getActiveTargetConnectorId());
+    }
+
+    function isSourceSchemaConnector() {
+        return connectorSupportsSchema(getConnectorTypeBySelect('sourceConnectorId', state.source.connectorId));
+    }
+
+    function getConnectorTypeById(connectorId) {
+        if (!connectorId) {
+            return '';
+        }
+        let type = getConnectorTypeBySelect('pickerTargetConnectorId', connectorId);
+        if (!type) {
+            type = getConnectorTypeBySelect('targetConnectorId', connectorId);
+        }
+        if (!type) {
+            type = getConnectorTypeBySelect('sourceConnectorId', connectorId);
+        }
+        return type;
+    }
+
+    function getPickerTargetConnectorId() {
+        if (pickerTargetConnectorSelect && typeof pickerTargetConnectorSelect.getValues === 'function') {
+            const ids = pickerTargetConnectorSelect.getValues();
+            if (ids.length) {
+                return ids[0];
+            }
+        }
+        return $('#pickerTargetConnectorId').val() || '';
+    }
+
+    function getActiveMappingBlock() {
+        if (state.activeMappingIndex < 0 || state.activeMappingIndex >= state.mappings.length) {
+            return null;
+        }
+        return state.mappings[state.activeMappingIndex];
+    }
+
+    function getMappingSourceConnectorId(block) {
+        if (block && block.sourceConnectorId) {
+            return block.sourceConnectorId;
+        }
+        return state.source.connectorId || '';
+    }
+
+    function getMappingTargetConnectorId(block) {
+        if (block && block.targetConnectorId) {
+            return block.targetConnectorId;
+        }
+        return state.target.connectorId || '';
+    }
+
+    function getDetailPanelTargetConnectorId() {
+        return getMappingTargetConnectorId(getActiveMappingBlock());
+    }
+
+    function getActiveTargetConnectorId() {
+        if (!$('#tablePickerModal').hasClass('hidden')) {
+            const pickerId = getPickerTargetConnectorId();
+            if (pickerId) {
+                return pickerId;
+            }
+        }
+        if (hasDetailTargetPanel()) {
+            const detailId = getDetailPanelTargetConnectorId();
+            if (detailId) {
+                return detailId;
+            }
+        }
+        return state.target.connectorId || '';
+    }
+
+    function isTargetSchemaConnector(connectorId) {
+        const id = connectorId != null ? connectorId : getActiveTargetConnectorId();
+        return connectorSupportsSchema(getConnectorTypeById(id));
+    }
+
+    function isTargetPostgresConnector(connectorId) {
+        const id = connectorId != null ? connectorId : getActiveTargetConnectorId();
+        return isPostgresConnectorType(getConnectorTypeById(id));
+    }
+
+    function shouldShowTargetSchema() {
+        return isSourceSchemaConnector() || isTargetSchemaConnector();
+    }
+
+    function isTargetSchemaReadOnly(connectorId) {
+        return isTargetPostgresConnector(connectorId);
+    }
+
+    function syncTargetSchemaFromSource(force) {
+        if (!shouldShowTargetSchema()) {
+            return;
+        }
+        const srcSchema = (state.source.schema || '').trim();
+        const $picker = $('#pickerTargetSchema');
+        const $detail = $('#detailTargetSchema');
+        if (srcSchema && (force || isTargetSchemaReadOnly() || !$picker.val())) {
+            if ($picker.length) {
+                $picker.val(srcSchema);
+            }
+        }
+        if (srcSchema && (force || isTargetSchemaReadOnly() || !$detail.val())) {
+            if ($detail.length) {
+                $detail.val(srcSchema);
+            }
+        }
+        applyTargetSchemaReadOnly();
+    }
+
+    function applyTargetSchemaReadOnly() {
+        const pickerReadonly = isTargetSchemaReadOnly(getPickerTargetConnectorId() || state.target.connectorId);
+        const detailReadonly = isTargetSchemaReadOnly(state.target.connectorId);
+        $('#pickerTargetSchema')
+            .prop('readonly', pickerReadonly)
+            .toggleClass('ds-schema-readonly', pickerReadonly);
+        $('#detailTargetSchema')
+            .prop('readonly', detailReadonly)
+            .toggleClass('ds-schema-readonly', detailReadonly);
+    }
+
+    function hasDetailTargetPanel() {
+        return $('#detailTargetDatabase').length > 0;
+    }
+
+    function getConnectorLabel(selectId, connectorId) {
+        if (!connectorId) {
+            return '未选择';
+        }
+        const text = $('#' + selectId + ' option[value="' + connectorId + '"]').text() || '';
+        const name = text.replace(/\([^)]*\)\s*$/, '').trim();
+        return name || connectorId;
+    }
+
+    /** 程序化赋值时不触发 onSelect，避免与 syncDetailPanelFromActiveMapping 形成递归 */
+    function setSelectValues(api, values) {
+        if (!api || typeof api.setValues !== 'function') {
+            return;
+        }
+        const list = Array.isArray(values) ? values : [values];
+        api.setValues(list, true);
+    }
+
+    function refreshMappingCardFlows() {
+        if (!hasDetailTargetPanel() || !state.mappings.length) {
+            return;
+        }
+        $('#mappingCardList .mapping-card').each(function () {
+            const idx = Number($(this).data('index'));
+            const block = state.mappings[idx];
+            if (block) {
+                $(this).find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+            }
+        });
+    }
+
+    function updateMappingCount() {
+        $('#mappingCount').text(state.mappings.length);
+    }
+
+    function updateWorkspaceEmptyState() {
+        const $empty = $('#mappingWorkspaceEmpty');
+        if (!$empty.length) {
+            return;
+        }
+        if (!state.mappings.length) {
+            $empty.removeClass('hidden');
+        } else {
+            $empty.addClass('hidden');
+        }
+    }
+
+    function updateSourceDatabaseFieldVisibility() {
+        const hide = isOracleSourceConnector();
+        $('#sourceDatabase').closest('.form-item-stack').toggleClass('hidden', hide);
+    }
+
+    function toggleSchemaLabelRequired($wrap, required) {
+        const $label = $wrap.find('.form-label').first();
+        $label.find('.ds-schema-req').remove();
+        if (required) {
+            $label.append(' <strong class="text-primary ds-schema-req">*</strong>');
+        }
+    }
+
+    function updateTargetDatabaseFieldVisibility() {
+        const pickerOracle = isOracleTargetConnector(getPickerTargetConnectorId() || state.target.connectorId);
+        const detailOracle = isOracleTargetConnector(getDetailPanelTargetConnectorId());
+        $('#pickerTargetDatabase').closest('.form-item-stack').toggleClass('hidden', pickerOracle);
+        $('#detailTargetDatabase').closest('.ds-target-field').toggleClass('hidden', detailOracle);
+        toggleSchemaLabelRequired($('#pickerTargetSchemaWrap'), pickerOracle);
+        toggleSchemaLabelRequired($('#detailTargetSchemaWrap'), detailOracle);
+    }
+
+    function updateTargetSchemaVisibility() {
+        const show = shouldShowTargetSchema();
+        $('#detailTargetSchemaWrap, #pickerTargetSchemaWrap').toggleClass('hidden', !show);
+        if (show) {
+            syncTargetSchemaFromSource(false);
+        }
+        applyTargetSchemaReadOnly();
+        updateTargetDatabaseFieldVisibility();
+    }
+
+    function formatMappingSourceLabel(block) {
+        if (!block) {
+            return '';
+        }
+        let label = block.sourceDatabase || '';
+        if (block.sourceSchema) {
+            label += (label ? '.' : '') + block.sourceSchema;
+        }
+        return label || '—';
+    }
+
+    function formatTargetNamespaceLabel(block) {
+        if (!block) {
+            return '—';
+        }
+        if (block.targetDatabase) {
+            return block.targetDatabase;
+        }
+        if (isOracleTargetConnector(getMappingTargetConnectorId(block)) && block.targetSchema) {
+            return block.targetSchema;
+        }
+        return block.targetDatabase || block.targetSchema || '—';
+    }
+
+    function formatMappingFlowHtml(block) {
+        const targetConnectorId = getMappingTargetConnectorId(block);
+        const targetLabel = escapeHtml(getConnectorLabel('targetConnectorId', targetConnectorId));
+        let targetNs = block.targetDatabase || '';
+        if (!targetNs && isOracleTargetConnector(targetConnectorId)) {
+            targetNs = block.targetSchema || '';
+        }
+        return '流向: ' + targetLabel + ' ➔ <strong>' + escapeHtml(targetNs || '—') + '</strong>';
+    }
+
+    function refreshPickerTargetDefaults() {
+        const srcDb = state.source.database || '';
+        const srcSchema = state.source.schema || '';
+        const activeBlock = getActiveMappingBlock();
+        const pickerTargetId = getPickerTargetConnectorId()
+            || getMappingTargetConnectorId(activeBlock)
+            || state.target.connectorId;
+        if ($('#pickerTargetDatabase').length && !isOracleTargetConnector(pickerTargetId)) {
+            $('#pickerTargetDatabase').val(srcDb);
+        }
+        if ($('#pickerTargetSchema').length && srcSchema) {
+            $('#pickerTargetSchema').val(srcSchema);
+        }
+        if (state.target.connectorId) {
+            setSelectValues(pickerTargetConnectorSelect, [state.target.connectorId]);
+        }
+        updateTargetDatabaseFieldVisibility();
+    }
+
+    function onPickerSourceContextChange() {
+        if ($('#tablePickerModal').hasClass('hidden')) {
+            return;
+        }
+        const srcDb = state.source.database || '';
+        const srcSchema = state.source.schema || '';
+        if (!isOracleTargetConnector(getPickerTargetConnectorId() || state.target.connectorId)) {
+            $('#pickerTargetDatabase').val(srcDb);
+        }
+        syncTargetSchemaFromSource(true);
+        updateTargetSchemaVisibility();
+    }
+
+    function syncDetailPanelFromActiveMapping() {
+        if (!hasDetailTargetPanel()) {
+            return;
+        }
+        const block = state.mappings[state.activeMappingIndex];
+        if (!block) {
+            return;
+        }
+        const sourceConnectorId = getMappingSourceConnectorId(block);
+        const targetConnectorId = getMappingTargetConnectorId(block);
+        state.source.connectorId = sourceConnectorId;
+        state.target.connectorId = targetConnectorId;
+        if (sourceConnectorId) {
+            setSelectValues(sourceConnectorSelect, [sourceConnectorId]);
+        }
+        $('#detailTargetDatabase').val(block.targetDatabase || '');
+        let targetSchema = block.targetSchema || '';
+        if (isTargetSchemaReadOnly(targetConnectorId) && state.source.schema) {
+            targetSchema = state.source.schema;
+            block.targetSchema = targetSchema;
+        }
+        $('#detailTargetSchema').val(targetSchema);
+        applyTargetSchemaReadOnly();
+        if (targetConnectorId) {
+            setSelectValues(targetConnectorSelect, [targetConnectorId]);
+        } else {
+            setSelectValues(targetConnectorSelect, []);
+        }
+        updateTargetDatabaseFieldVisibility();
+        const srcLabel = formatMappingSourceLabel(block);
+        const tgtNs = formatTargetNamespaceLabel(block);
+        $('#mappingDetailTitle').html(
+            '<i class="fa fa-table"></i> 表映射明细'
+            + (srcLabel ? ' <span class="text-tertiary text-sm">(' + escapeHtml(srcLabel) + ' ➔ ' + escapeHtml(tgtNs) + ')</span>' : '')
+        );
+    }
+
+    function syncActiveMappingFromDetailPanel() {
+        if (!hasDetailTargetPanel()) {
+            return;
+        }
+        const block = state.mappings[state.activeMappingIndex];
+        if (!block) {
+            return;
+        }
+        let targetConnectorId = state.target.connectorId;
+        if (targetConnectorSelect && typeof targetConnectorSelect.getValues === 'function') {
+            const ids = targetConnectorSelect.getValues();
+            if (ids.length) {
+                targetConnectorId = ids[0];
+            }
+        }
+        targetConnectorId = targetConnectorId || $('#targetConnectorId').val() || '';
+        block.targetConnectorId = targetConnectorId;
+        state.target.connectorId = targetConnectorId;
+        if (!isOracleTargetConnector(targetConnectorId)) {
+            block.targetDatabase = ($('#detailTargetDatabase').val() || '').trim();
+        } else {
+            block.targetDatabase = '';
+        }
+        if (!isTargetSchemaReadOnly(targetConnectorId)) {
+            block.targetSchema = ($('#detailTargetSchema').val() || '').trim();
+        } else {
+            block.targetSchema = (state.source.schema || block.targetSchema || '').trim();
+            $('#detailTargetSchema').val(block.targetSchema);
+        }
+        syncMappingsJson();
+        const $activeCard = $('#mappingCardList .mapping-card.is-active');
+        if ($activeCard.length) {
+            $activeCard.find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+        }
+        const srcLabel = formatMappingSourceLabel(block);
+        const tgtNs = formatTargetNamespaceLabel(block);
+        $('#mappingDetailTitle').html(
+            '<i class="fa fa-table"></i> 表映射明细'
+            + (srcLabel ? ' <span class="text-tertiary text-sm">(' + escapeHtml(srcLabel) + ' ➔ ' + escapeHtml(tgtNs) + ')</span>' : '')
+        );
+    }
+
+    function bindDetailPanelEvents() {
+        if (!hasDetailTargetPanel() || detailPanelBound) {
+            return;
+        }
+        detailPanelBound = true;
+        $('#detailTargetDatabase').on('input change', function () {
+            syncActiveMappingFromDetailPanel();
+        });
+        $('#detailTargetSchema').on('input change', function () {
+            if (!isTargetSchemaReadOnly(getDetailPanelTargetConnectorId())) {
+                syncActiveMappingFromDetailPanel();
+            }
+        });
+        $('#btnBatchTablePrefix').on('click', batchAddTablePrefix);
+    }
+
+    function applyTablePrefixToBlock(block, prefix) {
+        (block.tableMappings || []).forEach(function (row) {
+            row.targetTable = prefix + (row.targetTable || '');
+        });
+        syncMappingsJson();
+        renderMappingDetail(false);
+        bootGrowl('已批量更新目标表名', 'success');
+    }
+
+    function batchAddTablePrefix() {
+        if (isReadOnly()) {
+            return;
+        }
+        const block = state.mappings[state.activeMappingIndex];
+        if (!block || !(block.tableMappings || []).length) {
+            bootGrowl('当前映射没有可编辑的表', 'warning');
+            return;
+        }
+        const inputId = 'batchTablePrefixInput';
+        showConfirm({
+            title: '批量加目标表前缀',
+            message: '将为当前映射下的所有目标表名追加此前缀',
+            icon: 'info',
+            size: 'normal',
+            confirmText: '确定',
+            confirmType: 'primary',
+            body: '<div class="form-item mb-0">'
+                + '<label class="form-label" for="' + inputId + '">表名前缀</label>'
+                + '<div class="form-control-area">'
+                + '<input type="text" id="' + inputId + '" class="form-control" maxlength="64" value="sync_" placeholder="例如 sync_"/>'
+                + '</div></div>',
+            onConfirm: function () {
+                const $input = $('#' + inputId);
+                const prefix = ($input.length ? $input.val() : '') || '';
+                if (!String(prefix).trim()) {
+                    bootGrowl('前缀不能为空', 'warning');
+                    return;
+                }
+                applyTablePrefixToBlock(block, prefix);
+            }
+        });
+        setTimeout(function () {
+            const el = document.getElementById(inputId);
+            if (el) {
+                el.focus();
+                el.select();
+            }
+        }, 0);
     }
 
     function onDBChange(connectorId, schemaSelect, dbName) {
@@ -78,24 +517,44 @@
         });
     }
 
+    function resetSourcePickerContext() {
+        state.source.database = '';
+        state.source.schema = '';
+        state.source.checked = {};
+        resetSourceTableList();
+        renderSourceTableTreeEmpty('暂无表，请选择连接器、库与 Schema');
+        if (sourceDbSelect) {
+            sourceDbSelect.setData([]);
+        }
+        if (sourceSchemaSelect) {
+            sourceSchemaSelect.setData([]);
+        }
+    }
+
     function onSourceConnectorChange(connectorId) {
         if (!connectorId) {
-            sourceDbSelect.setData([]);
-            sourceSchemaSelect.setData([]);
+            resetSourcePickerContext();
             state.source.connectorId = '';
-            state.source.database = '';
-            state.source.schema = '';
-            state.source.checked = {};
-            resetSourceTableList();
-            renderSourceTableTreeEmpty('暂无表，请选择连接器、库与 Schema');
             clearMappings();
+            lastSourceConnectorId = '';
             return;
         }
-        if (lastSourceConnectorId && lastSourceConnectorId !== connectorId && !initializing) {
-            clearMappings();
+        const sourceChanged = lastSourceConnectorId && lastSourceConnectorId !== connectorId;
+        if (sourceChanged && !initializing) {
+            resetSourcePickerContext();
+            if (state.mappings.length) {
+                bootGrowl('已切换源端连接器，已添加的库映射关系仍保留，请核对源库/表是否仍适用', 'info');
+            }
         }
         lastSourceConnectorId = connectorId;
         state.source.connectorId = connectorId;
+        updateSourceDatabaseFieldVisibility();
+        if (isOracleSourceConnector()) {
+            state.source.database = '';
+            sourceDbSelect.setData([]);
+            onDBChange(connectorId, sourceSchemaSelect, '');
+            return;
+        }
         doGetter('/connector/getDatabase', { id: connectorId }, function (response) {
             if (response.success && response.data) {
                 const db = (response.data || []).map(function (dbName) {
@@ -455,7 +914,26 @@
         });
     }
 
+    /**
+     * 将表树 DOM 中的勾选状态写回 state（仅更新当前已渲染的表行，不覆盖未渲染项）。
+     * 解决再次打开弹窗时 UI 仍勾选但 state 已被清空导致校验失败的问题。
+     */
+    function syncCheckedFromTableTreeDom() {
+        $('#sourceTableTree .db-sync-table-cb').each(function () {
+            const name = $(this).data('name');
+            if (!name) {
+                return;
+            }
+            if (this.checked) {
+                state.source.checked[name] = true;
+            } else {
+                delete state.source.checked[name];
+            }
+        });
+    }
+
     function getCheckedSourceTableNames() {
+        syncCheckedFromTableTreeDom();
         const names = [];
         Object.keys(state.source.checked).forEach(function (name) {
             if (state.source.checked[name]) {
@@ -482,10 +960,23 @@
         $('#databaseMappingsJson').val(JSON.stringify(state.mappings));
     }
 
-    function findMappingIndex(sourceDatabase, sourceSchema) {
-        const schema = sourceSchema || '';
+    /**
+     * 同一源库可配置多个不同目标库；仅当源端与目标端命名空间完全一致时才合并表映射。
+     */
+    function findMappingIndex(sourceDatabase, sourceSchema, targetDatabase, targetSchema,
+                              sourceConnectorId, targetConnectorId) {
+        const srcSchema = sourceSchema || '';
+        const tgtDb = targetDatabase || '';
+        const tgtSchema = targetSchema || '';
+        const srcConn = sourceConnectorId || '';
+        const tgtConn = targetConnectorId || '';
         return state.mappings.findIndex(function (m) {
-            return m.sourceDatabase === sourceDatabase && (m.sourceSchema || '') === schema;
+            return m.sourceDatabase === sourceDatabase
+                && (m.sourceSchema || '') === srcSchema
+                && (m.targetDatabase || '') === tgtDb
+                && (m.targetSchema || '') === tgtSchema
+                && getMappingSourceConnectorId(m) === srcConn
+                && getMappingTargetConnectorId(m) === tgtConn;
         });
     }
 
@@ -493,10 +984,14 @@
         if (isReadOnly()) {
             return;
         }
-        if (!state.source.connectorId || !state.target.connectorId) {
-            bootGrowl('请先选择源端、目标端连接器', 'warning');
+        if (!state.source.connectorId) {
+            bootGrowl('请先选择源端连接器', 'warning');
             return;
         }
+        refreshPickerTargetDefaults();
+        updateSourceDatabaseFieldVisibility();
+        updateTargetSchemaVisibility();
+        syncCheckedFromTableTreeDom();
         $('#tablePickerModal').removeClass('hidden');
     }
 
@@ -511,14 +1006,15 @@
         state.activeMappingIndex = -1;
         state.detailPageNum = 1;
         $('#mappingDetailPanel').addClass('hidden');
-        $('#mappingDetailTableCount').text('0');
         $('#mappingDetailTableBody').empty();
         $('#mappingDetailPagination').addClass('hidden');
+        updateWorkspaceEmptyState();
     }
 
     function renderMappingSidebar() {
         const $list = $('#mappingCardList');
         const $empty = $('#mappingSidebarEmpty');
+        updateMappingCount();
         if (!state.mappings.length) {
             $list.empty();
             $empty.removeClass('hidden');
@@ -530,41 +1026,48 @@
         if (state.activeMappingIndex < 0 || state.activeMappingIndex >= state.mappings.length) {
             state.activeMappingIndex = 0;
         }
+        const useFlowCard = hasDetailTargetPanel();
         let html = '';
         state.mappings.forEach(function (block, idx) {
             const count = (block.tableMappings || []).length;
             const active = idx === state.activeMappingIndex ? ' is-active' : '';
             html += '<div class="mapping-card' + active + '" data-index="' + idx + '">';
             if (!isReadOnly()) {
-                html += '<button type="button" class="mapping-card-remove" data-index="' + idx + '" title="删除">'
+                html += '<button type="button" class="mapping-card-remove" data-index="' + idx + '" title="删除库映射">'
                     + '<i class="fa fa-times"></i></button>';
             }
-            html += '<div class="mapping-card-row">'
-                + '<span class="mapping-card-label">源库</span>'
-                + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
-                + escapeHtml(block.sourceDatabase || '') + '</span></div>'
-                + (block.sourceSchema
-                    ? ('<div class="mapping-card-row">'
-                        + '<span class="mapping-card-label">源Schema</span>'
-                        + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceSchema || '') + '">'
-                        + escapeHtml(block.sourceSchema || '') + '</span></div>')
-                    : '')
-                + '<div class="mapping-card-row">'
-                + '<span class="mapping-card-label">目标</span>'
-                + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
-                + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
-                + (isReadOnly() ? ' readonly' : '') + '/>'
-                + '</div>'
-                + (block.sourceSchema
-                    ? ('<div class="mapping-card-row">'
-                        + '<span class="mapping-card-label">目标Schema</span>'
-                        + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-schema"'
-                        + ' data-index="' + idx + '" value="' + escapeHtml(block.targetSchema || '') + '"'
-                        + (isReadOnly() ? ' readonly' : '') + '/>'
-                        + '</div>')
-                    : '')
-                + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>'
-                + '</div>';
+            if (useFlowCard) {
+                html += '<div class="mapping-card-src">库: ' + escapeHtml(formatMappingSourceLabel(block)) + '</div>'
+                    + '<div class="mapping-card-flow">' + formatMappingFlowHtml(block) + '</div>'
+                    + '<div class="mapping-card-footer">已选 ' + count + ' 张表</div>';
+            } else {
+                html += '<div class="mapping-card-row">'
+                    + '<span class="mapping-card-label">源库</span>'
+                    + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
+                    + escapeHtml(block.sourceDatabase || '') + '</span></div>'
+                    + (block.sourceSchema
+                        ? ('<div class="mapping-card-row">'
+                            + '<span class="mapping-card-label">源Schema</span>'
+                            + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceSchema || '') + '">'
+                            + escapeHtml(block.sourceSchema || '') + '</span></div>')
+                        : '')
+                    + '<div class="mapping-card-row">'
+                    + '<span class="mapping-card-label">目标</span>'
+                    + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
+                    + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
+                    + (isReadOnly() ? ' readonly' : '') + '/>'
+                    + '</div>'
+                    + (block.sourceSchema
+                        ? ('<div class="mapping-card-row">'
+                            + '<span class="mapping-card-label">目标Schema</span>'
+                            + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-schema"'
+                            + ' data-index="' + idx + '" value="' + escapeHtml(block.targetSchema || '') + '"'
+                            + (isReadOnly() ? ' readonly' : '') + '/>'
+                            + '</div>')
+                        : '')
+                    + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>';
+            }
+            html += '</div>';
         });
         $list.html(html);
         bindMappingSidebarEvents();
@@ -576,6 +1079,7 @@
             if ($(e.target).closest('.mapping-card-remove, .mapping-card-tgt-db, .mapping-card-tgt-schema').length) {
                 return;
             }
+            syncActiveMappingFromDetailPanel();
             const idx = Number($(this).data('index'));
             state.activeMappingIndex = idx;
             renderMappingSidebar();
@@ -585,18 +1089,26 @@
         $('.mapping-card-remove').off('click.removeCard').on('click.removeCard', function (e) {
             e.stopPropagation();
             const idx = Number($(this).data('index'));
-            state.mappings.splice(idx, 1);
-            if (!state.mappings.length) {
-                renderMappingSidebar();
-                return;
-            }
-            if (state.activeMappingIndex === idx) {
-                state.activeMappingIndex = Math.min(idx, state.mappings.length - 1);
-            } else if (state.activeMappingIndex > idx) {
-                state.activeMappingIndex--;
-            }
-            renderMappingSidebar();
-            renderMappingDetail(true);
+            showConfirm({
+                title: '确定要删除这条库同步路由吗？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'danger',
+                onConfirm: function () {
+                    state.mappings.splice(idx, 1);
+                    if (!state.mappings.length) {
+                        renderMappingSidebar();
+                        return;
+                    }
+                    if (state.activeMappingIndex === idx) {
+                        state.activeMappingIndex = Math.min(idx, state.mappings.length - 1);
+                    } else if (state.activeMappingIndex > idx) {
+                        state.activeMappingIndex--;
+                    }
+                    renderMappingSidebar();
+                    renderMappingDetail(true);
+                }
+            });
         });
 
         $('.mapping-card-tgt-db').off('change.cardTgtDb').on('change.cardTgtDb', function () {
@@ -621,7 +1133,7 @@
     function buildDetailTableRowHtml(block, row, rowIndex, blockIndex) {
         let html = '<tr data-r="' + rowIndex + '">'
             + '<td class="text-center text-tertiary">' + (row.index || (rowIndex + 1)) + '</td>'
-            + '<td class="text-primary">' + escapeHtml(row.sourceTable || '') + '</td>';
+            + '<td class="db-sync-src-table">' + escapeHtml(row.sourceTable || '') + '</td>';
         if (isReadOnly()) {
             html += '<td>' + escapeHtml(row.targetTable || '') + '</td>';
         } else {
@@ -716,8 +1228,8 @@
             return;
         }
         $('#mappingDetailPanel').removeClass('hidden');
-        const count = (block.tableMappings || []).length;
-        $('#mappingDetailTableCount').text(count);
+        updateWorkspaceEmptyState();
+        syncDetailPanelFromActiveMapping();
         if (reset) {
             state.detailPageNum = 1;
         }
@@ -773,11 +1285,27 @@
 
     function addDatabaseMapping() {
         const sourceTables = getCheckedSourceTableNames();
-        if (!state.source.connectorId || !state.target.connectorId) {
-            bootGrowl('请先选择源端、目标端连接器', 'warning');
+        if (!state.source.connectorId) {
+            bootGrowl('请先选择源端连接器', 'warning');
             return;
         }
+        const pickerTargetId = getPickerTargetConnectorId();
+        const sourceConnectorId = state.source.connectorId;
+        const targetConnectorId = pickerTargetId || state.target.connectorId;
+        if (!sourceConnectorId) {
+            bootGrowl('请先选择源端连接器', 'warning');
+            return;
+        }
+        if (!targetConnectorId) {
+            bootGrowl('请选择目标连接', 'warning');
+            return;
+        }
+        state.target.connectorId = targetConnectorId;
+        setSelectValues(targetConnectorSelect, [targetConnectorId]);
+        setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
+        syncTargetSchemaFromSource(true);
         const sourceIsOracle = isOracleSourceConnector();
+        const targetIsOracle = isOracleTargetConnector(targetConnectorId);
         if (!state.source.database && !(sourceIsOracle && state.source.schema)) {
             bootGrowl(sourceIsOracle ? '请先选择源 Schema' : '请先选择源库', 'warning');
             return;
@@ -786,30 +1314,69 @@
             bootGrowl('请至少勾选一张源表，可使用「全选」', 'warning');
             return;
         }
-        const sourceDb = state.source.database;
-        const sourceSchema = state.source.schema || '';
-        const defaultTargetDb = sourceDb;
-        const defaultTargetSchema = sourceSchema;
-        const existIdx = findMappingIndex(sourceDb, sourceSchema);
+        const sourceDb = sourceIsOracle ? '' : (state.source.database || '');
+        const sourceSchema = (state.source.schema || '').trim();
+        let defaultTargetDb = ($('#pickerTargetDatabase').val() || '').trim();
+        let defaultTargetSchema = ($('#pickerTargetSchema').val() || '').trim();
+        if (targetIsOracle) {
+            defaultTargetDb = '';
+            if (!defaultTargetSchema) {
+                defaultTargetSchema = sourceSchema;
+            }
+        } else {
+            if (!defaultTargetDb) {
+                defaultTargetDb = sourceDb;
+            }
+            if (!defaultTargetSchema && sourceSchema) {
+                defaultTargetSchema = sourceSchema;
+            }
+            if (isTargetPostgresConnector(targetConnectorId) && sourceSchema) {
+                defaultTargetSchema = sourceSchema;
+            }
+        }
+        if (targetIsOracle) {
+            if (!defaultTargetSchema) {
+                bootGrowl('请填写目标 Schema', 'warning');
+                return;
+            }
+        } else if (!defaultTargetDb) {
+            bootGrowl('目标库名不能为空', 'warning');
+            return;
+        }
+        const existIdx = findMappingIndex(sourceDb, sourceSchema, defaultTargetDb, defaultTargetSchema,
+            sourceConnectorId, targetConnectorId);
         const newRows = sourceTables.map(function (srcName) {
             return { sourceTable: srcName, targetTable: srcName };
         });
         if (existIdx >= 0) {
             const exist = state.mappings[existIdx];
+            if (!exist.sourceConnectorId) {
+                exist.sourceConnectorId = sourceConnectorId;
+            }
+            if (!exist.targetConnectorId) {
+                exist.targetConnectorId = targetConnectorId;
+            }
             const names = {};
             (exist.tableMappings || []).forEach(function (r) {
                 names[r.sourceTable] = true;
             });
+            let added = 0;
             newRows.forEach(function (r) {
                 if (!names[r.sourceTable]) {
                     exist.tableMappings.push(r);
+                    added++;
                 }
             });
             state.activeMappingIndex = existIdx;
+            if (!added) {
+                bootGrowl('该源库到目标库的映射已存在，未新增表', 'info');
+            }
         } else {
             state.mappings.push({
                 sourceDatabase: sourceDb,
                 sourceSchema: sourceSchema,
+                sourceConnectorId: sourceConnectorId,
+                targetConnectorId: targetConnectorId,
                 targetDatabase: defaultTargetDb,
                 targetSchema: defaultTargetSchema,
                 tableMappings: newRows
@@ -817,6 +1384,8 @@
             state.activeMappingIndex = state.mappings.length - 1;
         }
         state.source.checked = {};
+        $('#pickerTargetDatabase').val('');
+        $('#pickerTargetSchema').val('');
         closeTablePickerModal();
         renderMappingSidebar();
         renderMappingDetail(true);
@@ -835,26 +1404,30 @@
         initializing = true;
         state.mappings = JSON.parse(JSON.stringify(task.databaseMappings || []));
         reindexMappings();
-        lastSourceConnectorId = task.sourceConnectorId || '';
+        const first = state.mappings.length ? state.mappings[0] : null;
+        lastSourceConnectorId = (first && first.sourceConnectorId) || '';
         state.source.connectorId = lastSourceConnectorId;
-        state.target.connectorId = task.targetConnectorId || '';
+        state.target.connectorId = (first && first.targetConnectorId) || '';
         state.activeMappingIndex = state.mappings.length ? 0 : -1;
 
         const $form = $('#database-syncer-form');
         $form.find('input[name="name"]').val(task.name || '');
         $form.find('input[name="id"]').val(task.id || '');
 
-        if (sourceConnectorSelect && task.sourceConnectorId) {
-            sourceConnectorSelect.setValues([task.sourceConnectorId]);
+        if (state.source.connectorId) {
+            setSelectValues(sourceConnectorSelect, [state.source.connectorId]);
         }
-        if (targetConnectorSelect && task.targetConnectorId) {
-            targetConnectorSelect.setValues([task.targetConnectorId]);
+        if (state.target.connectorId && targetConnectorSelect) {
+            setSelectValues(targetConnectorSelect, [state.target.connectorId]);
         }
 
         renderMappingSidebar();
         if (state.mappings.length) {
             renderMappingDetail(true);
         }
+        updateWorkspaceEmptyState();
+        updateSourceDatabaseFieldVisibility();
+        updateTargetSchemaVisibility();
         initializing = false;
     }
 
@@ -901,6 +1474,8 @@
             onSelect: function (selected) {
                 state.source.schema = selected.length ? selected[0] : '';
                 loadSourceTables($('#sourceTableSearch').val().trim(), true);
+                onPickerSourceContextChange();
+                syncTargetSchemaFromSource(true);
             }
         });
 
@@ -912,6 +1487,7 @@
                     onDBChange(state.source.connectorId, sourceSchemaSelect, state.source.database);
                 }
                 loadSourceTables(null, true);
+                onPickerSourceContextChange();
             }
         });
 
@@ -920,6 +1496,8 @@
             disabled: isReadOnly(),
             onSelect: function (ids) {
                 onSourceConnectorChange(ids.length ? ids[0] : '');
+                updateSourceDatabaseFieldVisibility();
+                updateTargetSchemaVisibility();
             }
         });
 
@@ -927,9 +1505,42 @@
             type: 'single',
             disabled: isReadOnly(),
             onSelect: function (ids) {
-                state.target.connectorId = ids.length ? ids[0] : '';
+                const id = ids.length ? ids[0] : '';
+                state.target.connectorId = id;
+                const block = getActiveMappingBlock();
+                if (block) {
+                    block.targetConnectorId = id;
+                    syncMappingsJson();
+                    const $card = $('#mappingCardList .mapping-card.is-active');
+                    if ($card.length) {
+                        $card.find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+                    }
+                }
+                setSelectValues(pickerTargetConnectorSelect, id ? [id] : []);
+                updateTargetSchemaVisibility();
+                updateTargetDatabaseFieldVisibility();
+                syncTargetSchemaFromSource(true);
             }
         });
+
+        if ($('#pickerTargetConnectorId').length) {
+            pickerTargetConnectorSelect = $('#pickerTargetConnectorId').dbSelect({
+                type: 'single',
+                disabled: isReadOnly(),
+                onSelect: function (ids) {
+                    state.target.connectorId = ids.length ? ids[0] : '';
+                    setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
+                    updateTargetSchemaVisibility();
+                    updateTargetDatabaseFieldVisibility();
+                    syncTargetSchemaFromSource(true);
+                    refreshMappingCardFlows();
+                }
+            });
+        }
+
+        bindDetailPanelEvents();
+        updateSourceDatabaseFieldVisibility();
+        updateTargetSchemaVisibility();
 
         let srcSearchTimer = null;
         $('#sourceTableSearch').on('input', function () {
@@ -948,6 +1559,7 @@
         $('#btnCancelTablePicker, #btnCloseTablePicker, #tablePickerModalBackdrop').on('click', closeTablePickerModal);
 
         $('#database-syncer-submit-btn').on('click', function () {
+            syncActiveMappingFromDetailPanel();
             syncMappingsJson();
             const $form = $('#database-syncer-form');
             if (!validateForm($form)) {
@@ -977,6 +1589,7 @@
             initEditFromTask(page.task);
         } else {
             renderMappingSidebar();
+            updateWorkspaceEmptyState();
         }
     });
 })();

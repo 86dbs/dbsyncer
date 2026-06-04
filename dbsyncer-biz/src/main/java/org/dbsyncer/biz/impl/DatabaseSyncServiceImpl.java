@@ -93,25 +93,15 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(name)) {
             throw new BizException("任务名称不能为空");
         }
-        String sourceConnectorId = params.get("sourceConnectorId");
-        String targetConnectorId = params.get("targetConnectorId");
-        if (StringUtil.isBlank(sourceConnectorId)) {
-            throw new BizException("源端连接器不能为空");
-        }
-        if (StringUtil.isBlank(targetConnectorId)) {
-            throw new BizException("目标端连接器不能为空");
-        }
-
         List<DatabaseMapping> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
         if (CollectionUtils.isEmpty(mappings)) {
             throw new BizException("请至少添加一组库映射");
         }
         normalizeAndSortMappings(mappings);
+        validateMappingConnectors(mappings);
 
         DatabaseMigrationSyncTask task = new DatabaseMigrationSyncTask();
         fillTaskOnAdd(task, params);
-        task.setSourceConnectorId(sourceConnectorId);
-        task.setTargetConnectorId(targetConnectorId);
         task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
 
@@ -133,10 +123,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException("请至少添加一组库映射");
         }
         normalizeAndSortMappings(mappings);
+        validateMappingConnectors(mappings);
 
         fillTaskOnEdit(task, params);
-        task.setSourceConnectorId(params.get("sourceConnectorId"));
-        task.setTargetConnectorId(params.get("targetConnectorId"));
         task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
         return taskService.edit(task);
@@ -351,14 +340,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(name)) {
             throw new BizException("任务名称不能为空");
         }
-        String sourceConnectorId = params.get("sourceConnectorId");
-        String targetConnectorId = params.get("targetConnectorId");
-        if (StringUtil.isBlank(sourceConnectorId)) {
-            throw new BizException("源端连接器不能为空");
-        }
-        if (StringUtil.isBlank(targetConnectorId)) {
-            throw new BizException("目标端连接器不能为空");
-        }
         task.setName(name);
         task.setUpdateTime(Instant.now().toEpochMilli());
         fillSyncStrategy(task, params);
@@ -385,12 +366,25 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         tableGroups.forEach(group -> profileComponent.removeTableGroup(group.getId()));
     }
 
+    private void validateMappingConnectors(List<DatabaseMapping> mappings) {
+        for (int i = 0; i < mappings.size(); i++) {
+            DatabaseMapping mapping = mappings.get(i);
+            if (StringUtil.isBlank(mapping.getSourceConnectorId())) {
+                throw new BizException("库映射 " + (i + 1) + " 缺少源端连接器");
+            }
+            if (StringUtil.isBlank(mapping.getTargetConnectorId())) {
+                throw new BizException("库映射 " + (i + 1) + " 缺少目标端连接器");
+            }
+        }
+    }
+
     private DatabaseSyncTaskVO convertTask2Vo(DatabaseMigrationSyncTask task) {
         if (task == null) {
             return null;
         }
-        Connector source = profileComponent.getConnector(task.getSourceConnectorId());
-        Connector target = profileComponent.getConnector(task.getTargetConnectorId());
+        DatabaseMapping first = CollectionUtils.isEmpty(task.getDatabaseMappings()) ? null : task.getDatabaseMappings().get(0);
+        Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
+        Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
         BeanUtils.copyProperties(task, vo);
         int mappingCount = CollectionUtils.isEmpty(task.getDatabaseMappings()) ? 0 : task.getDatabaseMappings().size();

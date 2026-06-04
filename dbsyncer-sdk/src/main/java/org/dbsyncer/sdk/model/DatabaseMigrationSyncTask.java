@@ -18,15 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DatabaseMigrationSyncTask extends CommonTask {
 
     /**
-     * 源端连接器 ID
-     */
-    private String sourceConnectorId;
-    /**
-     * 目标端连接器 ID
-     */
-    private String targetConnectorId;
-    /**
-     * 库映射列表
+     * 库映射列表（源/目标连接器 ID 配置在每条 {@link DatabaseMapping} 上）
      */
     private List<DatabaseMapping> databaseMappings;
 
@@ -76,22 +68,6 @@ public class DatabaseMigrationSyncTask extends CommonTask {
      * 表级并发线程数（预留，与订正校验 threadNum 一致）
      */
     private int threadNum = 5;
-
-    public String getSourceConnectorId() {
-        return sourceConnectorId;
-    }
-
-    public void setSourceConnectorId(String sourceConnectorId) {
-        this.sourceConnectorId = sourceConnectorId;
-    }
-
-    public String getTargetConnectorId() {
-        return targetConnectorId;
-    }
-
-    public void setTargetConnectorId(String targetConnectorId) {
-        this.targetConnectorId = targetConnectorId;
-    }
 
     public List<DatabaseMapping> getDatabaseMappings() {
         return databaseMappings;

@@ -399,3 +399,190 @@
   padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid var(--border-secondary);
 }
+
+.picker-modal-dialog--wide {
+  width: min(760px, 100%);
+}
+
+.picker-modal-section + .picker-modal-section {
+  margin-top: var(--spacing-lg);
+}
+
+.picker-modal-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.picker-modal-target-box {
+  padding: var(--spacing-md);
+  border: 1px dashed var(--primary-color);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+}
+
+/* ========== 整库迁移页：顶部通栏 + 工作区 ========== */
+.database-syncer-page .ds-page-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-primary);
+}
+
+.ds-task-title-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.ds-task-name-item {
+  flex: 1;
+  min-width: 240px;
+}
+
+.ds-page-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ds-config-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+}
+
+.ds-config-bar .ds-bar-item {
+  flex: 0 1 320px;
+  min-width: 200px;
+}
+
+.ds-strategy-bar {
+  flex: 1;
+  min-width: 280px;
+}
+
+.ds-strategy-checks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md) var(--spacing-lg);
+}
+
+.ds-strategy-checks .form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+}
+
+.ds-strategy-overwrite {
+  gap: var(--spacing-sm);
+}
+
+.ds-strategy-overwrite .form-switch {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.mapping-workspace--page {
+  margin: var(--spacing-lg);
+  min-height: 520px;
+}
+
+.mapping-sidebar-header {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.mapping-card.is-active {
+  border-left: 3px solid var(--primary-color);
+}
+
+.mapping-card-flow {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--spacing-xs);
+}
+
+.mapping-card-src {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  padding-right: 24px;
+}
+
+.mapping-card.is-active .mapping-card-src {
+  color: var(--primary-color);
+}
+
+.ds-target-config-panel {
+  margin: var(--spacing-md) var(--spacing-lg) 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+}
+
+.ds-target-config-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.ds-target-config-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md) var(--spacing-lg);
+  align-items: flex-end;
+}
+
+.ds-target-field {
+  flex: 1;
+  min-width: 180px;
+}
+
+.form-control.ds-schema-readonly {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.mapping-detail-header--toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-primary);
+}
+
+.mapping-detail-scroll .db-sync-src-table {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.mapping-detail-empty.hidden,
+#mappingWorkspaceEmpty.hidden {
+  display: none;
+}
+
+#mappingDetailPanel:not(.hidden) ~ #mappingWorkspaceEmpty,
+.mapping-detail-panel:not(.hidden) + .mapping-detail-empty {
+  display: none;
+}

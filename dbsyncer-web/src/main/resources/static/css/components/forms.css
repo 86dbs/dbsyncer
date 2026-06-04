@@ -26,6 +26,9 @@
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
   background-color: #fff;
 }
+.form-control-50 {
+  width: 50% !important;
+}
 
 .form-control:focus {
   border-color: var(--primary-color);

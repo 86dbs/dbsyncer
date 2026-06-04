@@ -28,7 +28,6 @@
             <tr>
                 <th></th>
                 <th>任务名称</th>
-                <th>迁移方案</th>
                 <th>库映射数</th>
                 <th>结果</th>
                 <th>状态</th>
@@ -127,20 +126,7 @@
         return html;
     }
 
-    function renderConnectorPlan(task) {
-        const source = task.sourceConnector || {};
-        const target = task.targetConnector || {};
-        const sourceType = escapeHtml((source.config && source.config.connectorType) || '');
-        const targetType = escapeHtml((target.config && target.config.connectorType) || '');
-        return ''
-            + '<div class="flex items-center">'
-            + '<img draggable="false" class="mr-3" src="' + $basePath + '/img/' + sourceType + '.png" style="width:40px;height:40px;" onerror="this.style.display=\'none\'">'
-            + '<span>' + escapeHtml(source.name || '-') + '</span></div>'
-            + '<i class="fa fa-angle-double-down ml-3"></i>'
-            + '<div class="flex items-center">'
-            + '<img draggable="false" class="mr-3" src="' + $basePath + '/img/' + targetType + '.png" style="width:40px;height:40px;" onerror="this.style.display=\'none\'">'
-            + '<span>' + escapeHtml(target.name || '-') + '</span></div>';
-    }
+
 
     /**
      * 结果列：进度 + 异常条数（failTotal > 0 的明细数）
@@ -220,7 +206,6 @@
                     + 'onclick="doLoader(\'/database-syncer/page/detail?id=' + taskId + '\')">'
                     + escapeHtml(task.name || '') + '</a>'
                     + '</td>'
-                    + '<td style="min-width:180px;">' + renderConnectorPlan(task) + '</td>'
                     + '<td>' + mappingCount + '</td>'
                     + '<td>' + renderResultColumn(task) + '</td>'
                     + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
