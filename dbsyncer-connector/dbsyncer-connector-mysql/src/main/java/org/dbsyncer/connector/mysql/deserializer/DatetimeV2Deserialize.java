@@ -5,8 +5,6 @@ package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -26,7 +24,7 @@ public final class DatetimeV2Deserialize {
         int hour = bitSlice(datetime, 23, 5, 40);
         int minute = bitSlice(datetime, 28, 6, 40);
         int second = bitSlice(datetime, 34, 6, 40);
-        int nano = fsp / 1000;
+        int nano = fsp * 1000;
 
         // 检查是否为 MySQL 的零日期 (0000-00-00 00:00:00)
         // MySQL 从5.7开始默认不允许零日期 Java LocalDateTime 不支持
