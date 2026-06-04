@@ -10,10 +10,13 @@ import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.DatabaseMigrationDetailResult;
 import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
+import org.dbsyncer.sdk.model.ValidateSyncDetailResult;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.DataBaseSyncerDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.spi.ValidateSyncerDetailService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,11 +95,6 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public Paging result(String id) {
-                return null;
-            }
-
-            @Override
             public List<CommonTask> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum) {
                 return Collections.emptyList();
             }
@@ -131,6 +129,30 @@ public class ParserSupportConfiguration {
             @Override
             public void deleteByTaskId(String taskId) {
 
+            }
+        };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @DependsOn(value = "serviceFactory")
+    public ValidateSyncerDetailService validateSyncerDetailService() {
+        ValidateSyncerDetailService service = serviceFactory.get(ValidateSyncerDetailService.class);
+        if (service != null) {
+            return service;
+        }
+        return new ValidateSyncerDetailService() {
+            @Override
+            public void saveResult(ValidateSyncTask task, ValidateSyncDetailResult detail) {
+            }
+
+            @Override
+            public Paging result(String taskId) {
+                return null;
+            }
+
+            @Override
+            public void clearDetail(String taskId) {
             }
         };
     }
