@@ -24,8 +24,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.oceanbase</groupId>
-            <artifactId>oblogclient-logproxy</artifactId>
+            <groupId>com.zendesk</groupId>
+            <artifactId>mysql-binlog-connector-java</artifactId>
         </dependency>
 
         <dependency>

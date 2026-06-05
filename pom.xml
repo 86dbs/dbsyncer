@@ -52,7 +52,6 @@
         <kafka.version>0.11.0.0</kafka.version>
         <jedis.version>3.10.0</jedis.version>
         <oceanbase-client.version>2.4.12</oceanbase-client.version>
-        <logproxy-client.version>1.1.0</logproxy-client.version>
         <fastjson2.version>2.0.22</fastjson2.version>
         <protobuf.version>3.21.1</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
@@ -192,12 +191,6 @@
                 <groupId>com.oceanbase</groupId>
                 <artifactId>oceanbase-client</artifactId>
                 <version>${oceanbase-client.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.oceanbase</groupId>
-                <artifactId>oblogclient-logproxy</artifactId>
-                <version>${logproxy-client.version}</version>
             </dependency>
 
             <!-- log4j -->
