@@ -14,10 +14,12 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.postgresql.geometric.PGpoint;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,7 +50,16 @@ public final class PostgreSQLStringType extends StringType {
         // 位串类型
         BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
         // 其他类型
-        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
+        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot"),
+        // 数组类型（JDBC TYPE_NAME 以 _ 前缀表示，如 int8[] => _int8）
+        _BOOL("_bool"), _INT2("_int2"), _INT4("_int4"), _INT8("_int8"), _FLOAT4("_float4"), _FLOAT8("_float8"), _NUMERIC("_numeric"),
+        _OID("_oid"), _CHAR("_char"), _BPCHAR("_bpchar"), _VARCHAR("_varchar"), _TEXT("_text"), _NAME("_name"),
+        _BYTEA("_bytea"), _UUID("_uuid"), _JSON("_json"), _JSONB("_jsonb"),
+        _DATE("_date"), _TIME("_time"), _TIMESTAMP("_timestamp"), _TIMESTAMPTZ("_timestamptz"),
+        _INET("_inet"), _CIDR("_cidr"), _MONEY("_money"),
+        _BIT("_bit"), _VARBIT("_varbit"),
+        _INT4RANGE("_int4range"), _INT8RANGE("_int8range"), _NUMRANGE("_numrange"),
+        _TSRANGE("_tsrange"), _TSTZRANGE("_tstzrange"), _DATERANGE("_daterange");
 
         private final String value;
 
@@ -60,6 +71,16 @@ public final class PostgreSQLStringType extends StringType {
             return value;
         }
     }
+
+    private static final Set<TypeEnum> ARRAY_TYPES = EnumSet.of(
+            TypeEnum._BOOL, TypeEnum._INT2, TypeEnum._INT4, TypeEnum._INT8, TypeEnum._FLOAT4, TypeEnum._FLOAT8, TypeEnum._NUMERIC,
+            TypeEnum._OID, TypeEnum._CHAR, TypeEnum._BPCHAR, TypeEnum._VARCHAR, TypeEnum._TEXT, TypeEnum._NAME,
+            TypeEnum._BYTEA, TypeEnum._UUID, TypeEnum._JSON, TypeEnum._JSONB,
+            TypeEnum._DATE, TypeEnum._TIME, TypeEnum._TIMESTAMP, TypeEnum._TIMESTAMPTZ,
+            TypeEnum._INET, TypeEnum._CIDR, TypeEnum._MONEY,
+            TypeEnum._BIT, TypeEnum._VARBIT,
+            TypeEnum._INT4RANGE, TypeEnum._INT8RANGE, TypeEnum._NUMRANGE,
+            TypeEnum._TSRANGE, TypeEnum._TSTZRANGE, TypeEnum._DATERANGE);
 
     @Override
     public Set<String> getSupportedTypeName() {
@@ -81,6 +102,9 @@ public final class PostgreSQLStringType extends StringType {
         }
         if (val instanceof Boolean) {
             return ((Boolean) val) ? "1" : "0";
+        }
+        if (val instanceof PgArray) {
+            return val.toString();
         }
         return throwUnsupportedException(val, field);
     }
@@ -107,6 +131,14 @@ public final class PostgreSQLStringType extends StringType {
         // BIT 类型需要特殊处理：支持 Integer、Boolean、Number、String 等多种输入
         if (typeEnum == TypeEnum.BIT) {
             return convertToBit(val);
+        }
+        if (ARRAY_TYPES.contains(typeEnum)) {
+            if (val instanceof String) {
+                return toPgObject(typeEnum.getValue(), (String) val);
+            }
+            if (val instanceof PgArray) {
+                return val;
+            }
         }
 
         if (val instanceof String) {
@@ -151,14 +183,7 @@ public final class PostgreSQLStringType extends StringType {
                 case VARBIT:
                 case PG_LSN:
                 case TXID_SNAPSHOT:
-                    try {
-                        PGobject pgObject = new PGobject();
-                        pgObject.setType(typeEnum.getValue());
-                        pgObject.setValue(strVal);
-                        return pgObject;
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return toPgObject(typeEnum.getValue(), strVal);
                 default:
                     return val;
             }
@@ -192,6 +217,17 @@ public final class PostgreSQLStringType extends StringType {
             PGobject pgObject = new PGobject();
             pgObject.setType(TypeEnum.BIT.getValue());
             pgObject.setValue(bitStr);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Object toPgObject(String type, String value) {
+        try {
+            PGobject pgObject = new PGobject();
+            pgObject.setType(type);
+            pgObject.setValue(value);
             return pgObject;
         } catch (SQLException e) {
             throw new RuntimeException(e);
