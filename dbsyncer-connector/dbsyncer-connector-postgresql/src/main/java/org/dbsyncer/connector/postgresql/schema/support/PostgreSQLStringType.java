@@ -8,12 +8,12 @@ import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
-
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.postgresql.geometric.PGpoint;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 
 import java.sql.SQLException;
@@ -49,7 +49,6 @@ public final class PostgreSQLStringType extends StringType {
         BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
         // 其他类型
         CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
-
         private final String value;
 
         TypeEnum(String value) {
@@ -82,6 +81,12 @@ public final class PostgreSQLStringType extends StringType {
         if (val instanceof Boolean) {
             return ((Boolean) val) ? "1" : "0";
         }
+        if (val instanceof PgArray) {
+            return val.toString();
+        }
+        if (val instanceof String && PostgreSQLSchemaResolver.isArrayType(field.getTypeName())) {
+            return (String) val;
+        }
         return throwUnsupportedException(val, field);
     }
 
@@ -101,6 +106,14 @@ public final class PostgreSQLStringType extends StringType {
     protected Object convert(Object val, Field field) {
         // 规范化类型名，处理带 schema 前缀（如 "public"."geometry"）的情况
         String rawTypeName = PostgreSQLSchemaResolver.normalizeTypeName(field.getTypeName());
+        if (PostgreSQLSchemaResolver.isArrayType(rawTypeName)) {
+            if (val instanceof String) {
+                return toPgObject(rawTypeName, (String) val);
+            }
+            if (val instanceof PgArray) {
+                return val;
+            }
+        }
         // 将类型名转大写并替换空格为下划线，以匹配 TypeEnum
         String enumName = rawTypeName.toUpperCase().replace(" ", "_");
         TypeEnum typeEnum = TypeEnum.valueOf(enumName);
@@ -151,14 +164,7 @@ public final class PostgreSQLStringType extends StringType {
                 case VARBIT:
                 case PG_LSN:
                 case TXID_SNAPSHOT:
-                    try {
-                        PGobject pgObject = new PGobject();
-                        pgObject.setType(typeEnum.getValue());
-                        pgObject.setValue(strVal);
-                        return pgObject;
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return toPgObject(typeEnum.getValue(), strVal);
                 default:
                     return val;
             }
@@ -198,6 +204,17 @@ public final class PostgreSQLStringType extends StringType {
         }
     }
 
+    private Object toPgObject(String type, String value) {
+        try {
+            PGobject pgObject = new PGobject();
+            pgObject.setType(type);
+            pgObject.setValue(value);
+            return pgObject;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Object toPoint(String val) {
         try {
             PGpoint pgPoint = new PGpoint();
@@ -213,4 +230,5 @@ public final class PostgreSQLStringType extends StringType {
             throw new PostgreSQLException(e);
         }
     }
+
 }

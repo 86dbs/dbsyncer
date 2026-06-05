@@ -5,6 +5,7 @@ package org.dbsyncer.connector.postgresql.decoder;
 
 import org.dbsyncer.connector.postgresql.column.PgColumnValue;
 import org.dbsyncer.connector.postgresql.enums.MessageTypeEnum;
+import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 
 import org.postgresql.replication.LogSequenceNumber;
@@ -216,7 +217,12 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
             case "txid_snapshot":
                 // catch-all for unknown (extension module/custom) types
             default:
+                // 数组类型（JDBC TYPE_NAME 以 _ 前缀表示，与 PostgreSQLStringType 数组枚举一致）
+                if (PostgreSQLSchemaResolver.isArrayType(typeName)) {
+                    return value.asString();
+                }
                 return null;
         }
     }
+
 }
