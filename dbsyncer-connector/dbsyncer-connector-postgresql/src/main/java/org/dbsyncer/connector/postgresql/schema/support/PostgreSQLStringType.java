@@ -8,7 +8,6 @@ import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
-
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
@@ -19,7 +18,6 @@ import org.postgresql.util.PGobject;
 
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,17 +48,7 @@ public final class PostgreSQLStringType extends StringType {
         // 位串类型
         BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
         // 其他类型
-        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot"),
-        // 数组类型（JDBC TYPE_NAME 以 _ 前缀表示，如 int8[] => _int8）
-        _BOOL("_bool"), _INT2("_int2"), _INT4("_int4"), _INT8("_int8"), _FLOAT4("_float4"), _FLOAT8("_float8"), _NUMERIC("_numeric"),
-        _OID("_oid"), _CHAR("_char"), _BPCHAR("_bpchar"), _VARCHAR("_varchar"), _TEXT("_text"), _NAME("_name"),
-        _BYTEA("_bytea"), _UUID("_uuid"), _JSON("_json"), _JSONB("_jsonb"),
-        _DATE("_date"), _TIME("_time"), _TIMESTAMP("_timestamp"), _TIMESTAMPTZ("_timestamptz"),
-        _INET("_inet"), _CIDR("_cidr"), _MONEY("_money"),
-        _BIT("_bit"), _VARBIT("_varbit"),
-        _INT4RANGE("_int4range"), _INT8RANGE("_int8range"), _NUMRANGE("_numrange"),
-        _TSRANGE("_tsrange"), _TSTZRANGE("_tstzrange"), _DATERANGE("_daterange");
-
+        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
         private final String value;
 
         TypeEnum(String value) {
@@ -71,16 +59,6 @@ public final class PostgreSQLStringType extends StringType {
             return value;
         }
     }
-
-    private static final Set<TypeEnum> ARRAY_TYPES = EnumSet.of(
-            TypeEnum._BOOL, TypeEnum._INT2, TypeEnum._INT4, TypeEnum._INT8, TypeEnum._FLOAT4, TypeEnum._FLOAT8, TypeEnum._NUMERIC,
-            TypeEnum._OID, TypeEnum._CHAR, TypeEnum._BPCHAR, TypeEnum._VARCHAR, TypeEnum._TEXT, TypeEnum._NAME,
-            TypeEnum._BYTEA, TypeEnum._UUID, TypeEnum._JSON, TypeEnum._JSONB,
-            TypeEnum._DATE, TypeEnum._TIME, TypeEnum._TIMESTAMP, TypeEnum._TIMESTAMPTZ,
-            TypeEnum._INET, TypeEnum._CIDR, TypeEnum._MONEY,
-            TypeEnum._BIT, TypeEnum._VARBIT,
-            TypeEnum._INT4RANGE, TypeEnum._INT8RANGE, TypeEnum._NUMRANGE,
-            TypeEnum._TSRANGE, TypeEnum._TSTZRANGE, TypeEnum._DATERANGE);
 
     @Override
     public Set<String> getSupportedTypeName() {
@@ -106,6 +84,9 @@ public final class PostgreSQLStringType extends StringType {
         if (val instanceof PgArray) {
             return val.toString();
         }
+        if (val instanceof String && PostgreSQLSchemaResolver.isArrayType(field.getTypeName())) {
+            return (String) val;
+        }
         return throwUnsupportedException(val, field);
     }
 
@@ -125,20 +106,20 @@ public final class PostgreSQLStringType extends StringType {
     protected Object convert(Object val, Field field) {
         // 规范化类型名，处理带 schema 前缀（如 "public"."geometry"）的情况
         String rawTypeName = PostgreSQLSchemaResolver.normalizeTypeName(field.getTypeName());
+        if (PostgreSQLSchemaResolver.isArrayType(rawTypeName)) {
+            if (val instanceof String) {
+                return toPgObject(rawTypeName, (String) val);
+            }
+            if (val instanceof PgArray) {
+                return val;
+            }
+        }
         // 将类型名转大写并替换空格为下划线，以匹配 TypeEnum
         String enumName = rawTypeName.toUpperCase().replace(" ", "_");
         TypeEnum typeEnum = TypeEnum.valueOf(enumName);
         // BIT 类型需要特殊处理：支持 Integer、Boolean、Number、String 等多种输入
         if (typeEnum == TypeEnum.BIT) {
             return convertToBit(val);
-        }
-        if (ARRAY_TYPES.contains(typeEnum)) {
-            if (val instanceof String) {
-                return toPgObject(typeEnum.getValue(), (String) val);
-            }
-            if (val instanceof PgArray) {
-                return val;
-            }
         }
 
         if (val instanceof String) {
@@ -249,4 +230,5 @@ public final class PostgreSQLStringType extends StringType {
             throw new PostgreSQLException(e);
         }
     }
+
 }
