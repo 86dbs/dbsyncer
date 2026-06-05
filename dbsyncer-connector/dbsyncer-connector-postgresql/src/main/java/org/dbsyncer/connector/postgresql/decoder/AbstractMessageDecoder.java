@@ -216,6 +216,10 @@ public abstract class AbstractMessageDecoder implements MessageDecoder {
             case "txid_snapshot":
                 // catch-all for unknown (extension module/custom) types
             default:
+                // 数组类型（JDBC TYPE_NAME 以 _ 前缀表示，与 PostgreSQLStringType 数组枚举一致）
+                if (typeName != null && typeName.startsWith("_")) {
+                    return value.asString();
+                }
                 return null;
         }
     }
