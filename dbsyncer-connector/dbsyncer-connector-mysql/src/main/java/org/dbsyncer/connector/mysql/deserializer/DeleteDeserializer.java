@@ -7,10 +7,6 @@ import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.DeleteRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
-import com.github.shyiko.mysql.binlog.event.TableMapEventData;
-import com.github.shyiko.mysql.binlog.event.deserialization.DeleteRowsEventDataDeserializer;
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
@@ -31,6 +27,11 @@ public final class DeleteDeserializer extends DeleteRowsEventDataDeserializer {
 
     protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
+    }
+
+    @Override
+    protected Serializable deserializeDatetime(ByteArrayInputStream inputStream) throws IOException {
+        return datetimeV2Deserialize.deserializeDatetime(inputStream);
     }
 
     @Override

@@ -35,6 +35,11 @@ public final class ExtWriteDeserializer extends WriteRowsEventDataDeserializer {
     }
 
     @Override
+    protected Serializable deserializeDatetime(ByteArrayInputStream inputStream) throws IOException {
+        return datetimeV2Deserialize.deserializeDatetime(inputStream);
+    }
+
+    @Override
     protected Serializable deserializeDatetimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
         return datetimeV2Deserialize.deserializeDatetimeV2(meta, inputStream);
     }
