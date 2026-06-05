@@ -113,6 +113,7 @@ JAVA_OPTS+=("-Dspring.config.location=$CONFIG_PATH")
 JAVA_OPTS+=("-DLOG_HOME=$DBS_HOME/logs")
 JAVA_OPTS+=("-Dsun.stdout.encoding=UTF-8")
 JAVA_OPTS+=("-Dfile.encoding=UTF-8")
+JAVA_OPTS+=("-Duser.timezone=Asia/Shanghai")
 JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
 
 # 5. 主类
