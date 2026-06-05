@@ -6,8 +6,6 @@ package org.dbsyncer.connector.oceanbase.deserializer;
 import com.github.shyiko.mysql.binlog.event.TableMapEventData;
 import com.github.shyiko.mysql.binlog.event.deserialization.DeleteRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-import org.dbsyncer.connector.mysql.deserializer.DatetimeV2Deserialize;
-import org.dbsyncer.connector.mysql.deserializer.JsonBinaryDeserialize;
 
 import java.io.IOException;
 import java.io.Serializable;
