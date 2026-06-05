@@ -52,12 +52,12 @@ import java.util.stream.Stream;
  */
 public class MySQLListener extends AbstractDatabaseListener {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String BINLOG_FILENAME = "fileName";
-    private final String BINLOG_POSITION = "position";
-    private final Map<Long, TableMapEventData> tables = new HashMap<>();
-    private BinaryLogClient client;
+    protected final String binlogFilenameKey = "fileName";
+    protected final String binlogPositionKey = "position";
+    protected final Map<Long, TableMapEventData> tables = new HashMap<>();
+    protected BinaryLogClient client;
     private final Lock connectLock = new ReentrantLock();
 
     @Override
@@ -65,13 +65,13 @@ public class MySQLListener extends AbstractDatabaseListener {
         try {
             connectLock.lock();
             if (client != null && client.isConnected()) {
-                logger.error("MySQLExtractor is already started");
+                logger.error(getAlreadyStartedMessage());
                 return;
             }
             run();
         } catch (Exception e) {
             logger.error("启动失败:{}", e.getMessage());
-            throw new MySQLException(e);
+            throw wrapException(e);
         } finally {
             connectLock.unlock();
         }
@@ -95,16 +95,16 @@ public class MySQLListener extends AbstractDatabaseListener {
     public Map<String, String> captureSnapshot() {
         try {
             final DatabaseConfig config = getConnectorInstance().getConfig();
-            BinaryLogRemoteClient captureClient = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
+            BinaryLogClient captureClient = createBinlogClient(config);
             captureClient.connect();
             refreshSnapshot(captureClient.getBinlogFilename(), captureClient.getBinlogPosition());
             captureClient.disconnect();
             Map<String, String> captured = new HashMap<>(2);
-            captured.put(BINLOG_FILENAME, snapshot.get(BINLOG_FILENAME));
-            captured.put(BINLOG_POSITION, snapshot.get(BINLOG_POSITION));
+            captured.put(binlogFilenameKey, snapshot.get(binlogFilenameKey));
+            captured.put(binlogPositionKey, snapshot.get(binlogPositionKey));
             return captured;
         } catch (Exception e) {
-            logger.error("捕获MySQL binlog位点失败:{}", e.getMessage(), e);
+            logger.error(getCaptureSnapshotFailedMessage(), e.getMessage(), e);
             return Collections.emptyMap();
         }
     }
@@ -118,12 +118,32 @@ public class MySQLListener extends AbstractDatabaseListener {
         refreshSnapshot(offset.getNextFileName(), (Long) offset.getPosition());
     }
 
+    protected BinaryLogClient createBinlogClient(DatabaseConfig config) throws Exception {
+        return new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
+    }
+
+    protected String getAlreadyStartedMessage() {
+        return "MySQLExtractor is already started";
+    }
+
+    protected String getCaptureSnapshotFailedMessage() {
+        return "捕获MySQL binlog位点失败:{}";
+    }
+
+    protected RuntimeException wrapException(Exception e) {
+        return new MySQLException(e);
+    }
+
+    protected RuntimeException wrapException(String message) {
+        return new MySQLException(message);
+    }
+
     private void run() throws Exception {
         final DatabaseConfig config = getConnectorInstance().getConfig();
-        boolean containsPos = snapshot.containsKey(BINLOG_POSITION);
-        client = new BinaryLogRemoteClient(config.getHost(), config.getPort(), config.getUsername(), config.getPassword());
-        client.setBinlogFilename(snapshot.get(BINLOG_FILENAME));
-        client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(BINLOG_POSITION)) : 0);
+        boolean containsPos = snapshot.containsKey(binlogPositionKey);
+        client = createBinlogClient(config);
+        client.setBinlogFilename(snapshot.get(binlogFilenameKey));
+        client.setBinlogPosition(containsPos ? Long.parseLong(snapshot.get(binlogPositionKey)) : 0);
         client.setTableMapEventByTableId(tables);
         client.registerEventListener(new InnerEventListener());
         client.registerLifecycleListener(new InnerLifecycleListener());
@@ -151,8 +171,8 @@ public class MySQLListener extends AbstractDatabaseListener {
     }
 
     private void refreshSnapshot(String binlogFilename, long nextPosition) {
-        snapshot.put(BINLOG_FILENAME, binlogFilename);
-        snapshot.put(BINLOG_POSITION, String.valueOf(nextPosition));
+        snapshot.put(binlogFilenameKey, binlogFilename);
+        snapshot.put(binlogPositionKey, String.valueOf(nextPosition));
     }
 
     private void trySendEvent(ChangedEvent event) {
@@ -192,11 +212,11 @@ public class MySQLListener extends AbstractDatabaseListener {
                 ServerException serverException = (ServerException) e;
                 if (serverException.getErrorCode() == 1236) {
                     String log = String.format("[%s]执行异常，建议重新保存驱动，再启动驱动。", client.getWorkerThreadName());
-                    errorEvent(new MySQLException(log + e.getMessage()));
+                    errorEvent(wrapException(log + e.getMessage()));
                     return;
                 }
             }
-            errorEvent(new MySQLException(e.getMessage()));
+            errorEvent(wrapException(e.getMessage()));
         }
 
         @Override
