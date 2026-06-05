@@ -7,6 +7,8 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.ValidateSyncDetailResult;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 
+import java.util.Map;
+
 /**
  * 订正校验任务明细 SPI（落库 / 查询 / 清除，与 {@link TaskService} 任务生命周期解耦）。
  *
@@ -38,4 +40,12 @@ public interface ValidateSyncerDetailService {
      * @param taskId 任务 ID
      */
     void clearDetail(String taskId);
+
+    /**
+     * 对单条明细中尚未成功订正的差异尝试手动订正，并更新明细汇总列。
+     *
+     * @param detailId 明细主键
+     * @return 更新后的明细（含 diffTotal、fixedTotal、content 等）
+     */
+    Map<String, Object> manualRevise(String detailId);
 }

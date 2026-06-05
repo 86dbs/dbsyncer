@@ -100,8 +100,16 @@
                 <tbody id="diffTableBody"></tbody>
             </table>
         </div>
-        <div style="padding:12px 20px; border-top:1px solid var(--border-color, #e5e7eb); text-align:right;">
-            <button class="btn btn-outline" id="closeDiffModalBtn"><i class="fa fa-times"></i> 关闭</button>
+        <div id="diffModalFooter" class="flex items-center justify-between gap-2" style="padding:12px 20px; border-top:1px solid var(--border-color, #e5e7eb);">
+            <p id="diffReviseHint" class="text-sm text-tertiary mb-0 hidden">仍有差异未订正，可尝试将源端数据同步至目标端。</p>
+            <div class="flex items-center gap-2 ml-auto">
+                <button type="button" class="btn btn-primary hidden" id="btnManualRevise">
+                    <i class="fa fa-wrench"></i> 手动订正
+                </button>
+                <button type="button" class="btn btn-outline" id="closeDiffModalBtn">
+                    <i class="fa fa-times"></i> 关闭
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -113,6 +121,8 @@
         };
 
         var currentTaskId = '[[${taskId}]]';
+        var currentDetailId = '';
+        var manualReviseSubmitting = false;
 
         // 初始化任务下拉组件
         var taskSelect = $('#detailTaskSelect').dbSelect({
@@ -188,6 +198,7 @@
         // 关闭弹窗
         $('#closeDiffModal, #closeDiffModalBtn').click(function () {
             $('#diffDetailOverlay').hide();
+            resetDiffModalActions();
         });
         $('#diffDetailOverlay').click(function (e) {
             if ($(e.target).is('#diffDetailOverlay')) {
@@ -265,6 +276,80 @@
             return '<span>源：' + sourceTotal + '</span><br><span>目：' + targetTotal + '</span>';
         }
 
+        function resetDiffModalActions() {
+            currentDetailId = '';
+            $('#btnManualRevise').addClass('hidden').prop('disabled', false);
+            $('#diffReviseHint').addClass('hidden');
+        }
+
+        function resolveDiffFixedCounts(row, content) {
+            var diff = row.diffTotal;
+            if (diff === undefined || diff === null || diff === '') {
+                diff = content && content.diffTotal != null ? content.diffTotal : 0;
+            }
+            var fixed = row.fixedTotal;
+            if (fixed === undefined || fixed === null || fixed === '') {
+                fixed = content && content.correctedTotal != null ? content.correctedTotal : 0;
+            }
+            return {
+                diff: Number(diff) || 0,
+                fixed: Number(fixed) || 0
+            };
+        }
+
+        function updateManualReviseAction(detailId, diff, fixed) {
+            currentDetailId = detailId || '';
+            var pending = diff > fixed;
+            $('#btnManualRevise').toggleClass('hidden', !pending);
+            $('#diffReviseHint').toggleClass('hidden', !pending);
+        }
+
+        function renderDiffDetailModal(row) {
+            var content = parseContent(row.content);
+            if (!content) {
+                bootGrowl('无差异数据！', 'warning');
+                return;
+            }
+            var type = row.type || '';
+            var data = content.data || [];
+            var tableNameOuter = row.sourceTableName || (content.tableName || '-');
+            var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
+            var tgt = row.targetTotal != null ? row.targetTotal : (content.targetTotal != null ? content.targetTotal : 0);
+            var counts = resolveDiffFixedCounts(row, content);
+
+            if (type === 'rowData') {
+                $('#diffSummary').show();
+                $('#summarySourceTotal').text(src);
+                $('#summaryTargetTotal').text(tgt);
+                $('#summaryDiffTotal').text(counts.diff);
+                $('#summaryCorrectedTotal').text(counts.fixed);
+            } else {
+                $('#diffSummary').hide();
+            }
+
+            var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
+            var bodyHtml = '';
+            data.forEach(function (d) {
+                var safeMsg = escapeHtml(d.msg || '-');
+                var msgHtml = '<div class="diff-msg-cell">' + safeMsg + '</div>';
+                var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
+                var typeText = d.type || d.objType || '-';
+                bodyHtml += '<tr>' +
+                    '<td>' + sourceTableHtml + '</td>' +
+                    '<td>' + escapeHtml(typeText) + '</td>' +
+                    '<td>' + escapeHtml(d.key || '-') + '</td>' +
+                    '<td style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;">' + msgHtml + '</td>' +
+                    '</tr>';
+            });
+            if (data.length === 0) {
+                bodyHtml = '<tr><td colspan="4" class="text-center text-gray-400">无差异数据</td></tr>';
+            }
+            $('#diffTableHead').html(headHtml);
+            $('#diffTableBody').html(bodyHtml);
+            updateManualReviseAction(row.id, counts.diff, counts.fixed);
+            $('#diffDetailOverlay').show();
+        }
+
         /**
          * 按明细 ID 拉取完整记录（含 CONTENT）后展示弹窗。
          * @param {string} detailId 明细主键
@@ -276,52 +361,36 @@
                     bootGrowl(res.message || '加载失败', 'danger');
                     return;
                 }
-                var row = res.data;
-                var content = parseContent(row.content);
-                if (!content) {
-                    bootGrowl('无差异数据！', 'warning');
-                    return;
-                }
-                var type = row.type || '';
-                var data = content.data || [];
-                var tableNameOuter = row.sourceTableName || (content.tableName || '-');
-                var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
-                var tgt = row.targetTotal != null ? row.targetTotal : (content.targetTotal != null ? content.targetTotal : 0);
-                var diff = row.diffTotal != null ? row.diffTotal : (content.diffTotal != null ? content.diffTotal : 0);
-                var fixed = row.fixedTotal != null ? row.fixedTotal : 0;
-
-                if (type === 'rowData') {
-                    $('#diffSummary').show();
-                    $('#summarySourceTotal').text(src);
-                    $('#summaryTargetTotal').text(tgt);
-                    $('#summaryDiffTotal').text(diff);
-                    $('#summaryCorrectedTotal').text(fixed);
-                } else {
-                    $('#diffSummary').hide();
-                }
-
-                var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
-                var bodyHtml = '';
-                data.forEach(function (d) {
-                    var safeMsg = escapeHtml(d.msg || '-');
-                    var msgHtml = '<div class="diff-msg-cell">' + safeMsg + '</div>';
-                    var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
-                    var typeText = d.type || d.objType || '-';
-                    bodyHtml += '<tr>' +
-                        '<td>' + sourceTableHtml + '</td>' +
-                        '<td>' + escapeHtml(typeText) + '</td>' +
-                        '<td>' + escapeHtml(d.key || '-') + '</td>' +
-                        '<td style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;">' + msgHtml + '</td>' +
-                        '</tr>';
-                });
-                if (data.length === 0) {
-                    bodyHtml = '<tr><td colspan="4" class="text-center text-gray-400">无差异数据</td></tr>';
-                }
-                $('#diffTableHead').html(headHtml);
-                $('#diffTableBody').html(bodyHtml);
-                $('#diffDetailOverlay').show();
+                renderDiffDetailModal(res.data || {});
             });
         };
+
+        $('#btnManualRevise').click(function () {
+            if (!currentDetailId || manualReviseSubmitting) {
+                return;
+            }
+            showConfirm({
+                title: '确定要手动订正当前明细中尚未成功的差异数据？',
+                icon: 'warning',
+                size: 'large',
+                confirmType: 'primary',
+                onConfirm: function () {
+                    manualReviseSubmitting = true;
+                    $('#btnManualRevise').prop('disabled', true);
+                    doPoster('/validate-sync/manualRevise', {id: currentDetailId}, function (res) {
+                        manualReviseSubmitting = false;
+                        $('#btnManualRevise').prop('disabled', false);
+                        if (!res.success) {
+                            bootGrowl(res.message || '手动订正失败', 'danger');
+                            return;
+                        }
+                        bootGrowl('手动订正完成', 'success');
+                        renderDiffDetailModal(res.data || {});
+                        resultPagination.doSearch(buildSearchParams());
+                    });
+                }
+            });
+        });
 
         $(document).on('click', '.diff-detail-btn', function () {
             var id = $(this).data('detail-id');
