@@ -135,7 +135,7 @@ public class ParserSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = "serviceFactory")
+    @DependsOn(value = {"serviceFactory", "taskService"})
     public ValidateSyncerDetailService validateSyncerDetailService() {
         ValidateSyncerDetailService service = serviceFactory.get(ValidateSyncerDetailService.class);
         if (service != null) {
@@ -153,6 +153,11 @@ public class ParserSupportConfiguration {
 
             @Override
             public void clearDetail(String taskId) {
+            }
+
+            @Override
+            public java.util.Map<String, Object> manualRevise(String detailId) {
+                return null;
             }
         };
     }

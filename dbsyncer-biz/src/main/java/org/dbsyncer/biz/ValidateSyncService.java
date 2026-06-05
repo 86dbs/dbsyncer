@@ -114,6 +114,14 @@ public interface ValidateSyncService {
      */
     Object getValidateResultDetail(String id);
 
+    /**
+     * 对单条校验明细中尚未订正的差异执行手动订正。
+     *
+     * @param detailId 明细主键
+     * @return 更新后的明细
+     */
+    Object manualReviseDetail(String detailId);
+
     String addTableGroup(Map<String, String> params);
 
     String editTableGroup(Map<String, String> params);

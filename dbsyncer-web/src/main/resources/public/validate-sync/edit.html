@@ -103,34 +103,22 @@
             </div>
 
             <p><i class="fa fa-database text-success"></i> 校验范围</p>
-            <div class="grid grid-cols-9 mt-4">
-                <div class="form-item">
-                    <label class="form-label">订正</label>
-                    <input type="checkbox" name="enableSync" class="validate-sync-item" value="true" th:checked="${task?.enableSync}" />
-                </div>
-                <div class="form-item">
-                    <label class="form-label">行数据</label>
-                    <input type="checkbox" name="enablerRowData" class="validate-sync-item" value="true" th:checked="${task?.enablerRowData}" />
-                </div>
-                <div class="form-item">
-                    <label class="form-label">表结构</label>
-                    <input type="checkbox" name="enableSchema" class="validate-sync-item" value="true"
-                           th:disabled="${#strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'sqlite') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'sqlite')}"
-                           th:checked="${!(#strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'sqlite') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'sqlite')) and task?.enableSchema}" />
-                </div>
-
-<!--                <div class="form-item">-->
-<!--                    <label class="form-label">索引</label>-->
-<!--                    <input type="checkbox" name="enableIndex" class="validate-sync-item" value="true" th:checked="${task?.enableIndex}" />-->
-<!--                </div>-->
-<!--                <div class="form-item">-->
-<!--                    <label class="form-label">触发器</label>-->
-<!--                    <input type="checkbox" name="enableTrigger" class="validate-sync-item" value="true" th:checked="${task?.enableTrigger}" />-->
-<!--                </div>-->
-<!--                <div class="form-item">-->
-<!--                    <label class="form-label">函数</label>-->
-<!--                    <input type="checkbox" name="enableFunction" class="validate-sync-item" value="true" th:checked="${task?.enableFunction}" />-->
-<!--                </div>-->
+            <div id="validate-sync-scope" class="checkbox-group mt-4"
+                 th:with="schemaUnsupported=${#strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'sqlite') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'sqlite')}">
+                <input type="checkbox" name="enableSync" value="true" th:checked="${task?.enableSync}" />
+                <label>订正</label>
+                <input type="checkbox" name="enablerRowData" value="true" th:checked="${task?.enablerRowData}" />
+                <label>行数据</label>
+                <input type="checkbox" name="enableSchema" value="true"
+                       th:disabled="${schemaUnsupported}"
+                       th:checked="${!schemaUnsupported and task?.enableSchema}" />
+                <label>表结构</label>
+<!--                <input type="checkbox" name="enableIndex" value="true" th:checked="${task?.enableIndex}" />-->
+<!--                <label>索引</label>-->
+<!--                <input type="checkbox" name="enableTrigger" value="true" th:checked="${task?.enableTrigger}" />-->
+<!--                <label>触发器</label>-->
+<!--                <input type="checkbox" name="enableFunction" value="true" th:checked="${task?.enableFunction}" />-->
+<!--                <label>函数</label>-->
             </div>
 
             <!-- 过滤条件 -->
@@ -203,7 +191,7 @@
 
         bindTriggerChange();
 
-        $(".validate-sync-item").checkboxGroup({
+        $('#validate-sync-scope').checkboxGroup({
             theme: 'info',
             size: 'md'
         });

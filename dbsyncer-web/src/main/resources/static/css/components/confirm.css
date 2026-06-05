@@ -14,7 +14,7 @@
   align-items: flex-start;
   justify-content: center;
   padding-top: 60px;
-  z-index: 1000;
+  z-index: var(--z-confirm, 1080);
   animation: confirm-overlay-show 0.2s ease;
   overflow-y: auto;
 }

@@ -37,6 +37,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.*;
 import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.spi.ValidateSyncerDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
@@ -59,6 +60,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private TaskService<ValidateSyncTask> taskService;
+
+    @Resource
+    private ValidateSyncerDetailService validateSyncerDetailService;
 
     @Resource
     private StorageService storageService;
@@ -412,6 +416,12 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             return null;
         }
         return paging.getData().iterator().next();
+    }
+
+    @Override
+    public Object manualReviseDetail(String detailId) {
+        Assert.hasText(detailId, "id is required.");
+        return validateSyncerDetailService.manualRevise(detailId);
     }
 
     @Override
