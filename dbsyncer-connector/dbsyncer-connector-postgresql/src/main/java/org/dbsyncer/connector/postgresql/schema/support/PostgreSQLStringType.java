@@ -14,6 +14,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.postgresql.geometric.PGpoint;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 
 import java.sql.SQLException;
@@ -48,7 +49,7 @@ public final class PostgreSQLStringType extends StringType {
         // 位串类型
         BIT("bit"), BIT_VARYING("bit varying"), VARBIT("varbit"),
         // 其他类型
-        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot");
+        CITEXT("citext"), XML("xml"), PG_LSN("pg_lsn"), TXID_SNAPSHOT("txid_snapshot"),_INT8("_int8"),_VARCHAR("_varchar");
 
         private final String value;
 
@@ -81,6 +82,9 @@ public final class PostgreSQLStringType extends StringType {
         }
         if (val instanceof Boolean) {
             return ((Boolean) val) ? "1" : "0";
+        }
+        if (val instanceof PgArray) {
+            return val.toString();
         }
         return throwUnsupportedException(val, field);
     }
