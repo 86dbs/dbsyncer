@@ -29,6 +29,32 @@ public final class MySQLTimeType extends TimeType {
 
     @Override
     protected Time merge(Object val, Field field) {
+        if (val instanceof Time) {
+            return (Time) val;
+        }
+        if (val instanceof String) {
+            return parseTimeString((String) val);
+        }
         return throwUnsupportedException(val, field);
+    }
+
+    @Override
+    protected Object convert(Object val, Field field) {
+        if (val instanceof Time) {
+            return val;
+        }
+        if (val instanceof String) {
+            return parseTimeString((String) val);
+        }
+        return throwUnsupportedException(val, field);
+    }
+
+    private Time parseTimeString(String value) {
+        String text = value.trim();
+        int dot = text.indexOf('.');
+        if (dot > 0) {
+            text = text.substring(0, dot);
+        }
+        return Time.valueOf(text);
     }
 }
