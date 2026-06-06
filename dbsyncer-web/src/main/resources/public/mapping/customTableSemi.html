@@ -226,7 +226,7 @@
                         <label>到期</label>
                     </div>
                 </div>`);
-            items.push(`<div class="form-item" id="redis_expire_seconds_wrap" style="display:${expireType === 'expire' ? '' : 'none'}">
+            items.push(`<div class="form-item${expireType !== 'expire' ? ' hidden' : ''}" id="redis_expire_seconds_wrap">
                     <label class="form-label">过期时间（秒）<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
@@ -240,15 +240,13 @@
         const $expireWrap = $('#redis_expire_seconds_wrap');
         const $expireInput = $('input[name="expireSeconds"]');
         const updateExpireInput = function (value) {
-            if (value === 'expire') {
-                $expireWrap.show();
-                $expireInput.prop('required', true);
+            const visible = value === 'expire';
+            $expireWrap.toggleClass('hidden', !visible);
+            $expireInput.prop('required', visible).prop('tabindex', visible ? 0 : -1);
+            if (visible) {
                 if (!$expireInput.val()) {
                     $expireInput.val(86440);
                 }
-            } else {
-                $expireWrap.hide();
-                $expireInput.prop('required', false);
             }
         };
         if ($('#redis_expire_type').length) {
