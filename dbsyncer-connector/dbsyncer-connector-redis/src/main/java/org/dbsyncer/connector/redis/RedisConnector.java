@@ -6,9 +6,11 @@ package org.dbsyncer.connector.redis;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.redis.cdc.RedisListener;
 import org.dbsyncer.connector.redis.config.RedisConfig;
+import org.dbsyncer.connector.redis.constant.RedisConstant;
 import org.dbsyncer.connector.redis.schema.RedisSchemaResolver;
 import org.dbsyncer.connector.redis.util.RedisUtil;
 import org.dbsyncer.connector.redis.validator.RedisConfigValidator;
@@ -35,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.params.SetParams;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,8 +55,6 @@ import java.util.stream.Collectors;
 public class RedisConnector extends AbstractConnector implements ConnectorService<RedisConnectorInstance, RedisConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private static final String KEY_PREFIX = "keyPrefix";
 
     private final RedisConfigValidator configValidator = new RedisConfigValidator();
     private final RedisSchemaResolver schemaResolver = new RedisSchemaResolver();
@@ -144,17 +145,30 @@ public class RedisConnector extends AbstractConnector implements ConnectorServic
 
         Result result = new Result();
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
-        String keyPrefix = context.getCommand().get(KEY_PREFIX);
+        String keyPrefix = context.getCommand().get(RedisConstant.KEY_PREFIX);
+        String dataStructure = context.getCommand().get(RedisConstant.DATA_STRUCTURE);
+        String keyJoiner = context.getCommand().get(RedisConstant.KEY_JOINER);
+        String expireType = context.getCommand().get(RedisConstant.EXPIRE_TYPE);
+        String expireSeconds = context.getCommand().get(RedisConstant.EXPIRE_SECONDS);
         String event = context.getEvent();
         Jedis jedis = null;
         try {
             jedis = connectorInstance.borrowJedis();
             for (Map row : data) {
-                String redisKey = buildRedisKey(keyPrefix, pkFields, row);
+                String redisKey = buildRedisKey(keyPrefix, keyJoiner, pkFields, row);
                 if (StringUtil.equals(event, ConnectorConstant.OPERTION_DELETE)) {
                     jedis.del(redisKey);
+                    continue;
+                }
+                String value = JsonUtil.objToJson(row);
+                if (!StringUtil.equals(dataStructure, RedisConstant.DATA_TYPE_STRING)) {
+                    throw new RedisException("暂不支持的数据结构: " + dataStructure);
+                }
+                if (StringUtil.equals(expireType, RedisConstant.EXPIRE)) {
+                    long ttlSeconds = NumberUtil.toLong(expireSeconds);
+                    jedis.set(redisKey, value, SetParams.setParams().ex(ttlSeconds));
                 } else {
-                    jedis.set(redisKey, JsonUtil.objToJson(row));
+                    jedis.set(redisKey, value);
                 }
             }
             result.addSuccessData(data);
@@ -168,11 +182,12 @@ public class RedisConnector extends AbstractConnector implements ConnectorServic
         return result;
     }
 
-    private String buildRedisKey(String keyPrefix, List<Field> pkFields, Map row) {
+    private String buildRedisKey(String keyPrefix, String keyJoiner, List<Field> pkFields, Map row) {
         List<String> parts = pkFields.stream()
                 .map(f -> String.valueOf(row.get(f.getName())))
                 .collect(Collectors.toList());
-        String key = StringUtil.join(parts, StringUtil.UNDERLINE);
+        String joiner = StringUtil.isBlank(keyJoiner) ? StringUtil.COLON : keyJoiner;
+        String key = StringUtil.join(parts, joiner);
         if (StringUtil.isBlank(keyPrefix)) {
             return key;
         }
@@ -187,7 +202,21 @@ public class RedisConnector extends AbstractConnector implements ConnectorServic
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> cmd = new HashMap<>();
-        cmd.put(KEY_PREFIX, commandConfig.getTable().getName());
+        Table table = commandConfig.getTable();
+        String keyPrefix = table.getExtInfo().getProperty(RedisConstant.KEY_PREFIX);
+        if (StringUtil.isBlank(keyPrefix)) {
+            keyPrefix = table.getName();
+        }
+        cmd.put(RedisConstant.KEY_PREFIX, keyPrefix);
+        String dataStructure = table.getExtInfo().getProperty(RedisConstant.DATA_STRUCTURE);
+        cmd.put(RedisConstant.DATA_STRUCTURE, StringUtil.isBlank(dataStructure) ? RedisConstant.DATA_TYPE_STRING : dataStructure);
+        String keyJoiner = table.getExtInfo().getProperty(RedisConstant.KEY_JOINER);
+        cmd.put(RedisConstant.KEY_JOINER, StringUtil.isBlank(keyJoiner) ? StringUtil.COLON : keyJoiner);
+        cmd.put(RedisConstant.EXPIRE_TYPE, table.getExtInfo().getProperty(RedisConstant.EXPIRE_TYPE, RedisConstant.EXPIRE_NEVER));
+        String expireSeconds = table.getExtInfo().getProperty(RedisConstant.EXPIRE_SECONDS);
+        if (StringUtil.isNotBlank(expireSeconds)) {
+            cmd.put(RedisConstant.EXPIRE_SECONDS, expireSeconds);
+        }
         return cmd;
     }
 

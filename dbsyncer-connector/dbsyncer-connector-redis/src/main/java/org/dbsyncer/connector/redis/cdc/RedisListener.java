@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.redis.RedisConnectorInstance;
 import org.dbsyncer.connector.redis.RedisException;
+import org.dbsyncer.connector.redis.constant.RedisConstant;
 import org.dbsyncer.connector.redis.util.RedisUtil;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.listener.AbstractListener;
@@ -59,11 +60,11 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         try {
             for (Table table : customTable) {
                 String stream = table.getName();
-                String groupId = table.getExtInfo().getProperty("groupId");
+                String groupId = table.getExtInfo().getProperty(RedisConstant.GROUP_ID);
                 if (StringUtil.isBlank(groupId)) {
                     throw new RedisException("Redis Stream 消费组 groupId 不能为空");
                 }
-                String consumerName = table.getExtInfo().getProperty("consumerName");
+                String consumerName = table.getExtInfo().getProperty(RedisConstant.CONSUMER_NAME);
                 if (StringUtil.isBlank(consumerName)) {
                     consumerName = RedisUtil.DEFAULT_CONSUMER;
                 }

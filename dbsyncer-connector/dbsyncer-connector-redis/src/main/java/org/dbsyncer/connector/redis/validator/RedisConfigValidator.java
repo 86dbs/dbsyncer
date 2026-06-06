@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.redis.RedisConnector;
 import org.dbsyncer.connector.redis.config.RedisConfig;
+import org.dbsyncer.connector.redis.constant.RedisConstant;
 import org.dbsyncer.connector.redis.util.RedisUtil;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.model.Field;
@@ -44,8 +45,13 @@ public class RedisConfigValidator implements ConfigValidator<RedisConnector, Red
         Table table = new Table();
         String tableName = params.get("tableName");
         String columnList = params.get("columnList");
-        String groupId = params.get("groupId");
-        String consumerName = params.get("consumerName");
+        String groupId = params.get(RedisConstant.GROUP_ID);
+        String consumerName = params.get(RedisConstant.CONSUMER_NAME);
+        String keyPrefix = params.get(RedisConstant.KEY_PREFIX);
+        String dataStructure = params.get(RedisConstant.DATA_STRUCTURE);
+        String keyJoiner = params.get(RedisConstant.KEY_JOINER);
+        String expireType = params.get(RedisConstant.EXPIRE_TYPE);
+        String expireSeconds = params.get(RedisConstant.EXPIRE_SECONDS);
         Assert.hasText(tableName, "TableName is empty");
         Assert.hasText(columnList, "ColumnList is empty");
         List<Field> fields = JsonUtil.jsonToArray(columnList, Field.class);
@@ -53,11 +59,28 @@ public class RedisConfigValidator implements ConfigValidator<RedisConnector, Red
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
+        if (StringUtil.isNotBlank(keyPrefix)) {
+            table.getExtInfo().put(RedisConstant.KEY_PREFIX, keyPrefix.trim());
+        }
+        if (StringUtil.isNotBlank(dataStructure)) {
+            table.getExtInfo().put(RedisConstant.DATA_STRUCTURE, dataStructure.trim());
+        }
         if (StringUtil.isNotBlank(groupId)) {
-            table.getExtInfo().put("groupId", groupId);
+            table.getExtInfo().put(RedisConstant.GROUP_ID, groupId);
         }
         if (StringUtil.isNotBlank(consumerName)) {
-            table.getExtInfo().put("consumerName", consumerName);
+            table.getExtInfo().put(RedisConstant.CONSUMER_NAME, consumerName);
+        }
+        if (StringUtil.isNotBlank(keyJoiner)) {
+            table.getExtInfo().put(RedisConstant.KEY_JOINER, keyJoiner.trim());
+        }
+        if (StringUtil.isNotBlank(expireType)) {
+            table.getExtInfo().put(RedisConstant.EXPIRE_TYPE, expireType.trim());
+        }
+        if (StringUtil.equals(expireType, RedisConstant.EXPIRE)) {
+            Assert.hasText(expireSeconds, "ExpireSeconds is empty.");
+            Assert.isTrue(NumberUtil.toLong(expireSeconds) > 0, "ExpireSeconds is invalid.");
+            table.getExtInfo().put(RedisConstant.EXPIRE_SECONDS, expireSeconds.trim());
         }
         return table;
     }
