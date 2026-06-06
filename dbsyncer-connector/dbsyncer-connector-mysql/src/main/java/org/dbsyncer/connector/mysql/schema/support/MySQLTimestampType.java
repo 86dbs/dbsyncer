@@ -46,4 +46,8 @@ public final class MySQLTimestampType extends TimestampType {
         }
         return super.convert(val, field);
     }
+
+    private boolean isDatetime(Field field) {
+        return StringUtil.equalsIgnoreCase(TypeEnum.DATETIME.name(), field.getTypeName());
+    }
 }
