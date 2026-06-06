@@ -3,30 +3,35 @@
  */
 package org.dbsyncer.parser.strategy.impl;
 
+import com.google.protobuf.ByteString;
+import org.dbsyncer.common.binlog.proto.BinlogMap;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-import org.dbsyncer.storage.util.BinlogMessageUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +62,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Resource
     private BufferActuator storageBufferActuator;
 
+    @Resource
+    private ConnectorFactory connectorFactory;
+
     @Override
     public void flushFullData(String metaId, Result result, String event) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
@@ -81,9 +89,31 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
+        Meta meta = profileComponent.getMeta(metaId);
+        if (meta == null) {
+            return;
+        }
+        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        if (mapping == null) {
+            return;
+        }
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
+        if (connectorInstance == null) {
+            return;
+        }
+        ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
+        if (sourceConnector == null) {
+            return;
+        }
+        SchemaResolver schemaResolver = sourceConnector.getSchemaResolver();
+        if (schemaResolver == null) {
+            return;
+        }
+
         long now = Instant.now().toEpochMilli();
         data.forEach(r-> {
-            Map<String, Object> row = new HashMap();
+            Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
@@ -92,8 +122,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             row.put(ConfigConstant.DATA_ERROR, error);
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             try {
-                byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
-                row.put(ConfigConstant.BINLOG_DATA, bytes);
+                row.put(ConfigConstant.BINLOG_DATA, toBinlogBytes(schemaResolver, r));
             } catch (Exception e) {
                 // 构建详细类型信息
                 StringBuilder typeInfo = new StringBuilder();
@@ -104,6 +133,19 @@ public final class FlushStrategyImpl implements FlushStrategy {
             }
             storageBufferActuator.offer(new StorageRequest(metaId, row));
         });
+    }
+
+    private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data) {
+        BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
+        data.forEach((k, v)-> {
+            if (null != v) {
+                ByteString bytes = schemaResolver.serialize(v);
+                if (null != bytes) {
+                    dataBuilder.putRow(k, bytes);
+                }
+            }
+        });
+        return dataBuilder.build().toByteArray();
     }
 
     private void refreshTotal(String metaId, Result writer) {

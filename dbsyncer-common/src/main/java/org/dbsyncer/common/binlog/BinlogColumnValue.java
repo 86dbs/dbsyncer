@@ -1,15 +1,12 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
-package org.dbsyncer.storage.binlog;
+package org.dbsyncer.common.binlog;
 
+import com.google.protobuf.ByteString;
 import org.dbsyncer.common.column.AbstractColumnValue;
+import org.dbsyncer.common.enums.BinlogByteEnum;
 import org.dbsyncer.common.util.NumberUtil;
-import org.dbsyncer.storage.enums.BinlogByteEnum;
-
-import com.google.protobuf.ByteString;
-
-import com.google.protobuf.ByteString;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -18,9 +15,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2022-06-30 22:39
+ * @author AE86
+ * @version 1.0.0
+ * @date 2022-06-30 22:39
  */
 public class BinlogColumnValue extends AbstractColumnValue<ByteString> {
 

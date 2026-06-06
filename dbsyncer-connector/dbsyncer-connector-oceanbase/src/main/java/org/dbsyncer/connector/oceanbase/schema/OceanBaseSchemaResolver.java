@@ -16,7 +16,7 @@ import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseShortType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseStringType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseTimeType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseTimestampType;
-import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
+import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @date 2026-06-04 00:20
  */
-public final class OceanBaseSchemaResolver extends AbstractSchemaResolver {
+public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {

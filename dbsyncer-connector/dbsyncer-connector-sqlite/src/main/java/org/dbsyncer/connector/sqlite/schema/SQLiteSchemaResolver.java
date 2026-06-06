@@ -8,18 +8,18 @@ import org.dbsyncer.connector.sqlite.schema.support.SQLiteBytesType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteDoubleType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteIntType;
 import org.dbsyncer.connector.sqlite.schema.support.SQLiteStringType;
-import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
+import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
 import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2026-01-13 00:08
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2026-01-13 00:08
  */
-public final class SQLiteSchemaResolver extends AbstractSchemaResolver {
+public final class SQLiteSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {

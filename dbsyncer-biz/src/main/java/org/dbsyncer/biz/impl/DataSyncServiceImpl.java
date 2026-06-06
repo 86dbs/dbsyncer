@@ -5,12 +5,12 @@ package org.dbsyncer.biz.impl;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.lucene.index.IndexableField;
-import org.dbsyncer.biz.BinlogMessageService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.model.DataSyncEvent;
 import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.BinlogColumnVO;
 import org.dbsyncer.biz.vo.MessageVO;
+import org.dbsyncer.common.binlog.proto.BinlogMap;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -33,9 +33,9 @@ import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.binlog.proto.BinlogMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -75,9 +75,6 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Resource
     private ConnectorFactory connectorFactory;
-
-    @Resource
-    private BinlogMessageService binlogMessageService;
 
     @Override
     public MessageVO getMessageVo(String metaId, String messageId) {
@@ -139,6 +136,11 @@ public class DataSyncServiceImpl implements DataSyncService {
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
+        SchemaResolver schemaResolver = sourceConnector.getSchemaResolver();
+        if (schemaResolver == null) {
+            logger.warn("反序列化失败，没有实现SchemaResolver");
+            return target;
+        }
 
         // 5、反序列
         final Picker picker = new Picker(tableGroup);
@@ -146,7 +148,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         message.getRowMap().forEach((k, v)-> {
             if (fieldMap.containsKey(k)) {
                 try {
-                    Object val = binlogMessageService.deserializeValue(sourceConnector, fieldMap.get(k), v);
+                    Object val = schemaResolver.deserialize(v, fieldMap.get(k));
                     // 处理二进制对象显示
                     if (prettyBytes) {
                         if (val instanceof byte[]) {

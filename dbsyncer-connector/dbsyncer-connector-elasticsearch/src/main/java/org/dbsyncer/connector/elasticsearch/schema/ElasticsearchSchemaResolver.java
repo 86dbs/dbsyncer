@@ -24,9 +24,9 @@ import java.util.stream.Stream;
  * Elasticsearch 异构数据类型解析器
  * 支持 ES 所有标准数据类型的映射和转换
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2026-01-13 00:16
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2026-01-13 00:16
  */
 public final class ElasticsearchSchemaResolver extends AbstractSchemaResolver {
 

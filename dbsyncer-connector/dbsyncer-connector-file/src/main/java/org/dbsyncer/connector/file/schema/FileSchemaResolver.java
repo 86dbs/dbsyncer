@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2026-01-13 00:08
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2026-01-13 00:08
  */
 public final class FileSchemaResolver extends AbstractSchemaResolver {
 

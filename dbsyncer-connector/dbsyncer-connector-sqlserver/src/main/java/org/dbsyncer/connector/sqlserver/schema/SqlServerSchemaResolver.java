@@ -17,7 +17,7 @@ import org.dbsyncer.connector.sqlserver.schema.support.SqlServerShortType;
 import org.dbsyncer.connector.sqlserver.schema.support.SqlServerStringType;
 import org.dbsyncer.connector.sqlserver.schema.support.SqlServerTimeType;
 import org.dbsyncer.connector.sqlserver.schema.support.SqlServerTimestampType;
-import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
+import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
 import java.util.Map;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2026-01-13 00:08
  */
-public final class SqlServerSchemaResolver extends AbstractSchemaResolver {
+public final class SqlServerSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
