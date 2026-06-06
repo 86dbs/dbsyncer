@@ -5,8 +5,6 @@ package org.dbsyncer.connector.mysql.deserializer;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -26,7 +24,7 @@ public final class DatetimeV2Deserialize {
         int hour = bitSlice(datetime, 23, 5, 40);
         int minute = bitSlice(datetime, 28, 6, 40);
         int second = bitSlice(datetime, 34, 6, 40);
-        int nano = fsp / 1000;
+        int nano = fsp * 1000;
 
         // 检查是否为 MySQL 的零日期 (0000-00-00 00:00:00)
         // MySQL 从5.7开始默认不允许零日期 Java LocalDateTime 不支持
@@ -41,8 +39,42 @@ public final class DatetimeV2Deserialize {
             // 日期时间值超出有效范围，返回 null
             return null;
         }
+        return toTimestamp(year, month, day, hour, minute, second, nano);
+    }
+
+    /**
+     * 解析旧版 DATETIME 二进制格式（非 DATETIME2），按字面量读取，避免按 GMT 转 Unix 时间戳产生时区偏差。
+     */
+    public Serializable deserializeDatetime(ByteArrayInputStream inputStream) throws IOException {
+        int[] parts = split(inputStream.readLong(8), 100, 6);
+        int year = parts[5];
+        int month = parts[4];
+        int day = parts[3];
+        int hour = parts[2];
+        int minute = parts[1];
+        int second = parts[0];
+        if (year == 0 || month == 0 || day == 0) {
+            return null;
+        }
+        if (month < 1 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+            return null;
+        }
+        return toTimestamp(year, month, day, hour, minute, second, 0);
+    }
+
+    private Timestamp toTimestamp(int year, int month, int day, int hour, int minute, int second, int nano) {
         LocalDateTime time = LocalDateTime.of(year, month, day, hour, minute, second, nano);
         return Timestamp.valueOf(time);
+    }
+
+    private int[] split(long value, int divider, int length) {
+        int[] result = new int[length];
+        for (int i = 0; i < length - 1; i++) {
+            result[i] = (int) (value % divider);
+            value /= divider;
+        }
+        result[length - 1] = (int) value;
+        return result;
     }
 
     private long bigEndianLong(byte[] bytes, int offset, int length) {
