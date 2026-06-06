@@ -167,6 +167,26 @@
         </div>`);
     }
 
+    // 生成redis配置
+    function renderRedisInfo(customType, extInfo, items) {
+        if (customType === 'source') {
+            let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
+            items.push(`<div class="form-item">
+                    <label class="form-label">消费组 groupId<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="groupId" type="text" maxlength="128" value="${groupId}" required placeholder="dbsyncer-group"/>
+                    </div>
+                </div>`);
+            let consumerName = extInfo.consumerName === undefined ? 'dbsyncer-consumer' : extInfo.consumerName;
+            items.push(`<div class="form-item">
+                        <label class="form-label">消费者名称</label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="consumerName" type="text" maxlength="128" value="${consumerName}" placeholder="dbsyncer-consumer"/>
+                        </div>
+                    </div>`);
+        }
+    }
+
     function renderSemiInfo(tableName, extInfo) {
         let connectorType = $("#connectorType").val();
         let customType = $("#customType").val();
@@ -186,21 +206,8 @@
                 }
                 break;
             case 'Redis':
-                config.label = 'Stream';
-                let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
-                let consumerName = extInfo.consumerName === undefined ? 'dbsyncer-consumer' : extInfo.consumerName;
-                items.push(`<div class="form-item">
-                    <label class="form-label">消费组 groupId<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="groupId" type="text" maxlength="128" value="${groupId}" required placeholder="dbsyncer-group"/>
-                    </div>
-                </div>`);
-                items.push(`<div class="form-item">
-                    <label class="form-label">消费者名称</label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="consumerName" type="text" maxlength="128" value="${consumerName}" placeholder="dbsyncer-consumer"/>
-                    </div>
-                </div>`);
+                config.label = '表名';
+                renderRedisInfo(customType, extInfo, items);
                 break;
             case 'File':
                 config.label = '文件名';
