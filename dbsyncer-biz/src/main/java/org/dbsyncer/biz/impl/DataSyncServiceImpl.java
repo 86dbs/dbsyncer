@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.biz.impl;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.lucene.index.IndexableField;
+import org.dbsyncer.biz.BinlogMessageService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.model.DataSyncEvent;
 import org.dbsyncer.biz.model.DataSyncRequest;
@@ -14,12 +17,15 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -27,23 +33,15 @@ import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.binlog.proto.BinlogMap;
-import org.dbsyncer.storage.util.BinlogMessageUtil;
-
-import org.apache.lucene.index.IndexableField;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +72,12 @@ public class DataSyncServiceImpl implements DataSyncService {
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private ConnectorFactory connectorFactory;
+
+    @Resource
+    private BinlogMessageService binlogMessageService;
 
     @Override
     public MessageVO getMessageVo(String metaId, String messageId) {
@@ -130,13 +134,19 @@ public class DataSyncServiceImpl implements DataSyncService {
             return target;
         }
 
-        // 4、反序列
+        // 4、获取连接器服务
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
+        ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
+
+        // 5、反序列
         final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
         message.getRowMap().forEach((k, v)-> {
             if (fieldMap.containsKey(k)) {
                 try {
-                    Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
+                    Object val = binlogMessageService.deserializeValue(sourceConnector, fieldMap.get(k), v);
                     // 处理二进制对象显示
                     if (prettyBytes) {
                         if (val instanceof byte[]) {

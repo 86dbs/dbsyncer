@@ -6,9 +6,6 @@ package org.dbsyncer.connector.mysql.deserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
-import com.github.shyiko.mysql.binlog.event.deserialization.json.JsonBinary;
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
-
 import java.io.IOException;
 
 /**

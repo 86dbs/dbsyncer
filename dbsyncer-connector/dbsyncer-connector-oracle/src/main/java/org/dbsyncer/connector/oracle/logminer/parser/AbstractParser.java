@@ -3,20 +3,13 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import net.sf.jsqlparser.schema.Column;
+import oracle.jdbc.OracleTypes;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.model.Field;
-
-import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import net.sf.jsqlparser.schema.Column;
-import oracle.jdbc.OracleTypes;
-
-import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import net.sf.jsqlparser.schema.Column;
-import oracle.jdbc.OracleTypes;
 
 import java.sql.Types;
 import java.util.HashMap;

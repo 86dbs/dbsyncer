@@ -212,9 +212,9 @@
                 expireSeconds = 86440;
             }
             items.push(`<div class="form-item">
-                    <label class="form-label">复合主键拼接符</label>
+                    <label class="form-label">主键拼接符 <i class="fa fa-question-circle" title="如果有多个主键时，示例效果：A:B:C"></i></label>
                     <div class="form-control-area">
-                        <input class="form-control" name="keyJoiner" type="text" maxlength="16" value="${keyJoiner}" placeholder="复合主键拼接连接符，默认 :"/>
+                        <input class="form-control" name="keyJoiner" type="text" maxlength="16" value="${keyJoiner}" placeholder="默认 :"/>
                     </div>
                 </div>`);
             items.push(`<div class="form-item">
@@ -227,7 +227,7 @@
                     </div>
                 </div>`);
             items.push(`<div class="form-item${expireType !== 'expire' ? ' hidden' : ''}" id="redis_expire_seconds_wrap">
-                    <label class="form-label">过期时间（秒）<strong class="text-primary">*</strong></label>
+                    <label class="form-label">过期时间(秒)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
                         <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
                     </div>

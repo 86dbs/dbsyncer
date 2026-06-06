@@ -17,8 +17,6 @@ public interface DataType {
 
     /**
      * 获取支持的转换类型
-     *
-     * @return
      */
     Set<String> getSupportedTypeName();
 
@@ -42,8 +40,6 @@ public interface DataType {
 
     /**
      * 获取数据类型
-     *
-     * @return
      */
     DataTypeEnum getType();
 }
