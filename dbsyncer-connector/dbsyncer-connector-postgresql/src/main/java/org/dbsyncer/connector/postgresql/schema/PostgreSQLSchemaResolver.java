@@ -4,7 +4,17 @@
 package org.dbsyncer.connector.postgresql.schema;
 
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
-import org.dbsyncer.connector.postgresql.schema.support.*;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLFloatType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimeType;
+import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
@@ -48,6 +58,10 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
         if (dataType == null) {
             dataType = mapping.get(normalizeTypeName(field.getTypeName()));
         }
+        // 数组类型（_int8 等）统一由 PostgreSQLStringType 处理
+        if (dataType == null && isArrayType(field.getTypeName())) {
+            dataType = mapping.get("text");
+        }
         return dataType;
     }
 
@@ -60,5 +74,16 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                     }
                     mapping.put(typeName, t);
                 }));
+    }
+
+    /**
+     * PostgreSQL 数组类型：JDBC TYPE_NAME 以 _ 前缀表示（如 int8[] => _int8），部分场景为 xxx[]。
+     */
+    public static boolean isArrayType(String typeName) {
+        if (typeName == null) {
+            return false;
+        }
+        String normalized = normalizeTypeName(typeName);
+        return normalized.startsWith("_") || normalized.endsWith("[]");
     }
 }

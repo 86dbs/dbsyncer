@@ -350,10 +350,9 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
         try {
             final BulkRequest request = new BulkRequest();
-            final String pk = pkFields.get(0).getName();
             final String indexName = context.getCommand().get(_TARGET_INDEX);
             final String type = context.getCommand().get(_TYPE);
-            data.forEach(row -> addRequest(request, indexName, type, context.getEvent(), String.valueOf(row.get(pk)), row));
+            data.forEach(row -> addRequest(request, indexName, type, context.getEvent(), buildDocumentId(row, pkFields), row));
 
             BulkResponse response = connectorInstance.getConnection().bulkWithVersion(request, RequestOptions.DEFAULT);
             RestStatus restStatus = response.status();
@@ -656,6 +655,17 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         if (filters.containsKey(f.getFilter())) {
             filters.get(f.getFilter()).apply(builder, f.getName(), f.getValue());
         }
+    }
+
+    private String buildDocumentId(Map row, List<Field> pkFields) {
+        if (pkFields.size() == 1) {
+            return String.valueOf(row.get(pkFields.get(0).getName()));
+        }
+        String[] values = new String[pkFields.size()];
+        for (int i = 0; i < pkFields.size(); i++) {
+            values[i] = String.valueOf(row.get(pkFields.get(i).getName()));
+        }
+        return StringUtil.join(values, StringUtil.UNDERLINE);
     }
 
     private void addRequest(BulkRequest request, String index, String type, String event, String id, Map data) {
