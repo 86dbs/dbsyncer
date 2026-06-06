@@ -23,7 +23,9 @@
                 loading: false,
                 typeCounts: {}
             },
-            tableSearchKey: ''
+            tableSearchKey: '',
+            /** 当前连接器在选定库后是否提供 Schema 列表（由 getSchema 接口决定） */
+            schemaEnabled: false
         },
         target: { connectorId: '' },
         mappings: [],
@@ -62,20 +64,6 @@
         return (connectorType || '').trim().toLowerCase();
     }
 
-    function connectorSupportsSchema(connectorType) {
-        const t = normalizeConnectorType(connectorType);
-        return t === 'oracle'
-            || t === 'postgresql'
-            || t === 'postgres'
-            || t === 'sqlserver'
-            || t === 'sql server';
-    }
-
-    function isPostgresConnectorType(connectorType) {
-        const t = normalizeConnectorType(connectorType);
-        return t === 'postgresql' || t === 'postgres';
-    }
-
     function isOracleConnector(connectorId) {
         return normalizeConnectorType(getConnectorTypeById(connectorId)) === 'oracle';
     }
@@ -86,10 +74,6 @@
 
     function isOracleTargetConnector(connectorId) {
         return isOracleConnector(connectorId != null ? connectorId : getActiveTargetConnectorId());
-    }
-
-    function isSourceSchemaConnector() {
-        return connectorSupportsSchema(getConnectorTypeBySelect('sourceConnectorId', state.source.connectorId));
     }
 
     function getConnectorTypeById(connectorId) {
@@ -157,53 +141,43 @@
         return state.target.connectorId || '';
     }
 
-    function isTargetSchemaConnector(connectorId) {
-        const id = connectorId != null ? connectorId : getActiveTargetConnectorId();
-        return connectorSupportsSchema(getConnectorTypeById(id));
+    function isSourceNamespaceReady() {
+        const srcDb = (state.source.database || '').trim();
+        const srcSchema = (state.source.schema || '').trim();
+        if (isOracleSourceConnector()) {
+            return !!srcSchema;
+        }
+        if (!srcDb) {
+            return false;
+        }
+        return !state.source.schemaEnabled || !!srcSchema;
     }
 
-    function isTargetPostgresConnector(connectorId) {
-        const id = connectorId != null ? connectorId : getActiveTargetConnectorId();
-        return isPostgresConnectorType(getConnectorTypeById(id));
-    }
-
-    function shouldShowTargetSchema() {
-        return isSourceSchemaConnector() || isTargetSchemaConnector();
-    }
-
-    function isTargetSchemaReadOnly(connectorId) {
-        return isTargetPostgresConnector(connectorId);
-    }
-
-    function syncTargetSchemaFromSource(force) {
-        if (!shouldShowTargetSchema()) {
+    /** 源端库/Schema 就绪后，同步填充弹窗与详情中的目标库名、目标 Schema */
+    function fillTargetFromSource() {
+        if (!isSourceNamespaceReady()) {
             return;
         }
+        const srcDb = (state.source.database || '').trim();
         const srcSchema = (state.source.schema || '').trim();
-        const $picker = $('#pickerTargetSchema');
-        const $detail = $('#detailTargetSchema');
-        if (srcSchema && (force || isTargetSchemaReadOnly() || !$picker.val())) {
-            if ($picker.length) {
-                $picker.val(srcSchema);
+        const pickerTargetId = getPickerTargetConnectorId() || state.target.connectorId;
+        if ($('#pickerTargetDatabase').length && !isOracleTargetConnector(pickerTargetId)) {
+            $('#pickerTargetDatabase').val(srcDb);
+        }
+        if (hasDetailTargetPanel() && !isOracleTargetConnector(getDetailPanelTargetConnectorId())) {
+            const block = getActiveMappingBlock();
+            if (!block || !block.targetDatabase) {
+                $('#detailTargetDatabase').val(srcDb);
             }
         }
-        if (srcSchema && (force || isTargetSchemaReadOnly() || !$detail.val())) {
-            if ($detail.length) {
-                $detail.val(srcSchema);
+        if (srcSchema) {
+            if ($('#pickerTargetSchema').length) {
+                $('#pickerTargetSchema').val(srcSchema);
+            }
+            if ($('#detailTargetSchema').length) {
+                $('#detailTargetSchema').val(srcSchema);
             }
         }
-        applyTargetSchemaReadOnly();
-    }
-
-    function applyTargetSchemaReadOnly() {
-        const pickerReadonly = isTargetSchemaReadOnly(getPickerTargetConnectorId() || state.target.connectorId);
-        const detailReadonly = isTargetSchemaReadOnly(state.target.connectorId);
-        $('#pickerTargetSchema')
-            .prop('readonly', pickerReadonly)
-            .toggleClass('ds-schema-readonly', pickerReadonly);
-        $('#detailTargetSchema')
-            .prop('readonly', detailReadonly)
-            .toggleClass('ds-schema-readonly', detailReadonly);
     }
 
     function hasDetailTargetPanel() {
@@ -280,12 +254,8 @@
     }
 
     function updateTargetSchemaVisibility() {
-        const show = shouldShowTargetSchema();
+        const show = !!state.source.schemaEnabled;
         $('#detailTargetSchemaWrap, #pickerTargetSchemaWrap').toggleClass('hidden', !show);
-        if (show) {
-            syncTargetSchemaFromSource(false);
-        }
-        applyTargetSchemaReadOnly();
         updateTargetDatabaseFieldVisibility();
     }
 
@@ -324,35 +294,19 @@
     }
 
     function refreshPickerTargetDefaults() {
-        const srcDb = state.source.database || '';
-        const srcSchema = state.source.schema || '';
-        const activeBlock = getActiveMappingBlock();
-        const pickerTargetId = getPickerTargetConnectorId()
-            || getMappingTargetConnectorId(activeBlock)
-            || state.target.connectorId;
-        if ($('#pickerTargetDatabase').length && !isOracleTargetConnector(pickerTargetId)) {
-            $('#pickerTargetDatabase').val(srcDb);
-        }
-        if ($('#pickerTargetSchema').length && srcSchema) {
-            $('#pickerTargetSchema').val(srcSchema);
-        }
         if (state.target.connectorId) {
             setSelectValues(pickerTargetConnectorSelect, [state.target.connectorId]);
         }
-        updateTargetDatabaseFieldVisibility();
+        updateTargetSchemaVisibility();
+        fillTargetFromSource();
     }
 
     function onPickerSourceContextChange() {
         if ($('#tablePickerModal').hasClass('hidden')) {
             return;
         }
-        const srcDb = state.source.database || '';
-        const srcSchema = state.source.schema || '';
-        if (!isOracleTargetConnector(getPickerTargetConnectorId() || state.target.connectorId)) {
-            $('#pickerTargetDatabase').val(srcDb);
-        }
-        syncTargetSchemaFromSource(true);
         updateTargetSchemaVisibility();
+        fillTargetFromSource();
     }
 
     function syncDetailPanelFromActiveMapping() {
@@ -371,13 +325,7 @@
             setSelectValues(sourceConnectorSelect, [sourceConnectorId]);
         }
         $('#detailTargetDatabase').val(block.targetDatabase || '');
-        let targetSchema = block.targetSchema || '';
-        if (isTargetSchemaReadOnly(targetConnectorId) && state.source.schema) {
-            targetSchema = state.source.schema;
-            block.targetSchema = targetSchema;
-        }
-        $('#detailTargetSchema').val(targetSchema);
-        applyTargetSchemaReadOnly();
+        $('#detailTargetSchema').val(block.targetSchema || '');
         if (targetConnectorId) {
             setSelectValues(targetConnectorSelect, [targetConnectorId]);
         } else {
@@ -415,12 +363,7 @@
         } else {
             block.targetDatabase = '';
         }
-        if (!isTargetSchemaReadOnly(targetConnectorId)) {
-            block.targetSchema = ($('#detailTargetSchema').val() || '').trim();
-        } else {
-            block.targetSchema = (state.source.schema || block.targetSchema || '').trim();
-            $('#detailTargetSchema').val(block.targetSchema);
-        }
+        block.targetSchema = ($('#detailTargetSchema').val() || '').trim();
         syncMappingsJson();
         const $activeCard = $('#mappingCardList .mapping-card.is-active');
         if ($activeCard.length) {
@@ -443,9 +386,7 @@
             syncActiveMappingFromDetailPanel();
         });
         $('#detailTargetSchema').on('input change', function () {
-            if (!isTargetSchemaReadOnly(getDetailPanelTargetConnectorId())) {
-                syncActiveMappingFromDetailPanel();
-            }
+            syncActiveMappingFromDetailPanel();
         });
         $('#btnBatchTablePrefix').on('click', batchAddTablePrefix);
     }
@@ -502,7 +443,9 @@
 
     function onDBChange(connectorId, schemaSelect, dbName) {
         if (!connectorId) {
+            state.source.schemaEnabled = false;
             schemaSelect.setData([]);
+            updateTargetSchemaVisibility();
             return;
         }
         doGetter('/connector/getSchema', { id: connectorId, database: dbName }, function (response) {
@@ -510,16 +453,21 @@
                 const array = (response.data || []).map(function (schema) {
                     return { label: schema, value: schema, disabled: false };
                 });
+                state.source.schemaEnabled = array.length > 0;
                 schemaSelect.setData(array);
             } else {
+                state.source.schemaEnabled = false;
+                schemaSelect.setData([]);
                 bootGrowl('获取 Schema 失败: ' + (response.message || ''), 'danger');
             }
+            updateTargetSchemaVisibility();
         });
     }
 
     function resetSourcePickerContext() {
         state.source.database = '';
         state.source.schema = '';
+        state.source.schemaEnabled = false;
         state.source.checked = {};
         resetSourceTableList();
         renderSourceTableTreeEmpty('暂无表，请选择连接器、库与 Schema');
@@ -542,9 +490,6 @@
         const sourceChanged = lastSourceConnectorId && lastSourceConnectorId !== connectorId;
         if (sourceChanged && !initializing) {
             resetSourcePickerContext();
-            if (state.mappings.length) {
-                bootGrowl('已切换源端连接器，已添加的库映射关系仍保留，请核对源库/表是否仍适用', 'info');
-            }
         }
         lastSourceConnectorId = connectorId;
         state.source.connectorId = connectorId;
@@ -1303,11 +1248,17 @@
         state.target.connectorId = targetConnectorId;
         setSelectValues(targetConnectorSelect, [targetConnectorId]);
         setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
-        syncTargetSchemaFromSource(true);
+        fillTargetFromSource();
         const sourceIsOracle = isOracleSourceConnector();
         const targetIsOracle = isOracleTargetConnector(targetConnectorId);
-        if (!state.source.database && !(sourceIsOracle && state.source.schema)) {
-            bootGrowl(sourceIsOracle ? '请先选择源 Schema' : '请先选择源库', 'warning');
+        if (!isSourceNamespaceReady()) {
+            if (state.source.schemaEnabled) {
+                bootGrowl('请先选择源库和 Schema', 'warning');
+            } else if (sourceIsOracle) {
+                bootGrowl('请先选择源 Schema', 'warning');
+            } else {
+                bootGrowl('请先选择源库', 'warning');
+            }
             return;
         }
         if (!sourceTables.length) {
@@ -1328,9 +1279,6 @@
                 defaultTargetDb = sourceDb;
             }
             if (!defaultTargetSchema && sourceSchema) {
-                defaultTargetSchema = sourceSchema;
-            }
-            if (isTargetPostgresConnector(targetConnectorId) && sourceSchema) {
                 defaultTargetSchema = sourceSchema;
             }
         }
@@ -1474,8 +1422,8 @@
             onSelect: function (selected) {
                 state.source.schema = selected.length ? selected[0] : '';
                 loadSourceTables($('#sourceTableSearch').val().trim(), true);
+                fillTargetFromSource();
                 onPickerSourceContextChange();
-                syncTargetSchemaFromSource(true);
             }
         });
 
@@ -1483,10 +1431,15 @@
             type: 'single',
             onSelect: function (selected) {
                 state.source.database = selected.length ? selected[0] : '';
+                state.source.schema = '';
+                if (sourceSchemaSelect && typeof sourceSchemaSelect.setValues === 'function') {
+                    sourceSchemaSelect.setValues([], true);
+                }
                 if (state.source.connectorId) {
                     onDBChange(state.source.connectorId, sourceSchemaSelect, state.source.database);
                 }
                 loadSourceTables(null, true);
+                fillTargetFromSource();
                 onPickerSourceContextChange();
             }
         });
@@ -1519,7 +1472,7 @@
                 setSelectValues(pickerTargetConnectorSelect, id ? [id] : []);
                 updateTargetSchemaVisibility();
                 updateTargetDatabaseFieldVisibility();
-                syncTargetSchemaFromSource(true);
+                fillTargetFromSource();
             }
         });
 
@@ -1532,7 +1485,7 @@
                     setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
                     updateTargetSchemaVisibility();
                     updateTargetDatabaseFieldVisibility();
-                    syncTargetSchemaFromSource(true);
+                    fillTargetFromSource();
                     refreshMappingCardFlows();
                 }
             });
