@@ -6,654 +6,682 @@ package org.dbsyncer.common.binlog.proto;
 /**
  * Protobuf type {@code BinlogMap}
  */
-public final class BinlogMap extends com.google.protobuf.GeneratedMessageV3
-        implements
-            // @@protoc_insertion_point(message_implements:BinlogMap)
-            BinlogMapOrBuilder {
+public final class BinlogMap extends
+    com.google.protobuf.GeneratedMessageV3 implements
+    // @@protoc_insertion_point(message_implements:BinlogMap)
+    BinlogMapOrBuilder {
+private static final long serialVersionUID = 0L;
+  // Use BinlogMap.newBuilder() to construct.
+  private BinlogMap(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+    super(builder);
+  }
+  private BinlogMap() {
+  }
 
-    private static final long serialVersionUID = 0L;
+  @java.lang.Override
+  @SuppressWarnings({"unused"})
+  protected java.lang.Object newInstance(
+      UnusedPrivateParameter unused) {
+    return new BinlogMap();
+  }
 
-    // Use BinlogMap.newBuilder() to construct.
-    private BinlogMap(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-        super(builder);
+  @java.lang.Override
+  public final com.google.protobuf.UnknownFieldSet
+  getUnknownFields() {
+    return this.unknownFields;
+  }
+  public static final com.google.protobuf.Descriptors.Descriptor
+      getDescriptor() {
+    return org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_descriptor;
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  @java.lang.Override
+  protected com.google.protobuf.MapField internalGetMapField(
+      int number) {
+    switch (number) {
+      case 1:
+        return internalGetRow();
+      default:
+        throw new RuntimeException(
+            "Invalid map field number: " + number);
     }
+  }
+  @java.lang.Override
+  protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internalGetFieldAccessorTable() {
+    return org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_fieldAccessorTable
+        .ensureFieldAccessorsInitialized(
+            org.dbsyncer.common.binlog.proto.BinlogMap.class, org.dbsyncer.common.binlog.proto.BinlogMap.Builder.class);
+  }
 
-    private BinlogMap() {
+  public static final int ROW_FIELD_NUMBER = 1;
+  private static final class RowDefaultEntryHolder {
+    static final com.google.protobuf.MapEntry<
+        java.lang.String, com.google.protobuf.ByteString> defaultEntry =
+            com.google.protobuf.MapEntry
+            .<java.lang.String, com.google.protobuf.ByteString>newDefaultInstance(
+                org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_RowEntry_descriptor, 
+                com.google.protobuf.WireFormat.FieldType.STRING,
+                "",
+                com.google.protobuf.WireFormat.FieldType.BYTES,
+                com.google.protobuf.ByteString.EMPTY);
+  }
+  @SuppressWarnings("serial")
+  private com.google.protobuf.MapField<
+      java.lang.String, com.google.protobuf.ByteString> row_;
+  private com.google.protobuf.MapField<java.lang.String, com.google.protobuf.ByteString>
+  internalGetRow() {
+    if (row_ == null) {
+      return com.google.protobuf.MapField.emptyMapField(
+          RowDefaultEntryHolder.defaultEntry);
     }
-
-    @Override
-    @SuppressWarnings({"unused"})
-    protected Object newInstance(UnusedPrivateParameter unused) {
-        return new BinlogMap();
+    return row_;
+  }
+  public int getRowCount() {
+    return internalGetRow().getMap().size();
+  }
+  /**
+   * <code>map&lt;string, bytes&gt; row = 1;</code>
+   */
+  @java.lang.Override
+  public boolean containsRow(
+      java.lang.String key) {
+    if (key == null) { throw new NullPointerException("map key"); }
+    return internalGetRow().getMap().containsKey(key);
+  }
+  /**
+   * Use {@link #getRowMap()} instead.
+   */
+  @java.lang.Override
+  @java.lang.Deprecated
+  public java.util.Map<java.lang.String, com.google.protobuf.ByteString> getRow() {
+    return getRowMap();
+  }
+  /**
+   * <code>map&lt;string, bytes&gt; row = 1;</code>
+   */
+  @java.lang.Override
+  public java.util.Map<java.lang.String, com.google.protobuf.ByteString> getRowMap() {
+    return internalGetRow().getMap();
+  }
+  /**
+   * <code>map&lt;string, bytes&gt; row = 1;</code>
+   */
+  @java.lang.Override
+  public /* nullable */
+com.google.protobuf.ByteString getRowOrDefault(
+      java.lang.String key,
+      /* nullable */
+com.google.protobuf.ByteString defaultValue) {
+    if (key == null) { throw new NullPointerException("map key"); }
+    java.util.Map<java.lang.String, com.google.protobuf.ByteString> map =
+        internalGetRow().getMap();
+    return map.containsKey(key) ? map.get(key) : defaultValue;
+  }
+  /**
+   * <code>map&lt;string, bytes&gt; row = 1;</code>
+   */
+  @java.lang.Override
+  public com.google.protobuf.ByteString getRowOrThrow(
+      java.lang.String key) {
+    if (key == null) { throw new NullPointerException("map key"); }
+    java.util.Map<java.lang.String, com.google.protobuf.ByteString> map =
+        internalGetRow().getMap();
+    if (!map.containsKey(key)) {
+      throw new java.lang.IllegalArgumentException();
     }
+    return map.get(key);
+  }
 
-    @Override
-    public final com.google.protobuf.UnknownFieldSet getUnknownFields() {
-        return this.unknownFields;
+  private byte memoizedIsInitialized = -1;
+  @java.lang.Override
+  public final boolean isInitialized() {
+    byte isInitialized = memoizedIsInitialized;
+    if (isInitialized == 1) return true;
+    if (isInitialized == 0) return false;
+
+    memoizedIsInitialized = 1;
+    return true;
+  }
+
+  @java.lang.Override
+  public void writeTo(com.google.protobuf.CodedOutputStream output)
+                      throws java.io.IOException {
+    com.google.protobuf.GeneratedMessageV3
+      .serializeStringMapTo(
+        output,
+        internalGetRow(),
+        RowDefaultEntryHolder.defaultEntry,
+        1);
+    getUnknownFields().writeTo(output);
+  }
+
+  @java.lang.Override
+  public int getSerializedSize() {
+    int size = memoizedSize;
+    if (size != -1) return size;
+
+    size = 0;
+    for (java.util.Map.Entry<java.lang.String, com.google.protobuf.ByteString> entry
+         : internalGetRow().getMap().entrySet()) {
+      com.google.protobuf.MapEntry<java.lang.String, com.google.protobuf.ByteString>
+      row__ = RowDefaultEntryHolder.defaultEntry.newBuilderForType()
+          .setKey(entry.getKey())
+          .setValue(entry.getValue())
+          .build();
+      size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(1, row__);
     }
+    size += getUnknownFields().getSerializedSize();
+    memoizedSize = size;
+    return size;
+  }
 
-    private BinlogMap(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-            throw new NullPointerException();
-        }
-        int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields = com.google.protobuf.UnknownFieldSet.newBuilder();
-        try {
-            boolean done = false;
-            while (!done) {
-                int tag = input.readTag();
-                switch (tag) {
-                    case 0:
-                        done = true;
-                        break;
-                    case 10: {
-                        if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                            row_ = com.google.protobuf.MapField.newMapField(RowDefaultEntryHolder.defaultEntry);
-                            mutable_bitField0_ |= 0x00000001;
-                        }
-                        com.google.protobuf.MapEntry<String, com.google.protobuf.ByteString> row__ = input.readMessage(RowDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
-                        row_.getMutableMap().put(row__.getKey(), row__.getValue());
-                        break;
-                    }
-                    default: {
-                        if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
-                            done = true;
-                        }
-                        break;
-                    }
-                }
-            }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw e.setUnfinishedMessage(this);
-        } catch (com.google.protobuf.UninitializedMessageException e) {
-            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-        } catch (java.io.IOException e) {
-            throw new com.google.protobuf.InvalidProtocolBufferException(e).setUnfinishedMessage(this);
-        } finally {
-            this.unknownFields = unknownFields.build();
-            makeExtensionsImmutable();
-        }
+  @java.lang.Override
+  public boolean equals(final java.lang.Object obj) {
+    if (obj == this) {
+     return true;
     }
+    if (!(obj instanceof org.dbsyncer.common.binlog.proto.BinlogMap)) {
+      return super.equals(obj);
+    }
+    org.dbsyncer.common.binlog.proto.BinlogMap other = (org.dbsyncer.common.binlog.proto.BinlogMap) obj;
 
-    public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-        return BinlogMessageProto.internal_static_BinlogMap_descriptor;
+    if (!internalGetRow().equals(
+        other.internalGetRow())) return false;
+    if (!getUnknownFields().equals(other.getUnknownFields())) return false;
+    return true;
+  }
+
+  @java.lang.Override
+  public int hashCode() {
+    if (memoizedHashCode != 0) {
+      return memoizedHashCode;
+    }
+    int hash = 41;
+    hash = (19 * hash) + getDescriptor().hashCode();
+    if (!internalGetRow().getMap().isEmpty()) {
+      hash = (37 * hash) + ROW_FIELD_NUMBER;
+      hash = (53 * hash) + internalGetRow().hashCode();
+    }
+    hash = (29 * hash) + getUnknownFields().hashCode();
+    memoizedHashCode = hash;
+    return hash;
+  }
+
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      java.nio.ByteBuffer data)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      java.nio.ByteBuffer data,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data, extensionRegistry);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      com.google.protobuf.ByteString data)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      com.google.protobuf.ByteString data,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data, extensionRegistry);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(byte[] data)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      byte[] data,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws com.google.protobuf.InvalidProtocolBufferException {
+    return PARSER.parseFrom(data, extensionRegistry);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(java.io.InputStream input)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseWithIOException(PARSER, input);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      java.io.InputStream input,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseWithIOException(PARSER, input, extensionRegistry);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseDelimitedFrom(java.io.InputStream input)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseDelimitedWithIOException(PARSER, input);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseDelimitedFrom(
+      java.io.InputStream input,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      com.google.protobuf.CodedInputStream input)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseWithIOException(PARSER, input);
+  }
+  public static org.dbsyncer.common.binlog.proto.BinlogMap parseFrom(
+      com.google.protobuf.CodedInputStream input,
+      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+      throws java.io.IOException {
+    return com.google.protobuf.GeneratedMessageV3
+        .parseWithIOException(PARSER, input, extensionRegistry);
+  }
+
+  @java.lang.Override
+  public Builder newBuilderForType() { return newBuilder(); }
+  public static Builder newBuilder() {
+    return DEFAULT_INSTANCE.toBuilder();
+  }
+  public static Builder newBuilder(org.dbsyncer.common.binlog.proto.BinlogMap prototype) {
+    return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+  }
+  @java.lang.Override
+  public Builder toBuilder() {
+    return this == DEFAULT_INSTANCE
+        ? new Builder() : new Builder().mergeFrom(this);
+  }
+
+  @java.lang.Override
+  protected Builder newBuilderForType(
+      com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+    Builder builder = new Builder(parent);
+    return builder;
+  }
+  /**
+   * Protobuf type {@code BinlogMap}
+   */
+  public static final class Builder extends
+      com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+      // @@protoc_insertion_point(builder_implements:BinlogMap)
+      org.dbsyncer.common.binlog.proto.BinlogMapOrBuilder {
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_descriptor;
     }
 
     @SuppressWarnings({"rawtypes"})
-    @Override
-    protected com.google.protobuf.MapField internalGetMapField(int number) {
-        switch (number) {
-            case 1:
-                return internalGetRow();
-            default:
-                throw new RuntimeException("Invalid map field number: " + number);
-        }
+    protected com.google.protobuf.MapField internalGetMapField(
+        int number) {
+      switch (number) {
+        case 1:
+          return internalGetRow();
+        default:
+          throw new RuntimeException(
+              "Invalid map field number: " + number);
+      }
+    }
+    @SuppressWarnings({"rawtypes"})
+    protected com.google.protobuf.MapField internalGetMutableMapField(
+        int number) {
+      switch (number) {
+        case 1:
+          return internalGetMutableRow();
+        default:
+          throw new RuntimeException(
+              "Invalid map field number: " + number);
+      }
+    }
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.dbsyncer.common.binlog.proto.BinlogMap.class, org.dbsyncer.common.binlog.proto.BinlogMap.Builder.class);
     }
 
-    @Override
-    protected FieldAccessorTable internalGetFieldAccessorTable() {
-        return BinlogMessageProto.internal_static_BinlogMap_fieldAccessorTable.ensureFieldAccessorsInitialized(BinlogMap.class, Builder.class);
+    // Construct using org.dbsyncer.common.binlog.proto.BinlogMap.newBuilder()
+    private Builder() {
+
     }
 
-    public static final int ROW_FIELD_NUMBER = 1;
+    private Builder(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      super(parent);
 
-    private static final class RowDefaultEntryHolder {
-
-        static final com.google.protobuf.MapEntry<String, com.google.protobuf.ByteString> defaultEntry = com.google.protobuf.MapEntry.<String, com.google.protobuf.ByteString>newDefaultInstance(BinlogMessageProto.internal_static_BinlogMap_RowEntry_descriptor, com.google.protobuf.WireFormat.FieldType.STRING, "", com.google.protobuf.WireFormat.FieldType.BYTES, com.google.protobuf.ByteString.EMPTY);
+    }
+    @java.lang.Override
+    public Builder clear() {
+      super.clear();
+      bitField0_ = 0;
+      internalGetMutableRow().clear();
+      return this;
     }
 
-    private com.google.protobuf.MapField<String, com.google.protobuf.ByteString> row_;
-
-    private com.google.protobuf.MapField<String, com.google.protobuf.ByteString> internalGetRow() {
-        if (row_ == null) {
-            return com.google.protobuf.MapField.emptyMapField(RowDefaultEntryHolder.defaultEntry);
-        }
-        return row_;
+    @java.lang.Override
+    public com.google.protobuf.Descriptors.Descriptor
+        getDescriptorForType() {
+      return org.dbsyncer.common.binlog.proto.BinlogMessageProto.internal_static_BinlogMap_descriptor;
     }
 
+    @java.lang.Override
+    public org.dbsyncer.common.binlog.proto.BinlogMap getDefaultInstanceForType() {
+      return org.dbsyncer.common.binlog.proto.BinlogMap.getDefaultInstance();
+    }
+
+    @java.lang.Override
+    public org.dbsyncer.common.binlog.proto.BinlogMap build() {
+      org.dbsyncer.common.binlog.proto.BinlogMap result = buildPartial();
+      if (!result.isInitialized()) {
+        throw newUninitializedMessageException(result);
+      }
+      return result;
+    }
+
+    @java.lang.Override
+    public org.dbsyncer.common.binlog.proto.BinlogMap buildPartial() {
+      org.dbsyncer.common.binlog.proto.BinlogMap result = new org.dbsyncer.common.binlog.proto.BinlogMap(this);
+      if (bitField0_ != 0) { buildPartial0(result); }
+      onBuilt();
+      return result;
+    }
+
+    private void buildPartial0(org.dbsyncer.common.binlog.proto.BinlogMap result) {
+      int from_bitField0_ = bitField0_;
+      if (((from_bitField0_ & 0x00000001) != 0)) {
+        result.row_ = internalGetRow();
+        result.row_.makeImmutable();
+      }
+    }
+
+    @java.lang.Override
+    public Builder clone() {
+      return super.clone();
+    }
+    @java.lang.Override
+    public Builder setField(
+        com.google.protobuf.Descriptors.FieldDescriptor field,
+        java.lang.Object value) {
+      return super.setField(field, value);
+    }
+    @java.lang.Override
+    public Builder clearField(
+        com.google.protobuf.Descriptors.FieldDescriptor field) {
+      return super.clearField(field);
+    }
+    @java.lang.Override
+    public Builder clearOneof(
+        com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+      return super.clearOneof(oneof);
+    }
+    @java.lang.Override
+    public Builder setRepeatedField(
+        com.google.protobuf.Descriptors.FieldDescriptor field,
+        int index, java.lang.Object value) {
+      return super.setRepeatedField(field, index, value);
+    }
+    @java.lang.Override
+    public Builder addRepeatedField(
+        com.google.protobuf.Descriptors.FieldDescriptor field,
+        java.lang.Object value) {
+      return super.addRepeatedField(field, value);
+    }
+    @java.lang.Override
+    public Builder mergeFrom(com.google.protobuf.Message other) {
+      if (other instanceof org.dbsyncer.common.binlog.proto.BinlogMap) {
+        return mergeFrom((org.dbsyncer.common.binlog.proto.BinlogMap)other);
+      } else {
+        super.mergeFrom(other);
+        return this;
+      }
+    }
+
+    public Builder mergeFrom(org.dbsyncer.common.binlog.proto.BinlogMap other) {
+      if (other == org.dbsyncer.common.binlog.proto.BinlogMap.getDefaultInstance()) return this;
+      internalGetMutableRow().mergeFrom(
+          other.internalGetRow());
+      bitField0_ |= 0x00000001;
+      this.mergeUnknownFields(other.getUnknownFields());
+      onChanged();
+      return this;
+    }
+
+    @java.lang.Override
+    public final boolean isInitialized() {
+      return true;
+    }
+
+    @java.lang.Override
+    public Builder mergeFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              com.google.protobuf.MapEntry<java.lang.String, com.google.protobuf.ByteString>
+              row__ = input.readMessage(
+                  RowDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
+              internalGetMutableRow().getMutableMap().put(
+                  row__.getKey(), row__.getValue());
+              bitField0_ |= 0x00000001;
+              break;
+            } // case 10
+            default: {
+              if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                done = true; // was an endgroup tag
+              }
+              break;
+            } // default:
+          } // switch (tag)
+        } // while (!done)
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.unwrapIOException();
+      } finally {
+        onChanged();
+      } // finally
+      return this;
+    }
+    private int bitField0_;
+
+    private com.google.protobuf.MapField<
+        java.lang.String, com.google.protobuf.ByteString> row_;
+    private com.google.protobuf.MapField<java.lang.String, com.google.protobuf.ByteString>
+        internalGetRow() {
+      if (row_ == null) {
+        return com.google.protobuf.MapField.emptyMapField(
+            RowDefaultEntryHolder.defaultEntry);
+      }
+      return row_;
+    }
+    private com.google.protobuf.MapField<java.lang.String, com.google.protobuf.ByteString>
+        internalGetMutableRow() {
+      if (row_ == null) {
+        row_ = com.google.protobuf.MapField.newMapField(
+            RowDefaultEntryHolder.defaultEntry);
+      }
+      if (!row_.isMutable()) {
+        row_ = row_.copy();
+      }
+      bitField0_ |= 0x00000001;
+      onChanged();
+      return row_;
+    }
     public int getRowCount() {
-        return internalGetRow().getMap().size();
+      return internalGetRow().getMap().size();
     }
-
     /**
      * <code>map&lt;string, bytes&gt; row = 1;</code>
      */
-
-    @Override
-    public boolean containsRow(String key) {
-        if (key == null) {
-            throw new NullPointerException("map key");
-        }
-        return internalGetRow().getMap().containsKey(key);
+    @java.lang.Override
+    public boolean containsRow(
+        java.lang.String key) {
+      if (key == null) { throw new NullPointerException("map key"); }
+      return internalGetRow().getMap().containsKey(key);
     }
-
     /**
      * Use {@link #getRowMap()} instead.
      */
-    @Override
-    @Deprecated
-    public java.util.Map<String, com.google.protobuf.ByteString> getRow() {
-        return getRowMap();
+    @java.lang.Override
+    @java.lang.Deprecated
+    public java.util.Map<java.lang.String, com.google.protobuf.ByteString> getRow() {
+      return getRowMap();
     }
-
     /**
      * <code>map&lt;string, bytes&gt; row = 1;</code>
      */
-    @Override
-
-    public java.util.Map<String, com.google.protobuf.ByteString> getRowMap() {
-        return internalGetRow().getMap();
+    @java.lang.Override
+    public java.util.Map<java.lang.String, com.google.protobuf.ByteString> getRowMap() {
+      return internalGetRow().getMap();
     }
-
     /**
      * <code>map&lt;string, bytes&gt; row = 1;</code>
      */
-    @Override
-
-    public com.google.protobuf.ByteString getRowOrDefault(String key, com.google.protobuf.ByteString defaultValue) {
-        if (key == null) {
-            throw new NullPointerException("map key");
-        }
-        java.util.Map<String, com.google.protobuf.ByteString> map = internalGetRow().getMap();
-        return map.containsKey(key) ? map.get(key) : defaultValue;
+    @java.lang.Override
+    public /* nullable */
+com.google.protobuf.ByteString getRowOrDefault(
+        java.lang.String key,
+        /* nullable */
+com.google.protobuf.ByteString defaultValue) {
+      if (key == null) { throw new NullPointerException("map key"); }
+      java.util.Map<java.lang.String, com.google.protobuf.ByteString> map =
+          internalGetRow().getMap();
+      return map.containsKey(key) ? map.get(key) : defaultValue;
     }
-
     /**
      * <code>map&lt;string, bytes&gt; row = 1;</code>
      */
-    @Override
-
-    public com.google.protobuf.ByteString getRowOrThrow(String key) {
-        if (key == null) {
-            throw new NullPointerException("map key");
-        }
-        java.util.Map<String, com.google.protobuf.ByteString> map = internalGetRow().getMap();
-        if (!map.containsKey(key)) {
-            throw new IllegalArgumentException();
-        }
-        return map.get(key);
+    @java.lang.Override
+    public com.google.protobuf.ByteString getRowOrThrow(
+        java.lang.String key) {
+      if (key == null) { throw new NullPointerException("map key"); }
+      java.util.Map<java.lang.String, com.google.protobuf.ByteString> map =
+          internalGetRow().getMap();
+      if (!map.containsKey(key)) {
+        throw new java.lang.IllegalArgumentException();
+      }
+      return map.get(key);
     }
-
-    private byte memoizedIsInitialized = -1;
-
-    @Override
-    public final boolean isInitialized() {
-        byte isInitialized = memoizedIsInitialized;
-        if (isInitialized == 1)
-            return true;
-        if (isInitialized == 0)
-            return false;
-
-        memoizedIsInitialized = 1;
-        return true;
+    public Builder clearRow() {
+      bitField0_ = (bitField0_ & ~0x00000001);
+      internalGetMutableRow().getMutableMap()
+          .clear();
+      return this;
     }
-
-    @Override
-    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
-        com.google.protobuf.GeneratedMessageV3.serializeStringMapTo(output, internalGetRow(), RowDefaultEntryHolder.defaultEntry, 1);
-        unknownFields.writeTo(output);
-    }
-
-    @Override
-    public int getSerializedSize() {
-        int size = memoizedSize;
-        if (size != -1)
-            return size;
-
-        size = 0;
-        for (java.util.Map.Entry<String, com.google.protobuf.ByteString> entry : internalGetRow().getMap().entrySet()) {
-            com.google.protobuf.MapEntry<String, com.google.protobuf.ByteString> row__ = RowDefaultEntryHolder.defaultEntry.newBuilderForType().setKey(entry.getKey()).setValue(entry.getValue())
-                    .build();
-            size += com.google.protobuf.CodedOutputStream.computeMessageSize(1, row__);
-        }
-        size += unknownFields.getSerializedSize();
-        memoizedSize = size;
-        return size;
-    }
-
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof BinlogMap)) {
-            return super.equals(obj);
-        }
-        BinlogMap other = (BinlogMap) obj;
-
-        if (!internalGetRow().equals(other.internalGetRow()))
-            return false;
-        if (!unknownFields.equals(other.unknownFields))
-            return false;
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        if (memoizedHashCode != 0) {
-            return memoizedHashCode;
-        }
-        int hash = 41;
-        hash = (19 * hash) + getDescriptor().hashCode();
-        if (!internalGetRow().getMap().isEmpty()) {
-            hash = (37 * hash) + ROW_FIELD_NUMBER;
-            hash = (53 * hash) + internalGetRow().hashCode();
-        }
-        hash = (29 * hash) + unknownFields.hashCode();
-        memoizedHashCode = hash;
-        return hash;
-    }
-
-    public static BinlogMap parseFrom(java.nio.ByteBuffer data) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data);
-    }
-
-    public static BinlogMap parseFrom(java.nio.ByteBuffer data, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-    }
-
-    public static BinlogMap parseFrom(com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data);
-    }
-
-    public static BinlogMap parseFrom(com.google.protobuf.ByteString data, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-    }
-
-    public static BinlogMap parseFrom(byte[] data) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data);
-    }
-
-    public static BinlogMap parseFrom(byte[] data, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
-        return PARSER.parseFrom(data, extensionRegistry);
-    }
-
-    public static BinlogMap parseFrom(java.io.InputStream input) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
-    }
-
-    public static BinlogMap parseFrom(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    public static BinlogMap parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input);
-    }
-
-    public static BinlogMap parseDelimitedFrom(java.io.InputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    public static BinlogMap parseFrom(com.google.protobuf.CodedInputStream input) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input);
-    }
-
-    public static BinlogMap parseFrom(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
-        return com.google.protobuf.GeneratedMessageV3.parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    @Override
-    public Builder newBuilderForType() {
-        return newBuilder();
-    }
-
-    public static Builder newBuilder() {
-        return DEFAULT_INSTANCE.toBuilder();
-    }
-
-    public static Builder newBuilder(BinlogMap prototype) {
-        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-
-    @Override
-    public Builder toBuilder() {
-        return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @Override
-    protected Builder newBuilderForType(BuilderParent parent) {
-        Builder builder = new Builder(parent);
-        return builder;
-    }
-
     /**
-     * Protobuf type {@code BinlogMap}
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
      */
-    public static final class Builder extends com.google.protobuf.GeneratedMessageV3.Builder<Builder>
-            implements
-                // @@protoc_insertion_point(builder_implements:BinlogMap)
-                BinlogMapOrBuilder {
-
-        public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
-            return BinlogMessageProto.internal_static_BinlogMap_descriptor;
-        }
-
-        @SuppressWarnings({"rawtypes"})
-        protected com.google.protobuf.MapField internalGetMapField(int number) {
-            switch (number) {
-                case 1:
-                    return internalGetRow();
-                default:
-                    throw new RuntimeException("Invalid map field number: " + number);
-            }
-        }
-
-        @SuppressWarnings({"rawtypes"})
-        protected com.google.protobuf.MapField internalGetMutableMapField(int number) {
-            switch (number) {
-                case 1:
-                    return internalGetMutableRow();
-                default:
-                    throw new RuntimeException("Invalid map field number: " + number);
-            }
-        }
-
-        @Override
-        protected FieldAccessorTable internalGetFieldAccessorTable() {
-            return BinlogMessageProto.internal_static_BinlogMap_fieldAccessorTable.ensureFieldAccessorsInitialized(BinlogMap.class, Builder.class);
-        }
-
-        // Construct using org.dbsyncer.storage.binlog.proto.BinlogMap.newBuilder()
-        private Builder() {
-            maybeForceBuilderInitialization();
-        }
-
-        private Builder(BuilderParent parent) {
-            super(parent);
-            maybeForceBuilderInitialization();
-        }
-
-        private void maybeForceBuilderInitialization() {
-            if (com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders) {
-            }
-        }
-
-        @Override
-        public Builder clear() {
-            super.clear();
-            internalGetMutableRow().clear();
-            return this;
-        }
-
-        @Override
-        public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
-            return BinlogMessageProto.internal_static_BinlogMap_descriptor;
-        }
-
-        @Override
-        public BinlogMap getDefaultInstanceForType() {
-            return BinlogMap.getDefaultInstance();
-        }
-
-        @Override
-        public BinlogMap build() {
-            BinlogMap result = buildPartial();
-            if (!result.isInitialized()) {
-                throw newUninitializedMessageException(result);
-            }
-            return result;
-        }
-
-        @Override
-        public BinlogMap buildPartial() {
-            BinlogMap result = new BinlogMap(this);
-            int from_bitField0_ = bitField0_;
-            result.row_ = internalGetRow();
-            result.row_.makeImmutable();
-            onBuilt();
-            return result;
-        }
-
-        @Override
-        public Builder clone() {
-            return super.clone();
-        }
-
-        @Override
-        public Builder setField(com.google.protobuf.Descriptors.FieldDescriptor field, Object value) {
-            return super.setField(field, value);
-        }
-
-        @Override
-        public Builder clearField(com.google.protobuf.Descriptors.FieldDescriptor field) {
-            return super.clearField(field);
-        }
-
-        @Override
-        public Builder clearOneof(com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-            return super.clearOneof(oneof);
-        }
-
-        @Override
-        public Builder setRepeatedField(com.google.protobuf.Descriptors.FieldDescriptor field, int index, Object value) {
-            return super.setRepeatedField(field, index, value);
-        }
-
-        @Override
-        public Builder addRepeatedField(com.google.protobuf.Descriptors.FieldDescriptor field, Object value) {
-            return super.addRepeatedField(field, value);
-        }
-
-        @Override
-        public Builder mergeFrom(com.google.protobuf.Message other) {
-            if (other instanceof BinlogMap) {
-                return mergeFrom((BinlogMap) other);
-            } else {
-                super.mergeFrom(other);
-                return this;
-            }
-        }
-
-        public Builder mergeFrom(BinlogMap other) {
-            if (other == BinlogMap.getDefaultInstance())
-                return this;
-            internalGetMutableRow().mergeFrom(other.internalGetRow());
-            this.mergeUnknownFields(other.unknownFields);
-            onChanged();
-            return this;
-        }
-
-        @Override
-        public final boolean isInitialized() {
-            return true;
-        }
-
-        @Override
-        public Builder mergeFrom(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
-            BinlogMap parsedMessage = null;
-            try {
-                parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                parsedMessage = (BinlogMap) e.getUnfinishedMessage();
-                throw e.unwrapIOException();
-            } finally {
-                if (parsedMessage != null) {
-                    mergeFrom(parsedMessage);
-                }
-            }
-            return this;
-        }
-
-        private int bitField0_;
-
-        private com.google.protobuf.MapField<String, com.google.protobuf.ByteString> row_;
-
-        private com.google.protobuf.MapField<String, com.google.protobuf.ByteString> internalGetRow() {
-            if (row_ == null) {
-                return com.google.protobuf.MapField.emptyMapField(RowDefaultEntryHolder.defaultEntry);
-            }
-            return row_;
-        }
-
-        private com.google.protobuf.MapField<String, com.google.protobuf.ByteString> internalGetMutableRow() {
-            onChanged();;
-            if (row_ == null) {
-                row_ = com.google.protobuf.MapField.newMapField(RowDefaultEntryHolder.defaultEntry);
-            }
-            if (!row_.isMutable()) {
-                row_ = row_.copy();
-            }
-            return row_;
-        }
-
-        public int getRowCount() {
-            return internalGetRow().getMap().size();
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-
-        @Override
-        public boolean containsRow(String key) {
-            if (key == null) {
-                throw new NullPointerException("map key");
-            }
-            return internalGetRow().getMap().containsKey(key);
-        }
-
-        /**
-         * Use {@link #getRowMap()} instead.
-         */
-        @Override
-        @Deprecated
-        public java.util.Map<String, com.google.protobuf.ByteString> getRow() {
-            return getRowMap();
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-        @Override
-
-        public java.util.Map<String, com.google.protobuf.ByteString> getRowMap() {
-            return internalGetRow().getMap();
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-        @Override
-
-        public com.google.protobuf.ByteString getRowOrDefault(String key, com.google.protobuf.ByteString defaultValue) {
-            if (key == null) {
-                throw new NullPointerException("map key");
-            }
-            java.util.Map<String, com.google.protobuf.ByteString> map = internalGetRow().getMap();
-            return map.containsKey(key) ? map.get(key) : defaultValue;
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-        @Override
-
-        public com.google.protobuf.ByteString getRowOrThrow(String key) {
-            if (key == null) {
-                throw new NullPointerException("map key");
-            }
-            java.util.Map<String, com.google.protobuf.ByteString> map = internalGetRow().getMap();
-            if (!map.containsKey(key)) {
-                throw new IllegalArgumentException();
-            }
-            return map.get(key);
-        }
-
-        public Builder clearRow() {
-            internalGetMutableRow().getMutableMap().clear();
-            return this;
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-
-        public Builder removeRow(String key) {
-            if (key == null) {
-                throw new NullPointerException("map key");
-            }
-            internalGetMutableRow().getMutableMap().remove(key);
-            return this;
-        }
-
-        /**
-         * Use alternate mutation accessors instead.
-         */
-        @Deprecated
-        public java.util.Map<String, com.google.protobuf.ByteString> getMutableRow() {
-            return internalGetMutableRow().getMutableMap();
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-        public Builder putRow(String key, com.google.protobuf.ByteString value) {
-            if (key == null) {
-                throw new NullPointerException("map key");
-            }
-            if (value == null) {
-                throw new NullPointerException("map value");
-            }
-
-            internalGetMutableRow().getMutableMap().put(key, value);
-            return this;
-        }
-
-        /**
-         * <code>map&lt;string, bytes&gt; row = 1;</code>
-         */
-
-        public Builder putAllRow(java.util.Map<String, com.google.protobuf.ByteString> values) {
-            internalGetMutableRow().getMutableMap().putAll(values);
-            return this;
-        }
-
-        @Override
-        public final Builder setUnknownFields(final com.google.protobuf.UnknownFieldSet unknownFields) {
-            return super.setUnknownFields(unknownFields);
-        }
-
-        @Override
-        public final Builder mergeUnknownFields(final com.google.protobuf.UnknownFieldSet unknownFields) {
-            return super.mergeUnknownFields(unknownFields);
-        }
-
-        // @@protoc_insertion_point(builder_scope:BinlogMap)
+    public Builder removeRow(
+        java.lang.String key) {
+      if (key == null) { throw new NullPointerException("map key"); }
+      internalGetMutableRow().getMutableMap()
+          .remove(key);
+      return this;
+    }
+    /**
+     * Use alternate mutation accessors instead.
+     */
+    @java.lang.Deprecated
+    public java.util.Map<java.lang.String, com.google.protobuf.ByteString>
+        getMutableRow() {
+      bitField0_ |= 0x00000001;
+      return internalGetMutableRow().getMutableMap();
+    }
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
+    public Builder putRow(
+        java.lang.String key,
+        com.google.protobuf.ByteString value) {
+      if (key == null) { throw new NullPointerException("map key"); }
+      if (value == null) { throw new NullPointerException("map value"); }
+      internalGetMutableRow().getMutableMap()
+          .put(key, value);
+      bitField0_ |= 0x00000001;
+      return this;
+    }
+    /**
+     * <code>map&lt;string, bytes&gt; row = 1;</code>
+     */
+    public Builder putAllRow(
+        java.util.Map<java.lang.String, com.google.protobuf.ByteString> values) {
+      internalGetMutableRow().getMutableMap()
+          .putAll(values);
+      bitField0_ |= 0x00000001;
+      return this;
+    }
+    @java.lang.Override
+    public final Builder setUnknownFields(
+        final com.google.protobuf.UnknownFieldSet unknownFields) {
+      return super.setUnknownFields(unknownFields);
     }
 
-    // @@protoc_insertion_point(class_scope:BinlogMap)
-    private static final BinlogMap DEFAULT_INSTANCE;
-
-    static {
-        DEFAULT_INSTANCE = new BinlogMap();
+    @java.lang.Override
+    public final Builder mergeUnknownFields(
+        final com.google.protobuf.UnknownFieldSet unknownFields) {
+      return super.mergeUnknownFields(unknownFields);
     }
 
-    public static BinlogMap getDefaultInstance() {
-        return DEFAULT_INSTANCE;
+
+    // @@protoc_insertion_point(builder_scope:BinlogMap)
+  }
+
+  // @@protoc_insertion_point(class_scope:BinlogMap)
+  private static final org.dbsyncer.common.binlog.proto.BinlogMap DEFAULT_INSTANCE;
+  static {
+    DEFAULT_INSTANCE = new org.dbsyncer.common.binlog.proto.BinlogMap();
+  }
+
+  public static org.dbsyncer.common.binlog.proto.BinlogMap getDefaultInstance() {
+    return DEFAULT_INSTANCE;
+  }
+
+  private static final com.google.protobuf.Parser<BinlogMap>
+      PARSER = new com.google.protobuf.AbstractParser<BinlogMap>() {
+    @java.lang.Override
+    public BinlogMap parsePartialFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      Builder builder = newBuilder();
+      try {
+        builder.mergeFrom(input, extensionRegistry);
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(builder.buildPartial());
+      } catch (com.google.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(e)
+            .setUnfinishedMessage(builder.buildPartial());
+      }
+      return builder.buildPartial();
     }
+  };
 
-    private static final com.google.protobuf.Parser<BinlogMap> PARSER = new com.google.protobuf.AbstractParser<BinlogMap>() {
+  public static com.google.protobuf.Parser<BinlogMap> parser() {
+    return PARSER;
+  }
 
-        @Override
-        public BinlogMap parsePartialFrom(com.google.protobuf.CodedInputStream input,
-                                          com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
-            return new BinlogMap(input, extensionRegistry);
-        }
-    };
+  @java.lang.Override
+  public com.google.protobuf.Parser<BinlogMap> getParserForType() {
+    return PARSER;
+  }
 
-    public static com.google.protobuf.Parser<BinlogMap> parser() {
-        return PARSER;
-    }
-
-    @Override
-    public com.google.protobuf.Parser<BinlogMap> getParserForType() {
-        return PARSER;
-    }
-
-    @Override
-    public BinlogMap getDefaultInstanceForType() {
-        return DEFAULT_INSTANCE;
-    }
+  @java.lang.Override
+  public org.dbsyncer.common.binlog.proto.BinlogMap getDefaultInstanceForType() {
+    return DEFAULT_INSTANCE;
+  }
 
 }
+
