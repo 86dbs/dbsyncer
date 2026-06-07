@@ -78,9 +78,9 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
                 if (StringUtil.isBlank(consumerName)) {
                     consumerName = RedisUtil.DEFAULT_CONSUMER;
                 }
-                consumers.add(new StreamConsumer(table, stream, groupId, consumerName));
                 ensureGroup(instance, stream, groupId);
                 logResumeOffset(stream);
+                consumers.add(new StreamConsumer(table, stream, groupId, consumerName));
                 logger.info("Redis监听器已订阅 Stream: {}, groupId: {}, consumer: {}", stream, groupId, consumerName);
             }
             worker = new Worker();
@@ -124,13 +124,12 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         String stream = offset.getNextFileName();
         String entryId = String.valueOf(offset.getPosition());
         snapshot.put(OFFSET + stream, entryId);
-        ackEntry(stream, entryId);
     }
 
     private void logResumeOffset(String stream) {
         String offsetStr = snapshot.get(OFFSET + stream);
         if (StringUtil.isNotBlank(offsetStr)) {
-            logger.info("Redis Stream {} 已保存位点 {}，启动时将优先恢复 pending", stream, offsetStr);
+            logger.info("Redis Stream {} 已保存位点 {}", stream, offsetStr);
         }
     }
 
@@ -151,17 +150,13 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         return null;
     }
 
-    private void ackEntry(String stream, String entryId) {
-        StreamConsumer consumer = findConsumer(stream);
-        if (consumer == null) {
-            return;
-        }
+    private void ackEntry(StreamConsumer consumer, String entryId) {
         Jedis jedis = null;
         try {
             jedis = getConnectorInstance().borrowJedis();
-            jedis.xack(stream, consumer.groupId, new StreamEntryID(entryId));
+            jedis.xack(consumer.stream, consumer.groupId, new StreamEntryID(entryId));
         } catch (Exception e) {
-            logger.warn("ACK Stream {} entry {} 失败: {}", stream, entryId, e.getMessage());
+            logger.warn("ACK Stream {} entry {} 失败: {}", consumer.stream, entryId, e.getMessage());
         } finally {
             RedisUtil.returnResource(getConnectorInstance().getConnection(), jedis);
         }
@@ -225,19 +220,21 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         Map<String, Object> valueMap = parsePayload(entry);
         List<Object> rowData = mapToRowList(consumerInfo.table.getColumn(), valueMap);
         String offsetId = entry.getID().toString();
-        trySendEvent(new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, rowData, consumerInfo.stream, offsetId));
+        RowChangedEvent event = new RowChangedEvent(tableName, ConnectorConstant.OPERTION_INSERT, rowData,
+                consumerInfo.stream, offsetId);
+        trySendEvent(event);
+        ackEntry(consumerInfo, offsetId);
     }
 
-    private boolean readGroup(Jedis jedis, StreamConsumer consumerInfo, StreamEntryID startId, int blockMs) {
-        XReadGroupParams params = XReadGroupParams.xReadGroupParams().count(fetchSize).block(blockMs);
+    private void readNewEntries(Jedis jedis, StreamConsumer consumerInfo) {
+        XReadGroupParams params = XReadGroupParams.xReadGroupParams().count(fetchSize).block(200);
         Map<String, StreamEntryID> streams = new HashMap<>();
-        streams.put(consumerInfo.stream, startId);
+        streams.put(consumerInfo.stream, StreamEntryID.UNRECEIVED_ENTRY);
         List<Map.Entry<String, List<StreamEntry>>> result = jedis.xreadGroup(
                 consumerInfo.groupId, consumerInfo.consumerName, params, streams);
         if (CollectionUtils.isEmpty(result)) {
-            return false;
+            return;
         }
-        boolean processed = false;
         for (Map.Entry<String, List<StreamEntry>> item : result) {
             List<StreamEntry> entries = item.getValue();
             if (CollectionUtils.isEmpty(entries)) {
@@ -245,10 +242,8 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
             }
             for (StreamEntry entry : entries) {
                 processEntry(consumerInfo, entry);
-                processed = true;
             }
         }
-        return processed;
     }
 
     final class Worker extends Thread {
@@ -280,16 +275,7 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
             Jedis jedis = null;
             try {
                 jedis = instance.borrowJedis();
-                // 启动时仅恢复一次历史 pending（崩溃/异常退出未 ACK 的消息）
-                if (!consumerInfo.pendingRecovered) {
-                    while (connected && readGroup(jedis, consumerInfo, PENDING_ENTRY, 0)) {
-                        // 循环直到 pending 清空
-                    }
-                    consumerInfo.pendingRecovered = true;
-                    logger.info("Redis Stream {} 历史 pending 消息恢复完成", consumerInfo.stream);
-                }
-                // 正常运行只读新消息（>）；延迟 ACK 期间不可重复读 pending，否则会重复消费
-                readGroup(jedis, consumerInfo, StreamEntryID.UNRECEIVED_ENTRY, 200);
+                readNewEntries(jedis, consumerInfo);
             } catch (Exception e) {
                 if (!Thread.currentThread().isInterrupted()) {
                     logger.error("读取 Stream {} 失败", consumerInfo.stream, e);
@@ -306,8 +292,6 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         final String stream;
         final String groupId;
         final String consumerName;
-        /** 是否已完成启动时的 pending 恢复 */
-        volatile boolean pendingRecovered;
 
         StreamConsumer(Table table, String stream, String groupId, String consumerName) {
             this.table = table;
