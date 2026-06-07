@@ -87,9 +87,6 @@ public abstract class PrimaryKeyUtil {
      *   <li>日期时间类型：DATE, TIME, TIMESTAMP（按时间顺序比较）</li>
      * </ul>
      * </p>
-     *
-     * @param fields
-     * @return
      */
     public static boolean isSupportedCursor(List<Field> fields) {
         if (CollectionUtils.isEmpty(fields)) {

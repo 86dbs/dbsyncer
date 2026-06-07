@@ -163,7 +163,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     }
                     target.put(k, val);
                 } catch (Exception e) {
-                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(), (v == null ? null : v.getClass().getName()), v);
+                    logger.warn("解析Binlog数据类型异常：typeName=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getTypeName(), (v == null ? null : v.getClass().getName()), v);
                 }
             }
         });
