@@ -47,7 +47,15 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     private final OceanBaseConfigValidator configValidator = new OceanBaseConfigValidator();
     private final OceanBaseSchemaResolver schemaResolver = new OceanBaseSchemaResolver();
     private final Set<String> SYSTEM_DATABASES = Stream.of(
-            "information_schema", "mysql", "performance_schema", "sys", "oceanbase", "__public")
+            // MySQL 兼容系统库
+            "information_schema", "mysql", "performance_schema", "sys",
+            // OceanBase 系统库
+            "oceanbase", "__public", "__recyclebin", "ocs",
+            // Oracle 兼容系统库（企业版 / 混合租户常见）
+            "appqossys", "audsys", "ctxsys", "dbsfwuser", "dbsnmp", "dvsys",
+            "gsmadmin_internal", "lbacsys", "mdsys", "ojvmsys", "olapsys",
+            "orddata", "ordsys", "oraauditor", "outln", "system",
+            "sys_external_tbs", "wmsys", "xdb")
             .collect(Collectors.toSet());
 
     @Override
