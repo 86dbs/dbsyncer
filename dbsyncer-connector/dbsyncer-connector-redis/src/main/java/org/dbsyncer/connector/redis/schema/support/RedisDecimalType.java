@@ -19,7 +19,7 @@ public final class RedisDecimalType extends DecimalType {
 
     @Override
     protected BigDecimal merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (BigDecimal) convert(val, field);
     }
 
     @Override

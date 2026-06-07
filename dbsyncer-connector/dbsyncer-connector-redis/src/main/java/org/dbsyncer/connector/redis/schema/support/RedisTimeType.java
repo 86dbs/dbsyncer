@@ -19,7 +19,7 @@ public final class RedisTimeType extends TimeType {
 
     @Override
     protected Time merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Time) convert(val, field);
     }
 
     @Override

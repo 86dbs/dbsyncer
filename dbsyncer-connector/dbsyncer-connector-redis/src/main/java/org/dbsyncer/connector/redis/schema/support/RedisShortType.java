@@ -18,7 +18,7 @@ public final class RedisShortType extends ShortType {
 
     @Override
     protected Short merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Short) convert(val, field);
     }
 
     @Override

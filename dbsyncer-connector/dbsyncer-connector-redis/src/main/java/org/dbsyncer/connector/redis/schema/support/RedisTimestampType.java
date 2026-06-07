@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.redis.schema.support;
 
-import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
@@ -20,18 +19,10 @@ public final class RedisTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
-        if (val instanceof Long) {
-            return new Timestamp((Long) val);
+        if (val instanceof Number) {
+            return new Timestamp(((Number) val).longValue());
         }
-
-        if (val instanceof String) {
-            Timestamp timestamp = DateFormatUtil.stringToTimestamp((String) val);
-            if (null != timestamp) {
-                return timestamp;
-            }
-        }
-
-        return throwUnsupportedException(val, field);
+        return (Timestamp) convert(val, field);
     }
 
     @Override

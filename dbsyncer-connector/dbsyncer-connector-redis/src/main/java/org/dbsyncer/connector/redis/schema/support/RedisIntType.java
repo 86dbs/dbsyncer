@@ -18,7 +18,7 @@ public final class RedisIntType extends IntType {
 
     @Override
     protected Integer merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Integer) convert(val, field);
     }
 
     @Override

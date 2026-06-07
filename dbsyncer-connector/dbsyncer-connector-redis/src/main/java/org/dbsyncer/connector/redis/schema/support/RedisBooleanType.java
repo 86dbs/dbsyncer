@@ -18,7 +18,7 @@ public final class RedisBooleanType extends BooleanType {
 
     @Override
     protected Boolean merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Boolean) convert(val, field);
     }
 
     @Override

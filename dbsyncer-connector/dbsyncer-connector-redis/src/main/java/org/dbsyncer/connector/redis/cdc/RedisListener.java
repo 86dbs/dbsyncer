@@ -130,7 +130,7 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
     private void logResumeOffset(String stream) {
         String offsetStr = snapshot.get(OFFSET + stream);
         if (StringUtil.isNotBlank(offsetStr)) {
-            logger.info("Redis Stream {} 将从位点 {} 续传（pending 消息优先）", stream, offsetStr);
+            logger.info("Redis Stream {} 已保存位点 {}，启动时将优先恢复 pending", stream, offsetStr);
         }
     }
 
@@ -280,11 +280,15 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
             Jedis jedis = null;
             try {
                 jedis = instance.borrowJedis();
-                // 1. 优先处理 pending（已投递未 ACK），用于崩溃恢复与失败重试
-                while (connected && readGroup(jedis, consumerInfo, PENDING_ENTRY, 0)) {
-                    // 循环直到 pending 清空
+                // 启动时仅恢复一次历史 pending（崩溃/异常退出未 ACK 的消息）
+                if (!consumerInfo.pendingRecovered) {
+                    while (connected && readGroup(jedis, consumerInfo, PENDING_ENTRY, 0)) {
+                        // 循环直到 pending 清空
+                    }
+                    consumerInfo.pendingRecovered = true;
+                    logger.info("Redis Stream {} 历史 pending 消息恢复完成", consumerInfo.stream);
                 }
-                // 2. 再读取新消息（>），由 Redis 消费组维护投递进度
+                // 正常运行只读新消息（>）；延迟 ACK 期间不可重复读 pending，否则会重复消费
                 readGroup(jedis, consumerInfo, StreamEntryID.UNRECEIVED_ENTRY, 200);
             } catch (Exception e) {
                 if (!Thread.currentThread().isInterrupted()) {
@@ -302,6 +306,8 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         final String stream;
         final String groupId;
         final String consumerName;
+        /** 是否已完成启动时的 pending 恢复 */
+        volatile boolean pendingRecovered;
 
         StreamConsumer(Table table, String stream, String groupId, String consumerName) {
             this.table = table;

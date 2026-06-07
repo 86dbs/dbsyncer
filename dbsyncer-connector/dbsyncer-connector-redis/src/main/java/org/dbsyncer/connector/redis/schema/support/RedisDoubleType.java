@@ -18,7 +18,7 @@ public final class RedisDoubleType extends DoubleType {
 
     @Override
     protected Double merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Double) convert(val, field);
     }
 
     @Override

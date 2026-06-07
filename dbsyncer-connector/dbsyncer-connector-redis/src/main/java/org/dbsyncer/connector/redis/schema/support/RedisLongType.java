@@ -18,7 +18,7 @@ public final class RedisLongType extends LongType {
 
     @Override
     protected Long merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Long) convert(val, field);
     }
 
     @Override

@@ -19,7 +19,7 @@ public final class RedisDateType extends DateType {
 
     @Override
     protected Date merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Date) convert(val, field);
     }
 
     @Override

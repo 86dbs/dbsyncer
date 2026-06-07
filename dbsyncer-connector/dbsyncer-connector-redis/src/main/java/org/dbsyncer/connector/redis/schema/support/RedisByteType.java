@@ -18,7 +18,7 @@ public final class RedisByteType extends ByteType {
 
     @Override
     protected Byte merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Byte) convert(val, field);
     }
 
     @Override

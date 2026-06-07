@@ -18,7 +18,7 @@ public final class RedisFloatType extends FloatType {
 
     @Override
     protected Float merge(Object val, Field field) {
-        return throwUnsupportedException(val, field);
+        return (Float) convert(val, field);
     }
 
     @Override
