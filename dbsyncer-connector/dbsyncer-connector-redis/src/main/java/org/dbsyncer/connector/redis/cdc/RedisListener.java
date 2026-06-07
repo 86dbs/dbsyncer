@@ -59,7 +59,7 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
         RedisConnectorInstance instance = getConnectorInstance();
         try {
             for (Table table : customTable) {
-                String stream = table.getName();
+                String stream = table.getExtInfo().getProperty(RedisConstant.KEY_PREFIX);
                 String groupId = table.getExtInfo().getProperty(RedisConstant.GROUP_ID);
                 if (StringUtil.isBlank(groupId)) {
                     throw new RedisException("Redis Stream 消费组 groupId 不能为空");
