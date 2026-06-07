@@ -299,15 +299,12 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildJdbcUrl(DatabaseConfig config, String database) {
-        // jdbc:oceanbase://127.0.0.1:2881/test?rewriteBatchedStatements=true&useUnicode=true
+        // jdbc:oceanbase://127.0.0.1:2881/test
         StringBuilder url = new StringBuilder();
         url.append("jdbc:oceanbase://").append(config.getHost()).append(":").append(config.getPort());
         if (database != null && !database.trim().isEmpty()) {
             url.append("/").append(database);
         }
-        String base = url.toString();
-        String sep = base.contains("?") ? "&" : "?";
-        url.append(sep).append("cachePrepStmts=false");
         return url.toString();
     }
 

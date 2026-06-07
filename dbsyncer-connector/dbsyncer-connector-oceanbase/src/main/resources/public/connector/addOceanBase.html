@@ -35,7 +35,7 @@
             </label>
             <div class="form-control-area">
                 <input class="form-control" name="binlogHost" type="text" maxlength="100" placeholder="127.0.0.1"
-                       th:value="${connector?.config?.extInfo?.binlogHost}"/>
+                       th:value="${connector?.config?.extInfo?.getProperty('binlogHost')}"/>
             </div>
         </div>
         <div class="form-item">
@@ -44,7 +44,7 @@
             </label>
             <div class="form-control-area">
                 <input class="form-control" name="binlogPort" type="number" min="1" max="65535" placeholder="Binlog Instance 端口"
-                       th:value="${connector?.config?.extInfo?.binlogPort}"/>
+                       th:value="${connector?.config?.extInfo?.getProperty('binlogPort')}"/>
             </div>
         </div>
 
