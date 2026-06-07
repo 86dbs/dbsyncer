@@ -169,14 +169,7 @@
 
     // 生成redis配置
     function renderRedisInfo(customType, extInfo, items) {
-        let keyPrefix = extInfo.keyPrefix === undefined ? '' : extInfo.keyPrefix;
         let dataStructure = extInfo.dataStructure === undefined ? 'String' : extInfo.dataStructure;
-        items.push(`<div class="form-item">
-                    <label class="form-label">缓存key前缀</label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="keyPrefix" type="text" maxlength="128" value="${keyPrefix}" placeholder="如：user:cache，为空则使用表名"/>
-                    </div>
-                </div>`);
         items.push(`<div class="form-item">
                     <label class="form-label">数据结构<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
@@ -190,6 +183,14 @@
                     </div>
                 </div>`);
         if (customType === 'source') {
+            let stream = extInfo.stream !== undefined && extInfo.stream !== '' ? extInfo.stream
+                : (extInfo.keyPrefix === undefined ? '' : extInfo.keyPrefix);
+            items.push(`<div class="form-item">
+                <label class="form-label">Stream</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="stream" type="text" maxlength="128" value="${stream}" placeholder="Redis Stream 名称，如 user#，为空则使用表名"/>
+                </div>
+            </div>`);
             let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
             items.push(`<div class="form-item">
                     <label class="form-label">消费组 groupId<strong class="text-primary">*</strong></label>
@@ -204,35 +205,43 @@
                             <input class="form-control" name="consumerName" type="text" maxlength="128" value="${consumerName}" placeholder="dbsyncer-consumer"/>
                         </div>
                     </div>`);
-        } else {
-            let keyJoiner = extInfo.keyJoiner === undefined || extInfo.keyJoiner === '' ? ':' : extInfo.keyJoiner;
-            let expireType = extInfo.expireType === undefined ? 'never' : extInfo.expireType;
-            let expireSeconds = extInfo.expireSeconds === undefined ? '' : extInfo.expireSeconds;
-            if (expireSeconds === '') {
-                expireSeconds = 86440;
-            }
-            items.push(`<div class="form-item">
-                    <label class="form-label">主键拼接符 <i class="fa fa-question-circle" title="如果有多个主键时，示例效果：A:B:C"></i></label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="keyJoiner" type="text" maxlength="16" value="${keyJoiner}" placeholder="默认 :"/>
-                    </div>
-                </div>`);
-            items.push(`<div class="form-item">
-                    <label class="form-label">过期策略</label>
-                    <div id="redis_expire_type" class="radio-group">
-                        <input type="radio" name="expireType" value="never" ${expireType === 'never' ? 'checked' : ''} />
-                        <label>永不过期</label>
-                        <input type="radio" name="expireType" value="expire" ${expireType === 'expire' ? 'checked' : ''} />
-                        <label>到期</label>
-                    </div>
-                </div>`);
-            items.push(`<div class="form-item${expireType !== 'expire' ? ' hidden' : ''}" id="redis_expire_seconds_wrap">
-                    <label class="form-label">过期时间(秒)<strong class="text-primary">*</strong></label>
-                    <div class="form-control-area">
-                        <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
-                    </div>
-                </div>`);
+            return;
         }
+
+        let keyPrefix = extInfo.keyPrefix === undefined ? '' : extInfo.keyPrefix;
+        let keyJoiner = extInfo.keyJoiner === undefined || extInfo.keyJoiner === '' ? ':' : extInfo.keyJoiner;
+        let expireType = extInfo.expireType === undefined ? 'never' : extInfo.expireType;
+        let expireSeconds = extInfo.expireSeconds === undefined ? '' : extInfo.expireSeconds;
+        if (expireSeconds === '') {
+            expireSeconds = 86440;
+        }
+        items.push(`<div class="form-item">
+                <label class="form-label">缓存key前缀</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="keyPrefix" type="text" maxlength="128" value="${keyPrefix}" placeholder="如：user:cache，为空则使用表名"/>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item">
+                <label class="form-label">主键拼接符 <i class="fa fa-question-circle" title="如果有多个主键时，示例效果：A:B:C"></i></label>
+                <div class="form-control-area">
+                    <input class="form-control" name="keyJoiner" type="text" maxlength="16" value="${keyJoiner}" placeholder="默认 :"/>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item">
+                <label class="form-label">过期策略</label>
+                <div id="redis_expire_type" class="radio-group">
+                    <input type="radio" name="expireType" value="never" ${expireType === 'never' ? 'checked' : ''} />
+                    <label>永不过期</label>
+                    <input type="radio" name="expireType" value="expire" ${expireType === 'expire' ? 'checked' : ''} />
+                    <label>到期</label>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item${expireType !== 'expire' ? ' hidden' : ''}" id="redis_expire_seconds_wrap">
+                <label class="form-label">过期时间(秒)<strong class="text-primary">*</strong></label>
+                <div class="form-control-area">
+                    <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
+                </div>
+            </div>`);
     }
 
     function initRedisForm(extInfo) {

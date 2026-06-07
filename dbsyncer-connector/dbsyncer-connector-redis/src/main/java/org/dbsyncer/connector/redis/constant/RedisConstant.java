@@ -15,7 +15,10 @@ public final class RedisConstant {
     private RedisConstant() {
     }
 
-    /** 缓存 key 前缀 */
+    /** Redis Stream 名称（源表） */
+    public static final String STREAM = "stream";
+
+    /** 缓存 key 前缀（目标表） */
     public static final String KEY_PREFIX = "keyPrefix";
 
     /** 复合主键连接符 */

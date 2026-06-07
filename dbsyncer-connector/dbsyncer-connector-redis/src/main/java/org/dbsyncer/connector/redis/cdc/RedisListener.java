@@ -68,7 +68,7 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
             for (Table table : customTable) {
                 String stream = resolveStreamName(table);
                 if (StringUtil.isBlank(stream)) {
-                    throw new RedisException("Redis Stream 名称不能为空，请配置缓存 key 前缀或表名");
+                    throw new RedisException("Redis Stream 名称不能为空，请配置 Stream 或表名");
                 }
                 String groupId = table.getExtInfo().getProperty(RedisConstant.GROUP_ID);
                 if (StringUtil.isBlank(groupId)) {
@@ -135,7 +135,7 @@ public class RedisListener extends AbstractListener<RedisConnectorInstance> {
     }
 
     private String resolveStreamName(Table table) {
-        String stream = table.getExtInfo().getProperty(RedisConstant.KEY_PREFIX);
+        String stream = table.getExtInfo().getProperty(RedisConstant.STREAM);
         if (StringUtil.isNotBlank(stream)) {
             return stream.trim();
         }

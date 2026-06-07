@@ -47,6 +47,7 @@ public class RedisConfigValidator implements ConfigValidator<RedisConnector, Red
         String columnList = params.get("columnList");
         String groupId = params.get(RedisConstant.GROUP_ID);
         String consumerName = params.get(RedisConstant.CONSUMER_NAME);
+        String stream = params.get(RedisConstant.STREAM);
         String keyPrefix = params.get(RedisConstant.KEY_PREFIX);
         String dataStructure = params.get(RedisConstant.DATA_STRUCTURE);
         String keyJoiner = params.get(RedisConstant.KEY_JOINER);
@@ -59,6 +60,9 @@ public class RedisConfigValidator implements ConfigValidator<RedisConnector, Red
         table.setName(tableName);
         table.setColumn(fields);
         table.setType(connectorService.getExtendedTableType().getCode());
+        if (StringUtil.isNotBlank(stream)) {
+            table.getExtInfo().put(RedisConstant.STREAM, stream.trim());
+        }
         if (StringUtil.isNotBlank(keyPrefix)) {
             table.getExtInfo().put(RedisConstant.KEY_PREFIX, keyPrefix.trim());
         }

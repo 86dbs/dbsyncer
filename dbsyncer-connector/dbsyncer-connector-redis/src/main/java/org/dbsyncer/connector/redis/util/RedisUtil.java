@@ -6,7 +6,6 @@ package org.dbsyncer.connector.redis.util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.redis.config.RedisConfig;
 import org.dbsyncer.sdk.util.PropertiesUtil;
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
