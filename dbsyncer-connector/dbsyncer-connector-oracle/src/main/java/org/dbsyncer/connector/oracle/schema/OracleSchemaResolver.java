@@ -20,6 +20,7 @@ import org.dbsyncer.connector.oracle.schema.support.OracleIntType;
 import org.dbsyncer.connector.oracle.schema.support.OracleLongType;
 import org.dbsyncer.connector.oracle.schema.support.OracleStringType;
 import org.dbsyncer.connector.oracle.schema.support.OracleTimestampType;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ public final class OracleSchemaResolver extends AbstractDatabaseSchemaResolver {
     }
 
     @Override
-    public ByteString serialize(Object value) {
+    public ByteString serialize(Object value, Field field) {
         String type = value.getClass().getName();
         switch (type) {
             case "oracle.sql.TIMESTAMP":
@@ -82,7 +83,7 @@ public final class OracleSchemaResolver extends AbstractDatabaseSchemaResolver {
             default:
                 break;
         }
-        return super.serialize(value);
+        return super.serialize(value, field);
     }
 
     private byte[] getBytes(BLOB blob) {

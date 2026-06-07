@@ -81,7 +81,7 @@ public final class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolv
     }
 
     @Override
-    public ByteString serialize(Object value) {
+    public ByteString serialize(Object value, Field field) {
         String type = value.getClass().getName();
         switch (type) {
             case "org.postgresql.util.PGobject":
@@ -93,7 +93,7 @@ public final class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolv
             default:
                 break;
         }
-        return super.serialize(value);
+        return super.serialize(value, field);
     }
 
     /**

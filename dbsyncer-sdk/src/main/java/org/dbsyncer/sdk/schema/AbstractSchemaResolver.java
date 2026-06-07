@@ -118,11 +118,32 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
 
             // 数字：仅当字节长度与类型匹配时按二进制解析，否则按字符串（如 *_range 的 JSON）
             case INT:
-                return isStoredAsFixed(v, BinlogByteEnum.INTEGER.getByteLength()) ? value.asInteger() : value.asString();
+                if (isStoredAsFixed(v, BinlogByteEnum.INTEGER.getByteLength())) {
+                    return value.asInteger();
+                }
+                if (isStoredAsLong(v)) {
+                    return value.asLong().intValue();
+                }
+                return value.asString();
             case SHORT:
-                return isStoredAsFixed(v, BinlogByteEnum.SHORT.getByteLength()) ? value.asShort() : value.asString();
+                if (isStoredAsFixed(v, BinlogByteEnum.SHORT.getByteLength())) {
+                    return value.asShort();
+                }
+                if (isStoredAsFixed(v, BinlogByteEnum.INTEGER.getByteLength())) {
+                    return value.asInteger().shortValue();
+                }
+                if (isStoredAsLong(v)) {
+                    return value.asLong().shortValue();
+                }
+                return value.asString();
             case LONG:
-                return isStoredAsLong(v) ? value.asLong() : value.asString();
+                if (isStoredAsLong(v)) {
+                    return value.asLong();
+                }
+                if (isStoredAsFixed(v, BinlogByteEnum.INTEGER.getByteLength())) {
+                    return value.asInteger().longValue();
+                }
+                return value.asString();
             case FLOAT:
                 return isStoredAsFixed(v, BinlogByteEnum.FLOAT.getByteLength()) ? value.asFloat() : value.asString();
             case DOUBLE:
@@ -143,7 +164,27 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
     }
 
     @Override
-    public ByteString serialize(Object value) {
+    public ByteString serialize(Object value, Field field) {
+        if (value == null) {
+            return null;
+        }
+        if (field == null) {
+            return serialize(value);
+        }
+        Object converted = convert(value, field);
+        switch (getFieldType(field)) {
+            case INT:
+            case SHORT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return serializeByFieldType(converted, getFieldType(field));
+            default:
+                return serialize(converted);
+        }
+    }
+
+    private ByteString serialize(Object value) {
         // 自定义数据类型
         if (value instanceof CustomData) {
             CustomData cd = (CustomData) value;
@@ -220,6 +261,26 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
                 logger.error("Unsupported serialize value type:{}", type);
         }
         return null;
+    }
+
+    protected ByteString serializeByFieldType(Object value, DataTypeEnum fieldType) {
+        if (value == null) {
+            return null;
+        }
+        switch (fieldType) {
+            case INT:
+                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer->buffer.putInt(((Number) value).intValue()));
+            case SHORT:
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer->buffer.putShort(((Number) value).shortValue()));
+            case LONG:
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong(((Number) value).longValue()));
+            case FLOAT:
+                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer->buffer.putFloat(((Number) value).floatValue()));
+            case DOUBLE:
+                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer->buffer.putDouble(((Number) value).doubleValue()));
+            default:
+                return serialize(value);
+        }
     }
 
     protected ByteString allocateByteBufferToByteString(BinlogByteEnum byteType, ByteStringMapper mapper) {

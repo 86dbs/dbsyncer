@@ -44,7 +44,7 @@ public interface SchemaResolver {
      *
      * @param value 待序列化的值
      */
-    ByteString serialize(Object value);
+    ByteString serialize(Object value, Field field);
 
     /**
      * 反序列化从磁盘读取的数据，使用标准的数据类型解析器转换，返回原始值

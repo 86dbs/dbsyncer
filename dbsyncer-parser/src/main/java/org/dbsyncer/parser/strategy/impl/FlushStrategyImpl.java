@@ -16,8 +16,11 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -33,6 +36,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,11 +93,11 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
-        Meta meta = profileComponent.getMeta(metaId);
-        if (meta == null) {
+        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        if (tableGroup == null) {
             return;
         }
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
         if (mapping == null) {
             return;
         }
@@ -110,6 +114,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         if (schemaResolver == null) {
             return;
         }
+        Map<String, Field> fieldMap = new Picker(tableGroup).getTargetFieldMap();
 
         long now = Instant.now().toEpochMilli();
         data.forEach(r-> {
@@ -122,7 +127,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             row.put(ConfigConstant.DATA_ERROR, error);
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             try {
-                row.put(ConfigConstant.BINLOG_DATA, toBinlogBytes(schemaResolver, r));
+                row.put(ConfigConstant.BINLOG_DATA, toBinlogBytes(schemaResolver, r, fieldMap));
             } catch (Exception e) {
                 // 构建详细类型信息
                 StringBuilder typeInfo = new StringBuilder();
@@ -135,13 +140,16 @@ public final class FlushStrategyImpl implements FlushStrategy {
         });
     }
 
-    private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data) {
+    private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {
         BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
         data.forEach((k, v)-> {
             if (null != v) {
-                ByteString bytes = schemaResolver.serialize(v);
-                if (null != bytes) {
-                    dataBuilder.putRow(k, bytes);
+                Field field = fieldMap.get(k);
+                if (field != null) {
+                    ByteString bytes = schemaResolver.serialize(v, field);
+                    if (null != bytes) {
+                        dataBuilder.putRow(k, bytes);
+                    }
                 }
             }
         });
