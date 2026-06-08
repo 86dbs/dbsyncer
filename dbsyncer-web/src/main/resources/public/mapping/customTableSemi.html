@@ -229,16 +229,18 @@
             </div>`);
         items.push(`<div class="form-item">
                 <label class="form-label">过期策略</label>
-                <div id="redis_expire_type" class="radio-group">
-                    <input type="radio" name="expireType" value="never" ${expireType === 'never' ? 'checked' : ''} />
-                    <label>永不过期</label>
-                    <input type="radio" name="expireType" value="expire" ${expireType === 'expire' ? 'checked' : ''} />
-                    <label>到期</label>
+                <div class="form-control-area">
+                    <div id="redis_expire_type" class="radio-group radio-group-control-height">
+                        <input type="radio" name="expireType" value="never" ${expireType === 'never' ? 'checked' : ''} />
+                        <label>永不过期</label>
+                        <input type="radio" name="expireType" value="expire" ${expireType === 'expire' ? 'checked' : ''} />
+                        <label>到期</label>
+                    </div>
                 </div>
             </div>`);
-        items.push(`<div class="form-item${expireType !== 'expire' ? ' hidden' : ''}" id="redis_expire_seconds_wrap">
-                <label class="form-label">过期时间(秒)<strong class="text-primary">*</strong></label>
-                <div class="form-control-area">
+        items.push(`<div class="form-item">
+                <label class="form-label redis-expire-config hidden">过期时间(秒)<strong class="text-primary">*</strong></label>
+                <div class="form-control-area redis-expire-config hidden">
                     <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
                 </div>
             </div>`);
@@ -246,24 +248,22 @@
 
     function initRedisForm(extInfo) {
         initSelect($('select[name="dataStructure"]'));
-        const $expireWrap = $('#redis_expire_seconds_wrap');
+        const redisExpireConfig = $('.redis-expire-config');
         const $expireInput = $('input[name="expireSeconds"]');
-        const updateExpireInput = function (value) {
-            const visible = value === 'expire';
-            $expireWrap.toggleClass('hidden', !visible);
-            $expireInput.prop('required', visible).prop('tabindex', visible ? 0 : -1);
-            if (visible) {
+        const toggleExpireConfig = function (expireType) {
+            if (expireType === 'expire') {
+                redisExpireConfig.show();
+                $expireInput.prop('required', true).prop('tabindex', 0);
                 if (!$expireInput.val()) {
                     $expireInput.val(86440);
                 }
+            } else {
+                redisExpireConfig.hide();
+                $expireInput.prop('required', false).prop('tabindex', -1);
             }
         };
-        if ($('#redis_expire_type').length) {
-            $('#redis_expire_type').radioGroup({
-                onChange: updateExpireInput
-            });
-            updateExpireInput(extInfo.expireType || 'never');
-        }
+        $('#redis_expire_type').radioGroup({ onChange: toggleExpireConfig});
+        toggleExpireConfig(extInfo.expireType || $('input[name="expireType"]:checked').val() || 'never');
     }
 
     function renderSemiInfo(tableName, extInfo) {
