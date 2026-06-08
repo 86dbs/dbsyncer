@@ -14,6 +14,7 @@ import java.util.Map;
 public final class ExtUpdateDeserializer extends UpdateRowsEventDataDeserializer {
 
     private final DatetimeV2Deserialize datetimeV2Deserialize = new DatetimeV2Deserialize();
+    private final TimeDeserialize timeDeserialize = new TimeDeserialize();
     private final JsonBinaryDeserialize jsonBinaryDeserialize = new JsonBinaryDeserialize();
 
     public ExtUpdateDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) {
@@ -43,5 +44,15 @@ public final class ExtUpdateDeserializer extends UpdateRowsEventDataDeserializer
     @Override
     protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
+    }
+
+    @Override
+    protected Serializable deserializeTime(ByteArrayInputStream inputStream) throws IOException {
+        return timeDeserialize.deserializeTime(inputStream);
+    }
+
+    @Override
+    protected Serializable deserializeTimeV2(int meta, ByteArrayInputStream inputStream) throws IOException {
+        return timeDeserialize.deserializeTimeV2(meta, inputStream);
     }
 }
