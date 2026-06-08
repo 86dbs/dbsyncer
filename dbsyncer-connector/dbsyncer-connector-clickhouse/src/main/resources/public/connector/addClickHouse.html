@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+      xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="content">
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="host" type="text" maxlength="100" required placeholder="127.0.0.1"
+                       th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="8123"
+                       th:value="${connector?.config?.port}?: '8123'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="64" name="username" placeholder="default"
+                       th:value="${connector?.config?.username}?: 'default'" type="text"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码</label>
+            <div class="form-control-area">
+                <input class="form-control" maxlength="64" name="password" placeholder="无密码可留空"
+                       type="password" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">数据库名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="64" name="database" placeholder="default"
+                       type="text" th:value="${connector?.config?.database}?: 'default'"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 mt-5">
+        <div class="form-item">
+            <label class="form-label">轮询间隔(秒)
+                <i class="fa fa-question-circle" title="日志增量模式下，按主键游标轮询新数据的间隔"></i>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="pollIntervalSeconds" type="number" min="1" max="3600"
+                       th:value="${connector?.config?.extInfo?.getProperty('pollIntervalSeconds')}?:5" placeholder="默认5"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">轮询批次
+                <i class="fa fa-question-circle" title="日志增量模式每次拉取的最大行数"></i>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="pollBatchSize" type="number" min="1" max="10000"
+                       th:value="${connector?.config?.extInfo?.getProperty('pollBatchSize')}?:500" placeholder="默认500"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="maxActive" type="number" required min="1" max="512"
+                       th:value="${connector?.config?.maxActive}?:64" placeholder="默认64"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="keepAlive" type="number" required min="10000" max="120000"
+                       th:value="${connector?.config?.keepAlive}?:60000" placeholder="默认60000"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">连接参数</label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="5"
+                          th:text="${connector?.config?.propertiesText} ?: 'socket_timeout=300000&amp;connect_timeout=30000&amp;compress=0'"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">驱动</label>
+            <div class="form-control-area">
+                <input class="form-control" name="driverClassName" readonly="true"
+                       th:value="${connector?.config?.driverClassName} ?: 'com.clickhouse.jdbc.ClickHouseDriver'" type="text"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

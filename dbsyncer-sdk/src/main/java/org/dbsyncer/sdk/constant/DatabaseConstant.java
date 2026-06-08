@@ -56,4 +56,10 @@ public class DatabaseConstant {
      * SQLite分页语句
      */
     public static final String SQLITE_PAGE_SQL = " limit ? OFFSET ?";
+
+    // *********************************** ClickHouse **************************************//
+    /**
+     * ClickHouse分页语句
+     */
+    public static final String CLICKHOUSE_PAGE_SQL = " LIMIT ? OFFSET ?";
 }
