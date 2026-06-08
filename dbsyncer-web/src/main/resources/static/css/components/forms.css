@@ -83,13 +83,6 @@ select.form-control.is-invalid,
   column-gap: 16px; 
 }
 
-/* 占位隐藏：保留布局空间，避免切换单选时页面抖动 */
-.form-item.hidden {
-  display: grid;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .form-label { 
   color: var(--text-secondary); 
   font-weight: 500; 
