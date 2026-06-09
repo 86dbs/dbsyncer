@@ -26,7 +26,11 @@ public enum NoticeTypeEnum {
     /**
      * 驱动停止
      */
-    MAPPING_STOP(3);
+    MAPPING_STOP(3),
+    /**
+     * 通用消息
+     */
+    GENERAL_MESSAGE(4);
 
     private final int code;
 

@@ -62,6 +62,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -106,6 +107,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     private MetricResponse systemInfo;
 
     private LocalDateTime delayTime = LocalDateTime.now();
+
+    private final AtomicLong LAST_EXECUTE_TIME = new AtomicLong(System.currentTimeMillis());
 
     @PostConstruct
     private void init() {
@@ -253,12 +256,26 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
 
         MappingErrorContent content = new MappingErrorContent();
+
+        long endTime = System.currentTimeMillis();
         metaAll.forEach(meta -> {
             // 统计运行中和失败数
             if (meta.getFail().get() > 0) {
-                writeMappingReport(meta, content);
+                Query query = new Query(1, 1);
+                query.setType(StorageEnum.DATA);
+                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
+                query.setQueryTotal(true);
+                query.addFilter(ConfigConstant.DATA_SUCCESS, 0);
+                query.setMetaId(meta.getId());
+                Paging queryTemp = storageService.query(query);
+                if (queryTemp.getTotal() > 0) {
+                    writeMappingReport(meta, content);
+                }
             }
         });
+        //重置上一次的时间
+        LAST_EXECUTE_TIME.set(endTime);
 
         if (!CollectionUtils.isEmpty(content.getErrorItems())) {
             content.setTitle("同步失败");

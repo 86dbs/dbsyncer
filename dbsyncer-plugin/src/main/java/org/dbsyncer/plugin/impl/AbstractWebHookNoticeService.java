@@ -61,6 +61,12 @@ public abstract class AbstractWebHookNoticeService extends AbstractNoticeService
             return c.toString();
         }
 
+        // 通用通知
+        if (noticeContent instanceof GeneralNoticeContent) {
+            GeneralNoticeContent meta = (GeneralNoticeContent) noticeContent;
+            return String.format("[%s] %s %s", getAppConfig().getName(), noticeContent.getTitle(), meta.getContent());
+        }
+
         // 测试通知
         if (noticeContent instanceof TestNoticeContent) {
             TestNoticeContent meta = (TestNoticeContent) noticeContent;

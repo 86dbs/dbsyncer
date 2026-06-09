@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.plugin.model.MappingStopContent;
+import org.dbsyncer.plugin.model.GeneralNoticeContent;
 import org.dbsyncer.plugin.model.TestNoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.NoticeContent;
@@ -132,6 +133,12 @@ public final class MailNoticeService extends AbstractNoticeService {
         // 连接离线
         if (noticeContent instanceof ConnectorOfflineContent) {
             return getConnectorOfflineContent((ConnectorOfflineContent) noticeContent);
+        }
+
+        // 通用通知
+        if (noticeContent instanceof GeneralNoticeContent) {
+            GeneralNoticeContent meta = (GeneralNoticeContent) noticeContent;
+            return meta.getContent();
         }
 
         // 测试通知
