@@ -39,6 +39,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-h2 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-h2</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- dbsyncer-connector-http -->
         <dependency>
             <groupId>org.ghi</groupId>

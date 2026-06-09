@@ -58,6 +58,7 @@
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.13.1</junit.version>
         <jsql-parse.version>4.9</jsql-parse.version>
+        <h2.version>2.2.224</h2.version>
 
         <!-- 可选参数 -->
         <skip.spotless>true</skip.spotless>
@@ -135,6 +136,13 @@
                 <groupId>com.oracle.database.nls</groupId>
                 <artifactId>orai18n</artifactId>
                 <version>${ojdbc8.version}</version>
+            </dependency>
+
+            <!-- h2 -->
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
             </dependency>
 
             <!-- sqlserver-driver -->
