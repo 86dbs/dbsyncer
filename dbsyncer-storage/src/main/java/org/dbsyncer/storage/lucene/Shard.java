@@ -3,32 +3,30 @@
  */
 package org.dbsyncer.storage.lucene;
 
-import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.storage.StorageException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
-
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.storage.StorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,9 +57,7 @@ public class Shard {
 
     private IndexWriter indexWriter;
 
-    private IndexReader indexReader;
-
-    private final Object LOCK = new Object();
+    private SearcherManager searcherManager;
 
     private static final int MAX_SIZE = 10000;
 
@@ -70,7 +66,7 @@ public class Shard {
             // 索引存放的位置，设置在当前目录中
             Path dir = Paths.get(path);
             indexPath = new File(dir.toUri());
-            directory = FSDirectory.open(dir);
+            directory = new NIOFSDirectory(dir);
             // 分词器
             analyzer = new SmartChineseAnalyzer();
             reopen();
@@ -108,7 +104,6 @@ public class Shard {
     }
 
     public void deleteAll() {
-        // Fix Bug: this IndexReader is closed. 直接删除文件
         try {
             close();
             directory.close();
@@ -120,37 +115,26 @@ public class Shard {
 
     public void close() throws IOException {
         indexWriter.commit();
-        indexReader.close();
         indexWriter.close();
     }
 
-    public IndexSearcher getSearcher() throws IOException {
-        // 复用索引读取器
-        IndexReader changeReader = DirectoryReader.openIfChanged((DirectoryReader) indexReader, indexWriter, true);
-        if (null != changeReader) {
-            indexReader.close();
-            indexReader = null;
-            synchronized (LOCK) {
-                if (null == indexReader) {
-                    indexReader = changeReader;
-                }
-            }
-        }
-        return new IndexSearcher(indexReader);
-    }
-
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
-        final IndexSearcher searcher = getSearcher();
-        final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
-        Paging paging = new Paging(pageNum, pageSize);
-        paging.setTotal(topDocs.totalHits.value);
-        if (option.isQueryTotal()) {
-            return paging;
-        }
+        searcherManager.maybeRefresh();
+        final IndexSearcher searcher = searcherManager.acquire();
+        try {
+            final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
+            Paging paging = new Paging(pageNum, pageSize);
+            paging.setTotal(topDocs.totalHits.value);
+            if (option.isQueryTotal()) {
+                return paging;
+            }
 
-        List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
-        paging.setData(data);
-        return paging;
+            List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
+            paging.setData(data);
+            return paging;
+        } finally {
+            searcherManager.release(searcher);
+        }
     }
 
     private TopDocs getTopDocs(IndexSearcher searcher, Query query, int maxSize, Sort sort) throws IOException {
@@ -230,7 +214,7 @@ public class Shard {
                 doExecute(callback);
             } catch (IOException e) {
                 // 程序异常导致文件锁未关闭 java.nio.channels.ClosedChannelException
-                logger.error(String.format("索引异常：%s", indexPath.getAbsolutePath()), e);
+                logger.error("索引异常：{}", indexPath.getAbsolutePath(), e);
             }
             return;
         }
@@ -314,16 +298,15 @@ public class Shard {
 
         // 创建索引写入配置
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        // 默认32M, 减少合并次数
-        config.setRAMBufferSizeMB(32);
+        // 如果是写多读少场景，可以适当增大，减少 flush 次数
+        config.setRAMBufferSizeMB(256);
+        config.setMergePolicy(new TieredMergePolicy()
+                .setMaxMergedSegmentMB(512)
+                .setSegmentsPerTier(5)
+        );
         // 创建索引写入对象
         indexWriter = new IndexWriter(directory, config);
-        // 创建索引的读取器
-        indexReader = DirectoryReader.open(indexWriter);
-    }
-
-    public Analyzer getAnalyzer() {
-        return analyzer;
+        searcherManager = new SearcherManager(indexWriter, null);
     }
 
     interface Callback {
