@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.storage;
 
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -43,7 +44,7 @@ public class StorageSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public StorageService storageService() {
+    public StorageService storageService(ScheduledTaskService scheduledTaskService) {
         Properties properties = new Properties();
         if (environment instanceof AbstractEnvironment) {
             AbstractEnvironment ae = (AbstractEnvironment) environment;
@@ -76,7 +77,7 @@ public class StorageSupportConfiguration {
         }
 
         // 默认磁盘存储
-        DiskStorageService storageService = new DiskStorageService();
+        DiskStorageService storageService = new DiskStorageService(scheduledTaskService);
         storageService.init(properties);
         return storageService;
     }

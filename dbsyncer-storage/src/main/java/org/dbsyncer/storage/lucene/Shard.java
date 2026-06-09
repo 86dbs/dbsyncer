@@ -8,6 +8,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -21,9 +22,9 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.storage.StorageException;
@@ -35,19 +36,33 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-11-12 20:29
+ * Lucene 分片：写路径仅变更 IndexWriter；commit / deleteUnusedFiles / refresh 由 {@link org.dbsyncer.storage.impl.DiskStorageService} 定时托管，
+ * 查询与关闭前会主动 commit，保证读己之写与优雅停机。
+ *
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-11-12 20:29
  */
 public class Shard {
 
+    private static final int MAX_SIZE = 10000;
+
+    /** 配置索引体量小，降低 Writer 缓冲，减少 flush/segment 频率 */
+    private static final double RAM_BUFFER_SIZE_MB = 32D;
+
+    private static final int MAX_MERGED_SEGMENT_MB = 128;
+
+    private static final int SEGMENTS_PER_TIER = 4;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final Object lifecycleLock = new Object();
 
     private final File indexPath;
 
@@ -59,17 +74,15 @@ public class Shard {
 
     private SearcherManager searcherManager;
 
-    private static final int MAX_SIZE = 10000;
+    private volatile boolean dirty;
 
     public Shard(String path) {
         try {
-            // 索引存放的位置，设置在当前目录中
             Path dir = Paths.get(path);
             indexPath = new File(dir.toUri());
-            directory = new NIOFSDirectory(dir);
-            // 分词器
+            directory = FSDirectory.open(dir);
             analyzer = new SmartChineseAnalyzer();
-            reopen();
+            openWriterAndSearcher();
         } catch (IOException e) {
             throw new StorageException(e);
         }
@@ -85,6 +98,20 @@ public class Shard {
         }
     }
 
+    public void updateBatch(List<Term> terms, List<Document> docs) {
+        if (terms == null || docs == null || terms.isEmpty() || docs.size() != terms.size()) {
+            return;
+        }
+        execute(docs, () -> {
+            for (int i = 0; i < terms.size(); i++) {
+                Term term = terms.get(i);
+                if (term != null) {
+                    indexWriter.updateDocument(term, docs.get(i));
+                }
+            }
+        });
+    }
+
     public void deleteBatch(Term... terms) {
         if (null != terms) {
             execute(terms, () -> indexWriter.deleteDocuments(terms));
@@ -92,96 +119,107 @@ public class Shard {
     }
 
     public void delete(Query query) {
-        try {
-            indexWriter.deleteDocuments(query);
-            indexWriter.flush();
-            indexWriter.commit();
-            indexWriter.forceMergeDeletes();
-            indexWriter.deleteUnusedFiles();
-        } catch (IOException e) {
-            logger.error(e.getLocalizedMessage(), e);
-        }
+        execute(query, () -> indexWriter.deleteDocuments(query));
     }
 
     public void deleteAll() {
-        try {
-            close();
-            directory.close();
-            FileUtils.deleteDirectory(indexPath);
-        } catch (IOException e) {
-            throw new StorageException(e);
+        synchronized (lifecycleLock) {
+            try {
+                commitIfDirty();
+                closeWriterAndSearcher();
+                IOUtils.close(directory);
+                FileUtils.deleteDirectory(indexPath);
+            } catch (IOException e) {
+                throw new StorageException(e);
+            }
         }
     }
 
     public void close() throws IOException {
-        indexWriter.commit();
-        indexWriter.close();
+        synchronized (lifecycleLock) {
+            commitIfDirty();
+            closeWriterAndSearcher();
+            IOUtils.close(analyzer, directory);
+        }
+    }
+
+    /**
+     * 存在未提交变更时执行 commit、清理废弃文件并刷新 Searcher。
+     *
+     * @return 是否实际执行了 commit
+     */
+    public boolean commitIfDirty() throws IOException {
+        synchronized (lifecycleLock) {
+            if (!dirty || !isWriterOpen()) {
+                return false;
+            }
+            commitAndRefresh();
+            dirty = false;
+            return true;
+        }
     }
 
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
-        searcherManager.maybeRefresh();
-        final IndexSearcher searcher = searcherManager.acquire();
+        final IndexSearcher searcher;
+        synchronized (lifecycleLock) {
+            if (!isWriterOpen()) {
+                openWriterAndSearcher();
+            }
+            // 读前提交，保证配置保存后立即可查
+            commitIfDirty();
+            searcherManager.maybeRefresh();
+            searcher = searcherManager.acquire();
+        }
         try {
-            final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), MAX_SIZE, sort);
+            final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), sort);
             Paging paging = new Paging(pageNum, pageSize);
             paging.setTotal(topDocs.totalHits.value);
             if (option.isQueryTotal()) {
                 return paging;
             }
-
             List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
             paging.setData(data);
             return paging;
         } finally {
-            searcherManager.release(searcher);
+            synchronized (lifecycleLock) {
+                if (searcherManager != null) {
+                    searcherManager.release(searcher);
+                }
+            }
         }
     }
 
-    private TopDocs getTopDocs(IndexSearcher searcher, Query query, int maxSize, Sort sort) throws IOException {
+    private TopDocs getTopDocs(IndexSearcher searcher, Query query, Sort sort) throws IOException {
         if (null != sort) {
-            return searcher.search(query, maxSize, sort);
+            return searcher.search(query, MAX_SIZE, sort);
         }
-        return searcher.search(query, maxSize);
+        return searcher.search(query, MAX_SIZE);
     }
 
-    /**
-     * 执行查询
-     *
-     * @param searcher
-     * @param topDocs
-     * @param option
-     * @param pageNum
-     * @param pageSize
-     * @throws IOException
-     */
     private List<Map> search(IndexSearcher searcher, TopDocs topDocs, Option option, int pageNum, int pageSize) throws IOException {
         ScoreDoc[] docs = topDocs.scoreDocs;
         int total = docs.length;
         int begin = (pageNum - 1) * pageSize;
         int end = pageNum * pageSize;
 
-        // 判断边界
-        begin = begin > total ? total : begin;
-        end = end > total ? total : end;
+        begin = Math.min(begin, total);
+        end = Math.min(end, total);
 
         List<Map> list = new ArrayList<>();
-        Document doc = null;
-        Map r = null;
-        IndexableField f = null;
-        Iterator<IndexableField> iterator = null;
+        Document doc;
+        Map r;
+        IndexableField f;
+        Iterator<IndexableField> iterator;
         while (begin < end) {
-            // 取得对应的文档对象
             doc = searcher.doc(docs[begin++].doc);
             iterator = doc.iterator();
-            r = new ConcurrentHashMap();
+            r = new HashMap<>();
             while (iterator.hasNext()) {
                 f = iterator.next();
                 final String key = f.name();
                 if (!option.includeField(key)) {
                     continue;
                 }
-
-                // 开启高亮
                 if (option.isEnableHighLightSearch()) {
                     try {
                         if (option.getHighLightKeys().contains(key)) {
@@ -195,8 +233,6 @@ public class Shard {
                         logger.error(e.getLocalizedMessage(), e);
                     }
                 }
-
-                // 解析value类型
                 r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
             }
             list.add(r);
@@ -208,115 +244,118 @@ public class Shard {
         if (value == null) {
             return;
         }
-
-        if (indexWriter.isOpen()) {
-            try {
-                doExecute(callback);
-            } catch (IOException e) {
-                // 程序异常导致文件锁未关闭 java.nio.channels.ClosedChannelException
-                logger.error("索引异常：{}", indexPath.getAbsolutePath(), e);
-            }
-            return;
-        }
-
-        // 索引异常关闭
-        try {
-            reopen();
-            doExecute(callback);
-        } catch (IOException e) {
-            // 重试失败打印异常数据
-            logger.error(value.toString());
-        }
-    }
-
-    private void doExecute(Callback callback) throws IOException {
-        callback.execute();
-        indexWriter.flush();
-        indexWriter.commit();
-    }
-
-    private void reopen() throws IOException {
-        int maxRetries = 3;
-        int retryCount = 0;
-
-        while (retryCount < maxRetries) {
-            try {
-                // 尝试获取写锁
-                Lock writeLock = directory.obtainLock(IndexWriter.WRITE_LOCK_NAME);
-                if (writeLock != null) {
-                    IOUtils.close(writeLock); // release write lock
-                }
-                // 成功获取锁，跳出循环
-                break;
-            } catch (LockObtainFailedException e) {
-                retryCount++;
-                // 锁被其他进程持有或残留，尝试清理锁文件
-                logger.warn("无法获取 Lucene 写锁 (尝试 {}/{}), 尝试清理锁文件: {}", retryCount, maxRetries, indexPath.getAbsolutePath());
-
-                if (retryCount >= maxRetries) {
-                    // 最后一次重试失败，抛出异常
-                    throw new IOException("无法获取 Lucene 写锁，已重试 " + maxRetries + " 次。请检查是否有其他进程正在使用索引目录: " + indexPath.getAbsolutePath(), e);
-                }
-
+        synchronized (lifecycleLock) {
+            if (!isWriterOpen()) {
                 try {
-                    // 对于 FSDirectory，锁文件是物理文件，可以直接删除
-                    File lockFile = new File(indexPath, IndexWriter.WRITE_LOCK_NAME);
-                    if (lockFile.exists()) {
-                        boolean deleted = lockFile.delete();
-                        if (deleted) {
-                            logger.info("已删除残留的 Lucene 锁文件: {}", lockFile.getAbsolutePath());
-                            // 删除锁文件后，等待一小段时间让其他进程释放
-                            try {
-                                Thread.sleep(100); // 等待 100ms
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                            }
-                        } else {
-                            logger.warn("无法删除 Lucene 锁文件，可能被其他进程占用: {}", lockFile.getAbsolutePath());
-                            // 如果无法删除，等待更长时间
-                            try {
-                                Thread.sleep(500); // 等待 500ms
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    } else {
-                        // 锁文件不存在，但获取锁失败，可能是其他进程正在创建锁
-                        logger.warn("锁文件不存在但获取锁失败，等待后重试: {}", indexPath.getAbsolutePath());
-                        try {
-                            Thread.sleep(200); // 等待 200ms
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.error("清理 Lucene 锁文件失败: {}", indexPath.getAbsolutePath(), ex);
-                    // 继续重试
+                    openWriterAndSearcher();
+                } catch (IOException e) {
+                    logger.error("索引重开失败：{}", indexPath.getAbsolutePath(), e);
+                    logger.error("索引异常数据：{}", value);
+                    return;
+                }
+            }
+            try {
+                callback.execute();
+                dirty = true;
+            } catch (IOException e) {
+                logger.error("索引异常：{}", indexPath.getAbsolutePath(), e);
+                try {
+                    closeWriterAndSearcher();
+                } catch (IOException ex) {
+                    logger.warn("关闭索引 Writer 失败：{}", indexPath.getAbsolutePath(), ex);
                 }
             }
         }
+    }
 
-        // 创建索引写入配置
+    private void commitAndRefresh() throws IOException {
+        indexWriter.commit();
+        indexWriter.deleteUnusedFiles();
+        if (searcherManager != null) {
+            searcherManager.maybeRefresh();
+        }
+    }
+
+    private boolean isWriterOpen() {
+        return indexWriter != null && indexWriter.isOpen();
+    }
+
+    private void openWriterAndSearcher() throws IOException {
+        obtainWriteLockWithRetry();
+        closeWriterAndSearcher();
+
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        // 如果是写多读少场景，可以适当增大，减少 flush 次数
-        config.setRAMBufferSizeMB(256);
+        config.setRAMBufferSizeMB(RAM_BUFFER_SIZE_MB);
+        config.setCommitOnClose(true);
         config.setMergePolicy(new TieredMergePolicy()
-                .setMaxMergedSegmentMB(512)
-                .setSegmentsPerTier(5)
-        );
-        // 创建索引写入对象
+                .setMaxMergedSegmentMB(MAX_MERGED_SEGMENT_MB)
+                .setSegmentsPerTier(SEGMENTS_PER_TIER)
+                .setMaxMergeAtOnce(2));
+        ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
+        mergeScheduler.setMaxMergesAndThreads(2, 1);
+        config.setMergeScheduler(mergeScheduler);
+
         indexWriter = new IndexWriter(directory, config);
         searcherManager = new SearcherManager(indexWriter, null);
+        dirty = false;
+    }
+
+    private void closeWriterAndSearcher() throws IOException {
+        IOUtils.close(searcherManager, indexWriter);
+        searcherManager = null;
+        indexWriter = null;
+        dirty = false;
+    }
+
+    private void obtainWriteLockWithRetry() throws IOException {
+        int maxRetries = 3;
+        for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+            try {
+                Lock writeLock = directory.obtainLock(IndexWriter.WRITE_LOCK_NAME);
+                if (writeLock != null) {
+                    IOUtils.close(writeLock);
+                }
+                return;
+            } catch (LockObtainFailedException e) {
+                logger.warn("无法获取 Lucene 写锁 (尝试 {}/{}), 尝试清理锁文件: {}", retryCount + 1, maxRetries, indexPath.getAbsolutePath());
+                if (retryCount >= maxRetries - 1) {
+                    throw new IOException("无法获取 Lucene 写锁，已重试 " + maxRetries + " 次。请检查是否有其他进程正在使用索引目录: " + indexPath.getAbsolutePath(), e);
+                }
+                clearStaleLockFile();
+            }
+        }
+    }
+
+    private void clearStaleLockFile() {
+        try {
+            File lockFile = new File(indexPath, IndexWriter.WRITE_LOCK_NAME);
+            if (lockFile.exists()) {
+                boolean deleted = lockFile.delete();
+                if (deleted) {
+                    logger.info("已删除残留的 Lucene 锁文件: {}", lockFile.getAbsolutePath());
+                    sleepQuietly(100);
+                } else {
+                    logger.warn("无法删除 Lucene 锁文件，可能被其他进程占用: {}", lockFile.getAbsolutePath());
+                    sleepQuietly(500);
+                }
+            } else {
+                sleepQuietly(200);
+            }
+        } catch (Exception ex) {
+            logger.error("清理 Lucene 锁文件失败: {}", indexPath.getAbsolutePath(), ex);
+        }
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     interface Callback {
 
-        /**
-         * 索引回执
-         *
-         * @throws IOException
-         */
         void execute() throws IOException;
     }
-
 }
