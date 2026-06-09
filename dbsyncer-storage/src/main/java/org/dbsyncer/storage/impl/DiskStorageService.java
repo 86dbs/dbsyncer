@@ -59,8 +59,6 @@ public class DiskStorageService extends AbstractStorageService {
 
     private final String COMMIT_TASK_KEY = "diskStorageLuceneCommit";
 
-    private final String COMMIT_INTERVAL_PROPERTY = "dbsyncer.storage.disk.commit-interval-ms";
-
     private final long DEFAULT_COMMIT_INTERVAL_MS = 3000L;
 
     private final ScheduledTaskService scheduledTaskService;
@@ -81,7 +79,7 @@ public class DiskStorageService extends AbstractStorageService {
     @Override
     public void init(Properties properties) {
         if (properties != null) {
-            commitIntervalMs = NumberUtil.toLong(properties.getProperty(COMMIT_INTERVAL_PROPERTY), DEFAULT_COMMIT_INTERVAL_MS);
+            commitIntervalMs = NumberUtil.toLong(properties.getProperty("dbsyncer.storage.disk.commit-interval-ms"), DEFAULT_COMMIT_INTERVAL_MS);
             if (commitIntervalMs < 500L) {
                 commitIntervalMs = DEFAULT_COMMIT_INTERVAL_MS;
             }
@@ -198,7 +196,7 @@ public class DiskStorageService extends AbstractStorageService {
     }
 
     /**
-     * 定时提交所有分片，合并高频写入（如同步 DATA）产生的 segment，降低 Reader 代际与堆外占用。
+     * 定时提交所有分片，合并高频写入（如同步 DATA）产生的 segment，降低 Reader 堆外占用。
      */
     private void startCommitScheduler() {
         if (scheduledTaskService == null) {
@@ -216,8 +214,12 @@ public class DiskStorageService extends AbstractStorageService {
 
     private void commitAllShards() {
         for (Map.Entry<String, Shard> entry : shards.entrySet()) {
+            Shard shard = entry.getValue();
+            if (!shard.isDirty()) {
+                continue;
+            }
             try {
-                if (entry.getValue().commitIfDirty()) {
+                if (shard.commitIfDirty()) {
                     logger.debug("Lucene shard committed: {}", entry.getKey());
                 }
             } catch (IOException e) {

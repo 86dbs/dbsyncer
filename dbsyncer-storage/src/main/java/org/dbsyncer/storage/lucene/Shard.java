@@ -19,6 +19,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
@@ -27,6 +28,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.storage.StorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -51,10 +54,10 @@ import java.util.Map;
  */
 public class Shard {
 
-    private static final int MAX_SIZE = 10000;
+    /** searchAfter 跳页时每批跳过的文档数，控制单次堆内存占用 */
+    private static final int SEARCH_AFTER_STEP = 500;
 
-    /** 配置索引体量小，降低 Writer 缓冲，减少 flush/segment 频率 */
-    private static final double RAM_BUFFER_SIZE_MB = 32D;
+    private static final double RAM_BUFFER_SIZE_MB = 16D;
 
     private static final int MAX_MERGED_SEGMENT_MB = 128;
 
@@ -89,6 +92,9 @@ public class Shard {
     }
 
     public void insertBatch(List<Document> docs) {
+        if (CollectionUtils.isEmpty(docs)) {
+            return;
+        }
         execute(docs, () -> indexWriter.addDocuments(docs));
     }
 
@@ -113,13 +119,15 @@ public class Shard {
     }
 
     public void deleteBatch(Term... terms) {
-        if (null != terms) {
+        if (terms != null && terms.length > 0) {
             execute(terms, () -> indexWriter.deleteDocuments(terms));
         }
     }
 
     public void delete(Query query) {
-        execute(query, () -> indexWriter.deleteDocuments(query));
+        if (query != null) {
+            execute(query, () -> indexWriter.deleteDocuments(query));
+        }
     }
 
     public void deleteAll() {
@@ -127,7 +135,7 @@ public class Shard {
             try {
                 commitIfDirty();
                 closeWriterAndSearcher();
-                IOUtils.close(directory);
+                IOUtils.close(directory, analyzer);
                 FileUtils.deleteDirectory(indexPath);
             } catch (IOException e) {
                 throw new StorageException(e);
@@ -159,85 +167,151 @@ public class Shard {
         }
     }
 
+    public boolean isDirty() {
+        return dirty;
+    }
+
     public Paging query(Option option, int pageNum, int pageSize, Sort sort) throws IOException {
+        if (option == null || option.getQuery() == null) {
+            return new Paging(pageNum, pageSize);
+        }
+        if (pageNum < 1) {
+            pageNum = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 20;
+        }
+
         final IndexSearcher searcher;
         synchronized (lifecycleLock) {
-            if (!isWriterOpen()) {
-                openWriterAndSearcher();
-            }
-            // 读前提交，保证配置保存后立即可查
-            commitIfDirty();
-            searcherManager.maybeRefresh();
+            ensureWriterOpen();
+            prepareSearcherForRead();
             searcher = searcherManager.acquire();
         }
         try {
-            final TopDocs topDocs = getTopDocs(searcher, option.getQuery(), sort);
             Paging paging = new Paging(pageNum, pageSize);
-            paging.setTotal(topDocs.totalHits.value);
+            Query query = option.getQuery();
+
+            long total = searcher.count(query);
+            paging.setTotal(total);
+
             if (option.isQueryTotal()) {
                 return paging;
             }
-            List<Map> data = search(searcher, topDocs, option, pageNum, pageSize);
-            paging.setData(data);
+
+            int offset = (pageNum - 1) * pageSize;
+            if (offset >= total) {
+                paging.setData(new ArrayList<>());
+                return paging;
+            }
+
+            Sort pagingSort = ensureSortForPaging(sort);
+            ScoreDoc after = skipToOffset(searcher, query, pagingSort, offset);
+            TopDocs pageDocs = searchAfter(searcher, after, query, pageSize, pagingSort);
+            paging.setData(search(searcher, pageDocs, option));
             return paging;
         } finally {
-            synchronized (lifecycleLock) {
-                if (searcherManager != null) {
-                    searcherManager.release(searcher);
-                }
+            searcherManager.release(searcher);
+        }
+    }
+
+    /**
+     * 读前：有脏数据则 commit 并阻塞刷新；否则轻量 maybeRefresh。
+     */
+    private void prepareSearcherForRead() throws IOException {
+        if (dirty && isWriterOpen()) {
+            commitAndRefresh();
+            dirty = false;
+        } else if (searcherManager != null) {
+            searcherManager.maybeRefresh();
+        }
+    }
+
+    /**
+     * searchAfter 要求排序稳定，追加 _doc 作为 tie-breaker。
+     */
+    private Sort ensureSortForPaging(Sort sort) {
+        if (sort == null) {
+            return null;
+        }
+        for (SortField field : sort.getSort()) {
+            if (SortField.FIELD_DOC.equals(field)) {
+                return sort;
             }
         }
+        SortField[] fields = sort.getSort();
+        SortField[] extended = Arrays.copyOf(fields, fields.length + 1);
+        extended[fields.length] = SortField.FIELD_DOC;
+        return new Sort(extended);
     }
 
-    private TopDocs getTopDocs(IndexSearcher searcher, Query query, Sort sort) throws IOException {
-        if (null != sort) {
-            return searcher.search(query, MAX_SIZE, sort);
+    /**
+     * 使用 searchAfter 分批跳过 offset，避免深分页一次性加载大量 ScoreDoc。
+     */
+    private ScoreDoc skipToOffset(IndexSearcher searcher, Query query, Sort sort, int offset) throws IOException {
+        if (offset <= 0) {
+            return null;
         }
-        return searcher.search(query, MAX_SIZE);
+        ScoreDoc after = null;
+        int skipped = 0;
+        while (skipped < offset) {
+            int fetch = Math.min(SEARCH_AFTER_STEP, offset - skipped);
+            TopDocs page = searchAfter(searcher, after, query, fetch, sort);
+            ScoreDoc[] hits = page.scoreDocs;
+            if (hits.length == 0) {
+                break;
+            }
+            after = hits[hits.length - 1];
+            skipped += hits.length;
+            if (hits.length < fetch) {
+                break;
+            }
+        }
+        return after;
     }
 
-    private List<Map> search(IndexSearcher searcher, TopDocs topDocs, Option option, int pageNum, int pageSize) throws IOException {
+    private TopDocs searchAfter(IndexSearcher searcher, ScoreDoc after, Query query, int numHits, Sort sort) throws IOException {
+        if (sort != null) {
+            return searcher.searchAfter(after, query, numHits, sort);
+        }
+        return searcher.searchAfter(after, query, numHits);
+    }
+
+    private List<Map> search(IndexSearcher searcher, TopDocs topDocs, Option option) throws IOException {
         ScoreDoc[] docs = topDocs.scoreDocs;
-        int total = docs.length;
-        int begin = (pageNum - 1) * pageSize;
-        int end = pageNum * pageSize;
-
-        begin = Math.min(begin, total);
-        end = Math.min(end, total);
-
-        List<Map> list = new ArrayList<>();
-        Document doc;
-        Map r;
-        IndexableField f;
-        Iterator<IndexableField> iterator;
-        while (begin < end) {
-            doc = searcher.doc(docs[begin++].doc);
-            iterator = doc.iterator();
-            r = new HashMap<>();
+        List<Map> list = new ArrayList<>(docs.length);
+        for (ScoreDoc scoreDoc : docs) {
+            Document doc = searcher.doc(scoreDoc.doc);
+            Map<String, Object> row = new HashMap<>();
+            Iterator<IndexableField> iterator = doc.iterator();
             while (iterator.hasNext()) {
-                f = iterator.next();
-                final String key = f.name();
+                IndexableField field = iterator.next();
+                final String key = field.name();
                 if (!option.includeField(key)) {
                     continue;
                 }
-                if (option.isEnableHighLightSearch()) {
-                    try {
-                        if (option.getHighLightKeys().contains(key)) {
-                            String content = doc.get(key);
-                            TokenStream tokenStream = analyzer.tokenStream("", content);
-                            content = option.getHighlighter().getBestFragment(tokenStream, content);
-                            r.put(key, content);
-                            continue;
-                        }
-                    } catch (InvalidTokenOffsetsException e) {
-                        logger.error(e.getLocalizedMessage(), e);
-                    }
+                if (option.isEnableHighLightSearch() && option.getHighLightKeys().contains(key)) {
+                    row.put(key, highlightField(doc, key, option));
+                    continue;
                 }
-                r.put(f.name(), option.getFieldResolver(f.name()).getValue(f));
+                row.put(key, option.getFieldResolver(key).getValue(field));
             }
-            list.add(r);
+            list.add(row);
         }
         return list;
+    }
+
+    private String highlightField(Document doc, String key, Option option) {
+        String content = doc.get(key);
+        if (content == null) {
+            return null;
+        }
+        try (TokenStream tokenStream = analyzer.tokenStream(key, content)) {
+            return option.getHighlighter().getBestFragment(tokenStream, content);
+        } catch (IOException | InvalidTokenOffsetsException e) {
+            logger.error("高亮解析失败, field={}", key, e);
+            return content;
+        }
     }
 
     private void execute(Object value, Callback callback) {
@@ -245,25 +319,13 @@ public class Shard {
             return;
         }
         synchronized (lifecycleLock) {
-            if (!isWriterOpen()) {
-                try {
-                    openWriterAndSearcher();
-                } catch (IOException e) {
-                    logger.error("索引重开失败：{}", indexPath.getAbsolutePath(), e);
-                    logger.error("索引异常数据：{}", value);
-                    return;
-                }
-            }
             try {
+                ensureWriterOpen();
                 callback.execute();
                 dirty = true;
             } catch (IOException e) {
                 logger.error("索引异常：{}", indexPath.getAbsolutePath(), e);
-                try {
-                    closeWriterAndSearcher();
-                } catch (IOException ex) {
-                    logger.warn("关闭索引 Writer 失败：{}", indexPath.getAbsolutePath(), ex);
-                }
+                closeWriterQuietly();
             }
         }
     }
@@ -272,7 +334,14 @@ public class Shard {
         indexWriter.commit();
         indexWriter.deleteUnusedFiles();
         if (searcherManager != null) {
-            searcherManager.maybeRefresh();
+            // 阻塞刷新，保证 commit 后紧接着的查询可见
+            searcherManager.maybeRefreshBlocking();
+        }
+    }
+
+    private void ensureWriterOpen() throws IOException {
+        if (!isWriterOpen()) {
+            openWriterAndSearcher();
         }
     }
 
@@ -287,10 +356,12 @@ public class Shard {
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
         config.setRAMBufferSizeMB(RAM_BUFFER_SIZE_MB);
         config.setCommitOnClose(true);
+        config.setUseCompoundFile(true);
         config.setMergePolicy(new TieredMergePolicy()
                 .setMaxMergedSegmentMB(MAX_MERGED_SEGMENT_MB)
                 .setSegmentsPerTier(SEGMENTS_PER_TIER)
-                .setMaxMergeAtOnce(2));
+                .setMaxMergeAtOnce(2)
+                .setDeletesPctAllowed(20));
         ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
         mergeScheduler.setMaxMergesAndThreads(2, 1);
         config.setMergeScheduler(mergeScheduler);
@@ -305,6 +376,14 @@ public class Shard {
         searcherManager = null;
         indexWriter = null;
         dirty = false;
+    }
+
+    private void closeWriterQuietly() {
+        try {
+            closeWriterAndSearcher();
+        } catch (IOException e) {
+            logger.warn("关闭索引 Writer 失败：{}", indexPath.getAbsolutePath(), e);
+        }
     }
 
     private void obtainWriteLockWithRetry() throws IOException {
