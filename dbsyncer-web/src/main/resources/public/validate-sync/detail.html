@@ -24,6 +24,17 @@
             word-break: break-word;
             line-height: 1.5;
         }
+
+        .diff-table .diff-field-item {
+            margin-top: 6px;
+            padding: 4px 0;
+            border-top: 1px dashed var(--border-color, #e5e7eb);
+        }
+
+        .diff-table .diff-field-name {
+            font-weight: 600;
+            color: var(--text-primary, #111827);
+        }
     </style>
 
     <div class="card-header">
@@ -270,6 +281,43 @@
             return '<span>源：' + sourceTotal + '</span><br><span>目：' + targetTotal + '</span>';
         }
 
+        function parseDiffDetails(details) {
+            if (details == null || details === '') {
+                return [];
+            }
+            try {
+                var parsed = typeof details === 'string' ? JSON.parse(details) : details;
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function formatDiffValue(value) {
+            if (value === null || value === undefined || value === '') {
+                return 'NULL';
+            }
+            return String(value);
+        }
+
+        function buildDiffMsgCell(item) {
+            var safeMsg = escapeHtml(item.msg || '-');
+            var details = parseDiffDetails(item.details);
+            var html = '<div class="diff-msg-cell">';
+            html += '<div>' + safeMsg + '</div>';
+            if (details.length > 0) {
+                details.forEach(function (detail) {
+                    html += '<div class="diff-field-item">'
+                        + '<span class="diff-field-name">' + escapeHtml(detail.field || '-') + '</span>'
+                        + '：源=' + escapeHtml(formatDiffValue(detail.source))
+                        + '，目标=' + escapeHtml(formatDiffValue(detail.target))
+                        + '</div>';
+                });
+            }
+            html += '</div>';
+            return html;
+        }
+
         function resetDiffModalActions() {
             currentDetailId = '';
             $('#btnManualRevise').addClass('hidden').prop('disabled', false);
@@ -324,8 +372,7 @@
             var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
             var bodyHtml = '';
             data.forEach(function (d) {
-                var safeMsg = escapeHtml(d.msg || '-');
-                var msgHtml = '<div class="diff-msg-cell">' + safeMsg + '</div>';
+                var msgHtml = buildDiffMsgCell(d);
                 var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
                 var typeText = d.type || d.objType || '-';
                 bodyHtml += '<tr>' +
