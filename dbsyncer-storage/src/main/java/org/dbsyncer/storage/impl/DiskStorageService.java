@@ -25,6 +25,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.storage.StorageException;
 import org.dbsyncer.storage.lucene.Option;
@@ -42,6 +43,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 将数据存储在磁盘，基于lucene实现
@@ -50,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @date 2023-09-10 23:22
  */
+@Deprecated
 public class DiskStorageService extends AbstractStorageService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -61,6 +66,8 @@ public class DiskStorageService extends AbstractStorageService {
     private final ScheduledTaskService scheduledTaskService;
 
     private final Map<String, Shard> shards = new ConcurrentHashMap<>();
+
+    private final Map<String, Lock> shardLocks = new ConcurrentHashMap<>();
 
     private long commitIntervalMs = DEFAULT_COMMIT_INTERVAL_MS;
 
@@ -85,6 +92,65 @@ public class DiskStorageService extends AbstractStorageService {
         getShard(getSharding(StorageEnum.CONFIG, null));
         getShard(getSharding(StorageEnum.LOG, null));
         startCommitScheduler();
+    }
+
+    @Override
+    public Paging query(Query query) {
+        String sharding = getSharding(query.getType(), query.getMetaId());
+        Lock shardLock = getShardLock(sharding);
+        boolean locked = false;
+        try {
+            locked = shardLock.tryLock(3, TimeUnit.SECONDS);
+            if (locked) {
+                return super.query(query);
+            }
+            logger.warn("Disk storage query lock timeout, sharding={}", sharding);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Disk storage query interrupted, sharding={}", sharding);
+        } finally {
+            if (locked) {
+                shardLock.unlock();
+            }
+        }
+        return new Paging(query.getPageNum(), query.getPageSize());
+    }
+
+    @Override
+    public void delete(Query query) {
+        BooleanFilter q = query.getBooleanFilter();
+        if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
+            throw new SdkException("必须包含删除条件");
+        }
+
+        String sharding = getSharding(query.getType(), query.getMetaId());
+        Lock shardLock = getShardLock(sharding);
+        boolean locked = false;
+        try {
+            locked = shardLock.tryLock();
+            if (locked) {
+                super.delete(query);
+                return;
+            }
+            logger.warn("Disk storage delete lock failed, sharding={}", sharding);
+        } finally {
+            if (locked) {
+                shardLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void clear(StorageEnum type, String metaId) {
+        String sharding = getSharding(type, metaId);
+        Lock shardLock = getShardLock(sharding);
+        shardLock.lock();
+        try {
+            super.clear(type, metaId);
+        } finally {
+            shardLock.unlock();
+            shardLocks.remove(sharding);
+        }
     }
 
     @Override
@@ -336,6 +402,10 @@ public class DiskStorageService extends AbstractStorageService {
      */
     private Shard getShard(String sharding) {
         return shards.computeIfAbsent(sharding, k->new Shard(PATH + k));
+    }
+
+    private Lock getShardLock(String sharding) {
+        return shardLocks.computeIfAbsent(sharding, k -> new ReentrantLock());
     }
 
     /**
