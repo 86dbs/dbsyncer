@@ -40,9 +40,9 @@ import java.util.stream.Stream;
 /**
  * MySQL连接器实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2021-11-22 23:55
+ * @author AE86
+ * @version 1.0.0
+ * @date 2021-11-22 23:55
  */
 public final class MySQLConnector extends AbstractDatabaseConnector {
 

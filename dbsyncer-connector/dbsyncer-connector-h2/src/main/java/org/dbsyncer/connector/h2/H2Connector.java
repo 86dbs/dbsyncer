@@ -5,6 +5,7 @@ package org.dbsyncer.connector.h2;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.h2.schema.H2SchemaResolver;
+import org.dbsyncer.connector.h2.storage.H2StorageService;
 import org.dbsyncer.connector.h2.validator.H2ConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
@@ -21,6 +22,7 @@ import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.util.ArrayList;
@@ -29,6 +31,10 @@ import java.util.List;
 
 /**
  * H2 内嵌数据库连接器
+ *
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2021-11-22 23:55
  */
 public final class H2Connector extends AbstractDatabaseConnector {
 
@@ -59,6 +65,11 @@ public final class H2Connector extends AbstractDatabaseConnector {
             return new DatabaseQuartzListener();
         }
         return null;
+    }
+
+    @Override
+    public StorageService getStorageService() {
+        return new H2StorageService();
     }
 
     @Override
