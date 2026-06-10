@@ -50,7 +50,7 @@
             <div class="form-control-area">
                 <textarea name="properties" class="form-control" maxlength="1024" rows="5"
                           placeholder="MODE=MySQL&DB_CLOSE_DELAY=-1"
-                          th:text="${connector?.config?.propertiesText} ?: 'MODE=MySQL&DB_CLOSE_DELAY=-1'"></textarea>
+                          th:text="${connector?.config?.propertiesText} ?: 'MODE=MySQL&DB_CLOSE_DELAY=-1&TRACE_LEVEL_FILE=0&TRACE_LEVEL_SYSTEM_OUT=0'"></textarea>
             </div>
         </div>
     </div>

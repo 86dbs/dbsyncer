@@ -40,7 +40,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 将存储数据写入 H2（嵌入式）.
+ * 将存储数据写入 H2（嵌入式）
+ *
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-08 15:17
  */
 public class H2StorageService extends AbstractStorageService {
 
@@ -58,9 +62,8 @@ public class H2StorageService extends AbstractStorageService {
     @Override
     public void init(Properties properties) {
         DatabaseConfig config = new DatabaseConfig();
-        config.setConnectorType("H2");
-        String url = properties.getProperty("dbsyncer.storage.h2.url", "jdbc:h2:file:./data/dbsyncer;MODE=MySQL;DB_CLOSE_DELAY=-1");
-        url = normalizeStorageUrl(url);
+        config.setConnectorType(properties.getProperty("dbsyncer.storage.type"));
+        String url = properties.getProperty("dbsyncer.storage.h2.url");
         String username = properties.getProperty("dbsyncer.storage.h2.username", "sa");
         String password = properties.getProperty("dbsyncer.storage.h2.password", StringUtil.EMPTY);
         String driverClassName = properties.getProperty("dbsyncer.storage.h2.driver-class-name", "org.h2.Driver");
@@ -83,19 +86,6 @@ public class H2StorageService extends AbstractStorageService {
             databaseTemplate.execute("SET SCHEMA PUBLIC");
             return null;
         });
-    }
-
-    /**
-     * DATABASE_TO_LOWER / CASE_INSENSITIVE_IDENTIFIERS 与 MySQL 兼容模式冲突，会引发 Schema "PUBLIC" not found。
-     */
-    private String normalizeStorageUrl(String url) {
-        if (StringUtil.isBlank(url)) {
-            return url;
-        }
-        return url.replace(";DATABASE_TO_LOWER=TRUE", StringUtil.EMPTY)
-                .replace("DATABASE_TO_LOWER=TRUE;", StringUtil.EMPTY)
-                .replace(";CASE_INSENSITIVE_IDENTIFIERS=TRUE", StringUtil.EMPTY)
-                .replace("CASE_INSENSITIVE_IDENTIFIERS=TRUE;", StringUtil.EMPTY);
     }
 
     @Override
