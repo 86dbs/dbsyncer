@@ -60,6 +60,7 @@ public class H2StorageService extends AbstractStorageService {
         DatabaseConfig config = new DatabaseConfig();
         config.setConnectorType("H2");
         String url = properties.getProperty("dbsyncer.storage.h2.url", "jdbc:h2:file:./data/dbsyncer;MODE=MySQL;DB_CLOSE_DELAY=-1");
+        url = normalizeStorageUrl(url);
         String username = properties.getProperty("dbsyncer.storage.h2.username", "sa");
         String password = properties.getProperty("dbsyncer.storage.h2.password", StringUtil.EMPTY);
         String driverClassName = properties.getProperty("dbsyncer.storage.h2.driver-class-name", "org.h2.Driver");
@@ -69,7 +70,32 @@ public class H2StorageService extends AbstractStorageService {
         config.setUrl(url);
         logger.info("h2 storage url:{}", url);
         connectorInstance = new DatabaseConnectorInstance(config);
+        ensureSchema();
         initTable();
+    }
+
+    /**
+     * MODE=MySQL 下 H2 默认在 PUBLIC schema 建表，启动时显式确保 schema 存在。
+     */
+    private void ensureSchema() {
+        connectorInstance.execute(databaseTemplate -> {
+            databaseTemplate.execute("CREATE SCHEMA IF NOT EXISTS PUBLIC");
+            databaseTemplate.execute("SET SCHEMA PUBLIC");
+            return null;
+        });
+    }
+
+    /**
+     * DATABASE_TO_LOWER / CASE_INSENSITIVE_IDENTIFIERS 与 MySQL 兼容模式冲突，会引发 Schema "PUBLIC" not found。
+     */
+    private String normalizeStorageUrl(String url) {
+        if (StringUtil.isBlank(url)) {
+            return url;
+        }
+        return url.replace(";DATABASE_TO_LOWER=TRUE", StringUtil.EMPTY)
+                .replace("DATABASE_TO_LOWER=TRUE;", StringUtil.EMPTY)
+                .replace(";CASE_INSENSITIVE_IDENTIFIERS=TRUE", StringUtil.EMPTY)
+                .replace("CASE_INSENSITIVE_IDENTIFIERS=TRUE;", StringUtil.EMPTY);
     }
 
     @Override
@@ -129,32 +155,12 @@ public class H2StorageService extends AbstractStorageService {
 
     @Override
     protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, new ExecuteMapper() {
-            @Override
-            public String getSql(Executor executor) {
-                return executor.getInsert();
-            }
-
-            @Override
-            public Object[] getArgs(Executor executor, Map params) {
-                return getInsertArgs(executor, params);
-            }
-        });
+        batchExecute(type, sharding, list, true);
     }
 
     @Override
     protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, new ExecuteMapper() {
-            @Override
-            public String getSql(Executor executor) {
-                return executor.getUpdate();
-            }
-
-            @Override
-            public Object[] getArgs(Executor executor, Map params) {
-                return getUpdateArgs(executor, params);
-            }
-        });
+        batchExecute(type, sharding, list, false);
     }
 
     @Override
@@ -175,7 +181,7 @@ public class H2StorageService extends AbstractStorageService {
         }
     }
 
-    private void batchExecute(StorageEnum type, String sharding, List<Map> list, ExecuteMapper mapper) {
+    private void batchExecute(StorageEnum type, String sharding, List<Map> list, boolean insert) {
         if (CollectionUtils.isEmpty(list)) {
             return;
         }
@@ -184,8 +190,10 @@ public class H2StorageService extends AbstractStorageService {
         if (executor == null) {
             return;
         }
-        final String sql = mapper.getSql(executor);
-        final List<Object[]> args = list.stream().map(row -> mapper.getArgs(executor, row)).collect(Collectors.toList());
+        final String sql = insert ? executor.getInsert() : executor.getUpdate();
+        final List<Object[]> args = list.stream()
+                .map(row -> insert ? getInsertArgs(executor, row) : getUpdateArgs(executor, row))
+                .collect(Collectors.toList());
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
@@ -419,9 +427,8 @@ public class H2StorageService extends AbstractStorageService {
         }
 
         List<Field> fields = executor.getFields();
-        List<String> primaryKeys = new ArrayList<>();
-        primaryKeys.add(ConfigConstant.CONFIG_MODEL_ID);
-        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, primaryKeys, fields, "");
+        // 主键列名须与 Field.name 一致（如 ID），不可用 label（id），否则 H2 引号标识符大小写敏感
+        final SqlBuilderConfig config = new SqlBuilderConfig(connector, "", table, buildPrimaryKeys(fields), fields, "");
 
         String query = SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config);
         String insert = SqlBuilderEnum.INSERT.getSqlBuilder().buildSql(config);
@@ -429,6 +436,16 @@ public class H2StorageService extends AbstractStorageService {
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
         return executor;
+    }
+
+    private List<String> buildPrimaryKeys(List<Field> fields) {
+        List<String> primaryKeys = new ArrayList<>();
+        for (Field field : fields) {
+            if (field.isPk()) {
+                primaryKeys.add(field.getName());
+            }
+        }
+        return primaryKeys;
     }
 
     private boolean tableExists(String tableName) {
@@ -615,9 +632,4 @@ public class H2StorageService extends AbstractStorageService {
         }
     }
 
-    interface ExecuteMapper {
-        String getSql(Executor executor);
-
-        Object[] getArgs(Executor executor, Map params);
-    }
 }

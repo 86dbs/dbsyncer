@@ -49,8 +49,8 @@
             <label class="form-label">连接参数</label>
             <div class="form-control-area">
                 <textarea name="properties" class="form-control" maxlength="1024" rows="5"
-                          placeholder="MODE=MySQL&DB_CLOSE_DELAY=-1&DATABASE_TO_LOWER=TRUE&CASE_INSENSITIVE_IDENTIFIERS=TRUE"
-                          th:text="${connector?.config?.propertiesText} ?: 'MODE=MySQL&DB_CLOSE_DELAY=-1&DATABASE_TO_LOWER=TRUE&CASE_INSENSITIVE_IDENTIFIERS=TRUE'"></textarea>
+                          placeholder="MODE=MySQL&DB_CLOSE_DELAY=-1"
+                          th:text="${connector?.config?.propertiesText} ?: 'MODE=MySQL&DB_CLOSE_DELAY=-1'"></textarea>
             </div>
         </div>
     </div>
