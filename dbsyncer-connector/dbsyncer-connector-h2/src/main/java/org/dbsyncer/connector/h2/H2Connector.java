@@ -94,7 +94,7 @@ public final class H2Connector extends AbstractDatabaseConnector {
 
     @Override
     public String buildSqlWithQuotation() {
-        return "\"";
+        return "`";
     }
 
     @Override

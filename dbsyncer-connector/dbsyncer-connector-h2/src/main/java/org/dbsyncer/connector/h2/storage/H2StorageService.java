@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -112,6 +113,7 @@ public class H2StorageService extends AbstractStorageService {
         List<Object> queryArgs = new ArrayList<>();
         String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
         List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+        data = normalizeResultKeys(data, executor.getFields());
         replaceHighLight(highLightKeys, data);
         paging.setData(data);
         return paging;
@@ -451,12 +453,12 @@ public class H2StorageService extends AbstractStorageService {
             if (i > 0) {
                 ddl.append(", ");
             }
-            ddl.append(connector.buildWithQuotation(field.getName())).append(" ").append(resolveType(field));
+            ddl.append(connector.buildWithQuotation(field.getName().toUpperCase())).append(" ").append(resolveType(field));
             if (field.isPk()) {
                 ddl.append(" NOT NULL");
             }
         }
-        ddl.append(", PRIMARY KEY (").append(connector.buildWithQuotation(UnderlineToCamelUtils.camelToUnderline(ConfigConstant.CONFIG_MODEL_ID))).append("))");
+        ddl.append(", PRIMARY KEY (").append(connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase())).append("))");
         return ddl.toString();
     }
 
@@ -496,6 +498,43 @@ public class H2StorageService extends AbstractStorageService {
         }
     }
 
+    /**
+     * H2（MODE=MySQL）JDBC 返回的列名多为大写且无下划线
+     */
+    private List<Map<String, Object>> normalizeResultKeys(List<Map<String, Object>> data, List<Field> fields) {
+        if (CollectionUtils.isEmpty(data) || CollectionUtils.isEmpty(fields)) {
+            return data;
+        }
+        List<Map<String, Object>> normalized = new ArrayList<>(data.size());
+        for (Map<String, Object> row : data) {
+            Map<String, Object> newRow = new LinkedHashMap<>();
+            row.forEach((key, value) -> newRow.put(resolveLabelName(key, fields), value));
+            normalized.add(newRow);
+        }
+        return normalized;
+    }
+
+    private String resolveLabelName(Object key, List<Field> fields) {
+        if (key == null) {
+            return StringUtil.EMPTY;
+        }
+        String keyStr = String.valueOf(key);
+        String compactKey = compactColumnKey(keyStr);
+        for (Field field : fields) {
+            if (compactKey.equals(compactColumnKey(field.getName()))) {
+                return field.getLabelName();
+            }
+        }
+        if (keyStr.contains(StringUtil.UNDERLINE)) {
+            return UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true);
+        }
+        return keyStr;
+    }
+
+    private String compactColumnKey(String key) {
+        return key.replace(StringUtil.UNDERLINE, StringUtil.EMPTY).toUpperCase();
+    }
+
     static final class FieldBuilder {
         Map<String, Field> fieldMap;
         List<Field> fields;
@@ -522,8 +561,8 @@ public class H2StorageService extends AbstractStorageService {
                     new Field(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, "BIGINT", Types.BIGINT))
                     .peek(field -> {
                         field.setLabelName(field.getName());
-                        String labelName = UnderlineToCamelUtils.camelToUnderline(field.getName());
-                        field.setName(labelName);
+                        String columnName = UnderlineToCamelUtils.camelToUnderline(field.getName());
+                        field.setName(columnName);
                     }).collect(Collectors.toMap(Field::getLabelName, field -> field));
         }
 
