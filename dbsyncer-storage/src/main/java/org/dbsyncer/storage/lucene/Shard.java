@@ -6,7 +6,7 @@ package org.dbsyncer.storage.lucene;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer;
+import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
@@ -84,7 +84,8 @@ public class Shard {
             Path dir = Paths.get(path);
             indexPath = new File(dir.toUri());
             directory = FSDirectory.open(dir);
-            analyzer = new SmartChineseAnalyzer();
+            analyzer = new SimpleAnalyzer();
+//            analyzer = new SmartChineseAnalyzer();
             openWriterAndSearcher();
         } catch (IOException e) {
             throw new StorageException(e);

@@ -17,11 +17,11 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- smartcn中文分词器 -->
+        <!-- smartcn中文分词器
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-smartcn</artifactId>
-        </dependency>
+        </dependency> -->
 
         <dependency>
             <groupId>junit</groupId>
