@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.connector.mysql.binlog;
 
+import com.github.shyiko.mysql.binlog.GtidSet;
+import com.github.shyiko.mysql.binlog.MariadbGtidSet;
 import com.github.shyiko.mysql.binlog.event.Event;
 import com.github.shyiko.mysql.binlog.event.EventHeader;
 import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
@@ -29,6 +31,7 @@ import com.github.shyiko.mysql.binlog.event.deserialization.RowsQueryEventDataDe
 import com.github.shyiko.mysql.binlog.event.deserialization.TableMapEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.XAPrepareEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.event.deserialization.XidEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.Authenticator;
 import com.github.shyiko.mysql.binlog.network.ClientCapabilities;
 import com.github.shyiko.mysql.binlog.network.DefaultSSLSocketFactory;
@@ -54,18 +57,12 @@ import org.dbsyncer.connector.mysql.deserializer.ExtUpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.ExtWriteDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.UpdateDeserializer;
 import org.dbsyncer.connector.mysql.deserializer.WriteDeserializer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.shyiko.mysql.binlog.GtidSet;
-import com.github.shyiko.mysql.binlog.MariadbGtidSet;
-import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -707,18 +704,17 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
             while (connectedError) {
                 try {
                     logger.info("Trying to restore lost connection to {}}", createClientId());
-                    if (!connected) {
-                        logger.warn("Trying to stop");
-                        break;
-                    }
                     disconnect();
                     connect();
                     connectedError = false;
+                    if (connected) {
+                        break;
+                    }
                     break;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                     try {
-                        TimeUnit.SECONDS.sleep(1);
+                        TimeUnit.SECONDS.sleep(5);
                     } catch (InterruptedException ex) {
                         logger.error(e.getMessage(), e);
                     }
