@@ -153,29 +153,47 @@
         return !state.source.schemaEnabled || !!srcSchema;
     }
 
-    /** 源端库/Schema 就绪后，同步填充弹窗与详情中的目标库名、目标 Schema */
-    function fillTargetFromSource() {
-        if (!isSourceNamespaceReady()) {
-            return;
-        }
+    function isPickerModalOpen() {
+        return $('#tablePickerModal').length > 0 && !$('#tablePickerModal').hasClass('hidden');
+    }
+
+    /** 弹窗内：源库/Schema 选中后联动覆盖目标库名、目标 Schema */
+    function syncPickerTargetFromSource() {
         const srcDb = (state.source.database || '').trim();
         const srcSchema = (state.source.schema || '').trim();
         const pickerTargetId = getPickerTargetConnectorId() || state.target.connectorId;
         if ($('#pickerTargetDatabase').length && !isOracleTargetConnector(pickerTargetId)) {
             $('#pickerTargetDatabase').val(srcDb);
         }
+        if ($('#pickerTargetSchema').length) {
+            $('#pickerTargetSchema').val(srcSchema);
+        }
+    }
+
+    /** 源端库/Schema 就绪后填充目标命名空间；弹窗内强制联动，详情区仅在为空时默认填充 */
+    function fillTargetFromSource() {
+        if (isPickerModalOpen()) {
+            syncPickerTargetFromSource();
+            return;
+        }
+        if (!isSourceNamespaceReady()) {
+            return;
+        }
+        const srcDb = (state.source.database || '').trim();
+        const srcSchema = (state.source.schema || '').trim();
         if (hasDetailTargetPanel() && !isOracleTargetConnector(getDetailPanelTargetConnectorId())) {
             const block = getActiveMappingBlock();
+            const $detailDb = $('#detailTargetDatabase');
             if (!block || !block.targetDatabase) {
-                $('#detailTargetDatabase').val(srcDb);
+                if (!$detailDb.val().trim()) {
+                    $detailDb.val(srcDb);
+                }
             }
         }
         if (srcSchema) {
-            if ($('#pickerTargetSchema').length) {
-                $('#pickerTargetSchema').val(srcSchema);
-            }
-            if ($('#detailTargetSchema').length) {
-                $('#detailTargetSchema').val(srcSchema);
+            const $detailSchema = $('#detailTargetSchema');
+            if ($detailSchema.length && !$detailSchema.val().trim()) {
+                $detailSchema.val(srcSchema);
             }
         }
     }
@@ -294,11 +312,16 @@
     }
 
     function refreshPickerTargetDefaults() {
-        if (state.target.connectorId) {
-            setSelectValues(pickerTargetConnectorSelect, [state.target.connectorId]);
+        const block = getActiveMappingBlock();
+        const targetConnectorId = (block && block.targetConnectorId) || state.target.connectorId;
+        if (targetConnectorId) {
+            state.target.connectorId = targetConnectorId;
+            setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
+            if (targetConnectorSelect) {
+                setSelectValues(targetConnectorSelect, [targetConnectorId]);
+            }
         }
         updateTargetSchemaVisibility();
-        fillTargetFromSource();
     }
 
     function onPickerSourceContextChange() {
@@ -476,6 +499,52 @@
         }
         if (sourceSchemaSelect) {
             sourceSchemaSelect.setData([]);
+        }
+    }
+
+    /** 打开添加映射弹窗时重置表单，保留已加载的库列表，不沿用上次选择 */
+    function resetTablePickerForm() {
+        state.source.database = '';
+        state.source.schema = '';
+        state.source.schemaEnabled = false;
+        state.source.checked = {};
+        state.source.tableSearchKey = '';
+        resetSourceTableList();
+        renderSourceTableTreeEmpty('暂无表，请选择连接器、库与 Schema');
+        $('#sourceTableSearch').val('');
+        $('#pickerTargetDatabase').val('');
+        $('#pickerTargetSchema').val('');
+        if (sourceDbSelect) {
+            setSelectValues(sourceDbSelect, []);
+        }
+        if (sourceSchemaSelect) {
+            sourceSchemaSelect.setData([]);
+            setSelectValues(sourceSchemaSelect, []);
+        }
+    }
+
+    function hasSelectOptions(selectApi) {
+        if (!selectApi || typeof selectApi.getData !== 'function') {
+            return false;
+        }
+        const data = selectApi.getData();
+        return Array.isArray(data) && data.length > 0;
+    }
+
+    /** 编辑页等场景下源端连接器已赋值但未走 onSelect 时，补拉弹窗内的库/Schema 选项 */
+    function ensureSourcePickerOptionsLoaded() {
+        const connectorId = state.source.connectorId;
+        if (!connectorId) {
+            return;
+        }
+        if (isOracleSourceConnector()) {
+            if (!hasSelectOptions(sourceSchemaSelect)) {
+                onSourceConnectorChange(connectorId);
+            }
+            return;
+        }
+        if (!hasSelectOptions(sourceDbSelect)) {
+            onSourceConnectorChange(connectorId);
         }
     }
 
@@ -933,15 +1002,17 @@
             bootGrowl('请先选择源端连接器', 'warning');
             return;
         }
+        resetTablePickerForm();
+        ensureSourcePickerOptionsLoaded();
         refreshPickerTargetDefaults();
         updateSourceDatabaseFieldVisibility();
         updateTargetSchemaVisibility();
-        syncCheckedFromTableTreeDom();
         $('#tablePickerModal').removeClass('hidden');
     }
 
     function closeTablePickerModal() {
         $('#tablePickerModal').addClass('hidden');
+        resetTablePickerForm();
     }
 
     /**
@@ -1248,7 +1319,6 @@
         state.target.connectorId = targetConnectorId;
         setSelectValues(targetConnectorSelect, [targetConnectorId]);
         setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
-        fillTargetFromSource();
         const sourceIsOracle = isOracleSourceConnector();
         const targetIsOracle = isOracleTargetConnector(targetConnectorId);
         if (!isSourceNamespaceReady()) {
@@ -1331,9 +1401,6 @@
             });
             state.activeMappingIndex = state.mappings.length - 1;
         }
-        state.source.checked = {};
-        $('#pickerTargetDatabase').val('');
-        $('#pickerTargetSchema').val('');
         closeTablePickerModal();
         renderMappingSidebar();
         renderMappingDetail(true);
@@ -1364,6 +1431,7 @@
 
         if (state.source.connectorId) {
             setSelectValues(sourceConnectorSelect, [state.source.connectorId]);
+            onSourceConnectorChange(state.source.connectorId);
         }
         if (state.target.connectorId && targetConnectorSelect) {
             setSelectValues(targetConnectorSelect, [state.target.connectorId]);
