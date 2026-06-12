@@ -11,24 +11,34 @@ import org.dbsyncer.connector.clickhouse.validator.ClickHouseConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,6 +55,11 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     private static final Set<String> SYSTEM_DATABASES = Stream.of(
             "system", "information_schema", "INFORMATION_SCHEMA", "_temporary_and_external_tables")
             .collect(Collectors.toSet());
+
+    private static final String QUERY_TABLES = "SELECT name, engine FROM system.tables WHERE database = ? ORDER BY name";
+
+    private static final String QUERY_COLUMNS = "SELECT name, type, numeric_precision, numeric_scale, is_in_primary_key, is_in_sorting_key "
+            + "FROM system.columns WHERE database = ? AND table = ? ORDER BY position";
 
     private final ClickHouseConfigValidator configValidator = new ClickHouseConfigValidator();
     private final ClickHouseSchemaResolver schemaResolver = new ClickHouseSchemaResolver();
@@ -73,6 +88,18 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
             return new ClickHouseListener();
         }
         return null;
+    }
+
+    @Override
+    public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
+        String catalog = context.getCatalog();
+        if (StringUtil.isNotBlank(catalog)) {
+            DatabaseConfig effectiveConfig = copyDatabaseConfig(config);
+            effectiveConfig.setUrl(buildJdbcUrl(config, catalog));
+            effectiveConfig.setDatabase(catalog);
+            return new DatabaseConnectorInstance(effectiveConfig, catalog, context.getSchema());
+        }
+        return super.connect(config, context);
     }
 
     @Override
@@ -106,6 +133,98 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
         return Collections.emptyList();
+    }
+
+    @Override
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        String database = resolveDatabase(connectorInstance, context);
+        if (StringUtil.isBlank(database)) {
+            return Collections.emptyList();
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            List<Map<String, Object>> rows = databaseTemplate.queryForList(QUERY_TABLES, database);
+            if (CollectionUtils.isEmpty(rows)) {
+                return Collections.emptyList();
+            }
+            List<Table> tables = new ArrayList<>(rows.size());
+            for (Map<String, Object> row : rows) {
+                Object nameValue = row.get("name");
+                if (nameValue == null) {
+                    continue;
+                }
+                Table table = new Table();
+                table.setName(String.valueOf(nameValue));
+                table.setType(resolveTableType(row.get("engine")));
+                tables.add(table);
+            }
+            return tables;
+        });
+    }
+
+    @Override
+    protected String getSchema(String schema, Connection connection) {
+        return null;
+    }
+
+    @Override
+    public List<MetaInfo> getMetaInfo(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        if (CollectionUtils.isEmpty(context.getTablePatterns())) {
+            return Collections.emptyList();
+        }
+        for (Table table : context.getTablePatterns()) {
+            if (TableTypeEnum.getTableType(table.getType()) == getExtendedTableType()) {
+                return super.getMetaInfo(connectorInstance, context);
+            }
+        }
+        String database = resolveDatabase(connectorInstance, context);
+        if (StringUtil.isBlank(database)) {
+            return Collections.emptyList();
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            List<MetaInfo> metaInfos = new ArrayList<>();
+            for (Table table : context.getTablePatterns()) {
+                String tableName = table.getName();
+                List<Map<String, Object>> rows = databaseTemplate.queryForList(QUERY_COLUMNS, database, tableName);
+                if (CollectionUtils.isEmpty(rows)) {
+                    continue;
+                }
+                List<String> primaryKeys = new ArrayList<>();
+                List<String> sortingKeys = new ArrayList<>();
+                List<Field> fields = new ArrayList<>(rows.size());
+                for (Map<String, Object> row : rows) {
+                    Object nameValue = row.get("name");
+                    if (nameValue == null) {
+                        continue;
+                    }
+                    String columnName = String.valueOf(nameValue);
+                    if (isTruthy(row.get("is_in_primary_key"))) {
+                        primaryKeys.add(columnName);
+                    }
+                    if (isTruthy(row.get("is_in_sorting_key"))) {
+                        sortingKeys.add(columnName);
+                    }
+                }
+                List<String> effectivePrimaryKeys = !primaryKeys.isEmpty() ? primaryKeys : sortingKeys;
+                for (Map<String, Object> row : rows) {
+                    Object nameValue = row.get("name");
+                    if (nameValue == null) {
+                        continue;
+                    }
+                    String columnName = String.valueOf(nameValue);
+                    Object typeValue = row.get("type");
+                    String typeName = typeValue == null ? StringUtil.EMPTY : String.valueOf(typeValue);
+                    boolean pk = effectivePrimaryKeys.stream().anyMatch(key -> key.equalsIgnoreCase(columnName));
+                    fields.add(new Field(columnName, typeName, Types.OTHER, pk,
+                            toNonNegativeInt(row.get("numeric_precision")), toNonNegativeInt(row.get("numeric_scale"))));
+                }
+                MetaInfo metaInfo = new MetaInfo();
+                metaInfo.setTable(tableName);
+                metaInfo.setTableType(StringUtil.isNotBlank(table.getType()) ? table.getType() : TableTypeEnum.TABLE.getCode());
+                metaInfo.setColumn(fields);
+                metaInfos.add(metaInfo);
+            }
+            return metaInfos;
+        });
     }
 
     @Override
@@ -259,6 +378,84 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
             }
         });
         return context;
+    }
+
+    private String resolveDatabase(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        if (context != null && StringUtil.isNotBlank(context.getCatalog())) {
+            return context.getCatalog().trim();
+        }
+        if (StringUtil.isNotBlank(connectorInstance.getCatalog())) {
+            return connectorInstance.getCatalog().trim();
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            try {
+                Connection connection = databaseTemplate.getSimpleConnection().getConnection();
+                String catalog = connection.getCatalog();
+                return StringUtil.isNotBlank(catalog) ? catalog.trim() : StringUtil.EMPTY;
+            } catch (SQLException e) {
+                return StringUtil.EMPTY;
+            }
+        });
+    }
+
+    private String resolveTableType(Object engine) {
+        if (engine == null) {
+            return TableTypeEnum.TABLE.getCode();
+        }
+        String engineName = String.valueOf(engine);
+        if ("View".equalsIgnoreCase(engineName)) {
+            return TableTypeEnum.VIEW.getCode();
+        }
+        if ("MaterializedView".equalsIgnoreCase(engineName)) {
+            return TableTypeEnum.MATERIALIZED_VIEW.getCode();
+        }
+        return TableTypeEnum.TABLE.getCode();
+    }
+
+    private boolean isTruthy(Object value) {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue() != 0;
+        }
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        return "1".equals(String.valueOf(value));
+    }
+
+    private int toNonNegativeInt(Object value) {
+        if (!(value instanceof Number)) {
+            return 0;
+        }
+        return Math.max(0, ((Number) value).intValue());
+    }
+
+    private DatabaseConfig copyDatabaseConfig(DatabaseConfig source) {
+        DatabaseConfig target = new DatabaseConfig();
+        target.setConnectorType(source.getConnectorType());
+        target.setDriverClassName(source.getDriverClassName());
+        target.setHost(source.getHost());
+        target.setPort(source.getPort());
+        target.setUsername(source.getUsername());
+        target.setPassword(source.getPassword());
+        target.setMaxActive(source.getMaxActive());
+        target.setKeepAlive(source.getKeepAlive());
+        target.setDatabase(source.getDatabase());
+        target.setServiceName(source.getServiceName());
+        target.setUrl(source.getUrl());
+        if (source.getProperties() != null) {
+            Properties properties = new Properties();
+            properties.putAll(source.getProperties());
+            target.setProperties(properties);
+        }
+        if (source.getExtInfo() != null) {
+            Properties extInfo = new Properties();
+            extInfo.putAll(source.getExtInfo());
+            target.setExtInfo(extInfo);
+        }
+        return target;
     }
 
     private static class UpsertContext {
