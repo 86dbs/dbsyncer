@@ -1540,7 +1540,6 @@
                 setSelectValues(pickerTargetConnectorSelect, id ? [id] : []);
                 updateTargetSchemaVisibility();
                 updateTargetDatabaseFieldVisibility();
-                fillTargetFromSource();
             }
         });
 
@@ -1553,7 +1552,6 @@
                     setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
                     updateTargetSchemaVisibility();
                     updateTargetDatabaseFieldVisibility();
-                    fillTargetFromSource();
                     refreshMappingCardFlows();
                 }
             });
