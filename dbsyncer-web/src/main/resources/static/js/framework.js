@@ -811,11 +811,11 @@ function appendElapsedTime(content, meta) {
     }
     const seconds = Math.floor((endTime - beginTime) / 1000);
     if (seconds < 60) {
-        content.push(`<div class="text-xs text-tertiary">耗时: ${seconds}秒</div>`);
+        content.push(`<div class="text-tertiary">耗时: ${seconds}秒</div>`);
     } else {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        content.push(`<div class="text-xs text-tertiary">耗时: ${minutes}分${remainingSeconds}秒</div>`);
+        content.push(`<div class="text-tertiary">耗时: ${minutes}分${remainingSeconds}秒</div>`);
     }
 }
 
@@ -889,20 +889,20 @@ function renderFullPhaseSyncResult(meta) {
     const isFullInProgress = total > 0 && processed < total;
     const content = [];
 
-    content.push('<div class="sync-result">');
+    content.push('<div class="sync-result text-xs">');
     if (meta.counting) {
-        content.push(`<div class="text-xs text-tertiary mt-1">正在统计表总数...</div>`);
+        content.push(`<div class="text-tertiary">正在统计表总数...</div>`);
     } else {
-        content.push(`<div class="text-xs mt-1">总数: <strong>${formatCount(total)}</strong></div>`);
+        content.push(`<div>总数: ${formatCount(total)}</div>`);
         if (isFullInProgress) {
             content.push(renderMiniProgressBar(processed, total));
-            content.push(`<div class="text-xs">全量进度: <strong>${formatCount(processed)}</strong> / ${formatCount(total)} (${formatPercent(processed / total, 1)})</div>`);
+            content.push(`<div>全量进度: ${formatCount(processed)} / ${formatCount(total)} (${formatPercent(processed / total, 1)})</div>`);
         } else if (total === 0) {
-            content.push(`<div class="text-xs text-tertiary">等待全量任务启动...</div>`);
+            content.push(`<div class="text-tertiary">等待全量任务启动...</div>`);
         }
     }
     appendElapsedTime(content, meta);
-    content.push(`<div class="text-xs mt-1">成功: ${formatCount(success)}</div>`);
+    content.push(`<div>成功: ${formatCount(success)}</div>`);
     content.push('</div>');
     return content.join('');
 }
@@ -917,14 +917,14 @@ function renderFullIncrementSyncResult(meta) {
     if (phase === 'full') {
         return renderFullPhaseSyncResult(meta);
     }
-    content.push('<div class="sync-result">');
+    content.push('<div class="sync-result text-xs">');
     if (phase === 'increment') {
-        content.push(`<div class="text-xs mt-1">成功: <strong>${formatCount(success)}</strong></div>`);
+        content.push(`<div>成功: ${formatCount(success)}</div>`);
     } else {
         if (total > 0) {
-            content.push(`<div class="text-xs mt-1">全量总数: <strong>${formatCount(total)}</strong></div>`);
+            content.push(`<div>全量总数: ${formatCount(total)}</div>`);
         }
-        content.push(`<div class="text-xs mt-1">成功: ${formatCount(success)}</div>`);
+        content.push(`<div>成功: ${formatCount(success)}</div>`);
     }
 
     content.push('</div>');
@@ -936,28 +936,30 @@ function renderFullSyncResult(meta) {
     return renderFullPhaseSyncResult(meta);
 }
 
+// 同步失败行
+function renderMappingFailLine(meta) {
+    if (!meta.fail || meta.fail <= 0) {
+        return '';
+    }
+    return `<div class="text-xs mt-1">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
+}
+
 // 根据同步结果生成内容
 function renderSyncResult(mapping) {
     const meta = mapping.meta;
     if (!meta) return '';
 
     if (mapping.model === 'fullIncrement') {
-        let html = renderFullIncrementSyncResult(meta);
-        if (meta.fail > 0) {
-            html += `<div class="text-xs">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
-        }
-        return html;
+        return renderFullIncrementSyncResult(meta) + renderMappingFailLine(meta);
     }
 
     const content = [];
     if (mapping.model === 'full') {
         content.push(renderFullSyncResult(meta));
     } else {
-        content.push(`成功: ${formatCount(meta.success || 0)}`);
+        content.push(`<div class="text-xs">成功: ${formatCount(meta.success || 0)}</div>`);
     }
-    if (meta.fail > 0) {
-        content.push(`<br />失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span>`);
-    }
+    content.push(renderMappingFailLine(meta));
     return content.join('');
 }
 
