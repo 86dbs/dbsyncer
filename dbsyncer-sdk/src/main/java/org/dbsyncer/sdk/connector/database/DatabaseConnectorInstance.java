@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.connector.database.ds.SimpleDataSource;
+import org.dbsyncer.sdk.util.ConnectionUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,16 +48,24 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
 
     public <T> T execute(HandleCallback callback) {
         Connection connection = null;
+        boolean discardConnection = false;
         try {
             connection = getConnection();
             return (T) callback.apply(new DatabaseTemplate((SimpleConnection) connection));
         } catch (EmptyResultDataAccessException e) {
             throw e;
         } catch (Exception e) {
+            discardConnection = ConnectionUtil.isBrokenConnection(e);
             logger.error(e.getMessage());
             throw new SdkException(e.getMessage(), e.getCause());
         } finally {
-            dataSource.close(connection);
+            if (connection != null) {
+                if (discardConnection) {
+                    dataSource.discard(connection);
+                } else {
+                    dataSource.close(connection);
+                }
+            }
         }
     }
 
