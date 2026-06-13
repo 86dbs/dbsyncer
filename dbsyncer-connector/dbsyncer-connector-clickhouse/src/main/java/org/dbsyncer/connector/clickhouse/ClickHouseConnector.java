@@ -91,15 +91,19 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    protected boolean useJdbcTransaction() {
+        return false;
+    }
+
+    @Override
     public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
         String catalog = context.getCatalog();
-        if (StringUtil.isNotBlank(catalog)) {
-            DatabaseConfig effectiveConfig = copyDatabaseConfig(config);
-            effectiveConfig.setUrl(buildJdbcUrl(config, catalog));
-            effectiveConfig.setDatabase(catalog);
-            return new DatabaseConnectorInstance(effectiveConfig, catalog, context.getSchema());
-        }
-        return super.connect(config, context);
+        DatabaseConfig effectiveConfig = copyDatabaseConfig(config);
+        effectiveConfig.setUrl(buildJdbcUrl(config, catalog));
+        effectiveConfig.setDatabase(catalog);
+
+        // 不支持显示setCatalog
+        return new DatabaseConnectorInstance(effectiveConfig, StringUtil.EMPTY, context.getSchema());
     }
 
     @Override

@@ -69,9 +69,9 @@ import java.util.stream.Collectors;
 /**
  * 关系型数据库连接器实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-08 15:17
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-08 15:17
  */
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
@@ -350,22 +350,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorInstance.execute(databaseTemplate -> {
-                SimpleConnection connection = databaseTemplate.getSimpleConnection();
-                try {
-                    // 手动提交事务
-                    connection.setAutoCommit(false);
-                    int[] r = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
-                    connection.commit();
-                    return r;
-                } catch (Exception e) {
-                    // 异常回滚
-                    connection.rollback();
-                    throw e;
-                } finally {
-                    connection.setAutoCommit(true);
-                }
-            });
+            execute = connectorInstance.execute(databaseTemplate -> batchUpdate(databaseTemplate, executeSql, fields, data));
         } catch (Exception e) {
             // 出现失败时，服务降级为逐条处理
             forceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
@@ -389,6 +374,31 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
         }
         return result;
+    }
+
+    /**
+     * 是否使用 JDBC 事务包装批量写入。ClickHouse 等不支持事务的引擎应返回 false。
+     */
+    protected boolean useJdbcTransaction() {
+        return true;
+    }
+
+    protected int[] batchUpdate(DatabaseTemplate databaseTemplate, String executeSql, List<Field> fields, List<Map> data) throws Exception {
+        if (!useJdbcTransaction()) {
+            return databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+        }
+        SimpleConnection connection = databaseTemplate.getSimpleConnection();
+        try {
+            connection.setAutoCommit(false);
+            int[] result = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+            connection.commit();
+            return result;
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
     }
 
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context, String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
