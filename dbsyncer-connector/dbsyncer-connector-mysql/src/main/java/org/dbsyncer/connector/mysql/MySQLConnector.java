@@ -7,12 +7,15 @@ import net.sf.jsqlparser.statement.alter.Alter;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.cdc.MySQLListener;
+import org.dbsyncer.connector.mysql.constant.MySQLConstant;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.mysql.storage.MySQLStorageService;
 import org.dbsyncer.connector.mysql.validator.MySQLConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -36,9 +39,9 @@ import java.util.stream.Stream;
 /**
  * MySQL连接器实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2021-11-22 23:55
+ * @author AE86
+ * @version 1.0.0
+ * @date 2021-11-22 23:55
  */
 public final class MySQLConnector extends AbstractDatabaseConnector {
 
@@ -54,6 +57,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public ConfigValidator getConfigValidator() {
         return configValidator;
+    }
+
+    @Override
+    public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
+        MySQLConstant.enrichJdbcProperties(config);
+        return super.connect(config, context);
     }
 
     @Override
