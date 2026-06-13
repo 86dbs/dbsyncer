@@ -64,6 +64,9 @@ public abstract class TimestampType extends AbstractDataType<Timestamp> {
             OffsetDateTime date = (OffsetDateTime) val;
             return Timestamp.from(date.toInstant());
         }
+        if (val instanceof Number) {
+            return new Timestamp(((Number) val).longValue());
+        }
         return throwUnsupportedException(val, field);
     }
 }

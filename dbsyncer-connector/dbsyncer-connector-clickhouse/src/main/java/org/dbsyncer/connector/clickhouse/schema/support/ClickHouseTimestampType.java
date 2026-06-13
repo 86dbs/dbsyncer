@@ -6,6 +6,7 @@ package org.dbsyncer.connector.clickhouse.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ public final class ClickHouseTimestampType extends TimestampType {
     }
 
     @Override
-    protected java.sql.Timestamp merge(Object val, Field field) {
+    protected Timestamp merge(Object val, Field field) {
         return throwUnsupportedException(val, field);
     }
 }

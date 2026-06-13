@@ -9,9 +9,9 @@ import org.dbsyncer.sdk.model.Field;
 import java.lang.reflect.ParameterizedType;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2024-11-24 20:58
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2024-11-24 20:58
  */
 public abstract class AbstractDataType<T> implements DataType {
 
@@ -23,17 +23,11 @@ public abstract class AbstractDataType<T> implements DataType {
 
     /**
      * 转换为标准数据类型
-     *
-     * @param val
-     * @param field
-     * @return
      */
     protected abstract T merge(Object val, Field field);
 
     /**
      * 获取默认合并值
-     *
-     * @return
      */
     protected T getDefaultMergedVal(Field field) {
         return null;
@@ -41,17 +35,11 @@ public abstract class AbstractDataType<T> implements DataType {
 
     /**
      * 转换为指定数据类型
-     *
-     * @param val
-     * @param field
-     * @return
      */
     protected abstract Object convert(Object val, Field field);
 
     /**
      * 获取默认转换值
-     *
-     * @return
      */
     protected Object getDefaultConvertedVal(Field field) {
         return null;
