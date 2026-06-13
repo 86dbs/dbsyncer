@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -27,6 +28,10 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     private final int MAX_PULL_TIME = 20;
     // 有效检测时间（秒），默认10s
     private final int VALID_TIMEOUT_SECONDS = 10;
+    // 创建连接重试次数
+    private final int CREATE_RETRY_TIMES = 3;
+    // 创建连接重试间隔（毫秒）
+    private final long CREATE_RETRY_INTERVAL_MS = 500;
     // 获取连接锁
     private final ReentrantLock lock = new ReentrantLock();
     private String driverClassName;
@@ -136,16 +141,24 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
     }
 
     public void close(Connection connection) {
-        if (connection != null && connection instanceof SimpleConnection) {
+        if (connection instanceof SimpleConnection) {
             SimpleConnection simpleConnection = (SimpleConnection) connection;
-            // 连接过期
-            if (isExpired(simpleConnection)) {
+            if (isExpired(simpleConnection) || isUnavailable(simpleConnection)) {
                 closeQuietly(simpleConnection);
                 return;
             }
 
             // 回收连接
             pool.offer(simpleConnection);
+        }
+    }
+
+    /**
+     * 丢弃不可用连接，避免回收到连接池
+     */
+    public void discard(Connection connection) {
+        if (connection instanceof SimpleConnection) {
+            closeQuietly((SimpleConnection) connection);
         }
     }
 
@@ -158,28 +171,41 @@ public class SimpleDataSource implements DataSource, AutoCloseable {
 
     /**
      * 连接是否过期
-     *
-     * @param connection
-     * @return
      */
     private boolean isExpired(SimpleConnection connection) {
         return connection.getActiveTime() + keepAlive < Instant.now().toEpochMilli();
     }
 
+    private boolean isUnavailable(SimpleConnection connection) {
+        try {
+            return connection.isClosed() || !connection.isValid(VALID_TIMEOUT_SECONDS);
+        } catch (SQLException e) {
+            return true;
+        }
+    }
+
     /**
      * 创建新连接
-     *
-     * @return
-     * @throws SQLException
      */
     private SimpleConnection createConnection() {
-        SimpleConnection simpleConnection = null;
-        try {
-            simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, properties), oracleDriver);
-            activeNum.incrementAndGet();
-        } catch (SQLException e) {
-            throw new SdkException(e);
+        SQLException lastException = null;
+        for (int i = 0; i < CREATE_RETRY_TIMES; i++) {
+            try {
+                SimpleConnection simpleConnection = new SimpleConnection(DatabaseUtil.getConnection(driverClassName, url, properties), oracleDriver);
+                activeNum.incrementAndGet();
+                return simpleConnection;
+            } catch (SQLException e) {
+                lastException = e;
+                if (i < CREATE_RETRY_TIMES - 1) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(CREATE_RETRY_INTERVAL_MS);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                        throw new SdkException(e);
+                    }
+                }
+            }
         }
-        return simpleConnection;
+        throw new SdkException(lastException);
     }
 }
