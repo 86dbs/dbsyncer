@@ -58,6 +58,7 @@
         <junit.version>4.13.1</junit.version>
         <jsql-parse.version>4.9</jsql-parse.version>
         <h2.version>2.2.224</h2.version>
+        <hdrhistogram.version>2.1.12</hdrhistogram.version>
 
         <!-- 可选参数 -->
         <skip.spotless>true</skip.spotless>
@@ -187,6 +188,12 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.hdrhistogram</groupId>
+                        <artifactId>HdrHistogram</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -244,6 +251,13 @@
                 <groupId>com.github.jsqlparser</groupId>
                 <artifactId>jsqlparser</artifactId>
                 <version>${jsql-parse.version}</version>
+            </dependency>
+
+            <!-- HdrHistogram -->
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>${hdrhistogram.version}</version>
             </dependency>
 
         </dependencies>
