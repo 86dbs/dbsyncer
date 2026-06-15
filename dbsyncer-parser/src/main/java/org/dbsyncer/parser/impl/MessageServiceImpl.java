@@ -12,6 +12,7 @@ import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.plugin.impl.AbstractNoticeService;
 import org.dbsyncer.plugin.model.TestNoticeContent;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
+import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.model.NoticeMessage;
@@ -44,6 +45,9 @@ public class MessageServiceImpl implements MessageService {
     public void sendMessage(NoticeContent noticeContent) {
         NoticeConfig noticeConfig = profileComponent.getSystemConfig().getNoticeConfig();
         if (noticeConfig == null || noticeContent == null) {
+            return;
+        }
+        if (!isNoticeEnabled(noticeConfig, noticeContent.getNoticeType())) {
             return;
         }
         NoticeMessage message = new NoticeMessage();
@@ -86,6 +90,27 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void removeNotifyService(NoticeChannelEnum noticeChannelEnum) {
         this.notifyServiceMap.remove(noticeChannelEnum);
+    }
+
+    private boolean isNoticeEnabled(NoticeConfig noticeConfig, NoticeTypeEnum noticeType) {
+        if (noticeType == null || noticeType == NoticeTypeEnum.TEST_MESSAGE) {
+            return true;
+        }
+        switch (noticeType) {
+            case MAPPING_ERROR:
+                return noticeConfig.isEnableMappingError();
+            case MAPPING_STOP:
+                return noticeConfig.isEnableMappingStop();
+            case CONNECTOR_OFFLINE:
+                return noticeConfig.isEnableConnectorOffline();
+            case VALIDATE_SYNC_FAIL:
+                return noticeConfig.isEnableValidateSyncFail();
+            case SYSTEM_MESSAGE:
+            case GENERAL_MESSAGE:
+                return noticeConfig.isEnableSystemMessage();
+            default:
+                return true;
+        }
     }
 
     private void setMessageReceiversIfMail(NoticeChannelEnum channel, NoticeMessage message) {

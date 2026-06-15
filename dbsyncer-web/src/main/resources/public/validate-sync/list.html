@@ -50,6 +50,7 @@
                 <th>触发方式</th>
                 <th>结果</th>
                 <th>状态</th>
+                <th>最后执行</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -285,6 +286,7 @@
                         <td>${renderTaskTriggerText(task.trigger)}</td>
                         <td>${renderResultColumn(task)}</td>
                         <td>${renderTaskStateText(task.status || 0)}</td>
+                        <td>${formatDate(task.updateTime || '')}</td>
                         <td>
                             <div class="flex items-center">
                                 <button class="table-action-btn view" title="修改" onclick="doLoader('/validate-sync/page/edit?id=${task.id}')">
@@ -296,7 +298,7 @@
                     </tr>
                 `;
             },
-            emptyHtml:'<td colspan="8" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
+            emptyHtml:'<td colspan="9" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
             customPageSize:true
         });
 

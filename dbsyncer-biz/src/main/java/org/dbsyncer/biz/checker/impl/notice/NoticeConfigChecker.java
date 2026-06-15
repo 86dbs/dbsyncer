@@ -50,6 +50,13 @@ public class NoticeConfigChecker extends AbstractChecker {
         }
         NoticeConfig noticeConfig = systemConfig.getNoticeConfig();
 
+        noticeConfig.setEnableMappingError(StringUtil.isNotBlank(params.get("enableMappingError")));
+        noticeConfig.setEnableMappingStop(StringUtil.isNotBlank(params.get("enableMappingStop")));
+        noticeConfig.setEnableConnectorOffline(StringUtil.isNotBlank(params.get("enableConnectorOffline")));
+        noticeConfig.setEnableValidateSyncFail(StringUtil.isNotBlank(params.get("enableValidateSyncFail")));
+        noticeConfig.setEnableSystemMessage(StringUtil.isNotBlank(params.get("enableSystemMessage")));
+
+
         // 是否启用企业微信告警
         boolean enableWechat = StringUtil.isNotBlank(params.get("enableWechat"));
         WeChatNoticeChannel weChat = noticeConfig.getWechat();

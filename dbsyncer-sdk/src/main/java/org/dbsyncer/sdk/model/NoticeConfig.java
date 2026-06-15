@@ -22,6 +22,27 @@ public class NoticeConfig {
     private HttpNoticeChannel http = new HttpNoticeChannel();
     private MailNoticeChannel mail = new MailNoticeChannel();
 
+    /**
+     * 同步任务有失败数据
+     */
+    private boolean enableMappingError = true;
+    /**
+     * 停止驱动
+     */
+    private boolean enableMappingStop = true;
+    /**
+     * 连接离线
+     */
+    private boolean enableConnectorOffline = true;
+    /**
+     * 订正校验失败
+     */
+    private boolean enableValidateSyncFail = true;
+    /**
+     * 系统消息
+     */
+    private boolean enableSystemMessage = true;
+
     public org.dbsyncer.common.model.WeChatNoticeChannel getWechat() {
         return wechat;
     }
@@ -52,5 +73,45 @@ public class NoticeConfig {
 
     public void setMail(MailNoticeChannel mail) {
         this.mail = mail;
+    }
+
+    public boolean isEnableMappingError() {
+        return enableMappingError;
+    }
+
+    public void setEnableMappingError(boolean enableMappingError) {
+        this.enableMappingError = enableMappingError;
+    }
+
+    public boolean isEnableMappingStop() {
+        return enableMappingStop;
+    }
+
+    public void setEnableMappingStop(boolean enableMappingStop) {
+        this.enableMappingStop = enableMappingStop;
+    }
+
+    public boolean isEnableConnectorOffline() {
+        return enableConnectorOffline;
+    }
+
+    public void setEnableConnectorOffline(boolean enableConnectorOffline) {
+        this.enableConnectorOffline = enableConnectorOffline;
+    }
+
+    public boolean isEnableValidateSyncFail() {
+        return enableValidateSyncFail;
+    }
+
+    public void setEnableValidateSyncFail(boolean enableValidateSyncFail) {
+        this.enableValidateSyncFail = enableValidateSyncFail;
+    }
+
+    public boolean isEnableSystemMessage() {
+        return enableSystemMessage;
+    }
+
+    public void setEnableSystemMessage(boolean enableSystemMessage) {
+        this.enableSystemMessage = enableSystemMessage;
     }
 }

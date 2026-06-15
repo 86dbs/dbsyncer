@@ -705,21 +705,6 @@
         });
     }
 
-    function selectAllSourceTables() {
-        ensureAllSourceTablesLoaded(function () {
-            const names = getLoadedTableNames();
-            if (!names.length) {
-                bootGrowl('当前没有可选择的表', 'warning');
-                return;
-            }
-            setSourceTableChecked(names, true);
-            $('#sourceTableTree .db-sync-table-cb').prop('checked', true);
-            syncFolderCheckboxState($('#sourceTableTree'));
-            if (state.source.tableMeta.truncated) {
-                bootGrowl('已全选展示范围内的 ' + names.length + ' 张表（最多 ' + TABLE_DISPLAY_MAX + ' 张），请用搜索缩小范围', 'info');
-            }
-        });
-    }
 
     function clearAllSourceTables() {
         state.source.checked = {};
@@ -1571,7 +1556,6 @@
         bindTableTreeScroll();
         bindTableTreeEvents();
 
-        $('#btnSelectAllTables').on('click', selectAllSourceTables);
         $('#btnClearAllTables').on('click', clearAllSourceTables);
         $('#btnAddDbMapping').on('click', openTablePickerModal);
         $('#btnConfirmTablePicker').on('click', addDatabaseMapping);

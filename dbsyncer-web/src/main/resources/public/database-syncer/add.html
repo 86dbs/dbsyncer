@@ -10,7 +10,8 @@
                     <div class="form-item ds-task-name-item mb-0">
                         <label class="form-label">任务名称<strong class="text-primary">*</strong></label>
                         <div class="form-control-area">
-                            <input class="form-control form-control-50" name="name" type="text" maxlength="50" required placeholder="请输入任务名称"/>
+                            <input class="form-control form-control-50" name="name" type="text" maxlength="50" required
+                                   placeholder="请输入任务名称"/>
                         </div>
                     </div>
                     <div class="ds-page-actions">
@@ -56,9 +57,6 @@
 
                     <div id="mappingDetailPanel" class="mapping-detail-panel hidden">
                         <div class="ds-target-config-panel dbsyncer-select-panel">
-                            <div class="ds-target-config-title">
-                                <i class="fa fa-map-marker text-primary"></i> 当前映射的目标端存储路由
-                            </div>
                             <div class="ds-target-config-fields">
                                 <div class="form-item ds-target-field mb-0">
                                     <label class="form-label">目标连接<strong class="text-primary">*</strong></label>
@@ -73,13 +71,15 @@
                                 <div class="form-item ds-target-field mb-0">
                                     <label class="form-label">目标库名<strong class="text-primary">*</strong></label>
                                     <div class="form-control-area">
-                                        <input type="text" id="detailTargetDatabase" class="form-control" maxlength="128" placeholder="目标库名"/>
+                                        <input type="text" id="detailTargetDatabase" class="form-control"
+                                               maxlength="128" placeholder="目标库名"/>
                                     </div>
                                 </div>
                                 <div class="form-item ds-target-field mb-0" id="detailTargetSchemaWrap">
                                     <label class="form-label">目标 Schema</label>
                                     <div class="form-control-area">
-                                        <input type="text" id="detailTargetSchema" class="form-control" maxlength="128" placeholder="目标 Schema"/>
+                                        <input type="text" id="detailTargetSchema" class="form-control" maxlength="128"
+                                               placeholder="目标 Schema"/>
                                     </div>
                                 </div>
                             </div>
@@ -90,7 +90,7 @@
                                 <i class="fa fa-table"></i> 表映射明细
                             </span>
                             <button type="button" id="btnBatchTablePrefix" class="btn btn-outline btn-sm">
-                                <i class="fa fa-bolt"></i> 批量加目标表前缀
+                                批量加目标表前缀
                             </button>
                         </div>
                         <div class="mapping-detail-scroll">
@@ -136,7 +136,7 @@
         </div>
         <div class="picker-modal-body">
             <div class="picker-modal-section">
-                <div class="picker-modal-section-title">1. 选择源端数据库</div>
+                <div class="picker-modal-section-title">1. 选择源库</div>
                 <div class="grid grid-cols-2 gap-2">
                     <div class="form-item-stack">
                         <label class="form-label">库</label>
@@ -150,7 +150,7 @@
             </div>
 
             <div class="picker-modal-section">
-                <div class="picker-modal-section-title">2. 指定该映射流向的目标端</div>
+                <div class="picker-modal-section-title">2. 指定目标库</div>
                 <div class="picker-modal-target-box">
                     <div class="grid grid-cols-2 gap-2">
                         <div class="form-item-stack">
@@ -162,12 +162,14 @@
                             </select>
                         </div>
                         <div class="form-item-stack">
-                            <label class="form-label text-sm">目标库名<strong class="text-primary">*</strong></label>
-                            <input type="text" id="pickerTargetDatabase" class="form-control" maxlength="128" placeholder="目标库名"/>
+                            <label class="form-label text-sm">目标库名</label>
+                            <input type="text" id="pickerTargetDatabase" class="form-control" maxlength="128"
+                                   placeholder="目标库名"/>
                         </div>
                         <div class="form-item-stack" id="pickerTargetSchemaWrap">
                             <label class="form-label text-sm">目标 Schema</label>
-                            <input type="text" id="pickerTargetSchema" class="form-control" maxlength="128" placeholder="目标 Schema"/>
+                            <input type="text" id="pickerTargetSchema" class="form-control" maxlength="128"
+                                   placeholder="目标 Schema"/>
                         </div>
                     </div>
                 </div>
@@ -178,10 +180,10 @@
                 <div class="flex items-center justify-between gap-2 mb-2">
                     <div class="search-wrapper flex-1">
                         <i class="fa fa-search search-icon"></i>
-                        <input id="sourceTableSearch" class="search-input" type="text" maxlength="64" placeholder="输入表名过滤搜索...">
+                        <input id="sourceTableSearch" class="search-input" type="text" maxlength="64"
+                               placeholder="输入表名过滤搜索...">
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <button type="button" id="btnSelectAllTables" class="btn btn-outline btn-sm">全选</button>
                         <button type="button" id="btnClearAllTables" class="btn btn-outline btn-sm">清空</button>
                     </div>
                 </div>

@@ -30,7 +30,15 @@ public enum NoticeTypeEnum {
     /**
      * 通用消息
      */
-    GENERAL_MESSAGE(4);
+    GENERAL_MESSAGE(4),
+    /**
+     * 订正校验失败
+     */
+    VALIDATE_SYNC_FAIL(5),
+    /**
+     * 系统消息
+     */
+    SYSTEM_MESSAGE(6);
 
     private final int code;
 
