@@ -228,7 +228,7 @@
             const idx = Number($(this).data('index'));
             const block = state.mappings[idx];
             if (block) {
-                $(this).find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+                $(this).find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
             }
         });
     }
@@ -288,6 +288,54 @@
         return label || '—';
     }
 
+    function getMappingSourceDbName(block) {
+        if (!block) {
+            return '';
+        }
+        if (block.sourceDatabase) {
+            return block.sourceDatabase;
+        }
+        if (isOracleConnector(getMappingSourceConnectorId(block))) {
+            return block.sourceSchema || '';
+        }
+        return block.sourceDatabase || block.sourceSchema || '';
+    }
+
+    function getMappingTargetDbName(block) {
+        if (!block) {
+            return '';
+        }
+        if (block.targetDatabase) {
+            return block.targetDatabase;
+        }
+        if (isOracleTargetConnector(getMappingTargetConnectorId(block))) {
+            return block.targetSchema || '';
+        }
+        return block.targetDatabase || block.targetSchema || '';
+    }
+
+    function formatDbWithConnectorType(dbName, connectorId) {
+        const name = escapeHtml(dbName || '—');
+        const type = getConnectorTypeById(connectorId);
+        if (!type) {
+            return name;
+        }
+        return name + '(' + escapeHtml(type) + ')';
+    }
+
+    function formatMappingCardSourceLineHtml(block) {
+        return '源库： ' + formatDbWithConnectorType(getMappingSourceDbName(block), getMappingSourceConnectorId(block));
+    }
+
+    function formatMappingCardTargetLineHtml(block) {
+        return '目标库： ' + formatDbWithConnectorType(getMappingTargetDbName(block), getMappingTargetConnectorId(block));
+    }
+
+    function formatMappingCardBodyHtml(block) {
+        return '<div class="mapping-card-line mapping-card-src">' + formatMappingCardSourceLineHtml(block) + '</div>'
+            + '<div class="mapping-card-line mapping-card-target">' + formatMappingCardTargetLineHtml(block) + '</div>';
+    }
+
     function formatTargetNamespaceLabel(block) {
         if (!block) {
             return '—';
@@ -299,16 +347,6 @@
             return block.targetSchema;
         }
         return block.targetDatabase || block.targetSchema || '—';
-    }
-
-    function formatMappingFlowHtml(block) {
-        const targetConnectorId = getMappingTargetConnectorId(block);
-        const targetLabel = escapeHtml(getConnectorLabel('targetConnectorId', targetConnectorId));
-        let targetNs = block.targetDatabase || '';
-        if (!targetNs && isOracleTargetConnector(targetConnectorId)) {
-            targetNs = block.targetSchema || '';
-        }
-        return '流向: ' + targetLabel + ' ➔ <strong>' + escapeHtml(targetNs || '—') + '</strong>';
     }
 
     function refreshPickerTargetDefaults() {
@@ -390,7 +428,7 @@
         syncMappingsJson();
         const $activeCard = $('#mappingCardList .mapping-card.is-active');
         if ($activeCard.length) {
-            $activeCard.find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+            $activeCard.find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
         }
         const srcLabel = formatMappingSourceLabel(block);
         const tgtNs = formatTargetNamespaceLabel(block);
@@ -1038,9 +1076,8 @@
                     + '<i class="fa fa-times"></i></button>';
             }
             if (useFlowCard) {
-                html += '<div class="mapping-card-src">库: ' + escapeHtml(formatMappingSourceLabel(block)) + '</div>'
-                    + '<div class="mapping-card-flow">' + formatMappingFlowHtml(block) + '</div>'
-                    + '<div class="mapping-card-footer">已选 ' + count + ' 张表</div>';
+                html += formatMappingCardBodyHtml(block)
+                    + '<div class="mapping-card-footer">已选择 ' + count + ' 张表</div>';
             } else {
                 html += '<div class="mapping-card-row">'
                     + '<span class="mapping-card-label">源库</span>'
@@ -1519,7 +1556,7 @@
                     syncMappingsJson();
                     const $card = $('#mappingCardList .mapping-card.is-active');
                     if ($card.length) {
-                        $card.find('.mapping-card-flow').html(formatMappingFlowHtml(block));
+                        $card.find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
                     }
                 }
                 setSelectValues(pickerTargetConnectorSelect, id ? [id] : []);

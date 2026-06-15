@@ -510,6 +510,21 @@
   border-left: 3px solid var(--primary-color);
 }
 
+.mapping-card-line {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+  padding-right: 24px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapping-card.is-active .mapping-card-line {
+  color: var(--primary-color);
+}
+
 .mapping-card-flow {
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
@@ -517,14 +532,7 @@
 }
 
 .mapping-card-src {
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  padding-right: 24px;
-}
-
-.mapping-card.is-active .mapping-card-src {
-  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .ds-target-config-panel {
