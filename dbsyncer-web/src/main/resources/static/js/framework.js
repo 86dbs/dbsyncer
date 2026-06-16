@@ -803,20 +803,32 @@ function formatCount(value) {
 }
 
 // 追加耗时信息
+function formatElapsedDuration(beginTime, endTime) {
+    const begin = Number(beginTime);
+    const end = Number(endTime);
+    if (!begin || !end || end <= begin) {
+        return '';
+    }
+    const seconds = Math.floor((end - begin) / 1000);
+    if (seconds < 60) {
+        return seconds + '秒';
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) {
+        return minutes + '分' + remainingSeconds + '秒';
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return hours + '小时' + remainingMinutes + '分';
+}
+
 function appendElapsedTime(content, meta) {
-    const beginTime = meta.beginTime;
-    const endTime = meta.endTime;
-    if (!beginTime || !endTime) {
+    const text = formatElapsedDuration(meta.beginTime, meta.endTime);
+    if (!text) {
         return;
     }
-    const seconds = Math.floor((endTime - beginTime) / 1000);
-    if (seconds < 60) {
-        content.push(`<div class="text-tertiary">耗时: ${seconds}秒</div>`);
-    } else {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        content.push(`<div class="text-tertiary">耗时: ${minutes}分${remainingSeconds}秒</div>`);
-    }
+    content.push(`<div class="text-tertiary">耗时: ${text}</div>`);
 }
 
 // 迷你进度条

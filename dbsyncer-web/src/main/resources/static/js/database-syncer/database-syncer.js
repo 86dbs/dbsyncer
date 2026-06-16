@@ -1489,6 +1489,29 @@
         });
     }
 
+    function initSyncStrategyCheckboxStyle() {
+        $('.ds-strategy-enable-group').each(function () {
+            const $group = $(this);
+            if ($group.data('checkboxGroupInitialized')) {
+                return;
+            }
+            $group.checkboxGroup({
+                size: 'sm',
+                layout: 'inline'
+            });
+        });
+    }
+
+    function refreshSyncStrategyCheckboxState() {
+        $('input.db-sync-strategy-enable').each(function () {
+            const $input = $(this);
+            const api = $input.data('checkboxGroup');
+            if (api && typeof api.setValue === 'function') {
+                api.setValue($input.prop('checked'));
+            }
+        });
+    }
+
     function initSyncStrategyFromTask(task) {
         if (!task) {
             return;
@@ -1497,6 +1520,7 @@
         $('input[name="overwriteSchema"]').prop('checked', !!task.overwriteSchema);
         $('input[name="enableCopyData"]').prop('checked', !!task.enableCopyData);
         $('input[name="overwriteData"]').prop('checked', !!task.overwriteData);
+        refreshSyncStrategyCheckboxState();
         bindSyncStrategyEvents();
     }
 
@@ -1505,6 +1529,7 @@
             doLoader('/database-syncer/list');
         };
 
+        initSyncStrategyCheckboxStyle();
         bindSyncStrategyEvents();
 
         sourceSchemaSelect = $('#sourceSchema').dbSelect({

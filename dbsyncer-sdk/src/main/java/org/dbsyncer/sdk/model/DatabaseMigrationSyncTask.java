@@ -45,6 +45,16 @@ public class DatabaseMigrationSyncTask extends CommonTask {
     private Integer processed = 0;
 
     /**
+     * 最近一次执行开始时间（毫秒时间戳）
+     */
+    private Long beginTime;
+
+    /**
+     * 最近一次执行结束时间（毫秒时间戳，执行完成后写入）
+     */
+    private Long endTime;
+
+    /**
      * 库级执行快照（目标库/Schema 创建）
      */
     private final ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> databaseSnapshots = new ConcurrentHashMap<>();
@@ -115,6 +125,22 @@ public class DatabaseMigrationSyncTask extends CommonTask {
 
     public void setProcessed(Integer processed) {
         this.processed = processed;
+    }
+
+    public Long getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(Long beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public Long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
     }
 
     public ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> getDatabaseSnapshots() {

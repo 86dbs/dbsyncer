@@ -4,42 +4,55 @@
 <!-- 顶部通栏内联：与源端连接器同一行 -->
 <div th:fragment="bar" class="database-sync-strategy ds-strategy-bar">
     <div class="ds-strategy-checks">
-        <label class="form-label mb-0">
-            <input type="checkbox" name="enableCopySchema" class="db-sync-strategy-enable" value="true"
-                   data-overwrite="overwriteSchema"
-                   th:checked="${task?.enableCopySchema}"
-                   th:disabled="${readOnly}"/>
-            复制表结构
-        </label>
-        <label class="form-label mb-0 ds-strategy-overwrite">
-            覆盖结构
-            <label class="form-switch">
-                <input name="overwriteSchema" type="checkbox" value="true"
-                       th:checked="${task?.overwriteSchema}"
+        <div class="ds-strategy-group">
+            <div class="checkbox-group checkbox-group-inline ds-strategy-enable-group">
+                <input type="checkbox" name="enableCopySchema" id="dbSyncEnableCopySchema"
+                       class="db-sync-strategy-enable" value="true"
+                       data-overwrite="overwriteSchema"
+                       th:checked="${task == null ? true : task.enableCopySchema}"
                        th:disabled="${readOnly}"/>
-                <span class="switch-track">
-                    <span class="switch-thumb"></span>
+                <label for="dbSyncEnableCopySchema">复制表结构</label>
+            </div>
+            <div class="ds-strategy-overwrite">
+                <span class="ds-strategy-overwrite-label">覆盖结构</span>
+                <label class="form-switch">
+                    <input name="overwriteSchema" type="checkbox" value="true"
+                           th:checked="${task?.overwriteSchema}"
+                           th:disabled="${readOnly}"/>
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+                <span class="ds-strategy-hint" title="开启覆盖结构，会删除目标库已经存在的表">
+                    <i class="fa fa-info-circle"></i> 开启覆盖结构，会删除目标库已经存在的表
                 </span>
-            </label>
-        </label>
-        <label class="form-label mb-0">
-            <input type="checkbox" name="enableCopyData" class="db-sync-strategy-enable" value="true"
-                   data-overwrite="overwriteData"
-                   th:checked="${task?.enableCopyData}"
-                   th:disabled="${readOnly}"/>
-            同步数据
-        </label>
-        <label class="form-label mb-0 ds-strategy-overwrite">
-            覆盖数据
-            <label class="form-switch">
-                <input name="overwriteData" type="checkbox" value="true"
-                       th:checked="${task?.overwriteData}"
+            </div>
+        </div>
+        <div class="ds-strategy-group">
+            <div class="checkbox-group checkbox-group-inline ds-strategy-enable-group">
+                <input type="checkbox" name="enableCopyData" id="dbSyncEnableCopyData"
+                       class="db-sync-strategy-enable" value="true"
+                       data-overwrite="overwriteData"
+                       th:checked="${task == null ? true : task.enableCopyData}"
                        th:disabled="${readOnly}"/>
-                <span class="switch-track">
-                    <span class="switch-thumb"></span>
-                </span>
-            </label>
-        </label>
+                <label for="dbSyncEnableCopyData">同步数据</label>
+            </div>
+            <div class="ds-strategy-overwrite">
+                <span class="ds-strategy-overwrite-label">覆盖数据</span>
+                <label class="form-switch">
+                    <input name="overwriteData" type="checkbox" value="true"
+                           th:checked="${task?.overwriteData}"
+                           th:disabled="${readOnly}"/>
+                    <span class="switch-track">
+                        <span class="switch-option switch-option-on">Yes</span>
+                        <span class="switch-option switch-option-off">No</span>
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -48,19 +61,18 @@
     <div class="grid grid-cols-2 gap-6">
         <!-- 复制表结构 -->
         <div class="flex items-center gap-6 flex-wrap">
-            <div class="form-item mb-0">
-                <label class="form-label mb-2">
-                    <input type="checkbox" name="enableCopySchema" class="db-sync-strategy-enable" value="true"
-                           data-overwrite="overwriteSchema"
-                           th:checked="${task?.enableCopySchema}"
-                           th:disabled="${readOnly}"/>
-                    复制表结构
-                </label>
+            <div class="checkbox-group checkbox-group-inline ds-strategy-enable-group mb-0">
+                <input type="checkbox" name="enableCopySchema" id="dbSyncEnableCopySchemaContent"
+                       class="db-sync-strategy-enable" value="true"
+                       data-overwrite="overwriteSchema"
+                       th:checked="${task?.enableCopySchema}"
+                       th:disabled="${readOnly}"/>
+                <label for="dbSyncEnableCopySchemaContent">复制表结构</label>
             </div>
             <div class="form-item mb-0">
                 <label class="form-label mb-2">
                     是否覆盖
-                    <i class="fa fa-question-circle text-tertiary" title="目标库已存在同名表结构时是否覆盖"></i>
+                    <i class="fa fa-question-circle text-tertiary" title="开启覆盖结构，会删除目标已经存在的表"></i>
                 </label>
                 <div class="form-control-area">
                     <label class="form-switch">
@@ -78,14 +90,13 @@
         </div>
         <!-- 数据 -->
         <div class="flex items-center gap-6 flex-wrap">
-            <div class="form-item mb-0">
-                <label class="form-label mb-2">
-                    <input type="checkbox" name="enableCopyData" class="db-sync-strategy-enable" value="true"
-                           data-overwrite="overwriteData"
-                           th:checked="${task?.enableCopyData}"
-                           th:disabled="${readOnly}"/>
-                    数据
-                </label>
+            <div class="checkbox-group checkbox-group-inline ds-strategy-enable-group mb-0">
+                <input type="checkbox" name="enableCopyData" id="dbSyncEnableCopyDataContent"
+                       class="db-sync-strategy-enable" value="true"
+                       data-overwrite="overwriteData"
+                       th:checked="${task?.enableCopyData}"
+                       th:disabled="${readOnly}"/>
+                <label for="dbSyncEnableCopyDataContent">同步数据</label>
             </div>
             <div class="form-item mb-0">
                 <label class="form-label mb-2">

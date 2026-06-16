@@ -475,7 +475,19 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-md) var(--spacing-xl);
+}
+
+.ds-strategy-group {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.ds-strategy-enable-group {
+  gap: 0 !important;
+  margin: 0;
 }
 
 .ds-strategy-checks .form-label {
@@ -486,7 +498,28 @@
 }
 
 .ds-strategy-overwrite {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
+}
+
+.ds-strategy-overwrite-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ds-strategy-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  max-width: 280px;
+}
+
+.ds-strategy-hint .fa {
+  margin-right: 2px;
+  color: var(--warning-color, #faad14);
 }
 
 .ds-strategy-overwrite .form-switch {

@@ -6,8 +6,10 @@ package org.dbsyncer.web.controller.database.sync;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +45,20 @@ public class DatabaseSyncController extends BaseController {
     @Resource
     private DatabaseSyncService databaseSyncService;
 
+    @Resource
+    private LicenseService licenseService;
+
     @RequestMapping("/list")
     public String list(ModelMap model) {
+        initEditionInfo(model);
         return "database-syncer/list";
+    }
+
+    private void initEditionInfo(ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
     }
 
     /**

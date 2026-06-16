@@ -2,7 +2,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
 
-<div class="form-container">
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+    <p class="text-secondary mb-6">
+        暂未开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+    <div class="mb-6">
+        <img width="383px" height="127px" draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
+    </div>
+</div>
+
+<!-- 整库迁移列表 -->
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center">整库迁移</h3>
     </div>
@@ -41,7 +59,7 @@
     </div>
 </div>
 
-<script>
+<script th:if="${editionInfo.edition ne 'community'}">
     function databaseSyncStart(taskId) {
         doPoster('/database-syncer/start', { id: taskId }, function (response) {
             if (response.success) {
@@ -129,8 +147,20 @@
 
 
     /**
-     * 结果列：进度 + 异常条数（failTotal > 0 的明细数）
+     * 结果列：进度 + 异常条数 + 任务耗时（执行完成后）
      */
+    function renderTaskDurationText(task) {
+        var isRunning = Number(task.status) === 1;
+        if (isRunning) {
+            return '';
+        }
+        var durationText = formatElapsedDuration(task.beginTime, task.endTime);
+        if (!durationText) {
+            return '';
+        }
+        return '<span class="text-xs text-tertiary" style="white-space: nowrap;">任务耗时：' + durationText + '</span>';
+    }
+
     function renderResultColumn(task) {
         var n = Number(task.errorCount);
         if (isNaN(n) || n < 0) {
@@ -173,11 +203,13 @@
                 + 'onclick="doLoader(\'/database-syncer/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
                 + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
+        var durationHtml = renderTaskDurationText(task);
         var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
         return ''
-            + '<div style="min-width: 160px;">'
+            + '<div style="min-width: 180px;">'
             + '  <div class="progress-header" style="margin-bottom: 6px;">'
             + '    <span class="progress-title">' + left + '</span>'
+            + (durationHtml ? ('<span class="progress-duration" style="flex: 1; text-align: center;">' + durationHtml + '</span>') : '')
             + '    <span class="progress-value progress-value-' + state + '" style="font-size: 12px; font-weight: 600;">' + rightText + '</span>'
             + '  </div>'
             + '  <div class="progress-bar" style="height: 6px; margin-bottom: 0;">'
