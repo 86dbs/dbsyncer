@@ -39,6 +39,7 @@
     let targetConnectorSelect = null;
     let pickerTargetConnectorSelect = null;
     let tableTreeScrollBound = false;
+    let tableCbSeq = 0;
     let initializing = false;
     let lastSourceConnectorId = '';
     let detailPanelBound = false;
@@ -746,7 +747,82 @@
 
     function clearAllSourceTables() {
         state.source.checked = {};
-        $('#sourceTableTree .db-sync-table-cb').prop('checked', false);
+        $('#sourceTableTree .db-sync-table-cb').each(function () {
+            setCheckboxGroupChecked($(this), false);
+        });
+        syncFolderCheckboxState($('#sourceTableTree'));
+        updateTableTreeFooter(false);
+    }
+
+    function getSelectedTableCount() {
+        syncCheckedFromTableTreeDom();
+        let count = 0;
+        Object.keys(state.source.checked).forEach(function (name) {
+            if (state.source.checked[name]) {
+                count++;
+            }
+        });
+        return count;
+    }
+
+    const TABLE_TREE_CHECKBOX_OPTIONS = {
+        size: 'sm',
+        layout: 'inline'
+    };
+
+    function nextTableCheckboxId(prefix) {
+        tableCbSeq += 1;
+        return prefix + tableCbSeq;
+    }
+
+    function initTableTreeCheckboxStyle($root) {
+        ($root || $('#sourceTableTree')).find('.db-sync-table-cb, .db-sync-folder-cb').each(function () {
+            const $cb = $(this);
+            if ($cb.data('checkboxGroupInitialized')) {
+                return;
+            }
+            const cbId = $cb.attr('id');
+            $cb.checkboxGroup(TABLE_TREE_CHECKBOX_OPTIONS);
+            // 单选初始化会先包裹 checkbox-group，原 label 不再紧邻 input，需手动移除避免文案重复
+            if (cbId) {
+                $('label[for="' + cbId + '"]').each(function () {
+                    const $label = $(this);
+                    if (!$label.closest('.checkbox-group-item').length) {
+                        $label.remove();
+                    }
+                });
+            }
+        });
+    }
+
+    function setCheckboxGroupChecked($cb, checked) {
+        $cb.prop('indeterminate', false);
+        const $item = $cb.closest('.checkbox-group-item');
+        if ($item.length) {
+            $item.removeClass('indeterminate');
+        }
+        const api = $cb.data('checkboxGroup');
+        if (api && typeof api.setValue === 'function') {
+            api.setValue(checked);
+        } else {
+            $cb.prop('checked', checked);
+            if ($item.length) {
+                $item.toggleClass('active', !!checked);
+            }
+        }
+    }
+
+    function setCheckboxGroupIndeterminate($cb, indeterminate) {
+        $cb.prop('indeterminate', !!indeterminate);
+        const $item = $cb.closest('.checkbox-group-item');
+        if (!$item.length) {
+            return;
+        }
+        if (indeterminate) {
+            $item.addClass('indeterminate').removeClass('active');
+        } else {
+            $item.removeClass('indeterminate');
+        }
     }
 
     function renderSourceTableTreeEmpty(message) {
@@ -791,6 +867,7 @@
             return;
         }
         const folders = getTableFolderDefs();
+        tableCbSeq = 0;
         let html = '<div class="picker-tree-body">';
         folders.forEach(function (folder) {
             const count = getFolderCount(folder.key);
@@ -806,23 +883,26 @@
             const folderIndeterminate = !folderChecked && loadedInFolder.some(function (t) {
                 return !!state.source.checked[t.name];
             });
+            const folderCbId = nextTableCheckboxId('dbSyncFolder_');
             html += '<div class="picker-tree-node" data-folder-key="' + folder.key + '">'
-                + '<div class="picker-tree-folder" data-folder="TABLE">'
-                + '<label class="picker-tree-item picker-tree-folder-label" onclick="event.stopPropagation()">'
-                + '<input type="checkbox" class="db-sync-folder-cb" data-folder-key="' + folder.key + '"'
+                + '<div class="picker-tree-folder picker-tree-item picker-tree-folder-label" data-folder="TABLE">'
+                + '<input type="checkbox" class="db-sync-folder-cb" id="' + folderCbId + '" data-folder-key="' + folder.key + '"'
                 + (folderChecked ? ' checked' : '')
                 + (folderIndeterminate ? ' data-indeterminate="1"' : '')
                 + '>'
-                + '<i class="fa fa-caret-down"></i><i class="fa ' + folder.icon + '"></i> '
-                + folder.label + ' (' + count + ')</label></div>'
+                + '<label for="' + folderCbId + '" class="picker-tree-folder-cb-label"></label>'
+                + '<i class="fa fa-caret-down picker-tree-folder-caret"></i>'
+                + '<span class="picker-tree-folder-title">' + folder.label + ' (' + count + ')</span>'
+                + '</div>'
                 + '<div class="picker-tree-children" data-folder-key="' + folder.key + '"></div>'
                 + '</div>';
         });
         html += '</div><div class="picker-scroll-footer" id="sourceTableTreeFooter"></div>';
         $box.html(html);
+        initTableTreeCheckboxStyle($box);
 
         $box.find('.db-sync-folder-cb[data-indeterminate="1"]').each(function () {
-            this.indeterminate = true;
+            setCheckboxGroupIndeterminate($(this), true);
         });
 
         bindTableTreeScroll();
@@ -833,9 +913,11 @@
         const name = t.name || '';
         const ck = state.source.checked[name] ? ' checked' : '';
         const safeName = String(name).replace(/"/g, '&quot;');
-        return '<label class="picker-tree-item">'
-            + '<input type="checkbox" class="db-sync-table-cb" data-name="' + safeName + '"' + ck + '>'
-            + '<span>' + escapeHtml(name) + '</span></label>';
+        const cbId = nextTableCheckboxId('dbSyncTable_');
+        return '<div class="picker-tree-item">'
+            + '<input type="checkbox" class="db-sync-table-cb" id="' + cbId + '" data-name="' + safeName + '" value="' + safeName + '"' + ck + '>'
+            + '<label for="' + cbId + '">' + escapeHtml(name) + '</label>'
+            + '</div>';
     }
 
     function appendSourceTableRows(items) {
@@ -860,6 +942,7 @@
                 html += buildTableRowHtml(t);
             });
             $children.append(html);
+            initTableTreeCheckboxStyle($children);
         });
     }
 
@@ -878,15 +961,15 @@
             $footer.html('');
             return;
         }
-        const loaded = state.source.tables.length;
-        let text = '已加载 ' + loaded + ' / ' + (meta.cappedTotal || meta.total) + ' 张表';
+        const selected = getSelectedTableCount();
+        const total = meta.cappedTotal || meta.total;
+        let html = '<span class="picker-scroll-footer-count">已选中 ' + selected + ' / 共' + total + ' 张表</span>';
         if (meta.hasMore) {
-            text += '，向下滚动加载更多';
+            html += '<span class="picker-scroll-footer-hint">向下滚动加载更多</span>';
+        } else if (meta.truncated) {
+            html += '<span class="picker-scroll-footer-hint">共 ' + meta.total + ' 张，最多展示 ' + TABLE_DISPLAY_MAX + ' 张</span>';
         }
-        if (meta.truncated) {
-            text += '（共 ' + meta.total + ' 张，最多展示 ' + TABLE_DISPLAY_MAX + ' 张，请用搜索缩小范围）';
-        }
-        $footer.html(text);
+        $footer.html(html);
     }
 
     function bindTableTreeScroll() {
@@ -907,7 +990,7 @@
         const $box = $('#sourceTableTree');
 
         $box.off('click.pickerFolder').on('click.pickerFolder', '.picker-tree-folder', function (e) {
-            if ($(e.target).closest('.picker-tree-folder-label').length) {
+            if ($(e.target).closest('.checkbox-group-item, .checkbox-group').length) {
                 return;
             }
             const $icon = $(this).find('.fa-caret-down, .fa-caret-right').first();
@@ -919,6 +1002,7 @@
             const name = $(this).data('name');
             state.source.checked[name] = this.checked;
             syncFolderCheckboxState($box);
+            updateTableTreeFooter(false);
         });
 
         $box.off('change.folderCb').on('change.folderCb', '.db-sync-folder-cb', function () {
@@ -932,8 +1016,11 @@
                 state.source.checked[name] = checked;
             });
             const $node = $(this).closest('.picker-tree-node');
-            $node.find('.db-sync-table-cb').prop('checked', checked);
-            $(this).prop('indeterminate', false).removeAttr('data-indeterminate');
+            $node.find('.db-sync-table-cb').each(function () {
+                setCheckboxGroupChecked($(this), checked);
+            });
+            setCheckboxGroupChecked($(this), checked);
+            updateTableTreeFooter(false);
         });
     }
 
@@ -946,8 +1033,13 @@
             }
             const total = $tableCbs.length;
             const checkedCount = $tableCbs.filter(':checked').length;
-            $folderCb.prop('checked', checkedCount === total);
-            $folderCb.prop('indeterminate', checkedCount > 0 && checkedCount < total);
+            if (checkedCount === total) {
+                setCheckboxGroupChecked($folderCb, true);
+            } else if (checkedCount === 0) {
+                setCheckboxGroupChecked($folderCb, false);
+            } else {
+                setCheckboxGroupIndeterminate($folderCb, true);
+            }
         });
     }
 
@@ -1409,7 +1501,7 @@
             });
             state.activeMappingIndex = existIdx;
             if (!added) {
-                bootGrowl('该源库到目标库的映射已存在，未新增表', 'info');
+                bootGrowl('该源库到目标库的映射已存在!', 'info');
             }
         } else {
             state.mappings.push({
@@ -1426,7 +1518,6 @@
         closeTablePickerModal();
         renderMappingSidebar();
         renderMappingDetail(true);
-        bootGrowl('已添加库映射', 'success');
     }
 
     function clearMappings() {

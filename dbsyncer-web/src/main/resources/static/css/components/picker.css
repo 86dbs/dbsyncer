@@ -43,35 +43,78 @@
 }
 
 .picker-tree-node {
-  margin: var(--spacing-xs) 0;
+  margin: 0;
+}
+
+.picker-tree-body {
+  min-height: 0;
 }
 
 .picker-tree-folder {
   font-weight: 600;
   font-size: var(--font-size-sm);
-  padding: var(--spacing-xs) 0;
+  padding: 4px 0;
   cursor: pointer;
   user-select: none;
 }
 
 .picker-tree-folder-label {
   font-weight: 600;
+  cursor: default;
+  margin: 0;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.picker-tree-folder-caret {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--text-tertiary);
   cursor: pointer;
+}
+
+.picker-tree-folder-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group-item {
   margin: 0;
 }
 
-.picker-tree-folder-label .fa-caret-down,
-.picker-tree-folder-label .fa-caret-right {
-  margin-right: var(--spacing-xs);
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group-item::before {
+  margin-right: 0;
 }
 
-.picker-tree-folder .fa {
-  width: 14px;
-  margin-right: var(--spacing-xs);
+.picker-tree-folder-label .checkbox-group-item-label {
+  display: none;
 }
 
 .picker-tree-children {
-  padding-left: 18px;
+  /* 子表 checkbox 与分组行展开箭头对齐：16px 复选框 + 8px 间距 */
+  padding: 4px 8px 6px 24px;
+  margin-top: 2px;
+  background-color: rgba(22, 93, 255, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.picker-tree-children .picker-tree-item {
+  padding: 3px 0;
 }
 
 .picker-tree-item {
@@ -79,19 +122,70 @@
   align-items: center;
   font-size: var(--font-size-sm);
   padding: 2px 0;
-  cursor: pointer;
 }
 
-.picker-tree-item input[type="checkbox"] {
-  margin-right: var(--spacing-sm);
+.picker-tree-checkbox-group .picker-tree-item > label {
+  display: none;
+}
+
+.picker-tree-checkbox-group .picker-tree-item:not(.picker-tree-folder-label) .checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-item .checkbox-group-item {
   flex-shrink: 0;
 }
 
+.picker-tree-checkbox-group .picker-tree-item .checkbox-group-item-label {
+  font-weight: inherit;
+  font-size: inherit;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-tree-checkbox-group .checkbox-group-item.indeterminate::before {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.15);
+}
+
+.picker-tree-checkbox-group .checkbox-group-item.indeterminate::after {
+  width: 8px;
+  height: 0;
+  border: none;
+  border-top: 2px solid #ffffff;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  opacity: 1;
+}
+
 .picker-scroll-footer {
-  text-align: center;
-  padding: var(--spacing-sm) 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0 0;
+  margin-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-secondary);
   font-size: var(--font-size-xs);
   color: var(--text-tertiary);
+}
+
+.picker-scroll-footer-count {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.picker-scroll-footer-hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
 }
 
 .picker-scroll-footer.is-loading {
