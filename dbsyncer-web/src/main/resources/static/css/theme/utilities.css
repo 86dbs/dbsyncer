@@ -80,6 +80,31 @@
 .flex-none { flex: none; }
 .flex-shrink-0 { flex-shrink: 0; }
 
+.min-h-0 { min-height: 0; }
+.min-h-280 { min-height: 280px; }
+.min-h-480 { min-height: 480px; }
+.min-h-520 { min-height: 520px; }
+
+.gap-0 { gap: 0; }
+
+/* 左右分栏工作区 */
+.workspace-split {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 0;
+  min-height: 480px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+@media (max-width: 992px) {
+  .workspace-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gap-2 { gap: var(--spacing-sm); }
 .gap-4 { gap: var(--spacing-md); }
 

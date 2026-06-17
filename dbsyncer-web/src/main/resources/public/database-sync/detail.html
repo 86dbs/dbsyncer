@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container" id="databaseSyncerDetailPage" th:attr="data-task-id=${taskId}">
+    <div class="card-header">
+        <h3 class="card-title text-center">迁移结果详情</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center mb-4">
+            <div class="lg:col-span-2 flex items-center">
+                <label class="form-label mr-3 whitespace-nowrap">选择任务</label>
+                <select id="detailTaskSelect" class="form-control">
+                    <option th:each="t : ${taskList}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == taskId}"></option>
+                </select>
+            </div>
+            <div class="lg:col-span-2 flex items-center">
+                <label class="form-label mr-3 whitespace-nowrap">迁移类型</label>
+                <select id="detailTypeFilter" class="form-control">
+                    <option value="" th:selected="${detailType == null or detailType == ''}">全部</option>
+                    <option value="rowData" th:selected="${detailType == 'rowData'}">数据迁移</option>
+                    <option value="tableSchema" th:selected="${detailType == 'tableSchema'}">表结构</option>
+                </select>
+            </div>
+            <div class="lg:col-span-2 flex items-center">
+                <label class="form-label mr-3 whitespace-nowrap">状态</label>
+                <select id="detailStatusFilter" class="form-control">
+                    <option value="" th:selected="${detailStatus == null or detailStatus == ''}">全部</option>
+                    <option value="success" th:selected="${detailStatus == 'success'}">成功</option>
+                    <option value="fail" th:selected="${detailStatus == 'fail'}">失败</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid grid-cols-6 items-center mb-4">
+            <div class="lg:col-span-4"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-outline" onclick="backIndexPage()">
+                    <i class="fa fa-reply"></i> 返回列表
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th class="col-index"></th>
+                <th>迁移类型</th>
+                <th>源库</th>
+                <th>源表</th>
+                <th>目标库</th>
+                <th>目标表</th>
+                <th>源端行数</th>
+                <th>成功数</th>
+                <th>失败数</th>
+                <th>更新时间</th>
+                <th class="col-action">查看详情</th>
+            </tr>
+            </thead>
+            <tbody id="detail-result-table"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/database-sync/database-sync-detail.js}"></script>
+</html>

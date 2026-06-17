@@ -10,13 +10,98 @@
             width: 100%;
         }
 
+        .diff-table > tbody > tr > td {
+            max-width: none;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            vertical-align: top;
+        }
+
+        .diff-table .diff-exception-cell {
+            padding: 10px 12px;
+        }
+
         .diff-table .diff-msg-cell {
-            max-height: 180px;
+            max-height: 240px;
             overflow-y: auto;
-            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .diff-table .diff-msg-plain {
+            color: var(--text-secondary);
             word-break: break-word;
             overflow-wrap: anywhere;
-            line-height: 1.5;
+        }
+
+        .diff-table .diff-field-table-wrap {
+            border: 1px solid var(--border-secondary, #e5e7eb);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--bg-primary, #fff);
+        }
+
+        .diff-table .diff-field-table {
+            width: 100%;
+            margin: 0;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: var(--font-size-sm, 13px);
+        }
+
+        .diff-table .diff-field-table th,
+        .diff-table .diff-field-table td {
+            padding: 8px 10px;
+            vertical-align: middle;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .diff-table .diff-field-table thead th {
+            background: var(--bg-secondary, #f9fafb);
+            color: var(--text-secondary, #6b7280);
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-secondary, #e5e7eb);
+            text-align: center;
+        }
+
+        .diff-table .diff-field-table thead th:first-child {
+            text-align: left;
+        }
+
+        .diff-table .diff-field-table tbody td {
+            border-bottom: 1px solid var(--border-tertiary, #f3f4f6);
+            color: var(--text-primary, #111827);
+        }
+
+        .diff-table .diff-field-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .diff-table .diff-field-table tbody tr:hover {
+            background: var(--bg-tertiary, #f9fafb);
+        }
+
+        .diff-table .diff-field-table tbody td:first-child {
+            font-weight: 600;
+            font-family: var(--font-mono, ui-monospace, monospace);
+            color: var(--text-primary, #111827);
+        }
+
+        .diff-table .diff-field-table .diff-val-source,
+        .diff-table .diff-field-table .diff-val-target {
+            font-family: var(--font-mono, ui-monospace, monospace);
+            text-align: center;
+        }
+
+        .diff-table .diff-field-table .diff-val-source {
+            color: var(--primary-color, #2563eb);
+        }
+
+        .diff-table .diff-field-table .diff-val-target {
+            color: var(--error-color, #dc2626);
+            font-weight: 600;
         }
 
         .diff-table .diff-source-table-cell {
@@ -25,15 +110,26 @@
             line-height: 1.5;
         }
 
-        .diff-table .diff-field-item {
-            margin-top: 6px;
-            padding: 4px 0;
-            border-top: 1px dashed var(--border-color, #e5e7eb);
+        .confirm-body .validate-diff-detail-body {
+            white-space: normal;
         }
 
-        .diff-table .diff-field-name {
-            font-weight: 600;
-            color: var(--text-primary, #111827);
+        .confirm-title-extra .diff-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px 12px;
+        }
+
+        .confirm-title-extra .diff-summary-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .confirm-title-extra .diff-summary-item label {
+            font-weight: 500;
+            color: var(--text-secondary, #6b7280);
+            white-space: nowrap;
         }
     </style>
 
@@ -85,40 +181,6 @@
     </div>
 </div>
 
-<!-- 差异详情弹窗 -->
-<div id="diffDetailOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:var(--z-modal-backdrop, 1040);">
-    <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:8px; width:min(1100px, 92vw); max-height:80vh; display:flex; flex-direction:column; z-index:var(--z-modal, 1050);">
-        <div class="card-header flex items-center justify-between" style="padding:16px 20px;">
-            <h3 class="card-title" style="margin:0;"><i class="fa fa-list-alt mr-2"></i>差异详情</h3>
-            <button class="table-action-btn" id="closeDiffModal"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="card-body" style="overflow-y:auto; flex:1; padding:16px 20px;">
-            <!-- 汇总信息（行数据类型时显示） -->
-            <div id="diffSummary" class="mb-4" style="display:none;">
-                <div class="grid grid-cols-4">
-                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >源表</label><span id="summarySourceTotal" class="badge badge-info">-</span></div>
-                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >目标</label><span id="summaryTargetTotal" class="badge badge-info">-</span></div>
-                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >差异</label><span id="summaryDiffTotal" class="badge badge-error">-</span></div>
-                    <div class="flex items-center"><label class="font-medium text-gray-600 w-10" >已订正</label><span id="summaryCorrectedTotal" class="badge badge-success">-</span></div>
-                </div>
-            </div>
-            <!-- 差异数据表格 -->
-            <table class="table diff-table">
-                <thead id="diffTableHead"></thead>
-                <tbody id="diffTableBody"></tbody>
-            </table>
-        </div>
-        <div id="diffModalFooter" class="flex items-center justify-between gap-2" style="padding:12px 20px; border-top:1px solid var(--border-color, #e5e7eb);">
-            <p id="diffReviseHint" class="text-sm text-tertiary mb-0 hidden">仍有差异未订正，可尝试将源端数据同步至目标端。</p>
-            <div class="flex items-center gap-2 ml-auto">
-                <button type="button" class="btn btn-primary hidden" id="btnManualRevise">
-                    <i class="fa fa-wrench"></i> 手动订正
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
     $(document).ready(function () {
         window.backIndexPage = function () {
@@ -128,6 +190,7 @@
         var currentTaskId = '[[${taskId}]]';
         var currentDetailId = '';
         var manualReviseSubmitting = false;
+        var diffModalInstance = null;
 
         // 初始化任务下拉组件
         var taskSelect = $('#detailTaskSelect').dbSelect({
@@ -198,17 +261,6 @@
                     });
                 }
             });
-        });
-
-        // 关闭弹窗
-        $('#closeDiffModal, #closeDiffModalBtn').click(function () {
-            $('#diffDetailOverlay').hide();
-            resetDiffModalActions();
-        });
-        $('#diffDetailOverlay').click(function (e) {
-            if ($(e.target).is('#diffDetailOverlay')) {
-                $(this).hide();
-            }
         });
 
         // 校验类型中文映射
@@ -300,19 +352,75 @@
             return String(value);
         }
 
+        function buildCompareDiffTable(rows, options) {
+            options = options || {};
+            var firstHeader = options.firstHeader || '字段';
+            var firstKey = options.firstKey || 'field';
+            var html = '<div class="diff-field-table-wrap"><table class="diff-field-table">'
+                + '<thead><tr>'
+                + '<th style="width:38%;">' + escapeHtml(firstHeader) + '</th>'
+                + '<th style="width:31%;">源</th>'
+                + '<th style="width:31%;">目标</th>'
+                + '</tr></thead><tbody>';
+            rows.forEach(function (row) {
+                var firstVal = row[firstKey];
+                if (firstVal === undefined || firstVal === null || firstVal === '') {
+                    firstVal = row.field || '-';
+                }
+                html += '<tr>'
+                    + '<td>' + escapeHtml(firstVal) + '</td>'
+                    + '<td class="diff-val-source">' + escapeHtml(formatDiffValue(row.source)) + '</td>'
+                    + '<td class="diff-val-target">' + escapeHtml(formatDiffValue(row.target)) + '</td>'
+                    + '</tr>';
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function buildFieldDiffTable(details) {
+            return buildCompareDiffTable(details, { firstHeader: '字段', firstKey: 'field' });
+        }
+
+        function parseSchemaDiffFromMsg(msg) {
+            if (!msg || typeof msg !== 'string') {
+                return null;
+            }
+            var text = msg.trim();
+            var patterns = [
+                { re: /^类型不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '类型' },
+                { re: /^长度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '长度' },
+                { re: /^精度不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '精度' },
+                { re: /^主键标记不一致[，,]\s*source[：:]\s*(.+?)[，,]\s*target[：:]\s*(.+)$/i, label: '主键' }
+            ];
+            var i;
+            for (i = 0; i < patterns.length; i++) {
+                var m = text.match(patterns[i].re);
+                if (m) {
+                    return { label: patterns[i].label, source: m[1], target: m[2] };
+                }
+            }
+            return null;
+        }
+
+        function isSchemaDiffItem(item) {
+            var type = (item && (item.type || item.objType)) || '';
+            return type === '表结构' || type === 'tableSchema';
+        }
+
         function buildDiffMsgCell(item) {
-            var safeMsg = escapeHtml(item.msg || '-');
             var details = parseDiffDetails(item.details);
             var html = '<div class="diff-msg-cell">';
-            html += '<div>' + safeMsg + '</div>';
             if (details.length > 0) {
-                details.forEach(function (detail) {
-                    html += '<div class="diff-field-item">'
-                        + '<span class="diff-field-name">' + escapeHtml(detail.field || '-') + '</span>'
-                        + '：源=' + escapeHtml(formatDiffValue(detail.source))
-                        + '，目标=' + escapeHtml(formatDiffValue(detail.target))
-                        + '</div>';
-                });
+                html += buildFieldDiffTable(details);
+            } else if (isSchemaDiffItem(item)) {
+                var schemaRow = parseSchemaDiffFromMsg(item.msg);
+                if (schemaRow) {
+                    html += buildCompareDiffTable([schemaRow], { firstHeader: '差异项', firstKey: 'label' });
+                } else {
+                    html += '<div class="diff-msg-plain">' + escapeHtml(item.msg || '-') + '</div>';
+                }
+            } else {
+                html += '<div class="diff-msg-plain">' + escapeHtml(item.msg || '-') + '</div>';
             }
             html += '</div>';
             return html;
@@ -320,8 +428,22 @@
 
         function resetDiffModalActions() {
             currentDetailId = '';
-            $('#btnManualRevise').addClass('hidden').prop('disabled', false);
-            $('#diffReviseHint').addClass('hidden');
+        }
+
+        function closeDiffDetailModal() {
+            if (diffModalInstance) {
+                diffModalInstance.close();
+                diffModalInstance = null;
+            }
+            resetDiffModalActions();
+        }
+
+        function getDiffDetailConfirmBtn() {
+            if (!diffModalInstance) {
+                return null;
+            }
+            var dialog = diffModalInstance.getDialog();
+            return dialog ? dialog.querySelector('.confirm-btn-confirm') : null;
         }
 
         function resolveDiffFixedCounts(row, content) {
@@ -339,11 +461,73 @@
             };
         }
 
-        function updateManualReviseAction(detailId, diff, fixed) {
-            currentDetailId = detailId || '';
-            var pending = diff > fixed;
-            $('#btnManualRevise').toggleClass('hidden', !pending);
-            $('#diffReviseHint').toggleClass('hidden', !pending);
+        function buildDiffSummaryTitleExtra(src, tgt, counts) {
+            return '<div class="diff-summary-grid">'
+                + '<div class="diff-summary-item"><label>源表</label><span class="badge badge-info">' + escapeHtml(String(src)) + '</span></div>'
+                + '<div class="diff-summary-item"><label>目标</label><span class="badge badge-info">' + escapeHtml(String(tgt)) + '</span></div>'
+                + '<div class="diff-summary-item"><label>差异</label><span class="badge badge-error">' + escapeHtml(String(counts.diff)) + '</span></div>'
+                + '<div class="diff-summary-item"><label>已订正</label><span class="badge badge-success">' + escapeHtml(String(counts.fixed)) + '</span></div>'
+                + '</div>';
+        }
+
+        function buildDiffDetailBodyHtml(data, tableNameOuter) {
+            var html = '<div class="validate-diff-detail-body">';
+            var headHtml = '<tr>'
+                + '<th style="width:18%;">源表名称</th>'
+                + '<th style="width:10%;">类型</th>'
+                + '<th style="width:12%;">主键/标识</th>'
+                + '<th style="width:60%;">异常</th></tr>';
+            var bodyHtml = '';
+            data.forEach(function (d) {
+                var msgHtml = buildDiffMsgCell(d);
+                var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
+                var typeText = d.type || d.objType || '-';
+                bodyHtml += '<tr>'
+                    + '<td>' + sourceTableHtml + '</td>'
+                    + '<td>' + escapeHtml(typeText) + '</td>'
+                    + '<td>' + escapeHtml(d.key || '-') + '</td>'
+                    + '<td class="diff-exception-cell">' + msgHtml + '</td>'
+                    + '</tr>';
+            });
+            if (data.length === 0) {
+                bodyHtml = '<tr><td colspan="4" class="text-center text-gray-400">无差异数据</td></tr>';
+            }
+            html += '<table class="table diff-table"><thead>' + headHtml + '</thead><tbody>' + bodyHtml + '</tbody></table>';
+            html += '</div>';
+            return html;
+        }
+
+        function openManualReviseConfirm() {
+            if (!currentDetailId || manualReviseSubmitting) {
+                return;
+            }
+            showConfirm({
+                title: '确定要手动订正当前明细中尚未成功的差异数据？',
+                icon: 'warning',
+                size: 'large',
+                position: 'center',
+                confirmType: 'primary',
+                onConfirm: function () {
+                    manualReviseSubmitting = true;
+                    var confirmBtn = getDiffDetailConfirmBtn();
+                    if (confirmBtn) {
+                        confirmBtn.disabled = true;
+                    }
+                    doPoster('/validate-sync/manualRevise', {id: currentDetailId}, function (res) {
+                        manualReviseSubmitting = false;
+                        if (confirmBtn) {
+                            confirmBtn.disabled = false;
+                        }
+                        if (!res.success) {
+                            bootGrowl(res.message || '手动订正失败', 'danger');
+                            return;
+                        }
+                        bootGrowl('手动订正完成', 'success');
+                        renderDiffDetailModal(res.data || {});
+                        resultPagination.doSearch(buildSearchParams());
+                    });
+                }
+            });
         }
 
         function renderDiffDetailModal(row) {
@@ -358,37 +542,36 @@
             var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
             var tgt = row.targetTotal != null ? row.targetTotal : (content.targetTotal != null ? content.targetTotal : 0);
             var counts = resolveDiffFixedCounts(row, content);
+            var pending = counts.diff > counts.fixed;
 
-            if (type === 'rowData') {
-                $('#diffSummary').show();
-                $('#summarySourceTotal').text(src);
-                $('#summaryTargetTotal').text(tgt);
-                $('#summaryDiffTotal').text(counts.diff);
-                $('#summaryCorrectedTotal').text(counts.fixed);
-            } else {
-                $('#diffSummary').hide();
-            }
+            closeDiffDetailModal();
+            currentDetailId = row.id || '';
 
-            var headHtml = '<tr><th style="width:170px;">源表名称</th><th style="width:120px;">类型</th><th style="width:220px;">主键/标识</th><th>异常</th></tr>';
-            var bodyHtml = '';
-            data.forEach(function (d) {
-                var msgHtml = buildDiffMsgCell(d);
-                var sourceTableHtml = '<div class="diff-source-table-cell">' + escapeHtml(tableNameOuter) + '</div>';
-                var typeText = d.type || d.objType || '-';
-                bodyHtml += '<tr>' +
-                    '<td>' + sourceTableHtml + '</td>' +
-                    '<td>' + escapeHtml(typeText) + '</td>' +
-                    '<td>' + escapeHtml(d.key || '-') + '</td>' +
-                    '<td style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;">' + msgHtml + '</td>' +
-                    '</tr>';
+            diffModalInstance = showConfirm({
+                title: '差异详情',
+                titleExtra: type === 'rowData' ? buildDiffSummaryTitleExtra(src, tgt, counts) : '',
+                icon: 'info',
+                size: 'max',
+                position: 'center',
+                body: buildDiffDetailBodyHtml(data, tableNameOuter),
+                confirmText: pending ? '手动订正(最多100条)' : '关闭',
+                showCancel: pending,
+                cancelText: '关闭',
+                confirmType: 'primary',
+                closeOnConfirm: !pending,
+                onConfirm: function () {
+                    if (pending) {
+                        openManualReviseConfirm();
+                        return;
+                    }
+                    diffModalInstance = null;
+                    resetDiffModalActions();
+                },
+                onCancel: function () {
+                    diffModalInstance = null;
+                    resetDiffModalActions();
+                }
             });
-            if (data.length === 0) {
-                bodyHtml = '<tr><td colspan="4" class="text-center text-gray-400">无差异数据</td></tr>';
-            }
-            $('#diffTableHead').html(headHtml);
-            $('#diffTableBody').html(bodyHtml);
-            updateManualReviseAction(row.id, counts.diff, counts.fixed);
-            $('#diffDetailOverlay').show();
         }
 
         /**
@@ -405,33 +588,6 @@
                 renderDiffDetailModal(res.data || {});
             });
         };
-
-        $('#btnManualRevise').click(function () {
-            if (!currentDetailId || manualReviseSubmitting) {
-                return;
-            }
-            showConfirm({
-                title: '确定要手动订正当前明细中尚未成功的差异数据？',
-                icon: 'warning',
-                size: 'large',
-                confirmType: 'primary',
-                onConfirm: function () {
-                    manualReviseSubmitting = true;
-                    $('#btnManualRevise').prop('disabled', true);
-                    doPoster('/validate-sync/manualRevise', {id: currentDetailId}, function (res) {
-                        manualReviseSubmitting = false;
-                        $('#btnManualRevise').prop('disabled', false);
-                        if (!res.success) {
-                            bootGrowl(res.message || '手动订正失败', 'danger');
-                            return;
-                        }
-                        bootGrowl('手动订正完成', 'success');
-                        renderDiffDetailModal(res.data || {});
-                        resultPagination.doSearch(buildSearchParams());
-                    });
-                }
-            });
-        });
 
         $(document).on('click', '.diff-detail-btn', function () {
             var id = $(this).data('detail-id');

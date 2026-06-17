@@ -47,6 +47,8 @@
     let initializing = false;
     let lastSourceConnectorId = '';
     let detailPanelBound = false;
+    let tablePickerModal = null;
+    let tablePickerSearchTimer = null;
 
     function isReadOnly() {
         return !!page.readOnly;
@@ -253,7 +255,7 @@
     }
 
     function getActiveTargetConnectorId() {
-        if (!$('#tablePickerModal').hasClass('hidden')) {
+        if (isPickerModalOpen()) {
             const pickerId = getPickerTargetConnectorId();
             if (pickerId) {
                 return pickerId;
@@ -281,7 +283,7 @@
     }
 
     function isPickerModalOpen() {
-        return $('#tablePickerModal').length > 0 && !$('#tablePickerModal').hasClass('hidden');
+        return !!tablePickerModal;
     }
 
     /** 弹窗内：源库/Schema 选中后联动覆盖目标库名、目标 Schema */
@@ -351,12 +353,12 @@
         if (!hasDetailTargetPanel() || !state.mappings.length) {
             return;
         }
-        $('#mappingCardList .mapping-card').each(function () {
+        $('#mappingCardList .list-card').each(function () {
             const idx = Number($(this).data('index'));
             const block = state.mappings[idx];
             if (block) {
-                const $src = $(this).find('.mapping-card-line.mapping-card-src');
-                const $target = $(this).find('.mapping-card-line.mapping-card-target');
+                const $src = $(this).find('.list-card-line.is-title');
+                const $target = $(this).find('.list-card-line.list-card-target');
                 if ($src.length) {
                     $src.attr('title', getMappingSourceLineTitle(block));
                 }
@@ -386,7 +388,7 @@
 
     function updateSourceDatabaseFieldVisibility() {
         const hide = isOracleSourceConnector();
-        $('#sourceDatabase').closest('.form-item-stack').toggleClass('hidden', hide);
+        $('#sourceDatabase').closest('.form-item').toggleClass('hidden', hide);
     }
 
     function toggleSchemaLabelRequired($wrap, required) {
@@ -400,7 +402,7 @@
     function updateTargetDatabaseFieldVisibility() {
         const pickerOracle = isOracleTargetConnector(getPickerTargetConnectorId() || state.target.connectorId);
         const detailOracle = isOracleTargetConnector(getDetailPanelTargetConnectorId());
-        $('#pickerTargetDatabase').closest('.form-item-stack').toggleClass('hidden', pickerOracle);
+        $('#pickerTargetDatabase').closest('.form-item').toggleClass('hidden', pickerOracle);
         $('#detailTargetDatabase').closest('.ds-target-field').toggleClass('hidden', detailOracle);
         toggleSchemaLabelRequired($('#pickerTargetSchemaWrap'), pickerOracle);
         toggleSchemaLabelRequired($('#detailTargetSchemaWrap'), detailOracle);
@@ -479,9 +481,9 @@
     }
 
     function formatMappingCardBodyHtml(block) {
-        return '<div class="mapping-card-line mapping-card-src" title="' + escapeHtml(getMappingSourceLineTitle(block)) + '">'
+        return '<div class="list-card-line is-title" title="' + escapeHtml(getMappingSourceLineTitle(block)) + '">'
             + formatMappingCardSourceLineHtml(block) + '</div>'
-            + '<div class="mapping-card-line mapping-card-target" title="' + escapeHtml(getMappingTargetLineTitle(block)) + '">'
+            + '<div class="list-card-line list-card-target" title="' + escapeHtml(getMappingTargetLineTitle(block)) + '">'
             + formatMappingCardTargetLineHtml(block) + '</div>';
     }
 
@@ -512,7 +514,7 @@
     }
 
     function onPickerSourceContextChange() {
-        if ($('#tablePickerModal').hasClass('hidden')) {
+        if (!isPickerModalOpen()) {
             return;
         }
         updateTargetSchemaVisibility();
@@ -576,9 +578,9 @@
         }
         block.targetSchema = ($('#detailTargetSchema').val() || '').trim();
         syncMappingsJson();
-        const $activeCard = $('#mappingCardList .mapping-card.is-active');
+        const $activeCard = $('#mappingCardList .list-card.is-active');
         if ($activeCard.length) {
-            $activeCard.find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
+            $activeCard.find('.list-card-target').html(formatMappingCardTargetLineHtml(block));
         }
         const srcLabel = formatMappingSourceLabel(block);
         const tgtNs = formatTargetNamespaceLabel(block);
@@ -764,8 +766,12 @@
         updateSourceDatabaseFieldVisibility();
         if (isOracleSourceConnector()) {
             state.source.database = '';
-            sourceDbSelect.setData([]);
-            onDBChange(connectorId, sourceSchemaSelect, '');
+            if (sourceDbSelect) {
+                sourceDbSelect.setData([]);
+            }
+            if (sourceSchemaSelect) {
+                onDBChange(connectorId, sourceSchemaSelect, '');
+            }
             return;
         }
         doGetter('/connector/getDatabase', { id: connectorId }, function (response) {
@@ -773,7 +779,9 @@
                 const db = (response.data || []).map(function (dbName) {
                     return { label: dbName, value: dbName, disabled: false };
                 });
-                sourceDbSelect.setData(db);
+                if (sourceDbSelect) {
+                    sourceDbSelect.setData(db);
+                }
             } else {
                 bootGrowl('获取数据库失败: ' + (response.message || ''), 'danger');
             }
@@ -834,7 +842,7 @@
         const limit = Math.min(TABLE_PAGE_SIZE, TABLE_DISPLAY_MAX - offset);
         s.tableMeta.loading = true;
         updateTableTreeFooter(true);
-        doPoster('/database-syncer/previewTables', {
+        doPoster('/database-sync/previewTables', {
             connectorId: s.connectorId,
             database: s.database || '',
             schema: s.schema || '',
@@ -1269,6 +1277,151 @@
         });
     }
 
+    function buildPickerFormField(labelHtml, controlHtml, options) {
+        options = options || {};
+        let wrapClass = 'form-item';
+        if (options.wrapClass) {
+            wrapClass += ' ' + options.wrapClass;
+        }
+        const wrapId = options.wrapId ? ' id="' + options.wrapId + '"' : '';
+        const controlBlock = options.controlType === 'select'
+            ? controlHtml
+            : '<div class="form-control-area">' + controlHtml + '</div>';
+        return '<div class="' + wrapClass + '"' + wrapId + '>'
+            + '<label class="form-label">' + labelHtml + '</label>'
+            + controlBlock
+            + '</div>';
+    }
+
+    function buildTablePickerBodyHtml() {
+        const ro = isReadOnly();
+        const selectDisabled = ro ? ' disabled' : '';
+        const inputReadonly = ro ? ' readonly' : '';
+        const btnDisabled = ro ? ' disabled' : '';
+        return '<div class="dbsyncer-select-panel table-picker-body">'
+            + '<div class="mb-4">'
+            + '<h5 class="text-sm font-medium mb-3"><span class="text-primary">1.</span> 选择源库</h5>'
+            + '<div class="grid grid-cols-2">'
+            + buildPickerFormField(
+                '库',
+                '<select id="sourceDatabase" class="form-control"' + selectDisabled + '></select>',
+                { controlType: 'select' }
+            )
+            + buildPickerFormField(
+                'Schema',
+                '<select id="sourceSchema" class="form-control"' + selectDisabled + '></select>',
+                { controlType: 'select' }
+            )
+            + '</div></div>'
+            + '<div class="mb-4">'
+            + '<h5 class="text-sm font-medium mb-3"><span class="text-primary">2.</span> 指定目标库</h5>'
+            + '<div class="border border-dashed rounded-lg p-4 bg-secondary">'
+            + '<div class="grid grid-cols-2">'
+            + buildPickerFormField(
+                '目标连接<strong class="text-primary">*</strong>',
+                '<select id="pickerTargetConnectorId" class="form-control"' + selectDisabled + '></select>',
+                { controlType: 'select' }
+            )
+            + buildPickerFormField(
+                '目标库名',
+                '<input type="text" id="pickerTargetDatabase" class="form-control" maxlength="128" placeholder="目标库名"'
+                + inputReadonly + '/>'
+            )
+            + buildPickerFormField(
+                '目标 Schema',
+                '<input type="text" id="pickerTargetSchema" class="form-control" maxlength="128" placeholder="目标 Schema"'
+                + inputReadonly + '/>',
+                { wrapId: 'pickerTargetSchemaWrap' }
+            )
+            + '</div></div></div>'
+            + '<div>'
+            + '<h5 class="text-sm font-medium mb-3"><span class="text-primary">3.</span> 勾选需要同步的物理表</h5>'
+            + '<div class="flex items-center justify-between gap-2 mb-2">'
+            + '<div class="search-wrapper flex-1"><i class="fa fa-search search-icon"></i>'
+            + '<input id="sourceTableSearch" class="search-input" type="text" maxlength="64" placeholder="输入表名过滤搜索..."'
+            + inputReadonly + '/></div>'
+            + '<div class="flex items-center gap-2 flex-shrink-0">'
+            + '<button type="button" id="btnClearAllTables" class="btn btn-outline btn-sm"' + btnDisabled + '>清空</button>'
+            + '</div></div>'
+            + '<div id="sourceTableTree" class="picker-scroll picker-tree-checkbox-group"></div>'
+            + '</div></div>';
+    }
+
+    function initTablePickerControls() {
+        tableTreeScrollBound = false;
+
+        sourceSchemaSelect = $('#sourceSchema').dbSelect({
+            type: 'single',
+            disabled: isReadOnly(),
+            onSelect: function (selected) {
+                state.source.schema = selected.length ? selected[0] : '';
+                loadSourceTables($('#sourceTableSearch').val().trim(), true);
+                fillTargetFromSource();
+                onPickerSourceContextChange();
+            }
+        });
+
+        sourceDbSelect = $('#sourceDatabase').dbSelect({
+            type: 'single',
+            disabled: isReadOnly(),
+            onSelect: function (selected) {
+                state.source.database = selected.length ? selected[0] : '';
+                state.source.schema = '';
+                if (sourceSchemaSelect && typeof sourceSchemaSelect.setValues === 'function') {
+                    sourceSchemaSelect.setValues([], true);
+                }
+                if (state.source.connectorId) {
+                    onDBChange(state.source.connectorId, sourceSchemaSelect, state.source.database);
+                }
+                loadSourceTables(null, true);
+                fillTargetFromSource();
+                onPickerSourceContextChange();
+            }
+        });
+
+        pickerTargetConnectorSelect = $('#pickerTargetConnectorId').dbSelect({
+            type: 'single',
+            disabled: isReadOnly(),
+            onSelect: function (ids) {
+                state.target.connectorId = ids.length ? ids[0] : '';
+                setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
+                updateTargetSchemaVisibility();
+                updateTargetDatabaseFieldVisibility();
+                refreshMappingCardFlows();
+            }
+        });
+
+        refreshTargetConnectorOptions();
+
+        $('#sourceTableSearch').off('input.dbSyncPicker').on('input.dbSyncPicker', function () {
+            clearTimeout(tablePickerSearchTimer);
+            const key = $(this).val().trim();
+            tablePickerSearchTimer = setTimeout(function () { loadSourceTables(key, true); }, 300);
+        });
+
+        $('#btnClearAllTables').off('click.dbSyncPicker').on('click.dbSyncPicker', clearAllSourceTables);
+
+        bindTableTreeScroll();
+        bindTableTreeEvents();
+        updateSourceDatabaseFieldVisibility();
+        updateTargetSchemaVisibility();
+    }
+
+    function destroyTablePickerControls() {
+        clearTimeout(tablePickerSearchTimer);
+        tablePickerSearchTimer = null;
+        tableTreeScrollBound = false;
+        sourceDbSelect = null;
+        sourceSchemaSelect = null;
+        pickerTargetConnectorSelect = null;
+    }
+
+    function cleanupTablePickerState() {
+        resetTablePickerForm();
+        destroyTablePickerControls();
+        tablePickerModal = null;
+    }
+
     function openTablePickerModal() {
         if (isReadOnly()) {
             return;
@@ -1277,18 +1430,39 @@
             bootGrowl('请先选择源端连接器', 'warning');
             return;
         }
-        // resetTablePickerForm();
+        closeTablePickerModal();
+
+        tablePickerModal = showConfirm({
+            title: '选择源库与目标表映射',
+            size: 'max',
+            position: 'center',
+            body: buildTablePickerBodyHtml(),
+            confirmText: '确认添加',
+            cancelText: '取消',
+            closeOnConfirm: false,
+            onConfirm: function () {
+                if (addDatabaseMapping()) {
+                    closeTablePickerModal();
+                }
+            },
+            onCancel: function () {
+                cleanupTablePickerState();
+            }
+        });
+
+        initTablePickerControls();
         ensureSourcePickerOptionsLoaded();
-        refreshTargetConnectorOptions();
         refreshPickerTargetDefaults();
-        updateSourceDatabaseFieldVisibility();
-        updateTargetSchemaVisibility();
-        $('#tablePickerModal').removeClass('hidden');
+        renderSourceTableTreeEmpty('暂无表，请选择连接器、库与 Schema');
     }
 
     function closeTablePickerModal() {
-        $('#tablePickerModal').addClass('hidden');
-        resetTablePickerForm();
+        if (!tablePickerModal) {
+            return;
+        }
+        const modal = tablePickerModal;
+        cleanupTablePickerState();
+        modal.close();
     }
 
     /**
@@ -1323,42 +1497,42 @@
         state.mappings.forEach(function (block, idx) {
             const count = (block.tableMappings || []).length;
             const active = idx === state.activeMappingIndex ? ' is-active' : '';
-            html += '<div class="mapping-card' + active + '" data-index="' + idx + '">';
+            html += '<div class="list-card' + active + '" data-index="' + idx + '">';
             if (!isReadOnly()) {
-                html += '<button type="button" class="mapping-card-remove" data-index="' + idx + '" title="删除库映射">'
+                html += '<button type="button" class="list-card-remove" data-index="' + idx + '" title="删除库映射">'
                     + '<i class="fa fa-times"></i></button>';
             }
             if (useFlowCard) {
                 html += formatMappingCardBodyHtml(block)
-                    + '<div class="mapping-card-footer">已选择 ' + count + ' 张表</div>';
+                    + '<div class="list-card-footer">已选择 ' + count + ' 张表</div>';
             } else {
-                html += '<div class="mapping-card-row">'
-                    + '<span class="mapping-card-label">源&nbsp;&nbsp;库</span>'
-                    + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
+                html += '<div class="flex items-center gap-2 text-sm mb-1">'
+                    + '<span class="list-card-label">源&nbsp;&nbsp;库</span>'
+                    + '<span class="list-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
                     + escapeHtml(block.sourceDatabase || '') + '</span></div>'
                     + (block.sourceSchema
-                        ? ('<div class="mapping-card-row">'
-                            + '<span class="mapping-card-label">源Schema</span>'
-                            + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceSchema || '') + '">'
+                        ? ('<div class="flex items-center gap-2 text-sm mb-1">'
+                            + '<span class="list-card-label">源Schema</span>'
+                            + '<span class="list-card-value" title="' + escapeHtml(block.sourceSchema || '') + '">'
                             + escapeHtml(block.sourceSchema || '') + '</span></div>')
                         : '')
-                    + '<div class="mapping-card-row">'
-                    + '<span class="mapping-card-label">目标</span>'
-                    + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
+                    + '<div class="flex items-center gap-2 text-sm mb-1">'
+                    + '<span class="list-card-label">目标</span>'
+                    + '<input type="text" class="form-control form-control-sm flex-1 min-w-0 mapping-card-tgt-db"'
                     + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
                     + ' title="' + escapeHtml(block.targetDatabase || '') + '"'
                     + (isReadOnly() ? ' readonly' : '') + '/>'
                     + '</div>'
                     + (block.sourceSchema
-                        ? ('<div class="mapping-card-row">'
-                            + '<span class="mapping-card-label">目标Schema</span>'
-                            + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-schema"'
+                        ? ('<div class="flex items-center gap-2 text-sm mb-1">'
+                            + '<span class="list-card-label">目标Schema</span>'
+                            + '<input type="text" class="form-control form-control-sm flex-1 min-w-0 mapping-card-tgt-schema"'
                             + ' data-index="' + idx + '" value="' + escapeHtml(block.targetSchema || '') + '"'
                             + ' title="' + escapeHtml(block.targetSchema || '') + '"'
                             + (isReadOnly() ? ' readonly' : '') + '/>'
                             + '</div>')
                         : '')
-                    + '<div class="mapping-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>';
+                    + '<div class="list-card-footer">#' + (block.index || (idx + 1)) + ' · 共 ' + count + ' 个对象</div>';
             }
             html += '</div>';
         });
@@ -1368,8 +1542,8 @@
     }
 
     function bindMappingSidebarEvents() {
-        $('#mappingCardList .mapping-card').off('click.selectCard').on('click.selectCard', function (e) {
-            if ($(e.target).closest('.mapping-card-remove, .mapping-card-tgt-db, .mapping-card-tgt-schema').length) {
+        $('#mappingCardList .list-card').off('click.selectCard').on('click.selectCard', function (e) {
+            if ($(e.target).closest('.list-card-remove, .mapping-card-tgt-db, .mapping-card-tgt-schema').length) {
                 return;
             }
             syncActiveMappingFromDetailPanel();
@@ -1379,7 +1553,7 @@
             renderMappingDetail(true);
         });
 
-        $('.mapping-card-remove').off('click.removeCard').on('click.removeCard', function (e) {
+        $('.list-card-remove').off('click.removeCard').on('click.removeCard', function (e) {
             e.stopPropagation();
             const idx = Number($(this).data('index'));
             showConfirm({
@@ -1432,7 +1606,7 @@
         const targetTable = row.targetTable || '';
         let html = '<tr data-r="' + rowIndex + '">'
             + '<td class="text-center text-tertiary">' + (row.index || (rowIndex + 1)) + '</td>'
-            + '<td class="db-sync-src-table" title="' + escapeHtml(sourceTable) + '">' + escapeHtml(sourceTable) + '</td>';
+            + '<td class="text-primary font-medium text-truncate" title="' + escapeHtml(sourceTable) + '">' + escapeHtml(sourceTable) + '</td>';
         if (isReadOnly()) {
             html += '<td title="' + escapeHtml(targetTable) + '">' + escapeHtml(targetTable) + '</td>';
         } else {
@@ -1587,22 +1761,22 @@
         const sourceTables = getCheckedSourceTableNames();
         if (!state.source.connectorId) {
             bootGrowl('请先选择源端连接器', 'warning');
-            return;
+            return false;
         }
         const pickerTargetId = getPickerTargetConnectorId();
         const sourceConnectorId = state.source.connectorId;
         const targetConnectorId = pickerTargetId || state.target.connectorId;
         if (!sourceConnectorId) {
             bootGrowl('请先选择源端连接器', 'warning');
-            return;
+            return false;
         }
         if (!targetConnectorId) {
             bootGrowl('请选择目标连接', 'warning');
-            return;
+            return false;
         }
         if (!isSameConnectorType(sourceConnectorId, targetConnectorId)) {
             bootGrowl('目标连接器必须与源端连接器同类型', 'warning');
-            return;
+            return false;
         }
         state.target.connectorId = targetConnectorId;
         setSelectValues(targetConnectorSelect, [targetConnectorId]);
@@ -1617,11 +1791,11 @@
             } else {
                 bootGrowl('请先选择源库', 'warning');
             }
-            return;
+            return false;
         }
         if (!sourceTables.length) {
             bootGrowl('请至少勾选一张源表，可使用「全选」', 'warning');
-            return;
+            return false;
         }
         const sourceDb = sourceIsOracle ? '' : (state.source.database || '');
         const sourceSchema = (state.source.schema || '').trim();
@@ -1643,11 +1817,11 @@
         if (targetIsOracle) {
             if (!defaultTargetSchema) {
                 bootGrowl('请填写目标 Schema', 'warning');
-                return;
+                return false;
             }
         } else if (!defaultTargetDb) {
             bootGrowl('目标库名不能为空', 'warning');
-            return;
+            return false;
         }
         const existIdx = findMappingIndex(sourceDb, sourceSchema, defaultTargetDb, defaultTargetSchema,
             sourceConnectorId, targetConnectorId);
@@ -1689,9 +1863,9 @@
             });
             state.activeMappingIndex = state.mappings.length - 1;
         }
-        closeTablePickerModal();
         renderMappingSidebar();
         renderMappingDetail(true);
+        return true;
     }
 
     function clearMappings() {
@@ -1712,7 +1886,7 @@
         state.target.connectorId = (first && first.targetConnectorId) || '';
         state.activeMappingIndex = state.mappings.length ? 0 : -1;
 
-        const $form = $('#database-syncer-form');
+        const $form = $('#database-sync-form');
         $form.find('input[name="name"]').val(task.name || '');
         $form.find('input[name="id"]').val(task.id || '');
 
@@ -1791,39 +1965,12 @@
 
     $(document).ready(function () {
         window.backIndexPage = function () {
-            doLoader('/database-syncer/list');
+            doLoader('/database-sync/list');
         };
 
         initSyncStrategyCheckboxStyle();
         bindSyncStrategyEvents();
         initConnectorOptionsCache();
-
-        sourceSchemaSelect = $('#sourceSchema').dbSelect({
-            type: 'single',
-            onSelect: function (selected) {
-                state.source.schema = selected.length ? selected[0] : '';
-                loadSourceTables($('#sourceTableSearch').val().trim(), true);
-                fillTargetFromSource();
-                onPickerSourceContextChange();
-            }
-        });
-
-        sourceDbSelect = $('#sourceDatabase').dbSelect({
-            type: 'single',
-            onSelect: function (selected) {
-                state.source.database = selected.length ? selected[0] : '';
-                state.source.schema = '';
-                if (sourceSchemaSelect && typeof sourceSchemaSelect.setValues === 'function') {
-                    sourceSchemaSelect.setValues([], true);
-                }
-                if (state.source.connectorId) {
-                    onDBChange(state.source.connectorId, sourceSchemaSelect, state.source.database);
-                }
-                loadSourceTables(null, true);
-                fillTargetFromSource();
-                onPickerSourceContextChange();
-            }
-        });
 
         sourceConnectorSelect = $('#sourceConnectorId').dbSelect({
             type: 'single',
@@ -1846,9 +1993,9 @@
                 if (block) {
                     block.targetConnectorId = id;
                     syncMappingsJson();
-                    const $card = $('#mappingCardList .mapping-card.is-active');
+                    const $card = $('#mappingCardList .list-card.is-active');
                     if ($card.length) {
-                        $card.find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
+                        $card.find('.list-card-target').html(formatMappingCardTargetLineHtml(block));
                     }
                 }
                 setSelectValues(pickerTargetConnectorSelect, id ? [id] : []);
@@ -1857,44 +2004,16 @@
             }
         });
 
-        if ($('#pickerTargetConnectorId').length) {
-            pickerTargetConnectorSelect = $('#pickerTargetConnectorId').dbSelect({
-                type: 'single',
-                disabled: isReadOnly(),
-                onSelect: function (ids) {
-                    state.target.connectorId = ids.length ? ids[0] : '';
-                    setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
-                    updateTargetSchemaVisibility();
-                    updateTargetDatabaseFieldVisibility();
-                    refreshMappingCardFlows();
-                }
-            });
-        }
-
         bindDetailPanelEvents();
         refreshTargetConnectorOptions();
-        updateSourceDatabaseFieldVisibility();
         updateTargetSchemaVisibility();
 
-        let srcSearchTimer = null;
-        $('#sourceTableSearch').on('input', function () {
-            clearTimeout(srcSearchTimer);
-            const key = $(this).val().trim();
-            srcSearchTimer = setTimeout(function () { loadSourceTables(key, true); }, 300);
-        });
-
-        bindTableTreeScroll();
-        bindTableTreeEvents();
-
-        $('#btnClearAllTables').on('click', clearAllSourceTables);
         $('#btnAddDbMapping').on('click', openTablePickerModal);
-        $('#btnConfirmTablePicker').on('click', addDatabaseMapping);
-        $('#btnCancelTablePicker, #btnCloseTablePicker, #tablePickerModalBackdrop').on('click', closeTablePickerModal);
 
-        $('#database-syncer-submit-btn').on('click', function () {
+        $('#database-sync-submit-btn').on('click', function () {
             syncActiveMappingFromDetailPanel();
             syncMappingsJson();
-            const $form = $('#database-syncer-form');
+            const $form = $('#database-sync-form');
             if (!validateForm($form)) {
                 return;
             }
@@ -1916,7 +2035,7 @@
             }
             const btn = $(this);
             const original = btn.html();
-            const saveUrl = isEditMode() ? '/database-syncer/edit' : '/database-syncer/add';
+            const saveUrl = isEditMode() ? '/database-sync/edit' : '/database-sync/add';
             btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
             doPoster(saveUrl, $form.serializeJson(), function (response) {
                 btn.html(original).prop('disabled', false);

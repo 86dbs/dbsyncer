@@ -116,6 +116,18 @@ select.form-control.is-invalid,
   width: 100%;
 }
 
+.form-item .form-control-area {
+  min-width: 0;
+}
+
+.form-item .form-control-area > .dbsyncer-select,
+.form-item > select,
+.form-item > .dbsyncer-select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 @media (max-width: 768px) {
   .form-item { 
     grid-template-columns: 1fr; 

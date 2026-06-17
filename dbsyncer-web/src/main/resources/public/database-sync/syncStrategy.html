@@ -56,9 +56,11 @@
     </div>
 </div>
 
-<div th:fragment="content" class="database-sync-strategy mt-4">
-    <h3 class="mb-3"><i class="fa fa-cogs text-primary"></i> 迁移策略</h3>
-    <div class="grid grid-cols-2 gap-6">
+<div th:fragment="content" class="database-sync-strategy">
+    <h4 class="mb-3 font-medium">
+        <i class="fa fa-cogs text-primary"></i> 迁移策略
+    </h4>
+    <div class="grid grid-cols-2 gap-4">
         <!-- 复制表结构 -->
         <div class="flex items-center gap-6 flex-wrap">
             <div class="checkbox-group checkbox-group-inline ds-strategy-enable-group mb-0">

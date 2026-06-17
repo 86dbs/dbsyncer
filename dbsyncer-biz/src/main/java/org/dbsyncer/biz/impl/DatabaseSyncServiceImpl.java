@@ -242,7 +242,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
 
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(
-                "database-syncer-preview",
+                "database-sync-preview",
                 connectorId, database, schema,
                 connectorId, database, schema,
                 true);

@@ -278,3 +278,21 @@ tr[draggable="true"]:hover {
 .pagination-bar > *:not(:first-child) {
   margin-left: var(--spacing-sm);
 }
+
+/* 表格滚动区（工作区详情等） */
+.table-scroll-panel {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.table-scroll-panel .table {
+  margin-bottom: 0;
+}
+
+.table-scroll-panel .table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-primary);
+  z-index: 1;
+}

@@ -1,7 +1,9 @@
 /**
  * 确认对话框组件
  * @param {Object} options - 配置选项
- *   - title: 对话框标题（必需）
+ *   - title: 对话框标题（与 titleHtml 二选一，或同时提供时 title 作为纯文本标题）
+ *   - titleHtml: 自定义标题 HTML（不转义，替代默认 h3 标题）
+ *   - titleExtra: 标题下方扩展 HTML（不转义，如统计摘要等）
  *   - message: 对话框内容信息
  *   - body: 对话框主体HTML内容（可选）
  *   - icon: 图标类型（info/warning/error/success，默认 info）
@@ -9,6 +11,11 @@
  *   - cancelText: 取消按钮文本（默认 '取消'）
  *   - confirmType: 确认按钮类型（primary/success/warning/danger/info，默认 primary）
  *   - size: 对话框大小（normal/large/max，默认 normal）
+ *   - position: 弹窗位置（top/center，默认 center）
+ *   - showConfirm: 是否显示确认按钮（默认 true）
+ *   - showCancel: 是否显示取消按钮（默认 true）
+ *   - closeOnConfirm: 点击确认后是否关闭（默认 true）
+ *   - closeOnCancel: 点击取消后是否关闭（默认 true）
  *   - onConfirm: 确认回调函数
  *   - onCancel: 取消回调函数（可选）
  */
@@ -29,14 +36,16 @@
         options = options || {};
         
         // 参数验证
-        if (!options.title) {
-            console.warn('[showConfirm] 缺少必要参数: title');
+        if (!options.title && !options.titleHtml) {
+            console.warn('[showConfirm] 缺少必要参数: title 或 titleHtml');
             return;
         }
 
         // 默认配置
         const config = {
             title: options.title || '',
+            titleHtml: options.titleHtml || '',
+            titleExtra: options.titleExtra || '',
             message: options.message || '',
             body: options.body || '',
             icon: options.icon || 'info',
@@ -44,6 +53,11 @@
             cancelText: options.cancelText || '取消',
             confirmType: options.confirmType || 'primary',
             size: options.size || 'normal',
+            position: options.position || 'center',
+            showConfirm: options.showConfirm !== false,
+            showCancel: options.showCancel !== false,
+            closeOnConfirm: options.closeOnConfirm !== false,
+            closeOnCancel: options.closeOnCancel !== false,
             onConfirm: options.onConfirm || function() {},
             onCancel: options.onCancel || function() {}
         };
@@ -58,6 +72,11 @@
         const validSizes = ['normal', 'large', 'max'];
         if (validSizes.indexOf(config.size) === -1) {
             config.size = 'normal';
+        }
+
+        const validPositions = ['top', 'center'];
+        if (validPositions.indexOf(config.position) === -1) {
+            config.position = 'center';
         }
 
         // 验证确认按钮类型
@@ -83,7 +102,7 @@
         
         const overlay = document.createElement('div');
         overlay.id = overlayId;
-        overlay.className = 'confirm-overlay';
+        overlay.className = 'confirm-overlay confirm-overlay-position-' + config.position;
 
         const dialog = document.createElement('div');
         dialog.id = dialogId;
@@ -91,14 +110,21 @@
 
         // 构建头部HTML
         let headerHTML = '';
-        if (config.title || config.message) {
+        if (config.title || config.titleHtml || config.message || config.titleExtra) {
+            let titleHTML = '';
+            if (config.titleHtml) {
+                titleHTML = `<div class="confirm-title-html">${config.titleHtml}</div>`;
+            } else if (config.title) {
+                titleHTML = `<h3 class="confirm-title">${escapeHtml(config.title)}</h3>`;
+            }
             headerHTML = `
                 <div class="confirm-header">
                     <div class="confirm-icon icon-${config.icon}">
                         ${getIconHTML()}
                     </div>
                     <div class="confirm-content-wrapper">
-                        ${config.title ? `<h3 class="confirm-title">${escapeHtml(config.title)}</h3>` : ''}
+                        ${titleHTML}
+                        ${config.titleExtra ? `<div class="confirm-title-extra">${config.titleExtra}</div>` : ''}
                         ${config.message ? `<p class="confirm-message">${escapeHtml(config.message)}</p>` : ''}
                     </div>
                 </div>
@@ -111,25 +137,30 @@
             bodyHTML = `<div class="confirm-body">${config.body}</div>`;
         }
 
+        let footerHTML = '';
+        if (config.showConfirm || config.showCancel) {
+            let footerButtons = '';
+            if (config.showConfirm) {
+                footerButtons += `<button class="btn confirm-btn confirm-btn-confirm confirm-btn-type-${config.confirmType}">${escapeHtml(config.confirmText)}</button>`;
+            }
+            if (config.showCancel) {
+                footerButtons += `<button class="btn confirm-btn confirm-btn-cancel">${escapeHtml(config.cancelText)}</button>`;
+            }
+            footerHTML = `<div class="confirm-footer">${footerButtons}</div>`;
+        }
+
         dialog.innerHTML = `
             ${headerHTML}
             ${bodyHTML}
-            <div class="confirm-footer">
-                <button id="confirm-btn-confirm-${Date.now()}" class="btn confirm-btn confirm-btn-type-${config.confirmType}">
-                    ${escapeHtml(config.confirmText)}
-                </button>
-                <button id="confirm-btn-cancel-${Date.now()}" class="btn confirm-btn confirm-btn-cancel">
-                    ${escapeHtml(config.cancelText)}
-                </button>
-            </div>
+            ${footerHTML}
         `;
 
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
         // 获取按钮
-        const confirmBtn = dialog.querySelector('button:first-child');
-        const cancelBtn = dialog.querySelector('button:last-child');
+        const confirmBtn = dialog.querySelector('.confirm-btn-confirm');
+        const cancelBtn = dialog.querySelector('.confirm-btn-cancel');
 
         let closed = false;
 
@@ -154,32 +185,40 @@
         }
 
         function triggerConfirm() {
-            closeConfirm();
             if (typeof config.onConfirm === 'function') {
                 config.onConfirm();
+            }
+            if (config.closeOnConfirm) {
+                closeConfirm();
             }
         }
 
         function triggerCancel() {
-            closeConfirm();
             if (typeof config.onCancel === 'function') {
                 config.onCancel();
+            }
+            if (config.closeOnCancel) {
+                closeConfirm();
             }
         }
 
         // 确认按钮事件
-        confirmBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            triggerConfirm();
-        });
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerConfirm();
+            });
+        }
 
         // 取消按钮事件
-        cancelBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            triggerCancel();
-        });
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerCancel();
+            });
+        }
 
         // 点击非对话框区域关闭
         overlay.addEventListener('click', function(e) {
@@ -197,10 +236,12 @@
                 }
                 e.preventDefault();
                 e.stopPropagation();
-                if (document.activeElement === cancelBtn) {
+                if (cancelBtn && document.activeElement === cancelBtn) {
                     triggerCancel();
-                } else {
+                } else if (confirmBtn) {
                     triggerConfirm();
+                } else if (cancelBtn) {
+                    triggerCancel();
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
@@ -214,7 +255,11 @@
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
-        confirmBtn.focus();
+        if (confirmBtn) {
+            confirmBtn.focus();
+        } else if (cancelBtn) {
+            cancelBtn.focus();
+        }
 
         return {
             close: closeConfirm,

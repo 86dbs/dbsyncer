@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+    <p class="text-secondary mb-6">
+        暂未开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+    <div class="mb-6">
+        <img width="383px" height="127px" draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
+    </div>
+</div>
+
+<!-- 整库迁移列表 -->
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">整库迁移</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="database-sync-search" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索任务名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" onclick="doLoader('/database-sync/pageAdd')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>任务名称</th>
+                <th>库映射数</th>
+                <th>结果</th>
+                <th>状态</th>
+                <th>最后执行</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="database-sync-table"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script th:if="${editionInfo.edition ne 'community'}" th:src="@{/js/database-sync/database-sync-list.js}"></script>
+</html>

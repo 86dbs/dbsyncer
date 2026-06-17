@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletRequest;
  * @date 2026-05-22 00:00
  */
 @Controller
-@RequestMapping("/database-syncer")
+@RequestMapping("/database-sync")
 public class DatabaseSyncController extends BaseController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -51,7 +51,7 @@ public class DatabaseSyncController extends BaseController {
     @RequestMapping("/list")
     public String list(ModelMap model) {
         initEditionInfo(model);
-        return "database-syncer/list";
+        return "database-sync/list";
     }
 
     private void initEditionInfo(ModelMap model) {
@@ -68,7 +68,7 @@ public class DatabaseSyncController extends BaseController {
     public String pageAdd(ModelMap model) {
         model.put("connectors", connectorService.getConnectorAll());
         model.put("readOnly", false);
-        return "database-syncer/add";
+        return "database-sync/add";
     }
 
     /**
@@ -92,7 +92,7 @@ public class DatabaseSyncController extends BaseController {
             int status = task.getStatus() != null ? task.getStatus() : CommonTaskStatusEnum.READY.getCode();
             model.put("readOnly", status != CommonTaskStatusEnum.READY.getCode());
         }
-        return "database-syncer/" + page;
+        return "database-sync/" + page;
     }
 
     @PostMapping("/search")

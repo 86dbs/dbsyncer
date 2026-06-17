@@ -11,12 +11,20 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.45);
   display: flex;
-  align-items: flex-start;
   justify-content: center;
-  padding-top: 60px;
   z-index: var(--z-confirm, 1080);
   animation: confirm-overlay-show 0.2s ease;
   overflow-y: auto;
+}
+
+.confirm-overlay.confirm-overlay-position-center {
+  align-items: center;
+  padding: 24px 0;
+}
+
+.confirm-overlay.confirm-overlay-position-top {
+  align-items: flex-start;
+  padding-top: 60px;
 }
 
 .confirm-overlay.hidden {
@@ -115,6 +123,21 @@
   margin: 0;
 }
 
+.confirm-title-html {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.confirm-title-extra {
+  margin-top: var(--spacing-sm);
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
 .confirm-message {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
@@ -182,6 +205,24 @@
 
 .confirm-body:empty {
   padding: 0;
+}
+
+/* 表选择弹窗：表单布局，避免 confirm-body 默认换行规则影响控件对齐 */
+.confirm-body .table-picker-body {
+  white-space: normal;
+  word-break: normal;
+}
+
+.confirm-body .table-picker-body .grid > .form-item {
+  min-width: 0;
+}
+
+.confirm-dialog.size-max .confirm-body:has(.table-picker-body) {
+  max-height: 62vh;
+}
+
+.confirm-body .table-picker-body .picker-scroll {
+  height: min(320px, 36vh);
 }
 
 /* 对话框脚部 */
