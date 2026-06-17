@@ -39,6 +39,7 @@
                             <option value="">请选择连接器</option>
                             <option th:each="c : ${connectors}" th:value="${c?.id}"
                                     th:attr="data-connector-type=${c?.config?.connectorType}"
+                                    th:disabled="${#strings.equalsIgnoreCase(c?.config?.connectorType, 'ClickHouse') or #strings.equalsIgnoreCase(c?.config?.connectorType, 'OceanBase')}"
                                     th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                         </select>
                     </div>

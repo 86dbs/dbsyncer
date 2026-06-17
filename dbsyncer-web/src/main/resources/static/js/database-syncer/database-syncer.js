@@ -40,6 +40,8 @@
     let pickerTargetConnectorSelect = null;
     /** 页面加载时的全部连接器选项，用于按源端类型筛选目标连接器 */
     let allConnectorOptions = [];
+    /** 暂不支持作为源端的连接器类型 */
+    const UNSUPPORTED_SOURCE_CONNECTOR_TYPES = ['clickhouse', 'oceanbase'];
     let tableTreeScrollBound = false;
     let tableCbSeq = 0;
     let initializing = false;
@@ -146,6 +148,47 @@
 
     function normalizeConnectorType(connectorType) {
         return (connectorType || '').trim().toLowerCase();
+    }
+
+    function isUnsupportedSourceConnectorType(connectorType) {
+        return UNSUPPORTED_SOURCE_CONNECTOR_TYPES.indexOf(normalizeConnectorType(connectorType)) >= 0;
+    }
+
+    function isUnsupportedSourceConnector(connectorId) {
+        return isUnsupportedSourceConnectorType(getConnectorTypeById(connectorId));
+    }
+
+    function isSourceConnectorOptionDisabled(connectorType) {
+        return isUnsupportedSourceConnectorType(connectorType);
+    }
+
+    function refreshSourceConnectorOptions() {
+        if (!sourceConnectorSelect || typeof sourceConnectorSelect.setData !== 'function') {
+            return;
+        }
+        const options = [{ label: '请选择连接器', value: '', disabled: false }].concat(
+            allConnectorOptions.map(function (item) {
+                return {
+                    label: item.label,
+                    value: item.value,
+                    disabled: isSourceConnectorOptionDisabled(item.connectorType)
+                };
+            })
+        );
+        const current = state.source.connectorId || '';
+        const keepDisabledSelection = isEditMode() && current && isUnsupportedSourceConnector(current);
+        const validCurrent = current && options.some(function (item) {
+            return item.value === current && (!item.disabled || keepDisabledSelection);
+        });
+        const nextId = validCurrent ? current : '';
+        sourceConnectorSelect.setData(options);
+        sourceConnectorSelect.setValues(nextId ? [nextId] : [], true);
+        if (!validCurrent && current) {
+            state.source.connectorId = '';
+            lastSourceConnectorId = '';
+        } else {
+            state.source.connectorId = nextId;
+        }
     }
 
     function isOracleConnector(connectorId) {
@@ -680,6 +723,15 @@
             refreshTargetConnectorOptions();
             return;
         }
+        if (!initializing && isUnsupportedSourceConnector(connectorId)) {
+            const rollbackId = lastSourceConnectorId && !isUnsupportedSourceConnector(lastSourceConnectorId)
+                ? lastSourceConnectorId
+                : '';
+            setSelectValues(sourceConnectorSelect, rollbackId ? [rollbackId] : [], true);
+            state.source.connectorId = rollbackId;
+            refreshTargetConnectorOptions();
+            return;
+        }
         const sourceChanged = lastSourceConnectorId && lastSourceConnectorId !== connectorId;
         if (sourceChanged && !initializing) {
             resetSourcePickerContext();
@@ -1203,7 +1255,7 @@
             bootGrowl('请先选择源端连接器', 'warning');
             return;
         }
-        resetTablePickerForm();
+        // resetTablePickerForm();
         ensureSourcePickerOptionsLoaded();
         refreshTargetConnectorOptions();
         refreshPickerTargetDefaults();
@@ -1751,6 +1803,7 @@
                 updateTargetSchemaVisibility();
             }
         });
+        refreshSourceConnectorOptions();
 
         targetConnectorSelect = $('#targetConnectorId').dbSelect({
             type: 'single',
@@ -1816,6 +1869,9 @@
             }
             if (!state.mappings.length) {
                 bootGrowl('请至少添加一组库映射', 'warning');
+                return;
+            }
+            if (isUnsupportedSourceConnector(state.source.connectorId)) {
                 return;
             }
             for (let i = 0; i < state.mappings.length; i++) {
