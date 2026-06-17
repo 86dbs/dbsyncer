@@ -99,4 +99,26 @@ public final class DatabaseMigrationProgressComputer {
         return count;
     }
 
+    /**
+     * 列表展示的已完成表数：与 {@link #calculateProgressPercent} 使用同一套步骤计数，
+     * 换算为等效整表完成数（避免「进度 33% 但仍显示 0/65 张表」）。
+     */
+    public static int countCompletedTables(DatabaseMigrationSyncTask task, int totalTableCount) {
+        if (task == null) {
+            return 0;
+        }
+        if (task.getProcessed() != null && task.getProcessed() == 1 && totalTableCount > 0) {
+            return totalTableCount;
+        }
+        int stepsPerTable = getStepsPerTable(task);
+        if (stepsPerTable <= 0 || totalTableCount <= 0) {
+            return 0;
+        }
+        long completedDbSteps = countCompletedDatabaseSteps(task);
+        long completedTableSteps = countCompletedTableSteps(task, stepsPerTable);
+        long totalCompletedSteps = completedDbSteps + completedTableSteps;
+        int equivalentTables = (int) (totalCompletedSteps / stepsPerTable);
+        return Math.min(equivalentTables, totalTableCount);
+    }
+
 }

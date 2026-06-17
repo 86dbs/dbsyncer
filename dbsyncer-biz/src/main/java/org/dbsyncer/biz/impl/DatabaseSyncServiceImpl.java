@@ -173,8 +173,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
-                    int tableCount = CollectionUtils.isEmpty(tableGroups) ? 0 : tableGroups.size();
+                    int tableCount = resolveTotalTableCount(task, tableGroups);
                     vo.setProgress(DatabaseMigrationProgressComputer.calculateProgressPercent(task, tableCount));
+                    vo.setTotalTableCount(tableCount);
+                    vo.setCompletedTableCount(DatabaseMigrationProgressComputer.countCompletedTables(task, tableCount));
                     vo.setErrorCount(countMigrationDetailErrors(task.getId()));
                     list.add(vo);
                 }
@@ -402,6 +404,22 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         int to = Math.min(from + limit, total);
         result.put("hasMore", to < total);
         return result;
+    }
+
+    private int resolveTotalTableCount(DatabaseMigrationSyncTask task, List<TableGroup> tableGroups) {
+        if (!CollectionUtils.isEmpty(tableGroups)) {
+            return tableGroups.size();
+        }
+        if (task == null || CollectionUtils.isEmpty(task.getDatabaseMappings())) {
+            return 0;
+        }
+        int count = 0;
+        for (DatabaseMapping mapping : task.getDatabaseMappings()) {
+            if (!CollectionUtils.isEmpty(mapping.getTableMappings())) {
+                count += mapping.getTableMappings().size();
+            }
+        }
+        return count;
     }
 
     private long countMigrationDetailErrors(String taskId) {

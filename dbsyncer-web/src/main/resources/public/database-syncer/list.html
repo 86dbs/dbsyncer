@@ -149,6 +149,21 @@
     /**
      * 结果列：进度 + 异常条数 + 任务耗时（执行完成后）
      */
+    function renderTableProgressText(task) {
+        var total = Number(task.totalTableCount);
+        var completed = Number(task.completedTableCount);
+        if (isNaN(total) || total <= 0) {
+            return '';
+        }
+        if (isNaN(completed) || completed < 0) {
+            completed = 0;
+        }
+        if (completed > total) {
+            completed = total;
+        }
+        return '<span class="text-xs text-secondary" style="white-space: nowrap;">' + completed + '/' + total + '张表</span>';
+    }
+
     function renderTaskDurationText(task) {
         var isRunning = Number(task.status) === 1;
         if (isRunning) {
@@ -194,6 +209,8 @@
             } else if (progress >= 60) {
                 state = 'warning';
             }
+        } else if (Number(task.processed) !== 1 && Number(task.endTime) > 0 && progress < 100) {
+            state = 'warning';
         } else if (n > 0) {
             state = 'danger';
         }
@@ -203,13 +220,24 @@
                 + 'onclick="doLoader(\'/database-syncer/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
                 + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
+        var tableProgressHtml = renderTableProgressText(task);
         var durationHtml = renderTaskDurationText(task);
+        var centerParts = [];
+        if (tableProgressHtml) {
+            centerParts.push(tableProgressHtml);
+        }
+        if (durationHtml) {
+            centerParts.push(durationHtml);
+        }
+        var centerHtml = centerParts.length
+            ? ('<span class="progress-duration" style="flex: 1; text-align: center;">' + centerParts.join(' · ') + '</span>')
+            : '';
         var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
         return ''
             + '<div style="min-width: 180px;">'
             + '  <div class="progress-header" style="margin-bottom: 6px;">'
             + '    <span class="progress-title">' + left + '</span>'
-            + (durationHtml ? ('<span class="progress-duration" style="flex: 1; text-align: center;">' + durationHtml + '</span>') : '')
+            + centerHtml
             + '    <span class="progress-value progress-value-' + state + '" style="font-size: 12px; font-weight: 600;">' + rightText + '</span>'
             + '  </div>'
             + '  <div class="progress-bar" style="height: 6px; margin-bottom: 0;">'

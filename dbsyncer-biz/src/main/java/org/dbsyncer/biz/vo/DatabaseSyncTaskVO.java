@@ -24,6 +24,10 @@ public final class DatabaseSyncTaskVO extends DatabaseMigrationSyncTask {
     private BigDecimal progress;
     /** 失败明细条数（failTotal > 0） */
     private long errorCount;
+    /** 任务总表数（TableGroup 数量） */
+    private int totalTableCount;
+    /** 已完成表数（运行快照中已全部完成的表） */
+    private int completedTableCount;
 
     public DatabaseSyncTaskVO(Connector sourceConnector, Connector targetConnector) {
         this.sourceConnector = sourceConnector;
@@ -60,5 +64,21 @@ public final class DatabaseSyncTaskVO extends DatabaseMigrationSyncTask {
 
     public void setErrorCount(long errorCount) {
         this.errorCount = errorCount;
+    }
+
+    public int getTotalTableCount() {
+        return totalTableCount;
+    }
+
+    public void setTotalTableCount(int totalTableCount) {
+        this.totalTableCount = totalTableCount;
+    }
+
+    public int getCompletedTableCount() {
+        return completedTableCount;
+    }
+
+    public void setCompletedTableCount(int completedTableCount) {
+        this.completedTableCount = completedTableCount;
     }
 }
