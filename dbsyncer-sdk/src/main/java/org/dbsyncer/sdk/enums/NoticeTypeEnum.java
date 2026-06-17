@@ -36,11 +36,17 @@ public enum NoticeTypeEnum {
      */
     VALIDATE_SYNC_FAIL(5),
     /**
-     * 系统消息
+     * 授权异常
      */
-    SYSTEM_MESSAGE(6);
-
-
+    LICENSE_EXCEPTION(6),
+    /**
+     * 授权到期提醒
+     */
+    LICENSE_EXPIRE_REMIND(7),
+    /**
+     * 授权已过期
+     */
+    LICENSE_EXPIRED(8);
 
     private final int code;
 

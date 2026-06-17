@@ -5,9 +5,8 @@ package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.plugin.model.*;
-import org.dbsyncer.sdk.model.NoticeContent;
-
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.model.NoticeContent;
 
 /**
  * WebHook通知服务实现基类

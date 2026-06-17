@@ -8,26 +8,8 @@
         <p class="text-xs text-tertiary"></p>
     </div>
     <div class="card-body">
-        <h3 class="card-title">触发条件</h3>
-        <p class="text-xs text-tertiary mb-2">间隔10分钟扫描一次，勾选后将发送对应类型的告警。</p>
+        <p class="text-xs text-tertiary mb-4">告警策略由系统内置，此处配置全局通知渠道。</p>
         <form id="notice-form-edit">
-            <div id="notice-trigger-scope" class="checkbox-group mt-2 mb-4">
-                <input type="checkbox" name="enableMappingError" value="true"
-                       th:checked="${config == null or config.enableMappingError}" />
-                <label>同步任务有失败数据</label>
-                <input type="checkbox" name="enableMappingStop" value="true"
-                       th:checked="${config == null or config.enableMappingStop}" />
-                <label>手动停止驱动</label>
-                <input type="checkbox" name="enableConnectorOffline" value="true"
-                       th:checked="${config == null or config.enableConnectorOffline}" />
-                <label>连接离线</label>
-                <input type="checkbox" name="enableValidateSyncFail" value="true"
-                       th:checked="${config == null or config.enableValidateSyncFail}" />
-                <label>订正校验失败</label>
-                <input type="checkbox" name="enableSystemMessage" value="true"
-                       th:checked="${config == null or config.enableSystemMessage}" />
-                <label>系统消息</label>
-            </div>
             <!-- 管理员操作区域 -->
             <div class="form-actions mb-4">
                 <button id="testNoticeBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
@@ -190,15 +172,6 @@
 </div>
 
 <script>
-    function validateNoticeTriggerScope($form) {
-        var checked = $form.find('#notice-trigger-scope input[type="checkbox"]:checked').length > 0;
-        if (!checked) {
-            bootGrowl('请至少勾选一项触发条件。', 'danger');
-            return false;
-        }
-        return true;
-    }
-
     $(function () {
         // 定义切换显示/隐藏的函数
         function toggleConfigItems(checked, items) {
@@ -219,18 +192,11 @@
         initSwitchToggle('enableHttp', $('.http-config'));
         initSwitchToggle('enableWechat', $('.wechat-config'));
         initSwitchToggle('enableDingTalk', $('.dingtalk-config'));
-        $('#notice-trigger-scope').checkboxGroup({
-            theme: 'info',
-            size: 'md'
-        });
         // 绑定多值输入框事件
         initMultipleInputTags();
         //保存
         $("#updateNoticeBtn").click(function () {
             const $form = $("#notice-form-edit");
-            if (!validateNoticeTriggerScope($form)) {
-                return;
-            }
             if (validateForm($form)) {
                 const submitBtn = $(this);
                 const originalText = submitBtn.html();
