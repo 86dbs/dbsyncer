@@ -38,6 +38,7 @@
                         <select id="sourceConnectorId" class="form-control" th:disabled="${readOnly}">
                             <option value="">请选择连接器</option>
                             <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                    th:attr="data-connector-type=${c?.config?.connectorType}"
                                     th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                         </select>
                     </div>
@@ -73,6 +74,7 @@
                                         <select id="targetConnectorId" class="form-control" th:disabled="${readOnly}">
                                             <option value="">请选择连接器</option>
                                             <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                                    th:attr="data-connector-type=${c?.config?.connectorType}"
                                                     th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                                         </select>
                                     </div>
@@ -167,6 +169,7 @@
                             <select id="pickerTargetConnectorId" class="form-control" th:disabled="${readOnly}">
                                 <option value="">请选择连接器</option>
                                 <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                        th:attr="data-connector-type=${c?.config?.connectorType}"
                                         th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
                             </select>
                         </div>

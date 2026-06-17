@@ -26,7 +26,7 @@ public final class DefaultNoticeStrategies {
     public static final String INTERVAL_1D = "interval_1d";
 
     private static final String CRON_EVERY_10M = "0 */10 * * * ?";
-    private static final String CRON_DAILY_9AM = "0 0 9 * * ?";
+    private static final String CRON_DAILY_9AM = "0 13 16 * * ?";
 
     private DefaultNoticeStrategies() {
     }

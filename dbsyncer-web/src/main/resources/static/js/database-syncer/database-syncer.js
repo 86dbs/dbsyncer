@@ -38,6 +38,8 @@
     let sourceConnectorSelect = null;
     let targetConnectorSelect = null;
     let pickerTargetConnectorSelect = null;
+    /** 页面加载时的全部连接器选项，用于按源端类型筛选目标连接器 */
+    let allConnectorOptions = [];
     let tableTreeScrollBound = false;
     let tableCbSeq = 0;
     let initializing = false;
@@ -52,13 +54,94 @@
         return page.mode === 'edit';
     }
 
+    function getConnectorTypeFromOption($option) {
+        if (!$option || !$option.length) {
+            return '';
+        }
+        const dataType = ($option.attr('data-connector-type') || '').trim();
+        if (dataType) {
+            return dataType;
+        }
+        const text = $option.text() || '';
+        const match = text.match(/\(([^()]+)\)\s*$/);
+        return match && match[1] ? match[1].trim() : '';
+    }
+
     function getConnectorTypeBySelect(selectId, connectorId) {
         if (!connectorId) {
             return '';
         }
-        const text = $('#' + selectId + ' option[value="' + connectorId + '"]').text() || '';
-        const match = text.match(/\(([^()]+)\)\s*$/);
-        return match && match[1] ? match[1].trim() : '';
+        const $option = $('#' + selectId + ' option[value="' + connectorId + '"]');
+        if ($option.length) {
+            return getConnectorTypeFromOption($option);
+        }
+        const cached = allConnectorOptions.find(function (item) {
+            return item.value === connectorId;
+        });
+        return cached ? cached.connectorType : '';
+    }
+
+    function initConnectorOptionsCache() {
+        allConnectorOptions = [];
+        $('#sourceConnectorId option').each(function () {
+            const value = ($(this).val() || '').trim();
+            if (!value) {
+                return;
+            }
+            allConnectorOptions.push({
+                label: $(this).text().trim(),
+                value: value,
+                connectorType: getConnectorTypeFromOption($(this)),
+                disabled: !!$(this).prop('disabled')
+            });
+        });
+    }
+
+    function isSameConnectorType(sourceConnectorId, targetConnectorId) {
+        const sourceType = normalizeConnectorType(getConnectorTypeById(sourceConnectorId));
+        const targetType = normalizeConnectorType(getConnectorTypeById(targetConnectorId));
+        return !!(sourceType && targetType && sourceType === targetType);
+    }
+
+    function refreshTargetConnectorOptions() {
+        const sourceType = normalizeConnectorType(getConnectorTypeById(state.source.connectorId));
+        const filtered = sourceType
+            ? allConnectorOptions.filter(function (item) {
+                return normalizeConnectorType(item.connectorType) === sourceType;
+            })
+            : [];
+        const options = [{ label: '请选择连接器', value: '', disabled: false }].concat(
+            filtered.map(function (item) {
+                return { label: item.label, value: item.value, disabled: item.disabled };
+            })
+        );
+        const current = state.target.connectorId || '';
+        const validCurrent = current && filtered.some(function (item) {
+            return item.value === current;
+        });
+        const nextId = validCurrent ? current : '';
+
+        function applySelect(select) {
+            if (!select || typeof select.setData !== 'function') {
+                return;
+            }
+            select.setData(options);
+            select.setValues(nextId ? [nextId] : [], true);
+        }
+
+        applySelect(targetConnectorSelect);
+        applySelect(pickerTargetConnectorSelect);
+
+        if (!validCurrent && current) {
+            state.target.connectorId = '';
+            const block = getActiveMappingBlock();
+            if (block && block.targetConnectorId === current) {
+                block.targetConnectorId = '';
+                syncMappingsJson();
+            }
+        } else {
+            state.target.connectorId = nextId;
+        }
     }
 
     function normalizeConnectorType(connectorType) {
@@ -386,6 +469,7 @@
         if (sourceConnectorId) {
             setSelectValues(sourceConnectorSelect, [sourceConnectorId]);
         }
+        refreshTargetConnectorOptions();
         $('#detailTargetDatabase').val(block.targetDatabase || '');
         $('#detailTargetSchema').val(block.targetSchema || '');
         if (targetConnectorId) {
@@ -593,6 +677,7 @@
             state.source.connectorId = '';
             clearMappings();
             lastSourceConnectorId = '';
+            refreshTargetConnectorOptions();
             return;
         }
         const sourceChanged = lastSourceConnectorId && lastSourceConnectorId !== connectorId;
@@ -601,6 +686,7 @@
         }
         lastSourceConnectorId = connectorId;
         state.source.connectorId = connectorId;
+        refreshTargetConnectorOptions();
         updateSourceDatabaseFieldVisibility();
         if (isOracleSourceConnector()) {
             state.source.database = '';
@@ -1119,6 +1205,7 @@
         }
         resetTablePickerForm();
         ensureSourcePickerOptionsLoaded();
+        refreshTargetConnectorOptions();
         refreshPickerTargetDefaults();
         updateSourceDatabaseFieldVisibility();
         updateTargetSchemaVisibility();
@@ -1430,6 +1517,10 @@
             bootGrowl('请选择目标连接', 'warning');
             return;
         }
+        if (!isSameConnectorType(sourceConnectorId, targetConnectorId)) {
+            bootGrowl('目标连接器必须与源端连接器同类型', 'warning');
+            return;
+        }
         state.target.connectorId = targetConnectorId;
         setSelectValues(targetConnectorSelect, [targetConnectorId]);
         setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
@@ -1622,6 +1713,7 @@
 
         initSyncStrategyCheckboxStyle();
         bindSyncStrategyEvents();
+        initConnectorOptionsCache();
 
         sourceSchemaSelect = $('#sourceSchema').dbSelect({
             type: 'single',
@@ -1696,6 +1788,7 @@
         }
 
         bindDetailPanelEvents();
+        refreshTargetConnectorOptions();
         updateSourceDatabaseFieldVisibility();
         updateTargetSchemaVisibility();
 
@@ -1724,6 +1817,15 @@
             if (!state.mappings.length) {
                 bootGrowl('请至少添加一组库映射', 'warning');
                 return;
+            }
+            for (let i = 0; i < state.mappings.length; i++) {
+                const mapping = state.mappings[i];
+                const srcId = getMappingSourceConnectorId(mapping);
+                const tgtId = getMappingTargetConnectorId(mapping);
+                if (!isSameConnectorType(srcId, tgtId)) {
+                    bootGrowl('库映射 #' + (i + 1) + '：目标连接器必须与源端连接器同类型', 'warning');
+                    return;
+                }
             }
             const btn = $(this);
             const original = btn.html();

@@ -602,6 +602,7 @@
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   white-space: nowrap;
+  line-height: 1.5;
 }
 
 .ds-strategy-hint {
