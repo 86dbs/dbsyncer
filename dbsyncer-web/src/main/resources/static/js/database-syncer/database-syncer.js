@@ -355,7 +355,15 @@
             const idx = Number($(this).data('index'));
             const block = state.mappings[idx];
             if (block) {
-                $(this).find('.mapping-card-target').html(formatMappingCardTargetLineHtml(block));
+                const $src = $(this).find('.mapping-card-line.mapping-card-src');
+                const $target = $(this).find('.mapping-card-line.mapping-card-target');
+                if ($src.length) {
+                    $src.attr('title', getMappingSourceLineTitle(block));
+                }
+                if ($target.length) {
+                    $target.html(formatMappingCardTargetLineHtml(block));
+                    $target.attr('title', getMappingTargetLineTitle(block));
+                }
             }
         });
     }
@@ -458,9 +466,23 @@
         return '目标库: ' + formatDbWithConnectorType(getMappingTargetDbName(block), getMappingTargetConnectorId(block));
     }
 
+    function getMappingSourceLineTitle(block) {
+        const db = getMappingSourceDbName(block) || '—';
+        const type = getConnectorTypeById(getMappingSourceConnectorId(block));
+        return type ? ('源库: ' + db + '(' + type + ')') : ('源库: ' + db);
+    }
+
+    function getMappingTargetLineTitle(block) {
+        const db = getMappingTargetDbName(block) || '—';
+        const type = getConnectorTypeById(getMappingTargetConnectorId(block));
+        return type ? ('目标库: ' + db + '(' + type + ')') : ('目标库: ' + db);
+    }
+
     function formatMappingCardBodyHtml(block) {
-        return '<div class="mapping-card-line mapping-card-src">' + formatMappingCardSourceLineHtml(block) + '</div>'
-            + '<div class="mapping-card-line mapping-card-target">' + formatMappingCardTargetLineHtml(block) + '</div>';
+        return '<div class="mapping-card-line mapping-card-src" title="' + escapeHtml(getMappingSourceLineTitle(block)) + '">'
+            + formatMappingCardSourceLineHtml(block) + '</div>'
+            + '<div class="mapping-card-line mapping-card-target" title="' + escapeHtml(getMappingTargetLineTitle(block)) + '">'
+            + formatMappingCardTargetLineHtml(block) + '</div>';
     }
 
     function formatTargetNamespaceLabel(block) {
@@ -1324,6 +1346,7 @@
                     + '<span class="mapping-card-label">目标</span>'
                     + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-db"'
                     + ' data-index="' + idx + '" value="' + escapeHtml(block.targetDatabase || '') + '"'
+                    + ' title="' + escapeHtml(block.targetDatabase || '') + '"'
                     + (isReadOnly() ? ' readonly' : '') + '/>'
                     + '</div>'
                     + (block.sourceSchema
@@ -1331,6 +1354,7 @@
                             + '<span class="mapping-card-label">目标Schema</span>'
                             + '<input type="text" class="form-control form-control-sm mapping-card-target-input mapping-card-tgt-schema"'
                             + ' data-index="' + idx + '" value="' + escapeHtml(block.targetSchema || '') + '"'
+                            + ' title="' + escapeHtml(block.targetSchema || '') + '"'
                             + (isReadOnly() ? ' readonly' : '') + '/>'
                             + '</div>')
                         : '')
@@ -1385,7 +1409,9 @@
             if (!state.mappings[idx]) {
                 return;
             }
-            state.mappings[idx].targetDatabase = $(this).val();
+            const value = $(this).val();
+            state.mappings[idx].targetDatabase = value;
+            $(this).attr('title', value || '');
             syncMappingsJson();
         });
 
@@ -1394,20 +1420,25 @@
             if (!state.mappings[idx]) {
                 return;
             }
-            state.mappings[idx].targetSchema = $(this).val();
+            const value = $(this).val();
+            state.mappings[idx].targetSchema = value;
+            $(this).attr('title', value || '');
             syncMappingsJson();
         });
     }
 
     function buildDetailTableRowHtml(block, row, rowIndex, blockIndex) {
+        const sourceTable = row.sourceTable || '';
+        const targetTable = row.targetTable || '';
         let html = '<tr data-r="' + rowIndex + '">'
             + '<td class="text-center text-tertiary">' + (row.index || (rowIndex + 1)) + '</td>'
-            + '<td class="db-sync-src-table">' + escapeHtml(row.sourceTable || '') + '</td>';
+            + '<td class="db-sync-src-table" title="' + escapeHtml(sourceTable) + '">' + escapeHtml(sourceTable) + '</td>';
         if (isReadOnly()) {
-            html += '<td>' + escapeHtml(row.targetTable || '') + '</td>';
+            html += '<td title="' + escapeHtml(targetTable) + '">' + escapeHtml(targetTable) + '</td>';
         } else {
             html += '<td><input type="text" class="form-control form-control-sm db-tgt-tbl"'
-                + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" value="' + escapeHtml(row.targetTable || '') + '"/></td>'
+                + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" value="' + escapeHtml(targetTable) + '"'
+                + ' title="' + escapeHtml(targetTable) + '"/></td>'
                 + '<td><button type="button" class="table-action-btn delete btn-rm-detail-row"'
                 + ' data-b="' + blockIndex + '" data-r="' + rowIndex + '" title="删除">'
                 + '<i class="fa fa-times"></i></button></td>';

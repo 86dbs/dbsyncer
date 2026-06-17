@@ -711,6 +711,10 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-weight: 600;
   color: var(--primary-color);
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mapping-detail-empty.hidden,
