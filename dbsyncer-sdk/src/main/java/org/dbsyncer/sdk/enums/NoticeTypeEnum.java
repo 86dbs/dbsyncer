@@ -40,6 +40,8 @@ public enum NoticeTypeEnum {
      */
     SYSTEM_MESSAGE(6);
 
+
+
     private final int code;
 
     NoticeTypeEnum(int code){

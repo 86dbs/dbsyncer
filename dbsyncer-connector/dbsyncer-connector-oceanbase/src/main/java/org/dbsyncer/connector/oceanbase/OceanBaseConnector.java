@@ -47,15 +47,15 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     private final OceanBaseConfigValidator configValidator = new OceanBaseConfigValidator();
     private final OceanBaseSchemaResolver schemaResolver = new OceanBaseSchemaResolver();
     private final Set<String> SYSTEM_DATABASES = Stream.of(
-            // MySQL 兼容系统库
-            "information_schema", "mysql", "performance_schema", "sys",
-            // OceanBase 系统库
-            "oceanbase", "__public", "__recyclebin", "ocs",
-            // Oracle 兼容系统库（企业版 / 混合租户常见）
-            "appqossys", "audsys", "ctxsys", "dbsfwuser", "dbsnmp", "dvsys",
-            "gsmadmin_internal", "lbacsys", "mdsys", "ojvmsys", "olapsys",
-            "orddata", "ordsys", "oraauditor", "outln", "system",
-            "sys_external_tbs", "wmsys", "xdb")
+                    // MySQL 兼容系统库
+                    "information_schema", "mysql", "performance_schema", "sys",
+                    // OceanBase 系统库
+                    "oceanbase", "__public", "__recyclebin", "ocs",
+                    // Oracle 兼容系统库（企业版 / 混合租户常见）
+                    "appqossys", "audsys", "ctxsys", "dbsfwuser", "dbsnmp", "dvsys",
+                    "gsmadmin_internal", "lbacsys", "mdsys", "ojvmsys", "olapsys",
+                    "orddata", "ordsys", "oraauditor", "outln", "system",
+                    "sys_external_tbs", "wmsys", "xdb")
             .collect(Collectors.toSet());
 
     @Override
@@ -111,7 +111,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         if (connectorInstance == null || StringUtil.isBlank(tableName)) {
             return StringUtil.EMPTY;
         }
@@ -137,10 +137,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
             if (StringUtil.isBlank(ddl)) {
                 return StringUtil.EMPTY;
             }
-            if (ifNotExists) {
-                return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
-            }
-            return ddl;
+            return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
         });
     }
 

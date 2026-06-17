@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public final class ClickHouseConnector extends AbstractDatabaseConnector {
 
     private static final Set<String> SYSTEM_DATABASES = Stream.of(
-            "system", "information_schema", "INFORMATION_SCHEMA", "_temporary_and_external_tables")
+                    "system", "information_schema", "INFORMATION_SCHEMA", "_temporary_and_external_tables")
             .collect(Collectors.toSet());
 
     private static final String QUERY_TABLES = "SELECT name, engine FROM system.tables WHERE database = ? ORDER BY name";
@@ -250,11 +250,8 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
-        if (ifNotExists) {
-            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ") ENGINE = MergeTree() ORDER BY tuple()";
-        }
-        return "CREATE TABLE " + tableName + " (" + tableBodySql + ") ENGINE = MergeTree() ORDER BY tuple()";
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ") ENGINE = MergeTree() ORDER BY tuple()";
     }
 
     @Override
@@ -267,7 +264,7 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         if (connectorInstance == null || StringUtil.isBlank(tableName)) {
             return StringUtil.EMPTY;
         }

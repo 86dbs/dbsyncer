@@ -111,11 +111,8 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
         String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
-        if (!ifNotExists) {
-            return createSql;
-        }
         String escapedTableName = tableName.replace("'", "''");
         return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NULL BEGIN " + createSql + " END";
     }
@@ -132,7 +129,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         return null;
     }
 
@@ -273,6 +270,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         return targetCommand;
     }
+
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();

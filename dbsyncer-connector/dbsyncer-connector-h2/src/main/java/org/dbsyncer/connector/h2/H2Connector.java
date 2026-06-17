@@ -98,11 +98,13 @@ public final class H2Connector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
-        if (ifNotExists) {
-            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
-        }
-        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
+        throw new H2Exception("H2 暂时不支持该功能");
     }
 
     @Override
@@ -160,7 +162,7 @@ public final class H2Connector extends AbstractDatabaseConnector {
 
     @Override
     public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task, String targetTableName,
-            List<Field> sourceDefinitions, List<String> targetColumnNames) {
+                                        List<Field> sourceDefinitions, List<String> targetColumnNames) {
         throw new H2Exception("H2 暂时不支持该功能");
     }
 

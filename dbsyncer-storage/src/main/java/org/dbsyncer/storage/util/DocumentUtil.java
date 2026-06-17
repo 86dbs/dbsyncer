@@ -193,6 +193,55 @@ public abstract class DocumentUtil {
         return doc;
     }
 
+    public static Document convertDatabaseSyncDetail2Doc(Map params) {
+        Assert.notNull(params, "Params can not be null.");
+        Document doc = new Document();
+        String id = getString(params, ConfigConstant.CONFIG_MODEL_ID);
+        String taskId = getString(params, ConfigConstant.TASK_ID);
+        String type = getString(params, ConfigConstant.CONFIG_MODEL_TYPE);
+        Integer tableIndex = getInteger(params, ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX);
+        String sourceDatabase = getString(params, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE);
+        String sourceSchema = getString(params, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA);
+        String targetDatabase = getString(params, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE);
+        String sourceTable = getString(params, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE);
+        String targetTable = getString(params, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE);
+        Long sourceTotal = getLong(params, ConfigConstant.TASK_SOURCE_TOTAL);
+        Long successTotal = getLong(params, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
+        Long failTotal = getLong(params, ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        String content = getString(params, ConfigConstant.TASK_CONTENT);
+        Long createTime = getLong(params, ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        Long updateTime = getLong(params, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_ID, id, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.TASK_ID, taskId, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.CONFIG_MODEL_TYPE, type, Field.Store.YES));
+        doc.add(new IntPoint(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, tableIndex));
+        doc.add(new StoredField(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, tableIndex));
+        doc.add(new NumericDocValuesField(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, tableIndex));
+        doc.add(new StringField(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, sourceDatabase, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, sourceSchema, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, targetDatabase, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, sourceTable, Field.Store.YES));
+        doc.add(new StringField(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, targetTable, Field.Store.YES));
+        doc.add(new LongPoint(ConfigConstant.TASK_SOURCE_TOTAL, sourceTotal));
+        doc.add(new StoredField(ConfigConstant.TASK_SOURCE_TOTAL, sourceTotal));
+        doc.add(new NumericDocValuesField(ConfigConstant.TASK_SOURCE_TOTAL, sourceTotal));
+        doc.add(new LongPoint(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, successTotal));
+        doc.add(new StoredField(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, successTotal));
+        doc.add(new NumericDocValuesField(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, successTotal));
+        doc.add(new LongPoint(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, failTotal));
+        doc.add(new StoredField(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, failTotal));
+        doc.add(new NumericDocValuesField(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, failTotal));
+        doc.add(new TextField(ConfigConstant.TASK_CONTENT, content, Field.Store.YES));
+        doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_CREATE_TIME, createTime));
+        doc.add(new LongPoint(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime));
+        doc.add(new StoredField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime));
+        doc.add(new NumericDocValuesField(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime));
+        return doc;
+    }
+
     private static String getString(Map params, String key) {
         Object value = params.get(key);
         return value == null ? "" : String.valueOf(value);

@@ -125,15 +125,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
-        if (ifNotExists) {
-            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
-        }
-        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         if (connectorInstance == null || StringUtil.isBlank(tableName)) {
             return StringUtil.EMPTY;
         }
@@ -159,10 +156,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             if (StringUtil.isBlank(ddl)) {
                 return StringUtil.EMPTY;
             }
-            if (ifNotExists) {
-                return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
-            }
-            return ddl;
+            return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
         });
     }
 

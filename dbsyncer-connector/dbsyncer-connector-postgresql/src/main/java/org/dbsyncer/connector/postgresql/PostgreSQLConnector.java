@@ -127,12 +127,9 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
         String qualifiedTable = qualifyTableName(null, tableName);
-        if (ifNotExists) {
-            return "CREATE TABLE IF NOT EXISTS " + qualifiedTable + " (" + tableBodySql + ")";
-        }
-        return "CREATE TABLE " + qualifiedTable + " (" + tableBodySql + ")";
+        return "CREATE TABLE IF NOT EXISTS " + qualifiedTable + " (" + tableBodySql + ")";
     }
 
     @Override
@@ -179,7 +176,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         return null;
     }
 
@@ -400,7 +397,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         }
         String rawTypeName = PostgreSQLSchemaResolver.normalizeTypeName(t);
         if (PostgreSQLSchemaResolver.isArrayType(rawTypeName)) {
-           return t;
+            return t;
         }
         return null;
     }

@@ -63,19 +63,14 @@ public interface Database {
      * 生成创建表 DDL。
      *
      */
-    default String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
-        if (ifNotExists) {
-            return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
-        }
-        return "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
+    default String buildCreateTableSql(String tableName, String tableBodySql) {
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
     }
 
     /**
      * 从源库获取建表 DDL（支持时返回完整 CREATE TABLE 语句，不支持返回空串）。
      */
-    default String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
-        return StringUtil.EMPTY;
-    }
+    String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName);
 
     /**
      * 生成删除表 DDL。

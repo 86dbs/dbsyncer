@@ -115,11 +115,9 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql, boolean ifNotExists) {
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
         String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
-        if (!ifNotExists) {
-            return createSql;
-        }
+ 
         String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
                 "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
@@ -142,7 +140,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName, boolean ifNotExists) {
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         if (connectorInstance == null || StringUtil.isBlank(tableName)) {
             return StringUtil.EMPTY;
         }
@@ -170,9 +168,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
 
                 if (ddl.endsWith(";")) {
                     ddl = ddl.substring(0, ddl.length() - 1).trim();
-                }
-                if (!ifNotExists) {
-                    return ddl;
                 }
                 return "DECLARE v_cnt NUMBER := 0; BEGIN "
                         + "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableName + "'; "

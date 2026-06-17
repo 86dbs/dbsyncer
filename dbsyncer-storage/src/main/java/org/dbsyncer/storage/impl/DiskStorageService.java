@@ -386,6 +386,8 @@ public class DiskStorageService extends AbstractStorageService {
                 return DocumentUtil.convertTask2Doc(r);
             case VALIDATE_SYNC_DETAIL:
                 return DocumentUtil.convertValidateSyncDetail2Doc(r);
+            case DATABASE_SYNC_DETAIL:
+                return DocumentUtil.convertDatabaseSyncDetail2Doc(r);
             default:
                 return null;
         }
@@ -447,9 +449,12 @@ public class DiskStorageService extends AbstractStorageService {
             case ConfigConstant.TASK_TARGET_TOTAL:
             case ConfigConstant.TASK_DIFF_TOTAL:
             case ConfigConstant.TASK_FIXED_TOTAL:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL:
                 return SortField.Type.LONG;
             case ConfigConstant.DATA_SUCCESS:
             case ConfigConstant.TASK_STATUS:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX:
                 return SortField.Type.INT;
             default:
                 return SortField.Type.STRING;

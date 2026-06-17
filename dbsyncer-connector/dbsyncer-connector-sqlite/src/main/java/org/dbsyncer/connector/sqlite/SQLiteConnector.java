@@ -97,6 +97,11 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
+        throw new SQLiteException("SQLite 暂不支持该功能!");
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）

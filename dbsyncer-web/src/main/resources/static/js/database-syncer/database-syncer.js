@@ -325,11 +325,11 @@
     }
 
     function formatMappingCardSourceLineHtml(block) {
-        return '源库： ' + formatDbWithConnectorType(getMappingSourceDbName(block), getMappingSourceConnectorId(block));
+        return '源&nbsp;&nbsp;&nbsp;&nbsp;库:' + formatDbWithConnectorType(getMappingSourceDbName(block), getMappingSourceConnectorId(block));
     }
 
     function formatMappingCardTargetLineHtml(block) {
-        return '目标库： ' + formatDbWithConnectorType(getMappingTargetDbName(block), getMappingTargetConnectorId(block));
+        return '目标库: ' + formatDbWithConnectorType(getMappingTargetDbName(block), getMappingTargetConnectorId(block));
     }
 
     function formatMappingCardBodyHtml(block) {
@@ -1172,7 +1172,7 @@
                     + '<div class="mapping-card-footer">已选择 ' + count + ' 张表</div>';
             } else {
                 html += '<div class="mapping-card-row">'
-                    + '<span class="mapping-card-label">源库</span>'
+                    + '<span class="mapping-card-label">源&nbsp;&nbsp;库</span>'
                     + '<span class="mapping-card-value" title="' + escapeHtml(block.sourceDatabase || '') + '">'
                     + escapeHtml(block.sourceDatabase || '') + '</span></div>'
                     + (block.sourceSchema
