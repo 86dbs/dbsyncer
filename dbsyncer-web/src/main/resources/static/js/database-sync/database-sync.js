@@ -107,8 +107,8 @@
         return !!(sourceType && targetType && sourceType === targetType);
     }
 
-    function refreshTargetConnectorOptions() {
-        const sourceType = normalizeConnectorType(getConnectorTypeById(state.source.connectorId));
+    function buildTargetConnectorSelectOptions(sourceConnectorId, currentTargetId) {
+        const sourceType = normalizeConnectorType(getConnectorTypeById(sourceConnectorId));
         const filtered = sourceType
             ? allConnectorOptions.filter(function (item) {
                 return normalizeConnectorType(item.connectorType) === sourceType;
@@ -119,32 +119,54 @@
                 return { label: item.label, value: item.value, disabled: item.disabled };
             })
         );
-        const current = state.target.connectorId || '';
+        const current = currentTargetId || '';
         const validCurrent = current && filtered.some(function (item) {
             return item.value === current;
         });
-        const nextId = validCurrent ? current : '';
+        return {
+            options: options,
+            nextId: validCurrent ? current : ''
+        };
+    }
 
-        function applySelect(select) {
-            if (!select || typeof select.setData !== 'function') {
-                return;
+    function applyTargetConnectorSelect(select, options, nextId) {
+        if (!select || typeof select.setData !== 'function') {
+            return;
+        }
+        select.setData(options);
+        select.setValues(nextId ? [nextId] : [], true);
+    }
+
+    /**
+     * 详情区目标连接按当前库映射的源/目标连接器过滤；
+     * 弹窗内目标连接按顶部源端过滤。二者互不干扰。
+     */
+    function refreshTargetConnectorOptions() {
+        const block = getActiveMappingBlock();
+
+        if (targetConnectorSelect && hasDetailTargetPanel()) {
+            const detailSourceId = block ? getMappingSourceConnectorId(block) : state.source.connectorId;
+            const detailTargetId = block ? getMappingTargetConnectorId(block) : state.target.connectorId;
+            const detail = buildTargetConnectorSelectOptions(detailSourceId, detailTargetId);
+            applyTargetConnectorSelect(targetConnectorSelect, detail.options, detail.nextId);
+            if (block) {
+                state.target.connectorId = block.targetConnectorId || detail.nextId;
             }
-            select.setData(options);
-            select.setValues(nextId ? [nextId] : [], true);
         }
 
-        applySelect(targetConnectorSelect);
-        applySelect(pickerTargetConnectorSelect);
-
-        if (!validCurrent && current) {
-            state.target.connectorId = '';
-            const block = getActiveMappingBlock();
-            if (block && block.targetConnectorId === current) {
-                block.targetConnectorId = '';
-                syncMappingsJson();
+        if (pickerTargetConnectorSelect) {
+            const pickerTargetId = getPickerTargetConnectorId() || state.target.connectorId;
+            const picker = buildTargetConnectorSelectOptions(state.source.connectorId, pickerTargetId);
+            applyTargetConnectorSelect(pickerTargetConnectorSelect, picker.options, picker.nextId);
+            if (isPickerModalOpen()) {
+                state.target.connectorId = picker.nextId;
             }
-        } else {
-            state.target.connectorId = nextId;
+        } else if (!block || !hasDetailTargetPanel()) {
+            const global = buildTargetConnectorSelectOptions(state.source.connectorId, state.target.connectorId);
+            if (targetConnectorSelect) {
+                applyTargetConnectorSelect(targetConnectorSelect, global.options, global.nextId);
+            }
+            state.target.connectorId = global.nextId;
         }
     }
 
@@ -501,14 +523,10 @@
     }
 
     function refreshPickerTargetDefaults() {
-        const block = getActiveMappingBlock();
-        const targetConnectorId = (block && block.targetConnectorId) || state.target.connectorId;
-        if (targetConnectorId) {
-            state.target.connectorId = targetConnectorId;
-            setSelectValues(pickerTargetConnectorSelect, [targetConnectorId]);
-            if (targetConnectorSelect) {
-                setSelectValues(targetConnectorSelect, [targetConnectorId]);
-            }
+        refreshTargetConnectorOptions();
+        const pickerTargetId = getPickerTargetConnectorId() || state.target.connectorId;
+        if (pickerTargetId && pickerTargetConnectorSelect) {
+            setSelectValues(pickerTargetConnectorSelect, [pickerTargetId]);
         }
         updateTargetSchemaVisibility();
     }
@@ -569,6 +587,9 @@
             }
         }
         targetConnectorId = targetConnectorId || $('#targetConnectorId').val() || '';
+        if (!targetConnectorId && block.targetConnectorId) {
+            targetConnectorId = block.targetConnectorId;
+        }
         block.targetConnectorId = targetConnectorId;
         state.target.connectorId = targetConnectorId;
         if (!isOracleTargetConnector(targetConnectorId)) {
@@ -1384,10 +1405,8 @@
             disabled: isReadOnly(),
             onSelect: function (ids) {
                 state.target.connectorId = ids.length ? ids[0] : '';
-                setSelectValues(targetConnectorSelect, state.target.connectorId ? [state.target.connectorId] : []);
                 updateTargetSchemaVisibility();
                 updateTargetDatabaseFieldVisibility();
-                refreshMappingCardFlows();
             }
         });
 
@@ -1426,6 +1445,7 @@
         if (isReadOnly()) {
             return;
         }
+        syncActiveMappingFromDetailPanel();
         if (!state.source.connectorId) {
             bootGrowl('请先选择源端连接器', 'warning');
             return;
