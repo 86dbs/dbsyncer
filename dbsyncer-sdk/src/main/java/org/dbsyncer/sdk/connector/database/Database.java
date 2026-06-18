@@ -42,41 +42,25 @@ public interface Database {
     /**
      * 生成创建数据库（或同级命名空间）的 DDL；已存在时不报错（各库方言由连接器覆盖）。
      */
-    default String buildCreateDatabaseSql(String databaseName, String schemaName) {
-        if (StringUtil.isBlank(databaseName)) {
-            return StringUtil.EMPTY;
-        }
-        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
-    }
+    String buildCreateDatabaseSql(String databaseName, String schemaName);
 
     /**
      * 判断目标命名空间是否存在（库名 + Schema 由连接器方言解释）。
      */
-    default boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
-        if (StringUtil.isBlank(databaseName)) {
-            return false;
-        }
-        return false;
-    }
+    boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName);
 
     /**
      * 生成创建表 DDL。
-     *
      */
-    default String buildCreateTableSql(String tableName, String tableBodySql) {
-        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
-    }
+    String buildCreateTableSql(String tableName, String tableBodySql);
 
     /**
-     * 从源库获取建表 DDL（支持时返回完整 CREATE TABLE 语句，不支持返回空串）。
+     * 从源库获取建表
      */
     String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName);
 
     /**
      * 生成删除表 DDL。
-     *
-     * @param tableName 表名（不含库/schema 前缀，由连接上下文指定命名空间）
-     * @param ifExists  为 true 时表不存在不报错
      */
     default String buildDropTableSql(String tableName, boolean ifExists) {
         if (StringUtil.isBlank(tableName)) {

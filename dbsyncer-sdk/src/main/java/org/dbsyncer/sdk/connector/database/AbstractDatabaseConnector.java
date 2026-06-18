@@ -728,7 +728,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     /**
      * 根据当前运行的参数，动态拼接 WHERE 查询条件
-     *
      */
     private String buildQueryCondition(BooleanFilter baseQuery, List<Object> args) {
         if (baseQuery == null) {
@@ -1049,14 +1048,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 生成列定义中的类型片段（不含列名），用于同构订正等 DDL。
      */
-    public String formatTargetPhysicalType(Field sourceDefinition) {
-        return formatPhysicalType(sourceDefinition);
-    }
-
-    /**
-     * 生成列定义中的类型片段（不含列名），用于同构订正等 DDL。
-     */
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         String raw = sourceDefinition.getTypeName();
         // 空类型按 VARCHAR 兜底，避免下游拼接非法 DDL
         if (StringUtil.isBlank(raw)) {
