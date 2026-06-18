@@ -30,7 +30,7 @@ public class NoticeStrategyFlushScheduler {
 
     @PostConstruct
     private void start() {
-        for (NoticeStrategy strategy : DefaultNoticeStrategies.all()) {
+        for (NoticeStrategy strategy : DefaultNoticeStrategy.all()) {
             register(strategy);
         }
     }

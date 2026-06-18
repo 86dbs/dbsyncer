@@ -19,7 +19,7 @@ import java.util.Set;
  * @version 1.0.0
  * @date 2026-06-16 12:00
  */
-public final class DefaultNoticeStrategies {
+public final class DefaultNoticeStrategy {
 
     public static final String INTERVAL_10M = "interval_10m";
     public static final String IMMEDIATE = "immediate";
@@ -28,7 +28,7 @@ public final class DefaultNoticeStrategies {
     private static final String CRON_EVERY_10M = "0 */10 * * * ?";
     private static final String CRON_DAILY_9AM = "0 13 16 * * ?";
 
-    private DefaultNoticeStrategies() {
+    private DefaultNoticeStrategy() {
     }
 
     public static List<NoticeStrategy> all() {

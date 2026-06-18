@@ -97,6 +97,21 @@ public final class SQLiteConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        throw new SQLiteException("SQLite 暂不支持该功能!");
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        throw new SQLiteException("SQLite 暂不支持该功能!");
+    }
+
+    @Override
+    public String buildCreateTableSql(String tableName, String tableBodySql) {
+        throw new SQLiteException("SQLite 暂不支持该功能!");
+    }
+
+    @Override
     public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         throw new SQLiteException("SQLite 暂不支持该功能!");
     }

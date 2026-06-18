@@ -33,7 +33,7 @@ public class NoticeDecisionEngineImpl implements NoticeDecisionEngine {
 
     @PostConstruct
     private void init() {
-        List<NoticeStrategy> strategies = DefaultNoticeStrategies.all();
+        List<NoticeStrategy> strategies = DefaultNoticeStrategy.all();
         this.strategyRegistry = new NoticeStrategyRegistry(strategies);
     }
 

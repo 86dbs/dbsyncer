@@ -117,7 +117,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String buildCreateTableSql(String tableName, String tableBodySql) {
         String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
- 
+
         String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
                 "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
@@ -469,7 +469,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         String typeName = sourceDefinition == null ? null : sourceDefinition.getTypeName();
         if (StringUtil.isBlank(typeName)) {
             return "VARCHAR2(255)";

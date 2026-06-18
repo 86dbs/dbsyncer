@@ -65,6 +65,15 @@
         return btn;
     }
 
+    function applyProgressFillWidths(container) {
+        $(container).find('.progress-fill[data-progress-width]').each(function () {
+            const width = this.getAttribute('data-progress-width');
+            if (width !== null && width !== '') {
+                this.style.setProperty('--progress-width', width + '%');
+            }
+        });
+    }
+
     function PaginationManager(options) {
         const storageKey = options.storageKey || '';
         const stored = loadPaginationState(storageKey);
@@ -212,6 +221,7 @@
                 const html = config.renderRow(item, i);
                 tbody.append(html);
             });
+            applyProgressFillWidths(tbody);
         };
 
         // 渲染分页按钮

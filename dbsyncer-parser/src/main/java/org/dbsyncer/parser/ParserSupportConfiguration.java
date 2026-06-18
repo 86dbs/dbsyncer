@@ -16,7 +16,7 @@ import org.dbsyncer.sdk.spi.DataBaseSyncerDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.dbsyncer.sdk.spi.TaskService;
-import org.dbsyncer.sdk.spi.ValidateSyncerDetailService;
+import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -136,12 +136,12 @@ public class ParserSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = {"serviceFactory", "taskService"})
-    public ValidateSyncerDetailService validateSyncerDetailService() {
-        ValidateSyncerDetailService service = serviceFactory.get(ValidateSyncerDetailService.class);
+    public ValidateSyncDetailService validateSyncerDetailService() {
+        ValidateSyncDetailService service = serviceFactory.get(ValidateSyncDetailService.class);
         if (service != null) {
             return service;
         }
-        return new ValidateSyncerDetailService() {
+        return new ValidateSyncDetailService() {
             @Override
             public void saveResult(ValidateSyncTask task, ValidateSyncDetailResult detail) {
             }

@@ -37,7 +37,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.*;
 import org.dbsyncer.sdk.spi.TaskService;
-import org.dbsyncer.sdk.spi.ValidateSyncerDetailService;
+import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
@@ -62,7 +62,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private TaskService<ValidateSyncTask> taskService;
 
     @Resource
-    private ValidateSyncerDetailService validateSyncerDetailService;
+    private ValidateSyncDetailService validateSyncerDetailService;
 
     @Resource
     private StorageService storageService;

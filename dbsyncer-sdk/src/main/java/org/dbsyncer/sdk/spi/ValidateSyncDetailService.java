@@ -16,7 +16,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-06-04 18:00
  */
-public interface ValidateSyncerDetailService {
+public interface ValidateSyncDetailService {
 
     /**
      * 保存单表校验终态结果（按 taskId + type + 源/目标表名先删后插）。

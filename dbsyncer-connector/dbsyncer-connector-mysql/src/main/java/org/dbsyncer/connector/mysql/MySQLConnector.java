@@ -361,7 +361,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
             return super.formatPhysicalType(sourceDefinition);
         }

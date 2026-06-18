@@ -98,6 +98,17 @@ public final class H2Connector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        throw new H2Exception("H2 暂时不支持该功能");
+
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        throw new H2Exception("H2 暂时不支持该功能");
+    }
+
+    @Override
     public String buildCreateTableSql(String tableName, String tableBodySql) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
     }
