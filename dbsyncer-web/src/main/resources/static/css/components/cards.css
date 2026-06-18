@@ -142,11 +142,11 @@
 }
 
 /* 卡片中的轻量交互元素 */
-.card button:not(.btn):not([class*='btn-']) {
+.card button:not(.btn):not([class*='btn-']):not(.pagination-btn):not(.pagination-page-btn) {
   background: transparent;
   border: 0;
 }
-.card button:not(.btn):not([class*='btn-']):focus {
+.card button:not(.btn):not([class*='btn-']):not(.pagination-btn):not(.pagination-page-btn):focus {
   outline: none;
   box-shadow: none;
 }
@@ -184,7 +184,7 @@
 }
 
 .progress-value {
-  font-size: 24px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--primary-color);
 }
