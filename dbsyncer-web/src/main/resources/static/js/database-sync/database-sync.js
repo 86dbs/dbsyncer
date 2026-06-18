@@ -1638,14 +1638,13 @@
         }
         $pagination.removeClass('hidden');
 
-        const prevBtn = $('<button type="button" class="pagination-btn"' + (currentPage === 1 ? ' disabled' : '') + '>'
-            + '<i class="fa fa-angle-left"></i></button>');
-        if (currentPage > 1) {
-            prevBtn.on('click', function () {
-                renderDetailTablePage(currentPage - 1);
-            });
-        }
-        $bar.append(prevBtn);
+        $bar.append(createDetailNavBtn('首页', 'fa-angle-double-left', currentPage === 1, function () {
+            renderDetailTablePage(1);
+        }));
+
+        $bar.append(createDetailNavBtn('上一页', 'fa-angle-left', currentPage === 1, function () {
+            renderDetailTablePage(currentPage - 1);
+        }));
 
         const startPage = Math.max(1, currentPage - 1);
         const endPage = Math.min(totalPages, startPage + 2);
@@ -1659,14 +1658,22 @@
             $bar.append(pageBtn);
         }
 
-        const nextBtn = $('<button type="button" class="pagination-btn"' + (currentPage === totalPages ? ' disabled' : '') + '>'
-            + '<i class="fa fa-angle-right"></i></button>');
-        if (currentPage < totalPages) {
-            nextBtn.on('click', function () {
-                renderDetailTablePage(currentPage + 1);
-            });
+        $bar.append(createDetailNavBtn('下一页', 'fa-angle-right', currentPage === totalPages, function () {
+            renderDetailTablePage(currentPage + 1);
+        }));
+
+        $bar.append(createDetailNavBtn('末页', 'fa-angle-double-right', currentPage === totalPages, function () {
+            renderDetailTablePage(totalPages);
+        }));
+    }
+
+    function createDetailNavBtn(label, iconClass, disabled, onClick) {
+        const btn = $('<button type="button" class="pagination-btn pagination-btn-nav" title="' + label + '"' + (disabled ? ' disabled' : '') + '>'
+            + '<i class="fa ' + iconClass + '"></i></button>');
+        if (!disabled) {
+            btn.on('click', onClick);
         }
-        $bar.append(nextBtn);
+        return btn;
     }
 
     function renderDetailTablePage(pageNum) {

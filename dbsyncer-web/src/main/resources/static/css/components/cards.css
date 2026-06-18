@@ -177,6 +177,10 @@
   margin-bottom: 12px;
 }
 
+.progress-header-compact {
+  margin-bottom: 6px;
+}
+
 .progress-title {
   font-size: 14px;
   color: var(--text-primary);
@@ -199,6 +203,11 @@
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
+}
+
+.progress-bar-compact {
+  height: 6px;
+  margin-bottom: 0;
 }
 
 .progress-fill {

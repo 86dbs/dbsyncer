@@ -195,8 +195,19 @@
 .h-64 { height: 16rem; }
 
 .min-w-0 { min-width: 0; }
+.min-w-160 { min-width: 160px; }
 .min-w-200 { min-width: 200px; }
 .min-w-300 { min-width: 300px; }
+
+.connector-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.connector-logo-lg {
+  width: 60px;
+  height: 60px;
+}
 .max-w-full { max-width: 100%; }
 
 /* ========== 文本工具类 ========== */

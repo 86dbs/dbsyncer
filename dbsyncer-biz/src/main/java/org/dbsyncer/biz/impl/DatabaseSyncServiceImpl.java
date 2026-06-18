@@ -94,12 +94,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException("任务名称不能为空");
         }
         List<DatabaseMapping> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
-        for (DatabaseMapping mapping : mappings) {
-            if (mapping.getSourceConnectorId().equals(mapping.getTargetConnectorId()) && mapping.getSourceDatabase().equals(mapping.getTargetDatabase())) {
-                throw new BizException("同源同库不允许同步，请更换目标连接或数据库！");
-            }
-        }
-
+        checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
             throw new BizException("请至少添加一组库映射");
         }
@@ -125,6 +120,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         assertNotRunning(id);
 
         List<DatabaseMapping> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
+        checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
             throw new BizException("请至少添加一组库映射");
         }
@@ -135,6 +131,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
         return taskService.edit(task);
+    }
+
+    private static void checkDatabaseMapping(List<DatabaseMapping> mappings) {
+        for (DatabaseMapping mapping : mappings) {
+            if (mapping.getSourceConnectorId().equals(mapping.getTargetConnectorId()) && mapping.getSourceDatabase().equals(mapping.getTargetDatabase())) {
+                throw new BizException("同源同库不允许同步，请更换目标连接或数据库！");
+            }
+        }
     }
 
     @Override

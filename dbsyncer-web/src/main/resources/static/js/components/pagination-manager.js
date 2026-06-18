@@ -55,6 +55,16 @@
         return;
     }
     
+    function createPaginationNavBtn(label, iconClass, disabled, onClick) {
+        const btn = $(`<button type="button" class="pagination-btn pagination-btn-nav" title="${label}" ${disabled ? 'disabled' : ''}>
+            <i class="fa ${iconClass}"></i>
+        </button>`);
+        if (!disabled && typeof onClick === 'function') {
+            btn.on('click', onClick);
+        }
+        return btn;
+    }
+
     function PaginationManager(options) {
         const storageKey = options.storageKey || '';
         const stored = loadPaginationState(storageKey);
@@ -258,14 +268,21 @@
                 }
             }
 
+            // 首页按钮
+            paginationBar.append(createPaginationNavBtn(
+                '首页',
+                'fa-angle-double-left',
+                currentPage === 1,
+                () => onPageChange(1)
+            ));
+
             // 上一页按钮
-            const prevBtn = $(`<button type="button" class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>
-                <i class="fa fa-angle-left"></i>
-            </button>`);
-            if (currentPage > 1) {
-                prevBtn.on('click', () => onPageChange(currentPage - 1));
-            }
-            paginationBar.append(prevBtn);
+            paginationBar.append(createPaginationNavBtn(
+                '上一页',
+                'fa-angle-left',
+                currentPage === 1,
+                () => onPageChange(currentPage - 1)
+            ));
 
             // 页码按钮（显示3个页码）
             const startPage = Math.max(1, currentPage - 1);
@@ -282,13 +299,20 @@
             }
 
             // 下一页按钮
-            const nextBtn = $(`<button type="button" class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>
-                <i class="fa fa-angle-right"></i>
-            </button>`);
-            if (currentPage < totalPages) {
-                nextBtn.on('click', () => onPageChange(currentPage + 1));
-            }
-            paginationBar.append(nextBtn);
+            paginationBar.append(createPaginationNavBtn(
+                '下一页',
+                'fa-angle-right',
+                currentPage === totalPages,
+                () => onPageChange(currentPage + 1)
+            ));
+
+            // 末页按钮
+            paginationBar.append(createPaginationNavBtn(
+                '末页',
+                'fa-angle-double-right',
+                currentPage === totalPages,
+                () => onPageChange(totalPages)
+            ));
         };
 
         // 更新分页信息
