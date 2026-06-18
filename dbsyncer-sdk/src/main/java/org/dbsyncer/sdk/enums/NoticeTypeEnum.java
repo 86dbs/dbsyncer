@@ -20,11 +20,11 @@ public enum NoticeTypeEnum {
      */
     CONNECTOR_OFFLINE(1),
     /**
-     * 驱动异常
+     * 同步任务存在失败记录
      */
     MAPPING_ERROR(2),
     /**
-     * 驱动停止
+     * 手动停止同步任务
      */
     MAPPING_STOP(3),
     /**
@@ -50,7 +50,7 @@ public enum NoticeTypeEnum {
 
     private final int code;
 
-    NoticeTypeEnum(int code){
+    NoticeTypeEnum(int code) {
         this.code = code;
     }
 
