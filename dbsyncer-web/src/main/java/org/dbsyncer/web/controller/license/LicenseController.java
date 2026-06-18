@@ -68,7 +68,7 @@ public class LicenseController extends BaseController {
     @Resource
     private UserConfigService userConfigService;
 
-    @Value("${dbsyncer.web.license.server.address:http://101.132.145.213:9999/api/license/create}")
+    @Value("${dbsyncer.web.license.server.address:https://dbsyncer.cn/api/license/create}")
     private String serverAddress;
 
     public static final Integer SUCCESS = 200;

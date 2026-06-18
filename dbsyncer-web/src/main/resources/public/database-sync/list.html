@@ -5,8 +5,32 @@
 <!-- 社区版提示 -->
 <div th:if="${editionInfo.edition eq 'community'}" class="text-center">
     <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+
+    <!-- 整库迁移功能介绍 -->
+    <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
+        <h4 class="text-lg font-semibold text-info mb-2">
+            <i class="fa fa-database"></i> 什么是整库迁移？
+        </h4>
+        <p class="text-sm text-secondary mb-3">
+            整库迁移是将<strong>源数据库</strong>的整个库完整迁移到<strong>目标数据库</strong>的功能。支持表结构、全量数据等一次性迁移，适用于数据库升级、跨平台迁移、数据中心迁移等场景。
+        </p>
+        <ul class="text-sm text-secondary mb-3 pl-4">
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>全量迁移</strong>：一次性迁移整个数据库的所有对象
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>结构同步</strong>：自动创建表、索引、视图等数据库对象
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>增量同步</strong>：支持实时增量同步，减少业务停机时间
+            </li>
+            <li><i class="fa fa-angle-right text-info"></i> <strong>断点续传</strong>：迁移中断后可从断点继续，无需重头来过
+            </li>
+        </ul>
+        <p class="text-sm text-secondary">
+            适用于：数据库版本升级、跨数据库平台迁移、数据灾备、读写分离架构搭建等场景。
+        </p>
+    </div>
+
     <p class="text-secondary mb-6">
-        暂未开放，请下载
+        该功能仅在专业版开放，请下载
         <a href="https://gitee.com/ghi/dbsyncer/releases"
            class="text-primary hover-underline font-medium"
            title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
@@ -14,9 +38,6 @@
             <i class="fa fa-download"></i> 专业版
         </a>
     </p>
-    <div class="mb-6">
-        <img width="383px" height="127px" draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
-    </div>
 </div>
 
 <!-- 整库迁移列表 -->
