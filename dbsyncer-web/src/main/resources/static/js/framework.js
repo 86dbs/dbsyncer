@@ -710,45 +710,48 @@ function refreshLoginUser() {
     });
 }
 
-// 刷新授权信息
+// 刷新授权信息（顶部 header 许可状态）
 function refreshLicense() {
-    // 刷新授权信息
     doGetter("/license/query.json", {}, function (response) {
-        if (response.success === true) {
-            $("#licenseInfo").show();
-            const licenseInfo = response.data;
-            const $content = $("#effectiveContent");
-            const $editionName = $("#editionName");
-            const edition = licenseInfo.edition;
-            if (edition === "community") {
-                $editionName.text("社区版");
-                $content.text('');
-                return;
-            }
-            const $effectiveTime = licenseInfo.effectiveTime;
-            if ($effectiveTime <= 0) {
-                $content.text('未激活');
-                $content.addClass('text-warning');
-                return;
-            }
+        if (response.success !== true) {
+            return;
+        }
+        const licenseInfo = response.data;
+        const $licenseInfo = $("#licenseInfo");
+        const $content = $("#effectiveContent");
+        const $editionName = $("#editionName");
 
-            const $currentTime = licenseInfo.currentTime;
-            const $10days = 864000000;
-            // 有效期内
-            if ($currentTime < $effectiveTime && $effectiveTime - $10days > $currentTime) {
-                $("#licenseCheck").removeClass("hidden");
-            }
-            // 即将过期
-            else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
-                $("#licenseRemind").removeClass("hidden");
-                $editionName.text(licenseInfo.editionName)
+        $("#licenseCheck, #licenseRemind, #licenseWarning").addClass("hidden");
+        $content.text("").removeClass("text-warning");
+
+        const edition = licenseInfo.edition;
+        if (edition === "community") {
+            $licenseInfo.show();
+            $editionName.text("社区版");
+            return;
+        }
+
+        $licenseInfo.show();
+        $editionName.text(licenseInfo.editionName || "专业版");
+
+        const effectiveTime = Number(licenseInfo.effectiveTime) || 0;
+        if (effectiveTime <= 0) {
+            $content.text("未激活").addClass("text-warning");
+            return;
+        }
+
+        const currentTime = Number(licenseInfo.currentTime) || Date.now();
+        const tenDays = 864000000;
+
+        if (currentTime < effectiveTime && effectiveTime - tenDays > currentTime) {
+            $("#licenseCheck").removeClass("hidden");
+        } else if (currentTime < effectiveTime && effectiveTime - tenDays <= currentTime) {
+            $("#licenseRemind").removeClass("hidden");
+            if (licenseInfo.effectiveContent) {
                 $content.text(licenseInfo.effectiveContent);
             }
-            // 已过期
-            else if ($currentTime > $effectiveTime) {
-                $("#licenseWarning").removeClass("hidden");
-            }
-
+        } else if (currentTime > effectiveTime) {
+            $("#licenseWarning").removeClass("hidden");
         }
     });
 }
