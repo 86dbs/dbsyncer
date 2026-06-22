@@ -123,13 +123,6 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
-        String owner = targetInstance != null ? targetInstance.getSchema() : null;
-        String createSql = "CREATE TABLE " + qualifyTableName(owner, tableName) + " (" + tableBodySql + ")";
-        return wrapCreateTableIfNotExists(owner, tableName, createSql);
-    }
-
-    @Override
     public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
         String owner = targetInstance != null ? targetInstance.getSchema() : null;
         String dropSql = "DROP TABLE " + qualifyTableName(owner, tableName) + " CASCADE CONSTRAINTS";
@@ -137,18 +130,18 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
-                                    String sourceTableName, String targetTableName) {
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String createSql = "CREATE TABLE " + qualifyTableName(owner, tableName) + " (" + sourceDDL + ")";
+        return wrapCreateTableIfNotExists(owner, tableName, createSql);
+    }
+
+    @Override
+    public String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
         if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }
-        String ddl = fetchRawTableDdl(sourceInstance, sourceTableName);
-        if (StringUtil.isBlank(ddl)) {
-            return StringUtil.EMPTY;
-        }
-        String owner = targetInstance != null ? targetInstance.getSchema() : null;
-        String tableName = StringUtil.isNotBlank(targetTableName) ? targetTableName : sourceTableName;
-        return wrapCreateTableIfNotExists(owner, tableName, qualifyCreateTableStatement(ddl, owner, tableName));
+        return fetchRawTableDdl(sourceInstance, sourceTableName);
     }
 
     private String fetchRawTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {

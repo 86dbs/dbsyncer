@@ -50,18 +50,19 @@ public interface Database {
     boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName);
 
     /**
-     * 生成创建表 DDL；targetInstance 可传入目标连接以带上 schema。
+     * 生成创建表 DDL；targetInstance 可传入目标连接并schema。
      */
-    String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql);
+    String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL);
 
     /**
-     * 从源库获取建表 DDL，并在目标命名空间下生成可执行语句。
+     * 从源库获取建表DDL
      */
-    String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
-                             String sourceTableName, String targetTableName);
+    default String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName){
+        return StringUtil.EMPTY;
+    }
 
     /**
-     * 生成删除表 DDL；targetInstance 可传入目标连接以带上 schema。
+     * 生成删除表 DDL；targetInstance
      */
     String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName);
 
