@@ -1935,6 +1935,41 @@
         initializing = false;
     }
 
+    let overwriteSchemaProgrammatic = false;
+
+    function setOverwriteSchemaChecked(checked) {
+        overwriteSchemaProgrammatic = true;
+        $('input[name="overwriteSchema"]').prop('checked', checked);
+        overwriteSchemaProgrammatic = false;
+    }
+
+    function bindOverwriteSchemaConfirm() {
+        $('input[name="overwriteSchema"]').off('change.syncStrategyOverwrite').on('change.syncStrategyOverwrite', function () {
+            if (overwriteSchemaProgrammatic || isReadOnly()) {
+                return;
+            }
+            if (!$(this).is(':checked')) {
+                setOverwriteSchemaChecked(false);
+                return;
+            }
+            setOverwriteSchemaChecked(false);
+            showConfirm({
+                title: '确认开启覆盖结构？',
+                message: '开启会删除目标库已经存在的表',
+                icon: 'warning',
+                confirmType: 'danger',
+                confirmText: '确认',
+                cancelText: '取消',
+                onConfirm: function () {
+                    setOverwriteSchemaChecked(true);
+                },
+                onCancel: function () {
+                    setOverwriteSchemaChecked(false);
+                }
+            });
+        });
+    }
+
     function bindSyncStrategyEvents() {
         $('.db-sync-strategy-enable').each(function () {
             const $enable = $(this);
@@ -1953,6 +1988,7 @@
             $enable.off('change.syncStrategy').on('change.syncStrategy', refresh);
             refresh();
         });
+        bindOverwriteSchemaConfirm();
     }
 
     function initSyncStrategyCheckboxStyle() {
