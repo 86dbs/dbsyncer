@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.parser.strategy.impl;
 
+import com.google.protobuf.ByteString;
+import org.dbsyncer.common.binlog.proto.BinlogMap;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
@@ -16,26 +18,24 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-import org.dbsyncer.storage.util.BinlogMessageUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @Version 1.0.0
- * @Author AE86
- * @Date 2021-11-18 22:22
+ * @version 1.0.0
+ * @author AE86
+ * @date 2021-11-18 22:22
  */
 @Component
 public final class FlushStrategyImpl implements FlushStrategy {
@@ -58,11 +58,11 @@ public final class FlushStrategyImpl implements FlushStrategy {
     private BufferActuator storageBufferActuator;
 
     @Override
-    public void flushFullData(String metaId, Result result, String event) {
+    public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
         if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
             // 不记录全量数据，只统计成功失败总数
-            refreshTotal(metaId, result);
+            refreshTotal(result);
 
             if (!CollectionUtils.isEmpty(result.getFailData())) {
                 logger.error(result.getError().toString());
@@ -72,18 +72,23 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
 
-        flush(metaId, result, event);
+        flush(result, targetSchemaResolver, targetFieldMap);
     }
 
     @Override
-    public void flushIncrementData(String metaId, Result result, String event) {
-        flush(metaId, result, event);
+    public void flushIncrementData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+        flush(result, targetSchemaResolver, targetFieldMap);
     }
 
-    private void asyncWrite(String metaId, String tableGroupId, String targetTableGroupName, String event, boolean success, List<Map> data, String error) {
+    private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
+        String metaId = result.getMetaId();
+        String event = result.getEvent();
+        String tableGroupId = result.getTableGroupId();
+        String targetTableGroupName = result.getTargetTableGroupName();
+
         long now = Instant.now().toEpochMilli();
         data.forEach(r-> {
-            Map<String, Object> row = new HashMap();
+            Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
@@ -92,8 +97,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             row.put(ConfigConstant.DATA_ERROR, error);
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
             try {
-                byte[] bytes = BinlogMessageUtil.toBinlogMap(r).toByteArray();
-                row.put(ConfigConstant.BINLOG_DATA, bytes);
+                row.put(ConfigConstant.BINLOG_DATA, toBinlogBytes(schemaResolver, r, targetFieldMap));
             } catch (Exception e) {
                 // 构建详细类型信息
                 StringBuilder typeInfo = new StringBuilder();
@@ -106,9 +110,34 @@ public final class FlushStrategyImpl implements FlushStrategy {
         });
     }
 
-    private void refreshTotal(String metaId, Result writer) {
-        Assert.hasText(metaId, "Meta id can not be empty.");
-        Meta meta = cacheService.get(metaId, Meta.class);
+    private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {
+        BinlogMap.Builder dataBuilder = BinlogMap.newBuilder();
+        data.forEach((k, v)-> {
+            if (null != v) {
+                // DDL
+                if (fieldMap == null) {
+                    ByteString bytes = schemaResolver.serialize(v, null);
+                    if (null != bytes) {
+                        dataBuilder.putRow(k, bytes);
+                    }
+                    return;
+                }
+
+                // DML
+                Field field = fieldMap.get(k);
+                if (field != null) {
+                    ByteString bytes = schemaResolver.serialize(v, field);
+                    if (null != bytes) {
+                        dataBuilder.putRow(k, bytes);
+                    }
+                }
+            }
+        });
+        return dataBuilder.build().toByteArray();
+    }
+
+    private void refreshTotal(Result writer) {
+        Meta meta = cacheService.get(writer.getMetaId(), Meta.class);
         if (meta != null) {
             meta.getFail().getAndAdd(writer.getFailData().size());
             meta.getSuccess().getAndAdd(writer.getSuccessData().size());
@@ -116,19 +145,19 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
     }
 
-    private void flush(String metaId, Result result, String event) {
-        refreshTotal(metaId, result);
+    private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {
+        refreshTotal(result);
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());
-            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, false, result.getFailData(), error);
+            asyncWrite(result, schemaResolver, targetFieldMap, false, result.getFailData(), error);
         }
 
         // 是否写成功数据
         if (systemConfig.isEnableStorageWriteSuccess() && !CollectionUtils.isEmpty(result.getSuccessData())) {
-            asyncWrite(metaId, result.getTableGroupId(), result.getTargetTableGroupName(), event, true, result.getSuccessData(), "");
+            asyncWrite(result, schemaResolver, targetFieldMap, true, result.getSuccessData(), "");
         }
     }
 

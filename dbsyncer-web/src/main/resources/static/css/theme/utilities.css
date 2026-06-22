@@ -78,6 +78,39 @@
 .flex-1 { flex: 1; }
 .flex-auto { flex: auto; }
 .flex-none { flex: none; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+.min-h-0 { min-height: 0; }
+.min-h-280 { min-height: 280px; }
+.min-h-480 { min-height: 480px; }
+.min-h-520 { min-height: 520px; }
+
+.gap-0 { gap: 0; }
+
+/* 左右分栏工作区 */
+.workspace-split {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 0;
+  min-height: 480px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+@media (max-width: 992px) {
+  .workspace-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gap-2 { gap: var(--spacing-sm); }
+.gap-4 { gap: var(--spacing-md); }
+
+.space-y-4 > :not(:first-child) {
+  margin-top: var(--spacing-md);
+}
 
 /* Grid */
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
@@ -162,8 +195,19 @@
 .h-64 { height: 16rem; }
 
 .min-w-0 { min-width: 0; }
+.min-w-160 { min-width: 160px; }
 .min-w-200 { min-width: 200px; }
 .min-w-300 { min-width: 300px; }
+
+.connector-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.connector-logo-lg {
+  width: 60px;
+  height: 60px;
+}
 .max-w-full { max-width: 100%; }
 
 /* ========== 文本工具类 ========== */
@@ -194,6 +238,7 @@
 .border-none { border: none; }
 .border-gray-200 { border-color: #e5e7eb; }
 .border-2 { border-width: 2px; }
+.border-dashed { border-style: dashed; }
 
 /* ========== 圆角工具类 ========== */
 .rounded { border-radius: 0.25rem; }

@@ -40,6 +40,31 @@ public interface Database {
     }
 
     /**
+     * 生成创建数据库（或同级命名空间）的 DDL；已存在时不报错（各库方言由连接器覆盖）。
+     */
+    String buildCreateDatabaseSql(String databaseName, String schemaName);
+
+    /**
+     * 判断目标命名空间是否存在（库名 + Schema 由连接器方言解释）。
+     */
+    boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName);
+
+    /**
+     * 生成创建表 DDL
+     */
+    String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL);
+
+    /**
+     * 从源库获取建表DDL
+     */
+    String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName);
+
+    /**
+     * 生成删除表 DDL；targetInstance
+     */
+    String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName);
+
+    /**
      * 获取主键字段名称
      */
     default List<String> buildPrimaryKeys(List<String> primaryKeys) {

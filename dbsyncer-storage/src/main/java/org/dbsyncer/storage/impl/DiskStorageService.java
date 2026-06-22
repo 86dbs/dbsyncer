@@ -3,22 +3,6 @@
  */
 package org.dbsyncer.storage.impl;
 
-import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.OperationEnum;
-import org.dbsyncer.sdk.enums.SortEnum;
-import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.AbstractFilter;
-import org.dbsyncer.sdk.filter.BooleanFilter;
-import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.storage.AbstractStorageService;
-import org.dbsyncer.storage.StorageException;
-import org.dbsyncer.storage.lucene.Option;
-import org.dbsyncer.storage.lucene.Shard;
-import org.dbsyncer.storage.util.DocumentUtil;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -29,6 +13,26 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
+import org.dbsyncer.sdk.enums.SortEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.AbstractFilter;
+import org.dbsyncer.sdk.filter.BooleanFilter;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.storage.AbstractStorageService;
+import org.dbsyncer.storage.StorageException;
+import org.dbsyncer.storage.lucene.Option;
+import org.dbsyncer.storage.lucene.Shard;
+import org.dbsyncer.storage.util.DocumentUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,28 +43,114 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 将数据存储在磁盘，基于lucene实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2023-09-10 23:22
+ * @author AE86
+ * @version 1.0.0
+ * @date 2023-09-10 23:22
  */
+@Deprecated
 public class DiskStorageService extends AbstractStorageService {
 
-    private Map<String, Shard> shards = new ConcurrentHashMap();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final String COMMIT_TASK_KEY = "diskStorageLuceneCommit";
+
+    private final long DEFAULT_COMMIT_INTERVAL_MS = 3000L;
+
+    private final ScheduledTaskService scheduledTaskService;
+
+    private final Map<String, Shard> shards = new ConcurrentHashMap<>();
+
+    private final Map<String, Lock> shardLocks = new ConcurrentHashMap<>();
+
+    private long commitIntervalMs = DEFAULT_COMMIT_INTERVAL_MS;
 
     /**
      * 相对路径/data/
      */
     private static final String PATH = System.getProperty("user.dir") + File.separatorChar + "data" + File.separatorChar;
 
+    public DiskStorageService(ScheduledTaskService scheduledTaskService) {
+        this.scheduledTaskService = scheduledTaskService;
+    }
+
     @Override
     public void init(Properties properties) {
+        if (properties != null) {
+            commitIntervalMs = NumberUtil.toLong(properties.getProperty("dbsyncer.storage.disk.commit-interval-ms"), DEFAULT_COMMIT_INTERVAL_MS);
+            if (commitIntervalMs < 500L) {
+                commitIntervalMs = DEFAULT_COMMIT_INTERVAL_MS;
+            }
+        }
         // 创建配置和日志索引shard
         getShard(getSharding(StorageEnum.CONFIG, null));
         getShard(getSharding(StorageEnum.LOG, null));
+        startCommitScheduler();
+    }
+
+    @Override
+    public Paging query(Query query) {
+        String sharding = getSharding(query.getType(), query.getMetaId());
+        Lock shardLock = getShardLock(sharding);
+        boolean locked = false;
+        try {
+            locked = shardLock.tryLock(3, TimeUnit.SECONDS);
+            if (locked) {
+                return super.query(query);
+            }
+            logger.warn("Disk storage query lock timeout, sharding={}", sharding);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Disk storage query interrupted, sharding={}", sharding);
+        } finally {
+            if (locked) {
+                shardLock.unlock();
+            }
+        }
+        return new Paging(query.getPageNum(), query.getPageSize());
+    }
+
+    @Override
+    public void delete(Query query) {
+        BooleanFilter q = query.getBooleanFilter();
+        if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
+            throw new SdkException("必须包含删除条件");
+        }
+
+        String sharding = getSharding(query.getType(), query.getMetaId());
+        Lock shardLock = getShardLock(sharding);
+        boolean locked = false;
+        try {
+            locked = shardLock.tryLock();
+            if (locked) {
+                super.delete(query);
+                return;
+            }
+            logger.warn("Disk storage delete lock failed, sharding={}", sharding);
+        } finally {
+            if (locked) {
+                shardLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public void clear(StorageEnum type, String metaId) {
+        String sharding = getSharding(type, metaId);
+        Lock shardLock = getShardLock(sharding);
+        shardLock.lock();
+        try {
+            super.clear(type, metaId);
+        } finally {
+            shardLock.unlock();
+            shardLocks.remove(sharding);
+        }
     }
 
     @Override
@@ -124,16 +214,27 @@ public class DiskStorageService extends AbstractStorageService {
 
     @Override
     protected void batchInsert(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, (shard, docs)->shard.insertBatch(docs));
+        batchExecute(type, sharding, list, Shard::insertBatch);
     }
 
     @Override
     protected void batchUpdate(StorageEnum type, String sharding, List<Map> list) {
-        batchExecute(type, sharding, list, (shard, docs)-> {
-            for (Document doc : docs) {
-                shard.update(getPrimaryKeyTerm(doc), doc);
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        Shard shard = getShard(sharding);
+        List<Document> docs = new ArrayList<>(list.size());
+        List<Term> terms = new ArrayList<>(list.size());
+        list.forEach(r -> {
+            Document doc = convertDocument(type, r);
+            if (doc != null) {
+                docs.add(doc);
+                terms.add(getPrimaryKeyTerm(doc));
             }
         });
+        if (!docs.isEmpty()) {
+            shard.updateBatch(terms, docs);
+        }
     }
 
     @Override
@@ -149,10 +250,45 @@ public class DiskStorageService extends AbstractStorageService {
 
     @Override
     public void destroy() throws Exception {
+        stopCommitScheduler();
+        commitAllShards();
         for (Map.Entry<String, Shard> m : shards.entrySet()) {
             m.getValue().close();
         }
         shards.clear();
+    }
+
+    /**
+     * 定时提交所有分片，合并高频写入（如同步 DATA）产生的 segment，降低 Reader 堆外占用。
+     */
+    private void startCommitScheduler() {
+        if (scheduledTaskService == null) {
+            return;
+        }
+        scheduledTaskService.start(COMMIT_TASK_KEY, commitIntervalMs, this::commitAllShards);
+        logger.info("DiskStorage Lucene 定时 commit 已启动, interval={}ms", commitIntervalMs);
+    }
+
+    private void stopCommitScheduler() {
+        if (scheduledTaskService != null) {
+            scheduledTaskService.stop(COMMIT_TASK_KEY);
+        }
+    }
+
+    private void commitAllShards() {
+        for (Map.Entry<String, Shard> entry : shards.entrySet()) {
+            Shard shard = entry.getValue();
+            if (!shard.isDirty()) {
+                continue;
+            }
+            try {
+                if (shard.commitIfDirty()) {
+                    logger.debug("Lucene shard committed: {}", entry.getKey());
+                }
+            } catch (IOException e) {
+                logger.warn("Lucene shard commit failed: {}", entry.getKey(), e);
+            }
+        }
     }
 
     private BooleanQuery buildQuery(List<AbstractFilter> filters, List<BooleanFilter> clauses, Set<String> highLightKeys) {
@@ -226,30 +362,34 @@ public class DiskStorageService extends AbstractStorageService {
         Shard shard = getShard(sharding);
         List<Document> docs = new ArrayList<>();
         list.forEach(r-> {
-            switch (type) {
-                case DATA:
-                    docs.add(DocumentUtil.convertData2Doc(r));
-                    break;
-                case LOG:
-                    docs.add(DocumentUtil.convertLog2Doc(r));
-                    break;
-                case CONFIG:
-                    docs.add(DocumentUtil.convertConfig2Doc(r));
-                    break;
-                case TASK:
-                    docs.add(DocumentUtil.convertTask2Doc(r));
-                    break;
-                case VALIDATE_SYNC_DETAIL:
-                    docs.add(DocumentUtil.convertValidateSyncDetail2Doc(r));
-                    break;
-                default:
-                    break;
+            Document doc = convertDocument(type, r);
+            if (doc != null) {
+                docs.add(doc);
             }
         });
         try {
             mapper.apply(shard, docs);
         } catch (IOException e) {
             throw new StorageException(e);
+        }
+    }
+
+    private Document convertDocument(StorageEnum type, Map r) {
+        switch (type) {
+            case DATA:
+                return DocumentUtil.convertData2Doc(r);
+            case LOG:
+                return DocumentUtil.convertLog2Doc(r);
+            case CONFIG:
+                return DocumentUtil.convertConfig2Doc(r);
+            case TASK:
+                return DocumentUtil.convertTask2Doc(r);
+            case VALIDATE_SYNC_DETAIL:
+                return DocumentUtil.convertValidateSyncDetail2Doc(r);
+            case DATABASE_SYNC_DETAIL:
+                return DocumentUtil.convertDatabaseSyncDetail2Doc(r);
+            default:
+                return null;
         }
     }
 
@@ -264,6 +404,10 @@ public class DiskStorageService extends AbstractStorageService {
      */
     private Shard getShard(String sharding) {
         return shards.computeIfAbsent(sharding, k->new Shard(PATH + k));
+    }
+
+    private Lock getShardLock(String sharding) {
+        return shardLocks.computeIfAbsent(sharding, k -> new ReentrantLock());
     }
 
     /**
@@ -305,9 +449,12 @@ public class DiskStorageService extends AbstractStorageService {
             case ConfigConstant.TASK_TARGET_TOTAL:
             case ConfigConstant.TASK_DIFF_TOTAL:
             case ConfigConstant.TASK_FIXED_TOTAL:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL:
                 return SortField.Type.LONG;
             case ConfigConstant.DATA_SUCCESS:
             case ConfigConstant.TASK_STATUS:
+            case ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX:
                 return SortField.Type.INT;
             default:
                 return SortField.Type.STRING;

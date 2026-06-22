@@ -5,8 +5,29 @@
 <!-- 社区版提示 -->
 <div th:if="${editionInfo.edition eq 'community'}" class="text-center">
     <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+
+    <!-- 订正校验功能介绍 -->
+    <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
+        <h4 class="text-lg font-semibold text-info mb-2">
+            <i class="fa fa-check-circle"></i> 什么是订正校验？
+        </h4>
+        <p class="text-sm text-secondary mb-3">
+            订正校验是用于验证<strong>源数据库</strong>与<strong>目标数据库</strong>之间数据一致性的功能。在数据同步或迁移场景中，由于网络抖动、程序异常等原因，可能导致部分数据丢失或不一致。订正校验可以：
+        </p>
+        <ul class="text-sm text-secondary mb-3 pl-4">
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>自动检测</strong>：发现两边数据不一致的记录
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>差异分析</strong>：统计差异数量，定位问题数据
+            </li>
+            <li><i class="fa fa-angle-right text-info"></i> <strong>修复支持</strong>：提供修复能力，确保数据最终一致</li>
+        </ul>
+        <p class="text-sm text-secondary">
+            适用于：数据同步验证、迁移一致性检查、实时数据质量监控等场景。
+        </p>
+    </div>
+
     <p class="text-secondary mb-6">
-        暂未开放，请下载
+        该功能仅在专业版开放，请下载
         <a href="https://gitee.com/ghi/dbsyncer/releases"
            class="text-primary hover-underline font-medium"
            title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
@@ -14,9 +35,6 @@
             <i class="fa fa-download"></i> 专业版
         </a>
     </p>
-    <div class="mb-6">
-        <img width="383px" height="127px" draggable="false" th:src="@{'/img/license/enterprise.jpg'}" alt="专业版">
-    </div>
 </div>
 
 <!-- 查询订正校验列表 -->
@@ -50,6 +68,7 @@
                 <th>触发方式</th>
                 <th>结果</th>
                 <th>状态</th>
+                <th>最后执行</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -61,7 +80,7 @@
 
 <script th:if="${editionInfo.edition ne 'community'}">
     function copyTask(id) {
-        doPoster("/validate-sync/copy", { id: id }, function (response) {
+        doPoster("/validate-sync/copy", {id: id}, function (response) {
             if (response.success) {
                 bootGrowl('复制成功', 'success');
                 backIndexPage();
@@ -74,16 +93,16 @@
     function changeTaskState(id, url, title) {
         const btn = event.target.closest('.table-action-btn');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="'+ title +'中"></i>';
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin" title="' + title + '中"></i>';
         btn.disabled = true;
         doPoster(url, {id: id}, function (response) {
             btn.innerHTML = originalText;
             btn.disabled = false;
             if (response.success) {
-                bootGrowl(title +'成功', 'success');
+                bootGrowl(title + '成功', 'success');
                 refreshIndexList();
             } else {
-                bootGrowl(title +'失败: ' + response.message, 'danger');
+                bootGrowl(title + '失败: ' + response.message, 'danger');
             }
         })
     }
@@ -186,6 +205,33 @@
         return stateBtn.join('');
     }
 
+    function renderTableProgressText(task) {
+        var total = Number(task.totalTableCount);
+        var completed = Number(task.completedTableCount);
+        if (isNaN(total) || total <= 0) {
+            return '';
+        }
+        if (isNaN(completed) || completed < 0) {
+            completed = 0;
+        }
+        if (completed > total) {
+            completed = total;
+        }
+        return '<span class="text-xs text-secondary whitespace-nowrap">' + completed + '/' + total + '张表</span>';
+    }
+
+    function renderTaskDurationText(task) {
+        var isRunning = Number(task.status) === 1;
+        if (isRunning) {
+            return '';
+        }
+        var durationText = formatElapsedDuration(task.beginTime, task.endTime);
+        if (!durationText) {
+            return '';
+        }
+        return '<span class="text-xs text-tertiary whitespace-nowrap">任务耗时：' + durationText + '</span>';
+    }
+
     /**
      * 结果列：已有执行记录时，根据后端 errorCount（diffTotal&gt;0 的明细条数）展示「异常：n」或「正常」。
      * @param {Object} task 列表行数据（含 errorCount、updateTime）
@@ -195,6 +241,7 @@
         if (isNaN(n) || n < 0) {
             n = 0;
         }
+        var taskId = String(task.id || '').replace(/'/g, '');
         var isRunning = Number(task.status) === 1;
         var progressRaw = task.progress;
         if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
@@ -232,24 +279,39 @@
         }
 
         var left = (n > 0)
-            ? ('异常：<span class="badge badge-error">' + n + '</span>')
+            ? ('异常：<a href="javascript:void(0)" class="hover:underline cursor-pointer" title="查看异常校验结果" '
+                + 'onclick="doLoader(\'/validate-sync/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
+                + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
+        var tableProgressHtml = renderTableProgressText(task);
+        var durationHtml = renderTaskDurationText(task);
+        var centerParts = [];
+        if (tableProgressHtml) {
+            centerParts.push(tableProgressHtml);
+        }
+        if (durationHtml) {
+            centerParts.push(durationHtml);
+        }
+        var centerHtml = centerParts.length
+            ? ('<span class="progress-meta">' + centerParts.join('') + '</span>')
+            : '';
         var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
         return ''
-            + '<div style="min-width: 160px;">'
-            + '  <div class="progress-header" style="margin-bottom: 6px;">'
+            + '<div class="min-w-200">'
+            + '  <div class="progress-header progress-header-compact">'
             + '    <span class="progress-title">' + left + '</span>'
-            + '    <span class="progress-value progress-value-' + state + '" style="font-size: 12px; font-weight: 600;">' + rightText + '</span>'
+            + centerHtml
+            + '    <span class="progress-value progress-value-' + state + '">' + rightText + '</span>'
             + '  </div>'
-            + '  <div class="progress-bar" style="height: 6px; margin-bottom: 0;">'
-            + '    <div class="progress-fill ' + state + '" style="width: ' + progress + '%"></div>'
+            + '  <div class="progress-bar progress-bar-compact">'
+            + '    <div class="progress-fill ' + state + '" data-progress-width="' + progress + '"></div>'
             + '  </div>'
             + '</div>';
 
     }
 
     // 页面初始化
-    $(document).ready(function() {
+    $(document).ready(function () {
         // 定义返回函数，子页面返回
         window.backIndexPage = function () {
             doLoader('/validate-sync/list');
@@ -261,7 +323,7 @@
             tableBodySelector: '#validate-sync-table',
             storageKey: 'validate-sync-list',
             pageSize: 20,
-            renderRow: function(task, index) {
+            renderRow: function (task, index) {
                 return `
                     <tr>
                         <td>${index}</td>
@@ -282,6 +344,7 @@
                         <td>${renderTaskTriggerText(task.trigger)}</td>
                         <td>${renderResultColumn(task)}</td>
                         <td>${renderTaskStateText(task.status || 0)}</td>
+                        <td>${formatDate(task.updateTime || '')}</td>
                         <td>
                             <div class="flex items-center">
                                 <button class="table-action-btn view" title="修改" onclick="doLoader('/validate-sync/page/edit?id=${task.id}')">
@@ -293,8 +356,8 @@
                     </tr>
                 `;
             },
-            emptyHtml:'<td colspan="8" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
-            customPageSize:true
+            emptyHtml: '<td colspan="9" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无任务</p><p class="empty-description">点击"添加"按钮创建第一个任务</p></td>',
+            customPageSize: true
         });
 
         // 搜索框输入事件

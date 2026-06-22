@@ -30,6 +30,16 @@ public class Result<T> {
      */
     private String targetTableGroupName;
 
+    /**
+     * 同步任务metaId
+     */
+    private String metaId;
+
+    /**
+     * 事件
+     */
+    private String event;
+
     private final Object LOCK = new Object();
 
     public Result() {
@@ -83,5 +93,21 @@ public class Result<T> {
 
     public void setTargetTableGroupName(String targetTableGroupName) {
         this.targetTableGroupName = targetTableGroupName;
+    }
+
+    public String getMetaId() {
+        return metaId;
+    }
+
+    public void setMetaId(String metaId) {
+        this.metaId = metaId;
+    }
+
+    public String getEvent() {
+        return event;
+    }
+
+    public void setEvent(String event) {
+        this.event = event;
     }
 }

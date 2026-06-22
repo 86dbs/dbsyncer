@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">编辑整库迁移</h3>
+    </div>
+    <div class="card-body">
+        <p th:if="${readOnly}" class="text-warning text-sm mb-4">
+            <i class="fa fa-info-circle"></i> 任务运行中，仅可查看配置，请先停止任务后再修改
+        </p>
+        <div class="form-actions mb-4">
+            <button th:if="${!readOnly}" id="database-sync-submit-btn" type="button" class="btn btn-primary">
+                <i class="fa fa-save"></i> 保存
+            </button>
+            <button th:if="${readOnly}" type="button" class="btn btn-info" disabled>
+                <i class="fa fa-spinner fa-spin"></i> 运行中
+            </button>
+            <button class="btn btn-outline" type="button" onclick="backIndexPage()">
+                <i class="fa fa-reply"></i> 返回
+            </button>
+        </div>
+
+        <form id="database-sync-form">
+            <input type="hidden" name="id" id="database-sync-task-id" th:value="${task?.id}"/>
+
+            <div class="grid grid-cols-2">
+                <div class="form-item">
+                    <label class="form-label">任务名称<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="name" type="text" maxlength="50" required
+                               placeholder="请输入任务名称" th:value="${task?.name}"
+                               th:readonly="${readOnly}"/>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">
+                        <i class="fa fa-database text-primary"></i> 源端<strong class="text-primary">*</strong>
+                    </label>
+                    <select id="sourceConnectorId" class="form-control" th:disabled="${readOnly}">
+                        <option value="">请选择连接器</option>
+                        <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                th:attr="data-connector-type=${c?.config?.connectorType}"
+                                th:disabled="${#strings.equalsIgnoreCase(c?.config?.connectorType, 'ClickHouse') or #strings.equalsIgnoreCase(c?.config?.connectorType, 'OceanBase')}"
+                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-5" th:replace="database-sync/syncStrategy :: content"></div>
+
+            <div class="mt-5">
+                <h4 class="mb-3 font-medium">
+                    <i class="fa fa-sitemap text-primary"></i> 库映射配置
+                </h4>
+                <div class="workspace-split min-h-520">
+                    <aside class="flex flex-col border-r bg-secondary p-4 min-h-0 min-w-0">
+                        <div class="font-medium mb-3">
+                            库映射关系 (<span id="mappingCount">0</span>)
+                        </div>
+                        <button th:if="${!readOnly}" type="button" id="btnAddDbMapping" class="btn btn-primary w-full mb-3">
+                            <i class="fa fa-plus"></i> 添加库映射关系
+                        </button>
+                        <div id="mappingCardList" class="flex-1 overflow-y-auto min-h-0"></div>
+                        <div id="mappingSidebarEmpty" class="text-center text-tertiary p-6 hidden">
+                            <i class="fa fa-database empty-icon"></i>
+                            <p class="empty-text mt-2">暂无库映射</p>
+                            <p class="empty-description text-sm">选择源端连接器后，点击「添加库映射关系」选择表</p>
+                        </div>
+                    </aside>
+
+                    <section class="workspace-detail flex flex-col min-h-0 min-w-0">
+                        <div id="mappingDetailPanel" class="card card-static workspace-detail-panel flex flex-col flex-1 min-h-0 hidden">
+                            <div class="card-body border-b mb-0">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-item mb-0">
+                                        <label class="form-label">目标连接<strong class="text-primary">*</strong></label>
+                                        <div class="form-control-area">
+                                            <select id="targetConnectorId" class="form-control" th:disabled="${readOnly}">
+                                                <option value="">请选择连接器</option>
+                                                <option th:each="c : ${connectors}" th:value="${c?.id}"
+                                                        th:attr="data-connector-type=${c?.config?.connectorType}"
+                                                        th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-item mb-0">
+                                        <label class="form-label">目标库名<strong class="text-primary">*</strong></label>
+                                        <div class="form-control-area">
+                                            <input type="text" id="detailTargetDatabase" class="form-control" maxlength="128"
+                                                   placeholder="目标库名" th:readonly="${readOnly}"/>
+                                        </div>
+                                    </div>
+                                    <div class="form-item mb-0" id="detailTargetSchemaWrap">
+                                        <label class="form-label">目标 Schema</label>
+                                        <div class="form-control-area">
+                                            <input type="text" id="detailTargetSchema" class="form-control" maxlength="128"
+                                                   placeholder="目标 Schema" th:readonly="${readOnly}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-header flex items-center justify-between gap-2">
+                                <h4 class="card-title mb-0" id="mappingDetailTitle">
+                                    <i class="fa fa-table"></i> 表映射明细
+                                </h4>
+                                <button th:if="${!readOnly}" type="button" id="btnBatchTablePrefix" class="btn btn-outline btn-sm">
+                                    批量加目标表前缀
+                                </button>
+                            </div>
+                            <div class="card-body table-scroll-panel">
+                                <table class="table table-sm">
+                                    <thead>
+                                    <tr>
+                                        <th class="width50px">序号</th>
+                                        <th>源表名</th>
+                                        <th>目标表名 <i class="fa fa-pencil text-tertiary"></i></th>
+                                        <th th:if="${!readOnly}" class="width80px">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="mappingDetailTableBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="mappingDetailPagination" class="pagination hidden">
+                                <p class="pagination-info mb-0">
+                                    共 <span class="mappingDetailTotalCount">0</span> 条，第
+                                    <span class="mappingDetailCurrentPage">1</span> /
+                                    <span class="mappingDetailTotalPages">1</span> 页
+                                </p>
+                                <div class="pagination-bar"></div>
+                            </div>
+                        </div>
+                        <div id="mappingWorkspaceEmpty" class="card card-static workspace-empty flex flex-col flex-1 min-h-280">
+                            <div class="card-body flex flex-col items-center justify-center text-center text-tertiary flex-1">
+                                <i class="fa fa-hand-pointer-o empty-icon"></i>
+                                <p class="empty-text mt-2">请选择左侧库映射</p>
+                                <p class="empty-description text-sm">点击库映射卡片查看表映射明细</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <input type="hidden" name="databaseMappingsJson" id="databaseMappingsJson" value="[]"/>
+        </form>
+    </div>
+    <div class="blank-block"></div>
+</div>
+
+<script th:inline="javascript">
+    window.DATABASE_SYNC_PAGE = {
+        mode: 'edit',
+        readOnly: /*[[${readOnly}]]*/ false,
+        task: /*[[${task}]]*/ null
+    };
+</script>
+<script th:src="@{/js/database-sync/database-sync.js}"></script>
+</html>

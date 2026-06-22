@@ -11,7 +11,8 @@
     align-items: center;
 }
 
-.checkbox-group {
+/* 只针对表格的复选框生效 */
+table .checkbox-group {
     display: inline-flex !important;
     gap: 0 !important;
     margin: 0 !important;
@@ -20,7 +21,7 @@
     min-width: auto !important;
 }
 
-.checkbox-group-item {
+table .checkbox-group-item {
     display: inline-flex !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -29,12 +30,13 @@
     height: 20px !important;
     line-height: 20px !important;
 }
-.checkbox-group-item-label {
-    display: none !important; /* 表格中不显示标签文本 */
+
+table .checkbox-group-item-label {
+    display: none !important;
 }
 
-.checkbox-group-item::before {
-    margin-right: 0 !important; /* 表格中不需要右边距 */
+table .checkbox-group-item::before {
+    margin-right: 0 !important;
     display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -84,7 +86,7 @@
 .checkbox-group-item::after {
     content: '';
     position: absolute;
-    left: 50%;
+    left: 10px; /* 20px / 2，对齐 ::before 方框中心，避免压住右侧文案 */
     top: 50%;
     transform: translate(-50%, -50%) scale(0) rotate(45deg);
     width: 5px;
@@ -293,7 +295,7 @@
 }
 
 .checkbox-group.checkbox-group-sm .checkbox-group-item::after {
-    left: 50%;
+    left: 8px; /* 16px / 2 */
     width: 4px;
     height: 8px;
     transform-origin: center center;
@@ -315,7 +317,7 @@
 }
 
 .checkbox-group.checkbox-group-lg .checkbox-group-item::after {
-    left: 50%;
+    left: 12px; /* 24px / 2 */
     width: 6px;
     height: 12px;
     transform-origin: center center;

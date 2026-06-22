@@ -32,7 +32,11 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -101,6 +105,66 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     @Override
     public String buildSqlWithQuotation() {
         return "`";
+    }
+
+    @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
+        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        return connectorInstance.execute(databaseTemplate ->
+                !CollectionUtils.isEmpty(databaseTemplate.queryForList("SHOW DATABASES LIKE ?", String.class, databaseName)));
+    }
+
+    @Override
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ")";
+    }
+
+    @Override
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
+            return StringUtil.EMPTY;
+        }
+        String sql = "SHOW CREATE TABLE " + buildWithQuotation(sourceTableName);
+        return sourceInstance.execute(databaseTemplate -> {
+            List<java.util.Map<String, Object>> rows = databaseTemplate.queryForList(sql);
+            if (CollectionUtils.isEmpty(rows)) {
+                return StringUtil.EMPTY;
+            }
+            java.util.Map<String, Object> ddlRow = rows.get(0);
+            if (ddlRow == null || ddlRow.isEmpty()) {
+                return StringUtil.EMPTY;
+            }
+            String ddl = StringUtil.EMPTY;
+            for (java.util.Map.Entry<String, Object> entry : ddlRow.entrySet()) {
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("create table")
+                        && entry.getValue() != null) {
+                    ddl = String.valueOf(entry.getValue());
+                    break;
+                }
+            }
+            if (StringUtil.isBlank(ddl)) {
+                return StringUtil.EMPTY;
+            }
+            return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
+        });
+    }
+
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
     }
 
     @Override
@@ -295,7 +359,7 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
             return super.formatPhysicalType(sourceDefinition);
         }

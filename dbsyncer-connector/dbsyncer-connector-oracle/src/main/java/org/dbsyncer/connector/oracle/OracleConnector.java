@@ -8,12 +8,16 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -24,12 +28,18 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.springframework.util.Assert;
 
+import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Oracle连接器实现
@@ -74,6 +84,184 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     @Override
     public String buildSqlWithQuotation() {
         return "\"";
+    }
+
+    /**
+     * Oracle 以 schema（用户）为迁移命名空间；优先 {@code schemaName}，兼容仅填 {@code databaseName} 的旧数据。
+     */
+    @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        String user = schemaName.trim().toUpperCase(Locale.ROOT);
+        String password = defaultSchemaPassword(user);
+        String createUserSql = "CREATE USER " + user + " IDENTIFIED BY \"" + password + "\" " +
+                "DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP QUOTA UNLIMITED ON USERS";
+        String grantSql = "GRANT CONNECT, RESOURCE TO " + user;
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_USERS WHERE USERNAME = '" + user + "'; " +
+                "IF v_cnt = 0 THEN " +
+                "EXECUTE IMMEDIATE '" + createUserSql + "'; " +
+                "EXECUTE IMMEDIATE '" + grantSql + "'; " +
+                "END IF; END;";
+    }
+
+    /**
+     * 判断 schema（用户）是否存在；优先 {@code schemaName}，兼容仅填 {@code databaseName} 的旧数据。
+     */
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject(
+                        "SELECT COUNT(1) FROM ALL_USERS WHERE USERNAME = UPPER(?)",
+                        Integer.class,
+                        schemaName
+                ));
+        return count != null && count > 0;
+    }
+
+    private static String defaultSchemaPassword(String schemaName) {
+        return schemaName + "@1234";
+    }
+
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String dropSql = "DROP TABLE " + qualifyTableName(owner, tableName) + " CASCADE CONSTRAINTS";
+        return wrapDropTableIfExists(owner, tableName, dropSql);
+    }
+
+    @Override
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String createSql = "CREATE TABLE " + qualifyTableName(owner, tableName) + " (" + sourceDDL + ")";
+        return wrapCreateTableIfNotExists(owner, tableName, createSql);
+    }
+
+    @Override
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
+            return StringUtil.EMPTY;
+        }
+        return fetchRawTableDdl(sourceInstance, sourceTableName);
+    }
+
+    private String fetchRawTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
+        return connectorInstance.execute(databaseTemplate -> {
+            String schema = connectorInstance.getSchema();
+            try {
+                String ddl = databaseTemplate.queryForObject(
+                        "SELECT DBMS_METADATA.GET_DDL('TABLE', ?, ?) FROM DUAL",
+                        (ResultSet rs, int rowNum) -> {
+                            Clob clob = rs.getClob(1);
+                            if (clob == null || clob.length() == 0) {
+                                return StringUtil.EMPTY;
+                            }
+                            return clob.getSubString(1, (int) clob.length());
+                        },
+                        tableName, schema);
+                if (StringUtil.isBlank(ddl)) {
+                    return StringUtil.EMPTY;
+                }
+                ddl = ddl.trim();
+                if (StringUtil.isNotBlank(schema)) {
+                    String quotedSchema = "\"" + schema.toUpperCase(Locale.ROOT) + "\"";
+                    ddl = ddl.replace(quotedSchema + ".", "");
+                    quotedSchema = "\"" + schema + "\"";
+                    ddl = ddl.replace(quotedSchema + ".", "");
+                }
+                if (ddl.endsWith(";")) {
+                    ddl = ddl.substring(0, ddl.length() - 1).trim();
+                }
+                return ddl;
+            } catch (Exception e) {
+                String msg = e.getMessage();
+                if (msg != null && msg.contains("ORA-31603")) {
+                    return StringUtil.EMPTY;
+                }
+                throw new RuntimeException("Failed to get DDL for table: " + tableName, e);
+            }
+        });
+    }
+
+    private String qualifyCreateTableStatement(String ddl, String owner, String tableName) {
+        if (StringUtil.isBlank(ddl)) {
+            return StringUtil.EMPTY;
+        }
+        String normalized = ddl.trim();
+        int parenIndex = normalized.indexOf('(');
+        if (parenIndex < 0) {
+            return normalized;
+        }
+        return "CREATE TABLE " + qualifyTableName(owner, tableName) + " " + normalized.substring(parenIndex);
+    }
+
+    private String wrapCreateTableIfNotExists(String owner, String tableName, String createSql) {
+        String tableUpper = normalizeTableName(tableName);
+        String escapedCreateSql = escapeForExecuteImmediate(createSql);
+        if (StringUtil.isBlank(owner)) {
+            return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
+        }
+        String ownerUpper = normalizeOwner(owner);
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
+    }
+
+    private String wrapDropTableIfExists(String owner, String tableName, String dropSql) {
+        String tableUpper = normalizeTableName(tableName);
+        String escapedDropSql = escapeForExecuteImmediate(dropSql);
+        if (StringUtil.isBlank(owner)) {
+            return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
+        }
+        String ownerUpper = normalizeOwner(owner);
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
+    }
+
+    private String qualifyTableName(String owner, String tableName) {
+        String quotedTable = buildWithQuotation(normalizeTableName(tableName));
+        if (StringUtil.isBlank(owner)) {
+            return quotedTable;
+        }
+        return buildWithQuotation(normalizeOwner(owner)) + "." + quotedTable;
+    }
+
+    private static String normalizeOwner(String owner) {
+        return owner == null ? StringUtil.EMPTY : owner.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static String normalizeTableName(String tableName) {
+        return tableName == null ? StringUtil.EMPTY : tableName.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void applySessionSchema(DatabaseTemplate databaseTemplate, String schema) {
+        if (StringUtil.isBlank(schema)) {
+            return;
+        }
+        databaseTemplate.execute("ALTER SESSION SET CURRENT_SCHEMA = " + normalizeOwner(schema));
+    }
+
+    @Override
+    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
+        Result result = new Result();
+        try {
+            Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
+            connectorInstance.execute(databaseTemplate -> {
+                applySessionSchema(databaseTemplate, connectorInstance.getSchema());
+                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
+                return true;
+            });
+            Map<String, String> successMap = new HashMap<>();
+            successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
+            result.addSuccessData(Collections.singletonList(successMap));
+        } catch (Exception e) {
+            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
+        }
+        return result;
     }
 
     @Override
@@ -362,7 +550,7 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         String typeName = sourceDefinition == null ? null : sourceDefinition.getTypeName();
         if (StringUtil.isBlank(typeName)) {
             return "VARCHAR2(255)";

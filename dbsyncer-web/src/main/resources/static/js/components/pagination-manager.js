@@ -55,6 +55,42 @@
         return;
     }
     
+    function createPaginationNavBtn(label, iconClass, disabled, onClick) {
+        const btn = $(`<button type="button" class="pagination-btn pagination-btn-nav" title="${label}" ${disabled ? 'disabled' : ''}>
+            <i class="fa ${iconClass}"></i>
+        </button>`);
+        if (!disabled && typeof onClick === 'function') {
+            btn.on('click', onClick);
+        }
+        return btn;
+    }
+
+    function applyProgressFillWidths(container) {
+        $(container).find('.progress-fill[data-progress-width]').each(function () {
+            const width = this.getAttribute('data-progress-width');
+            if (width !== null && width !== '') {
+                this.style.setProperty('--progress-width', width + '%');
+            }
+        });
+    }
+
+    function getPageWindow(currentPage, totalPages, windowSize) {
+        if (totalPages <= windowSize) {
+            return { start: 1, end: totalPages };
+        }
+        let start = currentPage - Math.floor(windowSize / 2);
+        let end = start + windowSize - 1;
+        if (start < 1) {
+            start = 1;
+            end = windowSize;
+        }
+        if (end > totalPages) {
+            end = totalPages;
+            start = totalPages - windowSize + 1;
+        }
+        return { start: start, end: end };
+    }
+
     function PaginationManager(options) {
         const storageKey = options.storageKey || '';
         const stored = loadPaginationState(storageKey);
@@ -75,6 +111,7 @@
             storageKey: storageKey,
             customPageSize: options.customPageSize || false,
             customPageSizeItems: options.customPageSizeItems ||  [5, 10, 50, 100, 200],
+            showBoundaryButtons: options.showBoundaryButtons !== false,
             refreshCompleted: options.refreshCompleted || function() {}
         };
 
@@ -202,13 +239,14 @@
                 const html = config.renderRow(item, i);
                 tbody.append(html);
             });
+            applyProgressFillWidths(tbody);
         };
 
         // 渲染分页按钮
         this.renderPagination = function(currentPage, totalPages, onPageChange) {
             const pagination = $(config.paginationSelector);
             const paginationBar = $(config.paginationSelector).find(".pagination-bar");
-            const paginationBtns = pagination.find('.pagination-btn');
+            const paginationBtns = pagination.find('.pagination-btn, .pagination-page-btn');
             paginationBtns.remove();
 
             let $this = this;
@@ -258,21 +296,28 @@
                 }
             }
 
-            // 上一页按钮
-            const prevBtn = $(`<button type="button" class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}>
-                <i class="fa fa-angle-left"></i>
-            </button>`);
-            if (currentPage > 1) {
-                prevBtn.on('click', () => onPageChange(currentPage - 1));
+            if (config.showBoundaryButtons) {
+                // 首页按钮
+                paginationBar.append(createPaginationNavBtn(
+                    '首页',
+                    'fa-angle-double-left',
+                    currentPage === 1,
+                    () => onPageChange(1)
+                ));
             }
-            paginationBar.append(prevBtn);
 
-            // 页码按钮（显示3个页码）
-            const startPage = Math.max(1, currentPage - 1);
-            const endPage = Math.min(totalPages, startPage + 2);
+            // 上一页按钮
+            paginationBar.append(createPaginationNavBtn(
+                '上一页',
+                'fa-angle-left',
+                currentPage === 1,
+                () => onPageChange(currentPage - 1)
+            ));
 
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = $(`<button type="button" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
+            // 页码按钮：总页数 > 3 时固定展示 3 个，否则展示全部
+            const pageWindow = getPageWindow(currentPage, totalPages, 3);
+            for (let i = pageWindow.start; i <= pageWindow.end; i++) {
+                const pageBtn = $(`<button type="button" class="pagination-page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
                 pageBtn.on('click', () => {
                     if (i !== currentPage) {
                         onPageChange(i);
@@ -282,13 +327,22 @@
             }
 
             // 下一页按钮
-            const nextBtn = $(`<button type="button" class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>
-                <i class="fa fa-angle-right"></i>
-            </button>`);
-            if (currentPage < totalPages) {
-                nextBtn.on('click', () => onPageChange(currentPage + 1));
+            paginationBar.append(createPaginationNavBtn(
+                '下一页',
+                'fa-angle-right',
+                currentPage === totalPages,
+                () => onPageChange(currentPage + 1)
+            ));
+
+            if (config.showBoundaryButtons) {
+                // 末页按钮
+                paginationBar.append(createPaginationNavBtn(
+                    '末页',
+                    'fa-angle-double-right',
+                    currentPage === totalPages,
+                    () => onPageChange(totalPages)
+                ));
             }
-            paginationBar.append(nextBtn);
         };
 
         // 更新分页信息

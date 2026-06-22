@@ -5,19 +5,23 @@
     <parent>
         <groupId>org.ghi</groupId>
         <artifactId>dbsyncer</artifactId>
-        <version>2.1.1</version>
+        <version>2.1.2</version>
     </parent>
     <artifactId>dbsyncer-connector</artifactId>
     <packaging>pom</packaging>
     <modules>
         <module>dbsyncer-connector-base</module>
+        <module>dbsyncer-connector-clickhouse</module>
         <module>dbsyncer-connector-elasticsearch</module>
         <module>dbsyncer-connector-file</module>
+        <module>dbsyncer-connector-h2</module>
         <module>dbsyncer-connector-http</module>
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-mysql</module>
+        <module>dbsyncer-connector-oceanbase</module>
         <module>dbsyncer-connector-oracle</module>
         <module>dbsyncer-connector-postgresql</module>
+        <module>dbsyncer-connector-redis</module>
         <module>dbsyncer-connector-sqlite</module>
         <module>dbsyncer-connector-sqlserver</module>
     </modules>

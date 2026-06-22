@@ -12,8 +12,6 @@ import org.dbsyncer.sdk.enums.StorageStrategyEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
@@ -21,20 +19,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @Author AE86
- * @Version 1.0.0
- * @Date 2019-11-16 23:22
+ * @author AE86
+ * @version 1.0.0
+ * @date 2019-11-16 23:22
  */
 public abstract class AbstractStorageService implements StorageService, DisposableBean {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final Lock lock = new ReentrantLock();
 
     protected abstract Paging select(String sharding, Query query);
 
@@ -59,21 +50,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public Paging query(Query query) {
-        boolean locked = false;
         try {
-            locked = lock.tryLock(3, TimeUnit.SECONDS);
-            if (locked) {
-                String sharding = getSharding(query.getType(), query.getMetaId());
-                return select(sharding, query);
-            }
-        } catch (InterruptedException e) {
-            logger.warn("tryLock error:{}", e.getLocalizedMessage());
+            String sharding = getSharding(query.getType(), query.getMetaId());
+            return select(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
-        } finally {
-            if (locked) {
-                lock.unlock();
-            }
         }
         return new Paging(query.getPageNum(), query.getPageSize());
     }
@@ -85,32 +66,21 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             throw new SdkException("必须包含删除条件");
         }
 
-        boolean locked = false;
         try {
-            locked = lock.tryLock();
-            if (locked) {
-                String sharding = getSharding(query.getType(), query.getMetaId());
-                delete(sharding, query);
-            }
+            String sharding = getSharding(query.getType(), query.getMetaId());
+            delete(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
-        } finally {
-            if (locked) {
-                lock.unlock();
-            }
         }
     }
 
     @Override
     public void clear(StorageEnum type, String metaId) {
         try {
-            lock.lock();
             String sharding = getSharding(type, metaId);
             deleteAll(sharding);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
-        } finally {
-            lock.unlock();
         }
     }
 

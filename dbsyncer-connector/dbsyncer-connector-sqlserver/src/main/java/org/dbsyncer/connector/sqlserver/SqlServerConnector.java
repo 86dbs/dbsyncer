@@ -91,6 +91,46 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
+        String quoted = buildWithQuotation(databaseName);
+        String escapedName = databaseName.replace("'", "''");
+        return "IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = N'" + escapedName + "') CREATE DATABASE " + quoted;
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT COUNT(1) FROM sys.databases WHERE name = ?", Integer.class, databaseName));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+        String createSql = "CREATE TABLE " + tableName + " (" + sourceDDL + ")";
+        String escapedTableName = tableName.replace("'", "''");
+        return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NULL BEGIN " + createSql + " END";
+    }
+
+    @Override
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+        return StringUtil.EMPTY;
+    }
+
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        String quoted = buildWithQuotation(tableName);
+        String dropSql = "DROP TABLE " + quoted;
+        String escapedTableName = tableName.replace("'", "''");
+        return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NOT NULL " + dropSql;
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         List<String> primaryKeys = buildPrimaryKeys(config.getPrimaryKeys());
         String orderBy = StringUtil.join(primaryKeys, StringUtil.COMMA);
@@ -172,7 +212,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
             return super.formatPhysicalType(sourceDefinition);
         }
@@ -227,6 +267,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         return targetCommand;
     }
+
     @Override
     public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
         Database database = config.getDatabase();

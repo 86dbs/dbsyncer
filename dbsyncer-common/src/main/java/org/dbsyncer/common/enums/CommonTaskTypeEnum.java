@@ -17,7 +17,12 @@ public enum CommonTaskTypeEnum {
     /**
      * 订正校验
      */
-    VALIDATE_SYNC;
+    VALIDATE_SYNC,
+
+    /**
+     * 整库迁移
+     */
+    DATABASE_SYNC;
 
     /**
      * 按名称解析任务类型，并统一异常语义。

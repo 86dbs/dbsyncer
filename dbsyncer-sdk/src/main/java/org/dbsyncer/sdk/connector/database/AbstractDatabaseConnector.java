@@ -11,7 +11,11 @@ import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
-import org.dbsyncer.sdk.connector.*;
+import org.dbsyncer.sdk.connector.AbstractConnector;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.DefaultMetaContext;
+import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -48,7 +52,16 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,9 +69,9 @@ import java.util.stream.Collectors;
 /**
  * 关系型数据库连接器实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2020-01-08 15:17
+ * @author AE86
+ * @version 1.0.0
+ * @date 2020-01-08 15:17
  */
 public abstract class AbstractDatabaseConnector extends AbstractConnector implements ConnectorService<DatabaseConnectorInstance, DatabaseConfig>, Database {
 
@@ -337,22 +350,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         int[] execute = null;
         try {
             // 2、设置参数
-            execute = connectorInstance.execute(databaseTemplate -> {
-                SimpleConnection connection = databaseTemplate.getSimpleConnection();
-                try {
-                    // 手动提交事务
-                    connection.setAutoCommit(false);
-                    int[] r = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
-                    connection.commit();
-                    return r;
-                } catch (Exception e) {
-                    // 异常回滚
-                    connection.rollback();
-                    throw e;
-                } finally {
-                    connection.setAutoCommit(true);
-                }
-            });
+            execute = connectorInstance.execute(databaseTemplate -> batchUpdate(databaseTemplate, executeSql, fields, data));
         } catch (Exception e) {
             // 出现失败时，服务降级为逐条处理
             forceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
@@ -376,6 +374,31 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
         }
         return result;
+    }
+
+    /**
+     * 是否使用 JDBC 事务包装批量写入。ClickHouse 等不支持事务的引擎应返回 false。
+     */
+    protected boolean useJdbcTransaction() {
+        return true;
+    }
+
+    protected int[] batchUpdate(DatabaseTemplate databaseTemplate, String executeSql, List<Field> fields, List<Map> data) throws Exception {
+        if (!useJdbcTransaction()) {
+            return databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+        }
+        SimpleConnection connection = databaseTemplate.getSimpleConnection();
+        try {
+            connection.setAutoCommit(false);
+            int[] result = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+            connection.commit();
+            return result;
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
     }
 
     private void forceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context, String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
@@ -705,7 +728,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     /**
      * 根据当前运行的参数，动态拼接 WHERE 查询条件
-     *
      */
     private String buildQueryCondition(BooleanFilter baseQuery, List<Object> args) {
         if (baseQuery == null) {
@@ -1026,7 +1048,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     /**
      * 生成列定义中的类型片段（不含列名），用于同构订正等 DDL。
      */
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         String raw = sourceDefinition.getTypeName();
         // 空类型按 VARCHAR 兜底，避免下游拼接非法 DDL
         if (StringUtil.isBlank(raw)) {

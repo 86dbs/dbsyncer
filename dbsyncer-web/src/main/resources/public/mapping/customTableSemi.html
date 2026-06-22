@@ -167,6 +167,105 @@
         </div>`);
     }
 
+    // 生成redis配置
+    function renderRedisInfo(customType, extInfo, items) {
+        let dataStructure = extInfo.dataStructure === undefined ? 'String' : extInfo.dataStructure;
+        items.push(`<div class="form-item">
+                    <label class="form-label">数据结构<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <select class="form-control" name="dataStructure" required>
+                            <option value="String" ${dataStructure === 'String' ? 'selected' : ''}>String</option>
+                            <option value="List" disabled ${dataStructure === 'List' ? 'selected' : ''}>List(开发中)</option>
+                            <option value="Set" disabled ${dataStructure === 'Set' ? 'selected' : ''}>Set(开发中)</option>
+                            <option value="ZSet" disabled ${dataStructure === 'ZSet' ? 'selected' : ''}>ZSet(开发中)</option>
+                            <option value="Hash" disabled ${dataStructure === 'Hash' ? 'selected' : ''}>Hash(开发中)</option>
+                        </select>
+                    </div>
+                </div>`);
+        if (customType === 'source') {
+            let stream = extInfo.stream !== undefined && extInfo.stream !== '' ? extInfo.stream
+                : (extInfo.keyPrefix === undefined ? '' : extInfo.keyPrefix);
+            items.push(`<div class="form-item">
+                <label class="form-label">Stream</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="stream" type="text" maxlength="128" value="${stream}" placeholder="Redis Stream 名称，如 user#，为空则使用表名"/>
+                </div>
+            </div>`);
+            let groupId = extInfo.groupId === undefined ? '' : extInfo.groupId;
+            items.push(`<div class="form-item">
+                    <label class="form-label">消费组 groupId<strong class="text-primary">*</strong></label>
+                    <div class="form-control-area">
+                        <input class="form-control" name="groupId" type="text" maxlength="128" value="${groupId}" required placeholder="dbsyncer-group"/>
+                    </div>
+                </div>`);
+            let consumerName = extInfo.consumerName === undefined ? 'dbsyncer-consumer' : extInfo.consumerName;
+            items.push(`<div class="form-item">
+                        <label class="form-label">消费者名称</label>
+                        <div class="form-control-area">
+                            <input class="form-control" name="consumerName" type="text" maxlength="128" value="${consumerName}" placeholder="dbsyncer-consumer"/>
+                        </div>
+                    </div>`);
+            return;
+        }
+
+        let keyPrefix = extInfo.keyPrefix === undefined ? '' : extInfo.keyPrefix;
+        let keyJoiner = extInfo.keyJoiner === undefined || extInfo.keyJoiner === '' ? ':' : extInfo.keyJoiner;
+        let expireType = extInfo.expireType === undefined ? 'never' : extInfo.expireType;
+        let expireSeconds = extInfo.expireSeconds === undefined ? '' : extInfo.expireSeconds;
+        if (expireSeconds === '') {
+            expireSeconds = 86440;
+        }
+        items.push(`<div class="form-item">
+                <label class="form-label">缓存key前缀</label>
+                <div class="form-control-area">
+                    <input class="form-control" name="keyPrefix" type="text" maxlength="128" value="${keyPrefix}" placeholder="如：user:cache，为空则使用表名"/>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item">
+                <label class="form-label">主键拼接符 <i class="fa fa-question-circle" title="如果有多个主键时，示例效果：A:B:C"></i></label>
+                <div class="form-control-area">
+                    <input class="form-control" name="keyJoiner" type="text" maxlength="16" value="${keyJoiner}" placeholder="默认 :"/>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item">
+                <label class="form-label">过期策略</label>
+                <div class="form-control-area">
+                    <div id="redis_expire_type" class="radio-group radio-group-control-height">
+                        <input type="radio" name="expireType" value="never" ${expireType === 'never' ? 'checked' : ''} />
+                        <label>永不过期</label>
+                        <input type="radio" name="expireType" value="expire" ${expireType === 'expire' ? 'checked' : ''} />
+                        <label>到期</label>
+                    </div>
+                </div>
+            </div>`);
+        items.push(`<div class="form-item">
+                <label class="form-label redis-expire-config hidden">过期时间(秒)<strong class="text-primary">*</strong></label>
+                <div class="form-control-area redis-expire-config hidden">
+                    <input class="form-control" name="expireSeconds" type="number" min="1" maxlength="20" value="${expireSeconds}" placeholder="86440"/>
+                </div>
+            </div>`);
+    }
+
+    function initRedisForm(extInfo) {
+        initSelect($('select[name="dataStructure"]'));
+        const redisExpireConfig = $('.redis-expire-config');
+        const $expireInput = $('input[name="expireSeconds"]');
+        const toggleExpireConfig = function (expireType) {
+            if (expireType === 'expire') {
+                redisExpireConfig.show();
+                $expireInput.prop('required', true).prop('tabindex', 0);
+                if (!$expireInput.val()) {
+                    $expireInput.val(86440);
+                }
+            } else {
+                redisExpireConfig.hide();
+                $expireInput.prop('required', false).prop('tabindex', -1);
+            }
+        };
+        $('#redis_expire_type').radioGroup({ onChange: toggleExpireConfig});
+        toggleExpireConfig(extInfo.expireType || $('input[name="expireType"]:checked').val() || 'never');
+    }
+
     function renderSemiInfo(tableName, extInfo) {
         let connectorType = $("#connectorType").val();
         let customType = $("#customType").val();
@@ -184,6 +283,10 @@
                         </div>
                     </div>`);
                 }
+                break;
+            case 'Redis':
+                config.label = '表名';
+                renderRedisInfo(customType, extInfo, items);
                 break;
             case 'File':
                 config.label = '文件名';
@@ -428,10 +531,11 @@
         function showCustomTableInfo($customSelect) {
             let selected = $customSelect.getValues();
             let items;
+            let extInfo = {};
             if (selected.length >= 1) {
                 $(".field-data-row").remove();
                 let columns = JSON.parse($customSelect.getAttribute('column'));
-                let extInfo = JSON.parse($customSelect.getAttribute('extInfo'));
+                extInfo = JSON.parse($customSelect.getAttribute('extInfo'));
                 for (let c of columns) {
                     addFieldRow(c.name, c.typeName, c.pk);
                 }
@@ -443,6 +547,9 @@
             $("#customItems").html(items);
             initSelect($('select[name="method"]'));
             initSelect($('select[name="contentType"]'));
+            if ($("#connectorType").val() === 'Redis') {
+                initRedisForm(extInfo);
+            }
         }
 
         let customTableSelect = $("#custom_table_select").dbSelect({

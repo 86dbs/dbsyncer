@@ -34,6 +34,27 @@
   max-width: 300px;
 }
 
+/* 面板内全宽下拉：长连接器名称可完整展示 */
+.dbsyncer-select-panel .dbsyncer-select {
+  display: block;
+  width: 100%;
+}
+
+.dbsyncer-select-panel .dbsyncer-select-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(480px, calc(100vw - 48px));
+}
+
+.dbsyncer-select-panel .dbsyncer-select-option-text {
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+}
+
 /* 触发按钮 */
 .dbsyncer-select-trigger {
   display: flex;

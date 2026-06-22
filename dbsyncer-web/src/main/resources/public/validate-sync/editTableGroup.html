@@ -19,7 +19,7 @@
             <!-- 驱动同步关系 -->
             <div class="grid grid-cols-3">
                 <div class="flex items-center">
-                    <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${task?.sourceConnector?.config?.connectorType} + '.png'}" />
+                    <img draggable="false" class="connector-logo-lg" th:src="@{'/img/'+ ${task?.sourceConnector?.config?.connectorType} + '.png'}" alt="" />
                     <div class="ml-2">
                         <p class="text-md">[[${task?.sourceConnector?.name}]]</p>
                         <p class="text-sm">数据源表：[[${tableGroup?.sourceTable?.name}]] ([[${tableGroup?.sourceTable?.type}]]）</p>
@@ -30,7 +30,7 @@
                     <i class="fa fa-arrow-right fa-3x"></i>
                 </div>
                 <div class="flex items-center">
-                    <img draggable="false" style="width: 60px; height: 60px;" th:src="@{'/img/'+ ${task?.targetConnector?.config?.connectorType} + '.png'}" />
+                    <img draggable="false" class="connector-logo-lg" th:src="@{'/img/'+ ${task?.targetConnector?.config?.connectorType} + '.png'}" alt="" />
                     <div class="ml-2">
                         <p class="text-md">[[${task?.targetConnector?.name}]]</p>
                         <p class="text-sm">目标源表：[[${tableGroup?.targetTable?.name}]] ([[${tableGroup?.targetTable?.type}]]）</p>

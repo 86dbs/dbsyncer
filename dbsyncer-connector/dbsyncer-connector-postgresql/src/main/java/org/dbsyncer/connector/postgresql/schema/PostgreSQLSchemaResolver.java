@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.postgresql.schema;
 
+import com.google.protobuf.ByteString;
 import org.dbsyncer.connector.postgresql.PostgreSQLException;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
@@ -16,20 +17,23 @@ import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLStringType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimeType;
 import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
+import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
+import org.postgresql.geometric.PGpoint;
+import org.postgresql.util.PGobject;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
  * PostgreSQL标准数据类型解析器
  *
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 23:01
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-25 23:01
  */
-public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
+public final class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     /**
      * 规范化 PostgreSQL 类型名：去除 schema 前缀（如 "public"."geometry" -> geometry）和引号，并转小写。
@@ -74,6 +78,22 @@ public final class PostgreSQLSchemaResolver extends AbstractSchemaResolver {
                     }
                     mapping.put(typeName, t);
                 }));
+    }
+
+    @Override
+    public ByteString serialize(Object value, Field field) {
+        String type = value.getClass().getName();
+        switch (type) {
+            case "org.postgresql.util.PGobject":
+                PGobject pgObject = (PGobject) value;
+                return ByteString.copyFromUtf8(Objects.requireNonNull(pgObject.getValue()));
+            case "org.postgresql.geometric.PGpoint":
+                PGpoint pgpoint = (PGpoint) value;
+                return ByteString.copyFromUtf8(Objects.requireNonNull(pgpoint.getValue()));
+            default:
+                break;
+        }
+        return super.serialize(value, field);
     }
 
     /**

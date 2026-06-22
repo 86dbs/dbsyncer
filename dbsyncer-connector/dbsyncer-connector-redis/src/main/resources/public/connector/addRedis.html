@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<div th:fragment="content">
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">
+                URL<i class="fa fa-question-circle" title="格式：host:port，例如 127.0.0.1:6379"></i>
+                <strong class="text-primary">*</strong>
+            </label>
+            <div class="form-control-area">
+                <input class="form-control" name="url" type="text" maxlength="1024" required placeholder="127.0.0.1:6379" th:value="${connector?.config?.url}?:'127.0.0.1:6379'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">库索引</label>
+            <div class="form-control-area">
+                <input class="form-control" name="database" type="number" min="0" max="15" th:value="${connector?.config?.database}?:0"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 mt-4">
+        <div class="form-item">
+            <label class="form-label">密码</label>
+            <div class="form-control-area">
+                <input class="form-control" name="password" type="password" maxlength="256" autocomplete="new-password" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-4">
+        <div class="form-item">
+            <label class="form-label">连接池参数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="6" required>
+[[${connector?.config?.propertiesText ?:
+'timeout=3000
+maxTotal=32
+maxIdle=16
+minIdle=2
+testOnBorrow=true
+testWhileIdle=true'}]]</textarea>
+            </div>
+        </div>
+    </div>
+</div>

@@ -8,8 +8,9 @@ import org.dbsyncer.sdk.storage.Strategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
 import org.dbsyncer.sdk.storage.strategy.DataStrategy;
 import org.dbsyncer.sdk.storage.strategy.LogStrategy;
-import org.dbsyncer.sdk.storage.strategy.ValidateSyncDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.DatabaseSyncDetailStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
+import org.dbsyncer.sdk.storage.strategy.ValidateSyncDetailStrategy;
 
 /**
  * 存储策略枚举
@@ -43,7 +44,12 @@ public enum StorageStrategyEnum {
     /**
      * 订正校验明细策略
      */
-    VALIDATE_SYNC_DETAIL(StorageEnum.VALIDATE_SYNC_DETAIL, new ValidateSyncDetailStrategy());
+    VALIDATE_SYNC_DETAIL(StorageEnum.VALIDATE_SYNC_DETAIL, new ValidateSyncDetailStrategy()),
+
+    /**
+     * 整库迁移明细策略
+     */
+    DATABASE_SYNC_DETAIL(StorageEnum.DATABASE_SYNC_DETAIL, new DatabaseSyncDetailStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

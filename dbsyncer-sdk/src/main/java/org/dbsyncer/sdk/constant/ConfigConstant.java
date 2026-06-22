@@ -56,4 +56,15 @@ public class ConfigConstant {
     public static final String TASK_FIXED_TOTAL = "fixedTotal";
     public static final String TASK_CONTENT = "content";
 
+    /**
+     * 整库迁移明细（与 {@link #TASK_SOURCE_TOTAL}、{@link #CONFIG_MODEL_CREATE_TIME} 等共用 camelCase 键）
+     */
+    public static final String DATABASE_SYNC_DETAIL_TABLE_INDEX = "tableIndex";
+    public static final String DATABASE_SYNC_DETAIL_SOURCE_DATABASE = "sourceDatabase";
+    public static final String DATABASE_SYNC_DETAIL_SOURCE_SCHEMA = "sourceSchema";
+    public static final String DATABASE_SYNC_DETAIL_TARGET_DATABASE = "targetDatabase";
+    public static final String DATABASE_SYNC_DETAIL_SOURCE_TABLE = "sourceTable";
+    public static final String DATABASE_SYNC_DETAIL_TARGET_TABLE = "targetTable";
+    public static final String DATABASE_SYNC_DETAIL_SUCCESS_TOTAL = "successTotal";
+    public static final String DATABASE_SYNC_DETAIL_FAIL_TOTAL = "failTotal";
 }

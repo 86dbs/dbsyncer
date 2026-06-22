@@ -5,9 +5,8 @@ package org.dbsyncer.plugin.impl;
 
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.plugin.model.*;
-import org.dbsyncer.sdk.model.NoticeContent;
-
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.model.NoticeContent;
 
 /**
  * WebHook通知服务实现基类
@@ -59,6 +58,12 @@ public abstract class AbstractWebHookNoticeService extends AbstractNoticeService
                 c.append("\n");
             }
             return c.toString();
+        }
+
+        // 通用通知
+        if (noticeContent instanceof GeneralNoticeContent) {
+            GeneralNoticeContent meta = (GeneralNoticeContent) noticeContent;
+            return String.format("[%s] %s %s", getAppConfig().getName(), noticeContent.getTitle(), meta.getContent());
         }
 
         // 测试通知

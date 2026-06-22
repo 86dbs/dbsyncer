@@ -3,23 +3,29 @@
  */
 package org.dbsyncer.biz.impl;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.model.DataSyncEvent;
 import org.dbsyncer.biz.model.DataSyncRequest;
 import org.dbsyncer.biz.vo.BinlogColumnVO;
 import org.dbsyncer.biz.vo.MessageVO;
+import org.dbsyncer.common.binlog.proto.BinlogMap;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -27,23 +33,15 @@ import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.binlog.proto.BinlogMap;
-import org.dbsyncer.storage.util.BinlogMessageUtil;
-
-import org.apache.lucene.index.IndexableField;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,11 +73,13 @@ public class DataSyncServiceImpl implements DataSyncService {
     @Resource
     private StorageService storageService;
 
+    @Resource
+    private ConnectorFactory connectorFactory;
+
     @Override
     public MessageVO getMessageVo(String metaId, String messageId) {
         Assert.hasText(metaId, "The metaId is null.");
         Assert.hasText(messageId, "The messageId is null.");
-
         MessageVO messageVo = new MessageVO();
         try {
             Map row = getData(metaId, messageId);
@@ -93,7 +93,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             if (!CollectionUtils.isEmpty(binlogData)) {
                 Map<String, String> columnMap = tableGroup.getTargetTable().getColumn().stream().collect(Collectors.toMap(Field::getName, Field::getTypeName));
                 List<BinlogColumnVO> columns = new ArrayList<>();
-                binlogData.forEach((k, v)->columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
+                binlogData.forEach((k, v) -> columns.add(new BinlogColumnVO((String) k, v, columnMap.get(k))));
                 messageVo.setColumns(columns);
             }
         } catch (Exception e) {
@@ -110,7 +110,6 @@ public class DataSyncServiceImpl implements DataSyncService {
         if (tableGroup == null) {
             return Collections.EMPTY_MAP;
         }
-
         // 2、获取记录的数据
         byte[] bytes = (byte[]) row.get(ConfigConstant.BINLOG_DATA);
         if (null == bytes) {
@@ -120,23 +119,32 @@ public class DataSyncServiceImpl implements DataSyncService {
             }
             return Collections.EMPTY_MAP;
         }
-
         // 3、获取DDL
         Map<String, Object> target = new HashMap<>();
         BinlogMap message = BinlogMap.parseFrom(bytes);
         String event = (String) row.get(ConfigConstant.DATA_EVENT);
         if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
-            message.getRowMap().forEach((k, v)->target.put(k, v.toStringUtf8()));
+            message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
             return target;
         }
 
-        // 4、反序列
+        // 4、获取连接器服务
+        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
+        ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
+        ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());
+        SchemaResolver schemaResolver = sourceConnector.getSchemaResolver();
+        if (schemaResolver == null) {
+            logger.warn("反序列化失败，没有实现SchemaResolver");
+            return target;
+        }
+        // 5、反序列
         final Picker picker = new Picker(tableGroup);
         final Map<String, Field> fieldMap = picker.getTargetFieldMap();
-        message.getRowMap().forEach((k, v)-> {
+        message.getRowMap().forEach((k, v) -> {
             if (fieldMap.containsKey(k)) {
                 try {
-                    Object val = BinlogMessageUtil.deserializeValue(fieldMap.get(k).getType(), v);
+                    Object val = schemaResolver.deserialize(v, fieldMap.get(k));
                     // 处理二进制对象显示
                     if (prettyBytes) {
                         if (val instanceof byte[]) {
@@ -151,7 +159,7 @@ public class DataSyncServiceImpl implements DataSyncService {
                     }
                     target.put(k, val);
                 } catch (Exception e) {
-                    logger.warn("解析Binlog数据类型异常：type=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getType(), (v == null ? null : v.getClass().getName()), v);
+                    logger.warn("解析Binlog数据类型异常：typeName=[{}], valueType=[{}], value=[{}]", fieldMap.get(k).getTypeName(), (v == null ? null : v.getClass().getName()), v);
                 }
             }
         });
@@ -175,7 +183,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 有修改同步值
         String retryDataParams = params.get("retryDataParams");
         if (StringUtil.isNotBlank(retryDataParams)) {
-            JsonUtil.parseMap(retryDataParams).forEach((k, v)->binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
+            JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
         }
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
@@ -211,7 +219,6 @@ public class DataSyncServiceImpl implements DataSyncService {
         for (DataSyncEvent changedData : dataList) {
             String sourceTableName = tableGroup.getSourceTable().getName();
             RowChangedEvent changedEvent = new RowChangedEvent(sourceTableName, changedData.getEvent(), changedData.getData(), null, null);
-
             // 执行同步是否成功
             bufferActuatorRouter.execute(meta.getId(), changedEvent);
         }
@@ -220,7 +227,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private Map getData(String metaId, String messageId) {
         Query query = new Query(1, 1);
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field->field.binaryValue().bytes);
+        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setMetaId(metaId);

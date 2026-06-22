@@ -16,6 +16,10 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
     private long errorCount;
     //当前进度
     private BigDecimal progress;
+    // 表总数
+    private int totalTableCount;
+    // 已完成表数
+    private int completedTableCount;
 
     public ValidateSyncTaskVO(Connector sourceConnector, Connector targetConnector) {
         this.sourceConnector = sourceConnector;
@@ -44,5 +48,21 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
 
     public void setProgress(BigDecimal progress) {
         this.progress = progress;
+    }
+
+    public int getTotalTableCount() {
+        return totalTableCount;
+    }
+
+    public void setTotalTableCount(int totalTableCount) {
+        this.totalTableCount = totalTableCount;
+    }
+
+    public int getCompletedTableCount() {
+        return completedTableCount;
+    }
+
+    public void setCompletedTableCount(int completedTableCount) {
+        this.completedTableCount = completedTableCount;
     }
 }

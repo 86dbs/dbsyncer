@@ -1,6 +1,10 @@
 package org.dbsyncer.parser.strategy;
 
 import org.dbsyncer.common.model.Result;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.SchemaResolver;
+
+import java.util.Map;
 
 /**
  * 记录同步数据策略
@@ -14,18 +18,18 @@ public interface FlushStrategy {
     /**
      * 记录全量同步数据
      *
-     * @param metaId
-     * @param result
-     * @param event
+     * @param result 同步结果
+     * @param targetSchemaResolver 目标字段解析器
+     * @param targetFieldMap 目标表字段集合
      */
-    void flushFullData(String metaId, Result result, String event);
+    void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
 
     /**
      * 记录增量同步数据
      *
-     * @param metaId
-     * @param result
-     * @param event
+     * @param result 同步结果
+     * @param targetSchemaResolver 目标字段解析器
+     * @param targetFieldMap 目标表字段集合
      */
-    void flushIncrementData(String metaId, Result result, String event);
+    void flushIncrementData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap);
 }

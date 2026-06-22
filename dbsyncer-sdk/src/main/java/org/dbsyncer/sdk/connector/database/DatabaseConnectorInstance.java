@@ -117,6 +117,9 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
     public String getCatalog() {
         return catalog;
     }
+    public String getSchema() {
+        return schema;
+    }
 
     @Override
     public Object clone() throws CloneNotSupportedException {

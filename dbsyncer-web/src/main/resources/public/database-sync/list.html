@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 社区版提示 -->
+<div th:if="${editionInfo.edition eq 'community'}" class="text-center">
+    <h3 class="text-xl text-center text-gray-500">[[${editionInfo.editionName}]]</h3>
+
+    <!-- 整库迁移功能介绍 -->
+    <div class="bg-info/10 border border-info rounded-lg p-4 mb-6 text-left">
+        <h4 class="text-lg font-semibold text-info mb-2">
+            <i class="fa fa-database"></i> 什么是整库迁移？
+        </h4>
+        <p class="text-sm text-secondary mb-3">
+            整库迁移是将<strong>源数据库</strong>的整个库完整迁移到<strong>目标数据库</strong>的功能。支持表结构、全量数据等一次性迁移，适用于数据库升级、跨平台迁移、数据中心迁移等场景。
+        </p>
+        <ul class="text-sm text-secondary mb-3 pl-4">
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>全量迁移</strong>：一次性迁移多个数据库的所有对象
+            </li>
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>结构同步</strong>：自动创建数据库和表对象
+            </li>
+        </ul>
+        <p class="text-sm text-secondary">
+            适用于：数据库版本升级、跨数据库平台迁移、数据灾备、读写分离架构搭建等场景。
+        </p>
+    </div>
+
+    <p class="text-secondary mb-6">
+        该功能仅在专业版开放，请下载
+        <a href="https://gitee.com/ghi/dbsyncer/releases"
+           class="text-primary hover-underline font-medium"
+           title="下载专业版 dbsyncer-enterprise-x.x.x-bin.zip"
+           target="_blank">
+            <i class="fa fa-download"></i> 专业版
+        </a>
+    </p>
+</div>
+
+<!-- 整库迁移列表 -->
+<div th:if="${editionInfo.edition ne 'community'}" class="form-container">
+    <div class="card-header">
+        <h3 class="card-title text-center">整库迁移</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-center">
+            <div id="database-sync-search" class="lg:col-span-2 search-wrapper">
+                <i class="fa fa-search search-icon"></i>
+                <input class="search-input" type="text" maxlength="32" placeholder="搜索任务名称">
+                <span class="search-clear" title="清除">
+                    <i class="fa fa-times"></i>
+                </span>
+            </div>
+            <div class="lg:col-span-2"></div>
+            <div class="lg:col-span-2 flex items-center justify-end">
+                <button class="btn btn-primary" onclick="doLoader('/database-sync/pageAdd')">
+                    <i class="fa fa-plus"></i> 添加
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>任务名称</th>
+                <th>库映射数</th>
+                <th>结果</th>
+                <th>状态</th>
+                <th>最后执行</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="database-sync-table"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script th:if="${editionInfo.edition ne 'community'}" th:src="@{/js/database-sync/database-sync-list.js}"></script>
+</html>

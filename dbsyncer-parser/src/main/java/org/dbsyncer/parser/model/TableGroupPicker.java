@@ -6,11 +6,12 @@ package org.dbsyncer.parser.model;
 import org.dbsyncer.sdk.model.Field;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-01-18 22:53
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-01-18 22:53
  */
 public class TableGroupPicker {
 
@@ -20,12 +21,14 @@ public class TableGroupPicker {
 
     private final List<Field> sourceFields;
     private final List<Field> targetFields;
+    private final Map<String, Field> targetFieldMap;
 
     public TableGroupPicker(TableGroup tableGroup) {
         this.tableGroup = tableGroup;
         this.picker = new Picker(tableGroup);
         this.sourceFields = picker.getSourceFields();
         this.targetFields = picker.getTargetFields();
+        this.targetFieldMap = picker.getTargetFieldMap();
     }
 
     public TableGroup getTableGroup() {
@@ -42,5 +45,9 @@ public class TableGroupPicker {
 
     public List<Field> getTargetFields() {
         return targetFields;
+    }
+
+    public Map<String, Field> getTargetFieldMap() {
+        return targetFieldMap;
     }
 }

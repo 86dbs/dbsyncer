@@ -25,7 +25,11 @@
 .bg-white { background-color: #fff; }
 .bg-transparent { background-color: transparent; }
 
+/* 透明度背景色 */
+.bg-info\/10 { background-color: rgba(24, 144, 255, 0.1); }
+
 /* 边框色类 */
 .border-primary { border-color: var(--border-primary) !important; }
 .border-secondary { border-color: var(--border-secondary) !important; }
 .border-tertiary { border-color: var(--border-tertiary) !important; }
+.border-info { border-color: var(--info-color) !important; }

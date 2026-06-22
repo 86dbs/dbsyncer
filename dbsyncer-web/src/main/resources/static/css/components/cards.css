@@ -16,6 +16,104 @@
   transform: translateY(-2px);
 }
 
+.card.hidden {
+  display: none !important;
+}
+
+/* 工作区内嵌卡片：禁用 hover 上浮 */
+.card.card-static:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== 可选列表卡片（侧栏项） ========== */
+.list-card {
+  position: relative;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.list-card:hover {
+  border-color: var(--primary-hover);
+}
+
+.list-card.is-active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.list-card-remove {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+}
+
+.list-card-remove:hover {
+  color: var(--error-color);
+}
+
+.list-card-line {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+  padding-right: 24px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-card.is-active .list-card-line {
+  color: var(--primary-color);
+}
+
+.list-card-line.is-title {
+  font-weight: 500;
+}
+
+.list-card-footer {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--border-tertiary);
+  margin-top: var(--spacing-xs);
+}
+
+.list-card-label {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  width: 90px;
+  white-space: nowrap;
+}
+
+.list-card-value {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 工作区详情：面板与空状态互斥显示 */
+.workspace-detail > .workspace-detail-panel:not(.hidden) + .workspace-empty,
+.workspace-empty.hidden {
+  display: none;
+}
+
 /* ========== 卡片头部 ========== */
 .card-header {
   padding: var(--spacing-lg);
@@ -44,11 +142,11 @@
 }
 
 /* 卡片中的轻量交互元素 */
-.card button:not(.btn):not([class*='btn-']) {
+.card button:not(.btn):not([class*='btn-']):not(.pagination-btn):not(.pagination-page-btn) {
   background: transparent;
   border: 0;
 }
-.card button:not(.btn):not([class*='btn-']):focus {
+.card button:not(.btn):not([class*='btn-']):not(.pagination-btn):not(.pagination-page-btn):focus {
   outline: none;
   box-shadow: none;
 }
@@ -79,6 +177,22 @@
   margin-bottom: 12px;
 }
 
+.progress-header-compact {
+  margin-bottom: 6px;
+}
+
+/* 列表进度条中间辅助信息 */
+.progress-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  gap: 2px;
+  line-height: 1.4;
+}
+
 .progress-title {
   font-size: 14px;
   color: var(--text-primary);
@@ -86,7 +200,7 @@
 }
 
 .progress-value {
-  font-size: 24px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -103,8 +217,14 @@
   margin-bottom: 8px;
 }
 
+.progress-bar-compact {
+  height: 6px;
+  margin-bottom: 0;
+}
+
 .progress-fill {
   height: 100%;
+  width: var(--progress-width, 0%);
   background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
   border-radius: 4px;
   transition: width 0.3s ease;

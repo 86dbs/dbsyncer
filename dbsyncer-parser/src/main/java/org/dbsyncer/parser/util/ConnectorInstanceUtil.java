@@ -23,4 +23,8 @@ public abstract class ConnectorInstanceUtil {
     public static String buildConnectorInstanceId(String mappingId, String connectorId, String suffix) {
         return String.format("%s@%s@%s", mappingId, connectorId, suffix);
     }
+
+    public static String buildConnectorInstanceId(String mappingId, String connectorId, String database,String schema, String suffix) {
+        return String.format("%s@%s@%s@%s@%s", mappingId, connectorId, database,schema, suffix);
+    }
 }

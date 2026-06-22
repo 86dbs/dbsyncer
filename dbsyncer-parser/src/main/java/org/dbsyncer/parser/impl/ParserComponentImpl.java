@@ -29,6 +29,7 @@ import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.model.*;
 import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
@@ -170,7 +171,9 @@ public class ParserComponentImpl implements ParserComponent {
         context.setPageSize(mapping.getReadNum());
         setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
+        ConnectorService targetConnector = connectorFactory.getConnectorService(context.getTargetConnectorInstance().getConfig());
         picker.setSourceResolver(sourceConnector.getSchemaResolver());
+        Map<String, Field> targetFieldMap = picker.getTargetFieldMap();
         // 0、插件前置处理
         pluginFactory.process(context, ProcessEnum.BEFORE);
 
@@ -210,7 +213,7 @@ public class ParserComponentImpl implements ParserComponent {
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
             result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
-            flush(task, result);
+            flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
 
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
@@ -285,12 +288,11 @@ public class ParserComponentImpl implements ParserComponent {
 
     /**
      * 更新缓存
-     *
-     * @param task
-     * @param result
      */
-    private void flush(Task task, Result result) {
-        flushStrategy.flushFullData(task.getId(), result, ConnectorConstant.OPERTION_INSERT);
+    private void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+        result.setMetaId(task.getId());
+        result.setEvent(ConnectorConstant.OPERTION_INSERT);
+        flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
 
         // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());

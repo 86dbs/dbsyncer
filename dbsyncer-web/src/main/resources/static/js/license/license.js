@@ -27,6 +27,7 @@ $(function () {
                     $btn.html(originalText);
                     if (response.success === true) {
                         bootGrowl("删除激活码成功！", "success");
+                        refreshLicense();
                         doLoader("/license");
                     } else {
                         bootGrowl(response.message || "删除失败", "danger");
@@ -55,6 +56,7 @@ $(function () {
 
             if (response.success === true) {
                 bootGrowl("在线激活成功！", "success");
+                refreshLicense();
                 doLoader("/license");
             } else {
                 bootGrowl(response.message || "激活失败", "danger");
@@ -83,6 +85,7 @@ $(function () {
         onSuccess: function(file, response) {
             if (response.success) {
                 bootGrowl("激活码上传成功！", "success");
+                refreshLicense();
                 doLoader("/license");
             } else {
                 bootGrowl(response.message || "上传失败", "danger");

@@ -10,6 +10,12 @@
     flex-wrap: wrap;
     align-items: center;
 }
+
+/* 与 .form-control 输入框等高（37px），避免同行切换时行高抖动 */
+.radio-group.radio-group-control-height {
+    height: 37px;
+    min-height: 37px;
+}
 .radio-group > *:not(:first-child) {
     margin-left: var(--spacing-lg, 24px);
 }

@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.ghi</groupId>
         <artifactId>dbsyncer-connector</artifactId>
-        <version>2.1.1</version>
+        <version>2.1.2</version>
     </parent>
 
     <artifactId>dbsyncer-connector-base</artifactId>
@@ -15,6 +15,13 @@
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-sdk</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-clickhouse -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-clickhouse</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -29,6 +36,13 @@
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-file</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-h2 -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-h2</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -53,6 +67,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-oceanbase -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-oceanbase</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- dbsyncer-connector-oracle -->
         <dependency>
             <groupId>org.ghi</groupId>
@@ -64,6 +85,13 @@
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-postgresql</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <!-- dbsyncer-connector-redis -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-redis</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

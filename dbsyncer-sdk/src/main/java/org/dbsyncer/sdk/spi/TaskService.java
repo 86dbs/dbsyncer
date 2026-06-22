@@ -54,10 +54,6 @@ public interface TaskService<T extends CommonTask> {
      */
     Paging search(Map<String, String> param, CommonTaskTypeEnum commonTaskTypeEnum);
 
-    /**
-     * 查看任务执行详情
-     */
-    Paging result(String id);
 
     /**
      * 获取所有任务 根据任务类型

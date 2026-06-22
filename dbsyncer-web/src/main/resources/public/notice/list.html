@@ -9,11 +9,19 @@
     </div>
     <div class="card-body">
         <h3 class="card-title">触发条件</h3>
-        <p class="text-xs text-tertiary">间隔10分钟：1.同步任务有失败数据; 2.手动停止驱动; 3.连接离线; 4.订正校验失败。</p>
+        <p class="text-sm mb-4">
+            <i class="fa fa-external-link text-info"></i>
+            <a href="https://gitee.com/ghi/dbsyncer/wikis/%E6%93%8D%E4%BD%9C%E6%89%8B%E5%86%8C/%E5%91%8A%E8%AD%A6%E9%80%9A%E7%9F%A5?sort_id=17782458#%E4%BA%94-%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B"
+               title="点击查看规则"
+               target='_blank'>
+                查看规则
+            </a>
+        </p>
         <form id="notice-form-edit">
             <!-- 管理员操作区域 -->
-            <div class="form-actions mb-4">
-                <button id="testNoticeBtn" type="button" class="btn btn-default" th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
+            <div class="form-actions mb-4 flex justify-end">
+                <button id="testNoticeBtn" type="button" class="btn btn-default mr-2"
+                        th:if="${config?.wechat != null and (config?.wechat?.enabled || config?.dingTalk?.enabled || config?.http?.enabled || config?.mail?.enabled)}">
                     <span class="fa fa-flash"></span> 测试
                 </button>
                 <button id="updateNoticeBtn" type="button" class="btn btn-primary">
@@ -44,7 +52,7 @@
                     <label class="form-label">@所有人</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="wechatAtAll" type="checkbox" th:checked="${config?.wechat?.atAll}" />
+                            <input name="wechatAtAll" type="checkbox" th:checked="${config?.wechat?.atAll}"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -56,14 +64,16 @@
                 <div class="form-item wechat-config hidden">
                     <label class="form-label">@用户手机号</label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="200" name="wechatAtMobiles" data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.wechat?.atMobiles}"/>
+                        <input type="text" class="form-control" maxlength="200" name="wechatAtMobiles"
+                               data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.wechat?.atMobiles}"/>
                     </div>
                 </div>
 
                 <div class="form-item wechat-config hidden">
                     <label class="form-label">webhook<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <textarea name="wechatWebhookUrl" required class="form-control" maxlength="200" rows="3" placeholder="企业微信机器人webhook地址">[[${config?.wechat?.webhookUrl}]]</textarea>
+                        <textarea name="wechatWebhookUrl" required class="form-control" maxlength="200" rows="3"
+                                  placeholder="企业微信机器人webhook地址">[[${config?.wechat?.webhookUrl}]]</textarea>
                     </div>
                 </div>
                 <div class="form-item wechat-config hidden"></div>
@@ -88,7 +98,7 @@
                     <label class="form-label">@所有人</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="dingTalkAtAll" type="checkbox" th:checked="${config?.dingTalk?.atAll}" />
+                            <input name="dingTalkAtAll" type="checkbox" th:checked="${config?.dingTalk?.atAll}"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -100,14 +110,17 @@
                 <div class="form-item dingtalk-config hidden">
                     <label class="form-label">@用户手机号</label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="200" name="dingTalkAtMobiles" data-role="tagsinput" placeholder="182xxxx1234" th:value="${config?.dingTalk?.atMobiles}"/>
+                        <input type="text" class="form-control" maxlength="200" name="dingTalkAtMobiles"
+                               data-role="tagsinput" placeholder="182xxxx1234"
+                               th:value="${config?.dingTalk?.atMobiles}"/>
                     </div>
                 </div>
 
                 <div class="form-item dingtalk-config hidden">
                     <label class="form-label">webhook<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <textarea name="dingTalkWebhookUrl" required class="form-control" maxlength="200" rows="3" placeholder="钉钉机器人webhook地址">[[${config?.dingTalk?.webhookUrl}]]</textarea>
+                        <textarea name="dingTalkWebhookUrl" required class="form-control" maxlength="200" rows="3"
+                                  placeholder="钉钉机器人webhook地址">[[${config?.dingTalk?.webhookUrl}]]</textarea>
                     </div>
                 </div>
                 <div class="form-item dingtalk-config hidden"></div>
@@ -130,7 +143,8 @@
                 <div class="form-item http-config hidden">
                     <label class="form-label">url<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <textarea name="httpUrl" required class="form-control" maxlength="200" rows="3" placeholder="回调http地址">[[${config?.http?.url}]]</textarea>
+                        <textarea name="httpUrl" required class="form-control" maxlength="200" rows="3"
+                                  placeholder="回调http地址">[[${config?.http?.url}]]</textarea>
                     </div>
                 </div>
                 <div class="form-item http-config hidden"></div>
@@ -154,13 +168,17 @@
                 <div class="form-item mail-config hidden">
                     <label class="form-label">账号<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" name="mailAccount" required th:value="${config?.mail?.account}"/>
+                        <input type="text" class="form-control" maxlength="100" name="mailAccount" required
+                               th:value="${config?.mail?.account}"/>
                     </div>
                 </div>
                 <div class="form-item mail-config hidden">
-                    <label class="form-label">Code<strong class="text-primary">*</strong><i class="fa fa-question-circle" title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
+                    <label class="form-label">Code<strong class="text-primary">*</strong><i
+                            class="fa fa-question-circle"
+                            title="发邮件的Code,不是邮箱密码，示例：wqoxxxxxxdflbbig"></i></label>
                     <div class="form-control-area">
-                        <input type="text" class="form-control" maxlength="100" name="mailCode" required th:value="${config?.mail?.code}"/>
+                        <input type="text" class="form-control" maxlength="100" name="mailCode" required
+                               th:value="${config?.mail?.code}"/>
                     </div>
                 </div>
 
@@ -182,13 +200,15 @@
                 items.hide();
             }
         }
+
         function initSwitchToggle(switchName, config) {
-            const switchElement = $('input[name="'+switchName+'"]')
-            let switchApi = initSwitch(switchElement, function(checked) {
+            const switchElement = $('input[name="' + switchName + '"]')
+            let switchApi = initSwitch(switchElement, function (checked) {
                 toggleConfigItems(checked, config);
             });
             toggleConfigItems(switchApi.isChecked(), config);
         }
+
         initSwitchToggle('enableMail', $('.mail-config'));
         initSwitchToggle('enableHttp', $('.http-config'));
         initSwitchToggle('enableWechat', $('.wechat-config'));

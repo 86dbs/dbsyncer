@@ -1,0 +1,66 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
+package org.dbsyncer.connector.h2.schema.support;
+
+import org.dbsyncer.common.util.DateFormatUtil;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.support.StringType;
+
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * H2 字符串类型
+ */
+public final class H2StringType extends StringType {
+
+    private enum TypeEnum {
+
+        VARCHAR("VARCHAR"),
+        CHAR("CHAR"),
+        CHARACTER("CHARACTER"),
+        CLOB("CLOB"),
+        TEXT("TEXT"),
+        LONGVARCHAR("LONGVARCHAR"),
+        VARCHAR_IGNORECASE("VARCHAR_IGNORECASE");
+
+        private final String value;
+
+        TypeEnum(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    @Override
+    public Set<String> getSupportedTypeName() {
+        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+    }
+
+    @Override
+    protected String merge(Object val, Field field) {
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
+        }
+        if (val instanceof Number) {
+            return ((Number) val).toString();
+        }
+        if (val instanceof Timestamp) {
+            return DateFormatUtil.timestampToString((Timestamp) val);
+        }
+        if (val instanceof Date) {
+            return DateFormatUtil.dateToString((Date) val);
+        }
+        if (val instanceof java.util.Date) {
+            return DateFormatUtil.dateToString((java.util.Date) val);
+        }
+        return throwUnsupportedException(val, field);
+    }
+}

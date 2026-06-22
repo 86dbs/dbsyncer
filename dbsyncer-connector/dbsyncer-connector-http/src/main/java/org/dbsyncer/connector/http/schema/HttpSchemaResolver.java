@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2026-01-11 22:18
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2026-01-11 22:18
  */
 public final class HttpSchemaResolver extends AbstractSchemaResolver {
 

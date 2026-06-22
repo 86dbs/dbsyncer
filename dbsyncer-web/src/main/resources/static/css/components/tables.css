@@ -225,6 +225,15 @@ tr[draggable="true"]:hover {
   box-shadow: none;
 }
 
+/* 首页/末页、上一页/下一页导航按钮 */
+.pagination-btn-nav {
+  flex-shrink: 0;
+}
+
+.pagination-btn-nav .fa {
+  font-size: 14px;
+}
+
 .pagination-page {
   display: flex;
   align-items: center;
@@ -236,8 +245,12 @@ tr[draggable="true"]:hover {
   align-items: center;
   justify-content: center;
   min-width: 36px;
+  width: auto;
   height: 36px;
-  padding: 0 var(--spacing-sm);
+  padding: 0 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   border: none;
   background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   color: var(--text-secondary);
@@ -270,11 +283,95 @@ tr[draggable="true"]:hover {
   box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
 }
 
+span.pagination-page-btn {
+  cursor: default;
+  pointer-events: none;
+}
+
 /* 分页栏容器 */
 .pagination-bar {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
 }
 .pagination-bar > *:not(:first-child) {
   margin-left: var(--spacing-sm);
+}
+
+/* 表格滚动区（工作区详情等） */
+.table-scroll-panel {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.table-scroll-panel .table {
+  margin-bottom: 0;
+}
+
+.table-scroll-panel .table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-primary);
+  z-index: 1;
+}
+
+/* 表格列宽 */
+.table th.width50px {
+  width: 50px;
+}
+
+.table th.width80px {
+  width: 80px;
+}
+
+.table th.width10p { width: 10%; }
+.table th.width12p { width: 12%; }
+.table th.width18p { width: 18%; }
+.table th.width31p { width: 31%; }
+.table th.width38p { width: 38%; }
+.table th.width40p { width: 40%; }
+.table th.width60p { width: 60%; }
+
+/* 单元格换行（长文本、差异详情等） */
+.table.table-wrap-cells {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table.table-wrap-cells > thead > tr > th,
+.table.table-wrap-cells > tbody > tr > td {
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.table.table-wrap-cells > tbody > tr > td {
+  vertical-align: top;
+}
+
+/* 表格局部嵌套容器 */
+.table-inset {
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.table-inset > .table {
+  margin-bottom: 0;
+  table-layout: fixed;
+}
+
+/* 单元格内滚动区域 */
+.table-cell-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }

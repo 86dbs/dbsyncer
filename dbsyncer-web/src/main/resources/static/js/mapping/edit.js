@@ -85,71 +85,85 @@ function createMetaSnapshotParams() {
 }
 
 
-function onDBChange(connectorId, schemaSelect, dbName) {
+function onDBChange(connectorId, schemaSelect, dbName, defaultSchema) {
+    schemaSelect.setData([]);
+    schemaSelect.setValues([], true);
+    if (!connectorId || !dbName) {
+        return;
+    }
     doGetter('/connector/getSchema', {id: connectorId, database: dbName}, function (response) {
-        if (response.success && response.data) {
-            let array = [];
-            const schemas = response.data;
-            if (schemas && schemas.length > 0) {
-                schemas.forEach(function (schema) {
-                    array.push({label: schema, value: schema, disabled: false})
-                });
-            }
+        if (response.success) {
+            const schemas = response.data || [];
+            const array = schemas.map(function (schema) {
+                return {label: schema, value: schema, disabled: false};
+            });
             schemaSelect.setData(array);
+            if (defaultSchema && array.some(function (item) { return item.value === defaultSchema; })) {
+                schemaSelect.setValues([defaultSchema], true);
+            }
         } else {
             bootGrowl("获取Schema信息失败: " + response.message, "danger");
         }
-    })
+    });
 }
 
-function onConnectorChange(connectorId, dbSelect) {
+function onConnectorChange(connectorId, dbSelect, schemaSelect, defaultDatabase, defaultSchema) {
+    dbSelect.setData([]);
+    dbSelect.setValues([], true);
+    schemaSelect.setData([]);
+    schemaSelect.setValues([], true);
+    if (!connectorId) {
+        return;
+    }
     doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
-        if (response.success && response.data) {
-            const databases = response.data;
-            let db = [];
-            if (databases && databases.length > 0) {
-                databases.forEach(function (dbName) {
-                    db.push({label: dbName, value: dbName, disabled: false})
-                });
-            }
+        if (response.success) {
+            const databases = response.data || [];
+            const db = databases.map(function (dbName) {
+                return {label: dbName, value: dbName, disabled: false};
+            });
             dbSelect.setData(db);
+            if (defaultDatabase && db.some(function (item) { return item.value === defaultDatabase; })) {
+                dbSelect.setValues([defaultDatabase], true);
+                onDBChange(connectorId, schemaSelect, defaultDatabase, defaultSchema);
+            }
         } else {
             bootGrowl("获取数据库信息失败: " + response.message, "danger");
         }
-    })
+    });
 }
 
 function initDBSelect($connector, $database, $schema) {
     // 为每个 select 组维护独立的连接器ID，避免上下文串用
     let currentConnectorId = null;
+    const defaultDatabase = $database.data("database") || '';
+    const defaultSchema = $schema.data("schema") || '';
 
-    let connectorSelect = $connector.dbSelect({
-        type: 'single',
-        onSelect: function (connectorId) {
-            // 更新当前组的连接器ID
-            currentConnectorId = connectorId[0];
-            onConnectorChange(currentConnectorId, dbSelect);
-        }
-    });
     const schemaSelect = $schema.dbSelect({
         type: 'single',
-        defaultValue: [$schema.data("schema")]
+        defaultValue: defaultSchema ? [defaultSchema] : null
     });
     const dbSelect = $database.dbSelect({
         type: 'single',
-        defaultValue: [$database.data("database")],
+        defaultValue: defaultDatabase ? [defaultDatabase] : null,
         onSelect: function (selected) {
             if (currentConnectorId) {
                 onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '');
             }
         }
     });
+    const connectorSelect = $connector.dbSelect({
+        type: 'single',
+        onSelect: function (connectorId) {
+            currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
+            onConnectorChange(currentConnectorId, dbSelect, schemaSelect);
+        }
+    });
 
-    // 初始化：如果有默认选中的连接器，设置初始值
-    let selected = connectorSelect.getValues();
+    // 初始化：如果有默认选中的连接器，加载库列表
+    const selected = connectorSelect.getValues();
     if (selected.length >= 1) {
         currentConnectorId = selected[0];
-        onConnectorChange(currentConnectorId, dbSelect);
+        onConnectorChange(currentConnectorId, dbSelect, schemaSelect, defaultDatabase, defaultSchema);
     }
 }
 

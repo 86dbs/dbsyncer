@@ -30,10 +30,8 @@ public class SecurityConfig {
      */
     @PostConstruct
     public void init() {
-        logger.info("初始化安全配置...");
         AESKeyManager.init();
         TimestampValidator.init();
-        logger.info("安全配置初始化完成");
     }
 
     /**

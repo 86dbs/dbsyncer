@@ -11,6 +11,8 @@ import org.dbsyncer.connector.postgresql.validator.PostgreSQLConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
@@ -29,6 +31,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 /**
  * PostgreSQL连接器实现
@@ -40,7 +43,7 @@ import java.util.Locale;
 public final class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_DATABASE = "SELECT datname FROM pg_database WHERE datistemplate = FALSE order by datname";
-    private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '#' and schema_name NOT LIKE 'pg_%' AND schema_name not in('information_schema') order by schema_name";
+    private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name NOT IN ('information_schema') ORDER BY schema_name";
 
     private final PostgreSQLConfigValidator configValidator = new PostgreSQLConfigValidator();
     private final PostgreSQLSchemaResolver schemaResolver = new PostgreSQLSchemaResolver();
@@ -68,18 +71,111 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
+        String catalog = context.getCatalog();
+        if (StringUtil.isNotBlank(catalog)) {
+            DatabaseConfig effectiveConfig = copyDatabaseConfig(config);
+            effectiveConfig.setUrl(buildJdbcUrl(config, catalog));
+            effectiveConfig.setDatabase(catalog);
+            return new DatabaseConnectorInstance(effectiveConfig, catalog, context.getSchema());
+        }
+        return super.connect(config, context);
+    }
+
+    @Override
     public List<String> getDatabases(DatabaseConnectorInstance connectorInstance) {
         return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_DATABASE, String.class));
     }
 
     @Override
     public List<String> getSchemas(DatabaseConnectorInstance connectorInstance, String catalog) {
-        return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA.replace("#", catalog), String.class));
+        if (StringUtil.isBlank(catalog)) {
+            return connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        }
+        DatabaseConfig effectiveConfig = copyDatabaseConfig(connectorInstance.getConfig());
+        effectiveConfig.setUrl(buildJdbcUrl(connectorInstance.getConfig(), catalog));
+        effectiveConfig.setDatabase(catalog);
+        DatabaseConnectorInstance catalogInstance = new DatabaseConnectorInstance(effectiveConfig, catalog, null);
+        try {
+            return catalogInstance.execute(databaseTemplate -> databaseTemplate.queryForList(QUERY_SCHEMA, String.class));
+        } finally {
+            catalogInstance.close();
+        }
     }
 
     @Override
     public String buildSqlWithQuotation() {
         return "\"";
+    }
+
+    @Override
+    public String buildCreateDatabaseSql(String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return StringUtil.EMPTY;
+        }
+        return "CREATE DATABASE " + buildWithQuotation(databaseName);
+    }
+
+    @Override
+    public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
+        if (StringUtil.isBlank(databaseName)) {
+            return false;
+        }
+        Integer count = connectorInstance.execute(databaseTemplate ->
+                databaseTemplate.queryForObject("SELECT COUNT(1) FROM pg_database WHERE datname = ?", Integer.class, databaseName));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+        String schema = targetInstance != null ? targetInstance.getSchema() : null;
+        String qualifiedTable = qualifyTableName(schema, tableName);
+        return "CREATE TABLE IF NOT EXISTS " + qualifiedTable + " (" + sourceDDL + ")";
+    }
+
+    @Override
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+        return StringUtil.EMPTY;
+    }
+
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        String schema = targetInstance != null ? targetInstance.getSchema() : null;
+        return "DROP TABLE IF EXISTS " + qualifyTableName(schema, tableName) + " CASCADE";
+    }
+
+    String qualifyTableName(String schema, String tableName) {
+        String table = buildWithQuotation(tableName);
+        if (StringUtil.isBlank(schema)) {
+            return table;
+        }
+        return buildWithQuotation(schema) + "." + table;
+    }
+
+    private DatabaseConfig copyDatabaseConfig(DatabaseConfig source) {
+        DatabaseConfig target = new DatabaseConfig();
+        target.setConnectorType(source.getConnectorType());
+        target.setDriverClassName(source.getDriverClassName());
+        target.setHost(source.getHost());
+        target.setPort(source.getPort());
+        target.setUsername(source.getUsername());
+        target.setPassword(source.getPassword());
+        target.setMaxActive(source.getMaxActive());
+        target.setKeepAlive(source.getKeepAlive());
+        target.setDatabase(source.getDatabase());
+        target.setServiceName(source.getServiceName());
+        target.setUrl(source.getUrl());
+        if (source.getProperties() != null) {
+            Properties properties = new Properties();
+            properties.putAll(source.getProperties());
+            target.setProperties(properties);
+        }
+        if (source.getExtInfo() != null) {
+            Properties extInfo = new Properties();
+            extInfo.putAll(source.getExtInfo());
+            target.setExtInfo(extInfo);
+        }
+        return target;
     }
 
     @Override
@@ -265,7 +361,7 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    protected String formatPhysicalType(Field sourceDefinition) {
+    public String formatPhysicalType(Field sourceDefinition) {
         if (sourceDefinition == null || StringUtil.isBlank(sourceDefinition.getTypeName())) {
             return super.formatPhysicalType(sourceDefinition);
         }
@@ -293,6 +389,13 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
         }
         if ("SMALLSERIAL".equals(t)) {
             return "INT2";
+        }
+        if ("BYTEA".equals(t)) {
+            return "BYTEA";
+        }
+        String rawTypeName = PostgreSQLSchemaResolver.normalizeTypeName(t);
+        if (PostgreSQLSchemaResolver.isArrayType(rawTypeName)) {
+            return t;
         }
         return null;
     }

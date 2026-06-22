@@ -16,7 +16,7 @@ import org.dbsyncer.connector.mysql.schema.support.MySQLShortType;
 import org.dbsyncer.connector.mysql.schema.support.MySQLStringType;
 import org.dbsyncer.connector.mysql.schema.support.MySQLTimeType;
 import org.dbsyncer.connector.mysql.schema.support.MySQLTimestampType;
-import org.dbsyncer.sdk.schema.AbstractSchemaResolver;
+import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
 import java.util.Map;
@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2024-11-25 22:08
  */
-public final class MySQLSchemaResolver extends AbstractSchemaResolver {
+public final class MySQLSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {

@@ -71,10 +71,12 @@ public class ValidateSyncController extends BaseController {
      * 修改任务页面
      */
     @GetMapping("/page/{page}")
-    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id) {
+    public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
+                           @RequestParam(value = "detailStatus", required = false) String detailStatus) {
         if (page.equals("detail")) {
             model.put("taskId", id);
             model.put("taskList", validateSyncService.getAll());
+            model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
         } else if (page.equals("editTableGroup")) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);
@@ -308,6 +310,20 @@ public class ValidateSyncController extends BaseController {
                 return RestResult.restFail("记录不存在", 404);
             }
             return RestResult.restSuccess(detail);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 手动订正单条明细中尚未成功的差异数据。
+     */
+    @PostMapping("/manualRevise")
+    @ResponseBody
+    public RestResult manualRevise(@RequestParam("id") String id) {
+        try {
+            return RestResult.restSuccess(validateSyncService.manualReviseDetail(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

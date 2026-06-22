@@ -1,0 +1,290 @@
+/**
+ * 数据选择器（源/目标双栏、表树、映射块）
+ * 用于整库迁移等「选连接器 + 选表 + 配置映射」场景
+ */
+
+/* ========== 双栏布局 ========== */
+.picker-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: var(--spacing-md);
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .picker-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== 选择面板 ========== */
+.picker-panel {
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  background-color: var(--bg-primary);
+  min-width: 0;
+}
+
+.picker-panel-title {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  margin-bottom: var(--spacing-md);
+}
+
+/* ========== 可滚动表树区域 ========== */
+.picker-scroll {
+  height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  background-color: var(--bg-secondary);
+}
+
+.picker-tree-node {
+  margin: 0;
+}
+
+.picker-tree-body {
+  min-height: 0;
+}
+
+.picker-tree-folder {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.picker-tree-folder-label {
+  font-weight: 600;
+  cursor: default;
+  margin: 0;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.picker-tree-folder-caret {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.picker-tree-folder-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group-item {
+  margin: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-folder-label .checkbox-group-item::before {
+  margin-right: 0;
+}
+
+.picker-tree-folder-label .checkbox-group-item-label {
+  display: none;
+}
+
+.picker-tree-children {
+  /* 子表 checkbox 与分组行展开箭头对齐：16px 复选框 + 8px 间距 */
+  padding: 4px 8px 6px 24px;
+  margin-top: 2px;
+  background-color: rgba(22, 93, 255, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.picker-tree-children .picker-tree-item {
+  padding: 3px 0;
+}
+
+.picker-tree-item {
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  padding: 2px 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-item > label {
+  display: none;
+}
+
+.picker-tree-checkbox-group .picker-tree-item:not(.picker-tree-folder-label) .checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-item .checkbox-group-item {
+  flex-shrink: 0;
+}
+
+.picker-tree-checkbox-group .picker-tree-item .checkbox-group-item-label {
+  font-weight: inherit;
+  font-size: inherit;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-tree-checkbox-group .checkbox-group-item.indeterminate::before {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.15);
+}
+
+.picker-tree-checkbox-group .checkbox-group-item.indeterminate::after {
+  width: 8px;
+  height: 0;
+  border: none;
+  border-top: 2px solid #ffffff;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  opacity: 1;
+}
+
+.picker-scroll-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0 0;
+  margin-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.picker-scroll-footer-count {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.picker-scroll-footer-hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.picker-scroll-footer.is-loading {
+  color: var(--text-secondary);
+}
+
+/* ========== 表选择弹窗 ========== */
+.picker-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.picker-modal.hidden {
+  display: none;
+}
+
+.picker-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.picker-modal-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.picker-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.picker-modal-title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 500;
+}
+
+.picker-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-xs);
+}
+
+.picker-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.picker-modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.picker-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--border-secondary);
+}
+
+.picker-modal-dialog--wide {
+  width: min(760px, 100%);
+}
+
+.picker-modal-section + .picker-modal-section {
+  margin-top: var(--spacing-lg);
+}
+
+.picker-modal-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.picker-modal-target-box {
+  padding: var(--spacing-md);
+  border: 1px dashed var(--primary-color);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+}

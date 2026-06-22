@@ -21,7 +21,13 @@ import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.*;
+import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Group;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
@@ -119,6 +125,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
         //load ValidateSyncTasks
         loadValidateSyncTasks();
+
+        //loadDatabaseMigrationSyncTask
+        loadDatabaseMigrationSyncTask();
 
         // Launch drivers
         launch();
@@ -331,8 +340,22 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         taskAll.forEach(task -> {
             reConnect((ValidateSyncTask) task);
         });
-
         //启动任务
+        taskAll.stream()
+                .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
+                .forEach(task -> {
+                    task.setStatus(CommonTaskStatusEnum.READY.getCode());
+                    taskService.start(task.getId());
+                });
+    }
+
+
+    private void loadDatabaseMigrationSyncTask() {
+        List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
+        if (CollectionUtils.isEmpty(taskAll)) {
+            return;
+        }
+
         taskAll.stream()
                 .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
                 .forEach(task -> {

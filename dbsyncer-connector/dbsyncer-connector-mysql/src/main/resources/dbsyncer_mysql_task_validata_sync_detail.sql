@@ -8,7 +8,7 @@ CREATE TABLE `dbsyncer_task_validata_sync_detail` (
    `TARGET_TOTAL` bigint DEFAULT NULL COMMENT '目标表总数',
    `DIFF_TOTAL` bigint DEFAULT NULL COMMENT '差异总数',
    `FIXED_TOTAL` bigint DEFAULT NULL COMMENT '订正数量',
-   `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '对比结果 最高保存1000条数据',
+   `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '对比结果 最高保存100条数据',
    `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
    `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
    PRIMARY KEY (`ID`) USING BTREE,

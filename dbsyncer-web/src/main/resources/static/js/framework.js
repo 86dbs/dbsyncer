@@ -710,45 +710,48 @@ function refreshLoginUser() {
     });
 }
 
-// 刷新授权信息
+// 刷新授权信息（顶部 header 许可状态）
 function refreshLicense() {
-    // 刷新授权信息
     doGetter("/license/query.json", {}, function (response) {
-        if (response.success === true) {
-            $("#licenseInfo").show();
-            const licenseInfo = response.data;
-            const $content = $("#effectiveContent");
-            const $editionName = $("#editionName");
-            const edition = licenseInfo.edition;
-            if (edition === "community") {
-                $editionName.text("社区版");
-                $content.text('');
-                return;
-            }
-            const $effectiveTime = licenseInfo.effectiveTime;
-            if ($effectiveTime <= 0) {
-                $content.text('未激活');
-                $content.addClass('text-warning');
-                return;
-            }
+        if (response.success !== true) {
+            return;
+        }
+        const licenseInfo = response.data;
+        const $licenseInfo = $("#licenseInfo");
+        const $content = $("#effectiveContent");
+        const $editionName = $("#editionName");
 
-            const $currentTime = licenseInfo.currentTime;
-            const $10days = 864000000;
-            // 有效期内
-            if ($currentTime < $effectiveTime && $effectiveTime - $10days > $currentTime) {
-                $("#licenseCheck").removeClass("hidden");
-            }
-            // 即将过期
-            else if ($currentTime < $effectiveTime && $effectiveTime - $10days <= $currentTime) {
-                $("#licenseRemind").removeClass("hidden");
-                $editionName.text(licenseInfo.editionName)
+        $("#licenseCheck, #licenseRemind, #licenseWarning").addClass("hidden");
+        $content.text("").removeClass("text-warning");
+
+        const edition = licenseInfo.edition;
+        if (edition === "community") {
+            $licenseInfo.show();
+            $editionName.text("社区版");
+            return;
+        }
+
+        $licenseInfo.show();
+        $editionName.text(licenseInfo.editionName || "专业版");
+
+        const effectiveTime = Number(licenseInfo.effectiveTime) || 0;
+        if (effectiveTime <= 0) {
+            $content.text("未激活").addClass("text-warning");
+            return;
+        }
+
+        const currentTime = Number(licenseInfo.currentTime) || Date.now();
+        const tenDays = 864000000;
+
+        if (currentTime < effectiveTime && effectiveTime - tenDays > currentTime) {
+            $("#licenseCheck").removeClass("hidden");
+        } else if (currentTime < effectiveTime && effectiveTime - tenDays <= currentTime) {
+            $("#licenseRemind").removeClass("hidden");
+            if (licenseInfo.effectiveContent) {
                 $content.text(licenseInfo.effectiveContent);
             }
-            // 已过期
-            else if ($currentTime > $effectiveTime) {
-                $("#licenseWarning").removeClass("hidden");
-            }
-
+        } else if (currentTime > effectiveTime) {
+            $("#licenseWarning").removeClass("hidden");
         }
     });
 }
@@ -803,20 +806,32 @@ function formatCount(value) {
 }
 
 // 追加耗时信息
+function formatElapsedDuration(beginTime, endTime) {
+    const begin = Number(beginTime);
+    const end = Number(endTime);
+    if (!begin || !end || end <= begin) {
+        return '';
+    }
+    const seconds = Math.floor((end - begin) / 1000);
+    if (seconds < 60) {
+        return seconds + '秒';
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) {
+        return minutes + '分' + remainingSeconds + '秒';
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return hours + '小时' + remainingMinutes + '分';
+}
+
 function appendElapsedTime(content, meta) {
-    const beginTime = meta.beginTime;
-    const endTime = meta.endTime;
-    if (!beginTime || !endTime) {
+    const text = formatElapsedDuration(meta.beginTime, meta.endTime);
+    if (!text) {
         return;
     }
-    const seconds = Math.floor((endTime - beginTime) / 1000);
-    if (seconds < 60) {
-        content.push(`<div class="text-tertiary">耗时: ${seconds}秒</div>`);
-    } else {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        content.push(`<div class="text-tertiary">耗时: ${minutes}分${remainingSeconds}秒</div>`);
-    }
+    content.push(`<div class="text-tertiary">耗时: ${text}</div>`);
 }
 
 // 迷你进度条

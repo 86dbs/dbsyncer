@@ -5,7 +5,7 @@
 
     <groupId>org.ghi</groupId>
     <artifactId>dbsyncer</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
     <packaging>pom</packaging>
     <name>dbsyncer</name>
 
@@ -41,7 +41,6 @@
         <commons-codec.version>1.15</commons-codec.version>
         <lucene-analyzers-smartcn.version>8.8.0</lucene-analyzers-smartcn.version>
         <ojdbc8.version>21.6.0.0</ojdbc8.version>
-        <!--<mysql.version>5.1.40</mysql.version>-->
         <mysql.version>8.0.21</mysql.version>
         <jts-core.version>1.19.0</jts-core.version>
         <mysql-binlog.version>0.30.1</mysql-binlog.version>
@@ -50,11 +49,16 @@
         <postgresql.version>42.3.3</postgresql.version>
         <postgis-jdbc.version>2.5.1</postgis-jdbc.version>
         <kafka.version>0.11.0.0</kafka.version>
+        <jedis.version>3.10.0</jedis.version>
+        <oceanbase-client.version>2.4.12</oceanbase-client.version>
+        <clickhouse-jdbc.version>0.4.6</clickhouse-jdbc.version>
         <fastjson2.version>2.0.22</fastjson2.version>
-        <protobuf.version>3.21.1</protobuf.version>
+        <protobuf.version>3.21.12</protobuf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.13.1</junit.version>
         <jsql-parse.version>4.9</jsql-parse.version>
+        <h2.version>2.2.224</h2.version>
+        <hdrhistogram.version>2.1.12</hdrhistogram.version>
 
         <!-- 可选参数 -->
         <skip.spotless>true</skip.spotless>
@@ -134,6 +138,13 @@
                 <version>${ojdbc8.version}</version>
             </dependency>
 
+            <!-- h2 -->
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+            </dependency>
+
             <!-- sqlserver-driver -->
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>
@@ -177,6 +188,30 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.hdrhistogram</groupId>
+                        <artifactId>HdrHistogram</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jedis.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.oceanbase</groupId>
+                <artifactId>oceanbase-client</artifactId>
+                <version>${oceanbase-client.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.clickhouse</groupId>
+                <artifactId>clickhouse-jdbc</artifactId>
+                <version>${clickhouse-jdbc.version}</version>
             </dependency>
 
             <!-- log4j -->
@@ -216,6 +251,13 @@
                 <groupId>com.github.jsqlparser</groupId>
                 <artifactId>jsqlparser</artifactId>
                 <version>${jsql-parse.version}</version>
+            </dependency>
+
+            <!-- HdrHistogram -->
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>${hdrhistogram.version}</version>
             </dependency>
 
         </dependencies>
