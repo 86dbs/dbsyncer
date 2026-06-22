@@ -250,26 +250,18 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql) {
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ") ENGINE = MergeTree() ORDER BY tuple()";
     }
 
     @Override
-    public String buildDropTableSql(String tableName, boolean ifExists) {
-        String quoted = buildWithQuotation(tableName);
-        if (ifExists) {
-            return "DROP TABLE IF EXISTS " + quoted;
-        }
-        return "DROP TABLE " + quoted;
-    }
-
-    @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
-        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
+        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }
-        return connectorInstance.execute(databaseTemplate -> {
-            List<java.util.Map<String, Object>> rows = databaseTemplate.queryForList("SHOW CREATE TABLE " + tableName);
+        return sourceInstance.execute(databaseTemplate -> {
+            List<java.util.Map<String, Object>> rows = databaseTemplate.queryForList("SHOW CREATE TABLE " + sourceTableName);
             if (CollectionUtils.isEmpty(rows)) {
                 return StringUtil.EMPTY;
             }

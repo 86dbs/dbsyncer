@@ -28,25 +28,21 @@ public enum NoticeTypeEnum {
      */
     MAPPING_STOP(3),
     /**
-     * 通用消息
-     */
-    GENERAL_MESSAGE(4),
-    /**
      * 订正校验失败
      */
-    VALIDATE_SYNC_FAIL(5),
+    VALIDATE_SYNC_FAIL(4),
     /**
      * 授权异常
      */
-    LICENSE_EXCEPTION(6),
+    LICENSE_EXCEPTION(5),
     /**
      * 授权到期提醒
      */
-    LICENSE_EXPIRE_REMIND(7),
+    LICENSE_EXPIRE_REMIND(6),
     /**
      * 授权已过期
      */
-    LICENSE_EXPIRED(8);
+    LICENSE_EXPIRED(7);
 
     private final int code;
 

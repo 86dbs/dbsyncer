@@ -8,12 +8,16 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -24,14 +28,18 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
+import org.springframework.util.Assert;
 
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Oracle连接器实现
@@ -115,35 +123,35 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql) {
-        String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
-
-        String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
-        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
-                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + createSql + "'; END IF; " +
-                "END;";
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String createSql = "CREATE TABLE " + qualifyTableName(owner, tableName) + " (" + tableBodySql + ")";
+        return wrapCreateTableIfNotExists(owner, tableName, createSql);
     }
 
     @Override
-    public String buildDropTableSql(String tableName, boolean ifExists) {
-        String quoted = buildWithQuotation(tableName);
-        String dropSql = "DROP TABLE " + quoted + " CASCADE CONSTRAINTS";
-        if (!ifExists) {
-            return dropSql;
-        }
-        String upper = tableName == null ? StringUtil.EMPTY : tableName.toUpperCase(Locale.ROOT);
-        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + upper + "'; " +
-                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + dropSql + "'; END IF; " +
-                "END;";
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String dropSql = "DROP TABLE " + qualifyTableName(owner, tableName) + " CASCADE CONSTRAINTS";
+        return wrapDropTableIfExists(owner, tableName, dropSql);
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
-        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
+        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }
+        String ddl = fetchRawTableDdl(sourceInstance, sourceTableName);
+        if (StringUtil.isBlank(ddl)) {
+            return StringUtil.EMPTY;
+        }
+        String owner = targetInstance != null ? targetInstance.getSchema() : null;
+        String tableName = StringUtil.isNotBlank(targetTableName) ? targetTableName : sourceTableName;
+        return wrapCreateTableIfNotExists(owner, tableName, qualifyCreateTableStatement(ddl, owner, tableName));
+    }
+
+    private String fetchRawTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
         return connectorInstance.execute(databaseTemplate -> {
             String schema = connectorInstance.getSchema();
             try {
@@ -161,18 +169,16 @@ public final class OracleConnector extends AbstractDatabaseConnector {
                     return StringUtil.EMPTY;
                 }
                 ddl = ddl.trim();
-
-                //去掉 schema 前缀
-                String quotedSchema = "\"" + schema + "\"";
-                ddl = ddl.replace(quotedSchema + ".", "");
-
+                if (StringUtil.isNotBlank(schema)) {
+                    String quotedSchema = "\"" + schema.toUpperCase(Locale.ROOT) + "\"";
+                    ddl = ddl.replace(quotedSchema + ".", "");
+                    quotedSchema = "\"" + schema + "\"";
+                    ddl = ddl.replace(quotedSchema + ".", "");
+                }
                 if (ddl.endsWith(";")) {
                     ddl = ddl.substring(0, ddl.length() - 1).trim();
                 }
-                return "DECLARE v_cnt NUMBER := 0; BEGIN "
-                        + "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableName + "'; "
-                        + "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapeForExecuteImmediate(ddl) + "'; END IF; "
-                        + "END;";
+                return ddl;
             } catch (Exception e) {
                 String msg = e.getMessage();
                 if (msg != null && msg.contains("ORA-31603")) {
@@ -181,6 +187,88 @@ public final class OracleConnector extends AbstractDatabaseConnector {
                 throw new RuntimeException("Failed to get DDL for table: " + tableName, e);
             }
         });
+    }
+
+    private String qualifyCreateTableStatement(String ddl, String owner, String tableName) {
+        if (StringUtil.isBlank(ddl)) {
+            return StringUtil.EMPTY;
+        }
+        String normalized = ddl.trim();
+        int parenIndex = normalized.indexOf('(');
+        if (parenIndex < 0) {
+            return normalized;
+        }
+        return "CREATE TABLE " + qualifyTableName(owner, tableName) + " " + normalized.substring(parenIndex);
+    }
+
+    private String wrapCreateTableIfNotExists(String owner, String tableName, String createSql) {
+        String tableUpper = normalizeTableName(tableName);
+        String escapedCreateSql = escapeForExecuteImmediate(createSql);
+        if (StringUtil.isBlank(owner)) {
+            return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
+        }
+        String ownerUpper = normalizeOwner(owner);
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
+    }
+
+    private String wrapDropTableIfExists(String owner, String tableName, String dropSql) {
+        String tableUpper = normalizeTableName(tableName);
+        String escapedDropSql = escapeForExecuteImmediate(dropSql);
+        if (StringUtil.isBlank(owner)) {
+            return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
+        }
+        String ownerUpper = normalizeOwner(owner);
+        return "DECLARE v_cnt NUMBER := 0; BEGIN " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
+    }
+
+    private String qualifyTableName(String owner, String tableName) {
+        String quotedTable = buildWithQuotation(normalizeTableName(tableName));
+        if (StringUtil.isBlank(owner)) {
+            return quotedTable;
+        }
+        return buildWithQuotation(normalizeOwner(owner)) + "." + quotedTable;
+    }
+
+    private static String normalizeOwner(String owner) {
+        return owner == null ? StringUtil.EMPTY : owner.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static String normalizeTableName(String tableName) {
+        return tableName == null ? StringUtil.EMPTY : tableName.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private void applySessionSchema(DatabaseTemplate databaseTemplate, String schema) {
+        if (StringUtil.isBlank(schema)) {
+            return;
+        }
+        databaseTemplate.execute("ALTER SESSION SET CURRENT_SCHEMA = " + normalizeOwner(schema));
+    }
+
+    @Override
+    public Result writerDDL(DatabaseConnectorInstance connectorInstance, DDLConfig config) {
+        Result result = new Result();
+        try {
+            Assert.hasText(config.getSql(), "执行SQL语句不能为空.");
+            connectorInstance.execute(databaseTemplate -> {
+                applySessionSchema(databaseTemplate, connectorInstance.getSchema());
+                databaseTemplate.execute(DatabaseConstant.DBS_UNIQUE_CODE.concat(config.getSql()));
+                return true;
+            });
+            Map<String, String> successMap = new HashMap<>();
+            successMap.put(ConfigConstant.BINLOG_DATA, config.getSql());
+            result.addSuccessData(Collections.singletonList(successMap));
+        } catch (Exception e) {
+            result.getError().append(String.format("执行ddl: %s, 异常：%s", config.getSql(), e.getMessage()));
+        }
+        return result;
     }
 
     @Override

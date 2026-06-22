@@ -135,8 +135,17 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     private static void checkDatabaseMapping(List<DatabaseMapping> mappings) {
         for (DatabaseMapping mapping : mappings) {
-            if (mapping.getSourceConnectorId().equals(mapping.getTargetConnectorId()) && mapping.getSourceDatabase().equals(mapping.getTargetDatabase())) {
-                throw new BizException("同源同库不允许同步，请更换目标连接或数据库！");
+
+            if (StringUtil.equalsIgnoreCase(mapping.getSourceConnectorId(), mapping.getTargetConnectorId())) {
+
+                if (StringUtil.isNotBlank(mapping.getSourceDatabase()) && StringUtil.isNotBlank(mapping.getTargetDatabase()) && StringUtil.equalsIgnoreCase(mapping.getSourceDatabase(), mapping.getTargetDatabase())) {
+                    throw new BizException("同源同库不允许同步，请更换目标连接或数据库！");
+                }
+
+                if (StringUtil.isBlank(mapping.getSourceDatabase()) && StringUtil.isBlank(mapping.getTargetDatabase()) && StringUtil.equalsIgnoreCase(mapping.getSourceSchema(),mapping.getTargetSchema())) {
+                    throw new BizException("同源同schema不允许同步，请更换目标连接或schama！");
+                }
+
             }
         }
     }

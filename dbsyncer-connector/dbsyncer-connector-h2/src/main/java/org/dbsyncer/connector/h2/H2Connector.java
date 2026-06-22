@@ -109,23 +109,16 @@ public final class H2Connector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql) {
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
         throw new H2Exception("H2 暂时不支持该功能");
     }
 
-    @Override
-    public String buildDropTableSql(String tableName, boolean ifExists) {
-        String quoted = buildWithQuotation(tableName);
-        if (ifExists) {
-            return "DROP TABLE IF EXISTS " + quoted;
-        }
-        return "DROP TABLE " + quoted;
-    }
 
     @Override
     public String getPageSql(PageSql config) {

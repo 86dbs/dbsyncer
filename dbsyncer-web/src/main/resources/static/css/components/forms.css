@@ -26,9 +26,6 @@
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
   background-color: #fff;
 }
-.form-control-50 {
-  width: 50% !important;
-}
 
 .form-control:focus {
   border-color: var(--primary-color);
@@ -76,44 +73,24 @@ select.form-control.is-invalid,
 }
 
 /* 单项：标签+控件布局 */
-.form-item { 
-  display: grid; 
-  grid-template-columns: 120px 1fr; 
-  align-items: center; 
-  column-gap: 16px; 
+.form-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  column-gap: 16px;
 }
 
-.form-label { 
-  color: var(--text-secondary); 
-  font-weight: 500; 
+.form-label {
+  color: var(--text-secondary);
+  font-weight: 500;
   text-align: right;
   font-size: 14px;
 }
 
-.form-help { 
-  color: var(--text-tertiary); 
-  font-size: var(--font-size-xs); 
-  margin-top: 4px; 
-}
-
-/* 标签在上、控件占满宽（面板内表单项） */
-.form-item-stack {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-}
-
-.form-item-stack .form-label {
-  display: block;
-  text-align: left;
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+.form-help {
   color: var(--text-tertiary);
-}
-
-.form-item-stack .form-control-area,
-.form-item-stack > select,
-.form-item-stack > .dbsyncer-select {
-  width: 100%;
+  font-size: var(--font-size-xs);
+  margin-top: 4px;
 }
 
 .form-item .form-control-area {
@@ -129,11 +106,11 @@ select.form-control.is-invalid,
 }
 
 @media (max-width: 768px) {
-  .form-item { 
-    grid-template-columns: 1fr; 
-    row-gap: 6px; 
+  .form-item {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
   }
-  
+
   .form-label {
     text-align: left;
   }

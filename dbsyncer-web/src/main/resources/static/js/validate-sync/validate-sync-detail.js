@@ -299,7 +299,7 @@
                 return;
             }
             showConfirm({
-                title: '确定要手动订正当前明细中尚未成功的差异数据？',
+                title: '确定手动订正？',
                 icon: 'warning',
                 size: 'large',
                 position: 'center',

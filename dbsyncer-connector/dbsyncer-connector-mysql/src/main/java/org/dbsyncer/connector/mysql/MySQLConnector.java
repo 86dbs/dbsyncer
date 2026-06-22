@@ -125,17 +125,18 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql) {
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableBodySql + ")";
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
-        if (connectorInstance == null || StringUtil.isBlank(tableName)) {
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
+        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }
-        String sql = "SHOW CREATE TABLE " + buildWithQuotation(tableName);
-        return connectorInstance.execute(databaseTemplate -> {
+        String sql = "SHOW CREATE TABLE " + buildWithQuotation(sourceTableName);
+        return sourceInstance.execute(databaseTemplate -> {
             List<java.util.Map<String, Object>> rows = databaseTemplate.queryForList(sql);
             if (CollectionUtils.isEmpty(rows)) {
                 return StringUtil.EMPTY;
@@ -146,7 +147,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             }
             String ddl = StringUtil.EMPTY;
             for (java.util.Map.Entry<String, Object> entry : ddlRow.entrySet()) {
-                // 获取 create table 不区分大消息
                 if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("create table")
                         && entry.getValue() != null) {
                     ddl = String.valueOf(entry.getValue());
@@ -158,15 +158,6 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
             }
             return ddl.replaceFirst("(?i)^CREATE\\s+TABLE\\s+", "CREATE TABLE IF NOT EXISTS ");
         });
-    }
-
-    @Override
-    public String buildDropTableSql(String tableName, boolean ifExists) {
-        String quoted = buildWithQuotation(tableName);
-        if (ifExists) {
-            return "DROP TABLE IF EXISTS " + quoted;
-        }
-        return "DROP TABLE " + quoted;
     }
 
     @Override

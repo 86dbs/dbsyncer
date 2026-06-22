@@ -26,7 +26,7 @@ public final class DefaultNoticeStrategy {
     public static final String INTERVAL_1D = "interval_1d";
 
     private static final String CRON_EVERY_10M = "0 */10 * * * ?";
-    private static final String CRON_DAILY_9AM = "0 13 16 * * ?";
+    private static final String CRON_DAILY_9AM = "0 0 9 * * ?";
 
     private DefaultNoticeStrategy() {
     }
@@ -36,8 +36,8 @@ public final class DefaultNoticeStrategy {
     }
 
     public static NoticeStrategy interval10m() {
-        return new NoticeStrategy(INTERVAL_10M, "10分钟周期", NoticeFrequencyEnum.INTERVAL, CRON_EVERY_10M,
-                types(NoticeTypeEnum.LICENSE_EXCEPTION, NoticeTypeEnum.GENERAL_MESSAGE));
+        return new NoticeStrategy(INTERVAL_10M, "10分钟一次", NoticeFrequencyEnum.INTERVAL, CRON_EVERY_10M,
+                types(NoticeTypeEnum.LICENSE_EXCEPTION));
     }
 
     public static NoticeStrategy immediate() {
@@ -47,7 +47,7 @@ public final class DefaultNoticeStrategy {
     }
 
     public static NoticeStrategy interval1d() {
-        return new NoticeStrategy(INTERVAL_1D, "每日周期", NoticeFrequencyEnum.INTERVAL, CRON_DAILY_9AM,
+        return new NoticeStrategy(INTERVAL_1D, "每天一次", NoticeFrequencyEnum.INTERVAL, CRON_DAILY_9AM,
                 types(NoticeTypeEnum.LICENSE_EXPIRE_REMIND, NoticeTypeEnum.LICENSE_EXPIRED));
     }
 

@@ -1089,4 +1089,26 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return 255;
     }
 
+    @Override
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return "CREATE TABLE IF NOT EXISTS " + buildWithQuotation(tableName) + " (" + tableBodySql + ")";
+    }
+
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
+    }
+
+    @Override
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
+        return StringUtil.EMPTY;
+    }
+
 }

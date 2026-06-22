@@ -111,26 +111,24 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(String tableName, String tableBodySql) {
+    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql) {
         String createSql = "CREATE TABLE " + tableName + " (" + tableBodySql + ")";
         String escapedTableName = tableName.replace("'", "''");
         return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NULL BEGIN " + createSql + " END";
     }
 
     @Override
-    public String buildDropTableSql(String tableName, boolean ifExists) {
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
         String quoted = buildWithQuotation(tableName);
         String dropSql = "DROP TABLE " + quoted;
-        if (!ifExists) {
-            return dropSql;
-        }
         String escapedTableName = tableName.replace("'", "''");
         return "IF OBJECT_ID(N'" + escapedTableName + "', N'U') IS NOT NULL " + dropSql;
     }
 
     @Override
-    public String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName) {
-        return null;
+    public String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                                    String sourceTableName, String targetTableName) {
+        return StringUtil.EMPTY;
     }
 
     @Override

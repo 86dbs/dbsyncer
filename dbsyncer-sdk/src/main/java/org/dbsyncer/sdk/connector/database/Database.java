@@ -50,28 +50,20 @@ public interface Database {
     boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName);
 
     /**
-     * 生成创建表 DDL。
+     * 生成创建表 DDL；targetInstance 可传入目标连接以带上 schema。
      */
-    String buildCreateTableSql(String tableName, String tableBodySql);
+    String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String tableBodySql);
 
     /**
-     * 从源库获取建表
+     * 从源库获取建表 DDL，并在目标命名空间下生成可执行语句。
      */
-    String getCreateTableDdl(DatabaseConnectorInstance connectorInstance, String tableName);
+    String getCreateTableDdl(DatabaseConnectorInstance sourceInstance, DatabaseConnectorInstance targetInstance,
+                             String sourceTableName, String targetTableName);
 
     /**
-     * 生成删除表 DDL。
+     * 生成删除表 DDL；targetInstance 可传入目标连接以带上 schema。
      */
-    default String buildDropTableSql(String tableName, boolean ifExists) {
-        if (StringUtil.isBlank(tableName)) {
-            return StringUtil.EMPTY;
-        }
-        String quoted = buildWithQuotation(tableName);
-        if (ifExists) {
-            return "DROP TABLE IF EXISTS " + quoted;
-        }
-        return "DROP TABLE " + quoted;
-    }
+    String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName);
 
     /**
      * 获取主键字段名称

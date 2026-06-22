@@ -3,8 +3,6 @@
  */
 package org.dbsyncer.plugin.model;
 
-
-import org.dbsyncer.sdk.enums.NoticeTypeEnum;
 import org.dbsyncer.sdk.model.NoticeContent;
 
 /**
@@ -17,10 +15,6 @@ import org.dbsyncer.sdk.model.NoticeContent;
 public class GeneralNoticeContent extends NoticeContent {
 
     private String content;
-
-    public GeneralNoticeContent() {
-        setNoticeType(NoticeTypeEnum.GENERAL_MESSAGE);
-    }
 
     public String getContent() {
         return content;

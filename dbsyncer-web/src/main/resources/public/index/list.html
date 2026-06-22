@@ -354,6 +354,7 @@
             tableBodySelector: '#connectorTable',
             paginationSelector: '#connectorPagination',
             pageSize: 3,
+            showBoundaryButtons: false,
             renderRow: function(connector, index) {
                 return `<div class="card flex justify-between border rounded-md mb-3">
                 <div class="flex items-center">
@@ -378,6 +379,7 @@
             requestUrl: '/mapping/search',
             tableBodySelector: '#mappingTable',
             pageSize: 5,
+            showBoundaryButtons: false,
             renderRow: function(mapping, index) {
                 return `<tr>
                     <td><div class="font-medium">${escapeHtml(mapping.name)}</div></td>

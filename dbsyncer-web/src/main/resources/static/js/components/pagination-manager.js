@@ -94,6 +94,7 @@
             storageKey: storageKey,
             customPageSize: options.customPageSize || false,
             customPageSizeItems: options.customPageSizeItems ||  [5, 10, 50, 100, 200],
+            showBoundaryButtons: options.showBoundaryButtons !== false,
             refreshCompleted: options.refreshCompleted || function() {}
         };
 
@@ -278,13 +279,15 @@
                 }
             }
 
-            // 首页按钮
-            paginationBar.append(createPaginationNavBtn(
-                '首页',
-                'fa-angle-double-left',
-                currentPage === 1,
-                () => onPageChange(1)
-            ));
+            if (config.showBoundaryButtons) {
+                // 首页按钮
+                paginationBar.append(createPaginationNavBtn(
+                    '首页',
+                    'fa-angle-double-left',
+                    currentPage === 1,
+                    () => onPageChange(1)
+                ));
+            }
 
             // 上一页按钮
             paginationBar.append(createPaginationNavBtn(
@@ -316,13 +319,15 @@
                 () => onPageChange(currentPage + 1)
             ));
 
-            // 末页按钮
-            paginationBar.append(createPaginationNavBtn(
-                '末页',
-                'fa-angle-double-right',
-                currentPage === totalPages,
-                () => onPageChange(totalPages)
-            ));
+            if (config.showBoundaryButtons) {
+                // 末页按钮
+                paginationBar.append(createPaginationNavBtn(
+                    '末页',
+                    'fa-angle-double-right',
+                    currentPage === totalPages,
+                    () => onPageChange(totalPages)
+                ));
+            }
         };
 
         // 更新分页信息
