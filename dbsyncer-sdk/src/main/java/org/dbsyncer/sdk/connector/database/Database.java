@@ -52,14 +52,12 @@ public interface Database {
     /**
      * 生成创建表 DDL；targetInstance 可传入目标连接并schema。
      */
-    String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL);
+    String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL);
 
     /**
      * 从源库获取建表DDL
      */
-    default String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName){
-        return StringUtil.EMPTY;
-    }
+    String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName);
 
     /**
      * 生成删除表 DDL；targetInstance

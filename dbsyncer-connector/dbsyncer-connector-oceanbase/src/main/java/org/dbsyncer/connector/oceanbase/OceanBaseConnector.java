@@ -116,12 +116,12 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
         throw new OceanBaseException("create table sql is not supported.");
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
         if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }

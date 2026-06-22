@@ -109,12 +109,12 @@ public final class H2Connector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ")";
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
         throw new H2Exception("H2 暂时不支持该功能");
     }
 

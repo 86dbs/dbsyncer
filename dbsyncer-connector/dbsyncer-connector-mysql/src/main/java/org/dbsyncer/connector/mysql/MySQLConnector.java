@@ -125,12 +125,12 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ")";
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
         if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }

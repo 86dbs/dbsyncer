@@ -127,10 +127,15 @@ public final class PostgreSQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
         String schema = targetInstance != null ? targetInstance.getSchema() : null;
         String qualifiedTable = qualifyTableName(schema, tableName);
         return "CREATE TABLE IF NOT EXISTS " + qualifiedTable + " (" + sourceDDL + ")";
+    }
+
+    @Override
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+        return StringUtil.EMPTY;
     }
 
     @Override

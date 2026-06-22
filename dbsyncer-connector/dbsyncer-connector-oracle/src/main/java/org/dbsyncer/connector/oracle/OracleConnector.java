@@ -130,14 +130,14 @@ public final class OracleConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
+    public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
         String owner = targetInstance != null ? targetInstance.getSchema() : null;
         String createSql = "CREATE TABLE " + qualifyTableName(owner, tableName) + " (" + sourceDDL + ")";
         return wrapCreateTableIfNotExists(owner, tableName, createSql);
     }
 
     @Override
-    public String buildCreateTableSql(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
+    public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
         if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
             return StringUtil.EMPTY;
         }
