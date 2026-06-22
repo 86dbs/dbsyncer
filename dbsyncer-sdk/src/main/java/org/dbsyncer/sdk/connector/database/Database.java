@@ -50,7 +50,7 @@ public interface Database {
     boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName);
 
     /**
-     * 生成创建表 DDL；targetInstance 可传入目标连接并schema。
+     * 生成创建表 DDL
      */
     String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL);
 
