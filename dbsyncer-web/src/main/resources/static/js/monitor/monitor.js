@@ -90,7 +90,7 @@ function bindQueryDataEvent() {
         tableBodySelector: '#dataTableBody',
         params: params(),
         pageSize: 5,
-        showBoundaryButtons: false,
+        showBoundaryButtons: true,
         renderRow: function (d, index) {
             return `
                 <tr>
@@ -191,7 +191,7 @@ function bindQueryLogEvent() {
         requestUrl: '/monitor/queryLog',
         tableBodySelector: '#logList',
         pageSize: 5,
-        showBoundaryButtons: false,
+        showBoundaryButtons: true,
         renderRow: function (row, index) {
             return `
                 <tr>

@@ -245,8 +245,12 @@ tr[draggable="true"]:hover {
   align-items: center;
   justify-content: center;
   min-width: 36px;
+  width: auto;
   height: 36px;
-  padding: 0 var(--spacing-sm);
+  padding: 0 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   border: none;
   background: linear-gradient(135deg, #f7f9ff 0%, #eef2ff 100%);
   color: var(--text-secondary);
@@ -279,10 +283,16 @@ tr[draggable="true"]:hover {
   box-shadow: 0 6px 16px rgba(22, 93, 255, 0.3);
 }
 
+span.pagination-page-btn {
+  cursor: default;
+  pointer-events: none;
+}
+
 /* 分页栏容器 */
 .pagination-bar {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
 }
 .pagination-bar > *:not(:first-child) {
   margin-left: var(--spacing-sm);

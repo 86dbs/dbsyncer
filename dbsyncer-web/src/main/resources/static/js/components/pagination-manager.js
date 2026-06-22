@@ -74,6 +74,23 @@
         });
     }
 
+    function getPageWindow(currentPage, totalPages, windowSize) {
+        if (totalPages <= windowSize) {
+            return { start: 1, end: totalPages };
+        }
+        let start = currentPage - Math.floor(windowSize / 2);
+        let end = start + windowSize - 1;
+        if (start < 1) {
+            start = 1;
+            end = windowSize;
+        }
+        if (end > totalPages) {
+            end = totalPages;
+            start = totalPages - windowSize + 1;
+        }
+        return { start: start, end: end };
+    }
+
     function PaginationManager(options) {
         const storageKey = options.storageKey || '';
         const stored = loadPaginationState(storageKey);
@@ -229,7 +246,7 @@
         this.renderPagination = function(currentPage, totalPages, onPageChange) {
             const pagination = $(config.paginationSelector);
             const paginationBar = $(config.paginationSelector).find(".pagination-bar");
-            const paginationBtns = pagination.find('.pagination-btn');
+            const paginationBtns = pagination.find('.pagination-btn, .pagination-page-btn');
             paginationBtns.remove();
 
             let $this = this;
@@ -297,12 +314,10 @@
                 () => onPageChange(currentPage - 1)
             ));
 
-            // 页码按钮（显示3个页码）
-            const startPage = Math.max(1, currentPage - 1);
-            const endPage = Math.min(totalPages, startPage + 2);
-
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = $(`<button type="button" class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
+            // 页码按钮：总页数 > 3 时固定展示 3 个，否则展示全部
+            const pageWindow = getPageWindow(currentPage, totalPages, 3);
+            for (let i = pageWindow.start; i <= pageWindow.end; i++) {
+                const pageBtn = $(`<button type="button" class="pagination-page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`);
                 pageBtn.on('click', () => {
                     if (i !== currentPage) {
                         onPageChange(i);
