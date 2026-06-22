@@ -280,7 +280,10 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     long errorCount = countTaskDetail(t.getId());
                     vo.setErrorCount(errorCount);
                     List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(t.getId());
-                    vo.setProgress(calculateProgressPercent(t, tableGroupList.size()));
+                    int tableCount = tableGroupList.size();
+                    vo.setTotalTableCount(tableCount);
+                    vo.setCompletedTableCount(countCompletedTables(t, tableCount));
+                    vo.setProgress(calculateProgressPercent(t, tableCount));
                     list.add(vo);
                 }
             }
@@ -630,6 +633,32 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     /**
+     * 已完成表数：completed = (最小索引 - 1) + (快照中 status=1 的个数)
+     */
+    private int countCompletedTables(ValidateSyncTask task, int totalSize) {
+        if (task.getProcessed() == null) {
+            return 0;
+        }
+        if (task.getProcessed() == 1) {
+            return totalSize;
+        }
+        if (task.getTableSnapshots() == null || task.getTableSnapshots().isEmpty()) {
+            return 0;
+        }
+        int minIndex = task.getTableSnapshots().keySet().stream()
+                .min(Comparator.naturalOrder())
+                .orElse(0);
+        long doneCount = task.getTableSnapshots().values().stream()
+                .filter(snapshot -> snapshot != null && snapshot.getStatus() == 1)
+                .count();
+        long completed = Math.max(0, minIndex - 1L) + doneCount;
+        if (completed > totalSize) {
+            completed = totalSize;
+        }
+        return (int) completed;
+    }
+
+    /**
      * 进度百分比计算：
      * completed = (最小索引 - 1) + (快照中 status=1 的个数)
      * progress = completed / 表总数 * 100
@@ -643,24 +672,13 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         if (task.getProcessed() == null) {
             return null;
         }
-        if (task.getProcessed() != null && task.getProcessed() == 1) {
+        if (task.getProcessed() == 1) {
             return new BigDecimal("100.00");
         }
-        if (task.getTableSnapshots().isEmpty()) {
+        if (totalSize <= 0) {
             return BigDecimal.ZERO;
         }
-        int minIndex = task.getTableSnapshots().keySet().stream()
-                .min(Comparator.naturalOrder())  // 自然排序，取最小
-                .orElse(0);
-
-        long doneCount = task.getTableSnapshots().values().stream()
-                .filter(snapshot -> snapshot != null && snapshot.getStatus() == 1)
-                .count();
-        long completed = Math.max(0, minIndex - 1L) + doneCount;
-        if (completed > totalSize) {
-            completed = totalSize;
-        }
-        // 公式：completed * 100 / totalSize 保留2位小数
+        int completed = countCompletedTables(task, totalSize);
         return BigDecimal.valueOf(completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(totalSize), 2, RoundingMode.HALF_UP);

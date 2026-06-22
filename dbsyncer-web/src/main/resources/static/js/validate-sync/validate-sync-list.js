@@ -117,6 +117,33 @@
         return stateBtn.join('');
     }
 
+    function renderTableProgressText(task) {
+        var total = Number(task.totalTableCount);
+        var completed = Number(task.completedTableCount);
+        if (isNaN(total) || total <= 0) {
+            return '';
+        }
+        if (isNaN(completed) || completed < 0) {
+            completed = 0;
+        }
+        if (completed > total) {
+            completed = total;
+        }
+        return '<span class="text-xs text-secondary whitespace-nowrap">' + completed + '/' + total + '张表</span>';
+    }
+
+    function renderTaskDurationText(task) {
+        var isRunning = Number(task.status) === 1;
+        if (isRunning) {
+            return '';
+        }
+        var durationText = formatElapsedDuration(task.beginTime, task.endTime);
+        if (!durationText) {
+            return '';
+        }
+        return '<span class="text-xs text-tertiary whitespace-nowrap">任务耗时：' + durationText + '</span>';
+    }
+
     function renderResultColumn(task) {
         var n = Number(task.errorCount);
         if (isNaN(n) || n < 0) {
@@ -159,11 +186,24 @@
                 + 'onclick="doLoader(\'/validate-sync/page/detail?id=' + taskId + '&detailStatus=fail\'); return false;">'
                 + '<span class="badge badge-error">' + n + '</span></a>')
             : '<span class="badge badge-success">正常</span>';
+        var tableProgressHtml = renderTableProgressText(task);
+        var durationHtml = renderTaskDurationText(task);
+        var centerParts = [];
+        if (tableProgressHtml) {
+            centerParts.push(tableProgressHtml);
+        }
+        if (durationHtml) {
+            centerParts.push(durationHtml);
+        }
+        var centerHtml = centerParts.length
+            ? ('<span class="progress-meta">' + centerParts.join('') + '</span>')
+            : '';
         var rightText = (isRunning && progress === 0) ? '0%' : (progress + '%');
         return ''
-            + '<div class="min-w-160">'
+            + '<div class="min-w-200">'
             + '  <div class="progress-header progress-header-compact">'
             + '    <span class="progress-title">' + left + '</span>'
+            + centerHtml
             + '    <span class="progress-value progress-value-' + state + '">' + rightText + '</span>'
             + '  </div>'
             + '  <div class="progress-bar progress-bar-compact">'
