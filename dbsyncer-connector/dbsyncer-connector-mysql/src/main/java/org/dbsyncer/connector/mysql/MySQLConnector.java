@@ -161,6 +161,14 @@ public final class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）

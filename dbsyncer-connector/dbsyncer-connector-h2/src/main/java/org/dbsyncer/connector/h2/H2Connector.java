@@ -119,6 +119,10 @@ public final class H2Connector extends AbstractDatabaseConnector {
         throw new H2Exception("H2 暂时不支持该功能");
     }
 
+    @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        throw new H2Exception("Drop table is not supported.");
+    }
 
     @Override
     public String getPageSql(PageSql config) {

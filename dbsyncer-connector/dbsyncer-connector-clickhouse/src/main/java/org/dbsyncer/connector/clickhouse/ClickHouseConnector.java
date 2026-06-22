@@ -271,6 +271,11 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        throw new ClickHouseException("Drop table is not supported.");
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         appendOrderByPrimaryKeys(sql, config);

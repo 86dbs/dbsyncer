@@ -152,6 +152,11 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
+        throw new OceanBaseException("Drop table is not supported.");
+    }
+
+    @Override
     public String getPageSql(PageSql config) {
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         // 使用基类方法添加ORDER BY（按主键排序，保证分页一致性）
