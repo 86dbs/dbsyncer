@@ -271,7 +271,10 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
-        throw new ClickHouseException("Drop table is not supported.");
+        if (StringUtil.isBlank(tableName)) {
+            return StringUtil.EMPTY;
+        }
+        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
     }
 
     @Override
