@@ -60,6 +60,10 @@ public abstract class StringType extends AbstractDataType<String> {
             return DateFormatUtil.dateToString((Date) val);
         }
 
+        if (val instanceof java.util.Date) {
+            return DateFormatUtil.dateToString((java.util.Date) val);
+        }
+
         return throwUnsupportedException(val, field);
     }
 }
