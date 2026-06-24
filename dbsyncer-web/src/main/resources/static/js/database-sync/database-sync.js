@@ -41,7 +41,7 @@
     /** 页面加载时的全部连接器选项，用于按源端类型筛选目标连接器 */
     let allConnectorOptions = [];
     /** 暂不支持作为源端的连接器类型 */
-    const UNSUPPORTED_SOURCE_CONNECTOR_TYPES = [];
+    const UNSUPPORTED_SOURCE_CONNECTOR_TYPES = ['clickhouse'];
     let tableTreeScrollBound = false;
     let tableCbSeq = 0;
     let initializing = false;
