@@ -171,16 +171,23 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
         if (field == null) {
             return serialize(value);
         }
-        Object converted = convert(value, field);
+        Object v = convert(value, field);
+        if (v == null) {
+            return null;
+        }
         switch (getFieldType(field)) {
             case INT:
+                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer -> buffer.putInt(((Number) v).intValue()));
             case SHORT:
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> buffer.putShort(((Number) v).shortValue()));
             case LONG:
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong(((Number) v).longValue()));
             case FLOAT:
+                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer -> buffer.putFloat(((Number) v).floatValue()));
             case DOUBLE:
-                return serializeByFieldType(converted, getFieldType(field));
+                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer -> buffer.putDouble(((Number) v).doubleValue()));
             default:
-                return serialize(converted);
+                return serialize(v);
         }
     }
 
@@ -210,39 +217,39 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
                 return ByteString.copyFromUtf8(uuid.toString());
             // 时间
             case "java.sql.Timestamp":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
                     Timestamp timestamp = (Timestamp) value;
                     buffer.putLong(timestamp.getTime());
                 });
             case "java.sql.Date":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
                     Date date = (Date) value;
                     buffer.putLong(date.getTime());
                 });
             case "java.util.Date":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
                     java.util.Date uDate = (java.util.Date) value;
                     buffer.putLong(uDate.getTime());
                 });
             case "java.sql.Time":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer-> {
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> {
                     Time time = (Time) value;
                     buffer.putLong(time.getTime());
                 });
             // 数字
             case "java.lang.Integer":
-                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer->buffer.putInt((Integer) value));
+                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer -> buffer.putInt((Integer) value));
             case "java.math.BigInteger":
                 BigInteger bigInteger = (BigInteger) value;
                 return ByteString.copyFrom(bigInteger.toByteArray());
             case "java.lang.Long":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong((Long) value));
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong((Long) value));
             case "java.lang.Short":
-                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer->buffer.putShort((Short) value));
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> buffer.putShort((Short) value));
             case "java.lang.Float":
-                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer->buffer.putFloat((Float) value));
+                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer -> buffer.putFloat((Float) value));
             case "java.lang.Double":
-                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer->buffer.putDouble((Double) value));
+                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer -> buffer.putDouble((Double) value));
             case "java.math.BigDecimal":
                 BigDecimal bigDecimal = (BigDecimal) value;
                 return ByteString.copyFromUtf8(bigDecimal.toString());
@@ -251,36 +258,16 @@ public abstract class AbstractSchemaResolver implements SchemaResolver {
                 return ByteString.copyFrom(bitSet.toByteArray());
             // 布尔(1为true;0为false)
             case "java.lang.Boolean":
-                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer-> {
+                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer -> {
                     Boolean b = (Boolean) value;
                     buffer.putShort((short) (b ? 1 : 0));
                 });
             case "java.time.LocalDateTime":
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong(Timestamp.valueOf((LocalDateTime) value).getTime()));
+                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer -> buffer.putLong(Timestamp.valueOf((LocalDateTime) value).getTime()));
             default:
                 logger.error("Unsupported serialize value type:{}", type);
         }
         return null;
-    }
-
-    protected ByteString serializeByFieldType(Object value, DataTypeEnum fieldType) {
-        if (value == null) {
-            return null;
-        }
-        switch (fieldType) {
-            case INT:
-                return allocateByteBufferToByteString(BinlogByteEnum.INTEGER, buffer->buffer.putInt(((Number) value).intValue()));
-            case SHORT:
-                return allocateByteBufferToByteString(BinlogByteEnum.SHORT, buffer->buffer.putShort(((Number) value).shortValue()));
-            case LONG:
-                return allocateByteBufferToByteString(BinlogByteEnum.LONG, buffer->buffer.putLong(((Number) value).longValue()));
-            case FLOAT:
-                return allocateByteBufferToByteString(BinlogByteEnum.FLOAT, buffer->buffer.putFloat(((Number) value).floatValue()));
-            case DOUBLE:
-                return allocateByteBufferToByteString(BinlogByteEnum.DOUBLE, buffer->buffer.putDouble(((Number) value).doubleValue()));
-            default:
-                return serialize(value);
-        }
     }
 
     protected ByteString allocateByteBufferToByteString(BinlogByteEnum byteType, ByteStringMapper mapper) {
