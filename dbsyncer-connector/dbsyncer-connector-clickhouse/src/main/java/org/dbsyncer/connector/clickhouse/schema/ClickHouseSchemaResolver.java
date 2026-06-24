@@ -13,6 +13,7 @@ import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseFloatType;
 import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseIntType;
 import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseLongType;
 import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseStringType;
+import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseTimeType;
 import org.dbsyncer.connector.clickhouse.schema.support.ClickHouseTimestampType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
@@ -69,6 +70,7 @@ public final class ClickHouseSchemaResolver extends AbstractDatabaseSchemaResolv
                 new ClickHouseDoubleType(),
                 new ClickHouseDateType(),
                 new ClickHouseTimestampType(),
+                new ClickHouseTimeType(),
                 new ClickHouseBooleanType(),
                 new ClickHouseBytesType())
                 .forEach(t -> t.getSupportedTypeName().forEach(typeName -> {

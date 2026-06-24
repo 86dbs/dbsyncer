@@ -16,9 +16,11 @@ import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseShortType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseStringType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseTimeType;
 import org.dbsyncer.connector.oceanbase.schema.support.OceanBaseTimestampType;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDatabaseSchemaResolver;
 import org.dbsyncer.sdk.schema.DataType;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -30,6 +32,30 @@ import java.util.stream.Stream;
  * @date 2026-06-04 00:20
  */
 public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolver {
+
+    /**
+     * 规范化类型名：转大写并去除长度等括号参数（如 varchar(64) -> VARCHAR）。
+     */
+    public static String normalizeTypeName(String typeName) {
+        if (typeName == null) {
+            return null;
+        }
+        String normalized = typeName.trim().toUpperCase(Locale.ROOT);
+        int parenIndex = normalized.indexOf('(');
+        if (parenIndex > 0) {
+            normalized = normalized.substring(0, parenIndex).trim();
+        }
+        return normalized;
+    }
+
+    @Override
+    protected DataType getDataType(Map<String, DataType> mapping, Field field) {
+        DataType dataType = mapping.get(field.getTypeName());
+        if (dataType == null) {
+            dataType = mapping.get(normalizeTypeName(field.getTypeName()));
+        }
+        return dataType;
+    }
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
@@ -47,10 +73,11 @@ public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolve
             new OceanBaseTimestampType(),
             new OceanBaseTimeType())
         .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
-            if (mapping.containsKey(typeName)) {
-                throw new OceanBaseException("Duplicate type name: " + typeName);
+            String key = normalizeTypeName(typeName);
+            if (mapping.containsKey(key)) {
+                throw new OceanBaseException("Duplicate type name: " + key);
             }
-            mapping.put(typeName, t);
+            mapping.put(key, t);
         }));
     }
 

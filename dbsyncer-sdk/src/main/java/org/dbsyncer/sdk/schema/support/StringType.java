@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.AbstractDataType;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,12 +52,12 @@ public abstract class StringType extends AbstractDataType<String> {
             return DateFormatUtil.timestampToString((Timestamp) val);
         }
 
-        if (val instanceof Date) {
-            return DateFormatUtil.dateToString((Date) val);
+        if (val instanceof Time) {
+            return DateFormatUtil.timeToString((Time) val);
         }
 
-        if (val instanceof java.util.Date) {
-            return DateFormatUtil.dateToString((java.util.Date) val);
+        if (val instanceof Date) {
+            return DateFormatUtil.dateToString((Date) val);
         }
 
         return throwUnsupportedException(val, field);

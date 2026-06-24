@@ -25,7 +25,9 @@
                         <i class="fa fa-database text-primary"></i> 数据源<strong class="text-primary">*</strong>
                     </label>
                     <select name="sourceConnectorId" id="sourceConnectorId" class="form-control">
-                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
+                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                th:attr="data-connector-type=${c?.config?.connectorType}"
+                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                     </select>
                 </div>
 
@@ -35,7 +37,9 @@
                         <i class="fa fa-database text-success"></i> 目标源<strong class="text-primary">*</strong>
                     </label>
                     <select name="targetConnectorId" id="targetConnectorId" class="form-control">
-                        <option th:each="c,s:${connectors}" th:value="${c?.id}" th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
+                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
+                                th:attr="data-connector-type=${c?.config?.connectorType}"
+                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
                     </select>
                 </div>
             </div>
@@ -114,13 +118,28 @@
 </div>
 
 <script>
-    function onDBChange(connectorId, schemaSelect, dbName) {
+    function isOracleConnector($connector, connectorId) {
+        if (!$connector || !connectorId) {
+            return false;
+        }
+        const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
+        return type && String(type).toLowerCase() === 'oracle';
+    }
+
+    function toggleDatabaseFieldVisibility($database, hide) {
+        $database.closest('.form-item').toggleClass('hidden', !!hide);
+    }
+
+    function onDBChange(connectorId, schemaSelect, dbName, oracleMode) {
         schemaSelect.setData([]);
         schemaSelect.setValues([], true);
-        if (!connectorId || !dbName) {
+        if (!connectorId) {
             return;
         }
-        doGetter('/connector/getSchema', {id: connectorId, database: dbName}, function (response) {
+        if (!oracleMode && !dbName) {
+            return;
+        }
+        doGetter('/connector/getSchema', {id: connectorId, database: dbName || ''}, function (response) {
             if (response.success) {
                 const schemas = response.data || [];
                 const array = schemas.map(function (schema) {
@@ -133,12 +152,19 @@
         });
     }
 
-    function onConnectorChange(connectorId, dbSelect, schemaSelect) {
+    function onConnectorChange(connectorId, dbSelect, schemaSelect, $connector, $database) {
+        const oracleMode = isOracleConnector($connector, connectorId);
+        toggleDatabaseFieldVisibility($database, oracleMode);
+
         dbSelect.setData([]);
         dbSelect.setValues([], true);
         schemaSelect.setData([]);
         schemaSelect.setValues([], true);
         if (!connectorId) {
+            return;
+        }
+        if (oracleMode) {
+            onDBChange(connectorId, schemaSelect, '', true);
             return;
         }
         doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
@@ -163,7 +189,7 @@
             type: 'single',
             onSelect: function (selected) {
                 if (currentConnectorId) {
-                    onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '');
+                    onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '', false);
                 }
             }
         });
@@ -171,7 +197,7 @@
             type: 'single',
             onSelect: function (connectorId) {
                 currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
-                onConnectorChange(currentConnectorId, dbSelect, schemaSelect);
+                onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
             }
         });
 
@@ -179,7 +205,7 @@
         const selected = connectorSelect.getValues();
         if (selected.length >= 1) {
             currentConnectorId = selected[0];
-            onConnectorChange(currentConnectorId, dbSelect, schemaSelect);
+            onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
         }
     }
 

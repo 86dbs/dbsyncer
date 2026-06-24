@@ -85,13 +85,28 @@ function createMetaSnapshotParams() {
 }
 
 
-function onDBChange(connectorId, schemaSelect, dbName, defaultSchema) {
+function isOracleConnector($connector, connectorId) {
+    if (!$connector || !connectorId) {
+        return false;
+    }
+    const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
+    return type && String(type).toLowerCase() === 'oracle';
+}
+
+function toggleDatabaseFieldVisibility($database, hide) {
+    $database.closest('.form-item').toggleClass('hidden', !!hide);
+}
+
+function onDBChange(connectorId, schemaSelect, dbName, defaultSchema, oracleMode) {
     schemaSelect.setData([]);
     schemaSelect.setValues([], true);
-    if (!connectorId || !dbName) {
+    if (!connectorId) {
         return;
     }
-    doGetter('/connector/getSchema', {id: connectorId, database: dbName}, function (response) {
+    if (!oracleMode && !dbName) {
+        return;
+    }
+    doGetter('/connector/getSchema', {id: connectorId, database: dbName || ''}, function (response) {
         if (response.success) {
             const schemas = response.data || [];
             const array = schemas.map(function (schema) {
@@ -107,12 +122,19 @@ function onDBChange(connectorId, schemaSelect, dbName, defaultSchema) {
     });
 }
 
-function onConnectorChange(connectorId, dbSelect, schemaSelect, defaultDatabase, defaultSchema) {
+function onConnectorChange(connectorId, dbSelect, schemaSelect, $connector, $database, defaultDatabase, defaultSchema) {
+    const oracleMode = isOracleConnector($connector, connectorId);
+    toggleDatabaseFieldVisibility($database, oracleMode);
+
     dbSelect.setData([]);
     dbSelect.setValues([], true);
     schemaSelect.setData([]);
     schemaSelect.setValues([], true);
     if (!connectorId) {
+        return;
+    }
+    if (oracleMode) {
+        onDBChange(connectorId, schemaSelect, '', defaultSchema, true);
         return;
     }
     doGetter('/connector/getDatabase', {id: connectorId}, function (response) {
@@ -124,7 +146,7 @@ function onConnectorChange(connectorId, dbSelect, schemaSelect, defaultDatabase,
             dbSelect.setData(db);
             if (defaultDatabase && db.some(function (item) { return item.value === defaultDatabase; })) {
                 dbSelect.setValues([defaultDatabase], true);
-                onDBChange(connectorId, schemaSelect, defaultDatabase, defaultSchema);
+                onDBChange(connectorId, schemaSelect, defaultDatabase, defaultSchema, false);
             }
         } else {
             bootGrowl("获取数据库信息失败: " + response.message, "danger");
@@ -147,7 +169,7 @@ function initDBSelect($connector, $database, $schema) {
         defaultValue: defaultDatabase ? [defaultDatabase] : null,
         onSelect: function (selected) {
             if (currentConnectorId) {
-                onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '');
+                onDBChange(currentConnectorId, schemaSelect, selected.length >= 1 ? selected[0] : '', '', false);
             }
         }
     });
@@ -155,7 +177,7 @@ function initDBSelect($connector, $database, $schema) {
         type: 'single',
         onSelect: function (connectorId) {
             currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
-            onConnectorChange(currentConnectorId, dbSelect, schemaSelect);
+            onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
         }
     });
 
@@ -163,7 +185,7 @@ function initDBSelect($connector, $database, $schema) {
     const selected = connectorSelect.getValues();
     if (selected.length >= 1) {
         currentConnectorId = selected[0];
-        onConnectorChange(currentConnectorId, dbSelect, schemaSelect, defaultDatabase, defaultSchema);
+        onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database, defaultDatabase, defaultSchema);
     }
 }
 

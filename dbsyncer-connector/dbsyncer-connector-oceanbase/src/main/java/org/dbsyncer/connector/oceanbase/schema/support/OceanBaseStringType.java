@@ -4,6 +4,7 @@
 package org.dbsyncer.connector.oceanbase.schema.support;
 
 import org.dbsyncer.connector.oceanbase.OceanBaseException;
+import org.dbsyncer.connector.oceanbase.schema.OceanBaseSchemaResolver;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
@@ -48,7 +49,7 @@ public final class OceanBaseStringType extends StringType {
 
     @Override
     protected String merge(Object val, Field field) {
-        switch (TypeEnum.valueOf(field.getTypeName())) {
+        switch (resolveType(field)) {
             case GEOMETRY:
                 return deserializeGeometry((byte[]) val);
             case ENUM:
@@ -66,12 +67,16 @@ public final class OceanBaseStringType extends StringType {
     @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof String) {
-            if (TypeEnum.valueOf(field.getTypeName()) == TypeEnum.GEOMETRY) {
+            if (resolveType(field) == TypeEnum.GEOMETRY) {
                 return serializeGeometry((String) val);
             }
             return val;
         }
         return super.convert(val, field);
+    }
+
+    private TypeEnum resolveType(Field field) {
+        return TypeEnum.valueOf(OceanBaseSchemaResolver.normalizeTypeName(field.getTypeName()));
     }
 
     private String deserializeGeometry(byte[] bytes) {
