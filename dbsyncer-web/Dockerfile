@@ -1,5 +1,5 @@
 # 基础镜像
-FROM scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/java:8
+FROM dbsyncer.cn/images/xhtb-dbs/java:8
 
 # 维护者信息
 LABEL authors="chuanyun"

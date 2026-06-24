@@ -7,6 +7,7 @@ import org.dbsyncer.common.CommonException;
 import org.dbsyncer.common.column.Lexer;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -88,6 +89,10 @@ public abstract class DateFormatUtil {
 
     public static String now() {
         return LocalDateTime.now().format(YYYY_MM_DD_HH_MM_SS);
+    }
+
+    public static String timeToString(Time time) {
+        return time.toLocalTime().format(HH_MM_SS);
     }
 
     public static String dateToString(Date date) {
