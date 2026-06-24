@@ -34,18 +34,10 @@ import java.util.stream.Stream;
 public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     /**
-     * 规范化类型名：转大写并去除长度等括号参数（如 varchar(64) -> VARCHAR）。
+     * 规范化类型名：转大写
      */
     public static String normalizeTypeName(String typeName) {
-        if (typeName == null) {
-            return null;
-        }
-        String normalized = typeName.trim().toUpperCase(Locale.ROOT);
-        int parenIndex = normalized.indexOf('(');
-        if (parenIndex > 0) {
-            normalized = normalized.substring(0, parenIndex).trim();
-        }
-        return normalized;
+        return typeName.trim().toUpperCase(Locale.ROOT);
     }
 
     @Override
@@ -60,25 +52,25 @@ public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolve
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
         Stream.of(
-            new OceanBaseBytesType(),
-            new OceanBaseByteType(),
-            new OceanBaseDateType(),
-            new OceanBaseDecimalType(),
-            new OceanBaseDoubleType(),
-            new OceanBaseFloatType(),
-            new OceanBaseIntType(),
-            new OceanBaseLongType(),
-            new OceanBaseShortType(),
-            new OceanBaseStringType(),
-            new OceanBaseTimestampType(),
-            new OceanBaseTimeType())
-        .forEach(t->t.getSupportedTypeName().forEach(typeName-> {
-            String key = normalizeTypeName(typeName);
-            if (mapping.containsKey(key)) {
-                throw new OceanBaseException("Duplicate type name: " + key);
-            }
-            mapping.put(key, t);
-        }));
+                        new OceanBaseBytesType(),
+                        new OceanBaseByteType(),
+                        new OceanBaseDateType(),
+                        new OceanBaseDecimalType(),
+                        new OceanBaseDoubleType(),
+                        new OceanBaseFloatType(),
+                        new OceanBaseIntType(),
+                        new OceanBaseLongType(),
+                        new OceanBaseShortType(),
+                        new OceanBaseStringType(),
+                        new OceanBaseTimestampType(),
+                        new OceanBaseTimeType())
+                .forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
+                    String key = normalizeTypeName(typeName);
+                    if (mapping.containsKey(key)) {
+                        throw new OceanBaseException("Duplicate type name: " + key);
+                    }
+                    mapping.put(key, t);
+                }));
     }
 
 }
