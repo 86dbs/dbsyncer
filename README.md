@@ -58,8 +58,8 @@
 * 阿里云镜像
 ```shell
 # 社区版
-docker pull dbsyncer.cn/images/xhtb-dbs:latest
-docker pull dbsyncer.cn/images/xhtb-dbs:2.1.2
+docker pull dbsyncer.cn/images/xhtb-dbs/dbsyncer:latest
+docker pull dbsyncer.cn/images/xhtb-dbs/dbsyncer:2.1.2
 # 专业版
 docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
 docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.1.2
@@ -80,7 +80,7 @@ docker run -d \
   --log-driver json-file \
   --log-opt max-size=100m \
   --log-opt max-file=7 \
-  dbsyncer.cn/images/xhtb-dbs:latest
+  dbsyncer.cn/images/xhtb-dbs/dbsyncer:latest
 
 # 本地日志
 ls -la /opt/dbsyncer/logs
