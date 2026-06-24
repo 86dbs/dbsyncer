@@ -197,7 +197,7 @@
                 doPoster("/mapping/add", $form.serializeJson(), function (response) {
                     btn.html(originalText).prop('disabled', false);
                     if (response.success === true) {
-                        bootGrowl("保存驱动成功!", "success");
+                        bootGrowl("保存同步任务成功!", "success");
                         const rawStr = localStorage.getItem("dbsyncer.pagination.mapping-list");
                         const raw = JSON.parse(rawStr);
                         raw.pageNum = 1;

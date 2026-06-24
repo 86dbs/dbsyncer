@@ -96,8 +96,7 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
             return StringUtil.EMPTY;
         }
         String quoted = buildWithQuotation(databaseName);
-        String escapedName = databaseName.replace("'", "''");
-        return "IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = N'" + escapedName + "') CREATE DATABASE " + quoted;
+        return "IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = N'" + databaseName + "') CREATE DATABASE " + quoted;
     }
 
     @Override
