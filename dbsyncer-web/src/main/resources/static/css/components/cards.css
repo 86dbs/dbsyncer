@@ -44,7 +44,6 @@
 
 .list-card.is-active {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color);
 }
 
 .list-card-remove {
