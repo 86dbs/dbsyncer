@@ -3,8 +3,11 @@
  */
 package org.dbsyncer.connector.doris;
 
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.connector.doris.constant.DorisConstant;
+import org.dbsyncer.connector.doris.load.DorisStreamLoadWriter;
+import org.dbsyncer.connector.doris.schema.DorisSchemaResolver;
 import org.dbsyncer.connector.doris.validator.DorisConfigValidator;
 import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.sdk.config.DatabaseConfig;
@@ -15,6 +18,8 @@ import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.plugin.PluginContext;
+import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
 import java.util.Collections;
@@ -37,6 +42,8 @@ public final class DorisConnector extends MySQLConnector {
             .collect(Collectors.toSet());
 
     private final DorisConfigValidator configValidator = new DorisConfigValidator();
+    private final DorisSchemaResolver schemaResolver = new DorisSchemaResolver();
+    private final DorisStreamLoadWriter streamLoadWriter = new DorisStreamLoadWriter();
 
     @Override
     public String getConnectorType() {
@@ -49,9 +56,23 @@ public final class DorisConnector extends MySQLConnector {
     }
 
     @Override
+    public SchemaResolver getSchemaResolver() {
+        return schemaResolver;
+    }
+
+    @Override
     public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
         DorisConstant.enrichJdbcProperties(config);
         return super.connect(config, context);
+    }
+
+    @Override
+    public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        DatabaseConfig config = connectorInstance.getConfig();
+        if (DorisConstant.isStreamLoadMode(config) && DorisConstant.isStreamLoadEvent(context.getEvent())) {
+            return streamLoadWriter.write(connectorInstance, context);
+        }
+        return super.writer(connectorInstance, context);
     }
 
     @Override

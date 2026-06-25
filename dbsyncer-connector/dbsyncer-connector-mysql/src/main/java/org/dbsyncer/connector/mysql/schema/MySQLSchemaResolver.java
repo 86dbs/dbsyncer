@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * @Version 1.0.0
  * @Date 2024-11-25 22:08
  */
-public final class MySQLSchemaResolver extends AbstractDatabaseSchemaResolver {
+public class MySQLSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {

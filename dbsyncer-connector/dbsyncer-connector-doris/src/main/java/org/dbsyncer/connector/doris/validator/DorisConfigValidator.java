@@ -25,5 +25,6 @@ public final class DorisConfigValidator extends MySQLConfigValidator {
             connectorConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
         }
         DorisConstant.enrichJdbcProperties(connectorConfig);
+        DorisConstant.enrichExtInfo(connectorConfig, params.get(DorisConstant.HTTP_PORT), params.get(DorisConstant.WRITE_MODE));
     }
 }
