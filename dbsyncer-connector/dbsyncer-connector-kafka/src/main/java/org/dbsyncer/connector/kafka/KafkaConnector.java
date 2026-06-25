@@ -8,13 +8,16 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.cdc.KafkaListener;
 import org.dbsyncer.connector.kafka.config.KafkaConfig;
+import org.dbsyncer.connector.kafka.constant.KafkaConstant;
 import org.dbsyncer.connector.kafka.schema.KafkaSchemaResolver;
+import org.dbsyncer.connector.kafka.util.KafkaMessageUtil;
 import org.dbsyncer.connector.kafka.validator.KafkaConfigValidator;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
@@ -50,8 +53,6 @@ import java.util.Map;
 public class KafkaConnector extends AbstractConnector implements ConnectorService<KafkaConnectorInstance, KafkaConfig> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final String TOPIC = "topic";
 
     private final KafkaConfigValidator configValidator = new KafkaConfigValidator();
     private final KafkaSchemaResolver schemaResolver = new KafkaSchemaResolver();
@@ -149,18 +150,29 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
         }
 
         Result result = new Result();
-        final List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        List<Field> pkFields = PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields());
+        String topic = context.getCommand().get(KafkaConstant.TOPIC);
+        String sourceTableName = context.getSourceTable().getName();
+        String event = StringUtil.isBlank(context.getEvent()) ? ConnectorConstant.OPERTION_INSERT : context.getEvent();
         try {
-            String topic = context.getCommand().get(TOPIC);
             KafkaProducer<String, Object> producer = connectorInstance.getProducer(topic);
-            String key = StringUtil.join(pkFields, StringUtil.UNDERLINE);
-            data.forEach(row->producer.send(new ProducerRecord<>(topic, key, row)));
-            result.addSuccessData(data);
+            for (Map row : data) {
+                try {
+                    Map<String, Object> message = KafkaMessageUtil.buildMessage(sourceTableName, event, row);
+                    String key = KafkaMessageUtil.buildMessageKey(pkFields, row);
+                    producer.send(new ProducerRecord<>(topic, key, message));
+                    result.getSuccessData().add(row);
+                } catch (Exception e) {
+                    result.getFailData().add(row);
+                    result.getError().append(e.getMessage()).append(System.lineSeparator());
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            producer.flush();
         } catch (Exception e) {
-            // 记录错误数据
             result.addFailData(data);
             result.getError().append(e.getMessage()).append(System.lineSeparator());
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         }
         return result;
     }
@@ -173,7 +185,7 @@ public class KafkaConnector extends AbstractConnector implements ConnectorServic
     @Override
     public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
         Map<String, String> cmd = new HashMap<>();
-        cmd.put(TOPIC, commandConfig.getTable().getName());
+        cmd.put(KafkaConstant.TOPIC, commandConfig.getTable().getName());
         return cmd;
     }
 

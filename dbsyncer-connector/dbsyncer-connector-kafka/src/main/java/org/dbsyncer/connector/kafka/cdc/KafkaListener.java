@@ -7,7 +7,7 @@ import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
-import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.connector.kafka.util.KafkaMessageUtil;
 import org.dbsyncer.sdk.listener.AbstractListener;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
@@ -208,11 +208,16 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
             return;
         }
 
+        KafkaMessageUtil.ParsedMessage parsedMessage = KafkaMessageUtil.parse(valueMap);
+        Map<String, Object> rowMap = parsedMessage.getData();
+        String sourceTableName = StringUtil.isNotBlank(parsedMessage.getTable()) ? parsedMessage.getTable() : topic;
+        String event = parsedMessage.getEvent();
+
         // 转换为行数据
-        List<Object> rowData = mapToRowList(consumerInfo.table.getColumn(), valueMap);
+        List<Object> rowData = mapToRowList(consumerInfo.table.getColumn(), rowMap);
 
         // 触发事件，使用下一条消息的offset（nextOffset）作为position
-        trySendEvent(new RowChangedEvent(topic, ConnectorConstant.OPERTION_INSERT, rowData, topic, record.offset() + 1));
+        trySendEvent(new RowChangedEvent(sourceTableName, event, rowData, topic, record.offset() + 1));
     }
 
     final class Worker extends Thread {
