@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @date 2021-11-22 23:55
  */
-public final class MySQLConnector extends AbstractDatabaseConnector {
+public class MySQLConnector extends AbstractDatabaseConnector {
 
     private final MySQLConfigValidator configValidator = new MySQLConfigValidator();
     private final MySQLSchemaResolver schemaResolver = new MySQLSchemaResolver();

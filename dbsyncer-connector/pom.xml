@@ -12,6 +12,7 @@
     <modules>
         <module>dbsyncer-connector-base</module>
         <module>dbsyncer-connector-clickhouse</module>
+        <module>dbsyncer-connector-doris</module>
         <module>dbsyncer-connector-elasticsearch</module>
         <module>dbsyncer-connector-file</module>
         <module>dbsyncer-connector-h2</module>

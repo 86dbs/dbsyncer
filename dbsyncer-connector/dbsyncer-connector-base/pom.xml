@@ -25,6 +25,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-doris -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-doris</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- dbsyncer-connector-elasticsearch -->
         <dependency>
             <groupId>org.ghi</groupId>
