@@ -12,24 +12,29 @@ import org.dbsyncer.connector.oceanbase.validator.OceanBaseConfigValidator;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
+import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,6 +48,9 @@ import java.util.stream.Stream;
  * @date 2026-06-04 00:20
  */
 public final class OceanBaseConnector extends AbstractDatabaseConnector {
+
+    private static final String QUERY_TABLES = "SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES "
+            + "WHERE TABLE_SCHEMA = ? AND TABLE_TYPE IN ('BASE TABLE', 'VIEW')";
 
     private final OceanBaseConfigValidator configValidator = new OceanBaseConfigValidator();
     private final OceanBaseSchemaResolver schemaResolver = new OceanBaseSchemaResolver();
@@ -92,6 +100,32 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     }
 
     @Override
+    public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        String database = resolveDatabase(connectorInstance, context);
+        if (StringUtil.isBlank(database)) {
+            return Collections.emptyList();
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            List<Map<String, Object>> rows = databaseTemplate.queryForList(QUERY_TABLES, database);
+            if (CollectionUtils.isEmpty(rows)) {
+                return Collections.emptyList();
+            }
+            List<Table> tables = new ArrayList<>(rows.size());
+            for (Map<String, Object> row : rows) {
+                Object nameValue = row.get("TABLE_NAME");
+                if (nameValue == null) {
+                    continue;
+                }
+                Table table = new Table();
+                table.setName(String.valueOf(nameValue));
+                table.setType(resolveTableType(row.get("TABLE_TYPE")));
+                tables.add(table);
+            }
+            return tables;
+        });
+    }
+
+    @Override
     public String generateUniqueCode() {
         return DatabaseConstant.DBS_UNIQUE_CODE;
     }
@@ -103,7 +137,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildCreateDatabaseSql(String databaseName, String schemaName) {
-        throw new OceanBaseException("oceanbase暂不支持该功能");
+        return "CREATE DATABASE IF NOT EXISTS " + buildWithQuotation(databaseName);
     }
 
     @Override
@@ -117,7 +151,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
-        throw new OceanBaseException("create table sql is not supported.");
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ")";
     }
 
     @Override
@@ -152,7 +186,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
-        throw new OceanBaseException("Drop table is not supported.");
+        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
     }
 
     @Override
@@ -305,6 +339,31 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
     @Override
     protected String getSchema(String schema, Connection connection) {
         return null;
+    }
+
+    private String resolveDatabase(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
+        if (context != null && StringUtil.isNotBlank(context.getCatalog())) {
+            return context.getCatalog().trim();
+        }
+        if (StringUtil.isNotBlank(connectorInstance.getCatalog())) {
+            return connectorInstance.getCatalog().trim();
+        }
+        return connectorInstance.execute(databaseTemplate -> {
+            try {
+                Connection connection = databaseTemplate.getSimpleConnection().getConnection();
+                String catalog = connection.getCatalog();
+                return StringUtil.isNotBlank(catalog) ? catalog.trim() : StringUtil.EMPTY;
+            } catch (SQLException e) {
+                return StringUtil.EMPTY;
+            }
+        });
+    }
+
+    private String resolveTableType(Object tableType) {
+        if (tableType != null && TableTypeEnum.VIEW.getCode().equalsIgnoreCase(String.valueOf(tableType))) {
+            return TableTypeEnum.VIEW.getCode();
+        }
+        return TableTypeEnum.TABLE.getCode();
     }
 
     @Override
