@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @date 2025-06-25 23:01
  */
-public final class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolver {
+public class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     /**
      * 规范化 PostgreSQL 类型名：去除 schema 前缀（如 "public"."geometry" -> geometry）和引号，并转小写。

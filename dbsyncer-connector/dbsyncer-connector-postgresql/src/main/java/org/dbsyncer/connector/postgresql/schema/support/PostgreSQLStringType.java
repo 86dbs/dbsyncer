@@ -23,11 +23,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * @Author 穿云
- * @Version 1.0.0
- * @Date 2025-06-25 23:04
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2025-06-25 23:04
  */
-public final class PostgreSQLStringType extends StringType {
+public class PostgreSQLStringType extends StringType {
 
     private enum TypeEnum {
 
