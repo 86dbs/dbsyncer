@@ -1,0 +1,46 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
+package org.dbsyncer.connector.dameng.schema.support;
+
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.schema.support.StringType;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * @author 穿云
+ * @version 1.0.0
+ * @date 2026-06-07 02:00
+ */
+public final class DamengStringType extends StringType {
+
+    private enum TypeEnum {
+        TEXT, LONGVARCHAR, IMAGE, LONGVARBINARY;
+
+        public String getValue() {
+            return name();
+        }
+    }
+
+    @Override
+    public Set<String> getSupportedTypeName() {
+        return Arrays.stream(TypeEnum.values()).map(TypeEnum::getValue).collect(Collectors.toSet());
+    }
+
+    @Override
+    protected String merge(Object val, Field field) {
+        if (val == null) {
+            return null;
+        }
+        if (val instanceof String) {
+            return (String) val;
+        }
+        if (val instanceof byte[]) {
+            return new String((byte[]) val);
+        }
+        return String.valueOf(val);
+    }
+}

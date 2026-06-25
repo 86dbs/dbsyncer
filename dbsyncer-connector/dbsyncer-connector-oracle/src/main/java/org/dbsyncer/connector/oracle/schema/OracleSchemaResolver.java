@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @date 2024-12-24 23:45
  */
-public final class OracleSchemaResolver extends AbstractDatabaseSchemaResolver {
+public class OracleSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
