@@ -10,6 +10,7 @@
         var currentDetailId = '';
         var manualReviseSubmitting = false;
         var diffModalInstance = null;
+        var currentDetailContent = null;
 
         window.backIndexPage = function () {
             doLoader('/validate-sync/list');
@@ -220,6 +221,7 @@
 
         function resetDiffModalActions() {
             currentDetailId = '';
+            currentDetailContent = null;
         }
 
         function closeDiffDetailModal() {
@@ -294,16 +296,44 @@
             return html;
         }
 
+        function hasTargetExtraDiff(content) {
+            var data = (content && content.data) || [];
+            return data.some(function (d) {
+                return d && String(d.msg || '') === '目标多余';
+            });
+        }
+
+        function hasNonTargetExtraDiff(content) {
+            var data = (content && content.data) || [];
+            return data.some(function (d) {
+                return d && String(d.msg || '') !== '目标多余';
+            });
+        }
+
         function openManualReviseConfirm() {
             if (!currentDetailId || manualReviseSubmitting) {
                 return;
             }
+            var hasDelete = hasTargetExtraDiff(currentDetailContent);
+            var hasUpsert = hasNonTargetExtraDiff(currentDetailContent);
+            var title = '确定手动订正？';
+            var body = '';
+            var confirmType = 'primary';
+            if (hasDelete && !hasUpsert) {
+                title = '确定删除目标多余？';
+                body = '将删除目标库中源库不存在的记录，此操作不可恢复，请确认源库为权威基准。';
+                confirmType = 'danger';
+            } else if (hasDelete && hasUpsert) {
+                body = '将写入源数据到目标，并删除目标库中源库不存在的多余行，请确认后继续。';
+                confirmType = 'warning';
+            }
             showConfirm({
-                title: '确定手动订正？',
+                title: title,
+                body: body,
                 icon: 'warning',
                 size: 'large',
                 position: 'center',
-                confirmType: 'primary',
+                confirmType: confirmType,
                 onConfirm: function () {
                     manualReviseSubmitting = true;
                     var confirmBtn = getDiffDetailConfirmBtn();
@@ -343,6 +373,7 @@
 
             closeDiffDetailModal();
             currentDetailId = row.id || '';
+            currentDetailContent = content;
 
             diffModalInstance = showConfirm({
                 title: '差异详情',
