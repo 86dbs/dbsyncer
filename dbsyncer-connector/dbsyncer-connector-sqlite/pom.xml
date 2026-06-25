@@ -6,6 +6,7 @@
         <groupId>org.ghi</groupId>
         <artifactId>dbsyncer-connector</artifactId>
         <version>2.1.2</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>dbsyncer-connector-sqlite</artifactId>
