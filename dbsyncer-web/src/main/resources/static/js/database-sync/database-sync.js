@@ -2026,6 +2026,20 @@
         bindSyncStrategyEvents();
     }
 
+    function resetDatabaseSyncListPagination() {
+        try {
+            const key = 'dbsyncer.pagination.database-sync-list';
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                parsed.pageNum = 1;
+                localStorage.setItem(key, JSON.stringify(parsed));
+            }
+        } catch (e) {
+            console.warn('[database-sync] 重置列表分页失败', e);
+        }
+    }
+
     $(document).ready(function () {
         window.backIndexPage = function () {
             doLoader('/database-sync/list');
@@ -2104,6 +2118,9 @@
                 btn.html(original).prop('disabled', false);
                 if (response.success) {
                     bootGrowl(isEditMode() ? '修改成功' : '保存成功', 'success');
+                    if (isEditMode()) {
+                        resetDatabaseSyncListPagination();
+                    }
                     backIndexPage();
                 } else {
                     bootGrowl(response.message || '保存失败', 'danger');

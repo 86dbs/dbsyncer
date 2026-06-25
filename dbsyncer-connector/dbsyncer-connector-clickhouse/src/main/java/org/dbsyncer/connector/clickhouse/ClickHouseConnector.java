@@ -251,7 +251,8 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
-        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ") ENGINE = MergeTree() ORDER BY tuple()";
+        return "CREATE TABLE IF NOT EXISTS " + qualifyTableName(targetInstance, tableName)
+                + " (" + sourceDDL + ") ENGINE = MergeTree() ORDER BY tuple()";
     }
 
     @Override
@@ -274,7 +275,15 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
         if (StringUtil.isBlank(tableName)) {
             return StringUtil.EMPTY;
         }
-        return "DROP TABLE IF EXISTS " + buildWithQuotation(tableName);
+        return "DROP TABLE IF EXISTS " + qualifyTableName(targetInstance, tableName);
+    }
+
+    private String qualifyTableName(DatabaseConnectorInstance targetInstance, String tableName) {
+        String qualifiedTable = buildWithQuotation(tableName);
+        if (targetInstance != null && StringUtil.isNotBlank(targetInstance.getCatalog())) {
+            return buildWithQuotation(targetInstance.getCatalog()) + "." + qualifiedTable;
+        }
+        return qualifiedTable;
     }
 
     @Override

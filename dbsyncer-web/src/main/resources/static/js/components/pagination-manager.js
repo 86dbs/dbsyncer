@@ -204,6 +204,14 @@
             const items = result.data || [];
             const total = result.total || 0;
             const pageNum = result.pageNum || config.pageIndex;
+            const totalPages = Math.ceil(total / config.pageSize) || 1;
+
+            // 当前页超出有效范围时（如第 2 页删光数据），自动回到最后一页
+            if (pageNum > totalPages) {
+                this.doSearch(params, Math.max(1, totalPages));
+                return;
+            }
+
             // 更新分页管理器状态
             this.currentPage = pageNum;
             config.pageIndex = pageNum;
@@ -212,7 +220,7 @@
             // 渲染表格
             this.renderTable(items);
             // 更新分页信息
-            const totalPages = this.updateInfo(total, pageNum);
+            this.updateInfo(total, pageNum);
 
             // 渲染分页按钮
             this.renderPagination(pageNum, totalPages, (nextPage) => {
