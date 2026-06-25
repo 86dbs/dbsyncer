@@ -18,6 +18,7 @@
         <module>dbsyncer-connector-http</module>
         <module>dbsyncer-connector-kafka</module>
         <module>dbsyncer-connector-kingbase</module>
+        <module>dbsyncer-connector-mongodb</module>
         <module>dbsyncer-connector-mysql</module>
         <module>dbsyncer-connector-oceanbase</module>
         <module>dbsyncer-connector-oracle</module>
