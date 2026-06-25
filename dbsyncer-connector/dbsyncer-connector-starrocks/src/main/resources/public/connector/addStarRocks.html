@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+      xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="content">
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="host" type="text" maxlength="100" required placeholder="127.0.0.1"
+                       th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">查询端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="9030"
+                       th:value="${connector?.config?.port}?: '9030'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">HTTP 端口</label>
+            <div class="form-control-area">
+                <input class="form-control" name="httpPort" type="number" maxlength="64" placeholder="8030"
+                       th:value="${connector?.config?.extInfo?.httpPort}?: '8030'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">写入方式</label>
+            <div class="form-control-area">
+                <select class="form-control" name="writeMode">
+                    <option value="jdbc" th:selected="${connector?.config?.extInfo?.writeMode == null || connector?.config?.extInfo?.writeMode == 'jdbc'}">JDBC（默认）</option>
+                    <option value="stream_load" th:selected="${connector?.config?.extInfo?.writeMode == 'stream_load'}">Stream Load（批量导入）</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">用户名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="32" name="username" placeholder="root"
+                       th:value="${connector?.config?.username}" type="text"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="64" name="password" placeholder="请输入密码"
+                       type="password" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="maxActive" type="number" required min="1" max="512"
+                       th:value="${connector?.config?.maxActive}?:64" placeholder="默认64"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">有效期(毫秒)<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="keepAlive" type="number" required min="10000" max="120000"
+                       th:value="${connector?.config?.keepAlive}?:60000" placeholder="默认60000"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">连接参数</label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="5"
+                          th:text="${connector?.config?.propertiesText} ?: 'rewriteBatchedStatements=true&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;connectTimeout=10000&amp;socketTimeout=600000&amp;tcpKeepAlive=true'"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">驱动</label>
+            <div class="form-control-area">
+                <input class="form-control" name="driverClassName" readonly="true"
+                       th:value="${connector?.config?.driverClassName} ?: 'com.mysql.cj.jdbc.Driver'" type="text"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">说明</label>
+            <div class="form-control-area text-xs text-muted">
+                <p>StarRocks 通过 FE MySQL 协议端口（默认 9030）连接元数据与 JDBC 写入。</p>
+                <p>Stream Load 使用 FE HTTP 端口（默认 8030）批量导入，适用于 INSERT/UPDATE/UPSERT；DELETE 仍走 JDBC。</p>
+                <p>当前支持全量同步与定时增量，暂不支持 binlog 日志增量；Routine Load 需在 StarRocks 侧单独创建任务。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>
