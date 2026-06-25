@@ -25,6 +25,7 @@
         <module>dbsyncer-connector-oracle</module>
         <module>dbsyncer-connector-postgresql</module>
         <module>dbsyncer-connector-redis</module>
+        <module>dbsyncer-connector-rocketmq</module>
         <module>dbsyncer-connector-sqlite</module>
         <module>dbsyncer-connector-sqlserver</module>
         <module>dbsyncer-connector-tidb</module>

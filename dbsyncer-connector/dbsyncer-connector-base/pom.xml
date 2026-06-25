@@ -116,6 +116,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <!-- dbsyncer-connector-rocketmq -->
+        <dependency>
+            <groupId>org.ghi</groupId>
+            <artifactId>dbsyncer-connector-rocketmq</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
         <!-- dbsyncer-connector-sqlite -->
         <dependency>
             <groupId>org.ghi</groupId>
