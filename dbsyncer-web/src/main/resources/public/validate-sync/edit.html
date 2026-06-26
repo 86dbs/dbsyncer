@@ -108,7 +108,7 @@
                 <input type="checkbox" name="enableSync" value="true" th:checked="${task?.enableSync}" />
                 <label>订正</label>
 
-                <input type="checkbox" name="enablerRowData" value="true" th:checked="${task?.enablerRowData}" />
+                <input type="checkbox" name="enableRowData" value="true" th:checked="${task?.enableRowData}" />
                 <label>行数据</label>
 
                 <input type="checkbox" name="enableSchema" value="true"
@@ -124,12 +124,12 @@
             </div>
 
             <p><i class="fa fa-database text-success"></i> 目标策略</p>
-            <p class="text-xs text-tertiary">反向扫描目标表，扫描源库不存在,目标表存在的多余行</p>
+            <p class="text-xs text-tertiary">反向扫描目标表，扫描源表不存在,目标表存在的多余行</p>
             <div id="validate-sync-target-strategy" class="grid grid-cols-2 gap-4 mt-4">
                 <div class="form-item mb-0">
                     <label class="form-label">
                         反向扫描
-                        <i class="fa fa-question-circle text-tertiary" title="开启扫描目标表，记录源库不存在的多余行"></i>
+                        <i class="fa fa-question-circle text-tertiary" title="开启扫描目标表，记录源表不存在的多余行"></i>
                     </label>
                     <div class="form-control-area">
                         <label class="form-switch">
@@ -146,7 +146,7 @@
                 <div id="validate-sync-delete-extra-wrap" class="form-item mb-0 hidden">
                     <label class="form-label">
                         删除目标多余
-                        <i class="fa fa-question-circle text-tertiary" title="任务执行时自动删除源库不存在的多余行，不可恢复；须开启行数据与反向扫描"></i>
+                        <i class="fa fa-question-circle text-tertiary" title="任务执行时自动删除源表不存在的多余行，不可恢复；须开启行数据与反向扫描"></i>
                     </label>
                     <div class="form-control-area">
                         <label class="form-switch">
@@ -216,7 +216,7 @@
      * @returns {boolean}
      */
     function validateValidateSyncScope($form) {
-        var rowData = $form.find('input[name="enablerRowData"]').is(':checked');
+        var rowData = $form.find('input[name="enableRowData"]').is(':checked');
         var schema = $form.find('input[name="enableSchema"]').is(':checked');
         if (!rowData && !schema) {
             bootGrowl('请至少勾选「行数据」或「表结构」中的一项。', 'danger');
@@ -232,7 +232,7 @@
 
     function syncTargetStrategyState() {
         var $form = $('#validate-sync-modify-form');
-        var rowData = $form.find('input[name="enablerRowData"]').is(':checked');
+        var rowData = $form.find('input[name="enableRowData"]').is(':checked');
         var $reverseScan = $form.find('input[name="enableReverseScan"]');
         var $deleteExtra = $form.find('input[name="enableDeleteExtra"]');
         var $deleteWrap = $('#validate-sync-delete-extra-wrap');
@@ -266,7 +266,7 @@
             bootGrowl('删除目标多余须先开启反向扫描。', 'danger');
             return false;
         }
-        if (!$form.find('input[name="enablerRowData"]').is(':checked')) {
+        if (!$form.find('input[name="enableRowData"]').is(':checked')) {
             bootGrowl('删除目标多余须同时开启行数据。', 'danger');
             return false;
         }
