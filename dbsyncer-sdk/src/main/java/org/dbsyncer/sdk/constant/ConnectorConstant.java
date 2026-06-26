@@ -43,9 +43,14 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_CURSOR = "QUERY_CURSOR";
 
     /**
-     * 目标端按主键批量IN查询
+     * 目标端按主键批量 IN 查询（无分页）
      */
     public static final String OPERTION_QUERY_TARGET = "QUERY_TARGET";
+
+    /**
+     * 源端按主键批量 IN 查询（无分页）
+     */
+    public static final String OPERTION_QUERY_SOURCE = "QUERY_SOURCE";
 
     /**
      * 游标分页实际使用的主键名列表（逗号分隔），与 QUERY_CURSOR 的 SQL 占位符一致。

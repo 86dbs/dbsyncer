@@ -103,7 +103,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask task = new ValidateSyncTask();
         checkTask(task, params);
         // 默认检查行数据
-        task.setEnablerRowData(true);
+        task.setEnableRowData(true);
         // 关联同步任务
         String mappingId = params.get("mappingId");
         if (StringUtil.isNotBlank(mappingId)) {
@@ -605,13 +605,13 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setEnableReverseScan(StringUtil.isNotBlank(params.get("enableReverseScan")));
         task.setEnableDeleteExtra(StringUtil.isNotBlank(params.get("enableDeleteExtra")));
         task.setEnableSchema(StringUtil.isNotBlank(params.get("enableSchema")));
-        task.setEnablerRowData(StringUtil.isNotBlank(params.get("enablerRowData")));
-        if (task.isEnableReverseScan() && !task.isEnablerRowData()) {
+        task.setEnableRowData(StringUtil.isNotBlank(params.get("enableRowData")));
+        if (task.isEnableReverseScan() && !task.isEnableRowData()) {
             task.setEnableReverseScan(false);
         }
         if (!task.isEnableReverseScan()) {
             task.setEnableDeleteExtra(false);
-        } else if (task.isEnableDeleteExtra() && !task.isEnablerRowData()) {
+        } else if (task.isEnableDeleteExtra() && !task.isEnableRowData()) {
             task.setEnableDeleteExtra(false);
         }
         task.setEnableIndex(StringUtil.isNotBlank(params.get("enableIndex")));

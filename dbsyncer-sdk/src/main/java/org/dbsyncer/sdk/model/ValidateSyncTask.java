@@ -56,12 +56,12 @@ public class ValidateSyncTask extends CommonTask {
     private boolean enableSync = false;
 
     /**
-     * 是否反向扫描目标表，检测源库不存在的多余行（须开启 {@link #enablerRowData}）
+     * 是否反向扫描目标表，检测源库不存在的多余行
      */
     private boolean enableReverseScan = false;
 
     /**
-     * 任务执行时是否自动删除目标库中源库不存在的多余行（须同时开启 {@link #enableReverseScan} 与 {@link #enablerRowData}）
+     * 任务执行时是否自动删除目标库中源表不存在的多余行
      */
     private boolean enableDeleteExtra = false;
 
@@ -73,7 +73,7 @@ public class ValidateSyncTask extends CommonTask {
     /**
      * 校验范围（行数据）
      */
-    private boolean enablerRowData = true;
+    private boolean enableRowData = true;
 
     /**
      * 校验范围（索引）
@@ -231,12 +231,12 @@ public class ValidateSyncTask extends CommonTask {
         this.enableDeleteExtra = enableDeleteExtra;
     }
 
-    public boolean isEnablerRowData() {
-        return enablerRowData;
+    public boolean isEnableRowData() {
+        return enableRowData;
     }
 
-    public void setEnablerRowData(boolean enablerRowData) {
-        this.enablerRowData = enablerRowData;
+    public void setEnableRowData(boolean enableRowData) {
+        this.enableRowData = enableRowData;
     }
 
     public boolean isEnableIndex() {

@@ -286,17 +286,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
         String querySql;
-        if (context instanceof FullPluginContext && ((FullPluginContext) context).isTargetConnector()) {
-            queryKey = ConnectorConstant.OPERTION_QUERY_TARGET;
-            querySql = context.getCommand().get(queryKey);
-            Assert.hasText(querySql, "查询语句不能为空.");
-            BooleanFilter filter = ((FullPluginContext) context).getFilter();
-            String condition = buildQueryCondition(filter, context.getArgs());
-            querySql = buildTargetReaderSql(querySql, condition);
+        if (context instanceof FullPluginContext) {
+            FullPluginContext full = (FullPluginContext) context;
+            String condition = buildQueryCondition(full.getFilter(), context.getArgs());
+            if (StringUtil.isNotBlank(condition)) {
+                queryKey = full.isTargetConnector()
+                        ? ConnectorConstant.OPERTION_QUERY_TARGET
+                        : ConnectorConstant.OPERTION_QUERY_SOURCE;
+                querySql = context.getCommand().get(queryKey);
+                Assert.hasText(querySql, "查询语句不能为空.");
+                querySql = buildTargetReaderSql(querySql, condition);
+            } else {
+                querySql = context.getCommand().get(queryKey);
+                Assert.hasText(querySql, "查询语句不能为空.");
+                Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
+            }
         } else {
             querySql = context.getCommand().get(queryKey);
             Assert.hasText(querySql, "查询语句不能为空.");
-            // 2、设置参数
             Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
         }
 
@@ -447,6 +454,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 获取分页SQL
         Map<String, String> map = new HashMap<>();
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, columns, queryFilterSql);
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig));
         buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
 
         // 构建游标分页SQL
@@ -475,6 +483,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE, querySql);
         PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
         // 获取查询总数SQL
