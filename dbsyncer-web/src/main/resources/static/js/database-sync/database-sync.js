@@ -937,9 +937,12 @@
     function clearAllSourceTables() {
         state.source.checked = {};
         $('#sourceTableTree .db-sync-table-cb').each(function () {
-            setCheckboxGroupChecked($(this), false);
+            setCheckboxGroupChecked($(this), false, true);
         });
-        syncFolderCheckboxState($('#sourceTableTree'));
+        $('#sourceTableTree .db-sync-folder-cb').each(function () {
+            setCheckboxGroupChecked($(this), false, true);
+            setCheckboxGroupIndeterminate($(this), false);
+        });
         updateTableTreeFooter(false);
     }
 
@@ -984,14 +987,14 @@
         });
     }
 
-    function setCheckboxGroupChecked($cb, checked) {
+    function setCheckboxGroupChecked($cb, checked, silent) {
         $cb.prop('indeterminate', false);
         const $item = $cb.closest('.checkbox-group-item');
         if ($item.length) {
             $item.removeClass('indeterminate');
         }
         const api = $cb.data('checkboxGroup');
-        if (api && typeof api.setValue === 'function') {
+        if (!silent && api && typeof api.setValue === 'function') {
             api.setValue(checked);
         } else {
             $cb.prop('checked', checked);
@@ -1206,26 +1209,26 @@
             });
             const $node = $(this).closest('.picker-tree-node');
             $node.find('.db-sync-table-cb').each(function () {
-                setCheckboxGroupChecked($(this), checked);
+                setCheckboxGroupChecked($(this), checked, true);
             });
-            setCheckboxGroupChecked($(this), checked);
             updateTableTreeFooter(false);
         });
     }
 
     function syncFolderCheckboxState($box) {
         $box.find('.picker-tree-node').each(function () {
-            const $folderCb = $(this).find('.db-sync-folder-cb').first();
-            const $tableCbs = $(this).find('.db-sync-table-cb');
+            const $node = $(this);
+            const $folderCb = $node.children('.picker-tree-folder').find('.db-sync-folder-cb').first();
+            const $tableCbs = $node.children('.picker-tree-children').find('.db-sync-table-cb');
             if (!$folderCb.length || !$tableCbs.length) {
                 return;
             }
             const total = $tableCbs.length;
             const checkedCount = $tableCbs.filter(':checked').length;
             if (checkedCount === total) {
-                setCheckboxGroupChecked($folderCb, true);
+                setCheckboxGroupChecked($folderCb, true, true);
             } else if (checkedCount === 0) {
-                setCheckboxGroupChecked($folderCb, false);
+                setCheckboxGroupChecked($folderCb, false, true);
             } else {
                 setCheckboxGroupIndeterminate($folderCb, true);
             }
