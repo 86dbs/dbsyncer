@@ -48,6 +48,11 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_TARGET = "QUERY_TARGET";
 
     /**
+     * 目标端游标查询
+     */
+    public static final String OPERTION_QUERY_TARGET_CURSOR = "QUERY_TARGET_CURSOR";
+
+    /**
      * 源端按主键批量 IN 查询（无分页）
      */
     public static final String OPERTION_QUERY_SOURCE = "QUERY_SOURCE";

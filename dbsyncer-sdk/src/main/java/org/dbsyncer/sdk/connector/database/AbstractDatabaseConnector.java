@@ -289,15 +289,14 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (context instanceof FullPluginContext) {
             FullPluginContext full = (FullPluginContext) context;
             String condition = buildQueryCondition(full.getFilter(), context.getArgs());
-            if (StringUtil.isNotBlank(condition)) {
-                queryKey = full.isTargetConnector()
-                        ? ConnectorConstant.OPERTION_QUERY_TARGET
-                        : ConnectorConstant.OPERTION_QUERY_SOURCE;
+            if (!supportedCursor) {
+                //查询源表还是目标表
+                queryKey = full.isTargetConnector() ? ConnectorConstant.OPERTION_QUERY_TARGET : ConnectorConstant.OPERTION_QUERY_SOURCE;
                 querySql = context.getCommand().get(queryKey);
                 Assert.hasText(querySql, "查询语句不能为空.");
                 querySql = buildTargetReaderSql(querySql, condition);
             } else {
-                querySql = context.getCommand().get(queryKey);
+                querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR);
                 Assert.hasText(querySql, "查询语句不能为空.");
                 Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
             }
@@ -306,12 +305,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             Assert.hasText(querySql, "查询语句不能为空.");
             Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
         }
-
         final String finalQuerySql = querySql;
-
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(finalQuerySql, context.getArgs().toArray()));
-
         // 4、返回结果集
         return new Result(list);
     }
@@ -523,7 +519,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         buildSql(map, SqlBuilderEnum.DELETE, config);
 
         map.put(ConnectorConstant.OPERTION_QUERY_TARGET, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
-
+        //查询目标表游标生成
+        buildSql(map, SqlBuilderEnum.QUERY_TARGET_CURSOR, config);
         //查询目标总数SQL
         final String queryFilterSql = getQueryFilterSql(commandConfig);
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, queryFilterSql);
