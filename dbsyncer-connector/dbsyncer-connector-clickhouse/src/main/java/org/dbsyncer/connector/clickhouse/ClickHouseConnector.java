@@ -28,7 +28,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
-import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -303,9 +302,7 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
 
     @Override
     public String getPageCursorSql(PageSql config) {
-        if (!PrimaryKeyUtil.isSupportedCursor(config.getFields())) {
-            return StringUtil.EMPTY;
-        }
+
         StringBuilder sql = new StringBuilder(config.getQuerySql());
         buildCursorConditionAndOrderBy(sql, config);
         sql.append(DatabaseConstant.CLICKHOUSE_PAGE_SQL);

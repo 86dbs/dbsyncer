@@ -300,7 +300,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         SearchSourceBuilder builder = new SearchSourceBuilder();
         String index = _SOURCE_INDEX;
         if (context instanceof FullPluginContext && ((FullPluginContext) context).isTargetConnector()) {
-            index = ConnectorConstant.OPERTION_QUERY_TARGET;
+            index = ConnectorConstant.OPERTION_QUERY_TARGET_IN;
             BooleanFilter filter = ((FullPluginContext) context).getFilter();
             QueryBuilder dynamicQuery = buildFilterToQuery(filter);
             if (dynamicQuery != null) {
@@ -411,7 +411,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
             command.put(_TYPE, String.valueOf(type));
         }
         command.put(ConnectorConstant.TARGET_QUERY_COUNT, table.getName());
-        command.put(ConnectorConstant.OPERTION_QUERY_TARGET, table.getName());
+        command.put(ConnectorConstant.OPERTION_QUERY_TARGET_IN, table.getName());
         return command;
     }
 

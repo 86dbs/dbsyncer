@@ -35,6 +35,12 @@ public enum SqlBuilderEnum {
      * 查询SQL生成器
      */
     QUERY(ConnectorConstant.OPERTION_QUERY, new SqlBuilderQuery()),
+
+    /**
+     * 查询目标 SQL生成器
+     */
+    QUERY_TARGET(ConnectorConstant.OPERTION_QUERY_TARGET, new SqlBuilderQuery()),
+
     /**
      * 查询源表游标SQL生成器
      */

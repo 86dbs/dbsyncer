@@ -286,17 +286,24 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
         String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
         String querySql;
-        if (context instanceof FullPluginContext) {
+        if (context instanceof FullPluginContext ) {
             FullPluginContext full = (FullPluginContext) context;
+            boolean targetConnector = full.isTargetConnector();
             String condition = buildQueryCondition(full.getFilter(), context.getArgs());
-            if (!supportedCursor) {
-                //查询源表还是目标表
-                queryKey = full.isTargetConnector() ? ConnectorConstant.OPERTION_QUERY_TARGET : ConnectorConstant.OPERTION_QUERY_SOURCE;
+            if (StringUtil.isNotBlank(condition)) {
+                queryKey = targetConnector
+                        ? ConnectorConstant.OPERTION_QUERY_TARGET_IN
+                        : ConnectorConstant.OPERTION_QUERY_SOURCE_IN;
                 querySql = context.getCommand().get(queryKey);
                 Assert.hasText(querySql, "查询语句不能为空.");
                 querySql = buildTargetReaderSql(querySql, condition);
+            } else if (targetConnector) {
+                queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR : ConnectorConstant.OPERTION_QUERY_TARGET;
+                querySql = context.getCommand().get(queryKey);
+                Assert.hasText(querySql, "查询语句不能为空.");
+                Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
             } else {
-                querySql = context.getCommand().get(ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR);
+                querySql = context.getCommand().get(queryKey);
                 Assert.hasText(querySql, "查询语句不能为空.");
                 Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
             }
@@ -450,7 +457,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 获取分页SQL
         Map<String, String> map = new HashMap<>();
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, columns, queryFilterSql);
-        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig));
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig));
         buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
 
         // 构建游标分页SQL
@@ -479,7 +486,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
-        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE, querySql);
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, querySql);
         PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
         // 获取查询总数SQL
@@ -518,9 +525,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         buildSql(map, SqlBuilderEnum.DELETE, config);
 
-        map.put(ConnectorConstant.OPERTION_QUERY_TARGET, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
-        //查询目标表游标生成
+        map.put(ConnectorConstant.OPERTION_QUERY_TARGET_IN, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
+        buildSql(map, SqlBuilderEnum.QUERY_TARGET, config);
         buildSql(map, SqlBuilderEnum.QUERY_TARGET_CURSOR, config);
+
         //查询目标总数SQL
         final String queryFilterSql = getQueryFilterSql(commandConfig);
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, column, queryFilterSql);
