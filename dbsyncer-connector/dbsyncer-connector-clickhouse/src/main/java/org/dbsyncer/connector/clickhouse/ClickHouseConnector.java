@@ -100,9 +100,8 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
         DatabaseConfig effectiveConfig = copyDatabaseConfig(config);
         effectiveConfig.setUrl(buildJdbcUrl(config, catalog));
         effectiveConfig.setDatabase(catalog);
-
-        // 不支持显示setCatalog
-        return new DatabaseConnectorInstance(effectiveConfig, StringUtil.EMPTY, context.getSchema());
+        String schema = StringUtil.isNotBlank(context.getSchema()) ? context.getSchema() : catalog;
+        return new DatabaseConnectorInstance(effectiveConfig, StringUtil.EMPTY, schema);
     }
 
     @Override
@@ -279,8 +278,9 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
 
     private String qualifyTableName(DatabaseConnectorInstance targetInstance, String tableName) {
         String qualifiedTable = buildWithQuotation(tableName);
-        if (targetInstance != null && StringUtil.isNotBlank(targetInstance.getCatalog())) {
-            return buildWithQuotation(targetInstance.getCatalog()) + "." + qualifiedTable;
+        String database = resolveInstanceDatabase(targetInstance);
+        if (StringUtil.isNotBlank(database)) {
+            return buildWithQuotation(database) + "." + qualifiedTable;
         }
         return qualifiedTable;
     }
@@ -390,8 +390,9 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
         if (context != null && StringUtil.isNotBlank(context.getCatalog())) {
             return context.getCatalog().trim();
         }
-        if (StringUtil.isNotBlank(connectorInstance.getCatalog())) {
-            return connectorInstance.getCatalog().trim();
+        String database = resolveInstanceDatabase(connectorInstance);
+        if (StringUtil.isNotBlank(database)) {
+            return database;
         }
         return connectorInstance.execute(databaseTemplate -> {
             try {
@@ -402,6 +403,23 @@ public final class ClickHouseConnector extends AbstractDatabaseConnector {
                 return StringUtil.EMPTY;
             }
         });
+    }
+
+    private String resolveInstanceDatabase(DatabaseConnectorInstance connectorInstance) {
+        if (connectorInstance == null) {
+            return StringUtil.EMPTY;
+        }
+        if (StringUtil.isNotBlank(connectorInstance.getCatalog())) {
+            return connectorInstance.getCatalog().trim();
+        }
+        if (StringUtil.isNotBlank(connectorInstance.getSchema())) {
+            return connectorInstance.getSchema().trim();
+        }
+        DatabaseConfig config = connectorInstance.getConfig();
+        if (config != null && StringUtil.isNotBlank(config.getDatabase())) {
+            return config.getDatabase().trim();
+        }
+        return StringUtil.EMPTY;
     }
 
     private String resolveTableType(Object engine) {
