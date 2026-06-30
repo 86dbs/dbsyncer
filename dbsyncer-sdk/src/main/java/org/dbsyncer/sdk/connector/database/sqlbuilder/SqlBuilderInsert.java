@@ -35,8 +35,8 @@ public class SqlBuilderInsert extends AbstractSqlBuilder {
             }
             vs.add("?");
         }
-        // INSERT INTO "USER"("USERNAME","AGE") VALUES (?,?)
-        return String.format("%sINSERT INTO %s%s(%s) VALUES (%s)", database.generateUniqueCode(), config.getSchema(), database.buildWithQuotation(config.getTableName()), StringUtil
+        // INSERT INTO "USER" ("USERNAME","AGE") VALUES (?,?)
+        return String.format("%sINSERT INTO %s%s (%s) VALUES (%s)", database.generateUniqueCode(), config.getSchema(), database.buildWithQuotation(config.getTableName()), StringUtil
                 .join(fs, StringUtil.COMMA), StringUtil.join(vs, StringUtil.COMMA));
     }
 

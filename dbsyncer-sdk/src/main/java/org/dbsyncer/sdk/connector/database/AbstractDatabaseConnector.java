@@ -1030,7 +1030,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return primaryKeys;
     }
 
-    private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
+    protected List<Object[]> batchRows(List<Field> fields, List<Map> data) {
         return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
     }
 
