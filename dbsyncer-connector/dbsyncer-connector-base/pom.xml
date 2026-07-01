@@ -103,12 +103,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- dbsyncer-connector-kingbase -->
+        <!-- dbsyncer-connector-kingbase
         <dependency>
             <groupId>org.ghi</groupId>
             <artifactId>dbsyncer-connector-kingbase</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
+        </dependency> -->
 
         <!-- dbsyncer-connector-mongodb -->
         <dependency>
