@@ -19,7 +19,8 @@
                     <label class="form-label">记录同步成功数据</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}" type="checkbox" />
+                            <input name="enableStorageWriteSuccess" th:checked="${config?.enableStorageWriteSuccess}"
+                                   type="checkbox"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -29,10 +30,12 @@
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">记录全量数据<i class="fa fa-question-circle" title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
+                    <label class="form-label">记录全量数据<i class="fa fa-question-circle"
+                                                             title="不推荐在生产环境下开启，可在源库数据量较少时使用，一般用于测试"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}" type="checkbox" />
+                            <input name="enableStorageWriteFull" th:checked="${config?.enableStorageWriteFull}"
+                                   type="checkbox"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -45,7 +48,8 @@
                     <label class="form-label">记录同步失败数据</label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}" type="checkbox" />
+                            <input name="enableStorageWriteFail" th:checked="${config?.enableStorageWriteFail}"
+                                   type="checkbox"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -57,45 +61,46 @@
                 <div class="form-item">
                     <label class="form-label">记录失败日志长度<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="number" class="form-control" min="1024" max="8192" required name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
+                        <input type="number" class="form-control" min="1024" max="8192" required
+                               name="maxStorageErrorLength" th:value="${config?.maxStorageErrorLength}"/>
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">表执行器上限数<i class="fa fa-question-circle" title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong class="text-primary">*</strong></label>
+                    <label class="form-label">表执行器上限数<i class="fa fa-question-circle"
+                                                               title="每新增一张驱动表的映射关系，就会单独新开一个表执行器处理，超过此限制后，则使用通用执行器"></i><strong
+                            class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="number" class="form-control" min="1" max="200" required name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
+                        <input type="number" class="form-control" min="1" max="200" required
+                               name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
                     </div>
                 </div>
                 <div class="form-item">
                     <label class="form-label">同步数据过期时间(天)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="number" class="form-control" min="1" max="180" required name="expireDataDays" th:value="${config?.expireDataDays}"/>
+                        <input type="number" class="form-control" min="1" max="180" required name="expireDataDays"
+                               th:value="${config?.expireDataDays}"/>
                     </div>
                 </div>
                 <div class="form-item">
                     <label class="form-label">系统日志过期时间(天)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <input type="number" class="form-control" min="1" max="180" required name="expireLogDays" th:value="${config?.expireLogDays}"/>
+                        <input type="number" class="form-control" min="1" max="180" required name="expireLogDays"
+                               th:value="${config?.expireLogDays}"/>
                     </div>
                 </div>
                 <div class="form-item">
-                    <label class="form-label">打印trace信息<i class="fa fa-question-circle" title="仅用于排查问题，生产环境建议关闭"></i></label>
+                    <label class="form-label">日志文件过期时间(天)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">
-                        <label class="form-switch">
-                            <input name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}" type="checkbox" />
-                            <span class="switch-track">
-                                <span class="switch-option switch-option-on">Yes</span>
-                                <span class="switch-option switch-option-off">No</span>
-                                <span class="switch-thumb"></span>
-                            </span>
-                        </label>
+                        <input type="number" class="form-control" min="1" max="180" required name="expireFileLogDays"
+                               th:value="${config?.expireFileLogDays}"/>
                     </div>
                 </div>
                 <div class="form-item">
                     <label class="form-label">水印<i class="fa fa-question-circle" title="刷新页面生效"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input id="enableWatermark" name="enableWatermark" th:checked="${config?.enableWatermark}" type="checkbox" />
+                            <input id="enableWatermark" name="enableWatermark" th:checked="${config?.enableWatermark}"
+                                   type="checkbox"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -107,14 +112,19 @@
                 <div class="form-item">
                     <label class="form-label watermark hidden">水印内容</label>
                     <div class="form-control-area watermark hidden">
-                        <input type="text" class="form-control" maxlength="64" name="watermark" placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
+                        <input type="text" class="form-control" maxlength="64" name="watermark"
+                               placeholder="请输入水印(最多64个字)." th:value="${config?.watermark}"/>
                     </div>
                 </div>
+            </div>
+            <div class="grid mt-5 grid-cols-2">
                 <div class="form-item">
-                    <label class="form-label">开放api<i class="fa fa-question-circle" title="外部业务系统可凭此配置生成token，直接调用DBSyncer的管理接口，也可以同步数据。"></i></label>
+                    <label class="form-label">打印trace信息<i class="fa fa-question-circle"
+                                                              title="仅用于排查问题，生产环境建议关闭"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="enableOpenAPI" th:checked="${config?.enableOpenAPI}" type="checkbox" />
+                            <input name="enablePrintTraceInfo" th:checked="${config?.enablePrintTraceInfo}"
+                                   type="checkbox"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -123,14 +133,30 @@
                         </label>
                     </div>
                 </div>
-                <div class="form-item"></div>
             </div>
 
+            <!-- 开放API配置 -->
             <div class="grid mt-5 grid-cols-1 lg:grid-cols-3">
                 <div class="form-item lg:col-span-2">
-                    <label class="form-label open-api hidden">API密钥<i class="fa fa-question-circle" title="用于生成token访问OpenAPI，生成后请妥善保管"></i></label>
+                    <label class="form-label">开放api<i class="fa fa-question-circle"
+                                                        title="外部业务系统可凭此配置生成token，直接调用DBSyncer的管理接口，也可以同步数据。"></i></label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableOpenAPI" th:checked="${config?.enableOpenAPI}" type="checkbox"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item lg:col-span-2">
+                    <label class="form-label open-api hidden">API密钥<i class="fa fa-question-circle"
+                                                                        title="用于生成token访问OpenAPI，生成后请妥善保管"></i></label>
                     <div class="form-control-area flex">
-                        <input type="text" class="form-control open-api hidden" name="apiSecret" th:value="${config?.currentSecret}"/>
+                        <input type="text" class="form-control open-api hidden" name="apiSecret"
+                               th:value="${config?.currentSecret}"/>
                         <div class="form-actions ml-2">
                             <button type="button" class="open-api hidden btn btn-outline" id="copyApiSecretBtn">
                                 <i class="fa fa-copy"></i> 复制
@@ -145,9 +171,12 @@
 
             <div class="grid mt-5 grid-cols-1 lg:grid-cols-3">
                 <div class="form-item lg:col-span-2">
-                    <label class="form-label open-api hidden">RSA长度<i class="fa fa-question-circle" title="允许输入的范围[1024,2048,4096,8192]"></i></label>
+                    <label class="form-label open-api hidden">RSA长度<i class="fa fa-question-circle"
+                                                                        title="允许输入的范围[1024,2048,4096,8192]"></i></label>
                     <div class="form-control-area flex">
-                        <input type="number" class="form-control open-api hidden" name="rsaKeyLength" min="1024" max="8192" placeholder="允许输入的范围[1024-8192]" th:value="${config?.currentRsa?.keyLength}?: 2048"/>
+                        <input type="number" class="form-control open-api hidden" name="rsaKeyLength" min="1024"
+                               max="8192" placeholder="允许输入的范围[1024-8192]"
+                               th:value="${config?.currentRsa?.keyLength}?: 2048"/>
                         <button id="generateRSA" type="button" class="open-api hidden btn btn-outline ml-2">
                             <span class="fa fa-refresh"></span> 生成
                         </button>
@@ -180,10 +209,12 @@
             <!-- IP白名单 -->
             <div class="grid grid-cols-2 mt-5 open-api hidden">
                 <div class="form-item">
-                    <label class="form-label">IP白名单<i class="fa fa-question-circle" title="开启后仅白名单内IP可访问OpenAPI"></i></label>
+                    <label class="form-label">IP白名单<i class="fa fa-question-circle"
+                                                         title="开启后仅白名单内IP可访问OpenAPI"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="ipWhitelistEnabled" th:checked="${config?.ipWhitelistConfig?.enabled}" type="checkbox" value="true"/>
+                            <input name="ipWhitelistEnabled" th:checked="${config?.ipWhitelistConfig?.enabled}"
+                                   type="checkbox" value="true"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -193,10 +224,13 @@
                     </div>
                 </div>
                 <div class="form-item ip-whitelist-detail">
-                    <label class="form-label">允许本地访问<i class="fa fa-question-circle" title="127.0.0.1、localhost等"></i></label>
+                    <label class="form-label">允许本地访问<i class="fa fa-question-circle"
+                                                             title="127.0.0.1、localhost等"></i></label>
                     <div class="form-control-area">
                         <label class="form-switch">
-                            <input name="ipWhitelistAllowLocalhost" th:checked="${config?.ipWhitelistConfig?.allowLocalhost != null ? config.ipWhitelistConfig.allowLocalhost : true}" type="checkbox" value="true"/>
+                            <input name="ipWhitelistAllowLocalhost"
+                                   th:checked="${config?.ipWhitelistConfig?.allowLocalhost != null ? config.ipWhitelistConfig.allowLocalhost : true}"
+                                   type="checkbox" value="true"/>
                             <span class="switch-track">
                                 <span class="switch-option switch-option-on">Yes</span>
                                 <span class="switch-option switch-option-off">No</span>
@@ -208,7 +242,8 @@
                 <div class="form-item ip-whitelist-detail">
                     <label class="form-label">IP白名单</label>
                     <div class="form-control-area">
-                        <textarea name="ipWhitelist" class="form-control" rows="5" placeholder="每行一个，支持：单个IP、CIDR(192.168.1.0/24)、范围(192.168.1.1-192.168.1.100)">[[${config?.ipWhitelistText}]]</textarea>
+                        <textarea name="ipWhitelist" class="form-control" rows="5"
+                                  placeholder="每行一个，支持：单个IP、CIDR(192.168.1.0/24)、范围(192.168.1.1-192.168.1.100)">[[${config?.ipWhitelistText}]]</textarea>
                     </div>
                 </div>
             </div>
@@ -240,6 +275,7 @@
                 watermark.hide();
             }
         }
+
         let switchApi = initSwitch($('#enableWatermark'), toggleWatermark);
         toggleWatermark(switchApi.isChecked());
 
@@ -269,7 +305,7 @@
             const btn = $(this);
             const originalText = btn.html();
             btn.html('<i class="fa fa-spinner fa-spin"></i> 生成中...').prop('disabled', true);
-            doPoster('/system/generateRSA', {'keyLength' : rsaKeyLength.val()}, function (response) {
+            doPoster('/system/generateRSA', {'keyLength': rsaKeyLength.val()}, function (response) {
                 btn.html(originalText).prop('disabled', false);
                 if (response.success === true) {
                     rsaPublicKey.text(response.data.publicKey);
@@ -301,7 +337,7 @@
         function bindCopyBtn(btn, element, content) {
             // 先移除旧的事件绑定，避免重复绑定
             btn.off('click');
-            btn.on('click', function() {
+            btn.on('click', function () {
                 const text = element.val();
                 if (isBlank(text)) {
                     bootGrowl(content + "为空，无法复制", "warning");
@@ -309,7 +345,7 @@
                 }
                 copyToClipboard(text, {
                     button: $(this),
-                    successMessage: "复制"+content+"成功！",
+                    successMessage: "复制" + content + "成功！",
                     originalText: "复制",
                     originalIcon: "fa-copy"
                 });
@@ -324,6 +360,7 @@
         }
 
         const ipWhitelistDetail = $(".ip-whitelist-detail");
+
         function toggleIpWhitelistDetail(checked) {
             if (checked) {
                 ipWhitelistDetail.show();
@@ -331,6 +368,7 @@
                 ipWhitelistDetail.hide();
             }
         }
+
         let ipWhitelistSwitch = initSwitch($("input[name='ipWhitelistEnabled']"), toggleIpWhitelistDetail);
 
         function toggleOpenApiItem(checked) {
@@ -340,7 +378,7 @@
                 openApiItems.show();
                 toggleIpWhitelistDetail(ipWhitelistSwitch.isChecked());
                 // 显示区域后，延迟绑定事件，确保 DOM 元素已渲染
-                setTimeout(function() {
+                setTimeout(function () {
                     bindCopyButtons();
                 }, 100);
                 if (isBlank(apiSecret.val())) {
@@ -353,12 +391,13 @@
             }
             openApiItems.hide();
         }
+
         let enableOpenAPI = initSwitch($("input[name='enableOpenAPI']"), toggleOpenApiItem);
         const enableOpenAPIChecked = enableOpenAPI.isChecked();
         toggleOpenApiItem(enableOpenAPIChecked);
         // 如果初始状态就是显示 RSA 配置，也需要绑定事件
         if (enableOpenAPIChecked) {
-            setTimeout(function() {
+            setTimeout(function () {
                 bindCopyButtons();
             }, 100);
         }

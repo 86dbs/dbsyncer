@@ -50,9 +50,14 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     @Override
     public void start(Mapping mapping) {
+        start(mapping, false);
+    }
+
+    @Override
+    public void start(Mapping mapping, boolean autoRecovery) {
         final String metaId = mapping.getMetaId();
         running.add(metaId);
-        Thread worker = new Thread(() -> runFullIncrementSync(mapping, metaId));
+        Thread worker = new Thread(() -> runFullIncrementSync(mapping, metaId, autoRecovery));
         worker.setName("full-increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
@@ -65,12 +70,12 @@ public final class FullIncrementPuller extends AbstractPuller {
         incrementPuller.close(metaId);
     }
 
-    private void runFullIncrementSync(Mapping mapping, String metaId) {
+    private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
             Meta meta = profileComponent.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
                 //重启恢复是如果是增量阶段直接启动增量任务
-                incrementPuller.start(mapping);
+                incrementPuller.start(mapping, autoRecovery);
                 return;
             }
             prepareFullPhase(mapping, meta, metaId);
@@ -81,7 +86,7 @@ public final class FullIncrementPuller extends AbstractPuller {
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
-            incrementPuller.start(mapping);
+            incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {
             logger.error("全量+增量同步失败：{}, {}", metaId, e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());

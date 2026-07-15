@@ -8,11 +8,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.sdk.model.CommonTask;
-import org.dbsyncer.sdk.model.DatabaseMigrationDetailResult;
-import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
-import org.dbsyncer.sdk.model.ValidateSyncDetailResult;
-import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.sdk.spi.DataBaseSyncerDetailService;
+import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 import org.dbsyncer.sdk.spi.TaskService;
@@ -110,27 +106,12 @@ public class ParserSupportConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
-    public DataBaseSyncerDetailService dataBaseSyncerDetailService() {
-        DataBaseSyncerDetailService service = serviceFactory.get(DataBaseSyncerDetailService.class);
+    public DatabaseSyncDetailService dataBaseSyncerDetailService() {
+        DatabaseSyncDetailService service = serviceFactory.get(DatabaseSyncDetailService.class);
         if (service != null) {
             return service;
         }
-        return new DataBaseSyncerDetailService() {
-            @Override
-            public void saveResult(DatabaseMigrationSyncTask task, DatabaseMigrationDetailResult detail) {
-
-            }
-
-            @Override
-            public Paging queryByTaskId(String taskId) {
-                return null;
-            }
-
-            @Override
-            public void deleteByTaskId(String taskId) {
-
-            }
-        };
+        return params -> null;
     }
 
     @Bean
@@ -142,21 +123,14 @@ public class ParserSupportConfiguration {
             return service;
         }
         return new ValidateSyncDetailService() {
-            @Override
-            public void saveResult(ValidateSyncTask task, ValidateSyncDetailResult detail) {
-            }
 
             @Override
-            public Paging result(String taskId) {
+            public Paging result(Map<String, String> params) {
                 return null;
             }
 
             @Override
-            public void clearDetail(String taskId) {
-            }
-
-            @Override
-            public java.util.Map<String, Object> manualRevise(String detailId) {
+            public Map<String, Object> manualRevise(String detailId) {
                 return null;
             }
         };

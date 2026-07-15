@@ -59,8 +59,13 @@ public class MySQLStorageService extends AbstractStorageService {
 
     private final String PREFIX_TABLE = "dbsyncer_";
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
+    private final String SHOW_COLUMN = "SHOW COLUMNS FROM `%s` LIKE '%s'";
+    private final String SHOW_INDEX = "SHOW INDEX FROM `%s` WHERE Key_name = '%s'";
+    private final String SHOW_INDEX_COLUMN = "SHOW INDEX FROM `%s` WHERE Key_name = '%s' AND Column_name = '%s'";
     private final String DROP_TABLE = "DROP TABLE %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
+    private final String UK_DATABASE_SYNC_DETAIL = "UK_TASK_TYPE_TABLE";
+    private final String UK_DATABASE_SYNC_DETAIL_COLUMNS = "`TASK_ID`,`TYPE`,`SOURCE_DATABASE`,`SOURCE_SCHEMA`,`TARGET_DATABASE`,`TARGET_SCHEMA`,`TABLE_INDEX`";
     private final MySQLConnector connector = new MySQLConnector();
     private final Map<String, Executor> tables = new ConcurrentHashMap<>();
     private DatabaseConnectorInstance connectorInstance;
@@ -416,15 +421,16 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> taskFields = builder.getFields();
 
         // 数据校验明细（列顺序与 dbsyncer_mysql_task_validata_sync_detail.sql 一致）
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME,
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_STATUS, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME,
                 ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.TASK_TARGET_TOTAL, ConfigConstant.TASK_DIFF_TOTAL, ConfigConstant.TASK_FIXED_TOTAL,
                 ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> dataVerifyDetailFields = builder.getFields();
 
         // 整库迁移明细（列顺序与 dbsyncer_mysql_task_database_sync_detail.sql 一致）
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_STATUS,
                 ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE,
                 ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE,
+                ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA,
                 ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE,
                 ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL,
                 ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, ConfigConstant.TASK_CONTENT,
@@ -464,6 +470,9 @@ public class MySQLStorageService extends AbstractStorageService {
             executeSql(ddl);
         }
 
+        // 老版本升级：动态补齐新增字段
+        upgradeTableColumns(executor.getType(), table);
+
         List<Field> fields = executor.getFields();
         List<String> primaryKeys = new ArrayList<>();
         primaryKeys.add(ConfigConstant.CONFIG_MODEL_ID);
@@ -475,6 +484,74 @@ public class MySQLStorageService extends AbstractStorageService {
         String delete = SqlBuilderEnum.DELETE.getSqlBuilder().buildSql(config);
         executor.setTable(table).setQuery(query).setInsert(insert).setUpdate(update).setDelete(delete);
         return executor;
+    }
+
+    /**
+     * 老版本升级：按表类型动态补齐新增字段/索引（已存在则跳过）
+     *
+     * @param type  存储类型
+     * @param table 已带前缀的表名
+     */
+    private void upgradeTableColumns(String type, String table) {
+        if (StringUtil.isBlank(type)) {
+            return;
+        }
+        if (StorageEnum.DATABASE_SYNC_DETAIL.getType().equals(type)) {
+            addColumnIfNotExist(table, "STATUS", "`STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '执行状态, 0-运行中；1-已完成；' AFTER `TYPE`");
+            addColumnIfNotExist(table, "TARGET_SCHEMA", "`TARGET_SCHEMA` varchar(64) DEFAULT '' COMMENT '目标Schema' AFTER `TARGET_DATABASE`");
+            // 唯一索引需纳入 TARGET_SCHEMA
+            rebuildUniqueIndexIfNeeded(table, UK_DATABASE_SYNC_DETAIL, "TARGET_SCHEMA", UK_DATABASE_SYNC_DETAIL_COLUMNS);
+            return;
+        }
+        if (StorageEnum.VALIDATE_SYNC_DETAIL.getType().equals(type)) {
+            addColumnIfNotExist(table, "STATUS", "`STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '执行状态, 0-运行中；1-已完成；' AFTER `TYPE`");
+        }
+    }
+
+    /**
+     * 检查字段是否存在，不存在则动态新增
+     *
+     * @param table            已带前缀的表名
+     * @param column           字段名
+     * @param columnDefinition ADD COLUMN 后的字段定义
+     */
+    private void addColumnIfNotExist(String table, String column, String columnDefinition) {
+        String showColumnSql = String.format(SHOW_COLUMN, table, column);
+        try {
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(showColumnSql));
+            // 字段已存在，跳过
+            return;
+        } catch (EmptyResultDataAccessException e) {
+            // 字段不存在，继续新增
+        }
+        String alterSql = String.format("ALTER TABLE `%s` ADD COLUMN %s", table, columnDefinition);
+        executeSql(alterSql);
+    }
+
+    /**
+     * 唯一索引未包含指定列时，删除旧索引并按新列定义重建
+     *
+     * @param table           已带前缀的表名
+     * @param indexName       唯一索引名
+     * @param requiredColumn  索引必须包含的列
+     * @param indexColumns    新唯一索引列定义
+     */
+    private void rebuildUniqueIndexIfNeeded(String table, String indexName, String requiredColumn, String indexColumns) {
+        String showIndexColumnSql = String.format(SHOW_INDEX_COLUMN, table, indexName, requiredColumn);
+        try {
+            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(showIndexColumnSql));
+            // 索引已包含目标列，跳过
+            return;
+        } catch (EmptyResultDataAccessException e) {
+            // 索引不存在或不含目标列，继续重建
+        }
+
+        String showIndexSql = String.format(SHOW_INDEX, table, indexName);
+        List<Map<String, Object>> indexRows = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(showIndexSql));
+        if (!CollectionUtils.isEmpty(indexRows)) {
+            executeSql(String.format("ALTER TABLE `%s` DROP INDEX `%s`", table, indexName));
+        }
+        executeSql(String.format("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s)", table, indexName, indexColumns));
     }
 
     private String readSql(String type, boolean systemTable, String table) {
@@ -557,6 +634,7 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, "BIGINT", Types.BIGINT),

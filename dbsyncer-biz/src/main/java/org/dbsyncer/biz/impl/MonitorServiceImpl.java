@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.io.File;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -215,6 +216,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     public void deleteExpiredDataAndLog() {
         deleteExpiredData();
         deleteExpiredLog();
+        deleteExpiredFileLog();
     }
 
     @Override
@@ -370,6 +372,41 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
         query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
         storageService.delete(query);
+    }
+
+    /**
+     * 删除过期的日志文件（logs目录下的归档.log文件）
+     */
+    private void deleteExpiredFileLog() {
+        String logHome = System.getProperty("LOG_HOME", "logs");
+        File logDir = new File(logHome);
+        if (!logDir.exists() || !logDir.isDirectory()) {
+            return;
+        }
+        int expireFileLogDays = systemConfigService.getSystemConfig().getExpireFileLogDays();
+        long expireMillis = System.currentTimeMillis() - expireFileLogDays * 24L * 60L * 60L * 1000L;
+        deleteExpiredLogFile(logDir, expireFileLogDays, expireMillis);
+    }
+
+    private void deleteExpiredLogFile(File dir, int expireFileLogDays, long expireMillis) {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            if (file.isDirectory()) {
+                deleteExpiredLogFile(file, expireFileLogDays, expireMillis);
+                // 如果子目录已空，删除空目录
+                File[] children = file.listFiles();
+                if (children != null && children.length == 0) {
+                    file.delete();
+                }
+            } else if (file.getName().endsWith(".log") && file.lastModified() < expireMillis) {
+                if (file.delete()) {
+                    logger.info("删除过期{}天的日志文件: {}", expireFileLogDays, file.getAbsolutePath());
+                }
+            }
+        }
     }
 
     private MetaVO convertMeta2Vo(Meta meta) {

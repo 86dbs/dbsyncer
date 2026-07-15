@@ -225,9 +225,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     Mapping mapping = profileComponent.getMapping(m.getMappingId());
                     reConnect(mapping);
 
-                    // 恢复驱动状态
+                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (MetaEnum.RUNNING.getCode() == m.getState()) {
-                        managerFactory.start(mapping);
+                        managerFactory.start(mapping, true);
                     } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
                         managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
                     }

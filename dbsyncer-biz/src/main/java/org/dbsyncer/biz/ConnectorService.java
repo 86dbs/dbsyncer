@@ -78,6 +78,8 @@ public interface ConnectorService {
      */
     List<ConnectorVO> getConnectorAll();
 
+
+     List<ConnectorVO> getConnectorRelation();
     /**
      * 搜索连接器
      *

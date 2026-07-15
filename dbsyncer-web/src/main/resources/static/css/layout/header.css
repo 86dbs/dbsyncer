@@ -122,3 +122,85 @@
   justify-content: center;
   font-size: var(--font-size-sm);
 }
+
+/* ========== 授权状态下拉 ========== */
+.license-dropdown {
+  margin-right: 8px;
+}
+
+.license-trigger {
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.license-trigger:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.license-attention {
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.license-attention-warning {
+  color: var(--warning-color, #fa8c16);
+}
+
+.license-attention-error {
+  color: var(--error-color, #ff4d4f);
+}
+
+.license-effective-content {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--warning-color, #fa8c16);
+}
+
+.license-dropdown-menu {
+  min-width: 280px;
+  padding: 8px;
+}
+
+.license-dropdown-menu .license-dropdown-title {
+  padding: 4px 8px 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  cursor: default;
+}
+
+.license-dropdown-menu .license-dropdown-title:hover {
+  background-color: transparent;
+  color: var(--text-tertiary);
+}
+
+.license-dropdown-menu .license-product-item {
+  display: block;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: default;
+}
+
+.license-dropdown-menu .license-product-item:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.license-product-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.license-product-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.license-product-time {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}

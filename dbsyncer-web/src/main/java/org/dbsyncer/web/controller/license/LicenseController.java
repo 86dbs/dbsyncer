@@ -13,6 +13,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
+import org.dbsyncer.biz.vo.ProductStatusVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -50,8 +51,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/license")
@@ -75,6 +77,18 @@ public class LicenseController extends BaseController {
     public static final String STATUS = "status";
     public static final String DATA = "data";
     public static final String MSG = "msg";
+    // 到期提醒10天内
+    private static final long TEN_DAYS_MILLIS = 864000000L;
+    // 全部正常
+    private static final String PRODUCT_STATUS_NORMAL = "normal";
+    // 无正常、有即将过期
+    private static final String PRODUCT_STATUS_EXPIRING = "expiring";
+    // 全部过期
+    private static final String PRODUCT_STATUS_EXPIRED = "expired";
+    // 有正常 + 有异常
+    private static final String PRODUCT_STATUS_PARTIAL = "partial";
+    // 无产品列表
+    private static final String PRODUCT_STATUS_INACTIVE = "inactive";
 
     @RequestMapping("")
     public String index(ModelMap model) {
@@ -149,15 +163,105 @@ public class LicenseController extends BaseController {
     public RestResult query() {
         EditionInfoVO infoVo = getEditionInfoVO();
         ProductInfo productInfo = licenseService.getProductInfo();
-        if (productInfo != null && !CollectionUtils.isEmpty(productInfo.getProducts())) {
-            Optional<Product> first = productInfo.getProducts().stream().min(Comparator.comparing(Product::getEffectiveTime));
-            if (first.isPresent()) {
-                infoVo.setEffectiveTime(first.get().getEffectiveTime());
-                infoVo.setEditionName(first.get().getName());
-                formatEffectiveTimeContent(infoVo);
-            }
+        if (productInfo == null || CollectionUtils.isEmpty(productInfo.getProducts())) {
+            // 专业版软件已部署，但尚未激活任何产品授权
+            infoVo.setEditionStatus(PRODUCT_STATUS_INACTIVE);
+            return RestResult.restSuccess(infoVo);
         }
+
+        long currentTime = infoVo.getCurrentTime();
+        List<ProductStatusVO> productStatuses = productInfo.getProducts().stream()
+                .map(product -> toProductStatus(product, currentTime))
+                .collect(Collectors.toList());
+        infoVo.setProducts(productStatuses);
+        fillAggregateStatus(infoVo, productStatuses);
         return RestResult.restSuccess(infoVo);
+    }
+
+    /**
+     * 按全部产品聚合版本状态。
+     */
+    private void fillAggregateStatus(EditionInfoVO infoVo, List<ProductStatusVO> products) {
+        long normalCount = products.stream()
+                .filter(product -> PRODUCT_STATUS_NORMAL.equals(product.getStatus()))
+                .count();
+        long expiringCount = products.stream()
+                .filter(product -> PRODUCT_STATUS_EXPIRING.equals(product.getStatus()))
+                .count();
+        long expiredCount = products.stream()
+                .filter(product -> PRODUCT_STATUS_EXPIRED.equals(product.getStatus()))
+                .count();
+
+        // 需要关注异常的产品
+        List<ProductStatusVO> attentionProducts = products.stream()
+                .filter(product -> !PRODUCT_STATUS_NORMAL.equals(product.getStatus()))
+                .collect(Collectors.toList());
+        infoVo.setAttentionCount(attentionProducts.size());
+        infoVo.setAttentionSummary(buildAttentionSummary(attentionProducts));
+
+        if (normalCount == products.size()) {
+            infoVo.setEditionStatus(PRODUCT_STATUS_NORMAL);
+            return;
+        }
+        if (expiredCount == products.size()) {
+            infoVo.setEditionStatus(PRODUCT_STATUS_EXPIRED);
+            return;
+        }
+        if (normalCount > 0) {
+            infoVo.setEditionStatus(PRODUCT_STATUS_PARTIAL);
+            return;
+        }
+        if (expiringCount > 0) {
+            infoVo.setEditionStatus(PRODUCT_STATUS_EXPIRING);
+            products.stream()
+                    .filter(product -> PRODUCT_STATUS_EXPIRING.equals(product.getStatus()))
+                    .min(Comparator.comparingLong(ProductStatusVO::getEffectiveTime))
+                    .ifPresent(product -> {
+                        infoVo.setEffectiveTime(product.getEffectiveTime());
+                        formatEffectiveTimeContent(infoVo);
+                    });
+            return;
+        }
+        infoVo.setEditionStatus(PRODUCT_STATUS_EXPIRED);
+    }
+
+    private ProductStatusVO toProductStatus(Product product, long currentTime) {
+        ProductStatusVO statusVo = new ProductStatusVO();
+        statusVo.setName(product.getName());
+        statusVo.setEffectiveTime(product.getEffectiveTime());
+        statusVo.setStatus(resolveProductStatus(product.getEffectiveTime(), currentTime));
+        return statusVo;
+    }
+
+    private String resolveProductStatus(long effectiveTime, long currentTime) {
+        if (effectiveTime <= 0 || currentTime > effectiveTime) {
+            return PRODUCT_STATUS_EXPIRED;
+        }
+        if (effectiveTime - TEN_DAYS_MILLIS <= currentTime) {
+            return PRODUCT_STATUS_EXPIRING;
+        }
+        return PRODUCT_STATUS_NORMAL;
+    }
+
+    private String buildAttentionSummary(List<ProductStatusVO> attentionProducts) {
+        if (CollectionUtils.isEmpty(attentionProducts)) {
+            return null;
+        }
+        if (attentionProducts.size() == 1) {
+            ProductStatusVO product = attentionProducts.get(0);
+            return product.getName() + " " + statusLabel(product.getStatus());
+        }
+        return attentionProducts.size() + " 项需关注";
+    }
+
+    private String statusLabel(String status) {
+        if (PRODUCT_STATUS_EXPIRING.equals(status)) {
+            return "即将过期";
+        }
+        if (PRODUCT_STATUS_EXPIRED.equals(status)) {
+            return "已过期";
+        }
+        return "";
     }
 
     private EditionInfoVO getEditionInfoVO() {

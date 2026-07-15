@@ -8,9 +8,6 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -29,8 +26,6 @@ import java.util.stream.Collectors;
  * @Date 2026-01-11 22:21
  */
 public final class ElasticsearchStringType extends StringType {
-
-    private static final Logger log = LoggerFactory.getLogger(ElasticsearchStringType.class);
 
     private enum TypeEnum {
 

@@ -109,6 +109,14 @@ public interface ProfileComponent {
     // TableGroup
     String addTableGroup(TableGroup model);
 
+    /**
+     * 批量添加 TableGroup（单次存储批量写入）。
+     *
+     * @param models TableGroup 列表
+     * @return 已添加的 id 列表（与入参顺序一致）
+     */
+    List<String> addTableGroupBatch(List<TableGroup> models);
+
     String editTableGroup(TableGroup model);
 
     void removeTableGroup(String id);

@@ -1,6 +1,8 @@
 /**
  * DBSyncer Copyright 2020-2023 All Rights Reserved.
  */
+
+import oracle.jdbc.OracleConnection;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RandomUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -12,15 +14,10 @@ import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
-
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-
-import oracle.jdbc.OracleConnection;
-
-import oracle.jdbc.OracleConnection;
 
 import java.nio.charset.Charset;
 import java.sql.Clob;

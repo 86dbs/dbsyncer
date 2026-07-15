@@ -107,8 +107,10 @@
                  th:with="schemaUnsupported=${#strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.sourceConnector?.config?.connectorType, ''), 'sqlite') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'elasticsearch') or #strings.equalsIgnoreCase(#strings.defaultString(task?.targetConnector?.config?.connectorType, ''), 'sqlite')}">
                 <input type="checkbox" name="enableSync" value="true" th:checked="${task?.enableSync}" />
                 <label>订正</label>
-                <input type="checkbox" name="enablerRowData" value="true" th:checked="${task?.enablerRowData}" />
+
+                <input type="checkbox" name="enableRowData" value="true" th:checked="${task?.enableRowData}" />
                 <label>行数据</label>
+
                 <input type="checkbox" name="enableSchema" value="true"
                        th:disabled="${schemaUnsupported}"
                        th:checked="${!schemaUnsupported and task?.enableSchema}" />
@@ -119,6 +121,45 @@
 <!--                <label>触发器</label>-->
 <!--                <input type="checkbox" name="enableFunction" value="true" th:checked="${task?.enableFunction}" />-->
 <!--                <label>函数</label>-->
+            </div>
+
+            <p><i class="fa fa-database text-success"></i> 目标策略</p>
+            <p class="text-xs text-tertiary">反向校验，对比源表，目标表多余的行</p>
+            <div id="validate-sync-target-strategy" class="grid grid-cols-2 gap-4 mt-4">
+                <div class="form-item mb-0">
+                    <label class="form-label">
+                        反向校验
+                        <i class="fa fa-question-circle text-tertiary" title="开启扫描目标表，记录源表不存在的多余行"></i>
+                    </label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableReverseScan" type="checkbox" value="true"
+                                   th:checked="${task?.enableReverseScan}" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div id="validate-sync-delete-extra-wrap" class="form-item mb-0 hidden">
+                    <label class="form-label">
+                        反向订正
+                        <i class="fa fa-question-circle text-tertiary" title="任务执行时自动删除源表不存在的多余行，不可恢复；须开启行数据与反向校验"></i>
+                    </label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="enableReverseSync" type="checkbox" value="true"
+                                   th:checked="${task?.enableReverseSync}" />
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
             <!-- 过滤条件 -->
@@ -175,13 +216,120 @@
      * @returns {boolean}
      */
     function validateValidateSyncScope($form) {
-        var rowData = $form.find('input[name="enablerRowData"]').is(':checked');
+        var rowData = $form.find('input[name="enableRowData"]').is(':checked');
         var schema = $form.find('input[name="enableSchema"]').is(':checked');
         if (!rowData && !schema) {
             bootGrowl('请至少勾选「行数据」或「表结构」中的一项。', 'danger');
             return false;
         }
         return true;
+    }
+
+    function setSwitchEnabled($input, enabled) {
+        $input.prop('disabled', !enabled);
+        $input.closest('.form-switch').toggleClass('disabled', !enabled);
+    }
+
+    function syncTargetStrategyState() {
+        var $form = $('#validate-sync-modify-form');
+        var rowData = $form.find('input[name="enableRowData"]').is(':checked');
+        var $reverseScan = $form.find('input[name="enableReverseScan"]');
+        var $reverseSync = $form.find('input[name="enableReverseSync"]');
+        var $deleteWrap = $('#validate-sync-delete-extra-wrap');
+
+        var reverseAllowed = rowData;
+        var reverseChecked = reverseAllowed && $reverseScan.is(':checked');
+
+        if (!reverseAllowed) {
+            $reverseScan.prop('checked', false);
+        }
+        setSwitchEnabled($reverseScan, reverseAllowed);
+
+        $deleteWrap.toggleClass('hidden', !reverseChecked);
+
+        if (!reverseChecked) {
+            $reverseSync.prop('checked', false);
+            setSwitchEnabled($reverseSync, false);
+            return;
+        }
+
+        setSwitchEnabled($reverseSync, true);
+    }
+
+    function validateTargetStrategy($form) {
+        var reverseScan = $form.find('input[name="enableReverseScan"]').is(':checked');
+        var reverseSync = $form.find('input[name="enableReverseSync"]').is(':checked');
+        if (!reverseSync) {
+            return true;
+        }
+        if (!reverseScan) {
+            bootGrowl('反向订正须先开启反向校验。', 'danger');
+            return false;
+        }
+        if (!$form.find('input[name="enableRowData"]').is(':checked')) {
+            bootGrowl('反向订正须同时开启行数据。', 'danger');
+            return false;
+        }
+        return true;
+    }
+
+    function showReverseSyncConfirm(onConfirm) {
+        showConfirm({
+            title: '确定开启反向订正？',
+            message: '以源库为权威基准，删除目标库内源库不存在的冗余记录，删除操作不可恢复，请确认源库数据完整无误后继续。',
+            size: 'large',
+            icon: 'warning',
+            confirmType: 'danger',
+            onConfirm: onConfirm
+        });
+    }
+
+    function bindReverseSyncConfirm() {
+        $('#validate-sync-modify-form input[name="enableReverseSync"]').on('change', function () {
+            var $input = $(this);
+            if ($input.is(':checked')) {
+                $input.prop('checked', false);
+                syncTargetStrategyState();
+                showReverseSyncConfirm(function () {
+                    $input.prop('checked', true);
+                    syncTargetStrategyState();
+                });
+                return;
+            }
+            syncTargetStrategyState();
+        });
+    }
+
+    function submitValidateSyncForm() {
+        var $form = $('#validate-sync-modify-form');
+        if (!validateValidateSyncScope($form)) {
+            return;
+        }
+        if (!validateTargetStrategy($form)) {
+            return;
+        }
+        if (!validateForm($form)) {
+            return;
+        }
+        var saveTask = function () {
+            var $btn = $('#task-submit-btn');
+            var originalText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            doPoster('/validate-sync/edit', $form.serializeJson(), function (response) {
+                $btn.html(originalText).prop('disabled', false);
+                if (response.success === true) {
+                    bootGrowl('保存成功!', 'success');
+                    var rawStr = localStorage.getItem('dbsyncer.pagination.validate-sync-list');
+                    var raw = JSON.parse(rawStr);
+                    raw.pageNum = 1;
+                    localStorage.setItem('dbsyncer.pagination.validate-sync-list', JSON.stringify(raw));
+                    backIndexPage();
+                } else {
+                    bootGrowl(response.message, 'danger');
+                }
+            });
+        };
+        saveTask();
     }
 
     $(function () {
@@ -193,34 +341,18 @@
 
         $('#validate-sync-scope').checkboxGroup({
             theme: 'info',
-            size: 'md'
+            size: 'md',
+            onChange: function () {
+                syncTargetStrategyState();
+            }
         });
+        $('#validate-sync-modify-form input[name="enableReverseScan"]').on('change', syncTargetStrategyState);
+        bindReverseSyncConfirm();
+        syncTargetStrategyState();
 
         // 保存
-        $("#task-submit-btn").click(function () {
-            let $form = $("#validate-sync-modify-form");
-            if (!validateValidateSyncScope($form)) {
-                return;
-            }
-            if (validateForm($form)) {
-                const $btn = $(this);
-                const originalText = $btn.html();
-                $btn.html('<i class="fa fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
-                doPoster("/validate-sync/edit", $form.serializeJson(), function (response) {
-                    $btn.html(originalText).prop('disabled', false);
-                    if (response.success === true) {
-                        bootGrowl("保存成功!", "success");
-                        // 返回到默认主页
-                        const rawStr = localStorage.getItem("dbsyncer.pagination.validate-sync-list");
-                        const raw = JSON.parse(rawStr);
-                        raw.pageNum = 1;
-                        localStorage.setItem('dbsyncer.pagination.validate-sync-list', JSON.stringify(raw));
-                        backIndexPage();
-                    } else {
-                        bootGrowl(response.message, "danger");
-                    }
-                });
-            }
+        $('#task-submit-btn').click(function () {
+            submitValidateSyncForm();
         });
     });
 </script>

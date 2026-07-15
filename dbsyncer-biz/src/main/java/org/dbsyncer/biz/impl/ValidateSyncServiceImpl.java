@@ -30,12 +30,17 @@ import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.model.*;
+import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.Filter;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -48,7 +53,19 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,7 +79,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private TaskService<ValidateSyncTask> taskService;
 
     @Resource
-    private ValidateSyncDetailService validateSyncerDetailService;
+    private ValidateSyncDetailService validateSyncDetailService;
 
     @Resource
     private StorageService storageService;
@@ -103,7 +120,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask task = new ValidateSyncTask();
         checkTask(task, params);
         // 默认检查行数据
-        task.setEnablerRowData(true);
+        task.setEnableRowData(true);
         // 关联同步任务
         String mappingId = params.get("mappingId");
         if (StringUtil.isNotBlank(mappingId)) {
@@ -401,9 +418,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
         }
 
-        Set<String> selectFiled = getTaskDetailSelect();
-
-        query.setSelectFlied(selectFiled);
+        query.setSelectFlied(getTaskDetailSelect());
         query.addOrderBy(ConfigConstant.TASK_DIFF_TOTAL, SortEnum.DESC);
         return storageService.query(query);
     }
@@ -424,7 +439,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public Object manualReviseDetail(String detailId) {
         Assert.hasText(detailId, "id is required.");
-        return validateSyncerDetailService.manualRevise(detailId);
+        return validateSyncDetailService.manualRevise(detailId);
     }
 
     @Override
@@ -602,14 +617,26 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             task.setCron(cron);
         }
         task.setEnableSync(StringUtil.isNotBlank(params.get("enableSync")));
+        task.setEnableReverseScan(StringUtil.isNotBlank(params.get("enableReverseScan")));
+        task.setEnableReverseSync(StringUtil.isNotBlank(params.get("enableReverseSync")));
         task.setEnableSchema(StringUtil.isNotBlank(params.get("enableSchema")));
-        task.setEnablerRowData(StringUtil.isNotBlank(params.get("enablerRowData")));
+        task.setEnableRowData(StringUtil.isNotBlank(params.get("enableRowData")));
+        if (task.isEnableReverseScan() && !task.isEnableRowData()) {
+            task.setEnableReverseScan(false);
+        }
+        if (!task.isEnableReverseScan()) {
+            task.setEnableReverseSync(false);
+        } else if (task.isEnableReverseSync() && !task.isEnableRowData()) {
+            task.setEnableReverseSync(false);
+        }
         task.setEnableIndex(StringUtil.isNotBlank(params.get("enableIndex")));
         task.setEnableTrigger(StringUtil.isNotBlank(params.get("enableTrigger")));
         task.setEnableFunction(StringUtil.isNotBlank(params.get("enableFunction")));
         task.setReadNum(NumberUtil.toInt(params.get("readNum"), task.getReadNum()));
         task.setBatchNum(NumberUtil.toInt(params.get("batchNum"), task.getBatchNum()));
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), task.getThreadNum()));
+        task.getTableSnapshots().clear();
+        task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
     }
 
     private void log(LogType log, ValidateSyncTask task, TableGroup tableGroup) {
@@ -649,7 +676,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 .min(Comparator.naturalOrder())
                 .orElse(0);
         long doneCount = task.getTableSnapshots().values().stream()
-                .filter(snapshot -> snapshot != null && snapshot.getStatus() == 1)
+                .filter(snapshot -> snapshot != null && CommonTaskStepStatusEnum.isDone(snapshot.getStatus()))
                 .count();
         long completed = Math.max(0, minIndex - 1L) + doneCount;
         if (completed > totalSize) {
@@ -700,17 +727,18 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     private static Set<String> getTaskDetailSelect() {
         Set<String> selectFiled = new HashSet<>();
-        selectFiled.add(ConfigConstant.TASK_ID);
         selectFiled.add(ConfigConstant.CONFIG_MODEL_ID);
+        selectFiled.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        selectFiled.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        selectFiled.add(ConfigConstant.CONFIG_MODEL_TYPE);
+        selectFiled.add(ConfigConstant.TASK_ID);
+        selectFiled.add(ConfigConstant.TASK_STATUS);
         selectFiled.add(ConfigConstant.TASK_SOURCE_TABLE_NAME);
         selectFiled.add(ConfigConstant.DATA_TARGET_TABLE_NAME);
         selectFiled.add(ConfigConstant.TASK_SOURCE_TOTAL);
         selectFiled.add(ConfigConstant.TASK_TARGET_TOTAL);
         selectFiled.add(ConfigConstant.TASK_DIFF_TOTAL);
         selectFiled.add(ConfigConstant.TASK_FIXED_TOTAL);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_TYPE);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
         return selectFiled;
     }
 }

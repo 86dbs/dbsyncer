@@ -14,7 +14,6 @@ import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
-import org.dbsyncer.sdk.connector.DefaultMetaContext;
 import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -43,6 +42,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.SqlParameterValue;
 import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSetMetaData;
@@ -52,6 +52,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,7 +60,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -259,10 +259,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return 0L;
         }
         // 2. 根据是否目标连接器选择SQL
-        DefaultMetaContext context = (metaContext instanceof DefaultMetaContext) ? (DefaultMetaContext) metaContext : null;
-        boolean isTarget = Objects.nonNull(context) && context.isTargetConnector();
-
-        String queryCountSql = isTarget ? command.get(ConnectorConstant.TARGET_QUERY_COUNT) : command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
+        String queryCountSql = metaContext.isTargetConnector() ? command.get(ConnectorConstant.TARGET_QUERY_COUNT) : command.get(ConnectorConstant.OPERTION_QUERY_COUNT);
 
         // 3. SQL为空直接返回
         if (StringUtil.isBlank(queryCountSql)) {
@@ -282,29 +279,28 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
 
     @Override
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
-        // 1、获取查询SQL
-        boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
-        String queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
         String querySql;
-        if (context instanceof FullPluginContext && ((FullPluginContext) context).isTargetConnector()) {
-            queryKey = ConnectorConstant.OPERTION_QUERY_TARGET;
+        String queryKey = context.getCommandKey();
+        if (StringUtil.isBlank(queryKey)) {
+            boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
+            if (context.isTargetConnector()) {
+                queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR : ConnectorConstant.OPERTION_QUERY_TARGET;
+            } else {
+                queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_CURSOR : ConnectorConstant.OPERTION_QUERY;
+            }
             querySql = context.getCommand().get(queryKey);
             Assert.hasText(querySql, "查询语句不能为空.");
-            BooleanFilter filter = ((FullPluginContext) context).getFilter();
-            String condition = buildQueryCondition(filter, context.getArgs());
-            querySql = buildTargetReaderSql(querySql, condition);
-        } else {
-            querySql = context.getCommand().get(queryKey);
-            Assert.hasText(querySql, "查询语句不能为空.");
-            // 2、设置参数
             Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
+        } else {
+            FullPluginContext full = (FullPluginContext) context;
+            String condition = buildQueryCondition(full.getFilter(), context.getArgs());
+            querySql = context.getCommand().get(queryKey);
+            Assert.hasText(querySql, "查询语句不能为空.");
+            querySql = buildTargetReaderSql(querySql, condition);
         }
-
         final String finalQuerySql = querySql;
-
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(finalQuerySql, context.getArgs().toArray()));
-
         // 4、返回结果集
         return new Result(list);
     }
@@ -447,6 +443,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         // 获取分页SQL
         Map<String, String> map = new HashMap<>();
         SqlBuilderConfig buildSqlConfig = new SqlBuilderConfig(this, schema, tableName, primaryKeys, columns, queryFilterSql);
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(buildSqlConfig));
         buildSql(map, SqlBuilderEnum.QUERY, buildSqlConfig);
 
         // 构建游标分页SQL
@@ -475,6 +472,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         if (StringUtil.isNotBlank(queryFilterSql)) {
             querySql += queryFilterSql;
         }
+        map.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, querySql);
         PageSql pageSql = new PageSql(querySql, StringUtil.EMPTY, primaryKeys, table.getColumn());
         map.put(SqlBuilderEnum.QUERY.getName(), getPageSql(pageSql));
         // 获取查询总数SQL
@@ -513,7 +511,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
         buildSql(map, SqlBuilderEnum.DELETE, config);
 
-        map.put(ConnectorConstant.OPERTION_QUERY_TARGET, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
+        map.put(ConnectorConstant.OPERTION_QUERY_TARGET_IN, SqlBuilderEnum.QUERY.getSqlBuilder().buildQuerySql(config));
+        buildSql(map, SqlBuilderEnum.QUERY_TARGET, config);
+        buildSql(map, SqlBuilderEnum.QUERY_TARGET_CURSOR, config);
 
         //查询目标总数SQL
         final String queryFilterSql = getQueryFilterSql(commandConfig);
@@ -1016,7 +1016,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         return primaryKeys;
     }
 
-    private List<Object[]> batchRows(List<Field> fields, List<Map> data) {
+    protected List<Object[]> batchRows(List<Field> fields, List<Map> data) {
         return data.stream().map(row -> batchRow(fields, row)).collect(Collectors.toList());
     }
 
@@ -1029,9 +1029,30 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
                 args.addAll(cd.apply());
                 continue;
             }
-            args.add(val);
+            args.add(wrapBindParameter(f, val));
         }
         return args.toArray();
+    }
+
+    /**
+     * OceanBase 等对 UPSERT 中二进制列绑参较敏感，显式声明 JDBC 类型避免 setObject 推断失败。
+     */
+    protected Object wrapBindParameter(Field field, Object val) {
+        if (!(val instanceof byte[])) {
+            return val;
+        }
+        return new SqlParameterValue(resolveBinarySqlType(field), val);
+    }
+
+    private static int resolveBinarySqlType(Field field) {
+        if (field == null || StringUtil.isBlank(field.getTypeName())) {
+            return Types.VARBINARY;
+        }
+        String type = field.getTypeName().trim().toUpperCase(Locale.ROOT);
+        if (type.endsWith("BLOB") || "BLOB".equals(type)) {
+            return Types.BLOB;
+        }
+        return Types.VARBINARY;
     }
 
     private void printTraceLog(PluginContext context, String event, Map row, boolean success, String message) {

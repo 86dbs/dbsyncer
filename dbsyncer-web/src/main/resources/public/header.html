@@ -6,12 +6,26 @@
 <header th:fragment="header" class="h-14 border-b border-gray-200 flex items-center justify-end">
     <div class="flex items-center">
         <div id="licenseInfo" class="hidden">
-            <div class="flex items-center text-gray-500 text-sm">
-                <span class="items-center" id="editionName">专业版</span>
-                <img id="licenseCheck" class="hidden items-center m-1 cursor-pointer" draggable="false" title="已激活，点击查看授权许可" width="18" height="18" th:src="@{'/img/license/check.png'}" onclick="doLoader('/license')">
-                <img id="licenseRemind" class="hidden items-center m-1 cursor-pointer" draggable="false" title="即将过期，点击查看授权许可" width="18" height="18" th:src="@{'/img/license/remind.png'}" onclick="doLoader('/license')">
-                <img id="licenseWarning" class="hidden items-center m-1 cursor-pointer" draggable="false" title="已过期，点击查看授权许可" width="18" height="18" th:src="@{'/img/license/warning.png'}" onclick="doLoader('/license')">
-                <span id="effectiveContent" class="items-center"></span>
+            <div class="dropdown license-dropdown flex items-center">
+                <button id="licenseToggle" class="license-trigger flex items-center text-gray-500 text-sm" data-toggle type="button">
+                    <span class="items-center" id="editionName">专业版</span>
+                    <img id="licenseCheck" class="hidden items-center m-1" draggable="false" width="18" height="18" th:src="@{'/img/license/check.png'}">
+                    <img id="licenseRemind" class="hidden items-center m-1" draggable="false" width="18" height="18" th:src="@{'/img/license/remind.png'}">
+                    <img id="licenseWarning" class="hidden items-center m-1" draggable="false" width="18" height="18" th:src="@{'/img/license/warning.png'}">
+                    <span id="licenseAttention" class="hidden items-center license-attention"></span>
+                    <span id="effectiveContent" class="hidden items-center license-effective-content"></span>
+                    <i id="licenseArrow" class="fa fa-angle-down hidden"></i>
+                </button>
+                <ul id="licenseDropdownMenu" class="dropdown-menu license-dropdown-menu hidden">
+                    <li class="license-dropdown-title">授权状态</li>
+                    <div id="licenseProductDivider" class="dropdown-divider hidden"></div>
+                    <div class="dropdown-divider"></div>
+                    <li>
+                        <button type="button" onclick="doLoader('/license')">
+                            <i class="fa fa-key"></i> 查看授权详情
+                        </button>
+                    </li>
+                </ul>
             </div>
         </div>
         <div class="dropdown flex items-center m-2">

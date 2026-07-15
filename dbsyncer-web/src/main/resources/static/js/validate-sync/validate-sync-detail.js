@@ -10,6 +10,7 @@
         var currentDetailId = '';
         var manualReviseSubmitting = false;
         var diffModalInstance = null;
+        var currentDetailContent = null;
 
         window.backIndexPage = function () {
             doLoader('/validate-sync/list');
@@ -66,6 +67,54 @@
             tableSchema: 'badge-info',
             index: 'badge-warning'
         };
+        var statusTextMap = {
+            0: '运行中',
+            1: '已完成'
+        };
+        var statusBadgeMap = {
+            0: 'badge-success',
+            1: 'badge-info'
+        };
+
+        function getStatusBadge(status) {
+            var code = Number(status);
+            var text = statusTextMap[code];
+            if (!text) {
+                return '<span class="text-gray-400">-</span>';
+            }
+            var badgeClass = statusBadgeMap[code] || 'badge-info';
+            return '<span class="badge ' + badgeClass + '">' + text + '</span>';
+        }
+
+        function getSourceTargetCounts(row) {
+            if (row.type !== 'rowData') {
+                return '';
+            }
+            var sourceTotal = (row.sourceTotal === undefined || row.sourceTotal === null) ? '-' : row.sourceTotal;
+            var targetTotal = (row.targetTotal === undefined || row.targetTotal === null) ? '-' : row.targetTotal;
+            return '<span>源：' + sourceTotal + '</span><br><span>目：' + targetTotal + '</span>';
+        }
+
+        function getElapsedDuration(row) {
+            var text = formatElapsedDuration(row.createTime, row.updateTime);
+            if (!text) {
+                return '';
+            }
+            return '<span class="text-tertiary">耗时：' + escapeHtml(text) + '</span>';
+        }
+
+        function getExecutionDetail(row) {
+            var parts = [getStatusBadge(row.status)];
+            var duration = getElapsedDuration(row);
+            if (duration) {
+                parts.push(duration);
+            }
+            var counts = getSourceTargetCounts(row);
+            if (counts) {
+                parts.push(counts);
+            }
+            return parts.join('<br>');
+        }
 
         function parseContent(contentStr) {
             try {
@@ -75,66 +124,34 @@
             }
         }
 
-        function getDiffTotal(row) {
-            if (row.diffTotal !== undefined && row.diffTotal !== null && row.diffTotal !== '') {
-                var n = Number(row.diffTotal);
-                if (n > 0) {
-                    return '<span class="badge badge-error">' + n + '</span>';
-                }
-                return '<span class="badge badge-success">0</span>';
-            }
-            var content = parseContent(row.content);
+        function normalizeDiffList(content) {
             if (!content) {
-                return '-';
+                return [];
             }
-            var total = content.diffTotal || 0;
-            if (total > 0) {
-                return '<span class="badge badge-error">' + total + '</span>';
+            if (Array.isArray(content)) {
+                return content;
+            }
+            return Array.isArray(content.data) ? content.data : [];
+        }
+
+        function getDiffTotal(row) {
+            var n = Number(row.diffTotal) || 0;
+            if (n > 0) {
+                return '<span class="badge badge-error">' + n + '</span>';
             }
             return '<span class="badge badge-success">0</span>';
         }
 
         function getCorrectedTotal(row) {
-            var total = row.fixedTotal;
-            if (total === undefined || total === null) {
-                var content = parseContent(row.content);
-                total = content ? content.correctedTotal : 0;
-            }
-            total = Number(total) || 0;
+            var total = Number(row.fixedTotal) || 0;
             if (total > 0) {
                 return '<span class="badge badge-success">' + total + '</span>';
             }
             return '<span class="text-gray-400">0</span>';
         }
 
-        function getSourceTargetCounts(row) {
-            if (row.type !== 'rowData') {
-                return '<span class="text-gray-400">-</span>';
-            }
-            var sourceTotal = row.sourceTotal;
-            var targetTotal = row.targetTotal;
-            if (sourceTotal === undefined && targetTotal === undefined) {
-                var content = parseContent(row.content);
-                if (content) {
-                    sourceTotal = content.sourceTotal;
-                    targetTotal = content.targetTotal;
-                }
-            }
-            sourceTotal = (sourceTotal === undefined || sourceTotal === null) ? '-' : sourceTotal;
-            targetTotal = (targetTotal === undefined || targetTotal === null) ? '-' : targetTotal;
-            return '<span>源：' + sourceTotal + '</span><br><span>目：' + targetTotal + '</span>';
-        }
-
         function parseDiffDetails(details) {
-            if (details == null || details === '') {
-                return [];
-            }
-            try {
-                var parsed = typeof details === 'string' ? JSON.parse(details) : details;
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-                return [];
-            }
+            return Array.isArray(details) ? details : [];
         }
 
         function formatDiffValue(value) {
@@ -194,9 +211,15 @@
             return null;
         }
 
+        function formatDiffTypeText(type) {
+            if (!type) {
+                return '-';
+            }
+            return typeTextMap[type] || type;
+        }
+
         function isSchemaDiffItem(item) {
-            var type = (item && (item.type || item.objType)) || '';
-            return type === '表结构' || type === 'tableSchema';
+            return item && item.type === 'tableSchema';
         }
 
         function buildDiffMsgCell(item) {
@@ -220,6 +243,7 @@
 
         function resetDiffModalActions() {
             currentDetailId = '';
+            currentDetailContent = null;
         }
 
         function closeDiffDetailModal() {
@@ -238,18 +262,10 @@
             return dialog ? dialog.querySelector('.confirm-btn-confirm') : null;
         }
 
-        function resolveDiffFixedCounts(row, content) {
-            var diff = row.diffTotal;
-            if (diff === undefined || diff === null || diff === '') {
-                diff = content && content.diffTotal != null ? content.diffTotal : 0;
-            }
-            var fixed = row.fixedTotal;
-            if (fixed === undefined || fixed === null || fixed === '') {
-                fixed = content && content.correctedTotal != null ? content.correctedTotal : 0;
-            }
+        function resolveDiffFixedCounts(row) {
             return {
-                diff: Number(diff) || 0,
-                fixed: Number(fixed) || 0
+                diff: Number(row.diffTotal) || 0,
+                fixed: Number(row.fixedTotal) || 0
             };
         }
 
@@ -278,7 +294,7 @@
             var bodyHtml = '';
             data.forEach(function (d) {
                 var msgHtml = buildDiffMsgCell(d);
-                var typeText = d.type || d.objType || '-';
+                var typeText = formatDiffTypeText(d.type);
                 bodyHtml += '<tr>'
                     + '<td>' + escapeHtml(tableNameOuter) + '</td>'
                     + '<td>' + escapeHtml(typeText) + '</td>'
@@ -294,16 +310,42 @@
             return html;
         }
 
+        function hasTargetExtraDiff(diffList) {
+            return diffList.some(function (d) {
+                return d && String(d.msg || '') === '目标多余';
+            });
+        }
+
+        function hasNonTargetExtraDiff(diffList) {
+            return diffList.some(function (d) {
+                return d && String(d.msg || '') !== '目标多余';
+            });
+        }
+
         function openManualReviseConfirm() {
             if (!currentDetailId || manualReviseSubmitting) {
                 return;
             }
+            var hasDelete = hasTargetExtraDiff(currentDetailContent);
+            var hasUpsert = hasNonTargetExtraDiff(currentDetailContent);
+            var title = '确定手动订正？';
+            var body = '';
+            var confirmType = 'primary';
+            if (hasDelete && !hasUpsert) {
+                title = '确定反向订正？';
+                body = '以源库为权威基准，删除目标库内源库不存在的冗余记录，删除操作不可恢复，请确认源库数据完整无误后继续。';
+                confirmType = 'danger';
+            } else if (hasDelete && hasUpsert) {
+                body = '将写入源数据到目标，并删除目标库中源库不存在的多余行，请确认后继续。';
+                confirmType = 'warning';
+            }
             showConfirm({
-                title: '确定手动订正？',
+                title: title,
+                body: body,
                 icon: 'warning',
                 size: 'large',
                 position: 'center',
-                confirmType: 'primary',
+                confirmType: confirmType,
                 onConfirm: function () {
                     manualReviseSubmitting = true;
                     var confirmBtn = getDiffDetailConfirmBtn();
@@ -334,15 +376,16 @@
                 return;
             }
             var type = row.type || '';
-            var data = content.data || [];
-            var tableNameOuter = row.sourceTableName || (content.tableName || '-');
-            var src = row.sourceTotal != null ? row.sourceTotal : (content.sourceTotal != null ? content.sourceTotal : 0);
-            var tgt = row.targetTotal != null ? row.targetTotal : (content.targetTotal != null ? content.targetTotal : 0);
-            var counts = resolveDiffFixedCounts(row, content);
+            var data = normalizeDiffList(content);
+            var tableNameOuter = row.sourceTableName || '-';
+            var src = row.sourceTotal != null ? row.sourceTotal : 0;
+            var tgt = row.targetTotal != null ? row.targetTotal : 0;
+            var counts = resolveDiffFixedCounts(row);
             var pending = counts.diff > counts.fixed;
 
             closeDiffDetailModal();
             currentDetailId = row.id || '';
+            currentDetailContent = data;
 
             diffModalInstance = showConfirm({
                 title: '差异详情',
@@ -405,7 +448,7 @@
                     + '<td><span class="badge ' + badgeClass + '">' + escapeHtml(typeText) + '</span></td>'
                     + '<td>' + escapeHtml(row.sourceTableName || '-') + '</td>'
                     + '<td>' + escapeHtml(row.targetTableName || '-') + '</td>'
-                    + '<td>' + getSourceTargetCounts(row) + '</td>'
+                    + '<td>' + getExecutionDetail(row) + '</td>'
                     + '<td>' + getDiffTotal(row) + '</td>'
                     + '<td>' + getCorrectedTotal(row) + '</td>'
                     + '<td>' + formatDate(row.updateTime || '') + '</td>'
@@ -416,6 +459,11 @@
             emptyHtml: '<td colspan="9" class="text-center"><i class="fa fa-file-text-o empty-icon"></i>'
                 + '<p class="empty-text">暂无校验结果</p><p class="empty-description">请先执行校验任务</p></td>',
             customPageSize: true
+        });
+
+        // 注册到全局定时刷新管理器（保持当前页与筛选条件）
+        PageRefreshManager.register(function () {
+            resultPagination.doSearch(buildSearchParams(), resultPagination.currentPage);
         });
     }
 

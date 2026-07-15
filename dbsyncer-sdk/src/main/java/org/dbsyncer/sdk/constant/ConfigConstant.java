@@ -63,6 +63,7 @@ public class ConfigConstant {
     public static final String DATABASE_SYNC_DETAIL_SOURCE_DATABASE = "sourceDatabase";
     public static final String DATABASE_SYNC_DETAIL_SOURCE_SCHEMA = "sourceSchema";
     public static final String DATABASE_SYNC_DETAIL_TARGET_DATABASE = "targetDatabase";
+    public static final String DATABASE_SYNC_DETAIL_TARGET_SCHEMA = "targetSchema";
     public static final String DATABASE_SYNC_DETAIL_SOURCE_TABLE = "sourceTable";
     public static final String DATABASE_SYNC_DETAIL_TARGET_TABLE = "targetTable";
     public static final String DATABASE_SYNC_DETAIL_SUCCESS_TOTAL = "successTotal";

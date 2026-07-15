@@ -21,8 +21,8 @@ import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
@@ -30,6 +30,8 @@ import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseMigrationProgressComputer;
 import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.TableMapping;
+import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -79,6 +81,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Resource
     private StorageService storageService;
+
+    @Resource
+    private DatabaseSyncDetailService databaseSyncDetailService;
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
@@ -130,20 +135,21 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillTaskOnEdit(task, params);
         task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
+        task.getDatabaseSnapshots().clear();
+        task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
         return taskService.edit(task);
     }
 
     private static void checkDatabaseMapping(List<DatabaseMapping> mappings) {
         for (DatabaseMapping mapping : mappings) {
-
-            if (StringUtil.equalsIgnoreCase(mapping.getSourceConnectorId(), mapping.getTargetConnectorId())) {
-
-                if (StringUtil.isNotBlank(mapping.getSourceDatabase()) && StringUtil.isNotBlank(mapping.getTargetDatabase()) && StringUtil.equalsIgnoreCase(mapping.getSourceDatabase(), mapping.getTargetDatabase())) {
+            if (StringUtil.equals(mapping.getSourceConnectorId(), mapping.getTargetConnectorId())) {
+                boolean selectedDB = StringUtil.isNotBlank(mapping.getSourceDatabase()) && StringUtil.isNotBlank(mapping.getTargetDatabase());
+                if (selectedDB && StringUtil.equals(mapping.getSourceDatabase(), mapping.getTargetDatabase())) {
                     throw new BizException("同源同库不允许同步，请更换目标连接或数据库！");
                 }
-
-                if (StringUtil.isBlank(mapping.getSourceDatabase()) && StringUtil.isBlank(mapping.getTargetDatabase()) && StringUtil.equalsIgnoreCase(mapping.getSourceSchema(),mapping.getTargetSchema())) {
-                    throw new BizException("同源同schema不允许同步，请更换目标连接或schama！");
+                boolean selectedSchema = StringUtil.isNotBlank(mapping.getSourceSchema()) && StringUtil.isNotBlank(mapping.getTargetSchema());
+                if (!selectedDB && selectedSchema && StringUtil.equals(mapping.getSourceSchema(), mapping.getTargetSchema())) {
+                    throw new BizException("同源同schema不允许同步，请更换目标连接或schema！");
                 }
 
             }
@@ -216,28 +222,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public Paging searchResult(Map<String, String> params) {
-        String taskId = params.get("taskId");
-        Assert.hasText(taskId, "taskId 不能为空");
-        Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
-        query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-
-        String detailType = StringUtil.trimToEmpty(params.get("detailType"));
-        if (StringUtil.isNotBlank(detailType)) {
-            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, detailType);
-        }
-
-        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
-        if ("success".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.EQUAL, 0);
-        } else if ("fail".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.GT, 0);
-        }
-
-        query.setSelectFlied(getMigrationDetailSelect());
-        query.addOrderBy(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, SortEnum.DESC);
-        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
-        return storageService.query(query);
+        return databaseSyncDetailService.result(params);
     }
 
     @Override
@@ -277,6 +262,13 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                     .filter(t -> t.getName() != null && t.getName().toUpperCase().contains(key))
                     .collect(Collectors.toList());
         }
+        // 追加表映射时排除已添加源表，避免分页偏移在排除后错位并触发前端连续空翻页
+        Set<String> excludeTables = parseExcludeTables(params.get("excludeTablesJson"));
+        if (!CollectionUtils.isEmpty(excludeTables)) {
+            tables = tables.stream()
+                    .filter(t -> t.getName() == null || !excludeTables.contains(t.getName()))
+                    .collect(Collectors.toList());
+        }
         tables.sort(Comparator.comparing(Table::getName, String.CASE_INSENSITIVE_ORDER));
 
         int realTotal = tables.size();
@@ -310,6 +302,23 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return mappings == null ? Collections.emptyList() : mappings;
     }
 
+    private Set<String> parseExcludeTables(String excludeTablesJson) {
+        if (StringUtil.isBlank(excludeTablesJson)) {
+            return Collections.emptySet();
+        }
+        List<String> names = JsonUtil.jsonToArray(excludeTablesJson, String.class);
+        if (CollectionUtils.isEmpty(names)) {
+            return Collections.emptySet();
+        }
+        Set<String> exclude = new HashSet<>();
+        for (String name : names) {
+            if (StringUtil.isNotBlank(name)) {
+                exclude.add(name);
+            }
+        }
+        return exclude;
+    }
+
     /**
      * 按序号从小到大排序，并规范为连续序号 1..n，便于任务执行与恢复。
      */
@@ -322,17 +331,17 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             if (mapping.getIndex() <= 0) {
                 mapping.setIndex(i + 1);
             }
-            List<DatabaseMapping.TableMapping> tableMappings = mapping.getTableMappings();
+            List<TableMapping> tableMappings = mapping.getTableMappings();
             if (CollectionUtils.isEmpty(tableMappings)) {
                 continue;
             }
             for (int j = 0; j < tableMappings.size(); j++) {
-                DatabaseMapping.TableMapping row = tableMappings.get(j);
+                TableMapping row = tableMappings.get(j);
                 if (row.getIndex() <= 0) {
                     row.setIndex(j + 1);
                 }
             }
-            tableMappings.sort(Comparator.comparingInt(DatabaseMapping.TableMapping::getIndex));
+            tableMappings.sort(Comparator.comparingInt(TableMapping::getIndex));
             for (int j = 0; j < tableMappings.size(); j++) {
                 tableMappings.get(j).setIndex(j + 1);
             }
@@ -380,11 +389,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     private void clearTableGroups(String taskId) {
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(taskId);
-        if (CollectionUtils.isEmpty(tableGroups)) {
-            return;
-        }
-        tableGroups.forEach(group -> profileComponent.removeTableGroup(group.getId()));
+        profileComponent.getTableGroupAll(taskId)
+                .forEach(group -> profileComponent.removeTableGroup(group.getId()));
     }
 
     private void validateMappingConnectors(List<DatabaseMapping> mappings) {
@@ -425,10 +431,18 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return result;
     }
 
+    /**
+     * 任务总表数：以库映射配置中的表映射数为准，运行中不因 TableGroup 逐步落库而波动。
+     */
     private int resolveTotalTableCount(DatabaseMigrationSyncTask task, List<TableGroup> tableGroups) {
-        if (!CollectionUtils.isEmpty(tableGroups)) {
-            return tableGroups.size();
+        int configuredCount = countConfiguredTableMappings(task);
+        if (configuredCount > 0) {
+            return configuredCount;
         }
+        return CollectionUtils.isEmpty(tableGroups) ? 0 : tableGroups.size();
+    }
+
+    private int countConfiguredTableMappings(DatabaseMigrationSyncTask task) {
         if (task == null || CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             return 0;
         }
@@ -451,23 +465,4 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return paging != null ? paging.getTotal() : 0;
     }
 
-    private static Set<String> getMigrationDetailSelect() {
-        Set<String> fields = new HashSet<>();
-        fields.add(ConfigConstant.CONFIG_MODEL_ID);
-        fields.add(ConfigConstant.TASK_ID);
-        fields.add(ConfigConstant.CONFIG_MODEL_TYPE);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE);
-        fields.add(ConfigConstant.TASK_SOURCE_TOTAL);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
-        fields.add(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
-        fields.add(ConfigConstant.TASK_CONTENT);
-        fields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        fields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
-        return fields;
-    }
 }

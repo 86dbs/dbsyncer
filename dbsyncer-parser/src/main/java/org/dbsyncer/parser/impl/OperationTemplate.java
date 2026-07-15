@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserException;
@@ -26,8 +27,10 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -135,6 +138,48 @@ public final class OperationTemplate {
             }
             return group;
         });
+    }
+    
+    /**
+     * 批量添加配置：单次存储批量写入，并按分组批量更新缓存。
+     */
+    public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum,
+                                     GroupStrategyEnum groupStrategyEnum) {
+        if (CollectionUtils.isEmpty(models)) {
+            return Collections.emptyList();
+        }
+        Assert.notNull(commandEnum, "CommandEnum can not be null.");
+        Assert.isTrue(commandEnum == CommandEnum.OPR_ADD, "Batch execute only supports OPR_ADD");
+
+        List<Map> paramsList = new ArrayList<>(models.size());
+        for (ConfigModel model : models) {
+            Assert.notNull(model, "ConfigModel can not be null.");
+            paramsList.add(ConfigModelUtil.convertModelToMap(model));
+        }
+        storageService.addBatch(StorageEnum.CONFIG, null, paramsList);
+        cacheBatch(models, groupStrategyEnum);
+        return models.stream().map(ConfigModel::getId).collect(Collectors.toList());
+    }
+
+    private void cacheBatch(List<? extends ConfigModel> models, GroupStrategyEnum strategy) {
+        for (ConfigModel model : models) {
+            cacheService.put(model.getId(), model);
+        }
+        Map<String, List<ConfigModel>> grouped = models.stream()
+                .collect(Collectors.groupingBy(model -> getGroupId(model, strategy)));
+        grouped.forEach((groupId, groupModels) -> cacheService.getCache().compute(groupId, (k, v) -> {
+            Group group = (Group) v;
+            if (group == null) {
+                group = new Group();
+            }
+            for (ConfigModel model : groupModels) {
+                String id = model.getId();
+                if (!group.contains(id)) {
+                    group.add(id);
+                }
+            }
+            return group;
+        }));
     }
 
     public void remove(OperationConfig config) {

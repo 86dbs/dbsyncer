@@ -123,6 +123,11 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
+    public List<String> addTableGroupBatch(List<TableGroup> models) {
+        return operationTemplate.executeBatch(models, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE);
+    }
+
+    @Override
     public String editTableGroup(TableGroup model) {
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
     }

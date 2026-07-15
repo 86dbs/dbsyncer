@@ -718,42 +718,92 @@ function refreshLicense() {
         }
         const licenseInfo = response.data;
         const $licenseInfo = $("#licenseInfo");
-        const $content = $("#effectiveContent");
         const $editionName = $("#editionName");
+        const $content = $("#effectiveContent");
+        const $attention = $("#licenseAttention");
+        const $arrow = $("#licenseArrow");
+        const $dropdownMenu = $("#licenseDropdownMenu");
+        const $productDivider = $("#licenseProductDivider");
 
         $("#licenseCheck, #licenseRemind, #licenseWarning").addClass("hidden");
-        $content.text("").removeClass("text-warning");
+        $content.addClass("hidden").text("").removeClass("text-warning");
+        $attention.addClass("hidden").text("").removeClass("license-attention-warning license-attention-error");
+        $arrow.addClass("hidden");
+        $dropdownMenu.addClass("hidden");
+        $productDivider.addClass("hidden");
+        $dropdownMenu.find(".license-product-item").remove();
 
         const edition = licenseInfo.edition;
+        $licenseInfo.show();
         if (edition === "community") {
-            $licenseInfo.show();
             $editionName.text("社区版");
             return;
         }
 
-        $licenseInfo.show();
         $editionName.text(licenseInfo.editionName || "专业版");
+        const editionStatus = licenseInfo.editionStatus;
+        const products = licenseInfo.products || [];
 
-        const effectiveTime = Number(licenseInfo.effectiveTime) || 0;
-        if (effectiveTime <= 0) {
-            $content.text("未激活").addClass("text-warning");
+        // 未激活：专业版已部署，但尚无任何产品授权
+        if (editionStatus === "inactive" || (!editionStatus && products.length === 0)) {
+            $("#licenseWarning").removeClass("hidden");
+            $attention.removeClass("hidden").addClass("license-attention-error").text("未激活");
+            $arrow.removeClass("hidden");
             return;
         }
 
-        const currentTime = Number(licenseInfo.currentTime) || Date.now();
-        const tenDays = 864000000;
-
-        if (currentTime < effectiveTime && effectiveTime - tenDays > currentTime) {
+        if (editionStatus === "normal" || editionStatus === "partial") {
             $("#licenseCheck").removeClass("hidden");
-        } else if (currentTime < effectiveTime && effectiveTime - tenDays <= currentTime) {
+        } else if (editionStatus === "expiring") {
             $("#licenseRemind").removeClass("hidden");
             if (licenseInfo.effectiveContent) {
-                $content.text(licenseInfo.effectiveContent);
+                $content.removeClass("hidden").text(licenseInfo.effectiveContent);
             }
-        } else if (currentTime > effectiveTime) {
+        } else if (editionStatus === "expired") {
             $("#licenseWarning").removeClass("hidden");
+            $attention.removeClass("hidden").addClass("license-attention-error").text("全部功能已过期");
+        }
+
+        const attentionCount = Number(licenseInfo.attentionCount) || 0;
+        if (editionStatus !== "expired" && attentionCount > 0 && licenseInfo.attentionSummary) {
+            $attention.removeClass("hidden");
+            $attention.addClass(licenseInfo.attentionSummary.indexOf("已过期") >= 0
+                ? "license-attention-error"
+                : "license-attention-warning");
+            $attention.text(licenseInfo.attentionSummary);
+        }
+
+        if (products.length > 0) {
+            $arrow.removeClass("hidden");
+            renderLicenseProductList($dropdownMenu, $productDivider, products);
+        } else {
+            $arrow.removeClass("hidden");
         }
     });
+}
+
+function renderLicenseProductList($dropdownMenu, $productDivider, products) {
+    const statusConfig = {
+        normal: { icon: "fa-check-circle", badge: "badge-success", label: "正常" },
+        expiring: { icon: "fa-exclamation-triangle", badge: "badge-warning", label: "即将过期" },
+        expired: { icon: "fa-times-circle", badge: "badge-error", label: "已过期" }
+    };
+
+    products.forEach(function (product) {
+        const config = statusConfig[product.status] || statusConfig.normal;
+        const effectiveTime = Number(product.effectiveTime) || 0;
+        const timeText = effectiveTime > 0 ? formatDate(effectiveTime) : "未激活";
+        $productDivider.before(
+            '<li class="license-product-item">'
+            + '<div class="license-product-main">'
+            + '<span class="license-product-name">' + escapeHtml(product.name || "") + '</span>'
+            + '<span class="badge ' + config.badge + '"><i class="fa ' + config.icon + '"></i> ' + config.label + '</span>'
+            + '</div>'
+            + '<div class="license-product-time">' + escapeHtml(timeText) + '</div>'
+            + '</li>'
+        );
+    });
+    $productDivider.removeClass("hidden");
 }
 
 // ******************* 驱动表格展示内容 ***************************

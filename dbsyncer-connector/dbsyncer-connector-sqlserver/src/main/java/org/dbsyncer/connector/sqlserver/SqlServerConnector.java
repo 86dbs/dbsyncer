@@ -17,6 +17,8 @@ import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -31,6 +33,7 @@ import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -220,14 +223,14 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
 
         if (t.contains("VARBINARY")) {
             if (size > 8000) {
-                return "VARBINARY(MAX)";
+                return t + "(MAX)";
             }
         }
 
         if (t.contains("VARCHAR")) {
             // 长度 > 8000 → 必须用 MAX
             if (size > 8000) {
-                return "VARCHAR(MAX)";
+                return t + "(MAX)";
             }
         }
         return super.formatPhysicalType(sourceDefinition);
@@ -254,17 +257,24 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         List<Integer> result = db.execute(databaseTemplate -> databaseTemplate.queryForList(String.format(QUERY_TABLE_IDENTITY, tableName), Integer.class));
         // 允许显式插入标识列的值
         if (!CollectionUtils.isEmpty(result)) {
-
-            String insert = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName) + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
-                    + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);
+            String schema = resolveSchema(commandConfig.getSchema());
+            String insert = String.format(SET_TABLE_IDENTITY_ON, schema, tableName) + targetCommand.get(ConnectorConstant.OPERTION_INSERT)
+                    + String.format(SET_TABLE_IDENTITY_OFF, schema, tableName);
             targetCommand.put(ConnectorConstant.OPERTION_INSERT, insert);
 
-            String upset = String.format(SET_TABLE_IDENTITY_ON, commandConfig.getSchema(), tableName) + targetCommand.get(ConnectorConstant.OPERTION_UPSERT)
-                    + String.format(SET_TABLE_IDENTITY_OFF, commandConfig.getSchema(), tableName);
+            String upset = String.format(SET_TABLE_IDENTITY_ON, schema, tableName) + targetCommand.get(ConnectorConstant.OPERTION_UPSERT)
+                    + String.format(SET_TABLE_IDENTITY_OFF, schema, tableName);
             targetCommand.put(ConnectorConstant.OPERTION_UPSERT, upset);
 
         }
         return targetCommand;
+    }
+
+    /**
+     * SQL Server 目标 schema；未配置时默认 dbo（与 {@link #getSchema(String, Connection)} 一致）。
+     */
+    private String resolveSchema(String schema) {
+        return StringUtil.isNotBlank(schema) ? schema : "dbo";
     }
 
     @Override
@@ -404,4 +414,49 @@ public final class SqlServerConnector extends AbstractDatabaseConnector {
         }
         return super.buildCustomValue(fs, field);
     }
+
+    /**
+     * SQL Server 批量写入：IDENTITY 表分离 ON/OFF；显式 JDBC 类型避免 getParameterMetaData()。
+     */
+    @Override
+    protected int[] batchUpdate(DatabaseTemplate databaseTemplate, String executeSql, List<Field> fields, List<Map> data) throws Exception {
+        SimpleConnection connection = databaseTemplate.getSimpleConnection();
+        try {
+            connection.setAutoCommit(false);
+            int[] result = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data), batchArgTypes(fields));
+            connection.commit();
+            return result;
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+    }
+
+    /**
+     * 批量参数 JDBC 类型，与占位符顺序一致。
+     */
+    private int[] batchArgTypes(List<Field> fields) {
+        List<Integer> types = new ArrayList<>();
+        for (Field field : fields) {
+            if (field == null) {
+                continue;
+            }
+            switch (field.getTypeName()) {
+                case "geometry":
+                case "geography":
+                    types.add(Types.VARCHAR);
+                    types.add(Types.INTEGER);
+                    break;
+                case "hierarchyid":
+                    types.add(Types.VARCHAR);
+                    break;
+                default:
+                    types.add(field.getType() != 0 ? field.getType() : Types.VARCHAR);
+            }
+        }
+        return types.stream().mapToInt(Integer::intValue).toArray();
+    }
+
 }

@@ -14,6 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public abstract class BatchTaskUtil {
 
@@ -34,11 +35,6 @@ public abstract class BatchTaskUtil {
 
     /**
      * 创建线程池
-     *
-     * @param threadPoolSize
-     * @param maximumPoolSize
-     * @param queueSize
-     * @return
      */
     public static ExecutorService createExecutor(int threadPoolSize, int maximumPoolSize, int queueSize) {
         return new ThreadPoolExecutor(threadPoolSize, // 核心线程数
@@ -53,11 +49,11 @@ public abstract class BatchTaskUtil {
     /**
      * 并行处理列表数据
      *
-     * @param dataList 数据列表
-     * @param processor 数据处理函数
+     * @param dataList       数据列表
+     * @param processor      数据处理函数
      * @param threadPoolSize 线程池大小
-     * @param <T> 数据类型
-     * @param <R> 结果类型
+     * @param <T>            数据类型
+     * @param <R>            结果类型
      * @return 处理结果列表
      */
     public static <T, R> List<R> submit(Collection<T> dataList, Processor<T, R> processor, int threadPoolSize, Logger logger) {
@@ -72,7 +68,7 @@ public abstract class BatchTaskUtil {
         try {
             // 提交所有任务
             for (T data : dataList) {
-                futures.add(executor.submit(()-> {
+                futures.add(executor.submit(() -> {
                     try {
                         return processor.process(data);
                     } catch (Throwable e) {
@@ -115,8 +111,8 @@ public abstract class BatchTaskUtil {
      *
      * @param dataList 数据列表
      * @param consumer 数据处理消费者
-     * @param logger 日志记录器
-     * @param <T> 数据类型
+     * @param logger   日志记录器
+     * @param <T>      数据类型
      */
     public static <T> void execute(Collection<T> dataList, Consumer<T> consumer, Logger logger) {
         if (CollectionUtils.isEmpty(dataList)) {
@@ -129,7 +125,7 @@ public abstract class BatchTaskUtil {
         try {
             // 提交所有任务
             for (T data : dataList) {
-                futures.add(executor.submit(()-> {
+                futures.add(executor.submit(() -> {
                     try {
                         consumer.accept(data);
                     } catch (Throwable e) {
@@ -167,8 +163,8 @@ public abstract class BatchTaskUtil {
      * @param executor 自定义线程池
      * @param dataList 数据列表
      * @param consumer 数据处理消费者
-     * @param logger 日志记录器
-     * @param <T> 数据类型
+     * @param logger   日志记录器
+     * @param <T>      数据类型
      */
     public static <T> void execute(ExecutorService executor, Collection<T> dataList, Consumer<T> consumer, Logger logger) {
         if (CollectionUtils.isEmpty(dataList)) {
@@ -178,7 +174,7 @@ public abstract class BatchTaskUtil {
         List<Future<?>> futures = new ArrayList<>();
         // 提交所有任务
         for (T data : dataList) {
-            futures.add(executor.submit(()-> {
+            futures.add(executor.submit(() -> {
                 try {
                     consumer.accept(data);
                 } catch (Throwable e) {
@@ -210,6 +206,84 @@ public abstract class BatchTaskUtil {
         }
     }
 
+    public static <T> void executeBySlice(List<T> rows, int batchSize, int threadNum, Function<T> function, Logger logger) {
+        if (CollectionUtils.isEmpty(rows)) {
+            return;
+        }
+        ExecutorService executor = Executors.newFixedThreadPool(threadNum);
+        try {
+            int total = rows.size();
+            int taskCount = (total + batchSize - 1) / batchSize;
+            for (int i = 0; i < taskCount; ++i) {
+                int start = i * batchSize;
+                List<T> slice = rows.stream().skip(start).limit(batchSize).collect(Collectors.toList());
+                try {
+                    function.execute(slice, executor);
+                } catch (Throwable e) {
+                    logger.error("任务执行异常", e);
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    public static <T> void executeWithAwait(List<T> rows, ExecutorService executor, Consumer<T> consumer, Logger logger) {
+        List<Future<?>> futures = new ArrayList<>();
+        // 提交所有任务
+        for (T data : rows) {
+            futures.add(executor.submit(() -> {
+                try {
+                    consumer.accept(data);
+                } catch (Throwable e) {
+                    logger.error("任务执行异常", e);
+                }
+            }));
+        }
+        try {
+            // 等待所有任务完成
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        } catch (Exception e) {
+            // 线程被中断，优雅处理
+            Thread.currentThread().interrupt();
+            // 取消所有未完成的任务
+            for (Future<?> f : futures) {
+                if (!f.isDone()) {
+                    f.cancel(true);
+                }
+            }
+        }
+    }
+
+    public static <T> void executeBatchWithoutAwait(List<T> rows, ExecutorService executor, Consumer<List<T>> consumer, Logger logger) {
+        List<Future<?>> futures = new ArrayList<>();
+        // 提交所有任务
+        futures.add(executor.submit(() -> {
+            try {
+                consumer.accept(rows);
+            } catch (Throwable e) {
+                logger.error("任务执行异常", e);
+            }
+        }));
+        try {
+            // 等待所有任务完成
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        } catch (Exception e) {
+            // 线程被中断，优雅处理
+            Thread.currentThread().interrupt();
+            // 取消所有未完成的任务
+            for (Future<?> f : futures) {
+                if (!f.isDone()) {
+                    f.cancel(true);
+                }
+            }
+        }
+    }
+
     /**
      * 数据处理接口
      *
@@ -220,6 +294,12 @@ public abstract class BatchTaskUtil {
     public interface Processor<T, R> {
 
         R process(T data) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface Function<T> {
+
+        void execute(List<T> slice, ExecutorService executor);
     }
 
 }

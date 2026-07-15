@@ -43,13 +43,27 @@ public class ConnectorConstant {
     public static final String OPERTION_QUERY_CURSOR = "QUERY_CURSOR";
 
     /**
-     * 目标端按主键批量IN查询
+     * 分页查询目标端
      */
     public static final String OPERTION_QUERY_TARGET = "QUERY_TARGET";
 
     /**
+     * 目标端按主键批量 IN 查询（无分页）
+     */
+    public static final String OPERTION_QUERY_TARGET_IN = "QUERY_TARGET_IN";
+
+    /**
+     * 目标端游标查询
+     */
+    public static final String OPERTION_QUERY_TARGET_CURSOR = "QUERY_TARGET_CURSOR";
+
+    /**
+     * 源端按主键批量 IN 查询（无分页）
+     */
+    public static final String OPERTION_QUERY_SOURCE_IN = "QUERY_SOURCE_IN";
+
+    /**
      * 游标分页实际使用的主键名列表（逗号分隔），与 QUERY_CURSOR 的 SQL 占位符一致。
-     * 执行时用该列表做 getLastCursors，避免用 findTablePrimaryKeys 取到表上未参与游标的主键（如 id）导致参数个数不一致。
      */
     public static final String CURSOR_PK_NAMES = "CURSOR_PK_NAMES";
 
@@ -57,6 +71,11 @@ public class ConnectorConstant {
      * 查询过滤条件
      */
     public static final String OPERTION_QUERY_FILTER = "QUERY_FILTER";
+
+    /**
+     * 目标端查询字段列表（ES fetchSource 等），逗号分隔；与源端 {@link #OPERTION_QUERY} 对应。
+     */
+    public static final String OPERTION_TARGET_QUERY_FIELDS = "TARGET_QUERY_FIELDS";
 
     /**
      * 查询总数

@@ -20,9 +20,9 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
+import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -30,7 +30,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -101,7 +100,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     public String remove(String id) {
         List<Mapping> mappingAll = profileComponent.getMappingAll();
         if (!CollectionUtils.isEmpty(mappingAll)) {
-            mappingAll.forEach(mapping-> {
+            mappingAll.forEach(mapping -> {
                 if (StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)) {
                     String error = String.format("驱动“%s”正在使用，请先删除", mapping.getName());
                     logger.error(error);
@@ -148,6 +147,15 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
     }
 
     @Override
+    public List<ConnectorVO> getConnectorRelation() {
+        return profileComponent.getConnectorAll().stream()
+                .filter(this::isRelationalDatabaseConnector)
+                .map(this::convertConnector2Vo)
+                .sorted(Comparator.comparing(Connector::getUpdateTime).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public Paging<ConnectorVO> search(Map<String, String> params) {
         return searchConfigModel(params, getConnectorAll());
     }
@@ -171,7 +179,7 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
         // 更新连接器状态
         Set<String> exist = new HashSet<>();
-        list.forEach(c-> {
+        list.forEach(c -> {
             health.put(c.getId(), isAlive(c.getId(), c.getConfig()));
             exist.add(c.getId());
         });
@@ -208,6 +216,22 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
         } catch (Exception e) {
             LogType.ConnectorLog logType = LogType.ConnectorLog.FAILED;
             logService.log(logType, "%s%s", logType.getName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 仅保留关系型数据库连接器。
+     */
+    private boolean isRelationalDatabaseConnector(Connector connector) {
+        if (connector == null || connector.getConfig() == null || StringUtil.isBlank(connector.getConfig().getConnectorType())) {
+            return false;
+        }
+        try {
+            org.dbsyncer.sdk.spi.ConnectorService connectorService = connectorFactory.getConnectorService(connector.getConfig().getConnectorType());
+            return connectorService instanceof AbstractDatabaseConnector;
+        } catch (Exception e) {
+            logger.warn("过滤关系型连接器失败, connectorId={}, type={}", connector.getId(), connector.getConfig().getConnectorType(), e);
             return false;
         }
     }

@@ -20,6 +20,7 @@ public class DatabaseMigrationDetailResult {
     private String sourceDatabase;
     private String sourceSchema;
     private String targetDatabase;
+    private String targetSchema;
     private String sourceTable;
     private String targetTable;
     private Long sourceTotal;
@@ -46,10 +47,12 @@ public class DatabaseMigrationDetailResult {
         return of(DatabaseMigrationDetailTypeEnum.ROW_DATA, tableIndex);
     }
 
-    public DatabaseMigrationDetailResult namespace(String sourceDatabase, String sourceSchema, String targetDatabase) {
+    public DatabaseMigrationDetailResult namespace(String sourceDatabase, String sourceSchema,
+                                                   String targetDatabase, String targetSchema) {
         this.sourceDatabase = sourceDatabase;
         this.sourceSchema = sourceSchema;
         this.targetDatabase = targetDatabase;
+        this.targetSchema = targetSchema;
         return this;
     }
 
@@ -101,6 +104,10 @@ public class DatabaseMigrationDetailResult {
 
     public String getTargetDatabase() {
         return targetDatabase;
+    }
+
+    public String getTargetSchema() {
+        return targetSchema;
     }
 
     public String getSourceTable() {

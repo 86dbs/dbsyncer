@@ -35,13 +35,23 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     }
 
     public void start(Mapping mapping) {
+        start(mapping, false);
+    }
+
+    /**
+     * 启动驱动。
+     *
+     * @param mapping      驱动
+     * @param autoRecovery 是否为服务重启自动恢复（true 时对 CDC 监听启动失败按配置重试）
+     */
+    public void start(Mapping mapping, boolean autoRecovery) {
         Puller puller = getPuller(mapping);
 
         // 标记运行中
         changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
 
         try {
-            puller.start(mapping);
+            puller.start(mapping, autoRecovery);
         } catch (Exception e) {
             // rollback
             changeMetaState(mapping.getMetaId(), MetaEnum.READY);

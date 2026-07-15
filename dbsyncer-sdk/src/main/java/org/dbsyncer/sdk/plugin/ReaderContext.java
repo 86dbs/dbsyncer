@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.plugin;
 
+import org.dbsyncer.common.util.StringUtil;
+
 import java.util.List;
 
 /**
@@ -21,4 +23,8 @@ public interface ReaderContext extends BaseContext {
     int getPageIndex();
 
     int getPageSize();
+
+    default String getCommandKey(){
+        return StringUtil.EMPTY;
+    }
 }

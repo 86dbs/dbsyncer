@@ -3,7 +3,10 @@
  */
 package org.dbsyncer.sdk.model;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 库级映射配置
@@ -119,40 +122,15 @@ public class DatabaseMapping {
     }
 
     /**
-     * 表级映射
+     * 按 index 升序返回表映射列表（副本，不修改原列表）。
      */
-    public static class TableMapping {
-
-        /**
-         * 序号（从小到大，同一库映射内按此顺序处理）
-         */
-        private int index;
-
-        private String sourceTable;
-        private String targetTable;
-
-        public int getIndex() {
-            return index;
+    public List<TableMapping> getSortedTableMappings() {
+        if (tableMappings == null || tableMappings.isEmpty()) {
+            return Collections.emptyList();
         }
-
-        public void setIndex(int index) {
-            this.index = index;
-        }
-
-        public String getSourceTable() {
-            return sourceTable;
-        }
-
-        public void setSourceTable(String sourceTable) {
-            this.sourceTable = sourceTable;
-        }
-
-        public String getTargetTable() {
-            return targetTable;
-        }
-
-        public void setTargetTable(String targetTable) {
-            this.targetTable = targetTable;
-        }
+        return tableMappings.stream()
+                .sorted(Comparator.comparingInt(TableMapping::getIndex))
+                .collect(Collectors.toList());
     }
+
 }

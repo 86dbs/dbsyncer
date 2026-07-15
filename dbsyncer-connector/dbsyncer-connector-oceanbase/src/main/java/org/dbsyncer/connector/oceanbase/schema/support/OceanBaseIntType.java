@@ -47,6 +47,9 @@ public final class OceanBaseIntType extends IntType {
             calendar.setTime(d);
             return calendar.get(Calendar.YEAR);
         }
+        if (val instanceof Number) {
+            return ((Number) val).intValue();
+        }
         return throwUnsupportedException(val, field);
     }
 

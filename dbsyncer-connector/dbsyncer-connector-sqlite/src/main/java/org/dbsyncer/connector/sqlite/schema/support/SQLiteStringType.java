@@ -22,7 +22,8 @@ public final class SQLiteStringType extends StringType {
 
     private enum TypeEnum {
 
-        TEXT("TEXT");
+        TEXT("TEXT"),
+        VARCHAR("VARCHAR");
 
         private final String value;
 

@@ -18,6 +18,13 @@ import java.util.Map;
 public interface BaseContext {
 
     /**
+     * 是否是目标连接器
+     */
+    default boolean isTargetConnector() {
+        return false;
+    }
+
+    /**
      * 获取源表信息
      */
     Table getSourceTable();

@@ -7,6 +7,8 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.TimestampType;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,6 +42,19 @@ public final class ClickHouseTimestampType extends TimestampType {
 
     @Override
     protected Timestamp merge(Object val, Field field) {
+        if (val instanceof Timestamp) {
+            return (Timestamp) val;
+        }
+        if (val instanceof LocalDateTime) {
+            return Timestamp.valueOf((LocalDateTime) val);
+        }
+        if (val instanceof OffsetDateTime) {
+            return Timestamp.from(((OffsetDateTime) val).toInstant());
+        }
+
+        if (val instanceof Number) {
+            return new Timestamp(((Number) val).longValue());
+        }
         return throwUnsupportedException(val, field);
     }
 }

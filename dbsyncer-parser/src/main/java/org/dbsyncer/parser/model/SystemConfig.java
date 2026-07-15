@@ -7,8 +7,8 @@ import org.dbsyncer.common.model.ApiKeyConfig;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RsaConfig;
-import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.NoticeConfig;
 
 /**
  * 系统配置
@@ -32,6 +32,11 @@ public class SystemConfig extends ConfigModel {
      * 系统日志过期时间（天）
      */
     private int expireLogDays = 30;
+
+    /**
+     * 日志文件过期时间（天）
+     */
+    private int expireFileLogDays = 15;
 
     /**
      * 是否记录同步成功数据（false-关闭; true-开启）
@@ -117,6 +122,14 @@ public class SystemConfig extends ConfigModel {
 
     public void setExpireLogDays(int expireLogDays) {
         this.expireLogDays = expireLogDays;
+    }
+
+    public int getExpireFileLogDays() {
+        return expireFileLogDays;
+    }
+
+    public void setExpireFileLogDays(int expireFileLogDays) {
+        this.expireFileLogDays = expireFileLogDays;
     }
 
     public boolean isEnableStorageWriteSuccess() {

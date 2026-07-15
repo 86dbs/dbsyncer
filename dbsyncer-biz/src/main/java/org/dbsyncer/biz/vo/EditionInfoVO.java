@@ -3,6 +3,9 @@
  */
 package org.dbsyncer.biz.vo;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @Author 穿云
  * @Version 1.0.0
@@ -12,9 +15,13 @@ public class EditionInfoVO {
 
     private String edition;
     private String editionName;
+    private String editionStatus;
     private long effectiveTime;
     private long currentTime = System.currentTimeMillis();
     private String effectiveContent;
+    private int attentionCount;
+    private String attentionSummary;
+    private List<ProductStatusVO> products = new ArrayList<>();
 
     public String getEdition() {
         return edition;
@@ -54,5 +61,37 @@ public class EditionInfoVO {
 
     public void setEffectiveContent(String effectiveContent) {
         this.effectiveContent = effectiveContent;
+    }
+
+    public String getEditionStatus() {
+        return editionStatus;
+    }
+
+    public void setEditionStatus(String editionStatus) {
+        this.editionStatus = editionStatus;
+    }
+
+    public int getAttentionCount() {
+        return attentionCount;
+    }
+
+    public void setAttentionCount(int attentionCount) {
+        this.attentionCount = attentionCount;
+    }
+
+    public String getAttentionSummary() {
+        return attentionSummary;
+    }
+
+    public void setAttentionSummary(String attentionSummary) {
+        this.attentionSummary = attentionSummary;
+    }
+
+    public List<ProductStatusVO> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<ProductStatusVO> products) {
+        this.products = products;
     }
 }

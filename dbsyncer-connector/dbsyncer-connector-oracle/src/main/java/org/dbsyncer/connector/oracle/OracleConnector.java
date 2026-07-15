@@ -3,12 +3,12 @@
  */
 package org.dbsyncer.connector.oracle;
 
+import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.cdc.OracleListener;
 import org.dbsyncer.connector.oracle.schema.OracleSchemaResolver;
 import org.dbsyncer.connector.oracle.validator.OracleConfigValidator;
-import org.dbsyncer.common.model.Result;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
@@ -182,48 +182,41 @@ public class OracleConnector extends AbstractDatabaseConnector {
         });
     }
 
-    private String qualifyCreateTableStatement(String ddl, String owner, String tableName) {
-        if (StringUtil.isBlank(ddl)) {
-            return StringUtil.EMPTY;
-        }
-        String normalized = ddl.trim();
-        int parenIndex = normalized.indexOf('(');
-        if (parenIndex < 0) {
-            return normalized;
-        }
-        return "CREATE TABLE " + qualifyTableName(owner, tableName) + " " + normalized.substring(parenIndex);
-    }
-
     private String wrapCreateTableIfNotExists(String owner, String tableName, String createSql) {
-        String tableUpper = normalizeTableName(tableName);
+        String tableLiteral = escapeForExecuteImmediate(tableName);
         String escapedCreateSql = escapeForExecuteImmediate(createSql);
+        String tableExistsPredicate = "UPPER(TABLE_NAME) = UPPER('" + tableLiteral + "')";
         if (StringUtil.isBlank(owner)) {
             return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE " + tableExistsPredicate + "; " +
                     "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
         }
         String ownerUpper = normalizeOwner(owner);
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND " + tableExistsPredicate + "; " +
                 "IF v_cnt = 0 THEN EXECUTE IMMEDIATE '" + escapedCreateSql + "'; END IF; END;";
     }
 
     private String wrapDropTableIfExists(String owner, String tableName, String dropSql) {
-        String tableUpper = normalizeTableName(tableName);
+        String tableLiteral = escapeForExecuteImmediate(tableName);
         String escapedDropSql = escapeForExecuteImmediate(dropSql);
+        String tableExistsPredicate = "UPPER(TABLE_NAME) = UPPER('" + tableLiteral + "')";
         if (StringUtil.isBlank(owner)) {
             return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE TABLE_NAME = '" + tableUpper + "'; " +
+                    "SELECT COUNT(1) INTO v_cnt FROM USER_TABLES WHERE " + tableExistsPredicate + "; " +
                     "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
         }
         String ownerUpper = normalizeOwner(owner);
         return "DECLARE v_cnt NUMBER := 0; BEGIN " +
-                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND TABLE_NAME = '" + tableUpper + "'; " +
+                "SELECT COUNT(1) INTO v_cnt FROM ALL_TABLES WHERE OWNER = '" + ownerUpper + "' AND " + tableExistsPredicate + "; " +
                 "IF v_cnt > 0 THEN EXECUTE IMMEDIATE '" + escapedDropSql + "'; END IF; END;";
     }
 
+    /**
+     * schema.table 均加双引号并保留表名大小写，与整库迁移建表 DDL 一致。
+     */
     private String qualifyTableName(String owner, String tableName) {
-        String quotedTable = buildWithQuotation(normalizeTableName(tableName));
+        String quotedTable = buildWithQuotation(escapeForExecuteImmediate(tableName));
         if (StringUtil.isBlank(owner)) {
             return quotedTable;
         }
@@ -234,9 +227,13 @@ public class OracleConnector extends AbstractDatabaseConnector {
         return owner == null ? StringUtil.EMPTY : owner.trim().toUpperCase(Locale.ROOT);
     }
 
-    private static String normalizeTableName(String tableName) {
-        return tableName == null ? StringUtil.EMPTY : tableName.trim().toUpperCase(Locale.ROOT);
-    }
+//    private static String trimIdentifier(String name) {
+//        return name == null ? StringUtil.EMPTY : name.trim();
+//    }
+//
+//    private static String escapeSqlLiteral(String value) {
+//        return escapeForExecuteImmediate(value);
+//    }
 
     private void applySessionSchema(DatabaseTemplate databaseTemplate, String schema) {
         if (StringUtil.isBlank(schema)) {

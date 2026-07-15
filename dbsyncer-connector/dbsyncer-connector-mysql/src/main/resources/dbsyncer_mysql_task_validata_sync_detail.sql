@@ -2,6 +2,7 @@ CREATE TABLE `dbsyncer_task_validata_sync_detail` (
    `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
    `TASK_ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '关联的任务id',
    `TYPE` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务类型, dataVerification',
+   `STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '执行状态, 0-运行中；1-已完成；',
    `SOURCE_TABLE_NAME` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '数据源表名称',
    `TARGET_TABLE_NAME` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '目标源表名称',
    `SOURCE_TOTAL` bigint DEFAULT NULL COMMENT '源表总数',

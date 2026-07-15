@@ -6,6 +6,8 @@ package org.dbsyncer.connector.clickhouse.schema.support;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.DateType;
 
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,7 +40,17 @@ public final class ClickHouseDateType extends DateType {
     }
 
     @Override
-    protected java.sql.Date merge(Object val, Field field) {
+    protected Date merge(Object val, Field field) {
+        if (val instanceof Date) {
+            return (Date) val;
+        }
+        if (val instanceof LocalDate) {
+            return Date.valueOf((LocalDate) val);
+        }
+        if (val instanceof java.util.Date) {
+            return new Date(((java.util.Date) val).getTime());
+        }
+
         return throwUnsupportedException(val, field);
     }
 }

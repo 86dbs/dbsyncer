@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.config.IncrementRecoveryConfig;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -54,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -92,6 +94,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
     @Resource
     private TableGroupContext tableGroupContext;
 
+    @Resource
+    private IncrementRecoveryConfig incrementRecoveryConfig;
+
     private final Map<String, Listener> map = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -101,6 +106,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void start(Mapping mapping) {
+        start(mapping, false);
+    }
+
+    @Override
+    public void start(Mapping mapping, boolean autoRecovery) {
         final String mappingId = mapping.getId();
         final String metaId = mapping.getMetaId();
         Connector connector = profileComponent.getConnector(mapping.getSourceConnectorId());
@@ -114,7 +124,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
         Thread worker = new Thread(() -> {
             try {
-                map.computeIfAbsent(metaId, k -> {
+                Listener listener = map.computeIfAbsent(metaId, k -> {
                     logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
                     meta.setBeginTime(now);
@@ -122,7 +132,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
-                }).start();
+                });
+                startListener(mapping, metaId, listener, autoRecovery);
             } catch (Exception e) {
                 close(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
@@ -132,6 +143,34 @@ public final class IncrementPuller extends AbstractPuller implements Application
         worker.setName("increment-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
+    }
+
+    /**
+     * 启动监听。自动恢复（服务重启）时，为避免数据库晚于本服务启动导致 CDC 监听连接失败，
+     * 按 {@link IncrementRecoveryConfig} 配置的次数与间隔重试；手动启动仅尝试一次。
+     */
+    private void startListener(Mapping mapping, String metaId, Listener listener, boolean autoRecovery) throws Exception {
+        int maxAttempts = autoRecovery ? incrementRecoveryConfig.getRetryTimes() : 1;
+        for (int i = 1; i <= maxAttempts; i++) {
+            try {
+                listener.start();
+                if (i > 1) {
+                    logger.info("增量同步重试启动成功，任务名称:{}, 第{}次", mapping.getName(), i);
+                }
+                return;
+            } catch (Exception e) {
+                // 最后一次仍失败，或等待期间任务已关闭，则不再重试
+                if (i >= maxAttempts) {
+                    throw e;
+                }
+                logger.error("增量同步启动失败，任务名称:{} {}ms后重试", mapping.getName(), incrementRecoveryConfig.getRetryInterval(), e);
+                TimeUnit.MILLISECONDS.sleep(incrementRecoveryConfig.getRetryInterval());
+                if (!map.containsKey(metaId)) {
+                    logger.info("增量同步任务已关闭，终止重试：{}, {}", metaId, mapping.getName());
+                    return;
+                }
+            }
+        }
     }
 
     /**
@@ -164,7 +203,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Override
     public void close(String metaId) {
-        map.compute(metaId, (k, listener)-> {
+        map.compute(metaId, (k, listener) -> {
             if (listener != null) {
                 listener.close();
             }
@@ -204,7 +243,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
             AbstractQuartzListener quartzListener = (AbstractQuartzListener) listener;
-            List<TableGroupQuartzCommand> quartzCommands = list.stream().map(t-> {
+            List<TableGroupQuartzCommand> quartzCommands = list.stream().map(t -> {
                 final TableGroup group = PickerUtil.mergeTableGroupConfig(mapping, t);
                 final Picker picker = new Picker(group);
                 List<Field> fields = picker.getSourceFields();
@@ -221,7 +260,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
             Set<String> filterTable = new HashSet<>();
             List<Table> sourceTable = new ArrayList<>();
             List<Table> customTable = new ArrayList<>();
-            list.forEach(t->addSourceTable(sourceTable, customTable, filterTable, t.getSourceTable()));
+            list.forEach(t -> addSourceTable(sourceTable, customTable, filterTable, t.getSourceTable()));
             abstractListener.setDatabase(mapping.getSourceDatabase());
             abstractListener.setSchema(mapping.getSourceSchema());
             abstractListener.setConnectorService(connectorFactory.getConnectorService(connectorConfig.getConnectorType()));

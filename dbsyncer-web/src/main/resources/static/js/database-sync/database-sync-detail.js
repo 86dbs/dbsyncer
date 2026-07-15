@@ -20,6 +20,15 @@
         return escapeHtml(db || schema || '-');
     }
 
+    function formatTargetDb(row) {
+        var db = row.targetDatabase || '';
+        var schema = row.targetSchema || '';
+        if (db && schema) {
+            return escapeHtml(db) + ' / ' + escapeHtml(schema);
+        }
+        return escapeHtml(db || schema || '-');
+    }
+
     function formatFailTotal(fail) {
         var n = Number(fail) || 0;
         if (n > 0) {
@@ -240,7 +249,7 @@
                     + '<td><span class="badge ' + badgeClass + '">' + escapeHtml(typeText) + '</span></td>'
                     + '<td>' + formatSourceDb(row) + '</td>'
                     + '<td>' + escapeHtml(row.sourceTable || '-') + '</td>'
-                    + '<td>' + escapeHtml(row.targetDatabase || '-') + '</td>'
+                    + '<td>' + formatTargetDb(row) + '</td>'
                     + '<td>' + escapeHtml(row.targetTable || '-') + '</td>'
                     + '<td>' + sourceTotal + '</td>'
                     + '<td>' + (row.successTotal != null ? row.successTotal : '-') + '</td>'
