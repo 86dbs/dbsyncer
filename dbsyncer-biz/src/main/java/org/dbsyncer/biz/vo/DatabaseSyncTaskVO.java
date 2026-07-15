@@ -4,7 +4,7 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
 
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  * @version 1.0.0
  * @date 2026-05-22 00:00
  */
-public final class DatabaseSyncTaskVO extends DatabaseMigrationSyncTask {
+public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
 
     private final Connector sourceConnector;
     private final Connector targetConnector;

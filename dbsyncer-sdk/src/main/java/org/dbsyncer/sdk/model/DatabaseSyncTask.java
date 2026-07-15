@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @date 2026-05-22 11:19
  */
-public class DatabaseMigrationSyncTask extends CommonTask {
+public class DatabaseSyncTask extends CommonTask {
 
     /**
      * 库映射列表（源/目标连接器 ID 配置在每条 {@link DatabaseMapping} 上）

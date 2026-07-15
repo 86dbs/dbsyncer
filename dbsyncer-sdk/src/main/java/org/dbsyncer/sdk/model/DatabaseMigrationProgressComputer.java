@@ -23,7 +23,7 @@ public final class DatabaseMigrationProgressComputer {
     /**
      * 计算进度百分比 0~100
      */
-    public static BigDecimal calculateProgressPercent(DatabaseMigrationSyncTask task, int tableGroupSize) {
+    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize) {
         if (task == null) {
             return null;
         }
@@ -59,7 +59,7 @@ public final class DatabaseMigrationProgressComputer {
     /**
      * 每张表包含的步骤数（结构1 + 数据1）
      */
-    private static int getStepsPerTable(DatabaseMigrationSyncTask task) {
+    private static int getStepsPerTable(DatabaseSyncTask task) {
         int steps = 0;
         if (task.isEnableCopySchema()) steps++;
         if (task.isEnableCopyData()) steps++;
@@ -69,7 +69,7 @@ public final class DatabaseMigrationProgressComputer {
     /**
      * 已完成的数据库步骤
      */
-    private static long countCompletedDatabaseSteps(DatabaseMigrationSyncTask task) {
+    private static long countCompletedDatabaseSteps(DatabaseSyncTask task) {
         ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> snapshots = task.getDatabaseSnapshots();
         if (CollectionUtils.isEmpty(snapshots)) {
             return 0;
@@ -80,7 +80,7 @@ public final class DatabaseMigrationProgressComputer {
     /**
      * 已完成的表步骤（结构/数据）
      */
-    private static long countCompletedTableSteps(DatabaseMigrationSyncTask task, int stepsPerTable) {
+    private static long countCompletedTableSteps(DatabaseSyncTask task, int stepsPerTable) {
         ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> snapshots = task.getDatabaseSnapshots();
         if (CollectionUtils.isEmpty(snapshots) || stepsPerTable <= 0) {
             return 0;
@@ -111,7 +111,7 @@ public final class DatabaseMigrationProgressComputer {
      * 列表展示的已完成表数：与 {@link #calculateProgressPercent} 使用同一套步骤计数，
      * 换算为等效整表完成数（避免「进度 33% 但仍显示 0/65 张表」）。
      */
-    public static int countCompletedTables(DatabaseMigrationSyncTask task, int totalTableCount) {
+    public static int countCompletedTables(DatabaseSyncTask task, int totalTableCount) {
         if (task == null) {
             return 0;
         }

@@ -28,7 +28,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseMigrationProgressComputer;
-import org.dbsyncer.sdk.model.DatabaseMigrationSyncTask;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
@@ -77,7 +77,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private TaskService<DatabaseMigrationSyncTask> taskService;
+    private TaskService<DatabaseSyncTask> taskService;
 
     @Resource
     private StorageService storageService;
@@ -87,7 +87,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseMigrationSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
     }
@@ -106,7 +106,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         normalizeAndSortMappings(mappings);
         validateMappingConnectors(mappings);
 
-        DatabaseMigrationSyncTask task = new DatabaseMigrationSyncTask();
+        DatabaseSyncTask task = new DatabaseSyncTask();
         fillTaskOnAdd(task, params);
         task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
@@ -120,7 +120,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseMigrationSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         assertNotRunning(id);
 
@@ -140,7 +140,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return taskService.edit(task);
     }
 
-    private static void checkDatabaseMapping(List<DatabaseMapping> mappings) {
+    private  void checkDatabaseMapping(List<DatabaseMapping> mappings) {
         for (DatabaseMapping mapping : mappings) {
             if (StringUtil.equals(mapping.getSourceConnectorId(), mapping.getTargetConnectorId())) {
                 boolean selectedDB = StringUtil.isNotBlank(mapping.getSourceDatabase()) && StringUtil.isNotBlank(mapping.getTargetDatabase());
@@ -168,7 +168,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseMigrationSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
@@ -193,8 +193,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         List<DatabaseSyncTaskVO> list = new ArrayList<>();
         data.forEach(item -> {
-            if (item instanceof DatabaseMigrationSyncTask) {
-                DatabaseMigrationSyncTask task = (DatabaseMigrationSyncTask) item;
+            if (item instanceof DatabaseSyncTask) {
+                DatabaseSyncTask task = (DatabaseSyncTask) item;
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
@@ -214,8 +214,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public List<DatabaseSyncTaskVO> getAll() {
         return taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC).stream()
-                .filter(DatabaseMigrationSyncTask.class::isInstance)
-                .map(t -> convertTask2Vo((DatabaseMigrationSyncTask) t))
+                .filter(DatabaseSyncTask.class::isInstance)
+                .map(t -> convertTask2Vo((DatabaseSyncTask) t))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -352,7 +352,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
     }
 
-    private void fillTaskOnAdd(DatabaseMigrationSyncTask task, Map<String, String> params) {
+    private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
             task.setStatus(CommonTaskStatusEnum.READY.getCode());
@@ -365,7 +365,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillSyncStrategy(task, params);
     }
 
-    private void fillTaskOnEdit(DatabaseMigrationSyncTask task, Map<String, String> params) {
+    private void fillTaskOnEdit(DatabaseSyncTask task, Map<String, String> params) {
         String name = params.get("name");
         if (StringUtil.isBlank(name)) {
             throw new BizException("任务名称不能为空");
@@ -375,7 +375,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillSyncStrategy(task, params);
     }
 
-    private void fillSyncStrategy(DatabaseMigrationSyncTask task, Map<String, String> params) {
+    private void fillSyncStrategy(DatabaseSyncTask task, Map<String, String> params) {
         task.setEnableCopySchema(StringUtil.isNotBlank(params.get("enableCopySchema")));
         task.setEnableCopyData(StringUtil.isNotBlank(params.get("enableCopyData")));
         task.setOverwriteSchema(task.isEnableCopySchema() && StringUtil.isNotBlank(params.get("overwriteSchema")));
@@ -405,7 +405,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
     }
 
-    private DatabaseSyncTaskVO convertTask2Vo(DatabaseMigrationSyncTask task) {
+    private DatabaseSyncTaskVO convertTask2Vo(DatabaseSyncTask task) {
         if (task == null) {
             return null;
         }
@@ -434,7 +434,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     /**
      * 任务总表数：以库映射配置中的表映射数为准，运行中不因 TableGroup 逐步落库而波动。
      */
-    private int resolveTotalTableCount(DatabaseMigrationSyncTask task, List<TableGroup> tableGroups) {
+    private int resolveTotalTableCount(DatabaseSyncTask task, List<TableGroup> tableGroups) {
         int configuredCount = countConfiguredTableMappings(task);
         if (configuredCount > 0) {
             return configuredCount;
@@ -442,7 +442,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return CollectionUtils.isEmpty(tableGroups) ? 0 : tableGroups.size();
     }
 
-    private int countConfiguredTableMappings(DatabaseMigrationSyncTask task) {
+    private int countConfiguredTableMappings(DatabaseSyncTask task) {
         if (task == null || CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             return 0;
         }
