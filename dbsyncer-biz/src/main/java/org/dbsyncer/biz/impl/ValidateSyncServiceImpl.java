@@ -621,12 +621,12 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setEnableReverseSync(StringUtil.isNotBlank(params.get("enableReverseSync")));
         task.setEnableSchema(StringUtil.isNotBlank(params.get("enableSchema")));
         task.setEnableRowData(StringUtil.isNotBlank(params.get("enableRowData")));
-        if (task.isEnableReverseScan() && !task.isEnableRowData()) {
+        // 统一前置条件：行数据未开启，则反向扫描、反向同步全部禁用
+        if (!task.isEnableRowData()) {
             task.setEnableReverseScan(false);
-        }
-        if (!task.isEnableReverseScan()) {
             task.setEnableReverseSync(false);
-        } else if (task.isEnableReverseSync() && !task.isEnableRowData()) {
+        } else if (!task.isEnableReverseScan()) {
+            // 行数据开启，但反向扫描关闭 → 同步关闭反向订正
             task.setEnableReverseSync(false);
         }
         task.setEnableIndex(StringUtil.isNotBlank(params.get("enableIndex")));
