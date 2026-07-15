@@ -182,9 +182,20 @@
                 <version>${kingbase.version}</version>
             </dependency>
 
+            <!-- 须同时锁定 sync/core/bson，避免被 spring-boot-dependencies 压到 4.2.x 导致 NoClassDefFoundError -->
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
+                <version>${mongodb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-core</artifactId>
+                <version>${mongodb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
                 <version>${mongodb.version}</version>
             </dependency>
 

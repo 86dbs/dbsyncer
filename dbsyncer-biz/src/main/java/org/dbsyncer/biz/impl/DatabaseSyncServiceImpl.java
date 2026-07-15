@@ -6,6 +6,7 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
+import org.dbsyncer.biz.vo.TablePreviewVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
@@ -226,7 +227,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     @Override
-    public Map<String, Object> previewTables(Map<String, String> params) {
+    public TablePreviewVO previewTables(Map<String, String> params) {
         String connectorId = params.get("connectorId");
         String database = params.get("database");
         String schema = params.get("schema");
@@ -253,7 +254,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId());
         List<Table> tables = connectorFactory.getTables(connectorInstance, context);
         if (CollectionUtils.isEmpty(tables)) {
-            return buildPreviewTablesResult(Collections.emptyList(), 0, offset, limit);
+            return TablePreviewVO.of(Collections.emptyList(), 0, String.valueOf(offset), limit);
         }
 
         if (StringUtil.isNotBlank(searchKey)) {
@@ -289,8 +290,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             pageRows.add(row);
         }
 
-        Map<String, Object> result = buildPreviewTablesResult(pageRows, realTotal, offset, limit);
-        result.put("typeCounts", typeCounts);
+        TablePreviewVO result = TablePreviewVO.of(pageRows, realTotal, String.valueOf(offset), limit);
+        result.setTypeCounts(typeCounts);
         return result;
     }
 
@@ -417,18 +418,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         int mappingCount = CollectionUtils.isEmpty(task.getDatabaseMappings()) ? 0 : task.getDatabaseMappings().size();
         vo.setMappingCount(mappingCount);
         return vo;
-    }
-
-    private Map<String, Object> buildPreviewTablesResult(List<Map<String, Object>> data, int total, int offset, int limit) {
-        Map<String, Object> result = new HashMap<>(8);
-        result.put("data", data);
-        result.put("total", total);
-        result.put("offset", offset);
-        result.put("limit", limit);
-        int from = Math.min(offset, total);
-        int to = Math.min(from + limit, total);
-        result.put("hasMore", to < total);
-        return result;
     }
 
     /**

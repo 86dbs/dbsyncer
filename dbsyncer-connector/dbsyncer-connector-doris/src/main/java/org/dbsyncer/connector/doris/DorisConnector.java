@@ -5,23 +5,28 @@ package org.dbsyncer.connector.doris;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.doris.constant.DorisConstant;
 import org.dbsyncer.connector.doris.load.DorisStreamLoadWriter;
 import org.dbsyncer.connector.doris.schema.DorisSchemaResolver;
 import org.dbsyncer.connector.doris.validator.DorisConfigValidator;
 import org.dbsyncer.connector.mysql.MySQLConnector;
 import org.dbsyncer.sdk.config.DatabaseConfig;
+import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.storage.StorageService;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -75,6 +80,22 @@ public final class DorisConnector extends MySQLConnector {
         return super.writer(connectorInstance, context);
     }
 
+    /**
+     * Doris 不支持 MySQL 的 ON DUPLICATE KEY UPDATE；Unique/Primary Key 模型下普通 INSERT 即按键覆盖。
+     */
+    @Override
+    public String buildUpsertSql(DatabaseConnectorInstance connectorInstance, SqlBuilderConfig config) {
+        return buildPlainInsertSql(config);
+    }
+
+    /**
+     * Doris 不支持 INSERT IGNORE，使用普通 INSERT。
+     */
+    @Override
+    public String buildInsertSql(SqlBuilderConfig config) {
+        return buildPlainInsertSql(config);
+    }
+
     @Override
     public Listener getListener(String listenerType) {
         if (ListenerTypeEnum.isTiming(listenerType)) {
@@ -99,5 +120,24 @@ public final class DorisConnector extends MySQLConnector {
                     .filter(name -> !SYSTEM_DATABASES.contains(name.toLowerCase()))
                     .collect(Collectors.toList());
         });
+    }
+
+    private String buildPlainInsertSql(SqlBuilderConfig config) {
+        Database database = config.getDatabase();
+        List<Field> fields = config.getFields();
+        List<String> fieldNames = new ArrayList<>(fields.size());
+        List<String> placeholders = new ArrayList<>(fields.size());
+        for (Field field : fields) {
+            fieldNames.add(database.buildWithQuotation(field.getName()));
+            placeholders.add("?");
+        }
+        StringBuilder table = new StringBuilder();
+        table.append(config.getSchema());
+        table.append(database.buildWithQuotation(config.getTableName()));
+        return String.format("%sINSERT INTO %s (%s) VALUES (%s)",
+                database.generateUniqueCode(),
+                table,
+                StringUtil.join(fieldNames, StringUtil.COMMA),
+                StringUtil.join(placeholders, StringUtil.COMMA));
     }
 }
