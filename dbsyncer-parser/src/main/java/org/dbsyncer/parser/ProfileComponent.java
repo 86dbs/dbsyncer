@@ -20,7 +20,7 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import java.util.List;
 
 /**
- * 配置文件组件（system/user/connector/mapping/tableGroup/meta/projectGroup）
+ * 配置文件组件（system/user/connector/mapping/tableGroup/meta）
  * <p>
  * {@link ConfigConstant}
  *
