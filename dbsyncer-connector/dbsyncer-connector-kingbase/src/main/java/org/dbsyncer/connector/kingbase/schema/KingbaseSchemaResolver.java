@@ -7,18 +7,18 @@ import com.google.protobuf.ByteString;
 import com.kingbase8.geometric.KBpoint;
 import com.kingbase8.util.KBobject;
 import org.dbsyncer.connector.kingbase.KingbaseException;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLBooleanType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLBytesType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLDateType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLDecimalType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLDoubleType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLFloatType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLIntType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLLongType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLTimeType;
+import org.dbsyncer.connector.kingbase.schema.support.KingbaseSQLTimestampType;
 import org.dbsyncer.connector.kingbase.schema.support.KingbaseStringType;
 import org.dbsyncer.connector.postgresql.schema.PostgreSQLSchemaResolver;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBooleanType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLBytesType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDateType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDecimalType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLDoubleType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLFloatType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLIntType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLLongType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimeType;
-import org.dbsyncer.connector.postgresql.schema.support.PostgreSQLTimestampType;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.DataType;
 
@@ -35,9 +35,9 @@ public final class KingbaseSchemaResolver extends PostgreSQLSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(new KingbaseStringType(), new PostgreSQLIntType(), new PostgreSQLLongType(), new PostgreSQLDecimalType(),
-                        new PostgreSQLFloatType(), new PostgreSQLDoubleType(), new PostgreSQLDateType(),
-                        new PostgreSQLTimestampType(), new PostgreSQLBooleanType(), new PostgreSQLBytesType(), new PostgreSQLTimeType())
+        Stream.of(new KingbaseStringType(), new KingbaseSQLTimeType(), new KingbaseSQLTimestampType(), new KingbaseSQLLongType(),
+                        new KingbaseSQLIntType(), new KingbaseSQLFloatType(), new KingbaseSQLDoubleType(),
+                        new KingbaseSQLDecimalType(), new KingbaseSQLDateType(), new KingbaseSQLBytesType(), new KingbaseSQLBooleanType())
                 .forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
                     if (mapping.containsKey(typeName)) {
                         throw new KingbaseException("Duplicate type name: " + typeName);
