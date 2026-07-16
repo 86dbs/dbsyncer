@@ -13,7 +13,7 @@ create TABLE `dbsyncer_task_database_sync_detail` (
     `SOURCE_TOTAL`        bigint       DEFAULT NULL comment '源端总行数',
     `SUCCESS_TOTAL`       bigint       NOT NULL DEFAULT 0 comment '成功行数',
     `FAIL_TOTAL`          bigint       NOT NULL DEFAULT 0 comment '失败行数',
-    `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL comment '对比结果 最高保存1000条数据',
+    `CONTENT` text CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL comment '执行结果最多保存1000条数据',
     `CREATE_TIME`         bigint       NOT NULL comment '创建时间',
     `UPDATE_TIME`         bigint       NOT NULL comment '修改时间',
     PRIMARY KEY (`ID`),
