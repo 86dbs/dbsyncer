@@ -36,13 +36,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
- * DuckDB 连接器（本地文件库，可作为 Mapping 源/目标及整库迁移目标）
+ * DuckDB 连接器（本地文件库，可作为 Mapping 源/目标）。
  * <p>
- * 建库语义：连接配置 {@code serviceName} 指向 .duckdb 文件；整库迁移的 database/schema
- * 映射为文件内 {@code CREATE SCHEMA}（单文件多 schema），而非新建物理文件。
+ * 连接配置 {@code serviceName} 指向 .duckdb 文件。整库迁移相关能力暂不支持（与 H2 一致）。
  * </p>
  *
  * @author wuji
@@ -54,21 +52,6 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
     private static final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata "
                     + "WHERE lower(schema_name) NOT IN ('information_schema', 'pg_catalog') "
                     + "ORDER BY schema_name";
-
-    private static final String QUERY_SCHEMA_EXISTS =
-            "SELECT count(1) FROM information_schema.schemata WHERE schema_name = ?";
-
-    private static final String QUERY_COLUMNS =
-            "SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable "
-                    + "FROM information_schema.columns "
-                    + "WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position";
-
-    private static final String QUERY_PRIMARY_KEYS =
-            "SELECT kcu.column_name FROM information_schema.table_constraints tc "
-                    + "JOIN information_schema.key_column_usage kcu "
-                    + "ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema "
-                    + "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ? AND tc.table_name = ? "
-                    + "ORDER BY kcu.ordinal_position";
 
     private static final String QUERY_TABLES =
             "SELECT table_name, table_type FROM information_schema.tables "
@@ -174,97 +157,29 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
         return "\"";
     }
 
-    /**
-     * 整库迁移：在当前已连接的 DuckDB 文件内创建 schema（幂等）。
-     * databaseName / schemaName 任一非空即可；优先 schemaName。
-     */
     @Override
     public String buildCreateDatabaseSql(String databaseName, String schemaName) {
-        String name = StringUtil.isNotBlank(schemaName) ? schemaName : databaseName;
-        if (StringUtil.isBlank(name)) {
-            return StringUtil.EMPTY;
-        }
-        if ("main".equalsIgnoreCase(name.trim())) {
-            return StringUtil.EMPTY;
-        }
-        return "CREATE SCHEMA IF NOT EXISTS " + buildWithQuotation(name.trim());
+        throw new DuckDBException("DuckDB 暂时不支持该功能");
     }
 
     @Override
     public boolean databaseExists(DatabaseConnectorInstance connectorInstance, String databaseName, String schemaName) {
-        String name = StringUtil.isNotBlank(schemaName) ? schemaName : databaseName;
-        if (StringUtil.isBlank(name)) {
-            return true;
-        }
-        if ("main".equalsIgnoreCase(name.trim())) {
-            return true;
-        }
-        Integer count = connectorInstance.execute(databaseTemplate ->
-                databaseTemplate.queryForObject(QUERY_SCHEMA_EXISTS, Integer.class, name.trim()));
-        return count != null && count > 0;
+        throw new DuckDBException("DuckDB 暂时不支持该功能");
     }
 
-    /**
-     * 跨库迁移建表：sourceDDL 为列定义片段（可含 PRIMARY KEY (...)）。
-     */
     @Override
     public String getTargetTableDDL(DatabaseConnectorInstance targetInstance, String tableName, String sourceDDL) {
-        if (StringUtil.isBlank(sourceDDL) || StringUtil.isBlank(tableName)) {
-            return StringUtil.EMPTY;
-        }
-        return "CREATE TABLE IF NOT EXISTS " + qualifyTableName(targetInstance, tableName)
-                + " (" + sourceDDL.trim() + ")";
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + sourceDDL + ")";
     }
 
-    /**
-     * 同类型迁移：从 information_schema 拼装 CREATE TABLE。
-     */
     @Override
     public String getSourceTableDDL(DatabaseConnectorInstance sourceInstance, String sourceTableName) {
-        if (sourceInstance == null || StringUtil.isBlank(sourceTableName)) {
-            return StringUtil.EMPTY;
-        }
-        String schema = StringUtil.getIfBlank(sourceInstance.getSchema(),
-                StringUtil.getIfBlank(sourceInstance.getCatalog(), "main"));
-        return sourceInstance.execute(databaseTemplate -> {
-            List<Map<String, Object>> columns = databaseTemplate.queryForList(QUERY_COLUMNS, schema, sourceTableName);
-            if (CollectionUtils.isEmpty(columns)) {
-                return StringUtil.EMPTY;
-            }
-            List<String> pkColumns = databaseTemplate.queryForList(QUERY_PRIMARY_KEYS, String.class, schema, sourceTableName);
-            List<String> columnDefs = new ArrayList<>();
-            for (Map<String, Object> row : columns) {
-                String colName = stringVal(row, "column_name", "COLUMN_NAME");
-                String dataType = stringVal(row, "data_type", "DATA_TYPE");
-                if (StringUtil.isBlank(colName) || StringUtil.isBlank(dataType)) {
-                    continue;
-                }
-                StringBuilder def = new StringBuilder();
-                def.append(buildWithQuotation(colName)).append(" ").append(formatDuckType(dataType, row));
-                String nullable = stringVal(row, "is_nullable", "IS_NULLABLE");
-                if ("NO".equalsIgnoreCase(nullable)) {
-                    def.append(" NOT NULL");
-                }
-                columnDefs.add(def.toString());
-            }
-            if (CollectionUtils.isEmpty(columnDefs)) {
-                return StringUtil.EMPTY;
-            }
-            if (!CollectionUtils.isEmpty(pkColumns)) {
-                List<String> quotedPk = pkColumns.stream().map(this::buildWithQuotation).collect(Collectors.toList());
-                columnDefs.add("PRIMARY KEY (" + StringUtil.join(quotedPk, StringUtil.COMMA) + ")");
-            }
-            return "CREATE TABLE " + qualifyTableName(sourceInstance, sourceTableName)
-                    + " (" + StringUtil.join(columnDefs, StringUtil.COMMA) + ")";
-        });
+        throw new DuckDBException("DuckDB 暂时不支持该功能");
     }
 
     @Override
     public String buildDropTableSql(DatabaseConnectorInstance targetInstance, String tableName) {
-        if (StringUtil.isBlank(tableName)) {
-            return StringUtil.EMPTY;
-        }
-        return "DROP TABLE IF EXISTS " + qualifyTableName(targetInstance, tableName);
+        throw new DuckDBException("Drop table is not supported.");
     }
 
     @Override
@@ -315,7 +230,7 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
     public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
                                         String targetTableName, List<Field> sourceDefinitions,
                                         List<String> targetColumnNames) {
-        throw new DuckDBException("DuckDB 暂不支持列类型订正 ALTER");
+        throw new DuckDBException("DuckDB 暂时不支持该功能");
     }
 
     @Override
@@ -410,21 +325,6 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
         return context;
     }
 
-    private String qualifyTableName(DatabaseConnectorInstance instance, String tableName) {
-        String table = buildWithQuotation(tableName);
-        if (instance == null) {
-            return table;
-        }
-        // 实例 catalog 常承载 UI 所选 schema（getDatabases 返回 schema 列表）
-        String schema = StringUtil.isNotBlank(instance.getSchema())
-                ? instance.getSchema()
-                : instance.getCatalog();
-        if (StringUtil.isNotBlank(schema)) {
-            return buildWithQuotation(schema) + "." + table;
-        }
-        return table;
-    }
-
     private static String resolveSchema(ConnectorServiceContext context) {
         if (context == null) {
             return "main";
@@ -447,28 +347,6 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
         return TableTypeEnum.TABLE.getCode();
     }
 
-    private static String formatDuckType(String dataType, Map<String, Object> row) {
-        String type = dataType.trim().toUpperCase(Locale.ROOT);
-        if (type.contains("CHAR") || "VARCHAR".equals(type) || "STRING".equals(type) || "TEXT".equals(type)) {
-            int len = toNonNegativeInt(firstNonNull(row, "character_maximum_length", "CHARACTER_MAXIMUM_LENGTH"));
-            if (len > 0 && !"TEXT".equals(type) && !"STRING".equals(type)) {
-                return "VARCHAR(" + len + ")";
-            }
-            return "VARCHAR".equals(type) || "STRING".equals(type) || "TEXT".equals(type) ? "VARCHAR" : type;
-        }
-        if (type.contains("DECIMAL") || type.contains("NUMERIC")) {
-            int precision = toNonNegativeInt(firstNonNull(row, "numeric_precision", "NUMERIC_PRECISION"));
-            int scale = toNonNegativeInt(firstNonNull(row, "numeric_scale", "NUMERIC_SCALE"));
-            if (precision > 0 && scale >= 0) {
-                return String.format(Locale.ROOT, "DECIMAL(%d,%d)", precision, scale);
-            }
-            if (precision > 0) {
-                return String.format(Locale.ROOT, "DECIMAL(%d)", precision);
-            }
-        }
-        return type;
-    }
-
     private static Object firstNonNull(Map<String, Object> row, String... keys) {
         if (row == null || keys == null) {
             return null;
@@ -485,13 +363,6 @@ public final class DuckDBConnector extends AbstractDatabaseConnector {
     private static String stringVal(Map<String, Object> row, String... keys) {
         Object val = firstNonNull(row, keys);
         return val == null ? null : String.valueOf(val);
-    }
-
-    private static int toNonNegativeInt(Object value) {
-        if (!(value instanceof Number)) {
-            return 0;
-        }
-        return Math.max(0, ((Number) value).intValue());
     }
 
     private static final class UpsertContext {
