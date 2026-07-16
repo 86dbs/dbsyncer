@@ -62,6 +62,7 @@
         <junit.version>4.13.1</junit.version>
         <jsql-parse.version>4.9</jsql-parse.version>
         <h2.version>2.2.224</h2.version>
+        <duckdb.version>1.5.3.0</duckdb.version>
         <hdrhistogram.version>2.1.12</hdrhistogram.version>
 
         <!-- 可选参数 -->
@@ -245,6 +246,12 @@
                 <groupId>com.clickhouse</groupId>
                 <artifactId>clickhouse-jdbc</artifactId>
                 <version>${clickhouse-jdbc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.duckdb</groupId>
+                <artifactId>duckdb_jdbc</artifactId>
+                <version>${duckdb.version}</version>
             </dependency>
 
             <dependency>
