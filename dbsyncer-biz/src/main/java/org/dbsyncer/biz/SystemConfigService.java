@@ -50,7 +50,7 @@ public interface SystemConfigService {
     SystemConfig getSystemConfig();
 
     /**
-     * 获取所有配置（system、user、connector、mapping、tableGroup、meta、projectGroup）
+     * 获取所有配置（system、user、connector、mapping、tableGroup、meta）
      *
      * @return
      */
