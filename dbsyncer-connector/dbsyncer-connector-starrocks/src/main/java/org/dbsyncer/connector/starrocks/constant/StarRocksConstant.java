@@ -42,6 +42,7 @@ public final class StarRocksConstant {
         putIfAbsent(properties, "useUnicode", "true");
         putIfAbsent(properties, "characterEncoding", "UTF-8");
         putIfAbsent(properties, "useSSL", "false");
+        putIfAbsent(properties, "serverTimezone", "Asia/Shanghai");
     }
 
     public static void enrichExtInfo(DatabaseConfig config, String httpPort, String writeMode) {
