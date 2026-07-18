@@ -10,6 +10,7 @@ import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.AbstractDatabaseConnector;
 
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author 穿云
@@ -25,6 +26,22 @@ public final class DamengConfigValidator extends OracleConfigValidator {
             connectorConfig.setDriverClassName("dm.jdbc.driver.DmDriver");
         }
         DamengConstant.enrichJdbcProperties(connectorConfig);
+        applySchemaProperty(connectorConfig, params.get("schema"));
         connectorConfig.setUrl(connectorService.buildJdbcUrl(connectorConfig, connectorConfig.getDatabase()));
+    }
+
+    /**
+     * 达梦通过连接属性 {@code schema} 指定当前模式；未填写时驱动默认使用与用户名同名的模式。
+     */
+    private void applySchemaProperty(DatabaseConfig connectorConfig, String schema) {
+        if (StringUtil.isBlank(schema)) {
+            return;
+        }
+        Properties properties = connectorConfig.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+            connectorConfig.setProperties(properties);
+        }
+        properties.setProperty("schema", schema.trim());
     }
 }

@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 /**
  * 整库迁移任务。
  * <p>进度快照：{@link #databaseSnapshots}（库级，内含表级结构/数据/行游标）；</p>
- * <p>列表进度由 {@link DatabaseMigrationProgressComputer#calculateProgressPercent} 计算。</p>
+ * <p>列表进度由 {@link DatabaseSyncProcessor#calculateProgressPercent} 计算。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -60,7 +60,7 @@ public class DatabaseSyncTask extends CommonTask {
     /**
      * 执行快照：key = 库映射 index，value 含库流水线状态及下属表快照。TODO fan序列后是HashMap
      */
-    private final ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> databaseSnapshots = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, DatabaseSyncSnapshot> databaseSnapshots = new ConcurrentHashMap<>();
 
     /**
      * 分页读取条数
@@ -153,22 +153,22 @@ public class DatabaseSyncTask extends CommonTask {
         this.endTime = endTime;
     }
 
-    public ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> getDatabaseSnapshots() {
+    public ConcurrentHashMap<Integer, DatabaseSyncSnapshot> getDatabaseSnapshots() {
         return databaseSnapshots;
     }
 
-    public void putDatabaseSnapshot(Integer index, DatabaseMigrationSnapshot snapshot) {
+    public void putDatabaseSnapshot(Integer index, DatabaseSyncSnapshot snapshot) {
         if (index != null && snapshot != null) {
             databaseSnapshots.put(index, snapshot);
         }
     }
 
-    public DatabaseMigrationSnapshot getOrCreateDatabaseSnapshot(int mappingIndex) {
-        return databaseSnapshots.computeIfAbsent(mappingIndex, key -> new DatabaseMigrationSnapshot());
+    public DatabaseSyncSnapshot getOrCreateDatabaseSnapshot(int mappingIndex) {
+        return databaseSnapshots.computeIfAbsent(mappingIndex, key -> new DatabaseSyncSnapshot());
     }
 
-    public DatabaseMigrationTableSnapshot getTableSnapshot(int mappingIndex, int tableIndex) {
-        DatabaseMigrationSnapshot snapshot = databaseSnapshots.get(mappingIndex);
+    public DatabaseSyncTableSnapshot getTableSnapshot(int mappingIndex, int tableIndex) {
+        DatabaseSyncSnapshot snapshot = databaseSnapshots.get(mappingIndex);
         return snapshot == null ? null : snapshot.getTable(tableIndex);
     }
 

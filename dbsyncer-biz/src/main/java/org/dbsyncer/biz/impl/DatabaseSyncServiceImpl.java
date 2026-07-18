@@ -27,7 +27,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseMapping;
-import org.dbsyncer.sdk.model.DatabaseMigrationProgressComputer;
+import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
@@ -205,9 +205,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 if (vo != null) {
                     List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
                     int tableCount = resolveTotalTableCount(task, tableGroups);
-                    vo.setProgress(DatabaseMigrationProgressComputer.calculateProgressPercent(task, tableCount));
+                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(task, tableCount));
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseMigrationProgressComputer.countCompletedTables(task, tableCount));
+                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(task, tableCount));
                     vo.setErrorCount(countMigrationDetailErrors(task.getId()));
                     list.add(vo);
                 }

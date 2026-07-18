@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @date 2026-05-29 11:30
  */
-public class DatabaseMigrationSnapshot implements Serializable {
+public class DatabaseSyncSnapshot implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -24,9 +24,9 @@ public class DatabaseMigrationSnapshot implements Serializable {
     private int status;
 
     /** 表级快照：key = 表映射 index（库内唯一） */
-    private final ConcurrentHashMap<Integer, DatabaseMigrationTableSnapshot> tables = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, DatabaseSyncTableSnapshot> tables = new ConcurrentHashMap<>();
 
-    public DatabaseMigrationSnapshot() {
+    public DatabaseSyncSnapshot() {
     }
 
     public int getStatus() {
@@ -45,11 +45,11 @@ public class DatabaseMigrationSnapshot implements Serializable {
         return CommonTaskStepStatusEnum.ofCode(status);
     }
 
-    public ConcurrentHashMap<Integer, DatabaseMigrationTableSnapshot> getTables() {
+    public ConcurrentHashMap<Integer, DatabaseSyncTableSnapshot> getTables() {
         return tables;
     }
 
-    public DatabaseMigrationTableSnapshot getTable(int tableIndex) {
+    public DatabaseSyncTableSnapshot getTable(int tableIndex) {
         return tables.get(tableIndex);
     }
 }
