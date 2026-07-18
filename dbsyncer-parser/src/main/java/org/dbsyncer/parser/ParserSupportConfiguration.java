@@ -130,7 +130,7 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public Map<String, Object> manualRevise(String detailId) {
+            public Map<String, Object> manualRevise(String taskId, String detailId) {
                 return null;
             }
         };

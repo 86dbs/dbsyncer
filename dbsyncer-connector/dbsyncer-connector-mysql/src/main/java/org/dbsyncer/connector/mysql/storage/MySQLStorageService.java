@@ -59,13 +59,8 @@ public class MySQLStorageService extends AbstractStorageService {
 
     private final String PREFIX_TABLE = "dbsyncer_";
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
-    private final String SHOW_COLUMN = "SHOW COLUMNS FROM `%s` LIKE '%s'";
-    private final String SHOW_INDEX = "SHOW INDEX FROM `%s` WHERE Key_name = '%s'";
-    private final String SHOW_INDEX_COLUMN = "SHOW INDEX FROM `%s` WHERE Key_name = '%s' AND Column_name = '%s'";
     private final String DROP_TABLE = "DROP TABLE %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
-    private final String UK_DATABASE_SYNC_DETAIL = "UK_TASK_TYPE_TABLE";
-    private final String UK_DATABASE_SYNC_DETAIL_COLUMNS = "`TASK_ID`,`TYPE`,`SOURCE_DATABASE`,`SOURCE_SCHEMA`,`TARGET_DATABASE`,`TARGET_SCHEMA`,`TABLE_INDEX`";
     private final MySQLConnector connector = new MySQLConnector();
     private final Map<String, Executor> tables = new ConcurrentHashMap<>();
     private DatabaseConnectorInstance connectorInstance;
@@ -186,6 +181,55 @@ public class MySQLStorageService extends AbstractStorageService {
         final String sql = executor.getDelete();
         final List<Object[]> args = ids.stream().map(id -> new Object[]{id}).collect(Collectors.toList());
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
+    }
+
+    @Override
+    protected void batchIncrement(StorageEnum type, String sharding, String id, Map<String, Long> deltas) {
+        if (CollectionUtils.isEmpty(deltas)) {
+            return;
+        }
+        final Executor executor = getExecutor(type, sharding);
+        if (executor == null) {
+            return;
+        }
+        StringBuilder sql = new StringBuilder("UPDATE ").append(connector.buildWithQuotation(executor.getTable())).append(" SET ");
+        List<Object> args = new ArrayList<>();
+        boolean hasColumn = false;
+        for (Map.Entry<String, Long> entry : deltas.entrySet()) {
+            String column = resolveColumn(executor, entry.getKey());
+            if (column == null || entry.getValue() == null) {
+                continue;
+            }
+            if (hasColumn) {
+                sql.append(", ");
+            }
+            String quotation = connector.buildWithQuotation(column);
+            sql.append(quotation).append(" = ").append(quotation).append(" + ?");
+            args.add(entry.getValue());
+            hasColumn = true;
+        }
+        if (!hasColumn) {
+            return;
+        }
+        String updateTimeColumn = resolveColumn(executor, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        if (updateTimeColumn != null) {
+            sql.append(", ").append(connector.buildWithQuotation(updateTimeColumn)).append(" = ?");
+            args.add(System.currentTimeMillis());
+        }
+        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase())).append(" = ?");
+        args.add(id);
+        final List<Object[]> batchArgs = new ArrayList<>();
+        batchArgs.add(args.toArray());
+        connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), batchArgs));
+    }
+
+    private String resolveColumn(Executor executor, String labelName) {
+        for (Field field : executor.getFields()) {
+            if (field.getLabelName().equals(labelName)) {
+                return field.getName().toUpperCase();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -408,41 +452,47 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> configFields = builder.getFields();
 
+        // 用户配置/连接配置/驱动映射关系：通用六列
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> userFields = builder.getFields();
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> connectorFields = builder.getFields();
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> mappingFields = builder.getFields();
+
+        // 表映射关系：拆分 taskId(mappingId)/sortIndex 列 + json
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TABLE_GROUP_MAPPING_ID, ConfigConstant.TABLE_GROUP_SORT_INDEX, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> tableGroupFields = builder.getFields();
+
+        // 任务执行结果：拆分 state/total/success/fail 计数列 + json(快照兜底)
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.META_STATE, ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        List<Field> metaFields = builder.getFields();
+
+        // 任务执行明细：按任务分表(精简列)，校验/迁移结构化字段序列化进 DATA blob
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.DETAIL_TARGET_TABLE, ConfigConstant.DETAIL_IS_SUCCESS, ConfigConstant.DATA_ERROR,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.BINLOG_DATA);
+        List<Field> taskDetailFields = builder.getFields();
+
         // 日志
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
-
-        // 数据
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_SUCCESS, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.DATA_TARGET_TABLE_NAME, ConfigConstant.DATA_EVENT, ConfigConstant.DATA_ERROR, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.BINLOG_DATA);
-        List<Field> dataFields = builder.getFields();
 
         // 任务
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
-        // 数据校验明细（列顺序与 dbsyncer_mysql_task_validata_sync_detail.sql 一致）
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_STATUS, ConfigConstant.TASK_SOURCE_TABLE_NAME, ConfigConstant.DATA_TARGET_TABLE_NAME,
-                ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.TASK_TARGET_TOTAL, ConfigConstant.TASK_DIFF_TOTAL, ConfigConstant.TASK_FIXED_TOTAL,
-                ConfigConstant.TASK_CONTENT, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        List<Field> dataVerifyDetailFields = builder.getFields();
-
-        // 整库迁移明细（列顺序与 dbsyncer_mysql_task_database_sync_detail.sql 一致）
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TASK_STATUS,
-                ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE,
-                ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE,
-                ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA,
-                ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE,
-                ConfigConstant.TASK_SOURCE_TOTAL, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL,
-                ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, ConfigConstant.TASK_CONTENT,
-                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        List<Field> databaseSyncDetailFields = builder.getFields();
-
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
+        tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
+        tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
+        tables.computeIfAbsent(StorageEnum.MAPPING.getType(), k -> new Executor(k, mappingFields, true, true));
+        tables.computeIfAbsent(StorageEnum.TABLE_GROUP.getType(), k -> new Executor(k, tableGroupFields, true, true));
+        tables.computeIfAbsent(StorageEnum.META.getType(), k -> new Executor(k, metaFields, true, true));
+        tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
-        tables.computeIfAbsent(StorageEnum.DATA.getType(), k -> new Executor(k, dataFields, false, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-        tables.computeIfAbsent(StorageEnum.VALIDATE_SYNC_DETAIL.getType(), k -> new Executor(k, dataVerifyDetailFields, true, true));
-        tables.computeIfAbsent(StorageEnum.DATABASE_SYNC_DETAIL.getType(), k -> new Executor(k, databaseSyncDetailFields, true, true));
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
@@ -493,65 +543,7 @@ public class MySQLStorageService extends AbstractStorageService {
      * @param table 已带前缀的表名
      */
     private void upgradeTableColumns(String type, String table) {
-        if (StringUtil.isBlank(type)) {
-            return;
-        }
-        if (StorageEnum.DATABASE_SYNC_DETAIL.getType().equals(type)) {
-            addColumnIfNotExist(table, "STATUS", "`STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '执行状态, 0-运行中；1-已完成；' AFTER `TYPE`");
-            addColumnIfNotExist(table, "TARGET_SCHEMA", "`TARGET_SCHEMA` varchar(64) DEFAULT '' COMMENT '目标Schema' AFTER `TARGET_DATABASE`");
-            // 唯一索引需纳入 TARGET_SCHEMA
-            rebuildUniqueIndexIfNeeded(table, UK_DATABASE_SYNC_DETAIL, "TARGET_SCHEMA", UK_DATABASE_SYNC_DETAIL_COLUMNS);
-            return;
-        }
-        if (StorageEnum.VALIDATE_SYNC_DETAIL.getType().equals(type)) {
-            addColumnIfNotExist(table, "STATUS", "`STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '执行状态, 0-运行中；1-已完成；' AFTER `TYPE`");
-        }
-    }
-
-    /**
-     * 检查字段是否存在，不存在则动态新增
-     *
-     * @param table            已带前缀的表名
-     * @param column           字段名
-     * @param columnDefinition ADD COLUMN 后的字段定义
-     */
-    private void addColumnIfNotExist(String table, String column, String columnDefinition) {
-        String showColumnSql = String.format(SHOW_COLUMN, table, column);
-        try {
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(showColumnSql));
-            // 字段已存在，跳过
-            return;
-        } catch (EmptyResultDataAccessException e) {
-            // 字段不存在，继续新增
-        }
-        String alterSql = String.format("ALTER TABLE `%s` ADD COLUMN %s", table, columnDefinition);
-        executeSql(alterSql);
-    }
-
-    /**
-     * 唯一索引未包含指定列时，删除旧索引并按新列定义重建
-     *
-     * @param table           已带前缀的表名
-     * @param indexName       唯一索引名
-     * @param requiredColumn  索引必须包含的列
-     * @param indexColumns    新唯一索引列定义
-     */
-    private void rebuildUniqueIndexIfNeeded(String table, String indexName, String requiredColumn, String indexColumns) {
-        String showIndexColumnSql = String.format(SHOW_INDEX_COLUMN, table, indexName, requiredColumn);
-        try {
-            connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForMap(showIndexColumnSql));
-            // 索引已包含目标列，跳过
-            return;
-        } catch (EmptyResultDataAccessException e) {
-            // 索引不存在或不含目标列，继续重建
-        }
-
-        String showIndexSql = String.format(SHOW_INDEX, table, indexName);
-        List<Map<String, Object>> indexRows = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(showIndexSql));
-        if (!CollectionUtils.isEmpty(indexRows)) {
-            executeSql(String.format("ALTER TABLE `%s` DROP INDEX `%s`", table, indexName));
-        }
-        executeSql(String.format("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s)", table, indexName, indexColumns));
+        // 明细统一后新表结构由 .sql 建表定义，暂无需动态补列
     }
 
     private String readSql(String type, boolean systemTable, String table) {
@@ -622,23 +614,19 @@ public class MySQLStorageService extends AbstractStorageService {
             fieldMap = Stream.of(new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true), new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR), new Field(
                                     ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR",
                                     Types.VARCHAR), new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT",
-                                    Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR), new Field(ConfigConstant.DATA_SUCCESS, "INTEGER",
-                                    Types.INTEGER), new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR), new Field(ConfigConstant.DATA_TARGET_TABLE_NAME, "VARCHAR",
-                                    Types.VARCHAR), new Field(ConfigConstant.DATA_EVENT, "VARCHAR", Types.VARCHAR), new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR",
-                                    Types.LONGVARCHAR), new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB), new Field(ConfigConstant.TASK_ID, "VARCHAR",
-                                    Types.VARCHAR), new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER), new Field(ConfigConstant.TASK_SOURCE_TABLE_NAME, "VARCHAR",
-                                    Types.VARCHAR), new Field(ConfigConstant.TASK_SOURCE_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_TARGET_TOTAL, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.TASK_DIFF_TOTAL, "BIGINT", Types.BIGINT), new Field(ConfigConstant.TASK_FIXED_TOTAL, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.TASK_CONTENT, "LONGVARCHAR", Types.LONGVARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TABLE_INDEX, "INTEGER", Types.INTEGER),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, "BIGINT", Types.BIGINT))
+                                    Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
+                            new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.DETAIL_IS_SUCCESS, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_STATE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.META_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_SUCCESS, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_FAIL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线

@@ -352,7 +352,7 @@
                     if (confirmBtn) {
                         confirmBtn.disabled = true;
                     }
-                    doPoster('/validate-sync/manualRevise', { id: currentDetailId }, function (res) {
+                    doPoster('/validate-sync/manualRevise', { taskId: currentTaskId, id: currentDetailId }, function (res) {
                         manualReviseSubmitting = false;
                         if (confirmBtn) {
                             confirmBtn.disabled = false;
@@ -418,7 +418,7 @@
             if (!detailId) {
                 return;
             }
-            doPoster('/validate-sync/getResultDetail', { id: detailId }, function (res) {
+            doPoster('/validate-sync/getResultDetail', { taskId: currentTaskId, id: detailId }, function (res) {
                 if (!res.success) {
                     bootGrowl(res.message || '加载失败', 'danger');
                     return;

@@ -303,9 +303,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/getResultDetail")
     @ResponseBody
-    public RestResult getResultDetail(@RequestParam("id") String id) {
+    public RestResult getResultDetail(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            Object detail = validateSyncService.getValidateResultDetail(id);
+            Object detail = validateSyncService.getValidateResultDetail(taskId, id);
             if (detail == null) {
                 return RestResult.restFail("记录不存在", 404);
             }
@@ -321,9 +321,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/manualRevise")
     @ResponseBody
-    public RestResult manualRevise(@RequestParam("id") String id) {
+    public RestResult manualRevise(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            return RestResult.restSuccess(validateSyncService.manualReviseDetail(id));
+            return RestResult.restSuccess(validateSyncService.manualReviseDetail(taskId, id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

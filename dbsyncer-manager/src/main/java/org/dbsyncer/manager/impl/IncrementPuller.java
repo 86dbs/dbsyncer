@@ -195,6 +195,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+        // 严格走库：success/fail 为库侧增量列，先原子归零再落库快照
+        profileComponent.incrementMeta(metaId, 0L, -meta.getSuccess().get(), -meta.getFail().get());
         meta.getSuccess().set(0);
         meta.getFail().set(0);
         profileComponent.editConfigModel(meta);

@@ -23,7 +23,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
-import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
@@ -35,6 +34,7 @@ import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +67,11 @@ import java.util.stream.Collectors;
 public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /**
+     * 明细分表单次加载上限(单个任务表数量有限，一次装载后应用侧统计)
+     */
+    private final static int MAX_DETAIL_PAGE_SIZE = 100000;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -445,13 +450,16 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     private long countMigrationDetailErrors(String taskId) {
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.DATABASE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-        query.addFilter(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, FilterEnum.GT, 0);
-        query.setQueryTotal(true);
+        // 明细分表：失败数存 DATA blob，加载该任务分表后在应用侧统计 failTotal>0 的明细
+        Query query = new Query(1, MAX_DETAIL_PAGE_SIZE);
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(taskId);
         Paging paging = storageService.query(query);
-        return paging != null ? paging.getTotal() : 0;
+        if (paging == null) {
+            return 0;
+        }
+        return TaskDetailUtil.countDetails(paging.getData(),
+                row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL))) > 0L);
     }
 
 }

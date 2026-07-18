@@ -135,6 +135,23 @@ public interface ProfileComponent {
     List<Meta> getMetaAll();
 
     /**
+     * Meta 计数原子增量(严格走库)：直接落库自增 total/success/fail，可为负数。
+     *
+     * @param metaId       任务ID
+     * @param totalDelta   总数增量
+     * @param successDelta 成功数增量
+     * @param failDelta    失败数增量
+     */
+    void incrementMeta(String metaId, long totalDelta, long successDelta, long failDelta);
+
+    /**
+     * 构建导出配置快照(直查库)，用于配置导入/导出。
+     *
+     * @return 快照
+     */
+    java.util.Map<String, Object> getConfigSnapshot();
+
+    /**
      * 获取所有条件类型
      *
      * @return

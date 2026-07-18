@@ -6,7 +6,7 @@ import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.parser.CacheService;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -46,7 +46,7 @@ public class ConfigController {
     private SystemConfigService systemConfigService;
 
     @Resource
-    private CacheService cacheService;
+    private ProfileComponent profileComponent;
 
     @Resource
     private LogService logService;
@@ -60,7 +60,7 @@ public class ConfigController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getConfigModelAll());
-        model.put("fileSize", JsonUtil.objToJson(cacheService.getAll()).getBytes(Charset.defaultCharset()).length);
+        model.put("fileSize", JsonUtil.objToJson(profileComponent.getConfigSnapshot()).getBytes(Charset.defaultCharset()).length);
         return "config/list";
     }
 
@@ -123,7 +123,7 @@ public class ConfigController {
         info.setAppName(appConfig.getName());
         info.setCreateTime(Instant.now().toEpochMilli());
         map.put(PreloadTemplate.DBS_VERSION_INFO, info);
-        map.putAll(cacheService.getAll());
+        map.putAll(profileComponent.getConfigSnapshot());
         return map;
     }
 }

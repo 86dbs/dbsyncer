@@ -11,29 +11,41 @@ package org.dbsyncer.sdk.enums;
 public enum StorageEnum {
 
     /**
-     * 配置：连接器、驱动、映射关系、同步信息、系统配置、用戶配置
+     * 全局配置：收窄为系统配置(system)/通知配置(notice)
      */
     CONFIG("config"),
+    /**
+     * 用户配置
+     */
+    USER("user"),
+    /**
+     * 连接配置
+     */
+    CONNECTOR("connector"),
+    /**
+     * 驱动映射关系(mapping)配置
+     */
+    MAPPING("mapping"),
+    /**
+     * 表映射关系配置
+     */
+    TABLE_GROUP("table_group"),
+    /**
+     * 任务执行结果(meta)
+     */
+    META("meta"),
     /**
      * 日志：连接器、驱动、映射关系、同步信息、系统日志
      */
     LOG("log"),
     /**
-     * 数据：全量或增量数据
-     */
-    DATA("data"),
-    /**
      * 任务
      */
     TASK("task"),
     /**
-     * 订正校验明细
+     * 任务执行明细(统一 同步数据/订正校验/整库迁移 明细)
      */
-    VALIDATE_SYNC_DETAIL("task_validata_sync_detail"),
-    /**
-     * 整库迁移明细
-     */
-    DATABASE_SYNC_DETAIL("task_database_sync_detail");
+    TASK_DETAIL("task_detail");
 
     private final String type;
 

@@ -55,7 +55,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -163,6 +162,10 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         List<DataVO> list = new ArrayList<>();
         for (Map row : data) {
             try {
+                // 精简分表列映射到 DataVO：TYPE→event, IS_SUCCESS→success, TARGET_TABLE→targetTableName
+                row.put("event", row.get(ConfigConstant.CONFIG_MODEL_TYPE));
+                row.put("success", row.get(ConfigConstant.DETAIL_IS_SUCCESS));
+                row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, row.get(ConfigConstant.DETAIL_TARGET_TABLE));
                 DataVO dataVo = convert2Vo(row, DataVO.class);
                 Map binlogData = dataSyncService.getBinlogData(row, true);
                 dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
@@ -179,14 +182,14 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     public String clearData(String id) {
         Assert.hasText(id, "驱动不存在.");
         Meta meta = profileComponent.getMeta(id);
-        meta.getFail().getAndSet(0);
-        // 让定时任务触发更新meta
-        meta.setUpdateTime(Instant.now().toEpochMilli());
+        // 严格走库：fail 为库侧增量列，直接原子归零(同时刷新 updateTime)
+        profileComponent.incrementMeta(id, 0L, 0L, -meta.getFail().get());
         Mapping mapping = profileComponent.getMapping(meta.getMappingId());
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.DATA, id);
+        // 明细分表：直接删除该任务的同步明细分表(dbsyncer_task_detail_{metaId})
+        storageService.clear(StorageEnum.TASK_DETAIL, id);
         return "清空同步数据成功";
     }
 
@@ -264,12 +267,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             // 统计运行中和失败数
             if (meta.getFail().get() > 0) {
                 Query query = new Query(1, 1);
-                query.setType(StorageEnum.DATA);
+                query.setType(StorageEnum.TASK_DETAIL);
+                query.setMetaId(meta.getId());
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
                 query.setQueryTotal(true);
-                query.addFilter(ConfigConstant.DATA_SUCCESS, 0);
-                query.setMetaId(meta.getId());
+                query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
                 Paging queryTemp = storageService.query(query);
                 if (queryTemp.getTotal() > 0) {
                     writeMappingReport(meta, content);
@@ -335,32 +338,34 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
 
+        // 明细分表：查询该任务的同步明细分表(dbsyncer_task_detail_{metaId})
+        query.setMetaId(metaId);
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询数据状态
         if (StringUtil.isNotBlank(status) && !StringUtil.equals("-1", status)) {
-            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(status));
+            query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, NumberUtil.toInt(status));
         }
-        query.setMetaId(metaId);
-        query.setType(StorageEnum.DATA);
+        query.setType(StorageEnum.TASK_DETAIL);
         return storageService.query(query);
     }
 
     private void deleteExpiredData() {
-        List<MetaVO> metaAll = getMetaAll();
-        if (!CollectionUtils.isEmpty(metaAll)) {
+        // 明细分表：逐个任务分表按过期时间清理
+        int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
+        long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
+        List<Meta> metaAll = profileComponent.getMetaAll();
+        if (CollectionUtils.isEmpty(metaAll)) {
+            return;
+        }
+        for (Meta meta : metaAll) {
             Query query = new Query();
-            query.setType(StorageEnum.DATA);
-            int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
-            long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
-            LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
-            query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
-            metaAll.forEach(metaVo -> {
-                query.setMetaId(metaVo.getId());
-                storageService.delete(query);
-            });
+            query.setType(StorageEnum.TASK_DETAIL);
+            query.setMetaId(meta.getId());
+            query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
+            storageService.delete(query);
         }
     }
 

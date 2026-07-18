@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
@@ -66,7 +67,9 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     public void pull(StorageResponse response) {
-        storageExecutor.execute(()->storageService.addBatch(StorageEnum.DATA, response.getMetaId(), response.getDataList()));
+        String metaId = response.getMetaId();
+        // 严格走库 + 明细分表：写入 dbsyncer_task_detail_{metaId}(每个任务一张表)
+        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, metaId, response.getDataList()));
     }
 
     @Override

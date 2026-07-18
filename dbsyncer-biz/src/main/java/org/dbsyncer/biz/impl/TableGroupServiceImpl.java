@@ -168,7 +168,8 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Meta meta = profileComponent.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
-        // 清空状态
+        // 清空状态：success/fail 为库侧增量列，先原子归零再清空内存态
+        profileComponent.incrementMeta(meta.getId(), 0L, -meta.getSuccess().get(), -meta.getFail().get());
         meta.clear();
 
         // 手动配置增量点

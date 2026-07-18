@@ -31,8 +31,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.Query;
@@ -44,6 +42,7 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -66,6 +65,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -109,6 +109,11 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * 任务启停锁
      */
     private final static Object LOCK = new Object();
+
+    /**
+     * 明细分表单次加载上限(单个任务表组数量有限，一次装载后应用侧过滤/排序/分页)
+     */
+    private final static int MAX_DETAIL_PAGE_SIZE = 100000;
 
     @Override
     public ValidateSyncTaskVO get(String id) {
@@ -407,39 +412,40 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     public Paging searchResult(Map<String, String> params) {
         String taskId = params.get("taskId");
         Assert.hasText(taskId, "taskId is required.");
-        Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-
-        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
-        if ("success".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.EQUAL, 0);
-        } else if ("fail".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
-        }
-
-        query.setSelectFlied(getTaskDetailSelect());
-        query.addOrderBy(ConfigConstant.TASK_DIFF_TOTAL, SortEnum.DESC);
-        return storageService.query(query);
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        // 明细分表：加载该任务分表全部明细，差异指标存 DATA blob，过滤/排序/分页统一在应用侧
+        Paging all = queryAllDetails(taskId);
+        Predicate<Map<String, Object>> filter = buildDetailStatusFilter(StringUtil.trimToEmpty(params.get("detailStatus")));
+        Comparator<Map<String, Object>> comparator = Comparator.comparingLong(
+                (Map<String, Object> row) -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL)))).reversed();
+        return TaskDetailUtil.pageDetails(all.getData(), filter, comparator, pageNum, pageSize);
     }
 
     @Override
-    public Object getValidateResultDetail(String id) {
+    public Object getValidateResultDetail(String taskId, String id) {
+        Assert.hasText(taskId, "taskId is required.");
         Assert.hasText(id, "id is required.");
         Query query = new Query(1, 1);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(taskId);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
             return null;
         }
-        return paging.getData().iterator().next();
+        Object row = paging.getData().iterator().next();
+        if (row instanceof Map) {
+            return TaskDetailUtil.mergeDetailRow((Map<String, Object>) row);
+        }
+        return row;
     }
 
     @Override
-    public Object manualReviseDetail(String detailId) {
+    public Object manualReviseDetail(String taskId, String detailId) {
+        Assert.hasText(taskId, "taskId is required.");
         Assert.hasText(detailId, "id is required.");
-        return validateSyncDetailService.manualRevise(detailId);
+        return validateSyncDetailService.manualRevise(taskId, detailId);
     }
 
     @Override
@@ -552,14 +558,39 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * @return
      */
     private long countTaskDetail(String taskId) {
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-        query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.setQueryTotal(true);
-        Paging paging = storageService.query(query);
-        return paging.getTotal();
+        // 明细分表：差异数存 DATA blob，加载后在应用侧统计 diffTotal>0 的明细
+        Paging all = queryAllDetails(taskId);
+        return TaskDetailUtil.countDetails(all.getData(),
+                row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) > 0L);
+    }
+
+    /**
+     * 加载指定校验任务分表(dbsyncer_task_detail_{taskId})的全部明细。
+     *
+     * @param taskId 校验任务ID
+     * @return 明细分页(单页装载全部)
+     */
+    private Paging queryAllDetails(String taskId) {
+        Query query = new Query(1, MAX_DETAIL_PAGE_SIZE);
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(taskId);
+        return storageService.query(query);
+    }
+
+    /**
+     * 构建按执行结果(差异数)过滤的条件：success=无差异, fail=有差异
+     *
+     * @param detailStatus 前端筛选值
+     * @return 过滤器，无筛选时返回 null
+     */
+    private Predicate<Map<String, Object>> buildDetailStatusFilter(String detailStatus) {
+        if ("success".equalsIgnoreCase(detailStatus)) {
+            return row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) == 0L;
+        }
+        if ("fail".equalsIgnoreCase(detailStatus)) {
+            return row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) > 0L;
+        }
+        return null;
     }
 
     private void resetTableGroupAllIndex(String taskId) {
@@ -725,20 +756,4 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
     }
 
-    private static Set<String> getTaskDetailSelect() {
-        Set<String> selectFiled = new HashSet<>();
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_ID);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_TYPE);
-        selectFiled.add(ConfigConstant.TASK_ID);
-        selectFiled.add(ConfigConstant.TASK_STATUS);
-        selectFiled.add(ConfigConstant.TASK_SOURCE_TABLE_NAME);
-        selectFiled.add(ConfigConstant.DATA_TARGET_TABLE_NAME);
-        selectFiled.add(ConfigConstant.TASK_SOURCE_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_TARGET_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_DIFF_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_FIXED_TOTAL);
-        return selectFiled;
-    }
 }

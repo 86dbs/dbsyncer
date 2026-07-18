@@ -8,12 +8,10 @@ import org.dbsyncer.common.binlog.proto.BinlogMap;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
@@ -44,9 +42,6 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
-
-    @Resource
-    private CacheService cacheService;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -90,12 +85,15 @@ public final class FlushStrategyImpl implements FlushStrategy {
         data.forEach(r-> {
             Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-            row.put(ConfigConstant.DATA_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
+            // 明细分表(每个任务一张表)：TASK_ID=metaId; 事件写入 TYPE 列; 成功状态写入 IS_SUCCESS
+            row.put(ConfigConstant.TASK_ID, metaId);
+            row.put(ConfigConstant.DETAIL_IS_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
-            row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableGroupName);
-            row.put(ConfigConstant.DATA_EVENT, event);
+            row.put(ConfigConstant.DETAIL_TARGET_TABLE, targetTableGroupName);
+            row.put(ConfigConstant.CONFIG_MODEL_TYPE, event);
             row.put(ConfigConstant.DATA_ERROR, error);
             row.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, now);
+            row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, now);
             try {
                 row.put(ConfigConstant.BINLOG_DATA, toBinlogBytes(schemaResolver, r, targetFieldMap));
             } catch (Exception e) {
@@ -137,12 +135,13 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     private void refreshTotal(Result writer) {
-        Meta meta = cacheService.get(writer.getMetaId(), Meta.class);
-        if (meta != null) {
-            meta.getFail().getAndAdd(writer.getFailData().size());
-            meta.getSuccess().getAndAdd(writer.getSuccessData().size());
-            meta.setUpdateTime(Instant.now().toEpochMilli());
+        int success = writer.getSuccessData().size();
+        int fail = writer.getFailData().size();
+        if (success == 0 && fail == 0) {
+            return;
         }
+        // 严格走库：按批 DB 原子增量，不再在内存 Meta 实例上累加
+        profileComponent.incrementMeta(writer.getMetaId(), 0L, success, fail);
     }
 
     private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {

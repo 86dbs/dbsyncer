@@ -27,8 +27,9 @@ public interface ValidateSyncDetailService {
     /**
      * 对单条明细中尚未成功订正的差异尝试手动订正，并更新明细汇总列。
      *
+     * @param taskId   校验任务ID(明细分表定位)
      * @param detailId 明细主键
      * @return 更新后的明细（含 diffTotal、fixedTotal、content 等）
      */
-    Map<String, Object> manualRevise(String detailId);
+    Map<String, Object> manualRevise(String taskId, String detailId);
 }

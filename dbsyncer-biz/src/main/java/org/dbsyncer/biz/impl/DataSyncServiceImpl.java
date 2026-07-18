@@ -42,7 +42,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -122,7 +121,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 3、获取DDL
         Map<String, Object> target = new HashMap<>();
         BinlogMap message = BinlogMap.parseFrom(bytes);
-        String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        String event = (String) row.get(ConfigConstant.CONFIG_MODEL_TYPE);
         if (StringUtil.equals(event, ConnectorConstant.OPERTION_ALTER)) {
             message.getRowMap().forEach((k, v) -> target.put(k, v.toStringUtf8()));
             return target;
@@ -179,7 +178,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             return messageId;
         }
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-        String event = (String) row.get(ConfigConstant.DATA_EVENT);
+        String event = (String) row.get(ConfigConstant.CONFIG_MODEL_TYPE);
         // 有修改同步值
         String retryDataParams = params.get("retryDataParams");
         if (StringUtil.isNotBlank(retryDataParams)) {
@@ -195,13 +194,12 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         // 执行同步是否成功
         bufferActuatorRouter.execute(metaId, changedEvent);
-        storageService.remove(StorageEnum.DATA, metaId, messageId);
-        // 更新失败数
+        // 明细分表：从该任务分表(dbsyncer_task_detail_{metaId})删除该条同步数据
+        storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
+        // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Meta can not be null.");
-        meta.getFail().decrementAndGet();
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        profileComponent.editConfigModel(meta);
+        profileComponent.incrementMeta(metaId, 0L, 0L, -1L);
         return messageId;
     }
 
@@ -229,9 +227,10 @@ public class DataSyncServiceImpl implements DataSyncService {
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
+        // 明细分表：定位到该任务分表(dbsyncer_task_detail_{metaId})，按 ID 命中同步数据
         query.setMetaId(metaId);
-        query.setType(StorageEnum.DATA);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
+        query.setType(StorageEnum.TASK_DETAIL);
         Paging paging = storageService.query(query);
         if (!CollectionUtils.isEmpty(paging.getData())) {
             List<Map> data = (List<Map>) paging.getData();

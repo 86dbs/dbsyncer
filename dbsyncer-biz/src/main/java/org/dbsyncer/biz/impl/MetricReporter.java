@@ -303,7 +303,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
     }
 
     /**
@@ -313,7 +313,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
     }
 
     /**
@@ -327,7 +327,7 @@ public class MetricReporter implements ScheduledTaskJob {
     private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
         return queryMappingMetricCount(metaAll, (query)-> {
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
-            IntFilter success = new IntFilter(ConfigConstant.DATA_SUCCESS, status.getValue());
+            IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
             query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
         });
     }
@@ -353,7 +353,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingInsert(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_INSERT));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
     }
 
     /**
@@ -363,7 +363,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingUpdate(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_UPDATE));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
     }
 
     /**
@@ -373,7 +373,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDelete(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_DELETE));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
     }
 
     /**
@@ -383,23 +383,25 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_ALTER));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
     }
 
     private long queryMappingMetricCount(List<Meta> metaAll, Consumer<Query> operation) {
-        AtomicLong total = new AtomicLong(0);
-        if (!CollectionUtils.isEmpty(metaAll)) {
+        if (CollectionUtils.isEmpty(metaAll)) {
+            return 0L;
+        }
+        // 明细分表：逐任务分表(dbsyncer_task_detail_{metaId})统计后累加
+        long total = 0L;
+        for (Meta meta : metaAll) {
             Query query = new Query(1, 1);
             query.setQueryTotal(true);
-            query.setType(StorageEnum.DATA);
+            query.setType(StorageEnum.TASK_DETAIL);
+            query.setMetaId(meta.getId());
             operation.accept(query);
-            metaAll.forEach(meta-> {
-                query.setMetaId(meta.getId());
-                Paging paging = storageService.query(query);
-                total.getAndAdd(paging.getTotal());
-            });
+            Paging paging = storageService.query(query);
+            total += paging.getTotal();
         }
-        return total.get();
+        return total;
     }
 
     private MetricResponseInfo collect(BufferActuator bufferActuator, String code, String group, String metricName) {

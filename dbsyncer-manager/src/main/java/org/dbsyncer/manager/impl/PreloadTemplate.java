@@ -5,7 +5,6 @@ package org.dbsyncer.manager.impl;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
-import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -35,10 +34,7 @@ import org.dbsyncer.plugin.impl.HttpNoticeService;
 import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
-import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -54,7 +50,6 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -111,8 +106,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        // Load configModels
-        Arrays.stream(CommandEnum.values()).filter(CommandEnum::isPreload).forEach(this::execute);
+        // 严格走库：不再启动时全量预加载配置到内存缓存，配置读取统一直查库
 
         // Load plugins
         pluginFactory.loadPlugins();
@@ -260,36 +254,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         connector = profileComponent.getConnector(targetConnectorId);
         instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
         Assert.notNull(instance, "Target connector instance can not null");
-    }
-
-    private void execute(CommandEnum commandEnum) {
-        Query query = new Query();
-        query.setType(StorageEnum.CONFIG);
-        String modelType = commandEnum.getModelType();
-        query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, modelType);
-
-        int pageNum = 1;
-        int pageSize = 20;
-        long total = 0;
-        for (;;) {
-            query.setPageNum(pageNum);
-            query.setPageSize(pageSize);
-            Paging paging = storageService.query(query);
-            List<Map> data = (List<Map>) paging.getData();
-            if (CollectionUtils.isEmpty(data)) {
-                break;
-            }
-            data.forEach(map-> {
-                String json = (String) map.get(ConfigConstant.CONFIG_MODEL_JSON);
-                ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, json));
-                if (null != model) {
-                    operationTemplate.cache(model, commandEnum.getGroupStrategyEnum());
-                }
-            });
-            total += paging.getTotal();
-            pageNum++;
-        }
-        logger.info("{}:{}", modelType, total);
     }
 
     private void reload(Map<String, Map> map, CommandEnum commandEnum) {

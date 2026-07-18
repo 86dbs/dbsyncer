@@ -656,8 +656,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private void clearMetaIfFinished(String metaId) {
         Meta meta = profileComponent.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态
+        // 完成任务则重置状态：success/fail 为库侧增量列，原子归零
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
+            profileComponent.incrementMeta(metaId, 0L, -meta.getSuccess().get(), -meta.getFail().get());
             meta.getFail().set(0);
             meta.getSuccess().set(0);
             profileComponent.editConfigModel(meta);

@@ -6,11 +6,14 @@ package org.dbsyncer.sdk.enums;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
-import org.dbsyncer.sdk.storage.strategy.DataStrategy;
+import org.dbsyncer.sdk.storage.strategy.ConnectorStrategy;
 import org.dbsyncer.sdk.storage.strategy.LogStrategy;
-import org.dbsyncer.sdk.storage.strategy.DatabaseSyncDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.MappingStrategy;
+import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
+import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
+import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskStrategy;
-import org.dbsyncer.sdk.storage.strategy.ValidateSyncDetailStrategy;
+import org.dbsyncer.sdk.storage.strategy.UserStrategy;
 
 /**
  * 存储策略枚举
@@ -27,9 +30,34 @@ public enum StorageStrategyEnum {
     CONFIG(StorageEnum.CONFIG, new ConfigStrategy()),
 
     /**
-     * 数据策略
+     * 用户配置策略
      */
-    DATA(StorageEnum.DATA, new DataStrategy()),
+    USER(StorageEnum.USER, new UserStrategy()),
+
+    /**
+     * 连接配置策略
+     */
+    CONNECTOR(StorageEnum.CONNECTOR, new ConnectorStrategy()),
+
+    /**
+     * 驱动映射关系(mapping)策略
+     */
+    MAPPING(StorageEnum.MAPPING, new MappingStrategy()),
+
+    /**
+     * 表映射关系策略
+     */
+    TABLE_GROUP(StorageEnum.TABLE_GROUP, new TableGroupStrategy()),
+
+    /**
+     * 任务执行结果(meta)策略
+     */
+    META(StorageEnum.META, new MetaStrategy()),
+
+    /**
+     * 任务执行明细策略(统一 同步数据/订正校验/整库迁移 明细)
+     */
+    TASK_DETAIL(StorageEnum.TASK_DETAIL, new TaskDetailStrategy()),
 
     /**
      * 日志策略
@@ -39,17 +67,7 @@ public enum StorageStrategyEnum {
     /**
      * 任务策略
      */
-    TASK(StorageEnum.TASK, new TaskStrategy()),
-
-    /**
-     * 订正校验明细策略
-     */
-    VALIDATE_SYNC_DETAIL(StorageEnum.VALIDATE_SYNC_DETAIL, new ValidateSyncDetailStrategy()),
-
-    /**
-     * 整库迁移明细策略
-     */
-    DATABASE_SYNC_DETAIL(StorageEnum.DATABASE_SYNC_DETAIL, new DatabaseSyncDetailStrategy());
+    TASK(StorageEnum.TASK, new TaskStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

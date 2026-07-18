@@ -31,12 +31,31 @@ public class ConfigConstant {
     public static final String META = "meta";
 
     /**
-     * 数据
+     * 表映射关系表(dbsyncer_table_group)拆分列
      */
-    public static final String DATA_SUCCESS = "success";
+    public static final String TABLE_GROUP_MAPPING_ID = "taskId";
+    public static final String TABLE_GROUP_SORT_INDEX = "sortIndex";
+
+    /**
+     * 任务执行结果表(dbsyncer_meta)拆分列
+     */
+    public static final String META_STATE = "state";
+    public static final String META_TOTAL = "total";
+    public static final String META_SUCCESS = "metaSuccess";
+    public static final String META_FAIL = "fail";
+
+    /**
+     * 任务执行明细表(dbsyncer_task_detail)精简列(每个任务一张分表, 表内单一类别)
+     * <p>TYPE 列复用 {@link #CONFIG_MODEL_TYPE}: 同步数据存事件(insert/update/delete/DDL); 校验/迁移存子类型
+     */
+    public static final String DETAIL_IS_SUCCESS = "isSuccess";
+    public static final String DETAIL_TARGET_TABLE = "targetTable";
+
+    /**
+     * 数据(同步明细分表列)
+     */
     public static final String DATA_TABLE_GROUP_ID = "tableGroupId";
     public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
-    public static final String DATA_EVENT = "event";
     public static final String DATA_ERROR = "error";
 
     /**

@@ -39,6 +39,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids);
 
+    protected abstract void batchIncrement(StorageEnum type, String sharding, String id, Map<String, Long> deltas);
+
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
         return StorageStrategyEnum.getStrategy(type).createSharding(getSeparator(), collectionId);
@@ -132,6 +134,18 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     public void removeBatch(StorageEnum type, String metaId, List<String> ids) {
         if (!CollectionUtils.isEmpty(ids)) {
             batchDelete(type, getSharding(type, metaId), ids);
+        }
+    }
+
+    @Override
+    public void increment(StorageEnum type, String id, Map<String, Long> deltas) {
+        if (id == null || id.isEmpty() || CollectionUtils.isEmpty(deltas)) {
+            return;
+        }
+        try {
+            batchIncrement(type, getSharding(type, null), id, deltas);
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
         }
     }
 

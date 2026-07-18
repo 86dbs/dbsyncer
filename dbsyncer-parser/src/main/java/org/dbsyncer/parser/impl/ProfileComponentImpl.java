@@ -5,7 +5,6 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -22,8 +21,6 @@ import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
-import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 
 import org.springframework.stereotype.Component;
@@ -48,21 +45,9 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Resource
     private OperationTemplate operationTemplate;
 
-    @Resource
-    private ConnectorFactory connectorFactory;
-
     @Override
     public Connector parseConnector(String json) {
-        Map conn = JsonUtil.parseMap(json);
-        Map config = (Map) conn.remove("config");
-        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
-        Assert.notNull(connector, "Connector can not be null.");
-        String connectorType = (String) config.get("connectorType");
-        ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
-        Class<ConnectorConfig> configClass = connectorService.getConfigClass();
-        connector.setConfig(JsonUtil.jsonToObj(config.toString(), configClass));
-
-        return connector;
+        return operationTemplate.parseConnector(json);
     }
 
     @Override
@@ -167,6 +152,16 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<Meta> getMetaAll() {
         return operationTemplate.queryAll(Meta.class);
+    }
+
+    @Override
+    public void incrementMeta(String metaId, long totalDelta, long successDelta, long failDelta) {
+        operationTemplate.incrementMeta(metaId, totalDelta, successDelta, failDelta);
+    }
+
+    @Override
+    public Map<String, Object> getConfigSnapshot() {
+        return operationTemplate.buildExportSnapshot();
     }
 
     @Override
