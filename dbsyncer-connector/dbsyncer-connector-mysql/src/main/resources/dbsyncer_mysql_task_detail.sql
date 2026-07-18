@@ -1,0 +1,17 @@
+CREATE TABLE `dbsyncer_task_detail` (
+  `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
+  `TASK_ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '关联任务ID(同步metaId/校验或迁移taskId)',
+  `TABLE_GROUP_ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '关联表映射ID',
+  `TYPE` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '明细类型(同步:事件insert/update/delete/DDL; 校验/迁移:子类型)',
+  `TARGET_TABLE` varchar(100) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT '' COMMENT '目标表名称',
+  `IS_SUCCESS` int NOT NULL DEFAULT 0 COMMENT '是否成功/状态, 0-失败或运行中 1-成功或完成',
+  `ERROR` mediumtext CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '异常报错信息',
+  `DATA` blob DEFAULT NULL COMMENT '明细数据(按TYPE序列化: 同步数据/校验差异/迁移统计)',
+  `CREATE_TIME` bigint(0) NOT NULL COMMENT '创建时间',
+  `UPDATE_TIME` bigint(0) NOT NULL DEFAULT 0 COMMENT '修改时间',
+  PRIMARY KEY (`ID`) USING BTREE,
+  KEY `IDX_TYPE` (`TYPE`) USING BTREE,
+  KEY `IDX_TABLE_GROUP` (`TABLE_GROUP_ID`) USING BTREE,
+  KEY `IDX_SUCCESS_CREATE_TIME` (`IS_SUCCESS`, `CREATE_TIME`) USING BTREE,
+  FULLTEXT INDEX `FULL_TEXT_ERROR` (`ERROR`)
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = '任务执行明细表' ROW_FORMAT = Dynamic;
