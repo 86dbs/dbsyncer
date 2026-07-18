@@ -4,4 +4,5 @@ CREATE TABLE `dbsyncer_log` (
   `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
   `JSON` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志信息',
   PRIMARY KEY (`ID`) USING BTREE,
+  KEY `IDX_CREATE_TIME` (`CREATE_TIME`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '操作日志表' ROW_FORMAT = Dynamic;
