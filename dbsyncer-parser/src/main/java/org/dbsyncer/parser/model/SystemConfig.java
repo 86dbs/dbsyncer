@@ -14,8 +14,8 @@ import org.dbsyncer.sdk.model.NoticeConfig;
  * 系统配置
  *
  * @version 1.0.0
- * @Author AE86
- * @Date 2020-05-29 20:13
+ * @author AE86
+ * @date 2020-05-29 20:13
  */
 public class SystemConfig extends ConfigModel {
 

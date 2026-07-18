@@ -1,10 +1,9 @@
 CREATE TABLE `dbsyncer_config` (
   `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
+  `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
+  `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
   `NAME` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '名称',
-  `TYPE` varchar(24) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'system、user、connector、mapping、tableGroup、meta',
-  `CREATE_TIME` bigint(0) NOT NULL COMMENT '创建时间',
-  `UPDATE_TIME` bigint(0) NOT NULL COMMENT '修改时间',
+  `TYPE` varchar(24) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT 'system',
   `JSON` mediumtext CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '配置信息',
-  PRIMARY KEY (`ID`) USING BTREE,
-  INDEX `IDX_TYPE_UPDATE_CREATE_TIME`(`TYPE`, `UPDATE_TIME`, `CREATE_TIME`) USING BTREE
+  PRIMARY KEY (`ID`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = '配置信息表' ROW_FORMAT = Dynamic;
