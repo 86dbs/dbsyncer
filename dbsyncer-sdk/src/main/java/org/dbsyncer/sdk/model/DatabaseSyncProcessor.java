@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author wuji
  */
-public final class DatabaseMigrationProgressComputer {
+public final class DatabaseSyncProcessor {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
@@ -70,7 +70,7 @@ public final class DatabaseMigrationProgressComputer {
      * 已完成的数据库步骤
      */
     private static long countCompletedDatabaseSteps(DatabaseSyncTask task) {
-        ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> snapshots = task.getDatabaseSnapshots();
+        ConcurrentHashMap<Integer, DatabaseSyncSnapshot> snapshots = task.getDatabaseSnapshots();
         if (CollectionUtils.isEmpty(snapshots)) {
             return 0;
         }
@@ -81,16 +81,16 @@ public final class DatabaseMigrationProgressComputer {
      * 已完成的表步骤（结构/数据）
      */
     private static long countCompletedTableSteps(DatabaseSyncTask task, int stepsPerTable) {
-        ConcurrentHashMap<Integer, DatabaseMigrationSnapshot> snapshots = task.getDatabaseSnapshots();
+        ConcurrentHashMap<Integer, DatabaseSyncSnapshot> snapshots = task.getDatabaseSnapshots();
         if (CollectionUtils.isEmpty(snapshots) || stepsPerTable <= 0) {
             return 0;
         }
         long count = 0;
-        for (DatabaseMigrationSnapshot dbSnapshot : snapshots.values()) {
+        for (DatabaseSyncSnapshot dbSnapshot : snapshots.values()) {
             if (dbSnapshot == null || CollectionUtils.isEmpty(dbSnapshot.getTables())) {
                 continue;
             }
-            for (DatabaseMigrationTableSnapshot tableSnapshot : dbSnapshot.getTables().values()) {
+            for (DatabaseSyncTableSnapshot tableSnapshot : dbSnapshot.getTables().values()) {
                 if (tableSnapshot == null) {
                     continue;
                 }

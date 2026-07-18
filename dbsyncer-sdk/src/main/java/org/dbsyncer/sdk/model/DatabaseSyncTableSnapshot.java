@@ -12,7 +12,7 @@ import java.io.Serializable;
  * @version 1.0.0
  * @date 2026-05-29 11:30
  */
-public class DatabaseMigrationTableSnapshot extends CommonTaskSnapshot implements Serializable {
+public class DatabaseSyncTableSnapshot extends CommonTaskSnapshot implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
