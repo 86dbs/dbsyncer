@@ -3,28 +3,41 @@
  */
 package org.dbsyncer.connector.dameng;
 
+import org.dbsyncer.common.model.Result;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.dameng.cdc.DamengListener;
 import org.dbsyncer.connector.dameng.constant.DamengConstant;
 import org.dbsyncer.connector.dameng.schema.DamengSchemaResolver;
 import org.dbsyncer.connector.dameng.validator.DamengConfigValidator;
 import org.dbsyncer.connector.oracle.OracleConnector;
+import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
+import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.BindParameter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Blob;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -115,6 +128,57 @@ public final class DamengConnector extends OracleConnector {
     }
 
     /**
+     * 含 IDENTITY 自增列时，全量/覆盖写入需临时打开 IDENTITY_INSERT，否则报 -2723。
+     */
+    @Override
+    public Map<String, String> getTargetCommand(CommandConfig commandConfig) {
+        Map<String, String> targetCommand = super.getTargetCommand(commandConfig);
+        if (!hasIdentityColumn(commandConfig)) {
+            return targetCommand;
+        }
+        String qualified = qualifyIdentityTable(commandConfig.getSchema(), commandConfig.getTable().getName());
+        wrapIdentityInsert(targetCommand, ConnectorConstant.OPERTION_INSERT, qualified);
+        wrapIdentityInsert(targetCommand, ConnectorConstant.OPERTION_UPSERT, qualified);
+        return targetCommand;
+    }
+
+    /**
+     * 达梦 MERGE 成功时常返回 0 或空数组，需单独处理成功计数，否则界面进度一直为 0。
+     */
+    @Override
+    public Result writer(DatabaseConnectorInstance connectorInstance, PluginContext context) {
+        String event = context.getEvent();
+        List<Map> data = context.getTargetList();
+        List<Field> targetFields = context.getTargetFields();
+
+        if (CollectionUtils.isEmpty(targetFields)) {
+            LOGGER.error("writer fields can not be empty.");
+            throw new SdkException("writer fields can not be empty.");
+        }
+        if (CollectionUtils.isEmpty(data)) {
+            LOGGER.error("writer data can not be empty.");
+            throw new SdkException("writer data can not be empty.");
+        }
+
+        List<Field> fields = new ArrayList<>(targetFields);
+        String executeSql = resolveWriterSql(context, event, fields);
+        if (StringUtil.isBlank(executeSql)) {
+            LOGGER.error("事件:{}, 执行SQL不能为空", event);
+            throw new SdkException("执行SQL不能为空");
+        }
+
+        Result result = new Result();
+        int[] execute = null;
+        try {
+            execute = connectorInstance.execute(databaseTemplate -> damengBatchUpdate(databaseTemplate, executeSql, fields, data));
+        } catch (Exception e) {
+            damengForceUpdate(connectorInstance, context, executeSql, fields, event, data, result);
+        }
+        collectWriteResult(execute, data, event, result);
+        return result;
+    }
+
+    /**
      * MERGE INTO ... USING (SELECT ? FROM DUAL) 时，达梦对大字段默认按 VARCHAR 推断，
      * 需显式 CAST，否则报「无法转换的数据类型」。
      */
@@ -156,6 +220,198 @@ public final class DamengConnector extends OracleConnector {
         return (BindParameter) (ps, paramIndex, connection) -> ps.setBytes(paramIndex, bytes);
     }
 
+    private String resolveWriterSql(PluginContext context, String event, List<Field> fields) {
+        if (isDelete(event)) {
+            fields.clear();
+            fields.addAll(PrimaryKeyUtil.findExistPrimaryKeyFields(context.getTargetFields()));
+            return context.getCommand().get(event);
+        }
+        if (context.isForceUpdate()) {
+            return context.getCommand().get(ConnectorConstant.OPERTION_UPSERT);
+        }
+        if (isUpdate(event)) {
+            fields.addAll(PrimaryKeyUtil.findPrimaryKeyFields(fields));
+            return context.getCommand().get(event);
+        }
+        return context.getCommand().get(event);
+    }
+
+    /**
+     * 达梦 PreparedStatement 对多语句支持不稳定，将 IDENTITY_INSERT 与 MERGE 拆开执行。
+     */
+    private int[] damengBatchUpdate(DatabaseTemplate databaseTemplate, String executeSql, List<Field> fields, List<Map> data) throws Exception {
+        Matcher matcher = IDENTITY_WRAP.matcher(StringUtil.trimToEmpty(executeSql));
+        if (!matcher.matches()) {
+            return damengBatchUpdateInternal(databaseTemplate, executeSql, fields, data);
+        }
+        String qualified = matcher.group(1);
+        String mergeSql = matcher.group(2);
+        String onSql = "SET IDENTITY_INSERT " + qualified + " ON";
+        String offSql = "SET IDENTITY_INSERT " + qualified + " OFF";
+        SimpleConnection connection = databaseTemplate.getSimpleConnection();
+        try {
+            connection.setAutoCommit(false);
+            databaseTemplate.execute(onSql);
+            int[] result = damengBatchUpdateInternal(databaseTemplate, mergeSql, fields, data);
+            databaseTemplate.execute(offSql);
+            connection.commit();
+            return result;
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            try {
+                databaseTemplate.execute(offSql);
+            } catch (Exception ignore) {
+                // 会话结束时会自动还原 OFF
+            }
+            connection.setAutoCommit(true);
+        }
+    }
+
+    private int[] damengBatchUpdateInternal(DatabaseTemplate databaseTemplate, String executeSql, List<Field> fields, List<Map> data) throws Exception {
+        SimpleConnection connection = databaseTemplate.getSimpleConnection();
+        try {
+            connection.setAutoCommit(false);
+            int[] result = databaseTemplate.batchUpdate(executeSql, batchRows(fields, data));
+            connection.commit();
+            return fillSuccessResult(result, data.size());
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+    }
+
+    /**
+     * 达梦 MERGE 成功常返回 0；多语句 batch 可能返回空数组，均按成功处理。
+     */
+    private static int[] fillSuccessResult(int[] result, int dataSize) {
+        if (result == null || result.length == 0) {
+            int[] filled = new int[dataSize];
+            for (int i = 0; i < dataSize; i++) {
+                filled[i] = -2;
+            }
+            return filled;
+        }
+        for (int i = 0; i < result.length; i++) {
+            if (result[i] == 0) {
+                result[i] = -2;
+            }
+        }
+        return result;
+    }
+
+    private void collectWriteResult(int[] execute, List<Map> data, String event, Result result) {
+        if (execute == null) {
+            return;
+        }
+        int batchSize = Math.min(execute.length, data.size());
+        for (int i = 0; i < batchSize; i++) {
+            if (isDamengWriteSuccess(execute[i])) {
+                result.getSuccessData().add(data.get(i));
+                continue;
+            }
+            result.getFailData().add(data.get(i));
+            if (StringUtil.isBlank(result.getError())) {
+                result.getError().append("目标表数据可能").append(isInsert(event) ? "存在" : "不存在");
+            }
+        }
+    }
+
+    private static boolean isDamengWriteSuccess(int affectedRows) {
+        return affectedRows >= 0 || affectedRows == -2;
+    }
+
+    private void damengForceUpdate(DatabaseConnectorInstance connectorInstance, PluginContext context,
+                                   String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
+        Matcher matcher = IDENTITY_WRAP.matcher(StringUtil.trimToEmpty(executeSql));
+        if (!matcher.matches()) {
+            forceUpdateRowByRow(connectorInstance, context, executeSql, fields, event, data, result);
+            return;
+        }
+        String qualified = matcher.group(1);
+        String mergeSql = matcher.group(2);
+        String onSql = "SET IDENTITY_INSERT " + qualified + " ON";
+        String offSql = "SET IDENTITY_INSERT " + qualified + " OFF";
+        try {
+            connectorInstance.execute(databaseTemplate -> {
+                databaseTemplate.execute(onSql);
+                return null;
+            });
+            forceUpdateRowByRow(connectorInstance, context, mergeSql, fields, event, data, result);
+        } finally {
+            try {
+                connectorInstance.execute(databaseTemplate -> {
+                    databaseTemplate.execute(offSql);
+                    return null;
+                });
+            } catch (Exception ignore) {
+                // ignore
+            }
+        }
+    }
+
+    private void forceUpdateRowByRow(DatabaseConnectorInstance connectorInstance, PluginContext context,
+                                     String executeSql, List<Field> fields, String event, List<Map> data, Result result) {
+        data.forEach(row -> {
+            try {
+                int affected = connectorInstance.execute(databaseTemplate -> {
+                    List<Object[]> batch = batchRows(fields, Collections.singletonList(row));
+                    return databaseTemplate.update(executeSql, batch.get(0));
+                });
+                if (!isDamengWriteSuccess(affected)) {
+                    throw new SdkException("数据不存在或执行异常");
+                }
+                result.getSuccessData().add(row);
+            } catch (Exception e) {
+                result.getFailData().add(row);
+                result.getError().append(context.getTraceId()).append(" SQL:").append(executeSql)
+                        .append(System.lineSeparator()).append("ERROR:").append(e.getMessage()).append(System.lineSeparator());
+            }
+        });
+    }
+
+    private boolean hasIdentityColumn(CommandConfig commandConfig) {
+        String tableName = commandConfig.getTable() == null ? null : commandConfig.getTable().getName();
+        if (StringUtil.isBlank(tableName)) {
+            return false;
+        }
+        DatabaseConnectorInstance db = (DatabaseConnectorInstance) commandConfig.getConnectorInstance();
+        if (db == null) {
+            return false;
+        }
+        try {
+            String schema = commandConfig.getSchema();
+            Integer count = db.execute(databaseTemplate -> {
+                if (StringUtil.isNotBlank(schema)) {
+                    return databaseTemplate.queryForObject(QUERY_TABLE_IDENTITY_WITH_SCHEMA, Integer.class, tableName, schema);
+                }
+                return databaseTemplate.queryForObject(QUERY_TABLE_IDENTITY, Integer.class, tableName);
+            });
+            return count != null && count > 0;
+        } catch (Exception e) {
+            LOGGER.warn("Detect Dameng identity column failed, table={}: {}", tableName, e.getMessage());
+            return false;
+        }
+    }
+
+    private void wrapIdentityInsert(Map<String, String> targetCommand, String operation, String qualifiedTable) {
+        String sql = targetCommand.get(operation);
+        if (StringUtil.isBlank(sql)) {
+            return;
+        }
+        targetCommand.put(operation, "SET IDENTITY_INSERT " + qualifiedTable + " ON;" + sql
+                + ";SET IDENTITY_INSERT " + qualifiedTable + " OFF");
+    }
+
+    private String qualifyIdentityTable(String schema, String tableName) {
+        if (StringUtil.isNotBlank(schema)) {
+            return buildWithQuotation(schema) + "." + buildWithQuotation(tableName);
+        }
+        return buildWithQuotation(tableName);
+    }
 
     private static boolean isClobFamily(String type) {
         if (StringUtil.isBlank(type)) {
