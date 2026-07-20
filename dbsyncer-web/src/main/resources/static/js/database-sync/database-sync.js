@@ -230,7 +230,9 @@
     }
 
     function isOracleConnector(connectorId) {
-        return normalizeConnectorType(getConnectorTypeById(connectorId)) === 'oracle';
+        const type = normalizeConnectorType(getConnectorTypeById(connectorId));
+        // 达梦与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
+        return type === 'oracle' || type === 'dameng';
     }
 
     function isOracleSourceConnector() {

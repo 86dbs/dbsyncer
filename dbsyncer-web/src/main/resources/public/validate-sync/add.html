@@ -151,7 +151,8 @@
             return false;
         }
         const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
-        return type && String(type).toLowerCase() === 'oracle';
+        // 达梦与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
+        return type && ['oracle', 'dameng'].indexOf(String(type).toLowerCase()) >= 0;
     }
 
     function toggleDatabaseFieldVisibility($database, hide) {
