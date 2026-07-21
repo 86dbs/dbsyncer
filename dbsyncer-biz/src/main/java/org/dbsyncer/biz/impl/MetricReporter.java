@@ -188,7 +188,13 @@ public class MetricReporter implements ScheduledTaskJob {
         // 刷新报表
         try {
             running = true;
-            final List<Meta> metaAll = profileComponent.getMetaAll();
+            // 仅任务级 Meta；看板指标按同步驱动分表统计
+            final List<Meta> metaAll = profileComponent.getTaskMetaAll().stream()
+                    .filter(meta -> {
+                        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                        return mapping != null && StringUtil.equals(ConfigConstant.MAPPING, mapping.getType());
+                    })
+                    .collect(Collectors.toList());
             if (CollectionUtils.isEmpty(metaAll)) {
                 dashboardMetric.reset();
                 return;
@@ -390,13 +396,13 @@ public class MetricReporter implements ScheduledTaskJob {
         if (CollectionUtils.isEmpty(metaAll)) {
             return 0L;
         }
-        // 明细分表：逐任务分表(dbsyncer_task_detail_{metaId})统计后累加
+        // 明细分表：逐任务分表(dbsyncer_task_detail_{taskId})统计后累加
         long total = 0L;
         for (Meta meta : metaAll) {
             Query query = new Query(1, 1);
             query.setQueryTotal(true);
             query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(meta.getId());
+            query.setMetaId(StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId());
             operation.accept(query);
             Paging paging = storageService.query(query);
             total += paging.getTotal();

@@ -23,6 +23,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.dbsyncer.sdk.util.DatabaseUtil;
@@ -388,35 +389,72 @@ public class MySQLStorageService extends AbstractStorageService {
                 sql.append(" ").append(p.getOperation().toUpperCase()).append(" ");
             }
 
-            FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
             String name = UnderlineToCamelUtils.camelToUnderline(p.getName());
             sql.append(connector.buildWithQuotation(name));
-            sql.append(String.format(" %s ?", filterEnum.getName()));
-            switch (filterEnum) {
-                case EQUAL:
-                case NOT_EQUAL:
-                case LT:
-                case LT_AND_EQUAL:
-                case GT:
-                case GT_AND_EQUAL:
-                    args.add(p.getValue());
-                    break;
-                case LIKE:
-                    args.add(new StringBuilder("%").append(p.getValue()).append("%"));
-                    break;
-                case IN:
-                    args.add(new StringBuilder("(").append(p.getValue()).append(")"));
-                    break;
-                case IS_NULL:
-                case IS_NOT_NULL:
-                    break;
-                default:
-                    throw new MySQLException("Unsupported filter type: " + filterEnum.getName());
+            if (p instanceof InFilter) {
+                appendInClause(p, args, sql);
+            } else {
+                FilterEnum filterEnum = FilterEnum.getFilterEnum(p.getFilter());
+                if (filterEnum == FilterEnum.IN) {
+                    appendInClause(p, args, sql);
+                } else if (filterEnum == FilterEnum.IS_NULL || filterEnum == FilterEnum.IS_NOT_NULL) {
+                    sql.append(" ").append(filterEnum.getName());
+                } else {
+                    sql.append(String.format(" %s ?", filterEnum.getName()));
+                    switch (filterEnum) {
+                        case EQUAL:
+                        case NOT_EQUAL:
+                        case LT:
+                        case LT_AND_EQUAL:
+                        case GT:
+                        case GT_AND_EQUAL:
+                            args.add(p.getValue());
+                            break;
+                        case LIKE:
+                            args.add(new StringBuilder("%").append(p.getValue()).append("%"));
+                            break;
+                        default:
+                            throw new MySQLException("Unsupported filter type: " + filterEnum.getName());
+                    }
+                }
             }
             if (null != highLightKeys && p.isEnableHighLightSearch()) {
                 highLightKeys.add(p);
             }
         }
+    }
+
+    /**
+     * 展开 IN：生成 {@code IN (?,?,?)} 并逐个绑定参数（逗号拼接值或 {@link InFilter#getBindValues()}）。
+     */
+    private void appendInClause(AbstractFilter filter, List<Object> args, StringBuilder sql) {
+        List<Object> binds;
+        if (filter instanceof InFilter) {
+            binds = ((InFilter) filter).getBindValues();
+        } else {
+            String raw = filter.getValue() == null ? StringUtil.EMPTY : String.valueOf(filter.getValue());
+            String[] parts = StringUtil.split(raw, StringUtil.COMMA);
+            binds = new ArrayList<>();
+            if (parts != null) {
+                for (String part : parts) {
+                    if (StringUtil.isNotBlank(part)) {
+                        binds.add(part.trim());
+                    }
+                }
+            }
+        }
+        if (CollectionUtils.isEmpty(binds)) {
+            throw new MySQLException("IN filter values can not be empty.");
+        }
+        sql.append(" IN (");
+        for (int j = 0; j < binds.size(); j++) {
+            if (j > 0) {
+                sql.append(StringUtil.COMMA);
+            }
+            sql.append("?");
+        }
+        sql.append(")");
+        args.addAll(binds);
     }
 
     private void buildQuerySqlWithBooleanFilters(List<BooleanFilter> clauses, List<Object> args, StringBuilder sql, List<AbstractFilter> highLightKeys) {
@@ -452,26 +490,35 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> configFields = builder.getFields();
 
-        // 用户配置/连接配置/驱动映射关系：通用六列
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        // 用户配置：一行一用户，严格按 dbsyncer_user 拆分列
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.USER_USERNAME, ConfigConstant.USER_PASSWORD, ConfigConstant.USER_NICKNAME,
+                ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE);
         List<Field> userFields = builder.getFields();
 
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> connectorFields = builder.getFields();
 
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
-        List<Field> mappingFields = builder.getFields();
-
-        // 表映射关系：拆分 taskId(mappingId)/sortIndex 列 + json
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.TABLE_GROUP_MAPPING_ID, ConfigConstant.TABLE_GROUP_SORT_INDEX, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        // 表映射关系：关联信息拆分列 + json(字段映射/command等)
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.TABLE_GROUP_TASK_ID, ConfigConstant.TABLE_GROUP_SORT_INDEX,
+                ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID,
+                ConfigConstant.TABLE_GROUP_SOURCE_DATABASE, ConfigConstant.TABLE_GROUP_TARGET_DATABASE,
+                ConfigConstant.TABLE_GROUP_SOURCE_SCHEMA, ConfigConstant.TABLE_GROUP_TARGET_SCHEMA,
+                ConfigConstant.TABLE_GROUP_SOURCE_TABLE, ConfigConstant.TABLE_GROUP_TARGET_TABLE,
+                ConfigConstant.TABLE_GROUP_SOURCE_TOTAL, ConfigConstant.TABLE_GROUP_TARGET_TOTAL,
+                ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> tableGroupFields = builder.getFields();
 
-        // 任务执行结果：拆分 state/total/success/fail 计数列 + json(快照兜底)
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.META_STATE, ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        // 任务执行结果：严格按 dbsyncer_meta 拆分列(无 name/type/json)
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
+                ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
         List<Field> metaFields = builder.getFields();
 
-        // 任务执行明细：按任务分表(精简列)，校验/迁移结构化字段序列化进 DATA blob
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE,
+        // 任务执行明细：按任务分表(无 TASK_ID 列，靠 TABLE_GROUP_ID 关联)
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.DATA_TABLE_GROUP_ID, ConfigConstant.CONFIG_MODEL_TYPE,
                 ConfigConstant.DETAIL_TARGET_TABLE, ConfigConstant.DETAIL_IS_SUCCESS, ConfigConstant.DATA_ERROR,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.BINLOG_DATA);
         List<Field> taskDetailFields = builder.getFields();
@@ -480,14 +527,14 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> logFields = builder.getFields();
 
-        // 任务
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.TASK_STATUS, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        // 任务配置表(同步/校验/迁移统一)：ID/NAME/TYPE/JSON/时间
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
-        tables.computeIfAbsent(StorageEnum.MAPPING.getType(), k -> new Executor(k, mappingFields, true, true));
         tables.computeIfAbsent(StorageEnum.TABLE_GROUP.getType(), k -> new Executor(k, tableGroupFields, true, true));
         tables.computeIfAbsent(StorageEnum.META.getType(), k -> new Executor(k, metaFields, true, true));
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
@@ -611,28 +658,49 @@ public class MySQLStorageService extends AbstractStorageService {
         List<Field> fields;
 
         public FieldBuilder() {
-            fieldMap = Stream.of(new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true), new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR), new Field(
-                                    ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR",
-                                    Types.VARCHAR), new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT",
-                                    Types.BIGINT), new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
+            fieldMap = Stream.of(new Field(ConfigConstant.CONFIG_MODEL_ID, "VARCHAR", Types.VARCHAR, true),
+                            new Field(ConfigConstant.CONFIG_MODEL_NAME, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),
                             new Field(ConfigConstant.TASK_ID, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.TASK_STATUS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DETAIL_IS_SUCCESS, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DETAIL_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.META_STATE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.META_IS_TASK_DETAIL, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.META_TOTAL, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_SUCCESS, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_FAIL, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER))
+                            new Field(ConfigConstant.META_DIFF, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_FIXED, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_SNAPSHOT, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_SOURCE_DATABASE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_TARGET_DATABASE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_SOURCE_SCHEMA, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_TARGET_SCHEMA, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_TARGET_TABLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.TABLE_GROUP_TARGET_TOTAL, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.USER_USERNAME, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_PASSWORD, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_NICKNAME, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_ROLE, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_EMAIL, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.USER_PHONE, "VARCHAR", Types.VARCHAR))
                     .peek(field -> {
                         field.setLabelName(field.getName());
                         // 转换列下划线
                         String labelName = UnderlineToCamelUtils.camelToUnderline(field.getName());
                         field.setName(labelName);
-                    }).collect(Collectors.toMap(Field::getLabelName, field -> field));
+                    }).collect(Collectors.toMap(Field::getLabelName, field -> field, (a, b) -> a));
         }
 
         public List<Field> getFields() {

@@ -22,12 +22,9 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -152,6 +149,36 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<Meta> getMetaAll() {
         return operationTemplate.queryAll(Meta.class);
+    }
+
+    @Override
+    public List<Meta> getTaskMetaAll() {
+        return operationTemplate.queryTaskMetaAll();
+    }
+
+    @Override
+    public Meta getMetaByRefId(String refId, int isTaskDetail) {
+        return operationTemplate.queryMetaByRefId(refId, isTaskDetail);
+    }
+
+    @Override
+    public Map<String, Meta> getDetailMetaMap(List<String> refIds) {
+        return operationTemplate.queryDetailMetaMap(refIds);
+    }
+
+    @Override
+    public void removeDetailMetasByTaskId(String taskId) {
+        operationTemplate.removeDetailMetasByTaskId(taskId);
+    }
+
+    @Override
+    public long countTaskDetailBySuccess(String taskId, int isSuccess) {
+        return operationTemplate.countTaskDetailBySuccess(taskId, isSuccess);
+    }
+
+    @Override
+    public long countDetailMetaWithPositiveDiff(String taskId) {
+        return operationTemplate.countDetailMetaWithPositiveDiff(taskId);
     }
 
     @Override

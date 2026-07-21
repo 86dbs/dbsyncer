@@ -21,11 +21,8 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
-import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
@@ -34,7 +31,6 @@ import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +46,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,11 +64,6 @@ import java.util.stream.Collectors;
 public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    /**
-     * 明细分表单次加载上限(单个任务表数量有限，一次装载后应用侧统计)
-     */
-    private final static int MAX_DETAIL_PAGE_SIZE = 100000;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -114,10 +106,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
         DatabaseSyncTask task = new DatabaseSyncTask();
         fillTaskOnAdd(task, params);
-        task.setDatabaseMappings(mappings);
-        clearTableGroups(task.getId());
-
+        // 先落任务与任务级 Meta，再写 table_group，避免 task 失败留下孤儿关联
         String taskId = taskService.add(task);
+        persistTableGroupsFromMappings(taskId, mappings);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -139,8 +130,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         validateMappingConnectors(mappings);
 
         fillTaskOnEdit(task, params);
-        task.setDatabaseMappings(mappings);
         clearTableGroups(task.getId());
+        persistTableGroupsFromMappings(id, mappings);
         task.getDatabaseSnapshots().clear();
         task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
         return taskService.edit(task);
@@ -166,7 +157,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
         assertNotRunning(id);
-        clearTableGroups(id);
         taskService.delete(id);
         return "删除成功";
     }
@@ -176,8 +166,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
-        if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
-            throw new BizException("任务未配置库映射，无法启动");
+        if (profileComponent.getTableGroupCount(id) <= 0) {
+            throw new BizException("任务未配置库表映射，无法启动");
         }
         taskService.start(id);
         return "启动成功";
@@ -203,12 +193,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTask task = (DatabaseSyncTask) item;
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
-                    List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
-                    int tableCount = resolveTotalTableCount(task, tableGroups);
-                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(task, tableCount));
+                    int tableCount = profileComponent.getTableGroupCount(task.getId());
+                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(vo, tableCount, vo.getMappingCount()));
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(task, tableCount));
-                    vo.setErrorCount(countMigrationDetailErrors(task.getId()));
+                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(vo, tableCount));
+                    vo.setErrorCount(profileComponent.countTaskDetailBySuccess(task.getId(), 0));
                     list.add(vo);
                 }
             }
@@ -415,51 +404,100 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (task == null) {
             return null;
         }
-        DatabaseMapping first = CollectionUtils.isEmpty(task.getDatabaseMappings()) ? null : task.getDatabaseMappings().get(0);
+        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
+        List<DatabaseMapping> mappings = rebuildDatabaseMappingsFromTableGroups(tableGroups);
+        DatabaseMapping first = CollectionUtils.isEmpty(mappings) ? null : mappings.get(0);
         Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
         Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
         BeanUtils.copyProperties(task, vo);
-        int mappingCount = CollectionUtils.isEmpty(task.getDatabaseMappings()) ? 0 : task.getDatabaseMappings().size();
+        vo.setDatabaseMappings(mappings);
+        int mappingCount = CollectionUtils.isEmpty(mappings) ? 0 : mappings.size();
         vo.setMappingCount(mappingCount);
         return vo;
     }
 
     /**
-     * 任务总表数：以库映射配置中的表映射数为准，运行中不因 TableGroup 逐步落库而波动。
+     * 库表关联只存 table_group；保存/展示时从 table_group 还原 DatabaseMapping 视图。
      */
-    private int resolveTotalTableCount(DatabaseSyncTask task, List<TableGroup> tableGroups) {
-        int configuredCount = countConfiguredTableMappings(task);
-        if (configuredCount > 0) {
-            return configuredCount;
+    private List<DatabaseMapping> rebuildDatabaseMappingsFromTableGroups(List<TableGroup> tableGroups) {
+        if (CollectionUtils.isEmpty(tableGroups)) {
+            return Collections.emptyList();
         }
-        return CollectionUtils.isEmpty(tableGroups) ? 0 : tableGroups.size();
+        Map<String, DatabaseMapping> mappingMap = new LinkedHashMap<>();
+        List<TableGroup> sorted = tableGroups.stream()
+                .sorted(Comparator.comparingInt(TableGroup::getIndex))
+                .collect(Collectors.toList());
+        for (TableGroup group : sorted) {
+            String key = String.join("|",
+                    StringUtil.getIfBlank(group.getSourceConnectorId(), ""),
+                    StringUtil.getIfBlank(group.getTargetConnectorId(), ""),
+                    StringUtil.getIfBlank(group.getSourceDatabase(), ""),
+                    StringUtil.getIfBlank(group.getTargetDatabase(), ""),
+                    StringUtil.getIfBlank(group.getSourceSchema(), ""),
+                    StringUtil.getIfBlank(group.getTargetSchema(), ""));
+            DatabaseMapping mapping = mappingMap.computeIfAbsent(key, k -> {
+                DatabaseMapping dm = new DatabaseMapping();
+                dm.setSourceConnectorId(group.getSourceConnectorId());
+                dm.setTargetConnectorId(group.getTargetConnectorId());
+                dm.setSourceDatabase(group.getSourceDatabase());
+                dm.setTargetDatabase(group.getTargetDatabase());
+                dm.setSourceSchema(group.getSourceSchema());
+                dm.setTargetSchema(group.getTargetSchema());
+                dm.setTableMappings(new ArrayList<>());
+                return dm;
+            });
+            if (group.getSourceTable() == null || group.getTargetTable() == null) {
+                continue;
+            }
+            TableMapping tm = new TableMapping();
+            tm.setIndex(group.getIndex());
+            tm.setSourceTable(group.getSourceTable().getName());
+            tm.setTargetTable(group.getTargetTable().getName());
+            mapping.getTableMappings().add(tm);
+        }
+        List<DatabaseMapping> result = new ArrayList<>(mappingMap.values());
+        for (int i = 0; i < result.size(); i++) {
+            result.get(i).setIndex(i + 1);
+        }
+        return result;
     }
 
-    private int countConfiguredTableMappings(DatabaseSyncTask task) {
-        if (task == null || CollectionUtils.isEmpty(task.getDatabaseMappings())) {
-            return 0;
+    private void persistTableGroupsFromMappings(String taskId, List<DatabaseMapping> mappings) {
+        if (StringUtil.isBlank(taskId) || CollectionUtils.isEmpty(mappings)) {
+            return;
         }
-        int count = 0;
-        for (DatabaseMapping mapping : task.getDatabaseMappings()) {
-            if (!CollectionUtils.isEmpty(mapping.getTableMappings())) {
-                count += mapping.getTableMappings().size();
+        int sortIndex = 0;
+        long now = Instant.now().toEpochMilli();
+        for (DatabaseMapping mapping : mappings) {
+            List<TableMapping> tableMappings = mapping.getSortedTableMappings();
+            if (CollectionUtils.isEmpty(tableMappings)) {
+                continue;
+            }
+            for (TableMapping tableMapping : tableMappings) {
+                sortIndex++;
+                TableGroup group = new TableGroup();
+                group.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                group.setTaskId(taskId);
+                group.setIndex(sortIndex);
+                group.setSourceConnectorId(mapping.getSourceConnectorId());
+                group.setTargetConnectorId(mapping.getTargetConnectorId());
+                group.setSourceDatabase(StringUtil.getIfBlank(mapping.getSourceDatabase(), StringUtil.EMPTY));
+                group.setTargetDatabase(StringUtil.getIfBlank(mapping.getTargetDatabase(), StringUtil.EMPTY));
+                group.setSourceSchema(StringUtil.getIfBlank(mapping.getSourceSchema(), StringUtil.EMPTY));
+                group.setTargetSchema(StringUtil.getIfBlank(mapping.getTargetSchema(), StringUtil.EMPTY));
+                Table sourceTable = new Table();
+                sourceTable.setName(tableMapping.getSourceTable());
+                sourceTable.setType(TableTypeEnum.TABLE.getCode());
+                group.setSourceTable(sourceTable);
+                Table targetTable = new Table();
+                targetTable.setName(tableMapping.getTargetTable());
+                targetTable.setType(TableTypeEnum.TABLE.getCode());
+                group.setTargetTable(targetTable);
+                group.setCreateTime(now);
+                group.setUpdateTime(now);
+                profileComponent.addTableGroup(group);
             }
         }
-        return count;
     }
-
-    private long countMigrationDetailErrors(String taskId) {
-        // 明细分表：失败数存 DATA blob，加载该任务分表后在应用侧统计 failTotal>0 的明细
-        Query query = new Query(1, MAX_DETAIL_PAGE_SIZE);
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(taskId);
-        Paging paging = storageService.query(query);
-        if (paging == null) {
-            return 0;
-        }
-        return TaskDetailUtil.countDetails(paging.getData(),
-                row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL))) > 0L);
-    }
-
 }

@@ -8,7 +8,6 @@ import org.dbsyncer.sdk.storage.Strategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConnectorStrategy;
 import org.dbsyncer.sdk.storage.strategy.LogStrategy;
-import org.dbsyncer.sdk.storage.strategy.MappingStrategy;
 import org.dbsyncer.sdk.storage.strategy.MetaStrategy;
 import org.dbsyncer.sdk.storage.strategy.TableGroupStrategy;
 import org.dbsyncer.sdk.storage.strategy.TaskDetailStrategy;
@@ -38,11 +37,6 @@ public enum StorageStrategyEnum {
      * 连接配置策略
      */
     CONNECTOR(StorageEnum.CONNECTOR, new ConnectorStrategy()),
-
-    /**
-     * 驱动映射关系(mapping)策略
-     */
-    MAPPING(StorageEnum.MAPPING, new MappingStrategy()),
 
     /**
      * 表映射关系策略

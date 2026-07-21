@@ -161,10 +161,13 @@ public class MappingChecker extends AbstractChecker {
 
     public void addMeta(Mapping mapping) {
         Meta meta = new Meta();
-        meta.setMappingId(mapping.getId());
+        // 任务级 Meta：TASK_ID=任务ID，IS_TASK_DETAIL=0；主键与任务ID一致便于明细分表定位
+        meta.setTaskId(mapping.getId());
+        meta.setIsTaskDetail(0);
 
         // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());
+        meta.setId(mapping.getId());
 
         String id = profileComponent.addConfigModel(meta);
         mapping.setMetaId(id);

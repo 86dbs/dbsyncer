@@ -7,7 +7,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.Strategy;
 
 /**
- * 驱动映射关系(mapping)配置：单表存储
+ * 历史 mapping 策略：已并入 {@link StorageEnum#TASK}，保留类名兼容调用方。
  *
  * @Author AE86
  * @Version 1.0.0
@@ -17,6 +17,6 @@ public final class MappingStrategy implements Strategy {
 
     @Override
     public String createSharding(String separator, String collectionId) {
-        return StorageEnum.MAPPING.getType();
+        return StorageEnum.TASK.getType();
     }
 }

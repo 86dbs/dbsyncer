@@ -27,6 +27,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.parser.util.TaskDetailGroupUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -42,7 +43,6 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -86,6 +86,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskDetailGroupUtil taskDetailGroupUtil;
 
     @Resource
     private TableGroupService tableGroupService;
@@ -257,6 +260,22 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         newTask.setUpdateTime(System.currentTimeMillis());
         resetTaskSnapshot(newTask);
         String newId = taskService.add(newTask);
+        // 深拷贝 table_group（关联已下沉到该表）
+        List<TableGroup> sourceGroups = profileComponent.getTableGroupAll(id);
+        if (!CollectionUtils.isEmpty(sourceGroups)) {
+            long now = System.currentTimeMillis();
+            for (TableGroup source : sourceGroups) {
+                TableGroup copy = JsonUtil.jsonToObj(JsonUtil.objToJson(source), TableGroup.class);
+                if (copy == null) {
+                    continue;
+                }
+                copy.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                copy.setTaskId(newId);
+                copy.setCreateTime(now);
+                copy.setUpdateTime(now);
+                profileComponent.addTableGroup(copy);
+            }
+        }
         preloadTemplate.reConnect(newTask);
         return newId;
     }
@@ -264,10 +283,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public String delete(String id) {
         assertRunning(id);
-        List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
-        }
         taskService.delete(id);
         return "删除成功";
     }
@@ -414,31 +429,17 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Assert.hasText(taskId, "taskId is required.");
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
-        // 明细分表：加载该任务分表全部明细，差异指标存 DATA blob，过滤/排序/分页统一在应用侧
-        Paging all = queryAllDetails(taskId);
         Predicate<Map<String, Object>> filter = buildDetailStatusFilter(StringUtil.trimToEmpty(params.get("detailStatus")));
         Comparator<Map<String, Object>> comparator = Comparator.comparingLong(
                 (Map<String, Object> row) -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL)))).reversed();
-        return TaskDetailUtil.pageDetails(all.getData(), filter, comparator, pageNum, pageSize);
+        return taskDetailGroupUtil.queryJoinedResults(taskId, filter, comparator, pageNum, pageSize, null);
     }
 
     @Override
     public Object getValidateResultDetail(String taskId, String id) {
         Assert.hasText(taskId, "taskId is required.");
         Assert.hasText(id, "id is required.");
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(taskId);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-            return null;
-        }
-        Object row = paging.getData().iterator().next();
-        if (row instanceof Map) {
-            return TaskDetailUtil.mergeDetailRow((Map<String, Object>) row);
-        }
-        return row;
+        return taskDetailGroupUtil.getJoinedDetail(taskId, id);
     }
 
     @Override
@@ -558,23 +559,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * @return
      */
     private long countTaskDetail(String taskId) {
-        // 明细分表：差异数存 DATA blob，加载后在应用侧统计 diffTotal>0 的明细
-        Paging all = queryAllDetails(taskId);
-        return TaskDetailUtil.countDetails(all.getData(),
-                row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) > 0L);
-    }
-
-    /**
-     * 加载指定校验任务分表(dbsyncer_task_detail_{taskId})的全部明细。
-     *
-     * @param taskId 校验任务ID
-     * @return 明细分页(单页装载全部)
-     */
-    private Paging queryAllDetails(String taskId) {
-        Query query = new Query(1, MAX_DETAIL_PAGE_SIZE);
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(taskId);
-        return storageService.query(query);
+        return profileComponent.countDetailMetaWithPositiveDiff(taskId);
     }
 
     /**

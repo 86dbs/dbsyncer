@@ -78,6 +78,17 @@ public class Query {
         booleanFilter.add(new StringFilter(name, FilterEnum.LIKE, value, enableHighLightSearch));
     }
 
+    /**
+     * 字符串条件过滤(支持 EQUAL/IN/LIKE 等)。
+     *
+     * @param name       字段名
+     * @param filterEnum 运算符
+     * @param value      过滤值(IN 时为逗号拼接)
+     */
+    public void addFilter(String name, FilterEnum filterEnum, String value) {
+        booleanFilter.add(new StringFilter(name, filterEnum, value, false));
+    }
+
     public void addFilter(String name, int value) {
         booleanFilter.add(new IntFilter(name, value));
     }

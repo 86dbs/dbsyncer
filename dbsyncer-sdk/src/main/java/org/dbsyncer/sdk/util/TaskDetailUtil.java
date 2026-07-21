@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.util;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.nio.charset.StandardCharsets;
@@ -18,8 +19,7 @@ import java.util.function.Predicate;
 
 /**
  * 任务执行明细分表(dbsyncer_task_detail)工具。
- * <p>明细按任务分表(每个任务一张表)，精简为固定列；校验/迁移明细的结构化字段
- * 统一序列化进 DATA blob(JSON)，读取时再还原到行 Map，供上层 VO/前端使用。
+ * <p>校验/迁移结果展示字段来自连表：table_group(关联列) + meta(指标) + task_detail(载荷)。
  *
  * @author 穿云
  * @version 1.0.0
@@ -96,8 +96,74 @@ public abstract class TaskDetailUtil {
     }
 
     /**
+     * 装配校验/迁移结果行：table_group 关联列 + meta 指标 + detail 载荷。
+     *
+     * @param detailRow     task_detail 行
+     * @param tableGroupRow table_group 展示字段(可空)
+     * @param metaRow       meta 展示字段(可空)
+     * @return 合并后的展示行
+     */
+    public static Map<String, Object> assembleJoinedRow(Map<String, Object> detailRow,
+                                                        Map<String, Object> tableGroupRow,
+                                                        Map<String, Object> metaRow) {
+        Map<String, Object> row = detailRow == null ? new HashMap<>() : new HashMap<>(detailRow);
+        mergeDetailRow(row);
+        if (tableGroupRow != null) {
+            putIfPresent(row, ConfigConstant.TASK_SOURCE_TABLE_NAME, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SOURCE_TABLE));
+            putIfPresent(row, ConfigConstant.DATA_TARGET_TABLE_NAME, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_TABLE));
+            putIfPresent(row, ConfigConstant.DETAIL_TARGET_TABLE, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_TABLE));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SOURCE_DATABASE));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SOURCE_SCHEMA));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_DATABASE));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_SCHEMA));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SOURCE_TABLE));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_TABLE));
+            putIfPresent(row, ConfigConstant.TASK_SOURCE_TOTAL, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL));
+            putIfPresent(row, ConfigConstant.TASK_TARGET_TOTAL, tableGroupRow.get(ConfigConstant.TABLE_GROUP_TARGET_TOTAL));
+            putIfPresent(row, ConfigConstant.TABLE_GROUP_SORT_INDEX, tableGroupRow.get(ConfigConstant.TABLE_GROUP_SORT_INDEX));
+        }
+        if (metaRow != null) {
+            putIfPresent(row, ConfigConstant.TASK_DIFF_TOTAL, metaRow.get(ConfigConstant.META_DIFF));
+            putIfPresent(row, ConfigConstant.TASK_FIXED_TOTAL, metaRow.get(ConfigConstant.META_FIXED));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, metaRow.get(ConfigConstant.META_SUCCESS));
+            putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, metaRow.get(ConfigConstant.META_FAIL));
+            putIfPresent(row, ConfigConstant.META_TOTAL, metaRow.get(ConfigConstant.META_TOTAL));
+            putIfPresent(row, ConfigConstant.META_STATE, metaRow.get(ConfigConstant.META_STATE));
+            // 状态优先用 meta.state；前端兼容 status
+            if (metaRow.get(ConfigConstant.META_STATE) != null) {
+                row.put(ConfigConstant.TASK_STATUS, metaRow.get(ConfigConstant.META_STATE));
+            }
+        }
+        return row;
+    }
+
+    private static void putIfPresent(Map<String, Object> row, String key, Object value) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof String && StringUtil.isBlank((String) value)) {
+            return;
+        }
+        row.put(key, value);
+    }
+
+    /**
+     * 将 Meta 模型转为展示字段 Map
+     */
+    public static Map<String, Object> toMetaDisplayMap(Object total, Object success, Object fail,
+                                                       Object diff, Object fixed, Object state) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(ConfigConstant.META_TOTAL, total);
+        map.put(ConfigConstant.META_SUCCESS, success);
+        map.put(ConfigConstant.META_FAIL, fail);
+        map.put(ConfigConstant.META_DIFF, diff);
+        map.put(ConfigConstant.META_FIXED, fixed);
+        map.put(ConfigConstant.META_STATE, state);
+        return map;
+    }
+
+    /**
      * 明细分表查询后的统一后处理：合并 DATA blob → 应用过滤 → 排序 → 分页。
-     * <p>校验/迁移的差异数、失败数等结构化指标存在 DATA blob 中，无法在库侧过滤排序，统一在应用侧处理。
      *
      * @param rows       原始行集合(每行为 Map)
      * @param filter     过滤条件(可空)
@@ -145,7 +211,7 @@ public abstract class TaskDetailUtil {
             if (!(o instanceof Map)) {
                 continue;
             }
-            Map<String, Object> row = mergeDetailRow((Map<String, Object>) o);
+            Map<String, Object> row = mergeDetailRow(new HashMap<>((Map<String, Object>) o));
             if (filter == null || filter.test(row)) {
                 merged.add(row);
             }

@@ -85,8 +85,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
         data.forEach(r-> {
             Map<String, Object> row = new HashMap<>();
             row.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
-            // 明细分表(每个任务一张表)：TASK_ID=metaId; 事件写入 TYPE 列; 成功状态写入 IS_SUCCESS
-            row.put(ConfigConstant.TASK_ID, metaId);
+            // 明细分表：TABLE_GROUP_ID 关联表映射；事件写入 TYPE；成功状态写入 IS_SUCCESS
             row.put(ConfigConstant.DETAIL_IS_SUCCESS, success ? StorageDataStatusEnum.SUCCESS.getValue() : StorageDataStatusEnum.FAIL.getValue());
             row.put(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
             row.put(ConfigConstant.DETAIL_TARGET_TABLE, targetTableGroupName);

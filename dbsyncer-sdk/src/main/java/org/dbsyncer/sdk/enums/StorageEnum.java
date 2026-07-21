@@ -23,10 +23,6 @@ public enum StorageEnum {
      */
     CONNECTOR("connector"),
     /**
-     * 驱动映射关系(mapping)配置
-     */
-    MAPPING("mapping"),
-    /**
      * 表映射关系配置
      */
     TABLE_GROUP("table_group"),

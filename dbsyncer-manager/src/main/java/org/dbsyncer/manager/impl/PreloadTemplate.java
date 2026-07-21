@@ -35,6 +35,7 @@ import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -102,11 +103,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private boolean preloadCompleted;
 
     @Resource
-    private TaskService<ValidateSyncTask> taskService;
+    private TaskService<CommonTask> taskService;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        // 严格走库：不再启动时全量预加载配置到内存缓存，配置读取统一直查库
+        // 严格走库：配置直查库；此处仅做运行态恢复（连接器预热 + 中断任务续跑）
 
         // Load plugins
         pluginFactory.loadPlugins();
@@ -117,14 +118,12 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load connectorInstances
         loadConnectorInstance();
 
-        //load ValidateSyncTasks
-        loadValidateSyncTasks();
+        // 同步驱动：按任务级 Meta 恢复 Mapping
+        launchSyncMappings();
 
-        //loadDatabaseMigrationSyncTask
-        loadDatabaseMigrationSyncTask();
-
-        // Launch drivers
-        launch();
+        // 订正校验 / 整库迁移：由 TaskService(企业门面已从 dbsyncer_task 加载) 恢复运行中任务
+        resumeValidateSyncTasks();
+        resumeDatabaseSyncTasks();
 
         preloadCompleted = true;
     }
@@ -206,30 +205,42 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // Load connectorInstances
         loadConnectorInstance();
 
-        // Launch drivers
-        launch();
+        // 同步驱动恢复
+        launchSyncMappings();
     }
 
-    private void launch() {
-        List<Meta> metas = profileComponent.getMetaAll();
-        if (!CollectionUtils.isEmpty(metas)) {
-            metas.forEach(m-> {
-                try {
-                    // 重连
-                    Mapping mapping = profileComponent.getMapping(m.getMappingId());
-                    reConnect(mapping);
-
-                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
-                    if (MetaEnum.RUNNING.getCode() == m.getState()) {
-                        managerFactory.start(mapping, true);
-                    } else if (MetaEnum.STOPPING.getCode() == m.getState()) {
-                        managerFactory.changeMetaState(m.getId(), MetaEnum.READY);
-                    }
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
-            });
+    /**
+     * 恢复同步驱动(Mapping)。
+     * <p>只处理任务级 Meta({@code isTaskDetail=0})；明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
+     * Mapping 已并入 {@code dbsyncer_task}，通过 {@link Meta#getTaskId()} 关联。
+     */
+    private void launchSyncMappings() {
+        List<Meta> metas = profileComponent.getTaskMetaAll();
+        if (CollectionUtils.isEmpty(metas)) {
+            return;
         }
+        metas.forEach(meta -> {
+            try {
+                if (StringUtil.isBlank(meta.getTaskId())) {
+                    return;
+                }
+                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                // 校验/迁移也有任务级 Meta，但 TYPE 不是 mapping，跳过
+                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
+                    return;
+                }
+                reConnect(mapping);
+
+                // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
+                if (MetaEnum.RUNNING.getCode() == meta.getState()) {
+                    managerFactory.start(mapping, true);
+                } else if (MetaEnum.STOPPING.getCode() == meta.getState()) {
+                    managerFactory.changeMetaState(meta.getId(), MetaEnum.READY);
+                }
+            } catch (Exception e) {
+                logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), meta.getTaskId(), e.getMessage(), e);
+            }
+        });
     }
 
     public void reConnect(Mapping mapping) {
@@ -296,35 +307,59 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         }
     }
 
-    private void loadValidateSyncTasks() {
+    /**
+     * 恢复订正校验任务。
+     * <p>任务配置在 {@code dbsyncer_task}，表映射在 {@code dbsyncer_table_group}；
+     * TaskService 企业实现启动时已从库加载缓存，此处只做连接器预热与运行中任务续跑。
+     */
+    private void resumeValidateSyncTasks() {
         List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
         if (CollectionUtils.isEmpty(taskAll)) {
             return;
         }
-        taskAll.forEach(task -> {
-            reConnect((ValidateSyncTask) task);
-        });
-        //启动任务
-        taskAll.stream()
-                .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
-                .forEach(task -> {
-                    task.setStatus(CommonTaskStatusEnum.READY.getCode());
-                    taskService.start(task.getId());
-                });
+        for (CommonTask commonTask : taskAll) {
+            if (!(commonTask instanceof ValidateSyncTask)) {
+                continue;
+            }
+            ValidateSyncTask task = (ValidateSyncTask) commonTask;
+            try {
+                reConnect(task);
+            } catch (Exception e) {
+                logger.error("校验任务连接器预热失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
+            }
+        }
+        resumeRunningCommonTasks(taskAll);
     }
 
-
-    private void loadDatabaseMigrationSyncTask() {
+    /**
+     * 恢复整库迁移任务。
+     * <p>库表关联已下沉 {@code dbsyncer_table_group}，不再依赖任务 JSON 内 mappings；
+     * 连接器在 Handler 启动时按 table_group 初始化，此处只续跑运行中任务。
+     */
+    private void resumeDatabaseSyncTasks() {
         List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
         if (CollectionUtils.isEmpty(taskAll)) {
             return;
         }
+        resumeRunningCommonTasks(taskAll);
+    }
 
-        taskAll.stream()
-                .filter(task -> CommonTaskStatusEnum.isRunning(task.getStatus()))
-                .forEach(task -> {
-                    task.setStatus(CommonTaskStatusEnum.READY.getCode());
-                    taskService.start(task.getId());
-                });
+    /**
+     * 将中断前处于运行态的通用任务重新拉起（先落库为 READY，再 start）。
+     */
+    private void resumeRunningCommonTasks(List<CommonTask> taskAll) {
+        for (CommonTask task : taskAll) {
+            if (task == null || !CommonTaskStatusEnum.isRunning(task.getStatus())) {
+                continue;
+            }
+            try {
+                task.setStatus(CommonTaskStatusEnum.READY.getCode());
+                taskService.edit(task);
+                taskService.start(task.getId());
+                logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
+            } catch (Exception e) {
+                logger.error("恢复任务失败, taskId={}, err={}", task.getId(), e.getMessage(), e);
+            }
+        }
     }
 }

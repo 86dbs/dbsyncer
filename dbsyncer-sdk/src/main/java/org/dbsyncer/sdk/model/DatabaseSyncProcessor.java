@@ -22,8 +22,12 @@ public final class DatabaseSyncProcessor {
 
     /**
      * 计算进度百分比 0~100
+     *
+     * @param task           任务
+     * @param tableGroupSize 表映射总数(table_group 行数)
+     * @param mappingCount   库映射数(由 table_group 聚合得出)
      */
-    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize) {
+    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount) {
         if (task == null) {
             return null;
         }
@@ -33,9 +37,7 @@ public final class DatabaseSyncProcessor {
         }
         //获取表的步数
         int stepsPerTable = getStepsPerTable(task);
-        //数据库
-        int totalDbSteps = task.getDatabaseMappings().size();
-        int totalSteps = totalDbSteps + tableGroupSize * stepsPerTable;
+        int totalSteps = mappingCount + tableGroupSize * stepsPerTable;
         if (totalSteps <= 0) {
             return null;
         }

@@ -111,7 +111,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(userConfigService.getUserConfig());
         list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
         list.addAll(profileComponent.getMappingAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(profileComponent.getMetaAll().stream().limit(5).collect(Collectors.toList()));
+        list.addAll(profileComponent.getTaskMetaAll().stream().limit(5).collect(Collectors.toList()));
         return list;
     }
 

@@ -4,9 +4,11 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 整库迁移任务列表 VO
@@ -19,6 +21,12 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
 
     private final Connector sourceConnector;
     private final Connector targetConnector;
+
+    /**
+     * 库映射视图（由 table_group 还原，仅展示/编辑用，不落 task JSON）
+     */
+    private List<DatabaseMapping> databaseMappings;
+
     private int mappingCount;
     /** 任务进度 0~100，运行中由快照计算 */
     private BigDecimal progress;
@@ -40,6 +48,14 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
 
     public Connector getTargetConnector() {
         return targetConnector;
+    }
+
+    public List<DatabaseMapping> getDatabaseMappings() {
+        return databaseMappings;
+    }
+
+    public void setDatabaseMappings(List<DatabaseMapping> databaseMappings) {
+        this.databaseMappings = databaseMappings;
     }
 
     public int getMappingCount() {

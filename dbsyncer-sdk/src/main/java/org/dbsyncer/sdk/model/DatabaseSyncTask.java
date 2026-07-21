@@ -3,15 +3,11 @@
  */
 package org.dbsyncer.sdk.model;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 整库迁移任务。
- * <p>进度快照：{@link #databaseSnapshots}（库级，内含表级结构/数据/行游标）；</p>
+ * <p>库表关联配置存 {@code dbsyncer_table_group}；进度快照见 {@link #databaseSnapshots}。</p>
  * <p>列表进度由 {@link DatabaseSyncProcessor#calculateProgressPercent} 计算。</p>
  *
  * @author wuji
@@ -19,11 +15,6 @@ import java.util.stream.Collectors;
  * @date 2026-05-22 11:19
  */
 public class DatabaseSyncTask extends CommonTask {
-
-    /**
-     * 库映射列表（源/目标连接器 ID 配置在每条 {@link DatabaseMapping} 上）
-     */
-    private List<DatabaseMapping> databaseMappings;
 
     /**
      * 是否复制表结构
@@ -76,26 +67,6 @@ public class DatabaseSyncTask extends CommonTask {
      * 表级并发线程数（预留，与订正校验 threadNum 一致）
      */
     private int threadNum = 5;
-
-    public List<DatabaseMapping> getDatabaseMappings() {
-        return databaseMappings;
-    }
-
-    public void setDatabaseMappings(List<DatabaseMapping> databaseMappings) {
-        this.databaseMappings = databaseMappings;
-    }
-
-    /**
-     * 按 index 升序返回库映射列表（副本，不修改原列表）。
-     */
-    public List<DatabaseMapping> getSortedDatabaseMappings() {
-        if (databaseMappings == null || databaseMappings.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return databaseMappings.stream()
-                .sorted(Comparator.comparingInt(DatabaseMapping::getIndex))
-                .collect(Collectors.toList());
-    }
 
     public boolean isEnableCopySchema() {
         return enableCopySchema;

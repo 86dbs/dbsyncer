@@ -8,6 +8,21 @@ package org.dbsyncer.parser.model;
 public class UserInfo {
 
     /**
+     * 唯一ID(对应 dbsyncer_user.ID)
+     */
+    private String id;
+
+    /**
+     * 创建时间
+     */
+    private Long createTime;
+
+    /**
+     * 更新时间
+     */
+    private Long updateTime;
+
+    /**
      * 账号
      */
     private String username;
@@ -47,6 +62,30 @@ public class UserInfo {
         this.roleCode = roleCode;
         this.email = email;
         this.phone = phone;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public Long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
+
+    public Long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
     }
 
     public String getUsername() {

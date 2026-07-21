@@ -25,49 +25,84 @@ public class ConfigConstant {
      */
     public static final String SYSTEM = "system";
     public static final String USER = "user";
+
+    /**
+     * 用户表(dbsyncer_user)拆分列
+     */
+    public static final String USER_USERNAME = "username";
+    public static final String USER_PASSWORD = "password";
+    public static final String USER_NICKNAME = "nickname";
+    /**
+     * 列名 ROLE，模型字段 roleCode
+     */
+    public static final String USER_ROLE = "role";
+    public static final String USER_EMAIL = "email";
+    public static final String USER_PHONE = "phone";
+
     public static final String CONNECTOR = "connector";
+    /**
+     * 同步任务类型(存入 dbsyncer_task.TYPE；历史名 mapping，表已并入 task)
+     */
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
+    public static final String TASK = "task";
 
     /**
      * 表映射关系表(dbsyncer_table_group)拆分列
      */
-    public static final String TABLE_GROUP_MAPPING_ID = "taskId";
+    public static final String TABLE_GROUP_TASK_ID = "taskId";
     public static final String TABLE_GROUP_SORT_INDEX = "sortIndex";
+    public static final String TABLE_GROUP_SOURCE_CONNECTOR_ID = "sourceConnectorId";
+    public static final String TABLE_GROUP_TARGET_CONNECTOR_ID = "targetConnectorId";
+    public static final String TABLE_GROUP_SOURCE_DATABASE = "sourceDatabase";
+    public static final String TABLE_GROUP_TARGET_DATABASE = "targetDatabase";
+    public static final String TABLE_GROUP_SOURCE_SCHEMA = "sourceSchema";
+    public static final String TABLE_GROUP_TARGET_SCHEMA = "targetSchema";
+    public static final String TABLE_GROUP_SOURCE_TABLE = "sourceTable";
+    public static final String TABLE_GROUP_TARGET_TABLE = "targetTable";
+    public static final String TABLE_GROUP_SOURCE_TOTAL = "sourceTotal";
+    public static final String TABLE_GROUP_TARGET_TOTAL = "targetTotal";
+
+    /**
+     * @deprecated 使用 {@link #TABLE_GROUP_TASK_ID}
+     */
+    @Deprecated
+    public static final String TABLE_GROUP_MAPPING_ID = TABLE_GROUP_TASK_ID;
 
     /**
      * 任务执行结果表(dbsyncer_meta)拆分列
      */
+    public static final String META_TASK_ID = "taskId";
     public static final String META_STATE = "state";
+    public static final String META_IS_TASK_DETAIL = "isTaskDetail";
     public static final String META_TOTAL = "total";
-    public static final String META_SUCCESS = "metaSuccess";
+    public static final String META_SUCCESS = "success";
     public static final String META_FAIL = "fail";
+    public static final String META_DIFF = "diff";
+    public static final String META_FIXED = "fixed";
+    public static final String META_SNAPSHOT = "snapshot";
 
     /**
-     * 任务执行明细表(dbsyncer_task_detail)精简列(每个任务一张分表, 表内单一类别)
-     * <p>TYPE 列复用 {@link #CONFIG_MODEL_TYPE}: 同步数据存事件(insert/update/delete/DDL); 校验/迁移存子类型
+     * 任务执行明细表(dbsyncer_task_detail)精简列(按任务分表)
+     * <p>TYPE 列复用 {@link #CONFIG_MODEL_TYPE}
      */
     public static final String DETAIL_IS_SUCCESS = "isSuccess";
     public static final String DETAIL_TARGET_TABLE = "targetTable";
-
-    /**
-     * 数据(同步明细分表列)
-     */
     public static final String DATA_TABLE_GROUP_ID = "tableGroupId";
-    public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String DATA_ERROR = "error";
 
     /**
-     * Binlog
+     * Binlog / 明细载荷
      */
     public static final String BINLOG_DATA = "data";
 
     /**
-     * 任务
+     * 任务/前端兼容键
      */
     public static final String TASK_STATUS = "status";
     public static final String TASK_ID = "taskId";
+    public static final String DATA_TARGET_TABLE_NAME = "targetTableName";
     public static final String TASK_SOURCE_TABLE_NAME = "sourceTableName";
     public static final String TASK_SOURCE_TOTAL = "sourceTotal";
     public static final String TASK_TARGET_TOTAL = "targetTotal";
@@ -76,7 +111,7 @@ public class ConfigConstant {
     public static final String TASK_CONTENT = "content";
 
     /**
-     * 整库迁移明细（与 {@link #TASK_SOURCE_TOTAL}、{@link #CONFIG_MODEL_CREATE_TIME} 等共用 camelCase 键）
+     * 整库迁移展示字段(连表/VO 映射键，非独立明细列)
      */
     public static final String DATABASE_SYNC_DETAIL_TABLE_INDEX = "tableIndex";
     public static final String DATABASE_SYNC_DETAIL_SOURCE_DATABASE = "sourceDatabase";
