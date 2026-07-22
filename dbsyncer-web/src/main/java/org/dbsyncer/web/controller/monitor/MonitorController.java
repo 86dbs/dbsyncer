@@ -27,7 +27,6 @@ import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -42,14 +41,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -113,7 +110,7 @@ public class MonitorController extends BaseController {
     public String page(ModelMap model, String metaId, String messageId) {
         MetaVO metaVo = monitorService.getMetaVo(metaId);
         model.put("meta", metaVo);
-        model.put("mapping", mappingService.getMapping(metaVo.getMappingId()));
+        model.put("mapping", mappingService.getMapping(metaVo.getTaskId()));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
     }

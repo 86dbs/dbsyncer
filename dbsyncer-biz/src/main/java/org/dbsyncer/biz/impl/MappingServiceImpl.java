@@ -164,7 +164,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 String tableGroupJson = JsonUtil.objToJson(tableGroup);
                 TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                newTableGroup.setMappingId(newMapping.getId());
+                newTableGroup.setTaskId(newMapping.getId());
                 profileComponent.addTableGroup(newTableGroup);
                 log(LogType.TableGroupLog.COPY, newTableGroup);
             });

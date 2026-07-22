@@ -147,7 +147,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         }
         // 打印trace信息
         printTraceInfo(response);
-        final Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        final Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         List<TableGroupPicker> pickers = tableGroupContext.getTableGroupPickers(meta.getId(), response.getTableName());
 
         switch (response.getTypeEnum()) {

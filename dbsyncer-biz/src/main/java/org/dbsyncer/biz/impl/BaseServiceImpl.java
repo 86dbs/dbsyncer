@@ -81,7 +81,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, TableGroup tableGroup) {
         if (null != tableGroup) {
-            Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+            Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
             if (null != mapping) {
                 // 新增驱动知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();

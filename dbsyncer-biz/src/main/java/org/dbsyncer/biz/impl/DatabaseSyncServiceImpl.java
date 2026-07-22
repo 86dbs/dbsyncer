@@ -7,6 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -18,9 +19,9 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
@@ -45,7 +46,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -107,7 +107,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillTaskOnAdd(task, params);
         // 先落任务与任务级 Meta，再写 table_group，避免 task 失败留下孤儿关联
         String taskId = taskService.add(task);
-        persistTableGroupsFromMappings(taskId, mappings);
+        saveTableGroup(taskId, mappings);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -130,7 +130,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
         fillTaskOnEdit(task, params);
         clearTableGroups(task.getId());
-        persistTableGroupsFromMappings(id, mappings);
+        saveTableGroup(id, mappings);
         task.getDatabaseSnapshots().clear();
         task.setProcessed(CommonTaskStatusEnum.READY.getCode());
         return taskService.edit(task);
@@ -234,12 +234,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(connectorId)) {
             throw new BizException("连接器不能为空");
         }
-
         Connector connector = profileComponent.getConnector(connectorId);
         if (connector == null) {
             throw new BizException("连接器不存在");
         }
-
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(
                 "database-sync-preview",
                 connectorId, database, schema,
@@ -384,8 +382,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     private void clearTableGroups(String taskId) {
-        profileComponent.getTableGroupAll(taskId)
-                .forEach(group -> profileComponent.removeTableGroup(group.getId()));
+        profileComponent.getTableGroupAll(taskId).forEach(group -> profileComponent.removeTableGroup(group.getId()));
     }
 
     private void validateMappingConnectors(List<DatabaseMapping> mappings) {
@@ -405,7 +402,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             return null;
         }
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
-        List<DatabaseMapping> mappings = rebuildDatabaseMappingsFromTableGroups(tableGroups);
+        List<DatabaseMapping> mappings = DatabaseSyncMappingUtil.rebuildDatabaseMappings(tableGroups);
         DatabaseMapping first = CollectionUtils.isEmpty(mappings) ? null : mappings.get(0);
         Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
         Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
@@ -420,53 +417,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return vo;
     }
 
-    /**
-     * 库表关联只存 table_group；保存/展示时从 table_group 还原 DatabaseMapping 视图。
-     */
-    private List<DatabaseMapping> rebuildDatabaseMappingsFromTableGroups(List<TableGroup> tableGroups) {
-        if (CollectionUtils.isEmpty(tableGroups)) {
-            return Collections.emptyList();
-        }
-        Map<String, DatabaseMapping> mappingMap = new LinkedHashMap<>();
-        List<TableGroup> sorted = tableGroups.stream()
-                .sorted(Comparator.comparingInt(TableGroup::getIndex))
-                .collect(Collectors.toList());
-        for (TableGroup group : sorted) {
-            String key = String.join("|",
-                    StringUtil.getIfBlank(group.getSourceConnectorId(), ""),
-                    StringUtil.getIfBlank(group.getTargetConnectorId(), ""),
-                    StringUtil.getIfBlank(group.getSourceDatabase(), ""),
-                    StringUtil.getIfBlank(group.getTargetDatabase(), ""),
-                    StringUtil.getIfBlank(group.getSourceSchema(), ""),
-                    StringUtil.getIfBlank(group.getTargetSchema(), ""));
-            DatabaseMapping mapping = mappingMap.computeIfAbsent(key, k -> {
-                DatabaseMapping dm = new DatabaseMapping();
-                dm.setSourceConnectorId(group.getSourceConnectorId());
-                dm.setTargetConnectorId(group.getTargetConnectorId());
-                dm.setSourceDatabase(group.getSourceDatabase());
-                dm.setTargetDatabase(group.getTargetDatabase());
-                dm.setSourceSchema(group.getSourceSchema());
-                dm.setTargetSchema(group.getTargetSchema());
-                dm.setTableMappings(new ArrayList<>());
-                return dm;
-            });
-            if (group.getSourceTable() == null || group.getTargetTable() == null) {
-                continue;
-            }
-            TableMapping tm = new TableMapping();
-            tm.setIndex(group.getIndex());
-            tm.setSourceTable(group.getSourceTable().getName());
-            tm.setTargetTable(group.getTargetTable().getName());
-            mapping.getTableMappings().add(tm);
-        }
-        List<DatabaseMapping> result = new ArrayList<>(mappingMap.values());
-        for (int i = 0; i < result.size(); i++) {
-            result.get(i).setIndex(i + 1);
-        }
-        return result;
-    }
-
-    private void persistTableGroupsFromMappings(String taskId, List<DatabaseMapping> mappings) {
+    private void saveTableGroup(String taskId, List<DatabaseMapping> mappings) {
         if (StringUtil.isBlank(taskId) || CollectionUtils.isEmpty(mappings)) {
             return;
         }

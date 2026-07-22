@@ -78,21 +78,6 @@ public class Meta extends ConfigModel {
         this.taskId = taskId;
     }
 
-    /**
-     * @deprecated 使用 {@link #getTaskId()}
-     */
-    @Deprecated
-    public String getMappingId() {
-        return taskId;
-    }
-
-    /**
-     * @deprecated 使用 {@link #setTaskId(String)}
-     */
-    @Deprecated
-    public void setMappingId(String mappingId) {
-        this.taskId = mappingId;
-    }
 
     public int getState() {
         return state;

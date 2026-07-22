@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.sdk.util;
 
-import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -24,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author wuji
  * @version 1.0.0
+ * @date 2026-07-22 16:00
  */
 public final class TaskSnapshotUtil {
 
@@ -65,7 +65,7 @@ public final class TaskSnapshotUtil {
         if (StringUtil.isBlank(json) || StringUtil.equals("{}", json.trim())) {
             return;
         }
-        Map<String, DatabaseSyncSnapshot> parsed = JSON.parseObject(json,
+        Map<String, DatabaseSyncSnapshot> parsed = JsonUtil.jsonToObj(json,
                 new TypeReference<Map<String, DatabaseSyncSnapshot>>() {
                 });
         if (parsed == null) {
@@ -121,11 +121,11 @@ public final class TaskSnapshotUtil {
         if (StringUtil.isBlank(json) || StringUtil.equals("{}", json.trim())) {
             return null;
         }
-        DatabaseSyncTableSnapshot tableSnap = JSON.parseObject(json, DatabaseSyncTableSnapshot.class);
+        DatabaseSyncTableSnapshot tableSnap = JsonUtil.jsonToObj(json, DatabaseSyncTableSnapshot.class);
         if (tableSnap != null) {
             return tableSnap;
         }
-        return JSON.parseObject(json, CommonTaskSnapshot.class);
+        return JsonUtil.jsonToObj(json, CommonTaskSnapshot.class);
     }
 
     /**

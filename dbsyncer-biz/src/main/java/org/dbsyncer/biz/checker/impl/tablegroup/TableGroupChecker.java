@@ -82,7 +82,7 @@ public class TableGroupChecker extends AbstractChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(mappingId);
+        tableGroup.setTaskId(mappingId);
         Table source = findTable(mapping.getSourceTable(), sourceTable, sourceType);
         Table target = findTable(mapping.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
@@ -145,7 +145,7 @@ public class TableGroupChecker extends AbstractChecker {
      * 刷新表字段
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();

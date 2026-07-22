@@ -80,7 +80,7 @@ public class ValidateSyncController extends BaseController {
         } else if (page.equals("editTableGroup")) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);
-            model.put("task", validateSyncService.get(tableGroup.getMappingId()));
+            model.put("task", validateSyncService.get(tableGroup.getTaskId()));
         } else {
             model.put("task", validateSyncService.get(id));
         }

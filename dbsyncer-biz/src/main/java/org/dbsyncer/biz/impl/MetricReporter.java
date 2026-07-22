@@ -38,7 +38,6 @@ import org.dbsyncer.sdk.filter.impl.IntFilter;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -46,7 +45,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -144,7 +142,7 @@ public class MetricReporter implements ScheduledTaskJob {
 
     private void getMetricResponseInfo(String metaId, Map<String, TableGroupBufferActuator> group, String searchKey, List<MetricResponseInfo> tableList) {
         Meta meta = profileComponent.getMeta(metaId);
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
         group.forEach((k, actuator)-> {
             if (StringUtil.isNotBlank(searchKey)) {

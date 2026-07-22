@@ -148,7 +148,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 tableGroupAll.forEach(tableGroup -> {
                     TableGroup newTable = deepCopy(tableGroup);
                     newTable.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                    newTable.setMappingId(task.getId());
+                    newTable.setTaskId(task.getId());
                     profileComponent.addTableGroup(newTable);
                 });
             }
@@ -461,7 +461,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
-        ValidateSyncTask task = taskService.get(tableGroup.getMappingId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
         Assert.notNull(task, "The task id is invalid.");
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
@@ -509,7 +509,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         String tableGroupId = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        ValidateSyncTask task = taskService.get(tableGroup.getMappingId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
         assertRunning(task.getId());
 
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);

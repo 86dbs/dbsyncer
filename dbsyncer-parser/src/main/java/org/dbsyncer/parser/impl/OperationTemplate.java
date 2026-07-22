@@ -96,7 +96,7 @@ public final class OperationTemplate {
         Query condition = null;
         // 表映射关系按 mappingId 过滤
         if (model instanceof TableGroup) {
-            String mappingId = ((TableGroup) model).getMappingId();
+            String mappingId = ((TableGroup) model).getTaskId();
             if (StringUtil.isNotBlank(mappingId)) {
                 condition = new Query();
                 condition.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mappingId);
@@ -112,7 +112,7 @@ public final class OperationTemplate {
         condition.setType(type);
         condition.setQueryTotal(true);
         if (model instanceof TableGroup) {
-            String mappingId = ((TableGroup) model).getMappingId();
+            String mappingId = ((TableGroup) model).getTaskId();
             if (StringUtil.isNotBlank(mappingId)) {
                 condition.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mappingId);
             }

@@ -386,7 +386,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void writeMappingReport(Meta meta, MappingErrorContent content) {
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
             MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();

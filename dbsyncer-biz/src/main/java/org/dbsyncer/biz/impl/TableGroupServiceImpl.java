@@ -100,7 +100,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         assertRunning(mapping);
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
@@ -192,7 +192,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (ModelEnum.isFull(model)) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getMappingId());
+            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getTaskId());
             if (!CollectionUtils.isEmpty(groupAll)) {
                 for (TableGroup g : groupAll) {
                     count.getAndAdd(g.getSourceTable().getCount());

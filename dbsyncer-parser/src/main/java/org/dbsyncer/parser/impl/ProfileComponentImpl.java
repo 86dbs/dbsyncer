@@ -126,7 +126,7 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
+        TableGroup tableGroup = new TableGroup().setTaskId(mappingId);
         return operationTemplate.queryAll(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
     }
 
@@ -137,7 +137,7 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public int getTableGroupCount(String mappingId) {
-        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
+        TableGroup tableGroup = new TableGroup().setTaskId(mappingId);
         return operationTemplate.queryCount(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
     }
 

@@ -128,7 +128,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         }
 
         // 4、获取连接器服务
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(mapping.getId(), mapping.getTargetConnectorId(), ConnectorInstanceUtil.TARGET_SUFFIX);
         ConnectorInstance connectorInstance = connectorFactory.connect(targetInstanceId);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(connectorInstance.getConfig());

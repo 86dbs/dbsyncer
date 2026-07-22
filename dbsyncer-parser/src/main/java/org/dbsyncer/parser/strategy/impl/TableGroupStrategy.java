@@ -16,7 +16,7 @@ public final class TableGroupStrategy implements GroupStrategy<TableGroup> {
 
     @Override
     public String getGroupId(TableGroup model) {
-        String mappingId = model.getMappingId();
-        return new StringBuilder(ConfigConstant.TABLE_GROUP).append("_").append(mappingId).toString();
+        String taskId = model.getTaskId();
+        return new StringBuilder(ConfigConstant.TABLE_GROUP).append("_").append(taskId).toString();
     }
 }

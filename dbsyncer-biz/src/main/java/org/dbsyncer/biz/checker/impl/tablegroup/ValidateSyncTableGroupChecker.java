@@ -65,7 +65,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(taskId);
+        tableGroup.setTaskId(taskId);
         Table source = findTable(task.getSourceTable(), sourceTable, sourceType);
         Table target = findTable(task.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(task, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));

@@ -12,15 +12,12 @@ import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.StorageResponse;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.StorageService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 
@@ -76,7 +73,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
         Meta meta = profileComponent.getMeta(request.getMetaId());
         if (meta != null) {
-            Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
             if (mapping != null) {
                 logger.info("{}, data={}", mapping.getName(), request.getRow());
             }

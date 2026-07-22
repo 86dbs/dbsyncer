@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Table;
 
@@ -78,20 +79,16 @@ public class TableGroup extends AbstractConfigModel {
     }
 
     /**
-     * @deprecated 使用 {@link #getTaskId()}
+     * 库维度聚合键：源/目标连接器 + 库 + schema（不含表名）。
      */
-    @Deprecated
-    public String getMappingId() {
-        return taskId;
-    }
-
-    /**
-     * @deprecated 使用 {@link #setTaskId(String)}
-     */
-    @Deprecated
-    public TableGroup setMappingId(String mappingId) {
-        this.taskId = mappingId;
-        return this;
+    public String buildDatabaseMappingKey() {
+        return String.join("|",
+                StringUtil.getIfBlank(sourceConnectorId, ""),
+                StringUtil.getIfBlank(targetConnectorId, ""),
+                StringUtil.getIfBlank(sourceDatabase, ""),
+                StringUtil.getIfBlank(targetDatabase, ""),
+                StringUtil.getIfBlank(sourceSchema, ""),
+                StringUtil.getIfBlank(targetSchema, ""));
     }
 
     public String getSourceConnectorId() {
