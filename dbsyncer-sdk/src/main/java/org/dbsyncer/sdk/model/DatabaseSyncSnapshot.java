@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 
 import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +20,7 @@ public class DatabaseSyncSnapshot implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 库映射流水线状态，见 {@link CommonTaskStepStatusEnum} */
+    /** 库映射流水线状态，见 {@link CommonTaskStatusEnum} */
     private int status;
 
     /** 表级快照：key = 表映射 index（库内唯一） */
@@ -37,12 +37,12 @@ public class DatabaseSyncSnapshot implements Serializable {
         this.status = status;
     }
 
-    public void setStatus(CommonTaskStepStatusEnum status) {
-        this.status = status == null ? CommonTaskStepStatusEnum.PENDING.getCode() : status.getCode();
+    public void setStatus(CommonTaskStatusEnum status) {
+        this.status = status == null ? CommonTaskStatusEnum.READY.getCode() : status.getCode();
     }
 
-    public CommonTaskStepStatusEnum getStatusEnum() {
-        return CommonTaskStepStatusEnum.ofCode(status);
+    public CommonTaskStatusEnum getStatusEnum() {
+        return CommonTaskStatusEnum.ofCode(status);
     }
 
     public ConcurrentHashMap<Integer, DatabaseSyncTableSnapshot> getTables() {

@@ -84,6 +84,21 @@ public class ConfigConstant {
     public static final String META_SNAPSHOT = "snapshot";
 
     /**
+     * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
+     */
+    public static final String META_SNAPSHOT_DATABASE = "databaseSnapshots";
+
+    /**
+     * 结果 Meta.SNAPSHOT 内键：单表运行快照 JSON（TASK_ID=detail.id）
+     */
+    public static final String META_SNAPSHOT_TABLE_ONE = "tableSnapshot";
+
+    /**
+     * 结果 Meta.SNAPSHOT 内键：整库迁移时该表所属库映射 index
+     */
+    public static final String META_SNAPSHOT_MAPPING_INDEX = "mappingIndex";
+
+    /**
      * 任务执行明细表(dbsyncer_task_detail)精简列(按任务分表)
      * <p>TYPE 列复用 {@link #CONFIG_MODEL_TYPE}
      */

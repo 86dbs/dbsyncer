@@ -34,8 +34,8 @@ import org.dbsyncer.plugin.impl.HttpNoticeService;
 import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
-import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -230,7 +230,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     return;
                 }
                 reConnect(mapping);
-
                 // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                 if (MetaEnum.RUNNING.getCode() == meta.getState()) {
                     managerFactory.start(mapping, true);

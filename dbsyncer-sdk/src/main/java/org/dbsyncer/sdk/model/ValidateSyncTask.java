@@ -3,12 +3,18 @@
  */
 package org.dbsyncer.sdk.model;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 订正校验任务。
+ * <p>表映射存 {@code dbsyncer_table_group}；运行进度快照为内存态，
+ * 持久化见进度明细 Meta（{@code TASK_ID=table_group.id}）。</p>
+ */
 public class ValidateSyncTask extends CommonTask {
     // 数据源连接器ID
     private String sourceConnectorId;
@@ -108,7 +114,10 @@ public class ValidateSyncTask extends CommonTask {
     // 任务状态 0 处理中 1处理结束
     private Integer processed = 0;
 
-    //表执行快照
+    /**
+     * 运行态表执行快照：key = 表映射 index。不写入 dbsyncer_task.JSON，由 table_group 进度 Meta 持久化。
+     */
+    @JSONField(serialize = false)
     private final ConcurrentHashMap<Integer, CommonTaskSnapshot> tableSnapshots = new ConcurrentHashMap<>();
 
     public String getSourceConnectorId() {

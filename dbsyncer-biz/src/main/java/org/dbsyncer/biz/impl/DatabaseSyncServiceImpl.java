@@ -7,7 +7,6 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -21,7 +20,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
@@ -133,7 +132,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         clearTableGroups(task.getId());
         persistTableGroupsFromMappings(id, mappings);
         task.getDatabaseSnapshots().clear();
-        task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
+        task.setProcessed(CommonTaskStatusEnum.READY.getCode());
         return taskService.edit(task);
     }
 
@@ -194,9 +193,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     int tableCount = profileComponent.getTableGroupCount(task.getId());
-                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(vo, tableCount, vo.getMappingCount()));
+                    // 快照为 final 内存态，BeanUtils 不会拷到 VO，进度按原 task 计算
+                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(task, tableCount, vo.getMappingCount()));
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(vo, tableCount));
+                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(task, tableCount));
                     vo.setErrorCount(profileComponent.countTaskDetailBySuccess(task.getId(), 0));
                     list.add(vo);
                 }
@@ -411,6 +411,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
         BeanUtils.copyProperties(task, vo);
+        // final 快照 Map 无法被 BeanUtils 覆盖，需显式拷贝
+        vo.getDatabaseSnapshots().clear();
+        vo.getDatabaseSnapshots().putAll(task.getDatabaseSnapshots());
         vo.setDatabaseMappings(mappings);
         int mappingCount = CollectionUtils.isEmpty(mappings) ? 0 : mappings.size();
         vo.setMappingCount(mappingCount);

@@ -88,6 +88,14 @@ public interface MappingService {
     Paging<MappingVO> search(Map<String, String> params);
 
     /**
+     * 同步任务详情：按表映射汇总成功/失败数。
+     *
+     * @param params id=mappingId, detailStatus=fail|success|空, pageNum, pageSize
+     * @return 分页表映射汇总
+     */
+    Paging searchTableGroupResult(Map<String, String> params);
+
+    /**
      * 启动驱动
      *
      * @param id

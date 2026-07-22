@@ -10,7 +10,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 任务执行结果(dbsyncer_meta)。
  * <p>任务级：{@code isTaskDetail=0}，{@code taskId}=任务ID；
- * 明细级：{@code isTaskDetail=1}，校验/迁移时 {@code taskId}=task_detail.id，同步时 {@code taskId}=table_group.id。
+ * 进度明细：{@code isTaskDetail=1}，校验/迁移运行快照时 {@code taskId}=table_group.id（建议 {@code id}=table_group.id）；
+ * 结果明细：{@code isTaskDetail=1}，{@code taskId}=task_detail.id（saveResult 指标行）；
+ * 同步驱动明细：{@code isTaskDetail=1}，{@code taskId}=table_group.id（CDC 游标等）。
  *
  * @author AE86
  * @version 1.0.0
@@ -19,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Meta extends ConfigModel {
 
     /**
-     * 关联ID：任务级为 taskId；明细级为 task_detail.id 或 table_group.id
+     * 关联ID：任务级为 taskId；进度/同步明细为 table_group.id；结果明细为 task_detail.id
      */
     private String taskId;
 

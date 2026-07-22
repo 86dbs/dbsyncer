@@ -25,14 +25,12 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -113,7 +111,7 @@ public class TableGroupChecker extends AbstractChecker {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = profileComponent.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");

@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
@@ -33,6 +32,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -40,7 +40,6 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
-import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -162,8 +161,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
         String status = params.get("status");
+        String tableGroupId = params.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        if (StringUtil.isBlank(tableGroupId)) {
+            tableGroupId = params.get("tableGroupId");
+        }
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status, tableGroupId);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVO> list = new ArrayList<>();
         for (Map row : data) {
@@ -173,8 +176,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
                 row.put("success", row.get(ConfigConstant.DETAIL_IS_SUCCESS));
                 row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, row.get(ConfigConstant.DETAIL_TARGET_TABLE));
                 DataVO dataVo = convert2Vo(row, DataVO.class);
-                Map binlogData = dataSyncService.getBinlogData(row, true);
-                dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
+                // 列表不解 blob，字段详情按需拉取
+                dataVo.setJson(null);
                 list.add(dataVo);
             } catch (Exception e) {
                 logger.error(e.getLocalizedMessage(), e);
@@ -186,18 +189,77 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public String clearData(String id) {
+        return clearData(id, null);
+    }
+
+    @Override
+    public String clearData(String id, String tableGroupId) {
         Assert.hasText(id, "驱动不存在.");
         Meta meta = profileComponent.getMeta(id);
-        // 严格走库：fail 为库侧增量列，直接原子归零(同时刷新 updateTime)
-        profileComponent.incrementMeta(id, 0L, 0L, -meta.getFail().get());
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
-        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
-        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        // 明细分表：按任务ID删除 dbsyncer_task_detail_{taskId}
+        Assert.notNull(meta, "驱动不存在.");
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        Assert.notNull(mapping, "驱动不存在.");
         String shardId = StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : id;
+
+        if (StringUtil.isNotBlank(tableGroupId)) {
+            clearTableGroupData(meta, shardId, tableGroupId);
+            LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+            logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
+            return "清空当前表同步数据成功";
+        }
+
+        // 任务 Meta：success/fail 一并归零
+        resetMetaCounters(meta);
+        // 表级 Meta 删除
+        List<TableGroup> groups = profileComponent.getTableGroupAll(mapping.getId());
+        if (!CollectionUtils.isEmpty(groups)) {
+            for (TableGroup group : groups) {
+                if (group == null || StringUtil.isBlank(group.getId())) {
+                    continue;
+                }
+                removeTableMeta(group.getId());
+            }
+        }
+        LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
         storageService.clear(StorageEnum.TASK_DETAIL, shardId);
         return "清空同步数据成功";
+    }
+
+    private void clearTableGroupData(Meta taskMeta, String shardId, String tableGroupId) {
+        Meta tableMeta = profileComponent.getMetaByRefId(tableGroupId, 1);
+        long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
+        long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
+        if (tableSuccess != 0 || tableFail != 0) {
+            profileComponent.incrementMeta(taskMeta.getId(), 0L, -tableSuccess, -tableFail);
+        }
+        removeTableMeta(tableGroupId);
+
+        Query query = new Query();
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(shardId);
+        query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
+        storageService.delete(query);
+    }
+
+    private void resetMetaCounters(Meta meta) {
+        if (meta == null) {
+            return;
+        }
+        long success = meta.getSuccess() != null ? meta.getSuccess().get() : 0L;
+        long fail = meta.getFail() != null ? meta.getFail().get() : 0L;
+        if (success != 0 || fail != 0) {
+            profileComponent.incrementMeta(meta.getId(), 0L, -success, -fail);
+        }
+    }
+
+    private void removeTableMeta(String tableGroupId) {
+        Meta tableMeta = profileComponent.getMetaByRefId(tableGroupId, 1);
+        if (tableMeta != null) {
+            profileComponent.removeConfigModel(tableMeta.getId());
+        }
     }
 
     @Override
@@ -339,15 +401,23 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status) {
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status, String tableGroupId) {
         // 没有驱动
         if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
         }
         Query query = new Query(pageNum, pageSize);
-        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
-        query.setFieldResolverMap(fieldResolvers);
+        // 列表不查 DATA blob，详情弹窗再按 id 拉取
+        java.util.Set<String> selectFields = new java.util.HashSet<>();
+        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
+        selectFields.add(ConfigConstant.DATA_TABLE_GROUP_ID);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_TYPE);
+        selectFields.add(ConfigConstant.DETAIL_TARGET_TABLE);
+        selectFields.add(ConfigConstant.DETAIL_IS_SUCCESS);
+        selectFields.add(ConfigConstant.DATA_ERROR);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        query.setSelectFlied(selectFields);
 
         // 明细分表：查询 dbsyncer_task_detail_{taskId}
         query.setMetaId(metaId);
@@ -358,6 +428,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 查询数据状态
         if (StringUtil.isNotBlank(status) && !StringUtil.equals("-1", status)) {
             query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, NumberUtil.toInt(status));
+        }
+        if (StringUtil.isNotBlank(tableGroupId)) {
+            query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         }
         query.setType(StorageEnum.TASK_DETAIL);
         return storageService.query(query);

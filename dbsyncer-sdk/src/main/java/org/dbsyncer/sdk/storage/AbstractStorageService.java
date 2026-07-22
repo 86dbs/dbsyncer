@@ -57,6 +57,12 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             return select(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
+        } catch (SdkException e) {
+            // 动态分表尚未创建（任务未启动/无明细）时按空结果返回
+            if (isMissingStorageTable(e)) {
+                return new Paging(query.getPageNum(), query.getPageSize());
+            }
+            throw e;
         }
         return new Paging(query.getPageNum(), query.getPageSize());
     }
@@ -159,5 +165,15 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         List<String> list = new ArrayList<>();
         list.add(id);
         return list;
+    }
+
+    private boolean isMissingStorageTable(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            String msg = t.getMessage();
+            if (msg != null && (msg.contains("doesn't exist") || msg.contains("Unknown table") || msg.contains("not found"))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

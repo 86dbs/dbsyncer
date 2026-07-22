@@ -311,6 +311,71 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
+    public Paging searchTableGroupResult(Map<String, String> params) {
+        String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        if (StringUtil.isBlank(mappingId)) {
+            mappingId = params.get("id");
+        }
+        Assert.hasText(mappingId, "驱动ID不能为空.");
+        assertMappingExist(mappingId);
+
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String detailStatus = params.get("detailStatus");
+
+        List<TableGroup> groups = tableGroupService.getTableGroupAll(mappingId);
+        List<String> groupIds = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(groups)) {
+            for (TableGroup group : groups) {
+                if (group != null && StringUtil.isNotBlank(group.getId())) {
+                    groupIds.add(group.getId());
+                }
+            }
+        }
+        Map<String, Meta> metaMap = profileComponent.getDetailMetaMap(groupIds);
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(groups)) {
+            for (TableGroup group : groups) {
+                if (group == null || StringUtil.isBlank(group.getId())) {
+                    continue;
+                }
+                Meta tableMeta = metaMap.get(group.getId());
+                long success = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
+                long fail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
+                long updateTime = tableMeta != null ? tableMeta.getUpdateTime() : 0L;
+                if (StringUtil.equals("fail", detailStatus) && fail <= 0) {
+                    continue;
+                }
+                if (StringUtil.equals("success", detailStatus) && fail > 0) {
+                    continue;
+                }
+                Map<String, Object> row = new HashMap<>();
+                row.put("tableGroupId", group.getId());
+                row.put("index", group.getIndex());
+                row.put("sourceTable", group.getSourceTable() == null ? "" : group.getSourceTable().getName());
+                row.put("targetTable", group.getTargetTable() == null ? "" : group.getTargetTable().getName());
+                row.put("successTotal", success);
+                row.put("failTotal", fail);
+                row.put("updateTime", updateTime > 0 ? updateTime : group.getUpdateTime());
+                rows.add(row);
+            }
+            rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get("index")))));
+        }
+
+        Paging paging = new Paging(pageNum, pageSize);
+        paging.setTotal(rows.size());
+        int from = Math.max(0, (pageNum - 1) * pageSize);
+        if (from >= rows.size()) {
+            paging.setData(Collections.emptyList());
+            return paging;
+        }
+        int to = Math.min(rows.size(), from + pageSize);
+        paging.setData(rows.subList(from, to));
+        return paging;
+    }
+
+    @Override
     public String start(String id) {
         Mapping mapping = assertMappingExist(id);
         //校验映射关系是否存在

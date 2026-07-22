@@ -53,7 +53,7 @@ public class H2StorageService extends AbstractStorageService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String PREFIX_TABLE = "dbsyncer_";
-    private final String DROP_TABLE = "DROP TABLE %s";
+    private final String DROP_TABLE = "DROP TABLE IF EXISTS %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
     private final String QUERY_TABLE_EXISTS = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = UPPER(?)";
     private final String QUERY_INDEX_EXISTS = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.INDEXES WHERE UPPER(TABLE_NAME) = UPPER(?) AND UPPER(INDEX_NAME) = UPPER(?)";
@@ -99,31 +99,41 @@ public class H2StorageService extends AbstractStorageService {
     @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
-        Executor executor = getExecutor(query.getType(), sharding);
+        // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表
+        Executor executor = getExecutor(query.getType(), sharding, false);
         if (executor == null) {
             return paging;
         }
-        List<Object> queryCountArgs = new ArrayList<>();
-        String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
-        Long total = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
-        paging.setTotal(total);
-        if (query.isQueryTotal()) {
-            return paging;
-        }
+        try {
+            List<Object> queryCountArgs = new ArrayList<>();
+            String queryCountSql = buildQueryCountSql(query, executor, queryCountArgs);
+            Long total = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(queryCountSql, queryCountArgs.toArray(), Long.class));
+            paging.setTotal(total);
+            if (query.isQueryTotal()) {
+                return paging;
+            }
 
-        List<AbstractFilter> highLightKeys = new ArrayList<>();
-        List<Object> queryArgs = new ArrayList<>();
-        String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
-        List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
-        data = normalizeResultKeys(data, executor.getFields());
-        replaceHighLight(highLightKeys, data);
-        paging.setData(data);
-        return paging;
+            List<AbstractFilter> highLightKeys = new ArrayList<>();
+            List<Object> queryArgs = new ArrayList<>();
+            String querySql = buildQuerySql(query, executor, queryArgs, highLightKeys);
+            List<Map<String, Object>> data = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(querySql, queryArgs.toArray()));
+            data = normalizeResultKeys(data, executor.getFields());
+            replaceHighLight(highLightKeys, data);
+            paging.setData(data);
+            return paging;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                tables.remove(sharding);
+                logger.debug("select skip missing table, sharding={}: {}", sharding, e.getMessage());
+                return paging;
+            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new H2Exception(e);
+        }
     }
 
     @Override
     protected void delete(String sharding, Query query) {
-        Executor executor = getExecutor(query.getType(), sharding);
+        Executor executor = getExecutor(query.getType(), sharding, false);
         if (executor == null) {
             return;
         }
@@ -137,14 +147,20 @@ public class H2StorageService extends AbstractStorageService {
 
     @Override
     protected void deleteAll(String sharding) {
-        tables.computeIfPresent(sharding, (k, executor) -> {
-            String sql = getExecutorSql(executor, k);
-            executeSql(sql);
-            if (!executor.systemTable) {
-                return null;
-            }
-            return executor;
-        });
+        Executor executor = tables.remove(sharding);
+        // 系统表：截断后放回缓存
+        if (executor != null && executor.isSystemTable()) {
+            tables.put(sharding, executor);
+            executeSql(String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(sharding)));
+            return;
+        }
+        // 动态分表：无论是否在内存缓存，都尝试 DROP，避免删任务后孤儿表残留
+        String tableName = PREFIX_TABLE.concat(sharding);
+        try {
+            executeSql(String.format(DROP_TABLE, tableName));
+        } catch (Exception e) {
+            logger.debug("drop table {} skipped: {}", tableName, e.getMessage());
+        }
     }
 
     @Override
@@ -159,7 +175,7 @@ public class H2StorageService extends AbstractStorageService {
 
     @Override
     protected void batchDelete(StorageEnum type, String sharding, List<String> ids) {
-        final Executor executor = getExecutor(type, sharding);
+        final Executor executor = getExecutor(type, sharding, false);
         if (executor == null) {
             return;
         }
@@ -241,18 +257,47 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     private Executor getExecutor(StorageEnum type, String sharding) {
-        return tables.computeIfAbsent(sharding, table -> {
-            Executor executor = tables.get(type.getType());
-            if (executor == null) {
-                throw new NullExecutorException("未知的存储类型");
+        return getExecutor(type, sharding, true);
+    }
+
+    /**
+     * @param createIfAbsent true：写路径，分表不存在则建表；false：读/删路径，不存在则返回 null，避免错误 shard 产生孤儿表
+     */
+    private Executor getExecutor(StorageEnum type, String sharding, boolean createIfAbsent) {
+        Executor template = tables.get(type.getType());
+        if (template == null) {
+            throw new NullExecutorException("未知的存储类型");
+        }
+        String physicalTable = PREFIX_TABLE.concat(sharding);
+        // 读路径：缓存命中也要校验物理表，避免 DROP 后仍查已失效的 Executor
+        if (!createIfAbsent && !template.isSystemTable()) {
+            if (!tableExists(physicalTable)) {
+                tables.remove(sharding);
+                return null;
             }
-            Executor newExecutor = new Executor(executor.getType(), executor.getFields(), executor.isSystemTable(), executor.isOrderByUpdateTime());
+        }
+        Executor cached = tables.get(sharding);
+        if (cached != null) {
+            return cached;
+        }
+        return tables.computeIfAbsent(sharding, table -> {
+            Executor newExecutor = new Executor(template.getType(), template.getFields(), template.isSystemTable(), template.isOrderByUpdateTime());
             return createTableIfNotExist(table, newExecutor);
         });
     }
 
-    private String getExecutorSql(Executor executor, String sharding) {
-        return executor.isSystemTable() ? String.format(TRUNCATE_TABLE, PREFIX_TABLE.concat(sharding)) : String.format(DROP_TABLE, PREFIX_TABLE.concat(sharding));
+    private boolean isTableMissing(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            String msg = t.getMessage();
+            if (msg == null) {
+                continue;
+            }
+            String lower = msg.toLowerCase();
+            if (lower.contains("doesn't exist") || lower.contains("not found") || lower.contains("unknown table")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Object[] getInsertArgs(Executor executor, Map params) {
@@ -556,6 +601,12 @@ public class H2StorageService extends AbstractStorageService {
             createIndexIfNotExist(table, "IDX_TASK_SORT", "`TASK_ID`,`SORT_INDEX`");
             return;
         }
+        if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
+            // H2 索引名全局唯一：按表名哈希后缀，避免多分表冲突
+            String suffix = Integer.toHexString(table.hashCode() & 0xffff);
+            createIndexIfNotExist(table, "IDX_TG_UPD_" + suffix, "`TABLE_GROUP_ID`,`UPDATE_TIME`");
+            return;
+        }
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
         if (StorageEnum.META.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_STATE_UPDATE_TIME", "`STATE`,`UPDATE_TIME`");
@@ -590,8 +641,13 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     private boolean tableExists(String tableName) {
-        Long count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(QUERY_TABLE_EXISTS, new Object[] {tableName}, Long.class));
-        return count != null && count > 0;
+        try {
+            Long count = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForObject(QUERY_TABLE_EXISTS, new Object[] {tableName}, Long.class));
+            return count != null && count > 0;
+        } catch (Exception e) {
+            logger.debug("tableExists({}) failed: {}", tableName, e.getMessage());
+            return false;
+        }
     }
 
     private boolean indexExists(String tableName, String indexName) {

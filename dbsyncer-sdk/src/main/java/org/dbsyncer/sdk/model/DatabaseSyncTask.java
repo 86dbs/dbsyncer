@@ -3,12 +3,14 @@
  */
 package org.dbsyncer.sdk.model;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 整库迁移任务。
- * <p>库表关联配置存 {@code dbsyncer_table_group}；进度快照见 {@link #databaseSnapshots}。</p>
- * <p>列表进度由 {@link DatabaseSyncProcessor#calculateProgressPercent} 计算。</p>
+ * <p>库表关联配置存 {@code dbsyncer_table_group}；运行进度：库映射 status 摘要在任务级 Meta，
+ * 表级快照在进度明细 Meta（{@code TASK_ID=table_group.id}）。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -49,8 +51,10 @@ public class DatabaseSyncTask extends CommonTask {
     private Long endTime;
 
     /**
-     * 执行快照：key = 库映射 index，value 含库流水线状态及下属表快照。TODO fan序列后是HashMap
+     * 运行态执行快照：key = 库映射 index。不写入 dbsyncer_task.JSON；
+     * 库 status 持久化到任务级 Meta，表级落到 table_group 进度 Meta。
      */
+    @JSONField(serialize = false)
     private final ConcurrentHashMap<Integer, DatabaseSyncSnapshot> databaseSnapshots = new ConcurrentHashMap<>();
 
     /**
@@ -168,7 +172,7 @@ public class DatabaseSyncTask extends CommonTask {
     }
 
     /**
-     * 新一次执行前重置进度快照（上次已 processed=1 时调用）。
+     * 新一次执行前重置进度快照（上次已 processed=已完成 时调用）。
      */
     public void resetRunSnapshots() {
         processed = 0;

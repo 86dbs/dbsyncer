@@ -4,7 +4,8 @@
 package org.dbsyncer.common.enums;
 
 /**
- * 任务执行状态枚举
+ * 通用任务状态（任务运行态与快照/进度态统一）：
+ * 0-未运行；1-运行中；2-停止中；3-已完成。
  *
  * @author 穿云
  * @version 1.0.0
@@ -13,7 +14,7 @@ package org.dbsyncer.common.enums;
 public enum CommonTaskStatusEnum {
 
     /**
-     * 未运行
+     * 未运行 / 未执行
      */
     READY(0, "未运行"),
     /**
@@ -23,7 +24,12 @@ public enum CommonTaskStatusEnum {
     /**
      * 停止中
      */
-    STOPPING(2, "停止中");
+    STOPPING(2, "停止中"),
+
+    /**
+     * 已完成
+     */
+    DONE(3, "已完成");
 
     private final int code;
     private final String message;
@@ -33,15 +39,59 @@ public enum CommonTaskStatusEnum {
         this.message = message;
     }
 
-    public static boolean isRunning(int state) {
-        return RUNNING.getCode() == state;
-    }
-
     public int getCode() {
         return code;
     }
 
     public String getMessage() {
         return message;
+    }
+
+    public static boolean isReady(Integer status) {
+        return status != null && status == READY.code;
+    }
+
+    public static boolean isReady(int status) {
+        return status == READY.code;
+    }
+
+    public static boolean isRunning(Integer status) {
+        return status != null && status == RUNNING.code;
+    }
+
+    public static boolean isRunning(int status) {
+        return status == RUNNING.code;
+    }
+
+    public static boolean isStopping(Integer status) {
+        return status != null && status == STOPPING.code;
+    }
+
+    public static boolean isStopping(int status) {
+        return status == STOPPING.code;
+    }
+
+    public static boolean isDone(Integer status) {
+        return status != null && status == DONE.code;
+    }
+
+    public static boolean isDone(int status) {
+        return status == DONE.code;
+    }
+
+    /**
+     * 未完成、可续跑（未运行 / 运行中 / 停止中）。
+     */
+    public static boolean isIncomplete(int status) {
+        return !isDone(status);
+    }
+
+    public static CommonTaskStatusEnum ofCode(int code) {
+        for (CommonTaskStatusEnum value : values()) {
+            if (value.code == code) {
+                return value;
+            }
+        }
+        return null;
     }
 }

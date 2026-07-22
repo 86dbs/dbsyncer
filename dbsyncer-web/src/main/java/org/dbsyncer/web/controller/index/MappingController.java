@@ -7,8 +7,10 @@ import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.model.DataSyncRequest;
+import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -63,7 +65,36 @@ public class MappingController extends BaseController {
     }
 
     @GetMapping("/page/{page}")
-    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id, Integer exclude) {
+    public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id,
+                       @RequestParam(value = "exclude", required = false) Integer exclude,
+                       @RequestParam(value = "detailStatus", required = false) String detailStatus,
+                       @RequestParam(value = "tableGroupId", required = false) String tableGroupId,
+                       @RequestParam(value = "status", required = false) String status) {
+        if (StringUtil.equals("detail", page)) {
+            model.put("mappingId", id);
+            model.put("mapping", mappingService.getMapping(id, 1));
+            model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
+            return "mapping/detail";
+        }
+        if (StringUtil.equals("events", page)) {
+            MappingVO mapping = mappingService.getMapping(id, 1);
+            model.put("mappingId", id);
+            model.put("mapping", mapping);
+            model.put("metaId", mapping.getMetaId());
+            model.put("tableGroupId", tableGroupId == null ? "" : tableGroupId.trim());
+            String dataStatus = status;
+            if (StringUtil.isBlank(dataStatus)) {
+                if (StringUtil.equals("fail", detailStatus)) {
+                    dataStatus = "0";
+                } else if (StringUtil.equals("success", detailStatus)) {
+                    dataStatus = "1";
+                } else {
+                    dataStatus = "-1";
+                }
+            }
+            model.put("dataStatus", dataStatus);
+            return "mapping/events";
+        }
         model.put("mapping", mappingService.getMapping(id, exclude));
         model.put("connectors", connectorService.getConnectorAll());
         initConfig(model);
@@ -97,6 +128,21 @@ public class MappingController extends BaseController {
         try {
             Map<String, String> params = getParams(request);
             return RestResult.restSuccess(mappingService.search(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 同步任务详情：按表映射汇总成功/失败数
+     */
+    @PostMapping("/searchResult")
+    @ResponseBody
+    public RestResult searchResult(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(mappingService.searchTableGroupResult(params));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

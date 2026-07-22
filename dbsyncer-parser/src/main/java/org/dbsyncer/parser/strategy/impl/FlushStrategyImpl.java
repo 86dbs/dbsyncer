@@ -12,6 +12,7 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
@@ -141,6 +142,30 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
         // 严格走库：按批 DB 原子增量，不再在内存 Meta 实例上累加
         profileComponent.incrementMeta(writer.getMetaId(), 0L, success, fail);
+        incrementTableMeta(writer.getTableGroupId(), success, fail);
+    }
+
+    /**
+     * 同步表级 Meta：TASK_ID=table_group.id，IS_TASK_DETAIL=1，供详情页直接读成功/失败。
+     */
+    private void incrementTableMeta(String tableGroupId, long success, long fail) {
+        if (StringUtil.isBlank(tableGroupId)) {
+            return;
+        }
+        synchronized (("table-meta-" + tableGroupId).intern()) {
+            Meta tableMeta = profileComponent.getMetaByRefId(tableGroupId, 1);
+            if (tableMeta == null) {
+                tableMeta = new Meta();
+                tableMeta.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                tableMeta.setTaskId(tableGroupId);
+                tableMeta.setIsTaskDetail(1);
+                long now = Instant.now().toEpochMilli();
+                tableMeta.setCreateTime(now);
+                tableMeta.setUpdateTime(now);
+                profileComponent.addConfigModel(tableMeta);
+            }
+            profileComponent.incrementMeta(tableMeta.getId(), 0L, success, fail);
+        }
     }
 
     private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {

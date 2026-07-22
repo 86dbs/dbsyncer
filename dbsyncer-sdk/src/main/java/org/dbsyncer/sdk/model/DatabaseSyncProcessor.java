@@ -3,8 +3,8 @@
  */
 package org.dbsyncer.sdk.model;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
 
 import java.math.BigDecimal;
@@ -32,7 +32,7 @@ public final class DatabaseSyncProcessor {
             return null;
         }
         // 已标记完成
-        if (task.getProcessed() != null && task.getProcessed() == 1) {
+        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
             return new BigDecimal("100.00");
         }
         //获取表的步数
@@ -76,7 +76,7 @@ public final class DatabaseSyncProcessor {
         if (CollectionUtils.isEmpty(snapshots)) {
             return 0;
         }
-        return snapshots.values().stream().filter(s -> s != null && CommonTaskStepStatusEnum.isDone(s.getStatus())).count();
+        return snapshots.values().stream().filter(s -> s != null && CommonTaskStatusEnum.isDone(s.getStatus())).count();
     }
 
     /**
@@ -117,7 +117,7 @@ public final class DatabaseSyncProcessor {
         if (task == null) {
             return 0;
         }
-        if (task.getProcessed() != null && task.getProcessed() == 1 && totalTableCount > 0) {
+        if (CommonTaskStatusEnum.isDone(task.getProcessed()) && totalTableCount > 0) {
             return totalTableCount;
         }
         int stepsPerTable = getStepsPerTable(task);

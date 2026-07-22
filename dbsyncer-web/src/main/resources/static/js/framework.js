@@ -808,10 +808,8 @@ function renderLicenseProductList($dropdownMenu, $productDivider, products) {
 
 // ******************* 驱动表格展示内容 ***************************
 function showMappingError(metaId){
-    doLoader('/monitor?dataStatus=0&id='+metaId);
-    // 激活监控菜单
-    $('.sidebar-item').removeClass('active');
-    $('.sidebar-item[url="/monitor"]').addClass('active');
+    // 兼容旧调用：失败明细已迁移到同步任务详情
+    doLoader('/mapping/list');
 }
 
 function getStateConfig(mappingId) {
@@ -1002,11 +1000,12 @@ function renderFullSyncResult(meta) {
 }
 
 // 同步失败行
-function renderMappingFailLine(meta) {
+function renderMappingFailLine(meta, mappingId) {
     if (!meta.fail || meta.fail <= 0) {
         return '';
     }
-    return `<div class="text-xs mt-1">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
+    const id = mappingId || '';
+    return `<div class="text-xs mt-1">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败详情' onclick="doLoader('/mapping/page/detail?id=${id}&detailStatus=fail')">查看详情</span></div>`;
 }
 
 // 根据同步结果生成内容
@@ -1015,7 +1014,7 @@ function renderSyncResult(mapping) {
     if (!meta) return '';
 
     if (mapping.model === 'fullIncrement') {
-        return renderFullIncrementSyncResult(meta) + renderMappingFailLine(meta);
+        return renderFullIncrementSyncResult(meta) + renderMappingFailLine(meta, mapping.id);
     }
 
     const content = [];
@@ -1024,7 +1023,7 @@ function renderSyncResult(mapping) {
     } else {
         content.push(`<div class="text-xs">成功: ${formatCount(meta.success || 0)}</div>`);
     }
-    content.push(renderMappingFailLine(meta));
+    content.push(renderMappingFailLine(meta, mapping.id));
     return content.join('');
 }
 

@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.enums;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+
 /**
  * 整库迁移明细类型（{@code dbsyncer_task_database_sync_detail.TYPE}）。
  *
@@ -46,14 +48,14 @@ public enum DatabaseMigrationDetailTypeEnum {
         if (this == ROW_DATA) {
             return true;
         }
-        return this == TABLE_SCHEMA && CommonTaskStepStatusEnum.isDone(status);
+        return this == TABLE_SCHEMA && CommonTaskStatusEnum.isDone(status);
     }
 
     /**
      * 数据阶段是否已结束（含跳过）。
      */
     public boolean isDataPhaseDone(int status) {
-        return this == ROW_DATA && CommonTaskStepStatusEnum.isDone(status);
+        return this == ROW_DATA && CommonTaskStatusEnum.isDone(status);
     }
 
     /**

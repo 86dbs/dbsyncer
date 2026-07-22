@@ -8,7 +8,6 @@ import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
 import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
@@ -31,10 +30,8 @@ import org.dbsyncer.parser.util.TaskDetailGroupUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
-import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
@@ -602,6 +599,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = profileComponent.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
+        // final 快照 Map 无法被 BeanUtils 覆盖，需显式拷贝
+        vo.getTableSnapshots().clear();
+        vo.getTableSnapshots().putAll(validateSyncTask.getTableSnapshots());
         return vo;
     }
 
@@ -652,7 +652,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setBatchNum(NumberUtil.toInt(params.get("batchNum"), task.getBatchNum()));
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), task.getThreadNum()));
         task.getTableSnapshots().clear();
-        task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
+        task.setProcessed(CommonTaskStatusEnum.READY.getCode());
     }
 
     private void log(LogType log, ValidateSyncTask task, TableGroup tableGroup) {
@@ -676,35 +676,29 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     /**
-     * 已完成表数：completed = (最小索引 - 1) + (快照中 status=1 的个数)
+     * 已完成表数：快照中 status=已完成 的个数（不再用 minIndex 裁剪推断）。
      */
     private int countCompletedTables(ValidateSyncTask task, int totalSize) {
         if (task.getProcessed() == null) {
             return 0;
         }
-        if (task.getProcessed() == 1) {
+        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
             return totalSize;
         }
         if (task.getTableSnapshots() == null || task.getTableSnapshots().isEmpty()) {
             return 0;
         }
-        int minIndex = task.getTableSnapshots().keySet().stream()
-                .min(Comparator.naturalOrder())
-                .orElse(0);
         long doneCount = task.getTableSnapshots().values().stream()
-                .filter(snapshot -> snapshot != null && CommonTaskStepStatusEnum.isDone(snapshot.getStatus()))
+                .filter(snapshot -> snapshot != null && CommonTaskStatusEnum.isDone(snapshot.getStatus()))
                 .count();
-        long completed = Math.max(0, minIndex - 1L) + doneCount;
-        if (completed > totalSize) {
-            completed = totalSize;
+        if (doneCount > totalSize) {
+            return totalSize;
         }
-        return (int) completed;
+        return (int) doneCount;
     }
 
     /**
-     * 进度百分比计算：
-     * completed = (最小索引 - 1) + (快照中 status=1 的个数)
-     * progress = completed / 表总数 * 100
+     * 进度百分比：completed / 表总数 * 100。
      *
      * @param task      校验任务
      * @param totalSize 表总数
@@ -715,7 +709,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         if (task.getProcessed() == null) {
             return null;
         }
-        if (task.getProcessed() == 1) {
+        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
             return new BigDecimal("100.00");
         }
         if (totalSize <= 0) {
