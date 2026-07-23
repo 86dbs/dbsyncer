@@ -11,7 +11,6 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.StorageStrategyEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
-
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
@@ -73,7 +72,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         if (CollectionUtils.isEmpty(q.getClauses()) && CollectionUtils.isEmpty(q.getFilters())) {
             throw new SdkException("必须包含删除条件");
         }
-
         try {
             String sharding = getSharding(query.getType(), query.getMetaId());
             delete(sharding, query);

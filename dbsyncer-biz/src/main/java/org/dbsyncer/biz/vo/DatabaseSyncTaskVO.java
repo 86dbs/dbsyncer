@@ -8,10 +8,14 @@ import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * 整库迁移任务列表 VO
+ * 整库迁移任务列表/详情 VO。
+ * <p>接口出入参中的 {@code databaseMappings} 为 {@link DatabaseMappingVO}（含表）；
+ * 任务持久化库映射仍写在父类字段（仅库维）。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -23,14 +27,14 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
     private final Connector targetConnector;
 
     /**
-     * 库映射视图（由 table_group 还原，仅展示/编辑用，不落 task JSON）
+     * 编辑/展示用库映射（含表）
      */
-    private List<DatabaseMapping> databaseMappings;
+    private List<DatabaseMappingVO> mappingViews;
 
     private int mappingCount;
     /** 任务进度 0~100，运行中由快照计算 */
     private BigDecimal progress;
-    /** 失败明细条数（failTotal > 0） */
+    /** 失败明细条数（failTotal &gt; 0） */
     private long errorCount;
     /** 任务总表数（TableGroup 数量） */
     private int totalTableCount;
@@ -50,12 +54,43 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
         return targetConnector;
     }
 
-    public List<DatabaseMapping> getDatabaseMappings() {
-        return databaseMappings;
+    public List<DatabaseMappingVO> getMappingViews() {
+        return mappingViews;
     }
 
+    public void setMappingViews(List<DatabaseMappingVO> mappingViews) {
+        this.mappingViews = mappingViews;
+    }
+
+    /**
+     * 序列化为前端字段 {@code databaseMappings}（元素运行时为 {@link DatabaseMappingVO}）。
+     */
+    @Override
+    public List<DatabaseMapping> getDatabaseMappings() {
+        if (mappingViews == null) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(mappingViews);
+    }
+
+    /**
+     * BeanUtils / 接口反序列化入口；若元素已是 VO 则保留表映射。
+     */
+    @Override
     public void setDatabaseMappings(List<DatabaseMapping> databaseMappings) {
-        this.databaseMappings = databaseMappings;
+        if (databaseMappings == null) {
+            this.mappingViews = null;
+            return;
+        }
+        List<DatabaseMappingVO> views = new ArrayList<>(databaseMappings.size());
+        for (DatabaseMapping mapping : databaseMappings) {
+            if (mapping instanceof DatabaseMappingVO) {
+                views.add((DatabaseMappingVO) mapping);
+            } else {
+                views.add(DatabaseMappingVO.from(mapping));
+            }
+        }
+        this.mappingViews = views;
     }
 
     public int getMappingCount() {

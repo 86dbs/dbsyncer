@@ -3,13 +3,10 @@
  */
 package org.dbsyncer.sdk.model;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.dbsyncer.common.util.StringUtil;
 
 /**
- * 库级映射配置
+ * 库级映射配置（持久化于 task.JSON；不含表映射）。
  *
  * @author wuji
  * @version 1.0.0
@@ -51,11 +48,6 @@ public class DatabaseMapping {
      * 目标 Schema（可选）
      */
     private String targetSchema;
-
-    /**
-     * 表映射（源表 -> 目标表）
-     */
-    private List<TableMapping> tableMappings;
 
     public int getIndex() {
         return index;
@@ -113,24 +105,16 @@ public class DatabaseMapping {
         this.targetSchema = targetSchema;
     }
 
-    public List<TableMapping> getTableMappings() {
-        return tableMappings;
-    }
-
-    public void setTableMappings(List<TableMapping> tableMappings) {
-        this.tableMappings = tableMappings;
-    }
-
     /**
-     * 按 index 升序返回表映射列表（副本，不修改原列表）。
+     * 库维度聚合键：源/目标连接器 + 库 + schema（不含表名），与 TableGroup#buildDatabaseMappingKey 同规则。
      */
-    public List<TableMapping> getSortedTableMappings() {
-        if (tableMappings == null || tableMappings.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return tableMappings.stream()
-                .sorted(Comparator.comparingInt(TableMapping::getIndex))
-                .collect(Collectors.toList());
+    public String buildDatabaseMappingKey() {
+        return String.join("|",
+                StringUtil.getIfBlank(sourceConnectorId, ""),
+                StringUtil.getIfBlank(targetConnectorId, ""),
+                StringUtil.getIfBlank(sourceDatabase, ""),
+                StringUtil.getIfBlank(targetDatabase, ""),
+                StringUtil.getIfBlank(sourceSchema, ""),
+                StringUtil.getIfBlank(targetSchema, ""));
     }
-
 }

@@ -5,12 +5,14 @@ package org.dbsyncer.sdk.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 整库迁移任务。
- * <p>库表关联配置存 {@code dbsyncer_table_group}；运行进度：库映射 status 摘要在任务级 Meta，
- * 表级快照在进度明细 Meta（{@code TASK_ID=table_group.id}）。</p>
+ * <p>库映射轻量列表写入 {@code dbsyncer_task.JSON}（不含表）；表映射存 {@code dbsyncer_table_group}。
+ * 运行进度：库映射 status 摘要在任务级 Meta，表级快照在结果 Meta。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -34,6 +36,11 @@ public class DatabaseSyncTask extends CommonTask {
      * 数据是否覆盖（目标已存在时）
      */
     private boolean overwriteData;
+
+    /**
+     * 库级映射（持久化到 task.JSON，不含 tableMappings）
+     */
+    private List<DatabaseMapping> databaseMappings = new ArrayList<>();
 
     /**
      * 任务是否已全部处理完成：0-执行中，1-已结束（与订正校验一致，结束后可清空快照）
@@ -102,6 +109,14 @@ public class DatabaseSyncTask extends CommonTask {
 
     public void setOverwriteData(boolean overwriteData) {
         this.overwriteData = overwriteData;
+    }
+
+    public List<DatabaseMapping> getDatabaseMappings() {
+        return databaseMappings;
+    }
+
+    public void setDatabaseMappings(List<DatabaseMapping> databaseMappings) {
+        this.databaseMappings = databaseMappings == null ? new ArrayList<>() : databaseMappings;
     }
 
     public Integer getProcessed() {

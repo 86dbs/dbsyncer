@@ -10,9 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * 任务执行结果(dbsyncer_meta)。
  * <p>任务级：{@code isTaskDetail=0}，{@code taskId}=任务ID；
- * 进度明细：{@code isTaskDetail=1}，校验/迁移运行快照时 {@code taskId}=table_group.id（建议 {@code id}=table_group.id）；
- * 结果明细：{@code isTaskDetail=1}，{@code taskId}=task_detail.id（saveResult 指标行）；
- * 同步驱动明细：{@code isTaskDetail=1}，{@code taskId}=table_group.id（CDC 游标等）。
+ * 表映射明细：{@code isTaskDetail=1}，{@code id=taskId=table_group.id}（保存任务时预建，运行期更新指标/快照）。
  *
  * @author AE86
  * @version 1.0.0

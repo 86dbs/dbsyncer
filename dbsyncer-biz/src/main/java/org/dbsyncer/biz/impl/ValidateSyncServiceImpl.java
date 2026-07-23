@@ -8,6 +8,7 @@ import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
 import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.Paging;
@@ -30,7 +31,6 @@ import org.dbsyncer.parser.util.TaskDetailGroupUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.Field;
@@ -232,6 +232,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             throw new IllegalArgumentException("Task not found");
         }
         checkTask(task, params);
+        profileComponent.clearTaskRunResults(task.getId());
+        profileComponent.resetTaskMeta(task.getId());
         resetTaskSnapshot(task);
         List<TableGroup> groupAll = profileComponent.getTableGroupAll(task.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
@@ -311,7 +313,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTask t = (ValidateSyncTask) task;
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
-                    long errorCount = countTaskDetail(t.getId());
+
+                    long errorCount =  profileComponent.sumTaskDetailMetaDiff(t.getId());
                     vo.setErrorCount(errorCount);
                     List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(t.getId());
                     int tableCount = tableGroupList.size();
@@ -547,16 +550,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 按升序展示表
         Collections.sort(tables, Comparator.comparing(Table::getName));
         return tables;
-    }
-
-    /**
-     * 获取有异常的数据
-     *
-     * @param taskId
-     * @return
-     */
-    private long countTaskDetail(String taskId) {
-        return profileComponent.countDetailMetaWithPositiveDiff(taskId);
     }
 
     /**

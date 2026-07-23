@@ -5,6 +5,8 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
@@ -25,6 +27,7 @@ import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -38,6 +41,11 @@ import java.util.stream.Collectors;
  */
 @Component
 public class ProfileComponentImpl implements ProfileComponent {
+
+    /**
+     * table_group / 明细 Meta 批量写入单次上限
+     */
+    private static final int TABLE_GROUP_BATCH_SIZE = 1000;
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -101,12 +109,38 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public String addTableGroup(TableGroup model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
+        String id = operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
+        addTableGroupDetailMeta(id);
+        return id;
     }
 
     @Override
-    public List<String> addTableGroupBatch(List<TableGroup> models) {
-        return operationTemplate.executeBatch(models, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE);
+    public void addTableGroupBatch(List<TableGroup> models) {
+        if (CollectionUtils.isEmpty(models)) {
+            return;
+        }
+        List<String> allIds = new ArrayList<>(models.size());
+        TaskSplitUtil.split(models, TABLE_GROUP_BATCH_SIZE, batch -> {
+            List<String> ids = operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE);
+            allIds.addAll(ids);
+            List<Meta> metas = new ArrayList<>(ids.size());
+            long now = System.currentTimeMillis();
+            for (String id : ids) {
+                if (StringUtil.isBlank(id)) {
+                    continue;
+                }
+                Meta meta = new Meta();
+                meta.setId(id);
+                meta.setTaskId(id);
+                meta.setIsTaskDetail(1);
+                meta.setCreateTime(now);
+                meta.setUpdateTime(now);
+                metas.add(meta);
+            }
+            if (!CollectionUtils.isEmpty(metas)) {
+                operationTemplate.executeBatch(metas, CommandEnum.OPR_ADD, GroupStrategyEnum.DEFAULT);
+            }
+        });
     }
 
     @Override
@@ -116,7 +150,13 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public void removeTableGroup(String id) {
+        removeTableGroupDetailMeta(id);
         operationTemplate.remove(new OperationConfig(id, GroupStrategyEnum.TABLE));
+    }
+
+    @Override
+    public void removeTableGroupsByTaskId(String taskId) {
+        operationTemplate.removeTableGroupsByTaskId(taskId);
     }
 
     @Override
@@ -157,8 +197,8 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
-    public Meta getMetaByRefId(String refId, int isTaskDetail) {
-        return operationTemplate.queryMetaByRefId(refId, isTaskDetail);
+    public Meta getMetaByTaskId(String refId, int isTaskDetail) {
+        return operationTemplate.getMetaByTaskId(refId, isTaskDetail);
     }
 
     @Override
@@ -172,12 +212,73 @@ public class ProfileComponentImpl implements ProfileComponent {
     }
 
     @Override
+    public void clearTaskRunResults(String taskId) {
+        operationTemplate.clearTaskRunResults(taskId);
+    }
+
+    @Override
+    public void resetTaskMeta(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        Meta meta = getMetaByTaskId(taskId,0);
+        if (meta == null) {
+            return;
+        }
+        meta.clear();
+        meta.setTaskId(taskId);
+        meta.setIsTaskDetail(0);
+        meta.setUpdateTime(System.currentTimeMillis());
+        editConfigModel(meta);
+    }
+
+    /**
+     * 为 table_group 预建明细 Meta（已存在则跳过）。
+     */
+    private void addTableGroupDetailMeta(String tableGroupId) {
+        if (StringUtil.isBlank(tableGroupId)) {
+            return;
+        }
+        Meta existing = getMetaByTaskId(tableGroupId, 1);
+        if (existing != null) {
+            return;
+        }
+        Meta byId = getMeta(tableGroupId);
+        if (byId != null && byId.isTaskDetail()) {
+            return;
+        }
+        Meta meta = new Meta();
+        meta.setId(tableGroupId);
+        meta.setTaskId(tableGroupId);
+        meta.setIsTaskDetail(1);
+        long now = System.currentTimeMillis();
+        meta.setCreateTime(now);
+        meta.setUpdateTime(now);
+        addConfigModel(meta);
+    }
+
+    private void removeTableGroupDetailMeta(String tableGroupId) {
+        if (StringUtil.isBlank(tableGroupId)) {
+            return;
+        }
+        Meta byRef = getMetaByTaskId(tableGroupId, 1);
+        if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
+            removeConfigModel(byRef.getId());
+            return;
+        }
+        Meta byId = getMeta(tableGroupId);
+        if (byId != null && byId.isTaskDetail()) {
+            removeConfigModel(byId.getId());
+        }
+    }
+
+    @Override
     public long countTaskDetailBySuccess(String taskId, int isSuccess) {
         return operationTemplate.countTaskDetailBySuccess(taskId, isSuccess);
     }
 
     @Override
-    public long countDetailMetaWithPositiveDiff(String taskId) {
+    public long sumTaskDetailMetaDiff(String taskId) {
         return operationTemplate.countDetailMetaWithPositiveDiff(taskId);
     }
 

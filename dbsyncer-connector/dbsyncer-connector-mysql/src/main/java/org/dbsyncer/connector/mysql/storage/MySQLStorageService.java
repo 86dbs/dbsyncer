@@ -62,8 +62,7 @@ public class MySQLStorageService extends AbstractStorageService {
     private final String SHOW_TABLE = "show tables where Tables_in_%s = '%s'";
     private final String DROP_TABLE = "DROP TABLE IF EXISTS %s";
     private final String TRUNCATE_TABLE = "TRUNCATE TABLE %s";
-    private final String QUERY_INDEX_EXISTS =
-            "SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?";
+    private final String QUERY_INDEX_EXISTS ="SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?";
     private final MySQLConnector connector = new MySQLConnector();
     private final Map<String, Executor> tables = new ConcurrentHashMap<>();
     private DatabaseConnectorInstance connectorInstance;
@@ -644,6 +643,11 @@ public class MySQLStorageService extends AbstractStorageService {
      * @param table 已带前缀的表名
      */
     private void upgradeTableColumns(String type, String table) {
+        if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
+            createIndexIfNotExist(table, "IDX_TG_MAPPING",
+                    "`TASK_ID`,`SOURCE_CONNECTOR_ID`,`TARGET_CONNECTOR_ID`,`SOURCE_DATABASE`,`TARGET_DATABASE`,`SOURCE_SCHEMA`,`TARGET_SCHEMA`,`SORT_INDEX`");
+            return;
+        }
         if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
             // 新表 DDL 已含该索引；仅对老表补齐，存在则跳过，避免 Duplicate key name 打 ERROR
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");

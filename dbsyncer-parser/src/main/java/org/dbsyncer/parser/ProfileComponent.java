@@ -107,20 +107,29 @@ public interface ProfileComponent {
 
     List<Mapping> getMappingAll();
 
-    // TableGroup
+    /**
+     * 添加 TableGroup，并同路径预建明细 Meta（id=taskId=tableGroupId）。
+     */
     String addTableGroup(TableGroup model);
 
     /**
-     * 批量添加 TableGroup（单次存储批量写入）。
+     * 批量添加 TableGroup，并同路径批量预建明细 Meta。
      *
      * @param models TableGroup 列表
-     * @return 已添加的 id 列表（与入参顺序一致）
      */
-    List<String> addTableGroupBatch(List<TableGroup> models);
+    void addTableGroupBatch(List<TableGroup> models);
 
     String editTableGroup(TableGroup model);
 
+    /**
+     * 删除单个 TableGroup，并同路径删除其明细 Meta。
+     */
     void removeTableGroup(String id);
+
+    /**
+     * 按任务 ID 条件删除全部 table_group 及其明细 Meta（先取 id 删 Meta，再 delete WHERE TASK_ID）。
+     */
+    void removeTableGroupsByTaskId(String taskId);
 
     TableGroup getTableGroup(String tableGroupId);
 
@@ -152,7 +161,7 @@ public interface ProfileComponent {
      * @param isTaskDetail 0-任务级 1-明细级
      * @return Meta，不存在时返回 null
      */
-    Meta getMetaByRefId(String refId, int isTaskDetail);
+    Meta getMetaByTaskId(String refId, int isTaskDetail);
 
     /**
      * 批量按关联 ID 查询明细级 Meta（IS_TASK_DETAIL=1）。
@@ -163,11 +172,21 @@ public interface ProfileComponent {
     Map<String, Meta> getDetailMetaMap(List<String> refIds);
 
     /**
-     * 删除任务明细分表对应的明细级 Meta（须在 clear 分表之前调用）。
+     * 删除任务下明细级 Meta（按 table_group.id 关联，须在 clear 分表之前调用）。
      *
      * @param taskId 任务 ID
      */
     void removeDetailMetasByTaskId(String taskId);
+
+    /**
+     * 清空任务运行结果：按 table_group.id 删明细 Meta 并 clear TASK_DETAIL；表映射仍在时补回空明细 Meta。
+     */
+    void clearTaskRunResults(String taskId);
+
+    /**
+     * 重置任务级 Meta 计数与 SNAPSHOT（保留行，state=READY）。
+     */
+    void resetTaskMeta(String taskId);
 
     /**
      * 明细分表按成功标记 COUNT。
@@ -184,7 +203,7 @@ public interface ProfileComponent {
      * @param taskId 任务 ID
      * @return 有差异明细数
      */
-    long countDetailMetaWithPositiveDiff(String taskId);
+    long sumTaskDetailMetaDiff(String taskId);
 
     /**
      * Meta 计数原子增量(严格走库)：直接落库自增 total/success/fail，可为负数。

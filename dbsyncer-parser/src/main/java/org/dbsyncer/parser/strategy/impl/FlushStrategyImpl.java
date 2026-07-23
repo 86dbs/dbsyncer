@@ -153,10 +153,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         synchronized (("table-meta-" + tableGroupId).intern()) {
-            Meta tableMeta = profileComponent.getMetaByRefId(tableGroupId, 1);
+            Meta tableMeta = profileComponent.getMetaByTaskId(tableGroupId, 1);
             if (tableMeta == null) {
                 tableMeta = new Meta();
-                tableMeta.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                tableMeta.setId(tableGroupId);
                 tableMeta.setTaskId(tableGroupId);
                 tableMeta.setIsTaskDetail(1);
                 long now = Instant.now().toEpochMilli();

@@ -203,15 +203,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             monitorService.clearData(metaId);
             log(LogType.MetaLog.CLEAR, meta);
 
-            // 删除meta
+            // 条件删除 table_group + 明细 Meta，并清运行结果
+            profileComponent.clearTaskRunResults(id);
+            profileComponent.removeTableGroupsByTaskId(id);
+
+            // 删除任务级 meta
             profileComponent.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
-
-            // 删除tableGroup
-            List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
-            if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
-            }
 
             // 删除驱动表映射关系
             tableGroupContext.clear(metaId);

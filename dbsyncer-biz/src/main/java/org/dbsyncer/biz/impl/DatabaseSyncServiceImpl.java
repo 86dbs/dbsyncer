@@ -5,6 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.DatabaseSyncService;
+import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
@@ -15,9 +16,11 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
@@ -26,11 +29,11 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.DatabaseMapping;
 import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
+import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,10 +80,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private TaskService<DatabaseSyncTask> taskService;
 
     @Resource
-    private StorageService storageService;
+    private DatabaseSyncDetailService databaseSyncDetailService;
 
     @Resource
-    private DatabaseSyncDetailService databaseSyncDetailService;
+    private ParserComponent parserComponent;
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
@@ -95,7 +98,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (StringUtil.isBlank(name)) {
             throw new BizException("任务名称不能为空");
         }
-        List<DatabaseMapping> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
+        List<DatabaseMappingVO> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
         checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
             throw new BizException("请至少添加一组库映射");
@@ -105,6 +108,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
         DatabaseSyncTask task = new DatabaseSyncTask();
         fillTaskOnAdd(task, params);
+        task.setDatabaseMappings(toPersistMappings(mappings));
         // 先落任务与任务级 Meta，再写 table_group，避免 task 失败留下孤儿关联
         String taskId = taskService.add(task);
         saveTableGroup(taskId, mappings);
@@ -118,9 +122,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
-        assertNotRunning(id);
+        if (taskService.isRunning(id)) {
+            throw new BizException("任务正在运行，请先停止");
+        }
 
-        List<DatabaseMapping> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
+        List<DatabaseMappingVO> mappings = parseDatabaseMappings(params.get("databaseMappingsJson"));
         checkDatabaseMapping(mappings);
         if (CollectionUtils.isEmpty(mappings)) {
             throw new BizException("请至少添加一组库映射");
@@ -129,15 +135,19 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         validateMappingConnectors(mappings);
 
         fillTaskOnEdit(task, params);
-        clearTableGroups(task.getId());
+        task.setDatabaseMappings(toPersistMappings(mappings));
+        // 重建映射：清运行结果 → 条件删旧 table_group+明细 Meta → 批量写入
+        profileComponent.clearTaskRunResults(id);
+        profileComponent.removeTableGroupsByTaskId(id);
         saveTableGroup(id, mappings);
+        profileComponent.resetTaskMeta(id);
         task.getDatabaseSnapshots().clear();
         task.setProcessed(CommonTaskStatusEnum.READY.getCode());
         return taskService.edit(task);
     }
 
-    private  void checkDatabaseMapping(List<DatabaseMapping> mappings) {
-        for (DatabaseMapping mapping : mappings) {
+    private void checkDatabaseMapping(List<DatabaseMappingVO> mappings) {
+        for (DatabaseMappingVO mapping : mappings) {
             if (StringUtil.equals(mapping.getSourceConnectorId(), mapping.getTargetConnectorId())) {
                 boolean selectedDB = StringUtil.isNotBlank(mapping.getSourceDatabase()) && StringUtil.isNotBlank(mapping.getTargetDatabase());
                 if (selectedDB && StringUtil.equals(mapping.getSourceDatabase(), mapping.getTargetDatabase())) {
@@ -155,7 +165,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String delete(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        assertNotRunning(id);
+        if (taskService.isRunning(id)) {
+            throw new BizException("任务正在运行，请先停止");
+        }
         taskService.delete(id);
         return "删除成功";
     }
@@ -165,6 +177,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         Assert.hasText(id, "任务 ID 不能为空");
         DatabaseSyncTask task = taskService.get(id);
         Assert.notNull(task, "任务不存在");
+        if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
+            throw new BizException("任务未配置库映射，无法启动");
+        }
         if (profileComponent.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
         }
@@ -287,12 +302,28 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return result;
     }
 
-    private List<DatabaseMapping> parseDatabaseMappings(String mappingsJson) {
+    private List<DatabaseMappingVO> parseDatabaseMappings(String mappingsJson) {
         if (StringUtil.isBlank(mappingsJson)) {
             return Collections.emptyList();
         }
-        List<DatabaseMapping> mappings = JsonUtil.jsonToArray(mappingsJson, DatabaseMapping.class);
+        List<DatabaseMappingVO> mappings = JsonUtil.jsonToArray(mappingsJson, DatabaseMappingVO.class);
         return mappings == null ? Collections.emptyList() : mappings;
+    }
+
+    /**
+     * 入参 VO 转 task.JSON 持久化库映射（仅库维）。
+     */
+    private List<DatabaseMapping> toPersistMappings(List<DatabaseMappingVO> mappings) {
+        if (CollectionUtils.isEmpty(mappings)) {
+            return new ArrayList<>();
+        }
+        List<DatabaseMapping> result = new ArrayList<>(mappings.size());
+        for (DatabaseMappingVO mapping : mappings) {
+            if (mapping != null) {
+                result.add(mapping.toDatabaseMapping());
+            }
+        }
+        return result;
     }
 
     private Set<String> parseExcludeTables(String excludeTablesJson) {
@@ -315,12 +346,12 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     /**
      * 按序号从小到大排序，并规范为连续序号 1..n，便于任务执行与恢复。
      */
-    private void normalizeAndSortMappings(List<DatabaseMapping> mappings) {
+    private void normalizeAndSortMappings(List<DatabaseMappingVO> mappings) {
         if (CollectionUtils.isEmpty(mappings)) {
             return;
         }
         for (int i = 0; i < mappings.size(); i++) {
-            DatabaseMapping mapping = mappings.get(i);
+            DatabaseMappingVO mapping = mappings.get(i);
             if (mapping.getIndex() <= 0) {
                 mapping.setIndex(i + 1);
             }
@@ -339,7 +370,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 tableMappings.get(j).setIndex(j + 1);
             }
         }
-        mappings.sort(Comparator.comparingInt(DatabaseMapping::getIndex));
+        mappings.sort(Comparator.comparingInt(DatabaseMappingVO::getIndex));
         for (int i = 0; i < mappings.size(); i++) {
             mappings.get(i).setIndex(i + 1);
         }
@@ -375,17 +406,11 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setOverwriteData(task.isEnableCopyData() && StringUtil.isNotBlank(params.get("overwriteData")));
     }
 
-    private void assertNotRunning(String taskId) {
-        if (taskService.isRunning(taskId)) {
-            throw new BizException("任务正在运行，请先停止");
-        }
-    }
-
     private void clearTableGroups(String taskId) {
-        profileComponent.getTableGroupAll(taskId).forEach(group -> profileComponent.removeTableGroup(group.getId()));
+        profileComponent.removeTableGroupsByTaskId(taskId);
     }
 
-    private void validateMappingConnectors(List<DatabaseMapping> mappings) {
+    private void validateMappingConnectors(List<? extends DatabaseMapping> mappings) {
         for (int i = 0; i < mappings.size(); i++) {
             DatabaseMapping mapping = mappings.get(i);
             if (StringUtil.isBlank(mapping.getSourceConnectorId())) {
@@ -402,8 +427,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             return null;
         }
         List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
-        List<DatabaseMapping> mappings = DatabaseSyncMappingUtil.rebuildDatabaseMappings(tableGroups);
-        DatabaseMapping first = CollectionUtils.isEmpty(mappings) ? null : mappings.get(0);
+        List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
+                DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
+        DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);
         Connector source = first == null ? null : profileComponent.getConnector(first.getSourceConnectorId());
         Connector target = first == null ? null : profileComponent.getConnector(first.getTargetConnectorId());
         DatabaseSyncTaskVO vo = new DatabaseSyncTaskVO(source, target);
@@ -411,23 +437,81 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // final 快照 Map 无法被 BeanUtils 覆盖，需显式拷贝
         vo.getDatabaseSnapshots().clear();
         vo.getDatabaseSnapshots().putAll(task.getDatabaseSnapshots());
-        vo.setDatabaseMappings(mappings);
-        int mappingCount = CollectionUtils.isEmpty(mappings) ? 0 : mappings.size();
-        vo.setMappingCount(mappingCount);
+        // 覆盖 BeanUtils 写入的仅库维映射，挂上 table_group 表映射供编辑页
+        vo.setMappingViews(mappingViews);
+        vo.setMappingCount(CollectionUtils.isEmpty(mappingViews) ? 0 : mappingViews.size());
         return vo;
     }
 
-    private void saveTableGroup(String taskId, List<DatabaseMapping> mappings) {
+    /**
+     * 将 table_group 按库键挂到库映射 VO 的 tableMappings（编辑页回显）。
+     */
+    private List<DatabaseMappingVO> buildDatabaseMappingVo(List<DatabaseMapping> mappings, List<TableGroup> tableGroups) {
+        if (CollectionUtils.isEmpty(mappings)) {
+            return new ArrayList<>();
+        }
+        Map<String, List<TableGroup>> groupsByKey = new HashMap<>();
+        if (!CollectionUtils.isEmpty(tableGroups)) {
+            for (TableGroup group : tableGroups) {
+                if (group == null) {
+                    continue;
+                }
+                groupsByKey.computeIfAbsent(group.buildDatabaseMappingKey(), k -> new ArrayList<>()).add(group);
+            }
+        }
+        List<DatabaseMappingVO> result = new ArrayList<>(mappings.size());
+        for (DatabaseMapping src : mappings) {
+            if (src == null) {
+                continue;
+            }
+            DatabaseMappingVO vo = DatabaseMappingVO.from(src);
+            List<TableMapping> tableMappings = new ArrayList<>();
+            List<TableGroup> groups = groupsByKey.getOrDefault(src.buildDatabaseMappingKey(), Collections.emptyList());
+            groups.stream().sorted(Comparator.comparingInt(TableGroup::getIndex)).forEach(group -> {
+                Table sourceTable = group.getSourceTable();
+                Table targetTable = group.getTargetTable();
+                if (sourceTable != null && targetTable != null
+                        && StringUtil.isNotBlank(sourceTable.getName())
+                        && StringUtil.isNotBlank(targetTable.getName())) {
+                    tableMappings.add(DatabaseSyncMappingUtil.toTableMapping(
+                            sourceTable.getName(), targetTable.getName(), group.getIndex()));
+                }
+            });
+            vo.setTableMappings(tableMappings);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private void saveTableGroup(String taskId, List<DatabaseMappingVO> mappings) {
         if (StringUtil.isBlank(taskId) || CollectionUtils.isEmpty(mappings)) {
             return;
         }
+        List<TableGroup> groups = new ArrayList<>();
         int sortIndex = 0;
         long now = Instant.now().toEpochMilli();
-        for (DatabaseMapping mapping : mappings) {
+
+
+
+        for (DatabaseMappingVO mapping : mappings) {
             List<TableMapping> tableMappings = mapping.getSortedTableMappings();
             if (CollectionUtils.isEmpty(tableMappings)) {
                 continue;
             }
+            Connector sourceConnector = profileComponent.getConnector(mapping.getSourceConnectorId());
+            Assert.notNull(sourceConnector, "源连接器不存在");
+            Assert.notNull(sourceConnector.getConfig(), "源连接器配置不存在");
+            // 与 ParserComponentImpl#getMetaInfo 的实例ID保持一致（mappingId + connectorId + suffix）
+            connectorFactory.connect(
+                    ConnectorInstanceUtil.buildConnectorInstanceId(taskId, mapping.getSourceConnectorId(), ConnectorInstanceUtil.SOURCE_SUFFIX),
+                    sourceConnector.getConfig(),
+                    mapping.getSourceDatabase(),
+                    mapping.getSourceSchema()
+            );
+
+            List<String> sourceNames = tableMappings.stream().map(TableMapping::getSourceTable).collect(Collectors.toList());
+            Map<String, Table> sourceMetaMap= loadMetaTableMap(taskId, mapping,sourceNames);
+
             for (TableMapping tableMapping : tableMappings) {
                 sortIndex++;
                 TableGroup group = new TableGroup();
@@ -440,18 +524,36 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 group.setTargetDatabase(StringUtil.getIfBlank(mapping.getTargetDatabase(), StringUtil.EMPTY));
                 group.setSourceSchema(StringUtil.getIfBlank(mapping.getSourceSchema(), StringUtil.EMPTY));
                 group.setTargetSchema(StringUtil.getIfBlank(mapping.getTargetSchema(), StringUtil.EMPTY));
-                Table sourceTable = new Table();
-                sourceTable.setName(tableMapping.getSourceTable());
-                sourceTable.setType(TableTypeEnum.TABLE.getCode());
-                group.setSourceTable(sourceTable);
+                group.setSourceTable(sourceMetaMap.get(tableMapping.getSourceTable()));
                 Table targetTable = new Table();
                 targetTable.setName(tableMapping.getTargetTable());
                 targetTable.setType(TableTypeEnum.TABLE.getCode());
                 group.setTargetTable(targetTable);
                 group.setCreateTime(now);
                 group.setUpdateTime(now);
-                profileComponent.addTableGroup(group);
+                groups.add(group);
             }
         }
+        profileComponent.addTableGroupBatch(groups);
     }
+
+    public Map<String, Table> loadMetaTableMap(String taskId,DatabaseMappingVO ctx, List<String> tableNames) {
+
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(taskId, ctx.getSourceConnectorId(),ctx.getSourceDatabase(),ctx.getSourceSchema(),ctx.getTargetConnectorId(),ctx.getTargetDatabase(),ctx.getTargetSchema(),true);
+        tableNames.stream().distinct().forEach(context::addTablePattern);
+        List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
+        Map<String, Table> tableMap = new HashMap<>(metaInfos.size());
+        for (MetaInfo metaInfo : metaInfos) {
+            if (metaInfo == null || StringUtil.isBlank(metaInfo.getTable())) {
+                continue;
+            }
+            Table table = new Table();
+            table.setName(metaInfo.getTable());
+            table.setType(metaInfo.getTableType());
+            table.setColumn(metaInfo.getColumn());
+            tableMap.put(metaInfo.getTable(), table);
+        }
+        return tableMap;
+    }
+
 }

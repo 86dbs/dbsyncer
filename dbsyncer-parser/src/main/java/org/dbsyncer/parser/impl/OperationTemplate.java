@@ -7,6 +7,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -24,14 +25,13 @@ import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -55,12 +55,10 @@ import java.util.stream.Collectors;
 @Component
 public final class OperationTemplate {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     /**
      * 单次分页查询的页大小
      */
-    private static final int PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 1000;
 
     @Resource
     private StorageService storageService;
@@ -121,6 +119,21 @@ public final class OperationTemplate {
         return (int) paging.getTotal();
     }
 
+    /**
+     * 按任务 ID 删除全部 table_group 及其明细 Meta（META.TASK_ID = table_group.id）。
+     */
+    public void removeTableGroupsByTaskId(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        List<String> groupIds = listTableGroupIds(taskId);
+        removeDetailMetasByTableGroupIds(groupIds);
+        Query deleteQuery = new Query();
+        deleteQuery.setType(StorageEnum.TABLE_GROUP);
+        deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
+        storageService.delete(deleteQuery);
+    }
+
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;
@@ -171,7 +184,7 @@ public final class OperationTemplate {
      * @param isTaskDetail 0-任务级 1-明细级
      * @return Meta 或 null
      */
-    public Meta queryMetaByRefId(String refId, int isTaskDetail) {
+    public Meta getMetaByTaskId(String refId, int isTaskDetail) {
         if (StringUtil.isBlank(refId)) {
             return null;
         }
@@ -284,22 +297,50 @@ public final class OperationTemplate {
     }
 
     /**
-     * 按任务分表中的明细 ID，删除对应明细级 Meta（IS_TASK_DETAIL=1，TASK_ID=detailId）。
-     * <p>须在 {@code clear(TASK_DETAIL)} 之前调用。
-     *
-     * @param taskId 任务 ID（分表键）
+     * 按任务下 table_group.id 批量删除明细级 Meta（{@code META.TASK_ID = table_group.id}）。
      */
     public void removeDetailMetasByTaskId(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
-        List<String> detailIds = new ArrayList<>();
+        removeDetailMetasByTableGroupIds(listTableGroupIds(taskId));
+    }
+
+    /**
+     * 按 table_group.id 批量删除明细级 Meta。
+     */
+    public void removeDetailMetasByTableGroupIds(List<String> tableGroupIds) {
+        if (CollectionUtils.isEmpty(tableGroupIds)) {
+            return;
+        }
+        int batchSize = 1000;
+        for (int from = 0; from < tableGroupIds.size(); from += batchSize) {
+            int to = Math.min(from + batchSize, tableGroupIds.size());
+            List<String> batch = tableGroupIds.subList(from, to);
+            Query query = new Query();
+            query.setType(StorageEnum.META);
+            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
+            query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, StringUtil.join(batch, StringUtil.COMMA));
+            storageService.delete(query);
+        }
+    }
+
+    /**
+     * 查询任务下全部 table_group.id。
+     */
+    private List<String> listTableGroupIds(String taskId) {
+        List<String> groupIds = new ArrayList<>();
+        if (StringUtil.isBlank(taskId)) {
+            return groupIds;
+        }
         int pageNum = 1;
-        int pageSize = 500;
         while (true) {
-            Query query = new Query(pageNum, pageSize);
-            query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(taskId);
+            Query query = new Query(pageNum, PAGE_SIZE);
+            query.setType(StorageEnum.TABLE_GROUP);
+            Set<String> selectFields = new java.util.HashSet<>();
+            selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
+            query.setSelectFlied(selectFields);
+            query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
             Paging paging = storageService.query(query);
             if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
@@ -310,23 +351,42 @@ public final class OperationTemplate {
                 }
                 Object id = ((Map) item).get(ConfigConstant.CONFIG_MODEL_ID);
                 if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
-                    detailIds.add(String.valueOf(id));
+                    groupIds.add(String.valueOf(id));
                 }
-            }
-            if (paging.getData().size() < pageSize) {
-                break;
             }
             pageNum++;
         }
-        if (CollectionUtils.isEmpty(detailIds)) {
+        return groupIds;
+    }
+
+    /**
+     * 清空任务运行结果：按 table_group.id 删明细 Meta，再 clear TASK_DETAIL；表映射仍在时补回空明细 Meta。
+     */
+    public void clearTaskRunResults(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
             return;
         }
-        Map<String, Meta> metaMap = queryDetailMetaMap(detailIds);
-        for (Meta meta : metaMap.values()) {
-            if (meta != null && StringUtil.isNotBlank(meta.getId())) {
-                storageService.remove(StorageEnum.META, meta.getId());
-            }
+        List<String> groupIds = listTableGroupIds(taskId);
+        removeDetailMetasByTableGroupIds(groupIds);
+        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return;
         }
+        // 表映射仍保留时补回空明细 Meta，供续跑/重跑使用
+        List<Meta> metas = new ArrayList<>(groupIds.size());
+        long now = System.currentTimeMillis();
+        for (String groupId : groupIds) {
+            Meta meta = new Meta();
+            meta.setId(groupId);
+            meta.setTaskId(groupId);
+            meta.setIsTaskDetail(1);
+            meta.setCreateTime(now);
+            meta.setUpdateTime(now);
+            metas.add(meta);
+        }
+        TaskSplitUtil.split(metas, PAGE_SIZE, (models) -> {
+            executeBatch(models, CommandEnum.OPR_ADD, GroupStrategyEnum.DEFAULT);
+        });
     }
 
     /**
@@ -361,9 +421,8 @@ public final class OperationTemplate {
         }
         List<String> detailIds = new ArrayList<>();
         int pageNum = 1;
-        int pageSize = 500;
         while (true) {
-            Query query = new Query(pageNum, pageSize);
+            Query query = new Query(pageNum, PAGE_SIZE);
             query.setType(StorageEnum.TASK_DETAIL);
             query.setMetaId(taskId);
             Paging paging = storageService.query(query);
@@ -379,7 +438,7 @@ public final class OperationTemplate {
                     detailIds.add(String.valueOf(id));
                 }
             }
-            if (paging.getData().size() < pageSize) {
+            if (paging.getData().size() < PAGE_SIZE) {
                 break;
             }
             pageNum++;
@@ -522,7 +581,9 @@ public final class OperationTemplate {
     }
 
     /**
-     * 从存储行反序列化模型。Meta 无 JSON 列，按拆分列还原；其余优先 json 列。
+     * 从存储行反序列化模型。
+     * <p>有 json 列的模型统一走 {@link JsonUtil#jsonToObj}；
+     * Meta/UserInfo 无 json 列按拆分列还原；Connector 的 config 为抽象类型需特殊处理。
      */
     private <T> T deserialize(Map row, Class<T> clazz) {
         if (Meta.class.equals(clazz)) {
@@ -539,15 +600,11 @@ public final class OperationTemplate {
         if (Connector.class.equals(clazz)) {
             return (T) parseConnector(String.valueOf(json));
         }
-        T model = JsonUtil.jsonToObj(String.valueOf(json), clazz);
-        if (model instanceof TableGroup) {
-            overlayTableGroupColumns((TableGroup) model, row);
-        }
-        return model;
+        return JsonUtil.jsonToObj(String.valueOf(json), clazz);
     }
 
     /**
-     * 按 dbsyncer_meta 拆分列还原 Meta
+     * 按 dbsyncer_meta 拆分列还原 Meta（无 json 列）。
      */
     private Meta deserializeMeta(Map row) {
         Meta meta = new Meta();
@@ -573,45 +630,6 @@ public final class OperationTemplate {
             }
         }
         return meta;
-    }
-
-    /**
-     * 用拆分列覆盖 TableGroup 关联字段(以列为准)
-     */
-    private void overlayTableGroupColumns(TableGroup tableGroup, Map row) {
-        Object taskId = row.get(ConfigConstant.TABLE_GROUP_TASK_ID);
-        if (taskId != null) {
-            tableGroup.setTaskId(String.valueOf(taskId));
-        }
-        if (row.get(ConfigConstant.TABLE_GROUP_SORT_INDEX) != null) {
-            tableGroup.setIndex((int) toLong(row.get(ConfigConstant.TABLE_GROUP_SORT_INDEX)));
-        }
-        Object srcConn = row.get(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID);
-        if (srcConn != null) {
-            tableGroup.setSourceConnectorId(String.valueOf(srcConn));
-        }
-        Object tgtConn = row.get(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID);
-        if (tgtConn != null) {
-            tableGroup.setTargetConnectorId(String.valueOf(tgtConn));
-        }
-        Object srcDb = row.get(ConfigConstant.TABLE_GROUP_SOURCE_DATABASE);
-        if (srcDb != null) {
-            tableGroup.setSourceDatabase(String.valueOf(srcDb));
-        }
-        Object tgtDb = row.get(ConfigConstant.TABLE_GROUP_TARGET_DATABASE);
-        if (tgtDb != null) {
-            tableGroup.setTargetDatabase(String.valueOf(tgtDb));
-        }
-        Object srcSchema = row.get(ConfigConstant.TABLE_GROUP_SOURCE_SCHEMA);
-        if (srcSchema != null) {
-            tableGroup.setSourceSchema(String.valueOf(srcSchema));
-        }
-        Object tgtSchema = row.get(ConfigConstant.TABLE_GROUP_TARGET_SCHEMA);
-        if (tgtSchema != null) {
-            tableGroup.setTargetSchema(String.valueOf(tgtSchema));
-        }
-        tableGroup.setSourceTotal(toLong(row.get(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL)));
-        tableGroup.setTargetTotal(toLong(row.get(ConfigConstant.TABLE_GROUP_TARGET_TOTAL)));
     }
 
     private long toLong(Object value) {

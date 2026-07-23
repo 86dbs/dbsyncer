@@ -66,19 +66,20 @@ public class TaskDetailGroupUtil {
         if (CollectionUtils.isEmpty(detailRows)) {
             return TaskDetailUtil.pageDetails(null, filter, comparator, pageNum, pageSize);
         }
-        List<String> detailIds = detailRows.stream()
-                .map(row -> String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)))
+        List<String> tableGroupIds = detailRows.stream()
+                .map(row -> row.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
+                        ? null : String.valueOf(row.get(ConfigConstant.DATA_TABLE_GROUP_ID)))
                 .filter(StringUtil::isNotBlank)
+                .distinct()
                 .collect(Collectors.toList());
-        Map<String, Meta> metaMap = profileComponent.getDetailMetaMap(detailIds);
+        Map<String, Meta> metaMap = profileComponent.getDetailMetaMap(tableGroupIds);
 
         List<Map<String, Object>> joined = new ArrayList<>(detailRows.size());
         for (Map<String, Object> detailRow : detailRows) {
-            String detailId = String.valueOf(detailRow.get(ConfigConstant.CONFIG_MODEL_ID));
             String tableGroupId = detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
                     ? null : String.valueOf(detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID));
             Map<String, Object> tgRow = tableGroupId == null ? null : tableGroupDisplay.get(tableGroupId);
-            Meta meta = metaMap.get(detailId);
+            Meta meta = tableGroupId == null ? null : metaMap.get(tableGroupId);
             Map<String, Object> metaRow = meta == null ? null : TaskDetailUtil.toMetaDisplayMap(
                     meta.getTotal() == null ? 0L : meta.getTotal().get(),
                     meta.getSuccess() == null ? 0L : meta.getSuccess().get(),
@@ -118,7 +119,7 @@ public class TaskDetailGroupUtil {
         String tableGroupId = detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
                 ? null : String.valueOf(detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID));
         Map<String, Object> tgRow = tableGroupId == null ? null : buildTableGroupDisplayMap(taskId).get(tableGroupId);
-        Meta meta = profileComponent.getMetaByRefId(detailId, 1);
+        Meta meta = StringUtil.isBlank(tableGroupId) ? null : profileComponent.getMetaByTaskId(tableGroupId, 1);
         Map<String, Object> metaRow = meta == null ? null : org.dbsyncer.sdk.util.TaskDetailUtil.toMetaDisplayMap(
                 meta.getTotal() == null ? 0L : meta.getTotal().get(),
                 meta.getSuccess() == null ? 0L : meta.getSuccess().get(),

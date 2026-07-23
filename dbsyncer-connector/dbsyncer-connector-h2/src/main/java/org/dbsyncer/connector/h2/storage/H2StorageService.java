@@ -599,6 +599,8 @@ public class H2StorageService extends AbstractStorageService {
         }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_TASK_SORT", "`TASK_ID`,`SORT_INDEX`");
+            createIndexIfNotExist(table, "IDX_TG_MAPPING",
+                    "`TASK_ID`,`SOURCE_CONNECTOR_ID`,`TARGET_CONNECTOR_ID`,`SOURCE_DATABASE`,`TARGET_DATABASE`,`SOURCE_SCHEMA`,`TARGET_SCHEMA`,`SORT_INDEX`");
             return;
         }
         if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
