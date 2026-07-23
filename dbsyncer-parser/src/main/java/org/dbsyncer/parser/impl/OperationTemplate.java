@@ -38,11 +38,12 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -120,7 +121,7 @@ public final class OperationTemplate {
     }
 
     /**
-     * 按任务 ID 删除全部 table_group 及其明细 Meta（META.TASK_ID = table_group.id）。
+     * 按任务 ID 删除tableGroup
      */
     public void removeTableGroupsByTaskId(String taskId) {
         if (StringUtil.isBlank(taskId)) {
@@ -149,7 +150,7 @@ public final class OperationTemplate {
         if (CollectionUtils.isEmpty(data)) {
             return null;
         }
-        return deserialize(data.get(0), clazz);
+        return parseRow(data.get(0), clazz);
     }
 
     public String execute(OperationConfig config) {
@@ -179,18 +180,14 @@ public final class OperationTemplate {
 
     /**
      * 按关联 ID 查询 Meta。
-     *
-     * @param refId        任务ID / detailId / tableGroupId
-     * @param isTaskDetail 0-任务级 1-明细级
-     * @return Meta 或 null
      */
-    public Meta getMetaByTaskId(String refId, int isTaskDetail) {
-        if (StringUtil.isBlank(refId)) {
+    public Meta getMetaByTaskId(String taskId, int isTaskDetail) {
+        if (StringUtil.isBlank(taskId)) {
             return null;
         }
         Query query = new Query(1, 1);
         query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_TASK_ID, refId);
+        query.addFilter(ConfigConstant.META_TASK_ID, taskId);
         query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, isTaskDetail);
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
@@ -198,7 +195,7 @@ public final class OperationTemplate {
         }
         Object row = paging.getData().iterator().next();
         if (row instanceof Map) {
-            return deserializeMeta((Map) row);
+            return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
         }
         return null;
     }
@@ -234,7 +231,7 @@ public final class OperationTemplate {
                 if (!(item instanceof Map)) {
                     continue;
                 }
-                Meta meta = deserializeMeta((Map) item);
+                Meta meta = ConfigModelUtil.parseFromRow((Map) item, Meta.class);
                 if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
                     result.put(meta.getTaskId(), meta);
                 }
@@ -284,28 +281,7 @@ public final class OperationTemplate {
         params.put(ConfigConstant.META_DIFF, current.getDiff() == null ? 0L : current.getDiff().get());
         params.put(ConfigConstant.META_FIXED, current.getFixed() == null ? 0L : current.getFixed().get());
     }
-
-    /**
-     * 仅任务级 Meta（IS_TASK_DETAIL=0）。
-     *
-     * @return 任务级 Meta 列表
-     */
-    public List<Meta> queryTaskMetaAll() {
-        Query condition = new Query();
-        condition.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 0);
-        return queryList(StorageEnum.META, condition, Meta.class);
-    }
-
-    /**
-     * 按任务下 table_group.id 批量删除明细级 Meta（{@code META.TASK_ID = table_group.id}）。
-     */
-    public void removeDetailMetasByTaskId(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        removeDetailMetasByTableGroupIds(listTableGroupIds(taskId));
-    }
-
+    
     /**
      * 按 table_group.id 批量删除明细级 Meta。
      */
@@ -328,7 +304,7 @@ public final class OperationTemplate {
     /**
      * 查询任务下全部 table_group.id。
      */
-    private List<String> listTableGroupIds(String taskId) {
+    public List<String> listTableGroupIds(String taskId) {
         List<String> groupIds = new ArrayList<>();
         if (StringUtil.isBlank(taskId)) {
             return groupIds;
@@ -385,7 +361,7 @@ public final class OperationTemplate {
             metas.add(meta);
         }
         TaskSplitUtil.split(metas, PAGE_SIZE, (models) -> {
-            executeBatch(models, CommandEnum.OPR_ADD, GroupStrategyEnum.DEFAULT);
+            executeBatch(models, CommandEnum.OPR_ADD);
         });
     }
 
@@ -459,8 +435,7 @@ public final class OperationTemplate {
     /**
      * 批量添加配置：单次存储批量写入。
      */
-    public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum,
-                                     GroupStrategyEnum groupStrategyEnum) {
+    public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum) {
         if (CollectionUtils.isEmpty(models)) {
             return Collections.emptyList();
         }
@@ -506,51 +481,48 @@ public final class OperationTemplate {
     /**
      * 构建导出配置快照(直查库)，结构与导入 reload 保持一致：
      * type -> Group(index)、id -> model、tableGroup_{mappingId} -> Group。
-     *
+     *todo 带优化 导出为一个大的sql 文件，包括
      * @return 导出快照
      */
     public Map<String, Object> buildExportSnapshot() {
-        Map<String, Object> snapshot = new java.util.HashMap<>();
-        appendGroup(snapshot, ConfigConstant.SYSTEM, queryAll(org.dbsyncer.parser.model.SystemConfig.class));
-        appendGroup(snapshot, ConfigConstant.USER, queryAll(org.dbsyncer.parser.model.UserConfig.class));
-        appendGroup(snapshot, ConfigConstant.CONNECTOR, queryAll(org.dbsyncer.parser.model.Connector.class));
-        List<Mapping> mappingAll = queryAll(Mapping.class);
-        appendGroup(snapshot, ConfigConstant.MAPPING, mappingAll);
-        appendGroup(snapshot, ConfigConstant.META, queryAll(Meta.class));
+        Map<String, Object> snapshot = new HashMap<>();
+        List<Mapping> allMappings = queryAll(Mapping.class);
 
-        // 表映射关系按 mapping 分组
-        for (Mapping mapping : mappingAll) {
-            List<TableGroup> tableGroups = queryList(StorageEnum.TABLE_GROUP, buildMappingFilter(mapping.getId()), TableGroup.class);
-            String groupId = getGroupId(mapping, GroupStrategyEnum.PRELOAD_TABLE_GROUP);
-            Group group = new Group();
-            for (TableGroup tableGroup : tableGroups) {
-                group.add(tableGroup.getId());
-                snapshot.put(tableGroup.getId(), tableGroup);
-            }
-            snapshot.put(groupId, group);
-        }
+        Map<String, List<? extends ConfigModel>> typedModels = new LinkedHashMap<String, List<? extends ConfigModel>>() {{
+            put(ConfigConstant.SYSTEM, queryAll(org.dbsyncer.parser.model.SystemConfig.class));
+            put(ConfigConstant.USER, queryAll(org.dbsyncer.parser.model.UserConfig.class));
+            put(ConfigConstant.CONNECTOR, queryAll(org.dbsyncer.parser.model.Connector.class));
+            put(ConfigConstant.MAPPING, allMappings);
+            put(ConfigConstant.META, queryAll(Meta.class));
+        }};
+
+        typedModels.forEach((k, list) -> {
+            Group g = new Group();
+            list.forEach(m -> {
+                snapshot.put(m.getId(), m);
+                g.add(m.getId());
+            });
+            snapshot.put(k, g);
+        });
+
+        allMappings.forEach(mapping -> {
+            Query query = new Query();
+            query.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mapping.getId());
+            List<TableGroup> groups = queryList(StorageEnum.TABLE_GROUP, query, TableGroup.class);
+            Group idGroup = new Group();
+            groups.forEach(tg -> {
+                snapshot.put(tg.getId(), tg);
+                idGroup.add(tg.getId());
+            });
+            snapshot.put(getGroupId(mapping, GroupStrategyEnum.PRELOAD_TABLE_GROUP), idGroup);
+        });
         return snapshot;
-    }
-
-    private Query buildMappingFilter(String mappingId) {
-        Query condition = new Query();
-        condition.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mappingId);
-        return condition;
-    }
-
-    private void appendGroup(Map<String, Object> snapshot, String type, List<? extends ConfigModel> models) {
-        Group group = new Group();
-        for (ConfigModel model : models) {
-            group.add(model.getId());
-            snapshot.put(model.getId(), model);
-        }
-        snapshot.put(type, group);
     }
 
     /**
      * 分页查询指定存储表，反序列化 json 列为模型。
      */
-    private <T> List<T> queryList(StorageEnum type, Query condition, Class<T> clazz) {
+    public <T> List<T> queryList(StorageEnum type, Query condition, Class<T> clazz) {
         List<T> result = new ArrayList<>();
         int pageNum = 1;
         for (; ; ) {
@@ -567,7 +539,7 @@ public final class OperationTemplate {
                 break;
             }
             for (Map row : data) {
-                T model = deserialize(row, clazz);
+                T model = parseRow(row, clazz);
                 if (model != null) {
                     result.add(model);
                 }
@@ -581,69 +553,15 @@ public final class OperationTemplate {
     }
 
     /**
-     * 从存储行反序列化模型。
-     * <p>有 json 列的模型统一走 {@link JsonUtil#jsonToObj}；
-     * Meta/UserInfo 无 json 列按拆分列还原；Connector 的 config 为抽象类型需特殊处理。
+     * 存储行 → 模型。普通配置走 {@link ConfigModelUtil#parseFromRow}；
+     * Connector 因抽象 config 需按 connectorType 特殊还原。
      */
-    private <T> T deserialize(Map row, Class<T> clazz) {
-        if (Meta.class.equals(clazz)) {
-            return (T) deserializeMeta(row);
-        }
-        if (UserInfo.class.equals(clazz)) {
-            return (T) deserializeUserInfo(row);
-        }
-        Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
-        if (json == null) {
-            return null;
-        }
-        // 连接器配置为抽象类型 ConnectorConfig，需按 connectorType 还原具体实现类后再反序列化
+    private <T> T parseRow(Map row, Class<T> clazz) {
         if (Connector.class.equals(clazz)) {
-            return (T) parseConnector(String.valueOf(json));
+            Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
+            return json == null ? null : (T) parseConnector(String.valueOf(json));
         }
-        return JsonUtil.jsonToObj(String.valueOf(json), clazz);
-    }
-
-    /**
-     * 按 dbsyncer_meta 拆分列还原 Meta（无 json 列）。
-     */
-    private Meta deserializeMeta(Map row) {
-        Meta meta = new Meta();
-        meta.setId(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
-        meta.setCreateTime(toLong(row.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME)));
-        meta.setUpdateTime(toLong(row.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)));
-        Object taskId = row.get(ConfigConstant.META_TASK_ID);
-        meta.setTaskId(taskId == null ? null : String.valueOf(taskId));
-        meta.setState((int) toLong(row.get(ConfigConstant.META_STATE)));
-        meta.setIsTaskDetail((int) toLong(row.get(ConfigConstant.META_IS_TASK_DETAIL)));
-        meta.setTotal(new AtomicLong(toLong(row.get(ConfigConstant.META_TOTAL))));
-        meta.setSuccess(new AtomicLong(toLong(row.get(ConfigConstant.META_SUCCESS))));
-        meta.setFail(new AtomicLong(toLong(row.get(ConfigConstant.META_FAIL))));
-        meta.setDiff(new AtomicLong(toLong(row.get(ConfigConstant.META_DIFF))));
-        meta.setFixed(new AtomicLong(toLong(row.get(ConfigConstant.META_FIXED))));
-        Object snapshot = row.get(ConfigConstant.META_SNAPSHOT);
-        if (snapshot != null && StringUtil.isNotBlank(String.valueOf(snapshot))) {
-            Map map = JsonUtil.parseMap(String.valueOf(snapshot));
-            if (map != null) {
-                Map<String, String> snap = new java.util.HashMap<>();
-                map.forEach((k, v) -> snap.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
-                meta.setSnapshot(snap);
-            }
-        }
-        return meta;
-    }
-
-    private long toLong(Object value) {
-        if (value == null) {
-            return 0L;
-        }
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        try {
-            return Long.parseLong(String.valueOf(value));
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+        return ConfigModelUtil.parseFromRow(row, clazz);
     }
 
     /**
@@ -675,7 +593,6 @@ public final class OperationTemplate {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private <T> List<T> buildUserConfigList() {
         List<UserInfo> users = queryAllUserInfos();
         if (CollectionUtils.isEmpty(users)) {
@@ -731,22 +648,5 @@ public final class OperationTemplate {
             }
         }
         return firstId;
-    }
-
-    private UserInfo deserializeUserInfo(Map row) {
-        UserInfo user = new UserInfo();
-        user.setId(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
-        user.setCreateTime(toLong(row.get(ConfigConstant.CONFIG_MODEL_CREATE_TIME)));
-        user.setUpdateTime(toLong(row.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)));
-        user.setUsername(String.valueOf(row.get(ConfigConstant.USER_USERNAME)));
-        user.setPassword(String.valueOf(row.get(ConfigConstant.USER_PASSWORD)));
-        user.setNickname(String.valueOf(row.get(ConfigConstant.USER_NICKNAME)));
-        Object role = row.get(ConfigConstant.USER_ROLE);
-        user.setRoleCode(role == null ? null : String.valueOf(role));
-        Object email = row.get(ConfigConstant.USER_EMAIL);
-        user.setEmail(email == null ? StringUtil.EMPTY : String.valueOf(email));
-        Object phone = row.get(ConfigConstant.USER_PHONE);
-        user.setPhone(phone == null ? StringUtil.EMPTY : String.valueOf(phone));
-        return user;
     }
 }

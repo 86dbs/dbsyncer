@@ -76,6 +76,46 @@ public abstract class ConfigModelUtil {
         return params;
     }
 
+    /**
+     * 从存储行还原模型（与 {@link #convertModelToMap}/{@link #convertUserInfoToMap} 对称）。
+     */
+    public static <T> T parseFromRow(Map row, Class<T> clazz) {
+        if (row == null || clazz == null) {
+            return null;
+        }
+        if (Meta.class.equals(clazz)) {
+            return (T) parseMeta(row);
+        }
+        if (UserInfo.class.equals(clazz)) {
+            return (T) parseUserInfo(row);
+        }
+        Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
+        if (json == null) {
+            return null;
+        }
+        return JsonUtil.jsonToObj(String.valueOf(json), clazz);
+    }
+
+    private static Meta parseMeta(Map row) {
+        Map<String, Object> data = new HashMap<>(row);
+        Object snapshot = data.get(ConfigConstant.META_SNAPSHOT);
+        if (snapshot instanceof String && StringUtil.isNotBlank((String) snapshot)) {
+            data.put(ConfigConstant.META_SNAPSHOT, JsonUtil.parseMap((String) snapshot));
+        }
+        Meta meta = JsonUtil.mapToObj(data, Meta.class);
+        return meta == null ? new Meta() : meta;
+    }
+
+    private static UserInfo parseUserInfo(Map row) {
+        Map<String, Object> data = new HashMap<>(row);
+        // 列名 role 对应模型字段 roleCode
+        Object role = data.remove(ConfigConstant.USER_ROLE);
+        if (role != null) {
+            data.put("roleCode", role);
+        }
+        return JsonUtil.mapToObj(data, UserInfo.class);
+    }
+
     private static Map<String, Object> convertMetaToMap(Meta meta) {
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, meta.getId());

@@ -20,9 +20,12 @@ import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
 
@@ -121,7 +124,7 @@ public class ProfileComponentImpl implements ProfileComponent {
         }
         List<String> allIds = new ArrayList<>(models.size());
         TaskSplitUtil.split(models, TABLE_GROUP_BATCH_SIZE, batch -> {
-            List<String> ids = operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE);
+            List<String> ids = operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD);
             allIds.addAll(ids);
             List<Meta> metas = new ArrayList<>(ids.size());
             long now = System.currentTimeMillis();
@@ -138,7 +141,7 @@ public class ProfileComponentImpl implements ProfileComponent {
                 metas.add(meta);
             }
             if (!CollectionUtils.isEmpty(metas)) {
-                operationTemplate.executeBatch(metas, CommandEnum.OPR_ADD, GroupStrategyEnum.DEFAULT);
+                operationTemplate.executeBatch(metas, CommandEnum.OPR_ADD);
             }
         });
     }
@@ -193,7 +196,9 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public List<Meta> getTaskMetaAll() {
-        return operationTemplate.queryTaskMetaAll();
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 0);
+        return operationTemplate.queryList(StorageEnum.META, condition, Meta.class);
     }
 
     @Override
@@ -208,7 +213,7 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public void removeDetailMetasByTaskId(String taskId) {
-        operationTemplate.removeDetailMetasByTaskId(taskId);
+        operationTemplate.removeDetailMetasByTableGroupIds(operationTemplate.listTableGroupIds(taskId));
     }
 
     @Override

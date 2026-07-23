@@ -173,6 +173,21 @@ public abstract class JsonUtil {
     }
 
     /**
+     * Map 转对象（拆分列存储行还原场景）。
+     *
+     * @param map       存储行或中间 Map
+     * @param valueType 目标类型
+     * @param <T>       目标类型
+     * @return 反序列化结果，map 为空时返回 null
+     */
+    public static <T> T mapToObj(Map<?, ?> map, Class<T> valueType) {
+        if (map == null || valueType == null) {
+            return null;
+        }
+        return JSON.parseObject(JSON.toJSONString(map), valueType);
+    }
+
+    /**
      * 反序列化为带泛型的对象（如 {@code Map<String, Xxx>}）。
      *
      * @param json          JSON 字符串
