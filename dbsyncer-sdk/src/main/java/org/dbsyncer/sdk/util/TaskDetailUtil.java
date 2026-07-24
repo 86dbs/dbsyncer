@@ -27,11 +27,17 @@ import java.util.function.Predicate;
  */
 public abstract class TaskDetailUtil {
 
+    /**
+     * MySQL BLOB 上限（与 dbsyncer_task_detail.DATA 一致），写入前必须截取以免 Data truncation。
+     */
+    public static final int MAX_DATA_BYTES = 65535;
+
     private TaskDetailUtil() {
     }
 
     /**
      * 结构化内容序列化为 DATA blob 字节
+     * <p>超过 {@link #MAX_DATA_BYTES} 时优先截断 {@code content} 字段，尽量保持 JSON 可解析。
      *
      * @param content 结构化字段
      * @return blob 字节，内容为空时返回 null
@@ -40,7 +46,61 @@ public abstract class TaskDetailUtil {
         if (content == null || content.isEmpty()) {
             return null;
         }
+        byte[] bytes = toUtf8Bytes(content);
+        if (bytes.length <= MAX_DATA_BYTES) {
+            return bytes;
+        }
+        // 优先截断载荷字段，保证入库且尽量可反序列化
+        Map<String, Object> copy = new HashMap<>(content);
+        Object raw = copy.get(ConfigConstant.TASK_CONTENT);
+        if (raw instanceof String && StringUtil.isNotBlank((String) raw)) {
+            copy.put(ConfigConstant.TASK_CONTENT, StringUtil.EMPTY);
+            int overhead = toUtf8Bytes(copy).length;
+            int budget = Math.max(0, MAX_DATA_BYTES - overhead);
+            copy.put(ConfigConstant.TASK_CONTENT, truncateUtf8((String) raw, budget));
+            bytes = toUtf8Bytes(copy);
+            if (bytes.length <= MAX_DATA_BYTES) {
+                return bytes;
+            }
+        }
+        // 兜底：按字节硬截断（可能破坏 JSON，反序列化失败时返回空 Map）
+        return truncateBytes(bytes, MAX_DATA_BYTES);
+    }
+
+    private static byte[] toUtf8Bytes(Map<String, Object> content) {
         return JsonUtil.objToJsonSafe(content).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 按 UTF-8 字节上限截断字符串，保证落在完整字符边界上。
+     */
+    private static String truncateUtf8(String value, int maxBytes) {
+        if (value == null || maxBytes <= 0) {
+            return StringUtil.EMPTY;
+        }
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length <= maxBytes) {
+            return value;
+        }
+        int end = maxBytes;
+        // 若切断点落在多字节字符中间，回退到该字符起始之前
+        while (end > 0 && (bytes[end] & 0xC0) == 0x80) {
+            end--;
+        }
+        return new String(bytes, 0, end, StandardCharsets.UTF_8);
+    }
+
+    private static byte[] truncateBytes(byte[] bytes, int maxBytes) {
+        if (bytes == null || bytes.length <= maxBytes) {
+            return bytes;
+        }
+        int end = maxBytes;
+        while (end > 0 && (bytes[end] & 0xC0) == 0x80) {
+            end--;
+        }
+        byte[] truncated = new byte[end];
+        System.arraycopy(bytes, 0, truncated, 0, end);
+        return truncated;
     }
 
     /**

@@ -12,9 +12,11 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.ddl.DDLParser;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -84,6 +86,12 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     private ProfileComponent profileComponent;
 
     @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
     private PluginFactory pluginFactory;
 
     @Resource
@@ -141,7 +149,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
     @Override
     public void pull(WriterResponse response) {
-        Meta meta = profileComponent.getMeta(response.getChangedOffset().getMetaId());
+        Meta meta = metaProfile.getMeta(response.getChangedOffset().getMetaId());
         if (meta == null) {
             return;
         }
@@ -153,7 +161,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         switch (response.getTypeEnum()) {
             case DDL:
                 tableGroupContext.update(mapping, pickers.stream().map(picker-> {
-                    TableGroup tableGroup = profileComponent.getTableGroup(picker.getTableGroup().getId());
+                    TableGroup tableGroup = tableGroupProfile.getTableGroup(picker.getTableGroup().getId());
                     parseDDl(response, mapping, tableGroup);
                     return tableGroup;
                 }).collect(Collectors.toList()));
@@ -284,7 +292,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroup.setCommand(parserComponent.getCommand(mapping, tableGroup));
 
             // 6.持久化存储 & 更新缓存配置
-            profileComponent.editTableGroup(tableGroup);
+            tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
             applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));

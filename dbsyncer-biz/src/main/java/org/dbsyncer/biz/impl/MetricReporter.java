@@ -28,6 +28,7 @@ import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -73,6 +74,9 @@ public class MetricReporter implements ScheduledTaskJob {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -141,7 +145,7 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     private void getMetricResponseInfo(String metaId, Map<String, TableGroupBufferActuator> group, String searchKey, List<MetricResponseInfo> tableList) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
         group.forEach((k, actuator)-> {
@@ -187,7 +191,7 @@ public class MetricReporter implements ScheduledTaskJob {
         try {
             running = true;
             // 仅任务级 Meta；看板指标按同步驱动分表统计
-            final List<Meta> metaAll = profileComponent.getTaskMetaAll().stream()
+            final List<Meta> metaAll = metaProfile.getTaskMetaAll().stream()
                     .filter(meta -> {
                         Mapping mapping = profileComponent.getMapping(meta.getTaskId());
                         return mapping != null && StringUtil.equals(ConfigConstant.MAPPING, mapping.getType());

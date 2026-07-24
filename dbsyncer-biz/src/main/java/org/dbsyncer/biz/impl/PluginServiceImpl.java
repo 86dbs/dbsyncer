@@ -15,6 +15,7 @@ import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.model.Plugin;
 
@@ -43,6 +44,9 @@ public class PluginServiceImpl implements PluginService {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private LogService logService;
@@ -106,7 +110,7 @@ public class PluginServiceImpl implements PluginService {
                 continue;
             }
 
-            List<TableGroup> tableGroupAll = profileComponent.getTableGroupAll(m.getId());
+            List<TableGroup> tableGroupAll = tableGroupProfile.getTableGroupAll(m.getId());
             if (CollectionUtils.isEmpty(tableGroupAll)) {
                 continue;
             }

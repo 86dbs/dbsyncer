@@ -107,7 +107,7 @@ public abstract class ConfigModelUtil {
     }
 
     private static UserInfo parseUserInfo(Map row) {
-        Map<String, Object> data = new HashMap<>(row);
+        HashMap data = new HashMap<>(row);
         // 列名 role 对应模型字段 roleCode
         Object role = data.remove(ConfigConstant.USER_ROLE);
         if (role != null) {

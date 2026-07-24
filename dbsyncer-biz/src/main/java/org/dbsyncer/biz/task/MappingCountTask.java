@@ -43,7 +43,7 @@ public class MappingCountTask extends AbstractCountTask {
         if (shouldStop(mapping)) {
             return;
         }
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mappingId);
+        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mappingId);
         logger.info("正在统计:{}, {}张表", mapping.getName(), groupAll.size());
         if (!CollectionUtils.isEmpty(groupAll)) {
             for (TableGroup tableGroup : groupAll) {

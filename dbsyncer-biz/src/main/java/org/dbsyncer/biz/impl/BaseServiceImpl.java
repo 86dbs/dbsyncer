@@ -17,6 +17,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
 
@@ -34,6 +35,9 @@ public class BaseServiceImpl {
     private ProfileComponent profileComponent;
 
     @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
     private LogService logService;
 
     @Resource
@@ -45,7 +49,7 @@ public class BaseServiceImpl {
     protected final static Object LOCK = new Object();
 
     protected boolean isRunning(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         if (null != meta) {
             int state = meta.getState();
             return MetaEnum.isRunning(state);

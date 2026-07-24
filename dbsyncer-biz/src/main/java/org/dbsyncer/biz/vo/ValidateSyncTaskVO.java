@@ -12,7 +12,7 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
     // 连接器
     private final Connector sourceConnector;
     private final Connector targetConnector;
-    //错误数
+    // 错误数（任务级 Meta 累计差异行数）
     private long errorCount;
     //当前进度
     private BigDecimal progress;

@@ -17,6 +17,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
@@ -46,6 +47,9 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private Map<String, MappingConfigChecker> map;
@@ -189,7 +193,7 @@ public class MappingChecker extends AbstractChecker {
     }
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
+        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             sortTableGroup(groupAll, params);
             // 合并配置

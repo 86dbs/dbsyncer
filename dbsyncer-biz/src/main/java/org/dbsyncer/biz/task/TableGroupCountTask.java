@@ -33,7 +33,7 @@ public class TableGroupCountTask extends AbstractCountTask {
         if (shouldStop(mapping)) {
             return;
         }
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mappingId);
+        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mappingId);
         logger.info("正在统计:{}, {}张表", mapping.getName(), groupAll.size());
         if (!CollectionUtils.isEmpty(tableGroups)) {
             for (String tableGroupId : tableGroups) {
@@ -43,7 +43,7 @@ public class TableGroupCountTask extends AbstractCountTask {
                     return;
                 }
                 mapping = profileComponent.getMapping(mappingId);
-                updateTableGroupCount(mapping, profileComponent.getTableGroup(tableGroupId));
+                updateTableGroupCount(mapping, tableGroupProfile.getTableGroup(tableGroupId));
             }
         }
         // 更新驱动meta

@@ -7,8 +7,8 @@ import org.dbsyncer.common.config.BufferActuatorConfig;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Meta;
 
@@ -51,7 +51,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
     private ScheduledTaskService scheduledTaskService;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MetaProfile metaProfile;
 
     @Resource
     private TimeRegistry timeRegistry;
@@ -110,7 +110,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      * @return
      */
     public boolean isRunning(BufferRequest request) {
-        Meta meta = profileComponent.getMeta(request.getMetaId());
+        Meta meta = metaProfile.getMeta(request.getMetaId());
         return meta != null && MetaEnum.isRunning(meta.getState());
     }
 

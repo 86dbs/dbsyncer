@@ -16,6 +16,8 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 
 import org.slf4j.Logger;
@@ -53,6 +55,12 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private ProfileComponent profileComponent;
 
     @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
     private LogService logService;
 
     private final Map<String, Task> map = new ConcurrentHashMap<>();
@@ -72,7 +80,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
      * @param publishClosed 完成后是否发布关闭事件
      */
     public void runSync(Mapping mapping, boolean publishClosed) {
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
+        List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(mapping.getId());
         Assert.notEmpty(list, "映射关系不能为空");
         final String metaId = mapping.getMetaId();
         ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
@@ -118,7 +126,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         task.setEndTime(now);
 
         // 获取上次同步点
-        Meta meta = profileComponent.getMeta(task.getId());
+        Meta meta = metaProfile.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
         task.setPageIndex(NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue()));
         // 反序列化游标值类型(通常为数字或字符串类型)
@@ -145,7 +153,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     private void flush(Task task) {
-        Meta meta = profileComponent.getMeta(task.getId());
+        Meta meta = metaProfile.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
 
         // 全量的过程中，有新数据则更新总数

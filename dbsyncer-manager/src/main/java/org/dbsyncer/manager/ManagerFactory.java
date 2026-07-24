@@ -5,6 +5,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.MetaProfile;
 
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,9 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private Map<String, Puller> map;
@@ -70,7 +74,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     }
 
     public void changeMetaState(String metaId, MetaEnum metaEnum) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         int code = metaEnum.getCode();
         if (null != meta && meta.getState() != code) {
             meta.setState(code);

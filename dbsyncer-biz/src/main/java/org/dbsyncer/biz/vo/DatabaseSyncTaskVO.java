@@ -34,7 +34,7 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
     private int mappingCount;
     /** 任务进度 0~100，运行中由快照计算 */
     private BigDecimal progress;
-    /** 失败明细条数（failTotal &gt; 0） */
+    /** 失败数（任务级 Meta 累计 FAIL） */
     private long errorCount;
     /** 任务总表数（TableGroup 数量） */
     private int totalTableCount;

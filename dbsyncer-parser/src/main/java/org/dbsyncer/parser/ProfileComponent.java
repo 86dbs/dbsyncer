@@ -7,9 +7,7 @@ import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -21,9 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 配置文件组件（system/user/connector/mapping/tableGroup/meta）
- * <p>
- * {@link ConfigConstant}
+ * 配置文件组件（system/user/connector/mapping + 枚举查询等）。
+ * <p>表映射见 {@link TableGroupProfile}；Meta 见 {@link MetaProfile}；任务运行结果见 {@link TaskProfile}。
+ * <p>{@link ConfigConstant}
  *
  * @Version 1.0.0
  * @Author AE86
@@ -106,114 +104,6 @@ public interface ProfileComponent {
     Mapping getMapping(String mappingId);
 
     List<Mapping> getMappingAll();
-
-    /**
-     * 添加 TableGroup，并同路径预建明细 Meta（id=taskId=tableGroupId）。
-     */
-    String addTableGroup(TableGroup model);
-
-    /**
-     * 批量添加 TableGroup，并同路径批量预建明细 Meta。
-     *
-     * @param models TableGroup 列表
-     */
-    void addTableGroupBatch(List<TableGroup> models);
-
-    String editTableGroup(TableGroup model);
-
-    /**
-     * 删除单个 TableGroup，并同路径删除其明细 Meta。
-     */
-    void removeTableGroup(String id);
-
-    /**
-     * 按任务 ID 条件删除全部 table_group 及其明细 Meta（先取 id 删 Meta，再 delete WHERE TASK_ID）。
-     */
-    void removeTableGroupsByTaskId(String taskId);
-
-    TableGroup getTableGroup(String tableGroupId);
-
-    List<TableGroup> getTableGroupAll(String mappingId);
-
-    List<TableGroup> getSortedTableGroupAll(String mappingId);
-
-    int getTableGroupCount(String mappingId);
-
-    // Meta
-    Meta getMeta(String metaId);
-
-    /**
-     * 全部 Meta（含明细级）。优先使用 {@link #getTaskMetaAll()}。
-     */
-    List<Meta> getMetaAll();
-
-    /**
-     * 仅任务级 Meta（IS_TASK_DETAIL=0）。
-     *
-     * @return 任务级 Meta 列表
-     */
-    List<Meta> getTaskMetaAll();
-
-    /**
-     * 按关联 ID + 是否明细查询 Meta（任务级：taskId=任务ID；明细级：taskId=detailId 或 tableGroupId）。
-     *
-     * @param refId        关联 ID
-     * @param isTaskDetail 0-任务级 1-明细级
-     * @return Meta，不存在时返回 null
-     */
-    Meta getMetaByTaskId(String refId, int isTaskDetail);
-
-    /**
-     * 批量按关联 ID 查询明细级 Meta（IS_TASK_DETAIL=1）。
-     *
-     * @param refIds 关联 ID 列表(detailId / tableGroupId)
-     * @return key=refId
-     */
-    Map<String, Meta> getDetailMetaMap(List<String> refIds);
-
-    /**
-     * 删除任务下明细级 Meta（按 table_group.id 关联，须在 clear 分表之前调用）。
-     *
-     * @param taskId 任务 ID
-     */
-    void removeDetailMetasByTaskId(String taskId);
-
-    /**
-     * 清空任务运行结果：按 table_group.id 删明细 Meta 并 clear TASK_DETAIL；表映射仍在时补回空明细 Meta。
-     */
-    void clearTaskRunResults(String taskId);
-
-    /**
-     * 重置任务级 Meta 计数与 SNAPSHOT（保留行，state=READY）。
-     */
-    void resetTaskMeta(String taskId);
-
-    /**
-     * 明细分表按成功标记 COUNT。
-     *
-     * @param taskId    任务 ID
-     * @param isSuccess 0-失败 1-成功
-     * @return 行数
-     */
-    long countTaskDetailBySuccess(String taskId, int isSuccess);
-
-    /**
-     * 统计明细级 Meta 中 DIFF&gt;0 的数量。
-     *
-     * @param taskId 任务 ID
-     * @return 有差异明细数
-     */
-    long sumTaskDetailMetaDiff(String taskId);
-
-    /**
-     * Meta 计数原子增量(严格走库)：直接落库自增 total/success/fail，可为负数。
-     *
-     * @param metaId       任务ID
-     * @param totalDelta   总数增量
-     * @param successDelta 成功数增量
-     * @param failDelta    失败数增量
-     */
-    void incrementMeta(String metaId, long totalDelta, long successDelta, long failDelta);
 
     /**
      * 构建导出配置快照(直查库)，用于配置导入/导出。

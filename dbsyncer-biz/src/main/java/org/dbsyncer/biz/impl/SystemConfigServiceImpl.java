@@ -20,6 +20,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.MetaProfile;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -46,6 +47,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private PreloadTemplate preloadTemplate;
@@ -111,7 +115,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(userConfigService.getUserConfig());
         list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
         list.addAll(profileComponent.getMappingAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(profileComponent.getTaskMetaAll().stream().limit(5).collect(Collectors.toList()));
+        list.addAll(metaProfile.getTaskMetaAll().stream().limit(5).collect(Collectors.toList()));
         return list;
     }
 

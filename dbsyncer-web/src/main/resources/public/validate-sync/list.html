@@ -233,7 +233,7 @@
     }
 
     /**
-     * 结果列：已有执行记录时，根据后端 errorCount（diffTotal&gt;0 的明细条数）展示「异常：n」或「正常」。
+     * 结果列：已有执行记录时，根据后端 errorCount（任务级 Meta 累计差异行数）展示「异常：n」或「正常」。
      * @param {Object} task 列表行数据（含 errorCount、updateTime）
      */
     function renderResultColumn(task) {

@@ -5,11 +5,13 @@ package org.dbsyncer.parser.strategy.impl;
 
 import com.google.protobuf.ByteString;
 import org.dbsyncer.common.binlog.proto.BinlogMap;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Meta;
@@ -18,6 +20,7 @@ import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -46,6 +49,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private LogService logService;
@@ -141,7 +147,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         // 严格走库：按批 DB 原子增量，不再在内存 Meta 实例上累加
-        profileComponent.incrementMeta(writer.getMetaId(), 0L, success, fail);
+        metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
 
@@ -153,7 +159,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
         synchronized (("table-meta-" + tableGroupId).intern()) {
-            Meta tableMeta = profileComponent.getMetaByTaskId(tableGroupId, 1);
+            Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
             if (tableMeta == null) {
                 tableMeta = new Meta();
                 tableMeta.setId(tableGroupId);
@@ -164,7 +170,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 tableMeta.setUpdateTime(now);
                 profileComponent.addConfigModel(tableMeta);
             }
-            profileComponent.incrementMeta(tableMeta.getId(), 0L, success, fail);
+            metaProfile.incrementMeta(MetaIncrement.of(tableMeta.getId()).success(success).fail(fail));
         }
     }
 

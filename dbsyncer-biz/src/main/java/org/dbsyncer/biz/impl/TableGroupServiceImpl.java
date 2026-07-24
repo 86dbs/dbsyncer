@@ -20,9 +20,12 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -49,6 +52,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private ParserComponent parserComponent;
@@ -82,9 +91,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
                 params.put("targetTable", targetTableArray[i]);
                 TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
                 log(LogType.TableGroupLog.INSERT, model);
-                int tableGroupCount = profileComponent.getTableGroupCount(mappingId);
+                int tableGroupCount = tableGroupProfile.getTableGroupCount(mappingId);
                 model.setIndex(tableGroupCount + 1);
-                id = profileComponent.addTableGroup(model);
+                id = tableGroupProfile.addTableGroup(model);
                 list.add(id);
             }
             submitTableGroupCountTask(mapping, list);
@@ -98,14 +107,14 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     @Override
     public String edit(Map<String, String> params) {
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         assertRunning(mapping);
 
         TableGroup model = (TableGroup) tableGroupChecker.checkEditConfigModel(params);
         log(LogType.TableGroupLog.UPDATE, model);
-        profileComponent.editTableGroup(model);
+        tableGroupProfile.editTableGroup(model);
         List<String> list = new ArrayList<>();
         list.add(model.getId());
         submitTableGroupCountTask(mapping, list);
@@ -114,11 +123,11 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public String refreshFields(String id) {
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
         tableGroupChecker.refreshTableFields(tableGroup);
-        return profileComponent.editTableGroup(tableGroup);
+        return tableGroupProfile.editTableGroup(tableGroup);
     }
 
     @Override
@@ -130,9 +139,9 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id-> {
-            TableGroup model = profileComponent.getTableGroup(id);
+            TableGroup model = tableGroupProfile.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, model);
-            profileComponent.removeTableGroup(id);
+            tableGroupProfile.removeTableGroup(id);
         });
 
         // 合并驱动公共字段
@@ -146,14 +155,14 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public TableGroup getTableGroup(String id) {
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "TableGroup can not be null");
         return tableGroup;
     }
 
     @Override
     public List<TableGroup> getTableGroupAll(String mappingId) {
-        return profileComponent.getSortedTableGroupAll(mappingId);
+        return tableGroupProfile.getSortedTableGroupAll(mappingId);
     }
 
     @Override
@@ -165,11 +174,13 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     @Override
     public Meta updateMeta(Mapping mapping, String metaSnapshot) {
-        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
         // 清空状态：success/fail 为库侧增量列，先原子归零再清空内存态
-        profileComponent.incrementMeta(meta.getId(), 0L, -meta.getSuccess().get(), -meta.getFail().get());
+        metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
+                .success(-meta.getSuccess().get())
+                .fail(-meta.getFail().get()));
         meta.clear();
 
         // 手动配置增量点
@@ -192,7 +203,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (ModelEnum.isFull(model)) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = profileComponent.getTableGroupAll(meta.getTaskId());
+            List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(meta.getTaskId());
             if (!CollectionUtils.isEmpty(groupAll)) {
                 for (TableGroup g : groupAll) {
                     count.getAndAdd(g.getSourceTable().getCount());
@@ -204,7 +215,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
 
     private void resetTableGroupAllIndex(String mappingId) {
         synchronized (LOCK) {
-            List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
+            List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(mappingId);
             int size = list.size();
             int i = size;
             while (i > 0) {
@@ -217,7 +228,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     private void mergeMappingColumn(Mapping mapping) {
-        List<TableGroup> groups = profileComponent.getTableGroupAll(mapping.getId());
+        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(mapping.getId());
 
         List<Field> sourceColumn = null;
         List<Field> targetColumn = null;
@@ -240,6 +251,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         task.setTableGroups(list);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setTableGroupProfile(tableGroupProfile);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
         task.setTableGroupService(this);

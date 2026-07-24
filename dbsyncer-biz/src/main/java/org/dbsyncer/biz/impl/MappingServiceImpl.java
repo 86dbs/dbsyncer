@@ -35,6 +35,9 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -44,6 +47,7 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -91,6 +95,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private MonitorService monitorService;
@@ -158,14 +171,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
-        List<TableGroup> groupList = profileComponent.getTableGroupAll(mapping.getId());
+        List<TableGroup> groupList = tableGroupProfile.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groupList)) {
             groupList.forEach(tableGroup -> {
                 String tableGroupJson = JsonUtil.objToJson(tableGroup);
                 TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 newTableGroup.setTaskId(newMapping.getId());
-                profileComponent.addTableGroup(newTableGroup);
+                tableGroupProfile.addTableGroup(newTableGroup);
                 log(LogType.TableGroupLog.COPY, newTableGroup);
             });
         }
@@ -195,7 +208,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
         String metaId = mapping.getMetaId();
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         synchronized (LOCK) {
             assertRunning(metaId);
 
@@ -204,8 +217,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             log(LogType.MetaLog.CLEAR, meta);
 
             // 条件删除 table_group + 明细 Meta，并清运行结果
-            profileComponent.clearTaskRunResults(id);
-            profileComponent.removeTableGroupsByTaskId(id);
+            taskProfile.clearTaskRunResults(id);
+            tableGroupProfile.removeTableGroupsByTaskId(id);
 
             // 删除任务级 meta
             profileComponent.removeConfigModel(metaId);
@@ -269,7 +282,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
         }
         // 元信息
-        vo.setMeta(profileComponent.getMeta(mapping.getMetaId()));
+        vo.setMeta(metaProfile.getMeta(mapping.getMetaId()));
         return vo;
     }
 
@@ -330,7 +343,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 }
             }
         }
-        Map<String, Meta> metaMap = profileComponent.getDetailMetaMap(groupIds);
+        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(groupIds);
 
         List<Map<String, Object>> rows = new ArrayList<>();
         if (!CollectionUtils.isEmpty(groups)) {
@@ -539,6 +552,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setMetaSnapshot(metaSnapshot);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setTableGroupProfile(tableGroupProfile);
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
@@ -577,7 +591,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "Mapping can not be null.");
 
         // 元信息
-        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
@@ -606,7 +620,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 检查映射关系
      */
     private void assertTableGroupExist(String mappingId) {
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
+        List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(mappingId);
         Assert.notEmpty(list, "映射关系不能为空");
     }
 
@@ -717,11 +731,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private void clearMetaIfFinished(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态：success/fail 为库侧增量列，原子归零
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
-            profileComponent.incrementMeta(metaId, 0L, -meta.getSuccess().get(), -meta.getFail().get());
+            metaProfile.incrementMeta(MetaIncrement.of(metaId)
+                    .success(-meta.getSuccess().get())
+                    .fail(-meta.getFail().get()));
             meta.getFail().set(0);
             meta.getSuccess().set(0);
             profileComponent.editConfigModel(meta);

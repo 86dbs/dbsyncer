@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
@@ -45,6 +46,9 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Resource
     private ProfileComponent profileComponent;
 
+    @Resource
+    private MetaProfile metaProfile;
+
     @PostConstruct
     private void init() {
         setConfig(storageConfig);
@@ -71,7 +75,7 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
-        Meta meta = profileComponent.getMeta(request.getMetaId());
+        Meta meta = metaProfile.getMeta(request.getMetaId());
         if (meta != null) {
             Mapping mapping = profileComponent.getMapping(meta.getTaskId());
             if (mapping != null) {

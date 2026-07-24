@@ -23,11 +23,15 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.parser.util.TaskDetailGroupUtil;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -83,6 +87,15 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private TaskDetailGroupUtil taskDetailGroupUtil;
@@ -149,7 +162,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     TableGroup newTable = deepCopy(tableGroup);
                     newTable.setId(String.valueOf(snowflakeIdWorker.nextId()));
                     newTable.setTaskId(task.getId());
-                    profileComponent.addTableGroup(newTable);
+                    tableGroupProfile.addTableGroup(newTable);
                 });
             }
             // 合并任务公共字段
@@ -232,10 +245,10 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             throw new IllegalArgumentException("Task not found");
         }
         checkTask(task, params);
-        profileComponent.clearTaskRunResults(task.getId());
-        profileComponent.resetTaskMeta(task.getId());
+        taskProfile.clearTaskRunResults(task.getId());
+        taskProfile.resetTaskMeta(task.getId());
         resetTaskSnapshot(task);
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(task.getId());
+        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(task.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             mappingChecker.sortTableGroup(groupAll, params);
             for (TableGroup g : groupAll) {
@@ -260,7 +273,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         resetTaskSnapshot(newTask);
         String newId = taskService.add(newTask);
         // 深拷贝 table_group（关联已下沉到该表）
-        List<TableGroup> sourceGroups = profileComponent.getTableGroupAll(id);
+        List<TableGroup> sourceGroups = tableGroupProfile.getTableGroupAll(id);
         if (!CollectionUtils.isEmpty(sourceGroups)) {
             long now = System.currentTimeMillis();
             for (TableGroup source : sourceGroups) {
@@ -272,7 +285,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 copy.setTaskId(newId);
                 copy.setCreateTime(now);
                 copy.setUpdateTime(now);
-                profileComponent.addTableGroup(copy);
+                tableGroupProfile.addTableGroup(copy);
             }
         }
         preloadTemplate.reConnect(newTask);
@@ -288,7 +301,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String start(String id) {
-        List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(id);
+        List<TableGroup> tableGroupList = tableGroupProfile.getSortedTableGroupAll(id);
         Assert.isTrue(!CollectionUtils.isEmpty(tableGroupList), "任务未配置表映射，无法启动");
         taskService.start(id);
         return "启动成功";
@@ -314,9 +327,13 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
 
-                    long errorCount =  profileComponent.sumTaskDetailMetaDiff(t.getId());
+                    long errorCount = 0L;
+                    Meta taskMeta = metaProfile.getMeta(t.getId());
+                    if (taskMeta != null && taskMeta.getDiff() != null) {
+                        errorCount = taskMeta.getDiff().get();
+                    }
                     vo.setErrorCount(errorCount);
-                    List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(t.getId());
+                    List<TableGroup> tableGroupList = tableGroupProfile.getSortedTableGroupAll(t.getId());
                     int tableCount = tableGroupList.size();
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(countCompletedTables(t, tableCount));
@@ -461,7 +478,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String refreshFields(String id) {
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
         ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
@@ -496,9 +513,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
                 validateSyncTableGroupChecker.mergeConfig(task, model);
                 log(LogType.TableGroupLog.INSERT, task, model);
-                int tableGroupCount = profileComponent.getTableGroupCount(taskId);
+                int tableGroupCount = tableGroupProfile.getTableGroupCount(taskId);
                 model.setIndex(tableGroupCount + 1);
-                id = profileComponent.addTableGroup(model);
+                id = tableGroupProfile.addTableGroup(model);
                 list.add(id);
             }
             // 合并任务公共字段
@@ -510,7 +527,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public String editTableGroup(Map<String, String> params) {
         String tableGroupId = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
         assertRunning(task.getId());
@@ -518,7 +535,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);
         validateSyncTableGroupChecker.mergeConfig(task, model);
         log(LogType.TableGroupLog.UPDATE, task, tableGroup);
-        profileComponent.editTableGroup(model);
+        tableGroupProfile.editTableGroup(model);
         return tableGroupId;
     }
 
@@ -530,9 +547,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         assertRunning(taskId);
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = profileComponent.getTableGroup(id);
+            TableGroup model = tableGroupProfile.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, task, model);
-            profileComponent.removeTableGroup(id);
+            tableGroupProfile.removeTableGroup(id);
         });
         // 合并任务公共字段
         mergeTaskColumn(task);
@@ -570,7 +587,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     private void resetTableGroupAllIndex(String taskId) {
         synchronized (LOCK) {
-            List<TableGroup> list = profileComponent.getSortedTableGroupAll(taskId);
+            List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(taskId);
             int size = list.size();
             int i = size;
             while (i > 0) {
@@ -660,7 +677,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     private void mergeTaskColumn(ValidateSyncTask task) {
-        List<TableGroup> groups = profileComponent.getTableGroupAll(task.getId());
+        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(task.getId());
         List<Field> sourceColumn = null;
         for (TableGroup g : groups) {
             sourceColumn = PickerUtil.pickCommonFields(sourceColumn, g.getSourceTable().getColumn());

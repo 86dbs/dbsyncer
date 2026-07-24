@@ -23,6 +23,7 @@ import org.dbsyncer.biz.vo.MetricResponseVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
@@ -33,6 +34,8 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -42,6 +45,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
@@ -79,6 +83,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private DataSyncService dataSyncService;
@@ -132,7 +142,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public List<MetaVO> getMetaAll() {
         // 仅同步驱动任务级 Meta（mapping）；企业校验/迁移 Meta 不进监控列表
-        return profileComponent.getTaskMetaAll().stream()
+        return metaProfile.getTaskMetaAll().stream()
                 .map(this::convertMeta2Vo)
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(MetaVO::getUpdateTime).reversed())
@@ -141,7 +151,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public MetaVO getMetaVo(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "The meta is null.");
         MetaVO vo = convertMeta2Vo(meta);
         Assert.notNull(vo, String.format("驱动不存在. metaId:%s, taskId:%s", meta.getId(), meta.getTaskId()));
@@ -195,7 +205,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public String clearData(String id, String tableGroupId) {
         Assert.hasText(id, "驱动不存在.");
-        Meta meta = profileComponent.getMeta(id);
+        Meta meta = metaProfile.getMeta(id);
         Assert.notNull(meta, "驱动不存在.");
         Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         Assert.notNull(mapping, "驱动不存在.");
@@ -212,7 +222,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 任务 Meta：success/fail 一并归零
         resetMetaCounters(meta);
         // 表级 Meta 删除
-        List<TableGroup> groups = profileComponent.getTableGroupAll(mapping.getId());
+        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(mapping.getId());
         if (!CollectionUtils.isEmpty(groups)) {
             for (TableGroup group : groups) {
                 if (group == null || StringUtil.isBlank(group.getId())) {
@@ -229,11 +239,13 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void clearTableGroupData(Meta taskMeta, String shardId, String tableGroupId) {
-        Meta tableMeta = profileComponent.getMetaByTaskId(tableGroupId, 1);
+        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
         long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
         long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
         if (tableSuccess != 0 || tableFail != 0) {
-            profileComponent.incrementMeta(taskMeta.getId(), 0L, -tableSuccess, -tableFail);
+            metaProfile.incrementMeta(MetaIncrement.of(taskMeta.getId())
+                    .success(-tableSuccess)
+                    .fail(-tableFail));
         }
         removeTableMeta(tableGroupId);
 
@@ -251,12 +263,14 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         long success = meta.getSuccess() != null ? meta.getSuccess().get() : 0L;
         long fail = meta.getFail() != null ? meta.getFail().get() : 0L;
         if (success != 0 || fail != 0) {
-            profileComponent.incrementMeta(meta.getId(), 0L, -success, -fail);
+            metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
+                    .success(-success)
+                    .fail(-fail));
         }
     }
 
     private void removeTableMeta(String tableGroupId) {
-        Meta tableMeta = profileComponent.getMetaByTaskId(tableGroupId, 1);
+        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
         if (tableMeta != null) {
             profileComponent.removeConfigModel(tableMeta.getId());
         }
@@ -324,7 +338,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public void run() {
         // 预警：仅任务级 Meta
-        List<Meta> metaAll = profileComponent.getTaskMetaAll();
+        List<Meta> metaAll = metaProfile.getTaskMetaAll();
         if (CollectionUtils.isEmpty(metaAll)) {
             return;
         }
@@ -440,7 +454,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 明细分表：逐个任务分表按过期时间清理
         int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
-        List<Meta> metaAll = profileComponent.getTaskMetaAll();
+        List<Meta> metaAll = metaProfile.getTaskMetaAll();
         if (CollectionUtils.isEmpty(metaAll)) {
             return;
         }

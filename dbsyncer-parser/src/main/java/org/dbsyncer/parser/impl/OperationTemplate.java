@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -29,6 +30,7 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -181,23 +183,17 @@ public final class OperationTemplate {
     /**
      * 按关联 ID 查询 Meta。
      */
-    public Meta getMetaByTaskId(String taskId, int isTaskDetail) {
-        if (StringUtil.isBlank(taskId)) {
-            return null;
-        }
+    public Meta getMetaByTaskId(String taskId, TaskLevelEnum isTaskDetail) {
         Query query = new Query(1, 1);
         query.setType(StorageEnum.META);
         query.addFilter(ConfigConstant.META_TASK_ID, taskId);
-        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, isTaskDetail);
+        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, isTaskDetail.getCode());
         Paging paging = storageService.query(query);
         if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
             return null;
         }
         Object row = paging.getData().iterator().next();
-        if (row instanceof Map) {
-            return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
-        }
-        return null;
+        return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
     }
 
     /**
@@ -240,32 +236,34 @@ public final class OperationTemplate {
         return result;
     }
 
+
     /**
-     * Meta 计数原子增量(严格走库)：success/fail/total 直接落库自增，避免内存 AtomicLong 累加。
-     *
-     * @param metaId       任务ID
-     * @param totalDelta   总数增量
-     * @param successDelta 成功数增量
-     * @param failDelta    失败数增量
+     * Meta 计数原子增量(严格走库)：按 {@link MetaIncrement} 落库自增。
      */
-    public void incrementMeta(String metaId, long totalDelta, long successDelta, long failDelta) {
-        if (StringUtil.isBlank(metaId)) {
+    public void incrementMeta(MetaIncrement increment) {
+        if (increment == null || StringUtil.isBlank(increment.getMetaId())) {
             return;
         }
         Map<String, Long> deltas = new java.util.HashMap<>();
-        if (totalDelta != 0) {
-            deltas.put(ConfigConstant.META_TOTAL, totalDelta);
+        if (increment.getTotalDelta() != 0) {
+            deltas.put(ConfigConstant.META_TOTAL, increment.getTotalDelta());
         }
-        if (successDelta != 0) {
-            deltas.put(ConfigConstant.META_SUCCESS, successDelta);
+        if (increment.getSuccessDelta() != 0) {
+            deltas.put(ConfigConstant.META_SUCCESS, increment.getSuccessDelta());
         }
-        if (failDelta != 0) {
-            deltas.put(ConfigConstant.META_FAIL, failDelta);
+        if (increment.getFailDelta() != 0) {
+            deltas.put(ConfigConstant.META_FAIL, increment.getFailDelta());
+        }
+        if (increment.getDiffDelta() != 0) {
+            deltas.put(ConfigConstant.META_DIFF, increment.getDiffDelta());
+        }
+        if (increment.getFixedDelta() != 0) {
+            deltas.put(ConfigConstant.META_FIXED, increment.getFixedDelta());
         }
         if (deltas.isEmpty()) {
             return;
         }
-        storageService.increment(StorageEnum.META, metaId, deltas);
+        storageService.increment(StorageEnum.META, increment.getMetaId(), deltas);
     }
 
     /**
@@ -363,73 +361,6 @@ public final class OperationTemplate {
         TaskSplitUtil.split(metas, PAGE_SIZE, (models) -> {
             executeBatch(models, CommandEnum.OPR_ADD);
         });
-    }
-
-    /**
-     * 明细分表按成功标记计数（走 COUNT，不拉全量行）。
-     *
-     * @param taskId    任务 ID
-     * @param isSuccess 0-失败/未完成 1-成功
-     * @return 行数
-     */
-    public long countTaskDetailBySuccess(String taskId, int isSuccess) {
-        if (StringUtil.isBlank(taskId)) {
-            return 0L;
-        }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setMetaId(taskId);
-        query.setQueryTotal(true);
-        query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, isSuccess);
-        Paging paging = storageService.query(query);
-        return paging == null ? 0L : paging.getTotal();
-    }
-
-    /**
-     * 统计明细级 Meta 中 DIFF&gt;0 的数量（校验列表错误数，避免全量连表装配）。
-     *
-     * @param taskId 任务 ID
-     * @return 有差异的明细数
-     */
-    public long countDetailMetaWithPositiveDiff(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return 0L;
-        }
-        List<String> detailIds = new ArrayList<>();
-        int pageNum = 1;
-        while (true) {
-            Query query = new Query(pageNum, PAGE_SIZE);
-            query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(taskId);
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
-            }
-            for (Object item : paging.getData()) {
-                if (!(item instanceof Map)) {
-                    continue;
-                }
-                Object id = ((Map) item).get(ConfigConstant.CONFIG_MODEL_ID);
-                if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
-                    detailIds.add(String.valueOf(id));
-                }
-            }
-            if (paging.getData().size() < PAGE_SIZE) {
-                break;
-            }
-            pageNum++;
-        }
-        if (CollectionUtils.isEmpty(detailIds)) {
-            return 0L;
-        }
-        Map<String, Meta> metaMap = queryDetailMetaMap(detailIds);
-        long count = 0L;
-        for (Meta meta : metaMap.values()) {
-            if (meta != null && meta.getDiff() != null && meta.getDiff().get() > 0L) {
-                count++;
-            }
-        }
-        return count;
     }
 
     /**

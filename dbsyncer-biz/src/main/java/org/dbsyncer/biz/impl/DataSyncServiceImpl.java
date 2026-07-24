@@ -25,6 +25,8 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
@@ -33,6 +35,7 @@ import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -70,6 +73,12 @@ public class DataSyncServiceImpl implements DataSyncService {
     private ProfileComponent profileComponent;
 
     @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
     private StorageService storageService;
 
     @Resource
@@ -84,7 +93,7 @@ public class DataSyncServiceImpl implements DataSyncService {
             Map row = getData(metaId, messageId);
             Map binlogData = getBinlogData(row, true);
             String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
-            TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+            TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
             messageVo.setSourceTableName(tableGroup.getSourceTable().getName());
             messageVo.setTargetTableName(tableGroup.getTargetTable().getName());
             messageVo.setId(messageId);
@@ -105,7 +114,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     public Map getBinlogData(Map row, boolean prettyBytes) throws InvalidProtocolBufferException {
         String tableGroupId = (String) row.get(ConfigConstant.DATA_TABLE_GROUP_ID);
         // 1、获取配置信息
-        final TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        final TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         if (tableGroup == null) {
             return Collections.EMPTY_MAP;
         }
@@ -184,7 +193,7 @@ public class DataSyncServiceImpl implements DataSyncService {
         if (StringUtil.isNotBlank(retryDataParams)) {
             JsonUtil.parseMap(retryDataParams).forEach((k, v) -> binlogData.put(k, convertValue(binlogData.get(k), (String) v)));
         }
-        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         String sourceTableName = tableGroup.getSourceTable().getName();
 
         // 转换为源字段
@@ -197,9 +206,9 @@ public class DataSyncServiceImpl implements DataSyncService {
         // 明细分表：从该任务分表(dbsyncer_task_detail_{metaId})删除该条同步数据
         storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
         // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Meta can not be null.");
-        profileComponent.incrementMeta(metaId, 0L, 0L, -1L);
+        metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
         return messageId;
     }
 
@@ -207,9 +216,9 @@ public class DataSyncServiceImpl implements DataSyncService {
     public void syncBatch(DataSyncRequest request) {
         Mapping mapping = profileComponent.getMapping(request.getMappingId());
         Assert.notNull(mapping, "Mapping can not be null.");
-        TableGroup tableGroup = profileComponent.getTableGroup(request.getTableGroupId());
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(request.getTableGroupId());
         Assert.notNull(tableGroup, "Meta can not be null.");
-        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
         List<DataSyncEvent> dataList = request.getDataList();
         Assert.notEmpty(dataList, "DataList can not be null.");

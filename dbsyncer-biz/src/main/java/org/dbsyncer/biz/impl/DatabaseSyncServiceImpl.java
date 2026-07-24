@@ -19,10 +19,14 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -69,6 +73,15 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -137,10 +150,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         fillTaskOnEdit(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
         // 重建映射：清运行结果 → 条件删旧 table_group+明细 Meta → 批量写入
-        profileComponent.clearTaskRunResults(id);
-        profileComponent.removeTableGroupsByTaskId(id);
+        taskProfile.clearTaskRunResults(id);
+        tableGroupProfile.removeTableGroupsByTaskId(id);
         saveTableGroup(id, mappings);
-        profileComponent.resetTaskMeta(id);
+        taskProfile.resetTaskMeta(id);
         task.getDatabaseSnapshots().clear();
         task.setProcessed(CommonTaskStatusEnum.READY.getCode());
         return taskService.edit(task);
@@ -180,7 +193,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");
         }
-        if (profileComponent.getTableGroupCount(id) <= 0) {
+        if (tableGroupProfile.getTableGroupCount(id) <= 0) {
             throw new BizException("任务未配置库表映射，无法启动");
         }
         taskService.start(id);
@@ -207,12 +220,16 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTask task = (DatabaseSyncTask) item;
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
-                    int tableCount = profileComponent.getTableGroupCount(task.getId());
+                    int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
                     // 快照为 final 内存态，BeanUtils 不会拷到 VO，进度按原 task 计算
                     vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(task, tableCount, vo.getMappingCount()));
                     vo.setTotalTableCount(tableCount);
                     vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(task, tableCount));
-                    vo.setErrorCount(profileComponent.countTaskDetailBySuccess(task.getId(), 0));
+                    vo.setErrorCount(0L);
+                    Meta taskMeta = metaProfile.getMeta(task.getId());
+                    if (taskMeta != null && taskMeta.getFail() != null) {
+                        vo.setErrorCount(taskMeta.getFail().get());
+                    }
                     list.add(vo);
                 }
             }
@@ -407,7 +424,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     private void clearTableGroups(String taskId) {
-        profileComponent.removeTableGroupsByTaskId(taskId);
+        tableGroupProfile.removeTableGroupsByTaskId(taskId);
     }
 
     private void validateMappingConnectors(List<? extends DatabaseMapping> mappings) {
@@ -426,7 +443,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (task == null) {
             return null;
         }
-        List<TableGroup> tableGroups = profileComponent.getTableGroupAll(task.getId());
+        List<TableGroup> tableGroups = tableGroupProfile.getTableGroupAll(task.getId());
         List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
                 DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
         DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);
@@ -534,7 +551,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 groups.add(group);
             }
         }
-        profileComponent.addTableGroupBatch(groups);
+        tableGroupProfile.addTableGroupBatch(groups);
     }
 
     public Map<String, Table> loadMetaTableMap(String taskId,DatabaseMappingVO ctx, List<String> tableNames) {

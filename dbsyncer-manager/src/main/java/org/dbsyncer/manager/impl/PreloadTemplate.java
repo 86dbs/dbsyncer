@@ -28,6 +28,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
@@ -78,6 +79,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private ManagerFactory managerFactory;
@@ -215,7 +219,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * Mapping 已并入 {@code dbsyncer_task}，通过 {@link Meta#getTaskId()} 关联。
      */
     private void launchSyncMappings() {
-        List<Meta> metas = profileComponent.getTaskMetaAll();
+        List<Meta> metas = metaProfile.getTaskMetaAll();
         if (CollectionUtils.isEmpty(metas)) {
             return;
         }

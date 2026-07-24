@@ -18,6 +18,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
@@ -58,6 +59,9 @@ public class TableGroupChecker extends AbstractChecker {
     @Resource
     private ProfileComponent profileComponent;
 
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
@@ -78,7 +82,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系
-        checkRepeatedTable(profileComponent.getTableGroupAll(mappingId), sourceTable, targetTable);
+        checkRepeatedTable(tableGroupProfile.getTableGroupAll(mappingId), sourceTable, targetTable);
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
@@ -109,7 +113,7 @@ public class TableGroupChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");

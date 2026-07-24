@@ -3,10 +3,12 @@
  */
 package org.dbsyncer.parser.util;
 
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -42,7 +44,10 @@ public class TaskDetailGroupUtil {
     private static final int DETAIL_FETCH_PAGE_SIZE = 1000;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private StorageService storageService;
@@ -72,7 +77,7 @@ public class TaskDetailGroupUtil {
                 .filter(StringUtil::isNotBlank)
                 .distinct()
                 .collect(Collectors.toList());
-        Map<String, Meta> metaMap = profileComponent.getDetailMetaMap(tableGroupIds);
+        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(tableGroupIds);
 
         List<Map<String, Object>> joined = new ArrayList<>(detailRows.size());
         for (Map<String, Object> detailRow : detailRows) {
@@ -119,7 +124,7 @@ public class TaskDetailGroupUtil {
         String tableGroupId = detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
                 ? null : String.valueOf(detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID));
         Map<String, Object> tgRow = tableGroupId == null ? null : buildTableGroupDisplayMap(taskId).get(tableGroupId);
-        Meta meta = StringUtil.isBlank(tableGroupId) ? null : profileComponent.getMetaByTaskId(tableGroupId, 1);
+        Meta meta = StringUtil.isBlank(tableGroupId) ? null : metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
         Map<String, Object> metaRow = meta == null ? null : org.dbsyncer.sdk.util.TaskDetailUtil.toMetaDisplayMap(
                 meta.getTotal() == null ? 0L : meta.getTotal().get(),
                 meta.getSuccess() == null ? 0L : meta.getSuccess().get(),
@@ -165,7 +170,7 @@ public class TaskDetailGroupUtil {
     }
 
     private Map<String, Map<String, Object>> buildTableGroupDisplayMap(String taskId) {
-        List<TableGroup> groups = profileComponent.getTableGroupAll(taskId);
+        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(taskId);
         Map<String, Map<String, Object>> map = new HashMap<>();
         if (CollectionUtils.isEmpty(groups)) {
             return map;
