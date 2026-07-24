@@ -32,14 +32,20 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
     private List<DatabaseMappingVO> mappingViews;
 
     private int mappingCount;
-    /** 任务进度 0~100，运行中由快照计算 */
+    /** 任务进度 0~100，由任务/明细 Meta 计算 */
     private BigDecimal progress;
     /** 失败数（任务级 Meta 累计 FAIL） */
     private long errorCount;
     /** 任务总表数（TableGroup 数量） */
     private int totalTableCount;
-    /** 已完成表数（运行快照中已全部完成的表） */
+    /** 已完成表数（由 Meta 进度换算） */
     private int completedTableCount;
+    /** 任务级 Meta.state（本轮业务态，含 DONE=3） */
+    private Integer metaState;
+    /** 本轮执行开始时间（任务级 Meta） */
+    private Long beginTime;
+    /** 本轮执行结束时间（任务级 Meta） */
+    private Long endTime;
 
     public DatabaseSyncTaskVO(Connector sourceConnector, Connector targetConnector) {
         this.sourceConnector = sourceConnector;
@@ -131,5 +137,29 @@ public final class DatabaseSyncTaskVO extends DatabaseSyncTask {
 
     public void setCompletedTableCount(int completedTableCount) {
         this.completedTableCount = completedTableCount;
+    }
+
+    public Integer getMetaState() {
+        return metaState;
+    }
+
+    public void setMetaState(Integer metaState) {
+        this.metaState = metaState;
+    }
+
+    public Long getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(Long beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public Long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
     }
 }

@@ -7,6 +7,7 @@ import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
@@ -241,22 +242,20 @@ public class ParserComponentImpl implements ParserComponent {
         }
 
         int batchSize = context.getBatchSize();
-        // 总数
-        int total = context.getTargetList().size();
+        List<Map> targetList = context.getTargetList();
+        int total = targetList.size();
         // 单次任务
         if (total <= batchSize) {
             return connectorFactory.writer(context);
         }
 
         // 批量任务, 拆分
-        int taskSize = total % batchSize == 0 ? total / batchSize : total / batchSize + 1;
+        int taskSize = (total + batchSize - 1) / batchSize;
         CountDownLatch latch = new CountDownLatch(taskSize);
-        int offset = 0;
-        for (int i = 0; i < taskSize; i++) {
+        TaskSplitUtil.split(targetList, batchSize, batch -> {
             try {
                 PluginContext tmpContext = (PluginContext) context.clone();
-                tmpContext.setTargetList(context.getTargetList().stream().skip(offset).limit(batchSize).collect(Collectors.toList()));
-                offset += batchSize;
+                tmpContext.setTargetList(batch);
                 executor.execute(() -> {
                     try {
                         Result w = connectorFactory.writer(tmpContext);
@@ -273,7 +272,7 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.error(e.getMessage(), e);
                 latch.countDown();
             }
-        }
+        });
         try {
             latch.await();
         } catch (InterruptedException e) {

@@ -3,12 +3,10 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.enums.CommandEnum;
@@ -26,11 +24,9 @@ import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -57,11 +53,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public final class OperationTemplate {
-
-    /**
-     * 单次分页查询的页大小
-     */
-    private static final int PAGE_SIZE = 1000;
 
     @Resource
     private StorageService storageService;
@@ -100,7 +91,7 @@ public final class OperationTemplate {
             String mappingId = ((TableGroup) model).getTaskId();
             if (StringUtil.isNotBlank(mappingId)) {
                 condition = new Query();
-                condition.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mappingId);
+                condition.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, mappingId);
             }
         }
         return queryList(type, condition, (Class<T>) model.getClass());
@@ -115,27 +106,13 @@ public final class OperationTemplate {
         if (model instanceof TableGroup) {
             String mappingId = ((TableGroup) model).getTaskId();
             if (StringUtil.isNotBlank(mappingId)) {
-                condition.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mappingId);
+                condition.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, mappingId);
             }
         }
         Paging paging = storageService.query(condition);
         return (int) paging.getTotal();
     }
 
-    /**
-     * 按任务 ID 删除tableGroup
-     */
-    public void removeTableGroupsByTaskId(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        List<String> groupIds = listTableGroupIds(taskId);
-        removeDetailMetasByTableGroupIds(groupIds);
-        Query deleteQuery = new Query();
-        deleteQuery.setType(StorageEnum.TABLE_GROUP);
-        deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
-        storageService.delete(deleteQuery);
-    }
 
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
@@ -160,19 +137,12 @@ public final class OperationTemplate {
         Assert.notNull(model, "ConfigModel can not be null.");
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
-
         if (model instanceof UserConfig) {
-            return syncUserConfig((UserConfig) model, cmd);
+            return syncUserConfig((UserConfig) model);
         }
-
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
         StorageEnum type = ConfigModelUtil.getStorageEnum(model.getType());
         if (CommandEnum.OPR_EDIT == cmd) {
-            // 任务级 Meta：success/fail/diff/fixed 靠 increment 维护，edit 时保留库值防内存覆盖；
-            // 明细级 Meta：校验/迁移直接全量更新指标，不做保护。
-            if (model instanceof Meta && !((Meta) model).isTaskDetail()) {
-                preserveMetaCounters((Meta) model, params);
-            }
             storageService.edit(type, params);
         } else {
             storageService.add(type, params);
@@ -180,188 +150,6 @@ public final class OperationTemplate {
         return model.getId();
     }
 
-    /**
-     * 按关联 ID 查询 Meta。
-     */
-    public Meta getMetaByTaskId(String taskId, TaskLevelEnum isTaskDetail) {
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.META);
-        query.addFilter(ConfigConstant.META_TASK_ID, taskId);
-        query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, isTaskDetail.getCode());
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-            return null;
-        }
-        Object row = paging.getData().iterator().next();
-        return ConfigModelUtil.parseFromRow((Map) row, Meta.class);
-    }
-
-    /**
-     * 批量查询明细级 Meta，key 为 META.TASK_ID。
-     *
-     * @param refIds detailId / tableGroupId 集合
-     * @return meta 映射
-     */
-    public Map<String, Meta> queryDetailMetaMap(List<String> refIds) {
-        Map<String, Meta> result = new java.util.HashMap<>();
-        if (CollectionUtils.isEmpty(refIds)) {
-            return result;
-        }
-        List<String> ids = refIds.stream().filter(StringUtil::isNotBlank).distinct().collect(Collectors.toList());
-        if (ids.isEmpty()) {
-            return result;
-        }
-        // 分批 IN 查询，避免过长
-        int batchSize = 200;
-        for (int i = 0; i < ids.size(); i += batchSize) {
-            List<String> batch = ids.subList(i, Math.min(i + batchSize, ids.size()));
-            Query query = new Query(1, Math.max(batch.size(), 1));
-            query.setType(StorageEnum.META);
-            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
-            query.addFilter(ConfigConstant.META_TASK_ID, org.dbsyncer.sdk.enums.FilterEnum.IN, String.join(StringUtil.COMMA, batch));
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                continue;
-            }
-            for (Object item : paging.getData()) {
-                if (!(item instanceof Map)) {
-                    continue;
-                }
-                Meta meta = ConfigModelUtil.parseFromRow((Map) item, Meta.class);
-                if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
-                    result.put(meta.getTaskId(), meta);
-                }
-            }
-        }
-        return result;
-    }
-
-
-    /**
-     * Meta 计数原子增量(严格走库)：按 {@link MetaIncrement} 落库自增。
-     */
-    public void incrementMeta(MetaIncrement increment) {
-        if (increment == null || StringUtil.isBlank(increment.getMetaId())) {
-            return;
-        }
-        Map<String, Long> deltas = new java.util.HashMap<>();
-        if (increment.getTotalDelta() != 0) {
-            deltas.put(ConfigConstant.META_TOTAL, increment.getTotalDelta());
-        }
-        if (increment.getSuccessDelta() != 0) {
-            deltas.put(ConfigConstant.META_SUCCESS, increment.getSuccessDelta());
-        }
-        if (increment.getFailDelta() != 0) {
-            deltas.put(ConfigConstant.META_FAIL, increment.getFailDelta());
-        }
-        if (increment.getDiffDelta() != 0) {
-            deltas.put(ConfigConstant.META_DIFF, increment.getDiffDelta());
-        }
-        if (increment.getFixedDelta() != 0) {
-            deltas.put(ConfigConstant.META_FIXED, increment.getFixedDelta());
-        }
-        if (deltas.isEmpty()) {
-            return;
-        }
-        storageService.increment(StorageEnum.META, increment.getMetaId(), deltas);
-    }
-
-    /**
-     * 编辑任务级 Meta 时保留库中 success/fail/diff/fixed（增量列），仅允许 total/state/snapshot 等随模型更新。
-     */
-    private void preserveMetaCounters(Meta model, Map<String, Object> params) {
-        Meta current = queryObject(Meta.class, model.getId());
-        if (current == null) {
-            return;
-        }
-        params.put(ConfigConstant.META_SUCCESS, current.getSuccess() == null ? 0L : current.getSuccess().get());
-        params.put(ConfigConstant.META_FAIL, current.getFail() == null ? 0L : current.getFail().get());
-        params.put(ConfigConstant.META_DIFF, current.getDiff() == null ? 0L : current.getDiff().get());
-        params.put(ConfigConstant.META_FIXED, current.getFixed() == null ? 0L : current.getFixed().get());
-    }
-    
-    /**
-     * 按 table_group.id 批量删除明细级 Meta。
-     */
-    public void removeDetailMetasByTableGroupIds(List<String> tableGroupIds) {
-        if (CollectionUtils.isEmpty(tableGroupIds)) {
-            return;
-        }
-        int batchSize = 1000;
-        for (int from = 0; from < tableGroupIds.size(); from += batchSize) {
-            int to = Math.min(from + batchSize, tableGroupIds.size());
-            List<String> batch = tableGroupIds.subList(from, to);
-            Query query = new Query();
-            query.setType(StorageEnum.META);
-            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
-            query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, StringUtil.join(batch, StringUtil.COMMA));
-            storageService.delete(query);
-        }
-    }
-
-    /**
-     * 查询任务下全部 table_group.id。
-     */
-    public List<String> listTableGroupIds(String taskId) {
-        List<String> groupIds = new ArrayList<>();
-        if (StringUtil.isBlank(taskId)) {
-            return groupIds;
-        }
-        int pageNum = 1;
-        while (true) {
-            Query query = new Query(pageNum, PAGE_SIZE);
-            query.setType(StorageEnum.TABLE_GROUP);
-            Set<String> selectFields = new java.util.HashSet<>();
-            selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
-            query.setSelectFlied(selectFields);
-            query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
-            }
-            for (Object item : paging.getData()) {
-                if (!(item instanceof Map)) {
-                    continue;
-                }
-                Object id = ((Map) item).get(ConfigConstant.CONFIG_MODEL_ID);
-                if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
-                    groupIds.add(String.valueOf(id));
-                }
-            }
-            pageNum++;
-        }
-        return groupIds;
-    }
-
-    /**
-     * 清空任务运行结果：按 table_group.id 删明细 Meta，再 clear TASK_DETAIL；表映射仍在时补回空明细 Meta。
-     */
-    public void clearTaskRunResults(String taskId) {
-        if (StringUtil.isBlank(taskId)) {
-            return;
-        }
-        List<String> groupIds = listTableGroupIds(taskId);
-        removeDetailMetasByTableGroupIds(groupIds);
-        storageService.clear(StorageEnum.TASK_DETAIL, taskId);
-        if (CollectionUtils.isEmpty(groupIds)) {
-            return;
-        }
-        // 表映射仍保留时补回空明细 Meta，供续跑/重跑使用
-        List<Meta> metas = new ArrayList<>(groupIds.size());
-        long now = System.currentTimeMillis();
-        for (String groupId : groupIds) {
-            Meta meta = new Meta();
-            meta.setId(groupId);
-            meta.setTaskId(groupId);
-            meta.setIsTaskDetail(1);
-            meta.setCreateTime(now);
-            meta.setUpdateTime(now);
-            metas.add(meta);
-        }
-        TaskSplitUtil.split(metas, PAGE_SIZE, (models) -> {
-            executeBatch(models, CommandEnum.OPR_ADD);
-        });
-    }
 
     /**
      * 批量添加配置：单次存储批量写入。
@@ -412,7 +200,8 @@ public final class OperationTemplate {
     /**
      * 构建导出配置快照(直查库)，结构与导入 reload 保持一致：
      * type -> Group(index)、id -> model、tableGroup_{mappingId} -> Group。
-     *todo 带优化 导出为一个大的sql 文件，包括
+     * todo 带优化 导出为一个大的sql 文件，包括
+     *
      * @return 导出快照
      */
     public Map<String, Object> buildExportSnapshot() {
@@ -438,7 +227,7 @@ public final class OperationTemplate {
 
         allMappings.forEach(mapping -> {
             Query query = new Query();
-            query.addFilter(ConfigConstant.TABLE_GROUP_MAPPING_ID, mapping.getId());
+            query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, mapping.getId());
             List<TableGroup> groups = queryList(StorageEnum.TABLE_GROUP, query, TableGroup.class);
             Group idGroup = new Group();
             groups.forEach(tg -> {
@@ -455,44 +244,27 @@ public final class OperationTemplate {
      */
     public <T> List<T> queryList(StorageEnum type, Query condition, Class<T> clazz) {
         List<T> result = new ArrayList<>();
-        int pageNum = 1;
-        for (; ; ) {
-            Query query = new Query();
-            query.setType(type);
-            query.setPageNum(pageNum);
-            query.setPageSize(PAGE_SIZE);
-            if (condition != null) {
-                query.setBooleanFilter(condition.getBooleanFilter());
-            }
+        Query query = new Query();
+        query.setType(type);
+        query.setPageSize(ConfigConstant.PAGE_SIZE);
+        if (condition != null) {
+            query.setBooleanFilter(condition.getBooleanFilter());
+        }
+        while (true) {
             Paging paging = storageService.query(query);
-            List<Map> data = (List<Map>) paging.getData();
-            if (CollectionUtils.isEmpty(data)) {
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
+            List<Map> data = (List<Map>) paging.getData();
             for (Map row : data) {
                 T model = parseRow(row, clazz);
                 if (model != null) {
                     result.add(model);
                 }
             }
-            if (data.size() < PAGE_SIZE) {
-                break;
-            }
-            pageNum++;
+            query.setPageNum(query.getPageNum() + 1);
         }
         return result;
-    }
-
-    /**
-     * 存储行 → 模型。普通配置走 {@link ConfigModelUtil#parseFromRow}；
-     * Connector 因抽象 config 需按 connectorType 特殊还原。
-     */
-    private <T> T parseRow(Map row, Class<T> clazz) {
-        if (Connector.class.equals(clazz)) {
-            Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
-            return json == null ? null : (T) parseConnector(String.valueOf(json));
-        }
-        return ConfigModelUtil.parseFromRow(row, clazz);
     }
 
     /**
@@ -542,7 +314,7 @@ public final class OperationTemplate {
     /**
      * 用户配置落库：一行一用户，按账号同步增删改。
      */
-    private String syncUserConfig(UserConfig config, CommandEnum cmd) {
+    private String syncUserConfig(UserConfig config) {
         List<UserInfo> users = config.getUserInfoList();
         if (CollectionUtils.isEmpty(users)) {
             return config.getId();
@@ -579,5 +351,17 @@ public final class OperationTemplate {
             }
         }
         return firstId;
+    }
+
+    /**
+     * 存储行 → 模型。普通配置走 {@link ConfigModelUtil#parseFromRow}；
+     * Connector 因抽象 config 需按 connectorType 特殊还原。
+     */
+    private <T> T parseRow(Map row, Class<T> clazz) {
+        if (Connector.class.equals(clazz)) {
+            Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
+            return json == null ? null : (T) parseConnector(String.valueOf(json));
+        }
+        return ConfigModelUtil.parseFromRow(row, clazz);
     }
 }

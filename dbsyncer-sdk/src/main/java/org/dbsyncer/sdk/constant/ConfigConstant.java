@@ -65,12 +65,6 @@ public class ConfigConstant {
     public static final String TABLE_GROUP_TARGET_TOTAL = "targetTotal";
 
     /**
-     * @deprecated 使用 {@link #TABLE_GROUP_TASK_ID}
-     */
-    @Deprecated
-    public static final String TABLE_GROUP_MAPPING_ID = TABLE_GROUP_TASK_ID;
-
-    /**
      * 任务执行结果表(dbsyncer_meta)拆分列
      */
     public static final String META_TASK_ID = "taskId";
@@ -137,4 +131,10 @@ public class ConfigConstant {
     public static final String DATABASE_SYNC_DETAIL_TARGET_TABLE = "targetTable";
     public static final String DATABASE_SYNC_DETAIL_SUCCESS_TOTAL = "successTotal";
     public static final String DATABASE_SYNC_DETAIL_FAIL_TOTAL = "failTotal";
+
+    /**
+     * 内部分页加载默认分页大小
+     */
+    public static final int PAGE_SIZE= 1000;
+
 }

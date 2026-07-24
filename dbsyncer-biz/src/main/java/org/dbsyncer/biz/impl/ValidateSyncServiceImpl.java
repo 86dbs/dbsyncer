@@ -37,6 +37,7 @@ import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Table;
@@ -44,6 +45,7 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -247,7 +249,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         checkTask(task, params);
         taskProfile.clearTaskRunResults(task.getId());
         taskProfile.resetTaskMeta(task.getId());
-        resetTaskSnapshot(task);
         List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(task.getId());
         if (!CollectionUtils.isEmpty(groupAll)) {
             mappingChecker.sortTableGroup(groupAll, params);
@@ -270,7 +271,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         newTask.setStatus(CommonTaskStatusEnum.READY.getCode());
         newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
         newTask.setUpdateTime(System.currentTimeMillis());
-        resetTaskSnapshot(newTask);
         String newId = taskService.add(newTask);
         // 深拷贝 table_group（关联已下沉到该表）
         List<TableGroup> sourceGroups = tableGroupProfile.getTableGroupAll(id);
@@ -336,8 +336,15 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     List<TableGroup> tableGroupList = tableGroupProfile.getSortedTableGroupAll(t.getId());
                     int tableCount = tableGroupList.size();
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(countCompletedTables(t, tableCount));
-                    vo.setProgress(calculateProgressPercent(t, tableCount));
+                    boolean roundDone = taskMeta != null && org.dbsyncer.parser.enums.MetaEnum.isDone(taskMeta.getState());
+                    List<CommonTaskSnapshot> tableSnapshots = collectValidateTableSnapshots(tableGroupList);
+                    vo.setCompletedTableCount(countCompletedTables(roundDone, tableCount, tableSnapshots));
+                    vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));
+                    if (taskMeta != null) {
+                        vo.setMetaState(taskMeta.getState());
+                        vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
+                        vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+                    }
                     list.add(vo);
                 }
             }
@@ -609,9 +616,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = profileComponent.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
-        // final 快照 Map 无法被 BeanUtils 覆盖，需显式拷贝
-        vo.getTableSnapshots().clear();
-        vo.getTableSnapshots().putAll(validateSyncTask.getTableSnapshots());
         return vo;
     }
 
@@ -661,8 +665,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setReadNum(NumberUtil.toInt(params.get("readNum"), task.getReadNum()));
         task.setBatchNum(NumberUtil.toInt(params.get("batchNum"), task.getBatchNum()));
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), task.getThreadNum()));
-        task.getTableSnapshots().clear();
-        task.setProcessed(CommonTaskStatusEnum.READY.getCode());
     }
 
     private void log(LogType log, ValidateSyncTask task, TableGroup tableGroup) {
@@ -685,58 +687,59 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setSourceColumn(sourceColumn);
     }
 
-    /**
-     * 已完成表数：快照中 status=已完成 的个数（不再用 minIndex 裁剪推断）。
-     */
-    private int countCompletedTables(ValidateSyncTask task, int totalSize) {
-        if (task.getProcessed() == null) {
-            return 0;
+    private List<CommonTaskSnapshot> collectValidateTableSnapshots(List<TableGroup> tableGroupList) {
+        if (CollectionUtils.isEmpty(tableGroupList)) {
+            return Collections.emptyList();
         }
-        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
+        List<String> ids = new ArrayList<>(tableGroupList.size());
+        for (TableGroup group : tableGroupList) {
+            if (group != null && StringUtil.isNotBlank(group.getId())) {
+                ids.add(group.getId());
+            }
+        }
+        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
+        List<CommonTaskSnapshot> snapshots = new ArrayList<>(tableGroupList.size());
+        for (TableGroup group : tableGroupList) {
+            if (group == null || StringUtil.isBlank(group.getId())) {
+                snapshots.add(null);
+                continue;
+            }
+            Meta meta = metaMap == null ? null : metaMap.get(group.getId());
+            snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
+        }
+        return snapshots;
+    }
+
+    /**
+     * 已完成表数：明细 Meta 快照中 status=已完成 的个数。
+     */
+    private int countCompletedTables(boolean roundDone, int totalSize, List<CommonTaskSnapshot> tableSnapshots) {
+        if (roundDone) {
             return totalSize;
         }
-        if (task.getTableSnapshots() == null || task.getTableSnapshots().isEmpty()) {
+        if (CollectionUtils.isEmpty(tableSnapshots) || totalSize <= 0) {
             return 0;
         }
-        long doneCount = task.getTableSnapshots().values().stream()
+        long doneCount = tableSnapshots.stream()
                 .filter(snapshot -> snapshot != null && CommonTaskStatusEnum.isDone(snapshot.getStatus()))
                 .count();
-        if (doneCount > totalSize) {
-            return totalSize;
-        }
-        return (int) doneCount;
+        return (int) Math.min(doneCount, totalSize);
     }
 
     /**
      * 进度百分比：completed / 表总数 * 100。
-     *
-     * @param task      校验任务
-     * @param totalSize 表总数
-     * @return 百分比（0~100）
      */
-    private BigDecimal calculateProgressPercent(ValidateSyncTask task, int totalSize) {
-
-        if (task.getProcessed() == null) {
-            return null;
-        }
-        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
+    private BigDecimal calculateProgressPercent(boolean roundDone, int totalSize, List<CommonTaskSnapshot> tableSnapshots) {
+        if (roundDone) {
             return new BigDecimal("100.00");
         }
         if (totalSize <= 0) {
             return BigDecimal.ZERO;
         }
-        int completed = countCompletedTables(task, totalSize);
+        int completed = countCompletedTables(false, totalSize, tableSnapshots);
         return BigDecimal.valueOf(completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(totalSize), 2, RoundingMode.HALF_UP);
-    }
-
-    private void resetTaskSnapshot(ValidateSyncTask task) {
-        if (task == null) {
-            return;
-        }
-        task.setProcessed(0);
-        task.getTableSnapshots().clear();
     }
 
     protected void assertRunning(String taskId) {

@@ -3,6 +3,12 @@
  */
 package org.dbsyncer.sdk.model;
 
+import org.dbsyncer.sdk.constant.ConfigConstant;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Meta 计数原子增量参数（可为负数）。
  *
@@ -102,5 +108,26 @@ public class MetaIncrement {
 
     public void setFixedDelta(long fixedDelta) {
         this.fixedDelta = fixedDelta;
+    }
+
+     /**
+     * 转为存储增量 Map：key 与 {@link ConfigConstant} Meta 列名一致（total/success/fail/diff/fixed），值为 0 的项不入表。
+     *
+     * @return 非空增量；全为 0 时返回空 Map
+     */
+    public Map<String, Long> toDeltaMap() {
+        Map<String, Long> deltas = new HashMap<>(5);
+        putIfNonZero(deltas, ConfigConstant.META_TOTAL, totalDelta);
+        putIfNonZero(deltas, ConfigConstant.META_SUCCESS, successDelta);
+        putIfNonZero(deltas, ConfigConstant.META_FAIL, failDelta);
+        putIfNonZero(deltas, ConfigConstant.META_DIFF, diffDelta);
+        putIfNonZero(deltas, ConfigConstant.META_FIXED, fixedDelta);
+        return deltas.isEmpty() ? Collections.emptyMap() : deltas;
+    }
+
+    private static void putIfNonZero(Map<String, Long> deltas, String key, long value) {
+        if (value != 0L) {
+            deltas.put(key, value);
+        }
     }
 }

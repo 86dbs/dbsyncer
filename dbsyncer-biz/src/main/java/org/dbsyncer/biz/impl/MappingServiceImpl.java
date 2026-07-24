@@ -25,9 +25,12 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
@@ -35,9 +38,6 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -376,13 +376,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         Paging paging = new Paging(pageNum, pageSize);
         paging.setTotal(rows.size());
-        int from = Math.max(0, (pageNum - 1) * pageSize);
-        if (from >= rows.size()) {
-            paging.setData(Collections.emptyList());
-            return paging;
+        if (!CollectionUtils.isEmpty(rows)) {
+            int offset = (pageNum * pageSize) - pageSize;
+            paging.setData(rows.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
         }
-        int to = Math.min(rows.size(), from + pageSize);
-        paging.setData(rows.subList(from, to));
         return paging;
     }
 

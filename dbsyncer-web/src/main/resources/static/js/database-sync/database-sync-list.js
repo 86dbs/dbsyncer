@@ -4,8 +4,8 @@
 (function (window) {
     'use strict';
 
-    /** 与 CommonTaskStatusEnum.DONE 对齐：0未运行 1运行中 2停止中 3已完成 */
-    var PROCESSED_DONE = 3;
+    /** 与 MetaEnum.DONE / CommonTaskStatusEnum.DONE 对齐：本轮业务已完成 */
+    var META_STATE_DONE = 3;
 
     function databaseSyncStart(taskId) {
         doPoster('/database-sync/start', { id: taskId }, function (response) {
@@ -151,7 +151,7 @@
             } else if (progress >= 60) {
                 state = 'warning';
             }
-        } else if (Number(task.processed) !== PROCESSED_DONE && Number(task.endTime) > 0 && progress < 100) {
+        } else if (Number(task.metaState) !== META_STATE_DONE && Number(task.endTime) > 0 && progress < 100) {
             state = 'warning';
         } else if (n > 0) {
             state = 'danger';

@@ -4,22 +4,20 @@
 package org.dbsyncer.sdk.util;
 
 import com.alibaba.fastjson2.TypeReference;
-import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
-import org.dbsyncer.sdk.model.DatabaseSyncSnapshot;
 import org.dbsyncer.sdk.model.DatabaseSyncTableSnapshot;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 运行快照与 Meta.SNAPSHOT 互转。
+ * 运行快照与 Meta.SNAPSHOT 互转（权威在 {@code dbsyncer_meta}，不维护 Task 内存树）。
  * <p>任务级（IS_TASK_DETAIL=0）：整库迁移库映射 status 摘要（{@link ConfigConstant#META_SNAPSHOT_DATABASE}）；
- * 结果 Meta（TASK_ID=detail.id）：单表续跑快照（{@link ConfigConstant#META_SNAPSHOT_TABLE_ONE}）。</p>
+ * 明细 Meta（TASK_ID=table_group.id）：单表续跑快照（{@link ConfigConstant#META_SNAPSHOT_TABLE_ONE}）。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -31,60 +29,52 @@ public final class TaskSnapshotUtil {
     }
 
     /**
-     * 任务级：写入库映射 status 摘要（不含 tables）。
+     * 任务级：写入/更新单个库映射 status。
      */
-    public static Map<String, String> writeDatabaseStatusSummary(Map<String, String> metaSnapshot,
-                                                                 ConcurrentHashMap<Integer, DatabaseSyncSnapshot> snapshots) {
+    public static Map<String, String> putMappingStatus(Map<String, String> metaSnapshot, int mappingIndex, int status) {
         Map<String, String> target = ensureMap(metaSnapshot);
-        if (CollectionUtils.isEmpty(snapshots)) {
-            target.put(ConfigConstant.META_SNAPSHOT_DATABASE, "{}");
-            return target;
-        }
-        Map<String, Map<String, Object>> summary = new HashMap<>();
-        for (Map.Entry<Integer, DatabaseSyncSnapshot> entry : snapshots.entrySet()) {
-            if (entry.getKey() == null || entry.getValue() == null) {
-                continue;
-            }
-            Map<String, Object> one = new HashMap<>();
-            one.put("status", entry.getValue().getStatus());
-            summary.put(String.valueOf(entry.getKey()), one);
-        }
+        Map<String, Map<String, Object>> summary = readMappingStatusMap(target);
+        Map<String, Object> one = new HashMap<>();
+        one.put("status", status);
+        summary.put(String.valueOf(mappingIndex), one);
         target.put(ConfigConstant.META_SNAPSHOT_DATABASE, JsonUtil.objToJson(summary));
         return target;
     }
 
     /**
-     * 任务级：读库映射 status 摘要到内存（保留已有 tables，仅补齐/更新 status）。
+     * 任务级：读取单个库映射 status（无则 null）。
      */
-    public static void readDatabaseStatusSummary(Map<String, String> metaSnapshot,
-                                                 ConcurrentHashMap<Integer, DatabaseSyncSnapshot> target) {
-        if (target == null || metaSnapshot == null) {
-            return;
+    public static Integer getMappingStatus(Map<String, String> metaSnapshot, int mappingIndex) {
+        Map<String, Map<String, Object>> summary = readMappingStatusMap(metaSnapshot);
+        Map<String, Object> one = summary.get(String.valueOf(mappingIndex));
+        if (one == null || one.get("status") == null) {
+            return null;
         }
-        String json = metaSnapshot.get(ConfigConstant.META_SNAPSHOT_DATABASE);
-        if (StringUtil.isBlank(json) || StringUtil.equals("{}", json.trim())) {
-            return;
+        Object status = one.get("status");
+        if (status instanceof Number) {
+            return ((Number) status).intValue();
         }
-        Map<String, DatabaseSyncSnapshot> parsed = JsonUtil.jsonToObj(json,
-                new TypeReference<Map<String, DatabaseSyncSnapshot>>() {
-                });
-        if (parsed == null) {
-            return;
+        try {
+            return Integer.valueOf(String.valueOf(status).trim());
+        } catch (NumberFormatException e) {
+            return null;
         }
-        for (Map.Entry<String, DatabaseSyncSnapshot> entry : parsed.entrySet()) {
-            Integer index = parseIndex(entry.getKey());
-            if (index == null || entry.getValue() == null) {
-                continue;
-            }
-            DatabaseSyncSnapshot existing = target.get(index);
-            if (existing == null) {
-                DatabaseSyncSnapshot created = new DatabaseSyncSnapshot();
-                created.setStatus(entry.getValue().getStatus());
-                target.put(index, created);
-            } else {
-                existing.setStatus(entry.getValue().getStatus());
-            }
-        }
+    }
+
+    /**
+     * 任务级：库映射是否已完成。
+     */
+    public static boolean isMappingDone(Map<String, String> metaSnapshot, int mappingIndex) {
+        return CommonTaskStatusEnum.isDone(getMappingStatus(metaSnapshot, mappingIndex));
+    }
+
+    /**
+     * 任务级：清空库映射 status 摘要。
+     */
+    public static Map<String, String> clearMappingStatusSummary(Map<String, String> metaSnapshot) {
+        Map<String, String> target = ensureMap(metaSnapshot);
+        target.put(ConfigConstant.META_SNAPSHOT_DATABASE, "{}");
+        return target;
     }
 
     /**
@@ -144,6 +134,44 @@ public final class TaskSnapshotUtil {
 
     public static boolean hasTableSnapshot(Map<String, String> metaSnapshot) {
         return hasNonEmptyJson(metaSnapshot, ConfigConstant.META_SNAPSHOT_TABLE_ONE);
+    }
+
+    /**
+     * 解析任务级库映射 status 摘要为 index → status。
+     */
+    public static Map<Integer, Integer> readMappingStatusCodes(Map<String, String> metaSnapshot) {
+        Map<Integer, Integer> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Object>> entry : readMappingStatusMap(metaSnapshot).entrySet()) {
+            Integer index = parseIndex(entry.getKey());
+            if (index == null || entry.getValue() == null || entry.getValue().get("status") == null) {
+                continue;
+            }
+            Object status = entry.getValue().get("status");
+            if (status instanceof Number) {
+                result.put(index, ((Number) status).intValue());
+            } else {
+                try {
+                    result.put(index, Integer.valueOf(String.valueOf(status).trim()));
+                } catch (NumberFormatException ignored) {
+                    // skip
+                }
+            }
+        }
+        return result;
+    }
+
+    private static Map<String, Map<String, Object>> readMappingStatusMap(Map<String, String> metaSnapshot) {
+        if (metaSnapshot == null) {
+            return new HashMap<>();
+        }
+        String json = metaSnapshot.get(ConfigConstant.META_SNAPSHOT_DATABASE);
+        if (StringUtil.isBlank(json) || StringUtil.equals("{}", json.trim())) {
+            return new HashMap<>();
+        }
+        Map<String, Map<String, Object>> parsed = JsonUtil.jsonToObj(json,
+                new TypeReference<Map<String, Map<String, Object>>>() {
+                });
+        return parsed == null ? new HashMap<>() : new HashMap<>(parsed);
     }
 
     private static boolean hasNonEmptyJson(Map<String, String> metaSnapshot, String key) {

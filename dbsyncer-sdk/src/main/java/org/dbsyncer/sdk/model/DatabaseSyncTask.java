@@ -3,16 +3,13 @@
  */
 package org.dbsyncer.sdk.model;
 
-import com.alibaba.fastjson2.annotation.JSONField;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 整库迁移任务。
- * <p>库映射轻量列表写入 {@code dbsyncer_task.JSON}（不含表）；表映射存 {@code dbsyncer_table_group}。
- * 运行进度：库映射 status 摘要在任务级 Meta，表级快照在结果 Meta。</p>
+ * 整库迁移任务配置（仅持久化配置到 {@code dbsyncer_task.JSON}）。
+ * <p>库映射轻量列表写入 task.JSON（不含表）；表映射存 {@code dbsyncer_table_group}。
+ * 运行进度与本轮完成态一律在 {@code dbsyncer_meta}（任务级 STATE/时间/库摘要 + 明细 SNAPSHOT）。</p>
  *
  * @author wuji
  * @version 1.0.0
@@ -41,28 +38,6 @@ public class DatabaseSyncTask extends CommonTask {
      * 库级映射（持久化到 task.JSON，不含 tableMappings）
      */
     private List<DatabaseMapping> databaseMappings = new ArrayList<>();
-
-    /**
-     * 任务是否已全部处理完成：0-执行中，1-已结束（与订正校验一致，结束后可清空快照）
-     */
-    private Integer processed = 0;
-
-    /**
-     * 最近一次执行开始时间（毫秒时间戳）
-     */
-    private Long beginTime;
-
-    /**
-     * 最近一次执行结束时间（毫秒时间戳，执行完成后写入）
-     */
-    private Long endTime;
-
-    /**
-     * 运行态执行快照：key = 库映射 index。不写入 dbsyncer_task.JSON；
-     * 库 status 持久化到任务级 Meta，表级落到 table_group 进度 Meta。
-     */
-    @JSONField(serialize = false)
-    private final ConcurrentHashMap<Integer, DatabaseSyncSnapshot> databaseSnapshots = new ConcurrentHashMap<>();
 
     /**
      * 分页读取条数
@@ -119,49 +94,6 @@ public class DatabaseSyncTask extends CommonTask {
         this.databaseMappings = databaseMappings == null ? new ArrayList<>() : databaseMappings;
     }
 
-    public Integer getProcessed() {
-        return processed;
-    }
-
-    public void setProcessed(Integer processed) {
-        this.processed = processed;
-    }
-
-    public Long getBeginTime() {
-        return beginTime;
-    }
-
-    public void setBeginTime(Long beginTime) {
-        this.beginTime = beginTime;
-    }
-
-    public Long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(Long endTime) {
-        this.endTime = endTime;
-    }
-
-    public ConcurrentHashMap<Integer, DatabaseSyncSnapshot> getDatabaseSnapshots() {
-        return databaseSnapshots;
-    }
-
-    public void putDatabaseSnapshot(Integer index, DatabaseSyncSnapshot snapshot) {
-        if (index != null && snapshot != null) {
-            databaseSnapshots.put(index, snapshot);
-        }
-    }
-
-    public DatabaseSyncSnapshot getOrCreateDatabaseSnapshot(int mappingIndex) {
-        return databaseSnapshots.computeIfAbsent(mappingIndex, key -> new DatabaseSyncSnapshot());
-    }
-
-    public DatabaseSyncTableSnapshot getTableSnapshot(int mappingIndex, int tableIndex) {
-        DatabaseSyncSnapshot snapshot = databaseSnapshots.get(mappingIndex);
-        return snapshot == null ? null : snapshot.getTable(tableIndex);
-    }
-
     public int getReadNum() {
         return readNum;
     }
@@ -184,13 +116,5 @@ public class DatabaseSyncTask extends CommonTask {
 
     public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
-    }
-
-    /**
-     * 新一次执行前重置进度快照（上次已 processed=已完成 时调用）。
-     */
-    public void resetRunSnapshots() {
-        processed = 0;
-        databaseSnapshots.clear();
     }
 }

@@ -3,17 +3,14 @@
  */
 package org.dbsyncer.sdk.model;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 订正校验任务。
- * <p>表映射存 {@code dbsyncer_table_group}；运行进度快照为内存态，
- * 持久化见进度明细 Meta（{@code TASK_ID=table_group.id}）。</p>
+ * 订正校验任务配置（仅持久化配置到 {@code dbsyncer_task.JSON}）。
+ * <p>表映射存 {@code dbsyncer_table_group}；运行进度与本轮完成态在 {@code dbsyncer_meta}。</p>
  */
 public class ValidateSyncTask extends CommonTask {
     // 数据源连接器ID
@@ -110,15 +107,6 @@ public class ValidateSyncTask extends CommonTask {
      * 执行线程数
      */
     private int threadNum = 10;
-
-    // 任务状态 0 处理中 1处理结束
-    private Integer processed = 0;
-
-    /**
-     * 运行态表执行快照：key = 表映射 index。不写入 dbsyncer_task.JSON，由 table_group 进度 Meta 持久化。
-     */
-    @JSONField(serialize = false)
-    private final ConcurrentHashMap<Integer, CommonTaskSnapshot> tableSnapshots = new ConcurrentHashMap<>();
 
     public String getSourceConnectorId() {
         return sourceConnectorId;
@@ -302,21 +290,5 @@ public class ValidateSyncTask extends CommonTask {
 
     public void setEnableSchema(boolean enableSchema) {
         this.enableSchema = enableSchema;
-    }
-
-    public Integer getProcessed() {
-        return processed;
-    }
-
-    public void setProcessed(Integer processed) {
-        this.processed = processed;
-    }
-
-    public ConcurrentHashMap<Integer, CommonTaskSnapshot> getTableSnapshots() {
-        return tableSnapshots;
-    }
-
-    public void addTableSnapshots(Integer index, CommonTaskSnapshot tableSnapshots) {
-        this.tableSnapshots.put(index, tableSnapshots);
     }
 }

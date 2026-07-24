@@ -14,7 +14,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public abstract class BatchTaskUtil {
 
@@ -212,17 +211,13 @@ public abstract class BatchTaskUtil {
         }
         ExecutorService executor = Executors.newFixedThreadPool(threadNum);
         try {
-            int total = rows.size();
-            int taskCount = (total + batchSize - 1) / batchSize;
-            for (int i = 0; i < taskCount; ++i) {
-                int start = i * batchSize;
-                List<T> slice = rows.stream().skip(start).limit(batchSize).collect(Collectors.toList());
+            TaskSplitUtil.split(rows, batchSize, slice -> {
                 try {
                     function.execute(slice, executor);
                 } catch (Throwable e) {
                     logger.error("任务执行异常", e);
                 }
-            }
+            });
         } finally {
             executor.shutdownNow();
         }

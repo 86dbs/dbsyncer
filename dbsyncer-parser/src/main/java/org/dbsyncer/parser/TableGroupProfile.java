@@ -46,4 +46,6 @@ public interface TableGroupProfile {
     List<TableGroup> getSortedTableGroupAll(String mappingId);
 
     int getTableGroupCount(String mappingId);
+
+    List<String> listTableGroupIds(String taskId);
 }

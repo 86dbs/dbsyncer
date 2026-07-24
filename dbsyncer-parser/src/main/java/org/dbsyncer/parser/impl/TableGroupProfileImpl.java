@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
@@ -15,12 +16,20 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -32,16 +41,18 @@ import java.util.stream.Collectors;
 @Component
 public class TableGroupProfileImpl implements TableGroupProfile {
 
-    /**
-     * table_group / 明细 Meta 批量写入单次上限
-     */
-    private static final int TABLE_GROUP_BATCH_SIZE = 1000;
 
     @Resource
     private OperationTemplate operationTemplate;
 
     @Resource
+    private StorageService storageService;
+
+    @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
     public String addTableGroup(TableGroup model) {
@@ -55,7 +66,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (CollectionUtils.isEmpty(models)) {
             return;
         }
-        TaskSplitUtil.split(models, TABLE_GROUP_BATCH_SIZE, batch -> {
+        TaskSplitUtil.split(models, ConfigConstant.PAGE_SIZE, batch -> {
             List<String> ids = operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD);
             List<Meta> metas = new ArrayList<>(ids.size());
             long now = System.currentTimeMillis();
@@ -64,9 +75,9 @@ public class TableGroupProfileImpl implements TableGroupProfile {
                     continue;
                 }
                 Meta meta = new Meta();
-                meta.setId(id);
+                meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 meta.setTaskId(id);
-                meta.setIsTaskDetail(1);
+                meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 meta.setCreateTime(now);
                 meta.setUpdateTime(now);
                 metas.add(meta);
@@ -90,7 +101,16 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public void removeTableGroupsByTaskId(String taskId) {
-        operationTemplate.removeTableGroupsByTaskId(taskId);
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        List<String> groupIds = listTableGroupIds(taskId);
+        //删除所有子任务
+        metaProfile.deleteMetaByTableGroupIds(groupIds);
+        Query deleteQuery = new Query();
+        deleteQuery.setType(StorageEnum.TABLE_GROUP);
+        deleteQuery.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
+        storageService.delete(deleteQuery);
     }
 
     @Override
@@ -130,13 +150,43 @@ public class TableGroupProfileImpl implements TableGroupProfile {
             return;
         }
         Meta meta = new Meta();
-        meta.setId(tableGroupId);
+        meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
         meta.setTaskId(tableGroupId);
-        meta.setIsTaskDetail(1);
+        meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
         long now = System.currentTimeMillis();
         meta.setCreateTime(now);
         meta.setUpdateTime(now);
         operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_ADD));
+    }
+
+    /**
+     * 查询任务下全部 table_group.id。
+     */
+    @Override
+    public List<String> listTableGroupIds(String taskId) {
+        List<String> groupIds = new ArrayList<>();
+        if (StringUtil.isBlank(taskId)) {
+            return groupIds;
+        }
+        Query query = new Query();
+        query.setType(StorageEnum.TABLE_GROUP);
+        query.setPageSize(ConfigConstant.PAGE_SIZE);
+        Set<String> selectFields = new HashSet<>();
+        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
+        query.setSelectFlied(selectFields);
+        query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
+        while (true) {
+            Paging paging = storageService.query(query);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            for (Object item : paging.getData()) {
+                Map<String, Object> row = (Map<String, Object>) item;
+                groupIds.add(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
+            }
+            query.setPageNum(query.getPageNum() + 1);
+        }
+        return groupIds;
     }
 
     private void removeTableGroupDetailMeta(String tableGroupId) {
@@ -153,4 +203,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
             operationTemplate.remove(new OperationConfig(byId.getId()));
         }
     }
+
+
 }

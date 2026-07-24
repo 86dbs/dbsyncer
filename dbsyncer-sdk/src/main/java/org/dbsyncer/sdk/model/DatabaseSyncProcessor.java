@@ -6,13 +6,15 @@ package org.dbsyncer.sdk.model;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
+import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * 整库迁移任务进度计算（步骤计数法，稳定不漂移）
+ * 整库迁移任务进度计算（步骤计数法，基于 Meta 快照，稳定不漂移）。
  *
  * @author wuji
  */
@@ -20,115 +22,119 @@ public final class DatabaseSyncProcessor {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
+    private DatabaseSyncProcessor() {
+    }
+
     /**
-     * 计算进度百分比 0~100
+     * 计算进度百分比 0~100。
      *
-     * @param task           任务
-     * @param tableGroupSize 表映射总数(table_group 行数)
-     * @param mappingCount   库映射数(由 table_group 聚合得出)
+     * @param task                 任务配置（开关）
+     * @param tableGroupSize       表映射总数
+     * @param mappingCount         库映射数
+     * @param roundDone            任务级 Meta 是否本轮已完成（STATE=DONE）
+     * @param mappingStatusByIndex 任务级 Meta 库映射 status 摘要
+     * @param tableSnapshots       各表明细 Meta 快照（可含 null）
      */
-    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount) {
+    public static BigDecimal calculateProgressPercent(DatabaseSyncTask task, int tableGroupSize, int mappingCount,
+                                                      boolean roundDone,
+                                                      Map<Integer, Integer> mappingStatusByIndex,
+                                                      List<CommonTaskSnapshot> tableSnapshots) {
         if (task == null) {
             return null;
         }
-        // 已标记完成
-        if (CommonTaskStatusEnum.isDone(task.getProcessed())) {
+        if (roundDone) {
             return new BigDecimal("100.00");
         }
-        //获取表的步数
         int stepsPerTable = getStepsPerTable(task);
         int totalSteps = mappingCount + tableGroupSize * stepsPerTable;
         if (totalSteps <= 0) {
             return null;
         }
-
-        //已完成的数据库结构
-        long completedDbSteps = countCompletedDatabaseSteps(task);
-        //已完成的表结构步骤
-        long completedTableSteps = countCompletedTableSteps(task, stepsPerTable);
+        long completedDbSteps = countCompletedDatabaseSteps(mappingStatusByIndex);
+        long completedTableSteps = countCompletedTableSteps(task, tableSnapshots);
         long totalCompleted = completedDbSteps + completedTableSteps;
-
-        // 防止溢出
         if (totalCompleted > totalSteps) {
             totalCompleted = totalSteps;
         }
-        // 进度 = 完成数 / 总数 * 100
         return BigDecimal.valueOf(totalCompleted)
                 .multiply(HUNDRED)
                 .divide(BigDecimal.valueOf(totalSteps), 2, RoundingMode.HALF_UP);
     }
 
     /**
-     * 每张表包含的步骤数（结构1 + 数据1）
+     * 列表展示的已完成表数（等效整表完成数）。
      */
-    private static int getStepsPerTable(DatabaseSyncTask task) {
-        int steps = 0;
-        if (task.isEnableCopySchema()) steps++;
-        if (task.isEnableCopyData()) steps++;
-        return steps;
-    }
-
-    /**
-     * 已完成的数据库步骤
-     */
-    private static long countCompletedDatabaseSteps(DatabaseSyncTask task) {
-        ConcurrentHashMap<Integer, DatabaseSyncSnapshot> snapshots = task.getDatabaseSnapshots();
-        if (CollectionUtils.isEmpty(snapshots)) {
-            return 0;
-        }
-        return snapshots.values().stream().filter(s -> s != null && CommonTaskStatusEnum.isDone(s.getStatus())).count();
-    }
-
-    /**
-     * 已完成的表步骤（结构/数据）
-     */
-    private static long countCompletedTableSteps(DatabaseSyncTask task, int stepsPerTable) {
-        ConcurrentHashMap<Integer, DatabaseSyncSnapshot> snapshots = task.getDatabaseSnapshots();
-        if (CollectionUtils.isEmpty(snapshots) || stepsPerTable <= 0) {
-            return 0;
-        }
-        long count = 0;
-        for (DatabaseSyncSnapshot dbSnapshot : snapshots.values()) {
-            if (dbSnapshot == null || CollectionUtils.isEmpty(dbSnapshot.getTables())) {
-                continue;
-            }
-            for (DatabaseSyncTableSnapshot tableSnapshot : dbSnapshot.getTables().values()) {
-                if (tableSnapshot == null) {
-                    continue;
-                }
-                if (task.isEnableCopySchema()
-                        && DatabaseMigrationDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
-                    count++;
-                }
-                if (task.isEnableCopyData()
-                        && DatabaseMigrationDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    /**
-     * 列表展示的已完成表数：与 {@link #calculateProgressPercent} 使用同一套步骤计数，
-     * 换算为等效整表完成数（避免「进度 33% 但仍显示 0/65 张表」）。
-     */
-    public static int countCompletedTables(DatabaseSyncTask task, int totalTableCount) {
+    public static int countCompletedTables(DatabaseSyncTask task, int totalTableCount, boolean roundDone,
+                                           Map<Integer, Integer> mappingStatusByIndex,
+                                           List<CommonTaskSnapshot> tableSnapshots) {
         if (task == null) {
             return 0;
         }
-        if (CommonTaskStatusEnum.isDone(task.getProcessed()) && totalTableCount > 0) {
+        if (roundDone && totalTableCount > 0) {
             return totalTableCount;
         }
         int stepsPerTable = getStepsPerTable(task);
         if (stepsPerTable <= 0 || totalTableCount <= 0) {
             return 0;
         }
-        long completedDbSteps = countCompletedDatabaseSteps(task);
-        long completedTableSteps = countCompletedTableSteps(task, stepsPerTable);
-        long totalCompletedSteps = completedDbSteps + completedTableSteps;
+        long totalCompletedSteps = countCompletedDatabaseSteps(mappingStatusByIndex)
+                + countCompletedTableSteps(task, tableSnapshots);
         int equivalentTables = (int) (totalCompletedSteps / stepsPerTable);
         return Math.min(equivalentTables, totalTableCount);
     }
 
+    private static int getStepsPerTable(DatabaseSyncTask task) {
+        int steps = 0;
+        if (task.isEnableCopySchema()) {
+            steps++;
+        }
+        if (task.isEnableCopyData()) {
+            steps++;
+        }
+        return steps;
+    }
+
+    private static long countCompletedDatabaseSteps(Map<Integer, Integer> mappingStatusByIndex) {
+        if (CollectionUtils.isEmpty(mappingStatusByIndex)) {
+            return 0;
+        }
+        return mappingStatusByIndex.values().stream()
+                .filter(CommonTaskStatusEnum::isDone)
+                .count();
+    }
+
+    private static long countCompletedTableSteps(DatabaseSyncTask task, List<CommonTaskSnapshot> tableSnapshots) {
+        if (CollectionUtils.isEmpty(tableSnapshots)) {
+            return 0;
+        }
+        long count = 0;
+        for (CommonTaskSnapshot tableSnapshot : tableSnapshots) {
+            if (tableSnapshot == null) {
+                continue;
+            }
+            if (task.isEnableCopySchema()
+                    && DatabaseMigrationDetailTypeEnum.isSchemaPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                count++;
+            }
+            if (task.isEnableCopyData()
+                    && DatabaseMigrationDetailTypeEnum.isDataPhaseDone(tableSnapshot.getStep(), tableSnapshot.getStatus())) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 从任务级 Meta.SNAPSHOT 解析库映射 status。
+     */
+    public static Map<Integer, Integer> readMappingStatus(Map<String, String> taskMetaSnapshot) {
+        return TaskSnapshotUtil.readMappingStatusCodes(taskMetaSnapshot);
+    }
+
+    /**
+     * 任务级 Meta.state 是否为本轮已完成（与 CommonTaskStatusEnum.DONE / MetaEnum.DONE 同码）。
+     */
+    public static boolean isRoundDone(Integer metaState) {
+        return CommonTaskStatusEnum.isDone(metaState);
+    }
 }

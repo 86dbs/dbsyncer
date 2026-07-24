@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * 任务执行明细分表(dbsyncer_task_detail)工具。
@@ -242,10 +243,9 @@ public abstract class TaskDetailUtil {
         int safePageSize = Math.max(1, pageSize);
         Paging paging = new Paging(safePageNum, safePageSize);
         paging.setTotal(merged.size());
-        int from = Math.min((safePageNum - 1) * safePageSize, merged.size());
-        int to = Math.min(from + safePageSize, merged.size());
-        if (from < to) {
-            paging.setData(new ArrayList<>(merged.subList(from, to)));
+        int offset = (safePageNum - 1) * safePageSize;
+        if (offset < merged.size()) {
+            paging.setData(merged.stream().skip(offset).limit(safePageSize).collect(Collectors.toList()));
         }
         return paging;
     }

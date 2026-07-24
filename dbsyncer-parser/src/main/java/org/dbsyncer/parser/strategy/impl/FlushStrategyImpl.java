@@ -59,6 +59,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Resource
     private BufferActuator storageBufferActuator;
 
+
+
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
@@ -162,9 +164,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
             Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
             if (tableMeta == null) {
                 tableMeta = new Meta();
-                tableMeta.setId(tableGroupId);
+                tableMeta.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 tableMeta.setTaskId(tableGroupId);
-                tableMeta.setIsTaskDetail(1);
+                tableMeta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 long now = Instant.now().toEpochMilli();
                 tableMeta.setCreateTime(now);
                 tableMeta.setUpdateTime(now);

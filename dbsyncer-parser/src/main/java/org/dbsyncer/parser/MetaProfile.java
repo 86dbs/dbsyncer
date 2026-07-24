@@ -55,4 +55,6 @@ public interface MetaProfile {
      * @param increment 增量参数
      */
     void incrementMeta(MetaIncrement increment);
+
+    void deleteMetaByTableGroupIds(List<String> tableGroupIds);
 }
