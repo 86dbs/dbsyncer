@@ -67,13 +67,18 @@
             tableSchema: 'badge-info',
             index: 'badge-warning'
         };
+        // 与 CommonTaskStatusEnum 对齐：0未运行 / 1运行中 / 2停止中 / 3已完成
         var statusTextMap = {
-            0: '运行中',
-            1: '已完成'
+            0: '未运行',
+            1: '运行中',
+            2: '停止中',
+            3: '已完成'
         };
         var statusBadgeMap = {
-            0: 'badge-success',
-            1: 'badge-info'
+            0: 'badge-info',
+            1: 'badge-success',
+            2: 'badge-warning',
+            3: 'badge-info'
         };
 
         function getStatusBadge(status) {
@@ -104,7 +109,7 @@
         }
 
         function getExecutionDetail(row) {
-            var parts = [getStatusBadge(row.status)];
+            var parts = [getStatusBadge(row.isSuccess)];
             var duration = getElapsedDuration(row);
             if (duration) {
                 parts.push(duration);

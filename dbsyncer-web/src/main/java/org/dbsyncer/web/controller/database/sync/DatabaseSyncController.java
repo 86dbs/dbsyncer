@@ -90,7 +90,7 @@ public class DatabaseSyncController extends BaseController {
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
             model.put("task", task);
             int status = task.getStatus() != null ? task.getStatus() : CommonTaskStatusEnum.READY.getCode();
-            model.put("readOnly", status != CommonTaskStatusEnum.READY.getCode());
+            model.put("readOnly", CommonTaskStatusEnum.isRunning(status) || CommonTaskStatusEnum.isStopping(status));
         }
         return "database-sync/" + page;
     }

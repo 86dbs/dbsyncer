@@ -67,6 +67,14 @@
                 text: '停止中',
                 disabled: true,
                 class: 'badge-warning'
+            },
+            3: {
+                icon: 'fa-play',
+                title: '启动',
+                onclick: "databaseSyncStart('" + taskId + "')",
+                disabled: false,
+                class: 'badge-primary',
+                text: '已完成'
             }
         };
     }
@@ -84,7 +92,7 @@
         const onclickAttr = config.onclick ? ' onclick="' + config.onclick + '"' : '';
         let html = '<button class="table-action-btn play" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
             + '<i class="fa ' + config.icon + '"></i></button>';
-        if (state === 0) {
+        if (state === 0 || state === 3) {
             html += '<button class="table-action-btn delete" title="删除" onclick="databaseSyncRemove(\'' + taskId + '\')">'
                 + '<i class="fa fa-trash"></i></button>';
         }

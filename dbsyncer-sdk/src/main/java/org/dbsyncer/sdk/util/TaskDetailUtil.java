@@ -133,6 +133,8 @@ public abstract class TaskDetailUtil {
 
     /**
      * 读明细行时把 DATA blob 的结构化字段合并回行 Map，并补齐前端所需的 status(取自 isSuccess)。
+     * <p>
+     * {@code isSuccess} 存 {@link org.dbsyncer.common.enums.CommonTaskStatusEnum} 编码。
      *
      * @param row 明细行(键为 labelName)
      * @return 合并后的行 Map
@@ -145,7 +147,7 @@ public abstract class TaskDetailUtil {
         if (!content.isEmpty()) {
             content.forEach(row::putIfAbsent);
         }
-        // isSuccess 即执行状态(完成=1/运行中=0)，前端读 status
+        // isSuccess 存 CommonTaskStatusEnum 编码，前端读 status
         if (!row.containsKey(ConfigConstant.TASK_STATUS) && row.containsKey(ConfigConstant.DETAIL_IS_SUCCESS)) {
             row.put(ConfigConstant.TASK_STATUS, row.get(ConfigConstant.DETAIL_IS_SUCCESS));
         }

@@ -76,9 +76,17 @@
             2: {
                 icon: 'fa-spinner fa-spin',
                 title: '停止中',
-                text: ' 停止中',
+                text: '停止中',
                 disabled: true,
                 class: 'badge-warning'
+            },
+            3: {
+                icon: 'fa-play',
+                title: '启动',
+                onclick: "changeTaskState('" + taskId + "', '/validate-sync/start', '启动')",
+                disabled: false,
+                class: 'badge-primary',
+                text: '已完成'
             }
         };
     }
@@ -108,7 +116,7 @@
             '<button class="table-action-btn play" data-id="' + mappingId + '" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
             + '<i class="fa ' + config.icon + '"></i></button>'
         );
-        if (state === 0) {
+        if (state === 0 || state === 3) {
             stateBtn.push(
                 '<button class="table-action-btn delete" title="删除" onclick="deleteTask(\'' + mappingId + '\')">'
                 + '<i class="fa fa-trash"></i></button>'

@@ -54,12 +54,12 @@
             <!-- 同步模式选择 -->
             <div class="flex items-center justify-end mt-4">
                 <div class="form-actions">
-                    <span th:if="${task?.status ne 0}">
+                    <span th:if="${task?.status eq 1 or task?.status eq 2}">
                         <button type="button" class="btn btn-info" disabled>
                             <i class="fa fa-save"></i> 运行中
                         </button>
                     </span>
-                    <button th:if="${task?.status eq 0}"
+                    <button th:if="${task?.status eq null or task?.status eq 0 or task?.status eq 3}"
                             id="task-submit-btn"
                             type="button"
                             class="btn btn-primary">
