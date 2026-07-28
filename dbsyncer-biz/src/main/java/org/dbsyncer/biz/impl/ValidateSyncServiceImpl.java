@@ -11,6 +11,7 @@ import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -328,7 +329,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 if (vo != null) {
 
                     long errorCount = 0L;
-                    Meta taskMeta = metaProfile.getMeta(t.getId());
+                    Meta taskMeta = metaProfile.getMetaByTaskId(t.getId(), TaskLevelEnum.TASK);
                     if (taskMeta != null && taskMeta.getDiff() != null) {
                         errorCount = taskMeta.getDiff().get();
                     }

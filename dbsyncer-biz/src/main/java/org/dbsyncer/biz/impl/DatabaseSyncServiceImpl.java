@@ -10,6 +10,7 @@ import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -219,7 +220,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 DatabaseSyncTaskVO vo = convertTask2Vo(task);
                 if (vo != null) {
                     int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
-                    Meta taskMeta = metaProfile.getMeta(task.getId());
+                    Meta taskMeta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
                     boolean roundDone = taskMeta != null && DatabaseSyncProcessor.isRoundDone(taskMeta.getState());
                     Map<Integer, Integer> mappingStatus = DatabaseSyncProcessor.readMappingStatus(
                             taskMeta == null ? null : taskMeta.getSnapshot());

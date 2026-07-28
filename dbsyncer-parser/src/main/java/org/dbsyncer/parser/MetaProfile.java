@@ -18,6 +18,9 @@ import java.util.Map;
  */
 public interface MetaProfile {
 
+    /**
+     * 按 Meta 主键 id 查询
+     */
     Meta getMeta(String metaId);
 
     /**
