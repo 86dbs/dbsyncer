@@ -20,6 +20,7 @@ import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.storage.SqlQuery;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
@@ -133,12 +134,11 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public List<TableGroup> getIncompleteTableGroups(String taskId, int pageNum, int pageSize) {
-        String sql = "SELECT dtg.JSON AS json FROM dbsyncer_meta dm "
-                + "INNER JOIN dbsyncer_table_group dtg ON dtg.ID = dm.TASK_ID "
-                + "WHERE dtg.TASK_ID = ? AND dm.IS_TASK_DETAIL = 1 AND dm.STATE IN (0, 1, 2) "
-                + "ORDER BY dm.STATE DESC, dtg.SORT_INDEX ASC";
-        List<Map<String, Object>> rows = storageService.queryPage(sql, pageNum, pageSize, taskId);
+    public List<TableGroup> getIncompleteTableGroups(SqlQuery query) {
+        if (query == null) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> rows = storageService.queryList(query);
         if (CollectionUtils.isEmpty(rows)) {
             return Collections.emptyList();
         }

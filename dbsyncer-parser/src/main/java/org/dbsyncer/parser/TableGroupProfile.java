@@ -4,6 +4,7 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.storage.SqlQuery;
 
 import java.util.List;
 
@@ -46,14 +47,12 @@ public interface TableGroupProfile {
     List<TableGroup> getSortedTableGroupAll(String mappingId);
 
     /**
-     * 获取未完成的 tableGroups 数据
+     * 按 SQL 查询表映射（透传执行，结果按 TableGroup 反序列化）。
      *
-     * @param taskId   任务 ID
-     * @param pageNum  页码（从 1 起）
-     * @param pageSize 每页条数
-     * @return 未完成的 TableGroup 列表（无则空列表）
+     * @param query SQL 与可选分页参数
+     * @return TableGroup 列表（无则空列表）
      */
-    List<TableGroup> getIncompleteTableGroups(String taskId, int pageNum, int pageSize);
+    List<TableGroup> getIncompleteTableGroups(SqlQuery query);
 
     int getTableGroupCount(String mappingId);
 

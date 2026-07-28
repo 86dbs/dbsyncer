@@ -136,22 +136,10 @@ public interface StorageService {
     void increment(StorageEnum type, String id, Map<String, Long> deltas);
 
     /**
-     * 执行原生查询 SQL（系统配置库），返回行列表。
+     * 执行原生查询 SQL（系统配置库）；{@link SqlQuery#isPaged()} 为 true 时带分页。
      *
-     * @param sql  SQL（参数用 ? 占位）
-     * @param args 绑定参数
+     * @param query SQL 与可选分页参数
      * @return 行列表，无结果时空列表
      */
-    List<Map<String, Object>> queryList(String sql, Object... args);
-
-    /**
-     * 执行原生查询 SQL（带分页）。
-     *
-     * @param sql      SQL（不含 LIMIT，参数用 ? 占位）
-     * @param pageNum  页码（从 1 起）
-     * @param pageSize 每页条数
-     * @param args     绑定参数
-     * @return 行列表，无结果时空列表
-     */
-    List<Map<String, Object>> queryPage(String sql, int pageNum, int pageSize, Object... args);
+    List<Map<String, Object>> queryList(SqlQuery query);
 }
