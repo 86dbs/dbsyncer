@@ -16,6 +16,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +42,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class TableGroupProfileImpl implements TableGroupProfile {
-
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -129,6 +130,26 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         return getTableGroupAll(mappingId).stream()
                 .sorted(Comparator.comparing(TableGroup::getIndex).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TableGroup> getIncompleteTableGroups(String taskId, int pageNum, int pageSize) {
+        String sql = "SELECT dtg.JSON AS json FROM dbsyncer_meta dm "
+                + "INNER JOIN dbsyncer_table_group dtg ON dtg.ID = dm.TASK_ID "
+                + "WHERE dtg.TASK_ID = ? AND dm.IS_TASK_DETAIL = 1 AND dm.STATE IN (0, 1, 2) "
+                + "ORDER BY dm.STATE DESC, dtg.SORT_INDEX ASC";
+        List<Map<String, Object>> rows = storageService.queryPage(sql, pageNum, pageSize, taskId);
+        if (CollectionUtils.isEmpty(rows)) {
+            return Collections.emptyList();
+        }
+        List<TableGroup> result = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            TableGroup group = ConfigModelUtil.parseFromRow(row, TableGroup.class);
+            if (group != null) {
+                result.add(group);
+            }
+        }
+        return result;
     }
 
     @Override

@@ -92,6 +92,33 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
+    protected List<Map<String, Object>> selectList(String sql, Object[] args) {
+        try {
+            List<Map<String, Object>> data = connectorInstance.execute(
+                    databaseTemplate -> databaseTemplate.queryForList(sql, args));
+            return CollectionUtils.isEmpty(data) ? new ArrayList<>() : data;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("selectList skip missing table: {}", e.getMessage());
+                return new ArrayList<>();
+            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new MySQLException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    protected List<Map<String, Object>> selectList(String sql, int pageNum, int pageSize, Object[] args) {
+        // MySQL：LIMIT ?,? → offset, pageSize
+        Object[] pageArgs = new Object[(args == null ? 0 : args.length) + 2];
+        if (args != null && args.length > 0) {
+            System.arraycopy(args, 0, pageArgs, 0, args.length);
+        }
+        pageArgs[pageArgs.length - 2] = (pageNum - 1) * pageSize;
+        pageArgs[pageArgs.length - 1] = pageSize;
+        return selectList(sql + DatabaseConstant.MYSQL_PAGE_SQL, pageArgs);
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表

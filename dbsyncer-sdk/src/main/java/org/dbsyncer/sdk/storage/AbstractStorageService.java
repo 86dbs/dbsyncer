@@ -153,6 +153,38 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
     }
 
+    @Override
+    public List<Map<String, Object>> queryList(String sql, Object... args) {
+        Assert.hasText(sql, "sql can not be empty.");
+        try {
+            return selectList(sql, args == null ? new Object[0] : args);
+        } catch (NullExecutorException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> queryPage(String sql, int pageNum, int pageSize, Object... args) {
+        Assert.hasText(sql, "sql can not be empty.");
+        Assert.isTrue(pageNum > 0, "pageNum must be > 0");
+        Assert.isTrue(pageSize > 0, "pageSize must be > 0");
+        try {
+            return selectList(sql, pageNum, pageSize, args == null ? new Object[0] : args);
+        } catch (NullExecutorException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 原生 SQL 查询。
+     */
+    protected abstract List<Map<String, Object>> selectList(String sql, Object[] args);
+
+    /**
+     * 原生 SQL 分页查询（由实现类按方言追加 LIMIT）。
+     */
+    protected abstract List<Map<String, Object>> selectList(String sql, int pageNum, int pageSize, Object[] args);
+
     private List<Map> newArrayList(Map params) {
         List<Map> list = new ArrayList<>();
         list.add(params);

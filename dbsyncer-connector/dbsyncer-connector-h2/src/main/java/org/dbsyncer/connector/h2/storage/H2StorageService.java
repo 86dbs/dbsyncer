@@ -97,6 +97,50 @@ public class H2StorageService extends AbstractStorageService {
     }
 
     @Override
+    protected List<Map<String, Object>> selectList(String sql, Object[] args) {
+        try {
+            List<Map<String, Object>> data = connectorInstance.execute(
+                    databaseTemplate -> databaseTemplate.queryForList(sql, args));
+            if (CollectionUtils.isEmpty(data)) {
+                return new ArrayList<>();
+            }
+            // H2 列名多为大写：统一转小驼峰，便于按 label（如 json）解析
+            List<Map<String, Object>> normalized = new ArrayList<>(data.size());
+            for (Map<String, Object> row : data) {
+                Map<String, Object> newRow = new LinkedHashMap<>();
+                row.forEach((key, value) -> {
+                    String keyStr = key == null ? StringUtil.EMPTY : String.valueOf(key);
+                    if (keyStr.contains(StringUtil.UNDERLINE)) {
+                        newRow.put(UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true), value);
+                    } else {
+                        newRow.put(keyStr.toLowerCase(), value);
+                    }
+                });
+                normalized.add(newRow);
+            }
+            return normalized;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("selectList skip missing table: {}", e.getMessage());
+                return new ArrayList<>();
+            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new H2Exception(e);
+        }
+    }
+
+    @Override
+    protected List<Map<String, Object>> selectList(String sql, int pageNum, int pageSize, Object[] args) {
+        // H2：limit ? OFFSET ?
+        Object[] pageArgs = new Object[(args == null ? 0 : args.length) + 2];
+        if (args != null && args.length > 0) {
+            System.arraycopy(args, 0, pageArgs, 0, args.length);
+        }
+        pageArgs[pageArgs.length - 2] = pageSize;
+        pageArgs[pageArgs.length - 1] = (pageNum - 1) * pageSize;
+        return selectList(sql + DatabaseConstant.SQLITE_PAGE_SQL, pageArgs);
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表

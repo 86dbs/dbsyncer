@@ -45,6 +45,16 @@ public interface TableGroupProfile {
 
     List<TableGroup> getSortedTableGroupAll(String mappingId);
 
+    /**
+     * 获取未完成的 tableGroups 数据
+     *
+     * @param taskId   任务 ID
+     * @param pageNum  页码（从 1 起）
+     * @param pageSize 每页条数
+     * @return 未完成的 TableGroup 列表（无则空列表）
+     */
+    List<TableGroup> getIncompleteTableGroups(String taskId, int pageNum, int pageSize);
+
     int getTableGroupCount(String mappingId);
 
     List<String> listTableGroupIds(String taskId);
