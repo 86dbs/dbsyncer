@@ -143,9 +143,6 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public void increment(StorageEnum type, String id, Map<String, Long> deltas) {
-        if (id == null || id.isEmpty() || CollectionUtils.isEmpty(deltas)) {
-            return;
-        }
         try {
             batchIncrement(type, getSharding(type, null), id, deltas);
         } catch (NullExecutorException e) {

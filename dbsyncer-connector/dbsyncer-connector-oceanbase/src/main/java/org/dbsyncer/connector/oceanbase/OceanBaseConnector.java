@@ -170,7 +170,7 @@ public final class OceanBaseConnector extends AbstractDatabaseConnector {
             }
             String ddl = StringUtil.EMPTY;
             for (java.util.Map.Entry<String, Object> entry : ddlRow.entrySet()) {
-                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("create table")
+                if (entry.getKey() != null && "create table".equalsIgnoreCase(entry.getKey())
                         && entry.getValue() != null) {
                     ddl = String.valueOf(entry.getValue());
                     break;

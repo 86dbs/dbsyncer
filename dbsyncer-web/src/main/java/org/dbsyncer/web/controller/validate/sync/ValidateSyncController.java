@@ -8,14 +8,19 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -73,11 +78,11 @@ public class ValidateSyncController extends BaseController {
     @GetMapping("/page/{page}")
     public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                            @RequestParam(value = "detailStatus", required = false) String detailStatus) {
-        if (page.equals("detail")) {
+        if ("detail".equals(page)) {
             model.put("taskId", id);
             model.put("taskList", validateSyncService.getAll());
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
-        } else if (page.equals("editTableGroup")) {
+        } else if ("editTableGroup".equals(page)) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);
             model.put("task", validateSyncService.get(tableGroup.getTaskId()));

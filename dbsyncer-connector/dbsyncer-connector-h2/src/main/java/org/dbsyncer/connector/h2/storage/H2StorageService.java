@@ -230,9 +230,6 @@ public class H2StorageService extends AbstractStorageService {
 
     @Override
     protected void batchIncrement(StorageEnum type, String sharding, String id, Map<String, Long> deltas) {
-        if (CollectionUtils.isEmpty(deltas)) {
-            return;
-        }
         final Executor executor = getExecutor(type, sharding);
         if (executor == null) {
             return;
