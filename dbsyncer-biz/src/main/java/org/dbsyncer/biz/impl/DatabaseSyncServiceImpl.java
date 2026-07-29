@@ -279,53 +279,62 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (connector == null) {
             throw new BizException("连接器不存在");
         }
+        Assert.notNull(connector.getConfig(), "连接器配置不存在");
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(
                 "database-sync-preview",
                 connectorId, database, schema,
                 connectorId, database, schema,
                 true);
-        ConnectorInstance connectorInstance = connectorFactory.connect(connector.getId());
-        List<Table> tables = connectorFactory.getTables(connectorInstance, context);
-        if (CollectionUtils.isEmpty(tables)) {
-            return TablePreviewVO.of(Collections.emptyList(), 0, String.valueOf(offset), limit);
-        }
+        // 按所选库/schema 建临时连接查表（PostgreSQL 等无法靠 setCatalog 切库，须重建 JDBC URL）
+        String previewInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(
+                "database-sync-preview", connectorId, database, schema, ConnectorInstanceUtil.SOURCE_SUFFIX);
+        try {
+            connectorFactory.connect(previewInstanceId, connector.getConfig(), database, schema);
+            ConnectorInstance connectorInstance = connectorFactory.connect(previewInstanceId);
+            List<Table> tables = connectorFactory.getTables(connectorInstance, context);
+            if (CollectionUtils.isEmpty(tables)) {
+                return TablePreviewVO.of(Collections.emptyList(), 0, String.valueOf(offset), limit);
+            }
 
-        if (StringUtil.isNotBlank(searchKey)) {
-            String key = searchKey.toUpperCase();
-            tables = tables.stream()
-                    .filter(t -> t.getName() != null && t.getName().toUpperCase().contains(key))
-                    .collect(Collectors.toList());
-        }
-        // 追加表映射时排除已添加源表，避免分页偏移在排除后错位并触发前端连续空翻页
-        Set<String> excludeTables = parseExcludeTables(params.get("excludeTablesJson"));
-        if (!CollectionUtils.isEmpty(excludeTables)) {
-            tables = tables.stream()
-                    .filter(t -> t.getName() == null || !excludeTables.contains(t.getName()))
-                    .collect(Collectors.toList());
-        }
-        tables.sort(Comparator.comparing(Table::getName, String.CASE_INSENSITIVE_ORDER));
+            if (StringUtil.isNotBlank(searchKey)) {
+                String key = searchKey.toUpperCase();
+                tables = tables.stream()
+                        .filter(t -> t.getName() != null && t.getName().toUpperCase().contains(key))
+                        .collect(Collectors.toList());
+            }
+            // 追加表映射时排除已添加源表，避免分页偏移在排除后错位并触发前端连续空翻页
+            Set<String> excludeTables = parseExcludeTables(params.get("excludeTablesJson"));
+            if (!CollectionUtils.isEmpty(excludeTables)) {
+                tables = tables.stream()
+                        .filter(t -> t.getName() == null || !excludeTables.contains(t.getName()))
+                        .collect(Collectors.toList());
+            }
+            tables.sort(Comparator.comparing(Table::getName, String.CASE_INSENSITIVE_ORDER));
 
-        int realTotal = tables.size();
-        Map<String, Integer> typeCounts = new HashMap<>(4);
-        for (Table table : tables) {
-            String type = table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode();
-            typeCounts.merge(type.toUpperCase(), 1, Integer::sum);
-        }
+            int realTotal = tables.size();
+            Map<String, Integer> typeCounts = new HashMap<>(4);
+            for (Table table : tables) {
+                String type = table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode();
+                typeCounts.merge(type.toUpperCase(), 1, Integer::sum);
+            }
 
-        int from = Math.min(offset, realTotal);
-        int to = Math.min(from + limit, realTotal);
-        List<Map<String, Object>> pageRows = new ArrayList<>();
-        for (int i = from; i < to; i++) {
-            Table table = tables.get(i);
-            Map<String, Object> row = new HashMap<>(4);
-            row.put("name", table.getName());
-            row.put("type", table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode());
-            pageRows.add(row);
-        }
+            int from = Math.min(offset, realTotal);
+            int to = Math.min(from + limit, realTotal);
+            List<Map<String, Object>> pageRows = new ArrayList<>();
+            for (int i = from; i < to; i++) {
+                Table table = tables.get(i);
+                Map<String, Object> row = new HashMap<>(4);
+                row.put("name", table.getName());
+                row.put("type", table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode());
+                pageRows.add(row);
+            }
 
-        TablePreviewVO result = TablePreviewVO.of(pageRows, realTotal, String.valueOf(offset), limit);
-        result.setTypeCounts(typeCounts);
-        return result;
+            TablePreviewVO result = TablePreviewVO.of(pageRows, realTotal, String.valueOf(offset), limit);
+            result.setTypeCounts(typeCounts);
+            return result;
+        } finally {
+            connectorFactory.disconnect(previewInstanceId);
+        }
     }
 
     private List<DatabaseMappingVO> parseDatabaseMappings(String mappingsJson) {
