@@ -279,7 +279,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (connector == null) {
             throw new BizException("连接器不存在");
         }
-        Assert.notNull(connector.getConfig(), "连接器配置不存在");
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(
                 "database-sync-preview",
                 connectorId, database, schema,
@@ -295,7 +294,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             if (CollectionUtils.isEmpty(tables)) {
                 return TablePreviewVO.of(Collections.emptyList(), 0, String.valueOf(offset), limit);
             }
-
             if (StringUtil.isNotBlank(searchKey)) {
                 String key = searchKey.toUpperCase();
                 tables = tables.stream()
