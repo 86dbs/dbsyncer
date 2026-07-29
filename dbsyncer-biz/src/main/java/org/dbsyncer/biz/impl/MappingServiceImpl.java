@@ -191,16 +191,19 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
+            taskProfile.clearTaskRunResults(id);
+            taskProfile.resetTaskMeta(id);
+
             assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
-
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
             profileComponent.editConfigModel(model);
         }
         // 统计总数
         submitMappingCountTask(mapping, metaSnapshot);
+
         return id;
     }
 
@@ -211,7 +214,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Meta meta = metaProfile.getMeta(metaId);
         synchronized (LOCK) {
             assertRunning(metaId);
-
             // 删除数据
             monitorService.clearData(metaId);
             log(LogType.MetaLog.CLEAR, meta);
