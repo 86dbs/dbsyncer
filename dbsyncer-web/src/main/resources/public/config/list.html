@@ -13,7 +13,7 @@
                 <h3 class="card-title">配置列表</h3>
                 <p class="text-xs text-tertiary">导出所有配置，请点击
                     <a href="javascript:void(0);" onclick="downLoad()" class="text-primary hover-underline"
-                       th:title="'下载文件大小 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB'">
+                       th:title="'预估大小约 ' + ${#numbers.formatDecimal((fileSize / 1024), 0, 2)} + ' KB（ZIP 压缩后更小）'">
                         <i class="fa fa-download"></i> 下载
                     </a>
                 </p>
@@ -46,14 +46,14 @@
                     </div>
                     <div class="upload-text">点击或拖拽文件到此处上传</div>
                     <div class="upload-hint">
-                        支持扩展名：.json<br>
+                        支持扩展名：.zip / .json<br>
                         单次最多上传 5 个文件
                     </div>
                     <div class="upload-button">选择文件</div>
                     <input type="file"
                            class="upload-input"
                            id="fileConfig"
-                           accept=".json,application/json"
+                           accept=".zip,.json,application/zip,application/json"
                            multiple>
                 </div>
                 <div class="upload-list" data-upload-list></div>
@@ -66,7 +66,7 @@
 $(function() {
     initFileUpload('#configUploader', {
         uploadUrl: $basePath + '/config/upload',
-        accept: ['.json'],
+        accept: ['.zip', '.json'],
         maxFiles: 5,
         maxSize: 50 * 1024 * 1024, // 50MB
         onSuccess: function(file, response) {

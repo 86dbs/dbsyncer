@@ -198,9 +198,29 @@ public final class OperationTemplate {
     }
 
     /**
+     * 按存储类型统计行数（仅 total，不拉明细），用于导出体积粗估。
+     *
+     * @param type      存储类型
+     * @param condition 可选过滤条件（可为 null）
+     * @return 行数
+     */
+    public int count(StorageEnum type, Query condition) {
+        Query query = new Query();
+        query.setType(type);
+        query.setQueryTotal(true);
+        query.setPageNum(1);
+        query.setPageSize(1);
+        if (condition != null) {
+            query.setBooleanFilter(condition.getBooleanFilter());
+        }
+        Paging paging = storageService.query(query);
+        return paging == null ? 0 : (int) paging.getTotal();
+    }
+
+    /**
      * 构建导出配置快照(直查库)，结构与导入 reload 保持一致：
      * type -> Group(index)、id -> model、tableGroup_{mappingId} -> Group。
-     * todo 带优化 导出为一个大的sql 文件，包括
+     * table_group 一次全表扫描后按 taskId 分组，避免按 mapping N+1 查询。
      *
      * @return 导出快照
      */
@@ -225,15 +245,17 @@ public final class OperationTemplate {
             snapshot.put(k, g);
         });
 
+        List<TableGroup> allGroups = queryList(StorageEnum.TABLE_GROUP, null, TableGroup.class);
+        Map<String, Group> groupsByTaskId = new HashMap<>();
+        for (TableGroup tg : allGroups) {
+            if (tg == null || StringUtil.isBlank(tg.getTaskId())) {
+                continue;
+            }
+            snapshot.put(tg.getId(), tg);
+            groupsByTaskId.computeIfAbsent(tg.getTaskId(), id -> new Group()).add(tg.getId());
+        }
         allMappings.forEach(mapping -> {
-            Query query = new Query();
-            query.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, mapping.getId());
-            List<TableGroup> groups = queryList(StorageEnum.TABLE_GROUP, query, TableGroup.class);
-            Group idGroup = new Group();
-            groups.forEach(tg -> {
-                snapshot.put(tg.getId(), tg);
-                idGroup.add(tg.getId());
-            });
+            Group idGroup = groupsByTaskId.getOrDefault(mapping.getId(), new Group());
             snapshot.put(getGroupId(mapping, GroupStrategyEnum.PRELOAD_TABLE_GROUP), idGroup);
         });
         return snapshot;

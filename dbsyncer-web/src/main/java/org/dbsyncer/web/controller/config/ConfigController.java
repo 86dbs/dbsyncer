@@ -1,12 +1,13 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
 package org.dbsyncer.web.controller.config;
 
+import org.dbsyncer.biz.ConfigExportService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.model.VersionInfo;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
@@ -29,12 +30,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/config")
@@ -46,7 +43,7 @@ public class ConfigController {
     private SystemConfigService systemConfigService;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private ConfigExportService configExportService;
 
     @Resource
     private LogService logService;
@@ -60,7 +57,7 @@ public class ConfigController {
     @RequestMapping("")
     public String index(ModelMap model) {
         model.put("config", systemConfigService.getConfigModelAll());
-        model.put("fileSize", JsonUtil.objToJson(profileComponent.getConfigSnapshot()).getBytes(Charset.defaultCharset()).length);
+        model.put("fileSize", systemConfigService.estimateExportSize());
         return "config/list";
     }
 
@@ -76,7 +73,7 @@ public class ConfigController {
                     String filename = file.getOriginalFilename();
                     systemConfigService.checkFileSuffix(filename);
                     String tmpdir = System.getProperty("java.io.tmpdir");
-                    File dest = new File(tmpdir + filename);
+                    File dest = new File(tmpdir, filename);
                     FileUtils.deleteQuietly(dest);
                     FileUtils.copyInputStreamToFile(file.getInputStream(), dest);
                     systemConfigService.refreshConfig(dest);
@@ -94,36 +91,26 @@ public class ConfigController {
 
     @GetMapping("/download")
     public void download(HttpServletResponse response) {
-        String fileName = String.format("%s-%s-%s.json", appConfig.getName(), appConfig.getVersion(), snowflakeIdWorker.nextId());
+        String fileName = String.format("%s-%s-%s.zip", appConfig.getName(), appConfig.getVersion(), snowflakeIdWorker.nextId());
         response.setHeader("content-type", "application/octet-stream");
         response.setHeader("Content-Disposition", String.format("attachment; filename=%s", fileName));
-        response.setContentType("application/octet-stream");
+        response.setContentType("application/zip");
         OutputStream outputStream = null;
         try {
             outputStream = response.getOutputStream();
-            String cache = JsonUtil.objToJson(getConfig());
-            byte[] bytes = cache.getBytes(Charset.defaultCharset());
-            int length = bytes.length;
-            String msg = String.format("导出配置文件%s，大小%dKB", fileName, (length / 1024));
+            VersionInfo info = new VersionInfo();
+            info.setVersion(Version.CURRENT.getVersion());
+            info.setAppName(appConfig.getName());
+            info.setCreateTime(Instant.now().toEpochMilli());
+            configExportService.exportZip(outputStream, info);
+            String msg = String.format("导出配置文件%s", fileName);
             logger.info(msg);
             logService.log(LogType.CacheLog.EXPORT, msg);
-            outputStream.write(bytes, 0, length);
             outputStream.flush();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         } finally {
             IOUtils.closeQuietly(outputStream);
         }
-    }
-
-    private Map<String, Object> getConfig() {
-        Map<String, Object> map = new HashMap<>();
-        VersionInfo info = new VersionInfo();
-        info.setVersion(Version.CURRENT.getVersion());
-        info.setAppName(appConfig.getName());
-        info.setCreateTime(Instant.now().toEpochMilli());
-        map.put(PreloadTemplate.DBS_VERSION_INFO, info);
-        map.putAll(profileComponent.getConfigSnapshot());
-        return map;
     }
 }

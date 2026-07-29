@@ -19,7 +19,12 @@ public enum FileSuffixEnum {
     /**
      * JSON
      */
-    JSON("json");
+    JSON("json"),
+
+    /**
+     * ZIP 配置包
+     */
+    ZIP("zip");
 
     private final String name;
 

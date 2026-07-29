@@ -206,11 +206,18 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         Stream.of(CommandEnum.PRELOAD_SYSTEM, CommandEnum.PRELOAD_USER, CommandEnum.PRELOAD_CONNECTOR, CommandEnum.PRELOAD_MAPPING, CommandEnum.PRELOAD_META)
                 .forEach(commandEnum->reload(map, commandEnum));
 
-        // Load connectorInstances
-        loadConnectorInstance();
+        afterConfigImport();
+    }
 
-        // 同步驱动恢复
+    /**
+     * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
+     * ZIP / 旧 JSON 导入共用。
+     */
+    public void afterConfigImport() {
+        loadConnectorInstance();
         launchSyncMappings();
+        resumeValidateSyncTasks();
+        resumeDatabaseSyncTasks();
     }
 
     /**
