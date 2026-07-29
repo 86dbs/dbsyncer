@@ -8,18 +8,17 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -155,13 +153,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private void flush(Task task) {
         Meta meta = metaProfile.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
-
         // 全量的过程中，有新数据则更新总数
         long finished = meta.getSuccess().get() + meta.getFail().get();
         if (meta.getTotal().get() < finished) {
             meta.getTotal().set(finished);
         }
-
         meta.setBeginTime(task.getBeginTime());
         meta.setEndTime(task.getEndTime());
         meta.setUpdateTime(Instant.now().toEpochMilli());
