@@ -135,22 +135,23 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
-        // 加载驱动表
+        // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
+        Mapping mapping = profileComponent.getMapping(id);
 
         // 匹配相似表 on
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            matchSimilarTableGroups(model);
+            matchSimilarTableGroups(mapping);
             return id;
         }
 
         // 自定义表映射关系
         String tableGroups = params.get("tableGroups");
         if (StringUtil.isNotBlank(tableGroups)) {
-            matchCustomizedTableGroups(model, tableGroups);
+            matchCustomizedTableGroups(mapping, tableGroups);
         }
         // 统计总数
-        submitMappingCountTask((Mapping) model, null);
+        submitMappingCountTask(mapping, null);
         return id;
     }
 
