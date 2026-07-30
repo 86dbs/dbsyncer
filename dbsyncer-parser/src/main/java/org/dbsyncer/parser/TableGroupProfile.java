@@ -17,12 +17,12 @@ import java.util.List;
 public interface TableGroupProfile {
 
     /**
-     * 添加 TableGroup，并同路径预建明细 Meta（id=taskId=tableGroupId）。
+     * 添加 TableGroup，并同路径预建表级 Meta（id=雪花，taskId=tableGroupId，isTaskDetail=1）。
      */
     String addTableGroup(TableGroup model);
 
     /**
-     * 批量添加 TableGroup，并同路径批量预建明细 Meta。
+     * 批量添加 TableGroup，并同路径批量预建表级 Meta（id=雪花，taskId=tableGroupId）。
      *
      * @param models TableGroup 列表
      */

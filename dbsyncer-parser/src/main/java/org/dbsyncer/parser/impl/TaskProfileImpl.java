@@ -17,7 +17,6 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -46,9 +45,6 @@ public class TaskProfileImpl implements TaskProfile {
     @Resource
     private StorageService storageService;
 
-    @Resource
-    private SnowflakeIdWorker snowflakeIdWorker;
-
     @Override
     public void removeDetailMetasByTaskId(String taskId) {
         metaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
@@ -71,7 +67,6 @@ public class TaskProfileImpl implements TaskProfile {
         long now = System.currentTimeMillis();
         for (String groupId : groupIds) {
             Meta meta = new Meta();
-            meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
             meta.setTaskId(groupId);
             meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
             meta.setCreateTime(now);

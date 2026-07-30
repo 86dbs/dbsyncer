@@ -164,7 +164,7 @@ public class MappingChecker extends AbstractChecker {
 
     public void addMeta(Mapping mapping) {
         Meta meta = new Meta();
-        // 任务级 Meta：TASK_ID=任务ID，IS_TASK_DETAIL=0；主键与任务ID一致便于明细分表定位
+        // 任务级 Meta：taskId=任务ID，isTaskDetail=0；主键由 modifyConfigModel 生成雪花；明细分片靠 taskId
         meta.setTaskId(mapping.getId());
         meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         this.modifyConfigModel(meta, new HashMap<>());

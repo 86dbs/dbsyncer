@@ -86,8 +86,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
         String metaId = result.getMetaId();
-        // 明细分表键用 taskId；metaId 仍用于任务级 Meta 计数增量（兼容历史雪花主键）
-        String shardId = resolveTaskDetailShardId(metaId);
+        // 明细分表键用任务级 Meta.taskId；metaId 仍用于任务级 Meta 计数增量
+        String shardId = metaProfile.resolveTaskDetailShardId(metaId);
         String event = result.getEvent();
         String tableGroupId = result.getTableGroupId();
         String targetTableGroupName = result.getTargetTableGroupName();
@@ -116,20 +116,6 @@ public final class FlushStrategyImpl implements FlushStrategy {
             }
             storageBufferActuator.offer(new StorageRequest(shardId, row));
         });
-    }
-
-    /**
-     * 明细分表分片键：优先使用任务级 Meta.taskId（与任务 ID 一致）。
-     */
-    private String resolveTaskDetailShardId(String metaId) {
-        if (StringUtil.isBlank(metaId)) {
-            return metaId;
-        }
-        Meta meta = metaProfile.getMeta(metaId);
-        if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
-            return meta.getTaskId();
-        }
-        return metaId;
     }
 
     private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {
@@ -170,7 +156,7 @@ public final class FlushStrategyImpl implements FlushStrategy {
     }
 
     /**
-     * 同步表级 Meta：TASK_ID=table_group.id，IS_TASK_DETAIL=1，供详情页直接读成功/失败。
+     * 同步表级 Meta：taskId=table_group.id，isTaskDetail=1；主键由 ADD 路径生成雪花。
      */
     private void incrementTableMeta(String tableGroupId, long success, long fail) {
         if (StringUtil.isBlank(tableGroupId)) {
@@ -180,7 +166,6 @@ public final class FlushStrategyImpl implements FlushStrategy {
             Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
             if (tableMeta == null) {
                 tableMeta = new Meta();
-                tableMeta.setId(String.valueOf(snowflakeIdWorker.nextId()));
                 tableMeta.setTaskId(tableGroupId);
                 tableMeta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 long now = Instant.now().toEpochMilli();

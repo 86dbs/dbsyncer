@@ -22,7 +22,6 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.SqlQuery;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -53,9 +52,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     @Resource
     private MetaProfile metaProfile;
 
-    @Resource
-    private SnowflakeIdWorker snowflakeIdWorker;
-
     @Override
     public String addTableGroup(TableGroup model) {
         String id = operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
@@ -77,7 +73,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
                     continue;
                 }
                 Meta meta = new Meta();
-                meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                // id 由 OperationTemplate ADD 统一生成雪花；taskId 关联 table_group.id
                 meta.setTaskId(id);
                 meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
                 meta.setCreateTime(now);
@@ -166,12 +162,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (existing != null) {
             return;
         }
-        Meta byId = metaProfile.getMeta(tableGroupId);
-        if (byId != null && byId.isTaskDetail()) {
-            return;
-        }
         Meta meta = new Meta();
-        meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
         meta.setTaskId(tableGroupId);
         meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
         long now = System.currentTimeMillis();
@@ -217,11 +208,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         Meta byRef = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
         if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
             operationTemplate.remove(new OperationConfig(byRef.getId()));
-            return;
-        }
-        Meta byId = metaProfile.getMeta(tableGroupId);
-        if (byId != null && byId.isTaskDetail()) {
-            operationTemplate.remove(new OperationConfig(byId.getId()));
         }
     }
 

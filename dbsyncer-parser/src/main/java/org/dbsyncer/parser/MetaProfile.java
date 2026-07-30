@@ -49,4 +49,15 @@ public interface MetaProfile {
     void incrementMeta(MetaIncrement increment);
 
     void deleteMetaByTableGroupIds(List<String> tableGroupIds);
+
+    /**
+     * 明细分表分片键：任务级 Meta 的 {@code taskId}（任务/Mapping ID）。
+     * <p>入参应为任务级 Meta（{@code isTaskDetail=0}）；表级 Meta 的 taskId 是 table_group.id，不能当分片键。
+     */
+    String resolveTaskDetailShardId(Meta meta);
+
+    /**
+     * 按 Meta 主键解析明细分表分片键（先查 Meta，再取 taskId）。
+     */
+    String resolveTaskDetailShardId(String metaId);
 }

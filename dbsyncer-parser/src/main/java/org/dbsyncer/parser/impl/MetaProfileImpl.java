@@ -127,4 +127,24 @@ public class MetaProfileImpl implements MetaProfile {
         });
 
     }
+
+    @Override
+    public String resolveTaskDetailShardId(Meta meta) {
+        if (meta == null) {
+            return null;
+        }
+        return StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId();
+    }
+
+    @Override
+    public String resolveTaskDetailShardId(String metaId) {
+        if (StringUtil.isBlank(metaId)) {
+            return metaId;
+        }
+        Meta meta = getMeta(metaId);
+        if (meta != null) {
+            return resolveTaskDetailShardId(meta);
+        }
+        return metaId;
+    }
 }

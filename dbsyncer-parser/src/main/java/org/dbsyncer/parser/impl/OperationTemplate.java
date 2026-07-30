@@ -140,6 +140,12 @@ public final class OperationTemplate {
         if (model instanceof UserConfig) {
             return syncUserConfig((UserConfig) model);
         }
+        if (CommandEnum.OPR_ADD == cmd) {
+            if (StringUtil.isBlank(model.getId())) {
+                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            }
+        }
+
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
         StorageEnum type = ConfigModelUtil.getStorageEnum(model.getType());
         if (CommandEnum.OPR_EDIT == cmd) {
@@ -164,6 +170,9 @@ public final class OperationTemplate {
         List<Map> paramsList = new ArrayList<>(models.size());
         for (ConfigModel model : models) {
             Assert.notNull(model, "ConfigModel can not be null.");
+            if (StringUtil.isBlank(model.getId())) {
+                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
         StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());

@@ -9,8 +9,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 任务执行结果(dbsyncer_meta)。
- * <p>任务级：{@code isTaskDetail=0}，{@code taskId}=任务ID；
- * 表映射明细：{@code isTaskDetail=1}，{@code id=taskId=table_group.id}（保存任务时预建，运行期更新指标/快照）。
+ * <p>主键 {@code id} 为雪花，与业务实体 ID 解耦。
+ * <p>关联键 {@code taskId}：任务级（{@code isTaskDetail=0}）为任务/Mapping ID；
+ * 表级（{@code isTaskDetail=1}）为 {@code table_group.id}。
+ * <p>明细分表 {@code dbsyncer_task_detail_{taskId}} 分片使用任务级 Meta 的 taskId，不是 Meta 主键。
  *
  * @author AE86
  * @version 1.0.0
@@ -19,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Meta extends ConfigModel {
 
     /**
-     * 关联ID：任务级为 taskId；进度/同步明细为 table_group.id；结果明细为 task_detail.id
+     * 关联 ID：任务级为任务/Mapping ID；表级为 table_group.id
      */
     private String taskId;
 

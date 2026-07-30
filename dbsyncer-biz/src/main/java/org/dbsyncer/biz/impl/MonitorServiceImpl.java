@@ -209,7 +209,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Assert.notNull(meta, "驱动不存在.");
         Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         Assert.notNull(mapping, "驱动不存在.");
-        String shardId = resolveTaskDetailShardId(meta);
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
 
         if (StringUtil.isNotBlank(tableGroupId)) {
             TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
@@ -280,7 +280,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         if (meta == null) {
             return;
         }
-        String shardId = resolveTaskDetailShardId(meta);
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
         storageService.clear(StorageEnum.TASK_DETAIL, shardId);
         if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
             storageService.clear(StorageEnum.TASK_DETAIL, meta.getId());
@@ -387,7 +387,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             }
             Query query = new Query(1, 1);
             query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(resolveTaskDetailShardId(meta));
+            query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
             query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
             query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
             query.setQueryTotal(true);
@@ -466,7 +466,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
         // 明细分表：查询 dbsyncer_task_detail_{taskId}
         Meta meta = metaProfile.getMeta(metaId);
-        query.setMetaId(meta != null ? resolveTaskDetailShardId(meta) : metaId);
+        query.setMetaId(meta != null ? metaProfile.resolveTaskDetailShardId(meta) : metaId);
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
@@ -500,7 +500,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void deleteExpiredTaskDetails(Meta meta, long expiredTime) {
-        String shardId = resolveTaskDetailShardId(meta);
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
         deleteExpiredTaskDetailsByShard(shardId, expiredTime);
         if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
             deleteExpiredTaskDetailsByShard(meta.getId(), expiredTime);
@@ -513,13 +513,6 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         query.setMetaId(shardId);
         query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
         storageService.delete(query);
-    }
-
-    /**
-     * 明细分表分片键：任务级 Meta 使用 taskId（与任务 ID 一致）。
-     */
-    private String resolveTaskDetailShardId(Meta meta) {
-        return StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId();
     }
 
     private void deleteExpiredLog() {
