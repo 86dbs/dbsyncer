@@ -86,6 +86,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
         String metaId = result.getMetaId();
+        // 明细分表键用 taskId；metaId 仍用于任务级 Meta 计数增量（兼容历史雪花主键）
+        String shardId = resolveTaskDetailShardId(metaId);
         String event = result.getEvent();
         String tableGroupId = result.getTableGroupId();
         String targetTableGroupName = result.getTargetTableGroupName();
@@ -112,8 +114,22 @@ public final class FlushStrategyImpl implements FlushStrategy {
                 });
                 logger.warn("可能存在Blob或inputStream大文件类型, 无法序列化。字段类型详情: {}", typeInfo, e);
             }
-            storageBufferActuator.offer(new StorageRequest(metaId, row));
+            storageBufferActuator.offer(new StorageRequest(shardId, row));
         });
+    }
+
+    /**
+     * 明细分表分片键：优先使用任务级 Meta.taskId（与任务 ID 一致）。
+     */
+    private String resolveTaskDetailShardId(String metaId) {
+        if (StringUtil.isBlank(metaId)) {
+            return metaId;
+        }
+        Meta meta = metaProfile.getMeta(metaId);
+        if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
+            return meta.getTaskId();
+        }
+        return metaId;
     }
 
     private byte[] toBinlogBytes(SchemaResolver schemaResolver, Map<String, Object> data, Map<String, Field> fieldMap) {

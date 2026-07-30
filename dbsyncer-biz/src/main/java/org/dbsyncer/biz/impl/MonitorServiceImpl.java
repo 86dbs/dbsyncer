@@ -20,22 +20,22 @@ import org.dbsyncer.biz.vo.DataVO;
 import org.dbsyncer.biz.vo.LogVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.MetricResponseVO;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -209,9 +209,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         Assert.notNull(meta, "驱动不存在.");
         Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         Assert.notNull(mapping, "驱动不存在.");
-        String shardId = StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : id;
+        String shardId = resolveTaskDetailShardId(meta);
 
         if (StringUtil.isNotBlank(tableGroupId)) {
+            TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
+            Assert.notNull(tableGroup, "表映射不存在.");
+            Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前驱动.");
             clearTableGroupData(meta, shardId, tableGroupId);
             LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
             String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
@@ -234,7 +237,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
         String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.TASK_DETAIL, shardId);
+        clearTaskDetailShards(meta);
         return "清空同步数据成功";
     }
 
@@ -249,11 +252,39 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
         removeTableMeta(tableGroupId);
 
+        deleteTableGroupDetails(taskMeta, shardId, tableGroupId);
+    }
+
+    /**
+     * 删除表级同步明细；兼容历史雪花主键分表。
+     */
+    private void deleteTableGroupDetails(Meta taskMeta, String shardId, String tableGroupId) {
+        deleteTableGroupDetailsByShard(shardId, tableGroupId);
+        if (taskMeta != null && StringUtil.isNotBlank(taskMeta.getId()) && !StringUtil.equals(taskMeta.getId(), shardId)) {
+            deleteTableGroupDetailsByShard(taskMeta.getId(), tableGroupId);
+        }
+    }
+
+    private void deleteTableGroupDetailsByShard(String shardId, String tableGroupId) {
         Query query = new Query();
         query.setType(StorageEnum.TASK_DETAIL);
         query.setMetaId(shardId);
         query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
         storageService.delete(query);
+    }
+
+    /**
+     * 清空明细分表；兼容历史雪花主键分表。
+     */
+    private void clearTaskDetailShards(Meta meta) {
+        if (meta == null) {
+            return;
+        }
+        String shardId = resolveTaskDetailShardId(meta);
+        storageService.clear(StorageEnum.TASK_DETAIL, shardId);
+        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
+            storageService.clear(StorageEnum.TASK_DETAIL, meta.getId());
+        }
     }
 
     private void resetMetaCounters(Meta meta) {
@@ -434,7 +465,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         query.setSelectFlied(selectFields);
 
         // 明细分表：查询 dbsyncer_task_detail_{taskId}
-        query.setMetaId(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
+        query.setMetaId(meta != null ? resolveTaskDetailShardId(meta) : metaId);
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
@@ -463,12 +495,24 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                 continue;
             }
-            Query query = new Query();
-            query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(resolveTaskDetailShardId(meta));
-            query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
-            storageService.delete(query);
+            deleteExpiredTaskDetails(meta, expiredTime);
         }
+    }
+
+    private void deleteExpiredTaskDetails(Meta meta, long expiredTime) {
+        String shardId = resolveTaskDetailShardId(meta);
+        deleteExpiredTaskDetailsByShard(shardId, expiredTime);
+        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
+            deleteExpiredTaskDetailsByShard(meta.getId(), expiredTime);
+        }
+    }
+
+    private void deleteExpiredTaskDetailsByShard(String shardId, long expiredTime) {
+        Query query = new Query();
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(shardId);
+        query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
+        storageService.delete(query);
     }
 
     /**

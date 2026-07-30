@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.config.StorageConfig;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -76,6 +77,9 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
         Meta meta = metaProfile.getMeta(request.getMetaId());
+        if (meta == null) {
+            meta = metaProfile.getMetaByTaskId(request.getMetaId(), TaskLevelEnum.TASK);
+        }
         if (meta != null) {
             Mapping mapping = profileComponent.getMapping(meta.getTaskId());
             if (mapping != null) {

@@ -23,7 +23,6 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
-import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -62,9 +61,6 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ConnectorFactory connectorFactory;
-
-    @Resource
-    private SnowflakeIdWorker snowflakeIdWorker;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -171,10 +167,7 @@ public class MappingChecker extends AbstractChecker {
         // 任务级 Meta：TASK_ID=任务ID，IS_TASK_DETAIL=0；主键与任务ID一致便于明细分表定位
         meta.setTaskId(mapping.getId());
         meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
-
-        // 修改基本配置
         this.modifyConfigModel(meta, new HashMap<>());
-        meta.setId(String.valueOf(snowflakeIdWorker.nextId()));
 
         String id = profileComponent.addConfigModel(meta);
         mapping.setMetaId(id);

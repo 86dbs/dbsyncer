@@ -564,6 +564,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             Map<String, Table> sourceMetaMap= loadMetaTableMap(taskId, mapping,sourceNames);
 
             for (TableMapping tableMapping : tableMappings) {
+                Table sourceTable = sourceMetaMap.get(tableMapping.getSourceTable());
+                if (sourceTable == null) {
+                    throw new BizException(String.format("源表 [%s] 不存在或无法读取元数据", tableMapping.getSourceTable()));
+                }
                 sortIndex++;
                 TableGroup group = new TableGroup();
                 group.setId(String.valueOf(snowflakeIdWorker.nextId()));
@@ -575,7 +579,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 group.setTargetDatabase(StringUtil.getIfBlank(mapping.getTargetDatabase(), StringUtil.EMPTY));
                 group.setSourceSchema(StringUtil.getIfBlank(mapping.getSourceSchema(), StringUtil.EMPTY));
                 group.setTargetSchema(StringUtil.getIfBlank(mapping.getTargetSchema(), StringUtil.EMPTY));
-                group.setSourceTable(sourceMetaMap.get(tableMapping.getSourceTable()));
+                group.setSourceTable(sourceTable);
                 Table targetTable = new Table();
                 targetTable.setName(tableMapping.getTargetTable());
                 targetTable.setType(TableTypeEnum.TABLE.getCode());

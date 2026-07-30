@@ -192,10 +192,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Mapping mapping = assertMappingExist(id);
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
+            assertRunning(mapping.getMetaId());
             taskProfile.clearTaskRunResults(id);
             taskProfile.resetTaskMeta(id);
 
-            assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
             // 更新meta
