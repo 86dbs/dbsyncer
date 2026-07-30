@@ -203,11 +203,15 @@ public class DataSyncServiceImpl implements DataSyncService {
 
         // 执行同步是否成功
         bufferActuatorRouter.execute(metaId, changedEvent);
-        // 明细分表：从该任务分表(dbsyncer_task_detail_{metaId})删除该条同步数据
-        storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
-        // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
+        // 明细分表：从该任务分表(dbsyncer_task_detail_{taskId})删除该条同步数据
         Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Meta can not be null.");
+        String shardId = StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
+        storageService.remove(StorageEnum.TASK_DETAIL, shardId, messageId);
+        if (!StringUtil.equals(shardId, metaId)) {
+            storageService.remove(StorageEnum.TASK_DETAIL, metaId, messageId);
+        }
+        // 更新失败数：fail 为库侧增量列，原子自减(同时刷新 updateTime)
         metaProfile.incrementMeta(MetaIncrement.of(metaId).fail(-1L));
         return messageId;
     }
@@ -236,14 +240,25 @@ public class DataSyncServiceImpl implements DataSyncService {
         Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
         fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
         query.setFieldResolverMap(fieldResolvers);
-        // 明细分表：定位到该任务分表(dbsyncer_task_detail_{metaId})，按 ID 命中同步数据
-        query.setMetaId(metaId);
+        // 明细分表：定位到该任务分表(dbsyncer_task_detail_{taskId})，按 ID 命中同步数据
+        Meta meta = metaProfile.getMeta(metaId);
+        String shardId = meta != null && StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : metaId;
+        query.setMetaId(shardId);
         query.addFilter(ConfigConstant.CONFIG_MODEL_ID, messageId);
         query.setType(StorageEnum.TASK_DETAIL);
         Paging paging = storageService.query(query);
         if (!CollectionUtils.isEmpty(paging.getData())) {
             List<Map> data = (List<Map>) paging.getData();
             return data.get(0);
+        }
+        // 兼容历史雪花主键分表
+        if (!StringUtil.equals(shardId, metaId)) {
+            query.setMetaId(metaId);
+            paging = storageService.query(query);
+            if (!CollectionUtils.isEmpty(paging.getData())) {
+                List<Map> data = (List<Map>) paging.getData();
+                return data.get(0);
+            }
         }
         return Collections.EMPTY_MAP;
     }

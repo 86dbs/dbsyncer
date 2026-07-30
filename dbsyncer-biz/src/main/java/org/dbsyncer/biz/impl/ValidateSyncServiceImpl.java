@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
@@ -21,7 +22,10 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -30,9 +34,6 @@ import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.parser.util.TaskDetailGroupUtil;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -48,6 +49,8 @@ import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -75,6 +78,8 @@ import java.util.stream.Stream;
 
 @Service
 public class ValidateSyncServiceImpl implements ValidateSyncService {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
@@ -174,20 +179,26 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             preloadTemplate.reConnect(task);
             return id;
         } else {
+            Assert.hasText(params.get("sourceConnectorId"), "数据源不能为空");
+            Assert.hasText(params.get("targetConnectorId"), "目标源不能为空");
             task.setSourceConnectorId(params.get("sourceConnectorId"));
             task.setSourceDatabase(params.get("sourceDatabase"));
             task.setSourceSchema(params.get("sourceSchema"));
             task.setTargetConnectorId(params.get("targetConnectorId"));
             task.setTargetDatabase(params.get("targetDatabase"));
             task.setTargetSchema(params.get("targetSchema"));
-            // 先持久化再建连 才能拉去到所有表
+            // 先持久化再建连，才能拉取到所有表
             String id = taskService.add(task);
             preloadTemplate.reConnect(task);
-            refreshTables(id);
-            ValidateSyncTask validateSyncTask = taskService.get(id);
-            // 与 MappingServiceImpl 一致：勾选「匹配相似表」时仅走自动匹配，否则解析自定义表映射文本
+            ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
+            // 勾选「匹配相似表」时仅走自动匹配，否则解析自定义表映射文本
             if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
                 matchSimilarTableGroups(validateSyncTask);
+            } else {
+                String tableGroups = params.get("tableGroups");
+                if (StringUtil.isNotBlank(tableGroups)) {
+                    matchCustomizedTableGroups(validateSyncTask, tableGroups);
+                }
             }
             return id;
         }
@@ -204,13 +215,12 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     /**
      * 匹配相似表
-     *
      */
     private void matchSimilarTableGroups(ValidateSyncTask validateSyncTask) {
         List<Table> sourceTables = validateSyncTask.getSourceTable();
         List<Table> targetTables = validateSyncTask.getTargetTable();
         if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
+            throw new BizException("未获取到源库或目标库表列表，无法匹配相似表");
         }
         // 同名目标表只保留首次出现，避免 toMap 在重名时抛异常
         Map<String, Table> targetTableMap = new LinkedHashMap<>();
@@ -222,22 +232,85 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
 
         for (Table sourceTable : sourceTables) {
-            if (StringUtil.isBlank(sourceTable.getName())) {
+            if (sourceTable == null || StringUtil.isBlank(sourceTable.getName())) {
                 continue;
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(Locale.ROOT), (k, targetTable) -> {
-                if (TableTypeEnum.isTable(targetTable.getType())) {
-                    Map<String, String> p = new HashMap<>();
-                    p.put("taskId", validateSyncTask.getId());
-                    p.put("sourceTable", sourceTable.getName());
-                    p.put("targetTable", targetTable.getName());
-                    // ValidateSyncTableGroupChecker 必填，与 Mapping 侧物理表映射一致
-                    p.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
-                    p.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
-                    addTableGroup(p);
-                }
-                return targetTable;
-            });
+            Table targetTable = targetTableMap.get(sourceTable.getName().toUpperCase(Locale.ROOT));
+            if (targetTable == null) {
+                continue;
+            }
+            // 仅匹配物理表；type 为空时按表处理（部分驱动元数据可能缺 TABLE_TYPE）
+            String targetType = targetTable.getType();
+            if (StringUtil.isNotBlank(targetType) && !TableTypeEnum.isTable(targetType)) {
+                continue;
+            }
+            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable, StringUtil.EMPTY);
+        }
+    }
+
+    /**
+     * 自定义配置表映射关系（与 MappingServiceImpl 文本格式一致）
+     */
+    private void matchCustomizedTableGroups(ValidateSyncTask validateSyncTask, String tableGroups) {
+        List<Table> sourceTables = validateSyncTask.getSourceTable();
+        List<Table> targetTables = validateSyncTask.getTargetTable();
+        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
+            throw new BizException("未获取到源库或目标库表列表，无法解析表映射关系");
+        }
+        Map<String, Table> sourceTableMap = toTableNameMap(sourceTables);
+        Map<String, Table> targetTableMap = toTableNameMap(targetTables);
+        String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
+        // 数据源表|目标源表=源表字段A1*|目标字段A2*
+        for (String line : lines) {
+            if (StringUtil.isBlank(line)) {
+                continue;
+            }
+            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
+            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
+            if (tableGroupNames.length != 2) {
+                continue;
+            }
+            Table sourceTable = sourceTableMap.get(tableGroupNames[0].toUpperCase(Locale.ROOT));
+            Table targetTable = targetTableMap.get(tableGroupNames[1].toUpperCase(Locale.ROOT));
+            if (sourceTable == null || targetTable == null) {
+                logger.warn("自定义表映射未找到表: {} >> {}", tableGroupNames[0], tableGroupNames[1]);
+                continue;
+            }
+            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable,
+                    tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
+        }
+    }
+
+    private Map<String, Table> toTableNameMap(List<Table> tables) {
+        Map<String, Table> map = new LinkedHashMap<>();
+        for (Table table : tables) {
+            if (table == null || StringUtil.isBlank(table.getName())) {
+                continue;
+            }
+            map.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
+        }
+        return map;
+    }
+
+    /**
+     * 单表匹配写入；失败只记日志，不中断其余表（对齐 MappingServiceImpl）
+     */
+    private boolean addMatchedTableGroup(String taskId, Table sourceTable, Table targetTable, String fieldMappings) {
+        try {
+            Map<String, String> params = new HashMap<>(8);
+            params.put("taskId", taskId);
+            params.put("sourceTable", sourceTable.getName());
+            params.put("targetTable", targetTable.getName());
+            params.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
+            params.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
+            if (StringUtil.isNotBlank(fieldMappings)) {
+                params.put("fieldMappings", fieldMappings);
+            }
+            addTableGroup(params);
+            return true;
+        } catch (Exception e) {
+            logger.error("添加表映射失败: {} >> {}, {}", sourceTable.getName(), targetTable.getName(), e.getMessage());
+            return false;
         }
     }
 
@@ -476,12 +549,20 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String refreshTables(String id) {
+        refreshTablesAndGet(id);
+        return id;
+    }
+
+    /**
+     * 拉取并回写源/目标表列表，返回已刷新的任务对象（供创建后立即匹配使用）。
+     */
+    private ValidateSyncTask refreshTablesAndGet(String id) {
         ValidateSyncTask task = taskService.get(id);
         Assert.notNull(task, "The task id is invalid.");
         task.setSourceTable(updateConnectorTables(task, ConnectorInstanceUtil.SOURCE_SUFFIX));
         task.setTargetTable(updateConnectorTables(task, ConnectorInstanceUtil.TARGET_SUFFIX));
         taskService.edit(task);
-        return id;
+        return task;
     }
 
     @Override
