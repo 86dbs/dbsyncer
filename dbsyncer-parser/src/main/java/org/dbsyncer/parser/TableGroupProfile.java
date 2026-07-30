@@ -48,11 +48,12 @@ public interface TableGroupProfile {
 
     /**
      * 按 SQL 查询表映射（透传执行，结果按 TableGroup 反序列化）。
+     * <p>过滤条件由调用方 SQL 决定（例如未完成明细 Meta 连表），本方法不做业务语义过滤。
      *
      * @param query SQL 与可选分页参数
      * @return TableGroup 列表（无则空列表）
      */
-    List<TableGroup> getIncompleteTableGroups(SqlQuery query);
+    List<TableGroup> listTableGroupsBySql(SqlQuery query);
 
     int getTableGroupCount(String mappingId);
 

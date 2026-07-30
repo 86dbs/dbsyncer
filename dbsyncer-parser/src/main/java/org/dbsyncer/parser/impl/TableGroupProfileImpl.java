@@ -130,7 +130,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public List<TableGroup> getIncompleteTableGroups(SqlQuery query) {
+    public List<TableGroup> listTableGroupsBySql(SqlQuery query) {
         if (query == null) {
             return Collections.emptyList();
         }

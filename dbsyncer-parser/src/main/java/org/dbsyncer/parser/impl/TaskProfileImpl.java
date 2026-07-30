@@ -40,7 +40,7 @@ public class TaskProfileImpl implements TaskProfile {
     private MetaProfile metaProfile;
 
     @Resource
-    TableGroupProfile tableGroupProfile;
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private StorageService storageService;

@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -88,6 +89,9 @@ public class MetaProfileImpl implements MetaProfile {
             query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
             query.addFilter(ConfigConstant.META_TASK_ID, org.dbsyncer.sdk.enums.FilterEnum.IN, String.join(StringUtil.COMMA, batch));
             Paging paging = storageService.query(query);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                return;
+            }
             for (Object item : paging.getData()) {
                 if (!(item instanceof Map)) {
                     continue;
@@ -132,6 +136,9 @@ public class MetaProfileImpl implements MetaProfile {
     public String resolveTaskDetailShardId(Meta meta) {
         if (meta == null) {
             return null;
+        }
+        if (meta.isTaskDetail()) {
+            throw new ParserException("明细分表分片键须使用任务级 Meta，不能传入表级 Meta");
         }
         return StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId();
     }

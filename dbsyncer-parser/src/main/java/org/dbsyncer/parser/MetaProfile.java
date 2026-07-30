@@ -52,7 +52,7 @@ public interface MetaProfile {
 
     /**
      * 明细分表分片键：任务级 Meta 的 {@code taskId}（任务/Mapping ID）。
-     * <p>入参应为任务级 Meta（{@code isTaskDetail=0}）；表级 Meta 的 taskId 是 table_group.id，不能当分片键。
+     * <p>入参必须为任务级 Meta（{@code isTaskDetail=0}）；表级 Meta 会抛异常。
      */
     String resolveTaskDetailShardId(Meta meta);
 

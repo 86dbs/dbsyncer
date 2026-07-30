@@ -318,7 +318,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     public String edit(Map<String, String> params) {
         ValidateSyncTask task = taskService.get(params.get("id"));
         if (task == null) {
-            throw new IllegalArgumentException("Task not found");
+            throw new BizException("任务不存在");
         }
         checkTask(task, params);
         taskProfile.clearTaskRunResults(task.getId());
