@@ -79,6 +79,9 @@ public final class OracleStringType extends StringType {
 
     @Override
     protected Object convert(Object val, Field field) {
+        if (val instanceof OracleLobParameter) {
+            return val;
+        }
         if (val instanceof Time) {
             return val.toString();
         }

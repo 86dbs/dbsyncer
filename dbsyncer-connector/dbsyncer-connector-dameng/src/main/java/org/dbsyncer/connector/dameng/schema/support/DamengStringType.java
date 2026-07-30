@@ -74,6 +74,10 @@ public final class DamengStringType extends StringType {
 
     @Override
     protected Object convert(Object val, Field field) {
+        // 已是绑参对象：写库可直接用；序列化前再拆成字符串更稳
+        if (val instanceof OracleLobParameter) {
+            return val;
+        }
         Object converted = super.convert(val, field);
         // MERGE 大字段需以 CLOB 绑定，配合 CAST(? AS CLOB)
         if (converted instanceof String && TypeEnum.isLob(field.getTypeName())) {
