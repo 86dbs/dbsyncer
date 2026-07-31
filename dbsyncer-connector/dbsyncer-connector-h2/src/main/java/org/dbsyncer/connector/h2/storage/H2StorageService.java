@@ -28,6 +28,7 @@ import org.dbsyncer.sdk.storage.AbstractStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -104,16 +105,17 @@ public class H2StorageService extends AbstractStorageService {
             if (CollectionUtils.isEmpty(data)) {
                 return new ArrayList<>();
             }
-            // H2 列名多为大写：统一转小驼峰，便于按 label（如 json）解析
+            // H2 列名常为大写/折叠大小写：下划线转小驼峰；其余保留原 key，并用大小写不敏感 Map，
+            // 保证 AS sourceTable / SOURCETABLE 都能按 camelCase 读取（与结构化查询 normalizeResultKeys 语义对齐）
             List<Map<String, Object>> normalized = new ArrayList<>(data.size());
             for (Map<String, Object> row : data) {
-                Map<String, Object> newRow = new LinkedHashMap<>();
+                Map<String, Object> newRow = new LinkedCaseInsensitiveMap<>();
                 row.forEach((key, value) -> {
                     String keyStr = key == null ? StringUtil.EMPTY : String.valueOf(key);
                     if (keyStr.contains(StringUtil.UNDERLINE)) {
                         newRow.put(UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true), value);
                     } else {
-                        newRow.put(keyStr.toLowerCase(), value);
+                        newRow.put(keyStr, value);
                     }
                 });
                 normalized.add(newRow);

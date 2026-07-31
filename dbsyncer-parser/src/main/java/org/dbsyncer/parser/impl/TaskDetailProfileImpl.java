@@ -16,11 +16,12 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,8 +52,11 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
                     + "INNER JOIN dbsyncer_meta dm ON dm.TASK_ID = d.TABLE_GROUP_ID AND dm.IS_TASK_DETAIL = 1 "
                     + "INNER JOIN dbsyncer_table_group tg ON tg.ID = d.TABLE_GROUP_ID ";
 
-    /** 与 SELECT ... AS 别名一致，供 H2 等小写化后还原 */
-    private static final String[] SQL_ALIASES = {
+    /**
+     * 与 SELECT ... AS 一致的驼峰别名；H2 等可能折叠为 TYPE/UPDATETIME，
+     * 装配时读忽略大小写、写出固定用这些 key，保证前端 JSON 字段稳定。
+     */
+    private static final String[] SELECT_ALIASES = {
             "id", "createTime", "updateTime", "tableGroupId", "type", "targetTable",
             "isSuccess", "error", "data", "sourceTable", "targetTableName",
             "sourceDatabase", "targetDatabase", "sourceSchema", "targetSchema",
@@ -130,8 +134,17 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     }
 
     private Map<String, Object> toDisplayRow(Map<String, Object> sqlRow) {
-        // H2 等驱动可能把 AS sourceTable 变成 sourcetable，先规范化别名再装配前端字段
-        Map<String, Object> row = normalizeSqlAliases(sqlRow);
+        // 先按忽略大小写读取驱动结果，再写出固定驼峰别名（避免 JSON 出现 TYPE/UPDATETIME）
+        Map<String, Object> src = new LinkedCaseInsensitiveMap<>();
+        if (sqlRow != null) {
+            src.putAll(sqlRow);
+        }
+        Map<String, Object> row = new LinkedHashMap<>();
+        for (String alias : SELECT_ALIASES) {
+            if (src.containsKey(alias)) {
+                row.put(alias, src.get(alias));
+            }
+        }
         TaskDetailUtil.mergeDetailRow(row);
 
         Object sourceTable = row.get("sourceTable");
@@ -186,40 +199,6 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
             row.put(ConfigConstant.TASK_STATUS, state);
         }
         return row;
-    }
-
-    /**
-     * 将 SQL 结果别名规范为 camelCase，兼容 H2 等返回全小写 label 的驱动。
-     */
-    private Map<String, Object> normalizeSqlAliases(Map<String, Object> sqlRow) {
-        Map<String, Object> row = new HashMap<>();
-        if (sqlRow == null || sqlRow.isEmpty()) {
-            return row;
-        }
-        row.putAll(sqlRow);
-        for (String alias : SQL_ALIASES) {
-            Object val = getIgnoreCase(sqlRow, alias);
-            if (val != null) {
-                row.put(alias, val);
-            }
-        }
-        return row;
-    }
-
-    private static Object getIgnoreCase(Map<String, Object> row, String name) {
-        if (row == null || StringUtil.isBlank(name)) {
-            return null;
-        }
-        Object val = row.get(name);
-        if (val != null) {
-            return val;
-        }
-        for (Map.Entry<String, Object> entry : row.entrySet()) {
-            if (entry.getKey() != null && name.equalsIgnoreCase(entry.getKey())) {
-                return entry.getValue();
-            }
-        }
-        return null;
     }
 
     private void putIfPresent(Map<String, Object> row, String key, Object value) {
