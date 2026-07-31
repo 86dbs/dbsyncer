@@ -49,6 +49,15 @@ public interface StorageService {
     void clear(StorageEnum type, String metaId);
 
     /**
+     * 确保分片表存在（仅建表结构，不写数据）。
+     * <p>用于配置导入预建 {@link StorageEnum#TASK_DETAIL} 等动态分表。
+     *
+     * @param type   存储类型
+     * @param metaId 分片键（TASK_DETAIL 为任务 ID）
+     */
+    void ensure(StorageEnum type, String metaId);
+
+    /**
      * 添加
      *
      * @param type

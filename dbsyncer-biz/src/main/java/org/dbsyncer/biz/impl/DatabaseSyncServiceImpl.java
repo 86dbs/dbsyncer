@@ -125,9 +125,18 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         DatabaseSyncTask task = new DatabaseSyncTask();
         fillTaskOnAdd(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
-        // 先落任务与任务级 Meta，再写 table_group，避免 task 失败留下孤儿关联
+        // 任务需先落库（含任务级 Meta）才能按 taskId 建连与写 table_group；失败则整单回滚
         String taskId = taskService.add(task);
-        saveTableGroup(taskId, mappings);
+        try {
+            saveTableGroup(taskId, mappings);
+        } catch (Exception e) {
+            try {
+                taskService.delete(taskId);
+            } catch (Exception cleanupEx) {
+                logger.error("整库迁移任务创建失败后回滚删除失败: id={}", taskId, cleanupEx);
+            }
+            throw new BizException(e.getMessage(), e);
+        }
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }

@@ -193,10 +193,10 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         String metaSnapshot = params.get("metaSnapshot");
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
+            Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
+            // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
             taskProfile.clearTaskRunResults(id);
             taskProfile.resetTaskMeta(id);
-
-            Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
             log(LogType.MappingLog.UPDATE, model);
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);

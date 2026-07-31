@@ -56,6 +56,15 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
                     + "INNER JOIN dbsyncer_meta dm ON dm.TASK_ID = d.TABLE_GROUP_ID AND dm.IS_TASK_DETAIL = 1 "
                     + "INNER JOIN dbsyncer_table_group tg ON tg.ID = d.TABLE_GROUP_ID ";
 
+    /** 与 SELECT ... AS 别名一致，供 H2 等小写化后还原 */
+    private static final String[] SQL_ALIASES = {
+            "id", "createTime", "updateTime", "tableGroupId", "type", "targetTable",
+            "isSuccess", "error", "data", "sourceTable", "targetTableName",
+            "sourceDatabase", "targetDatabase", "sourceSchema", "targetSchema",
+            "sourceTotal", "targetTotal", "sortIndex",
+            "total", "success", "fail", "diff", "fixed", "state"
+    };
+    
     @Resource
     private StorageService storageService;
 
@@ -158,7 +167,8 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     }
 
     private Map<String, Object> toDisplayRow(Map<String, Object> sqlRow) {
-        Map<String, Object> row = sqlRow == null ? new HashMap<>() : new HashMap<>(sqlRow);
+        // H2 等驱动可能把 AS sourceTable 变成 sourcetable，先规范化别名再装配前端字段
+        Map<String, Object> row = normalizeSqlAliases(sqlRow);
         TaskDetailUtil.mergeDetailRow(row);
 
         Object sourceTable = row.get("sourceTable");
@@ -202,6 +212,40 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         return row;
     }
 
+    /**
+     * 将 SQL 结果别名规范为 camelCase，兼容 H2 等返回全小写 label 的驱动。
+     */
+    private Map<String, Object> normalizeSqlAliases(Map<String, Object> sqlRow) {
+        Map<String, Object> row = new HashMap<>();
+        if (sqlRow == null || sqlRow.isEmpty()) {
+            return row;
+        }
+        row.putAll(sqlRow);
+        for (String alias : SQL_ALIASES) {
+            Object val = getIgnoreCase(sqlRow, alias);
+            if (val != null) {
+                row.put(alias, val);
+            }
+        }
+        return row;
+    }
+
+    private static Object getIgnoreCase(Map<String, Object> row, String name) {
+        if (row == null || StringUtil.isBlank(name)) {
+            return null;
+        }
+        Object val = row.get(name);
+        if (val != null) {
+            return val;
+        }
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey() != null && name.equalsIgnoreCase(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     private void putIfPresent(Map<String, Object> row, String key, Object value) {
         if (value == null) {
             return;
@@ -211,6 +255,8 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         }
         row.put(key, value);
     }
+
+
 
     private String detailTableName(String taskId) {
         return "dbsyncer_task_detail_" + taskId;

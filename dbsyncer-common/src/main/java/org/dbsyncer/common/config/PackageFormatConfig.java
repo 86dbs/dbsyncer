@@ -30,6 +30,10 @@ public final class PackageFormatConfig {
      */
     public static final String MAPPING = "mapping.json";
     public static final String META = "meta.json";
+    /**
+     * 任务明细动态分表结构清单（仅 taskIds，不导出行数据；导入时预建空表）
+     */
+    public static final String TASK_DETAIL = "task_detail.json";
     public static final String TABLE_GROUP_DIR = "table_group/";
     public static final String NDJSON_SUFFIX = ".ndjson";
 

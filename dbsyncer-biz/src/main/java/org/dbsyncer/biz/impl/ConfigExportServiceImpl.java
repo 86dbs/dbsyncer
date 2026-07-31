@@ -42,7 +42,8 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * 流式 ZIP 配置导出：system/user/connector/task/meta 写 JSON 数组，
- * table_group 按 taskId 分文件写 NDJSON；task.json 含同步/校验/迁移全量任务。
+ * table_group 按 taskId 分文件写 NDJSON；task.json 含同步/校验/迁移全量任务；
+ * task_detail.json 仅含任务 ID 清单，导入时预建空分表（不导出行数据）。
  *
  * @author AE86
  * @version 1.0.0
@@ -71,9 +72,11 @@ public class ConfigExportServiceImpl implements ConfigExportService {
             counts.put(ConfigConstant.SYSTEM, writeJsonArray(zos, PackageFormatConfig.SYSTEM, operationTemplate.queryAll(SystemConfig.class)));
             counts.put(ConfigConstant.USER, writeJsonArray(zos, PackageFormatConfig.USER, operationTemplate.queryAll(UserConfig.class)));
             counts.put(ConfigConstant.CONNECTOR, writeJsonArray(zos, PackageFormatConfig.CONNECTOR, operationTemplate.queryAll(Connector.class)));
-            counts.put(ConfigConstant.TASK, writeAllTasks(zos));
+            List<String> taskIds = new ArrayList<>();
+            counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
             counts.put(ConfigConstant.TABLE_GROUP, writeTableGroups(zos));
             counts.put(ConfigConstant.META, writeJsonArray(zos, PackageFormatConfig.META, operationTemplate.queryAll(Meta.class)));
+            counts.put(StorageEnum.TASK_DETAIL.getType(), writeTaskDetailSchemas(zos, taskIds));
             writeManifest(zos, versionInfo, counts);
         }
     }
@@ -108,8 +111,10 @@ public class ConfigExportServiceImpl implements ConfigExportService {
 
     /**
      * 导出 dbsyncer_task 全表：同步(mapping)、订正校验(VALIDATE_SYNC)、整库迁移(DATABASE_SYNC)。
+     *
+     * @param taskIds 收集任务 ID，供导出 task_detail 分表结构清单
      */
-    private int writeAllTasks(ZipOutputStream zos) throws IOException {
+    private int writeAllTasks(ZipOutputStream zos, List<String> taskIds) throws IOException {
         List<Object> tasks = new ArrayList<>();
         Query query = new Query();
         query.setType(StorageEnum.TASK);
@@ -128,12 +133,27 @@ public class ConfigExportServiceImpl implements ConfigExportService {
                 Map task = JsonUtil.parseMap(String.valueOf(json));
                 if (task != null) {
                     tasks.add(task);
+                    Object id = task.get(ConfigConstant.CONFIG_MODEL_ID);
+                    if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
+                        taskIds.add(String.valueOf(id));
+                    }
                 }
             }
             query.setPageNum(query.getPageNum() + 1);
         }
         writeBytes(zos, PackageFormatConfig.TASK, JsonUtil.objToJson(tasks).getBytes(StandardCharsets.UTF_8));
         return tasks.size();
+    }
+
+    /**
+     * 导出 task_detail 动态分表结构清单（仅 taskIds，不导出行数据）。
+     */
+    private int writeTaskDetailSchemas(ZipOutputStream zos, List<String> taskIds) throws IOException {
+        List<String> ids = taskIds == null ? Collections.emptyList() : taskIds;
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("taskIds", ids);
+        writeBytes(zos, PackageFormatConfig.TASK_DETAIL, JsonUtil.objToJson(payload).getBytes(StandardCharsets.UTF_8));
+        return ids.size();
     }
 
     private int writeTableGroups(ZipOutputStream zos) throws IOException {

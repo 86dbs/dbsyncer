@@ -297,6 +297,11 @@ public class H2StorageService extends AbstractStorageService {
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql, args));
     }
 
+    @Override
+    protected void ensureShard(StorageEnum type, String sharding) {
+        getExecutor(type, sharding, true);
+    }
+
     private Executor getExecutor(StorageEnum type, String sharding) {
         return getExecutor(type, sharding, true);
     }

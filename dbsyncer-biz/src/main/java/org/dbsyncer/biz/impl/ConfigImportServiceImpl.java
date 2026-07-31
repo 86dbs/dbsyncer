@@ -114,13 +114,14 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     private void importZip(File file) {
         try (ZipFile zip = new ZipFile(file, StandardCharsets.UTF_8)) {
             validateManifest(zip);
-            // 依赖顺序：system → user → connector → task → table_group → meta
+            // 依赖顺序：system → user → connector → task → table_group → meta → task_detail 空表
             importJsonModels(zip, PackageFormatConfig.SYSTEM, SystemConfig.class, false);
             importJsonModels(zip, PackageFormatConfig.USER, UserConfig.class, false);
             importConnectors(zip);
             importTasks(zip);
             importTableGroups(zip);
             importJsonModels(zip, PackageFormatConfig.META, Meta.class, true);
+            importTaskDetailSchemas(zip);
             preloadTemplate.afterConfigImport();
         } catch (BizException e) {
             throw e;
@@ -312,6 +313,39 @@ public class ConfigImportServiceImpl implements ConfigImportService {
         }
         operationTemplate.executeBatch(new ArrayList<>(buffer), CommandEnum.OPR_ADD);
         buffer.clear();
+    }
+
+    /**
+     * 按 ZIP 中 task_detail.json 的 taskIds 预建空分表（仅结构，无行数据）。
+     * 兼容旧包：无该文件时跳过。
+     */
+    private void importTaskDetailSchemas(ZipFile zip) throws IOException {
+        ZipEntry entry = zip.getEntry(PackageFormatConfig.TASK_DETAIL);
+        if (entry == null) {
+            return;
+        }
+        String json = readEntryAsString(zip, entry);
+        if (StringUtil.isBlank(json)) {
+            return;
+        }
+        Map map = JsonUtil.parseMap(json);
+        if (map == null) {
+            return;
+        }
+        Object taskIdsObj = map.get("taskIds");
+        if (!(taskIdsObj instanceof List)) {
+            return;
+        }
+        for (Object item : (List) taskIdsObj) {
+            if (item == null) {
+                continue;
+            }
+            String taskId = String.valueOf(item);
+            if (StringUtil.isBlank(taskId)) {
+                continue;
+            }
+            storageService.ensure(StorageEnum.TASK_DETAIL, taskId);
+        }
     }
 
     private String readEntryAsString(ZipFile zip, ZipEntry entry) throws IOException {
