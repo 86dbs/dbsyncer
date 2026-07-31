@@ -9,7 +9,6 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
 import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -156,9 +155,8 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
             args.add(query.getDetailType());
         }
         if (StringUtil.isNotBlank(query.getDetailStatus())) {
-            TaskDetailMetricEnum statusMetric = query.getStatusMetric() == null
-                    ? TaskDetailMetricEnum.DIFF : query.getStatusMetric();
-            String column = statusMetric.getColumn();
+            Assert.notNull(query.getStatusMetric(), "按状态筛选时 statusMetric 不能为空");
+            String column = query.getStatusMetric().getColumn();
             if (StringUtil.equalsIgnoreCase(ConfigConstant.META_SUCCESS, query.getDetailStatus())) {
                 where.append("AND ").append(column).append(" = 0 ");
             } else if (StringUtil.equalsIgnoreCase(ConfigConstant.META_FAIL, query.getDetailStatus())) {

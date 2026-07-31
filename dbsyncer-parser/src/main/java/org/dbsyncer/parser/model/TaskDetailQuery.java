@@ -66,6 +66,7 @@ public class TaskDetailQuery {
 
     /**
      * 按明细状态筛选（success / fail）。
+     * <p>与 {@link #statusMetric(TaskDetailMetricEnum)} 成对使用，仅设状态不设指标会在查询时断言失败。
      */
     public TaskDetailQuery detailStatus(String detailStatus) {
         this.detailStatus = detailStatus;
@@ -73,7 +74,8 @@ public class TaskDetailQuery {
     }
 
     /**
-     * 状态筛选所依据的 Meta 指标。
+     * 状态筛选所依据的 Meta 指标（DIFF / FAIL）。
+     * <p>设置 {@link #detailStatus(String)} 时必填，禁止静默默认。
      */
     public TaskDetailQuery statusMetric(TaskDetailMetricEnum statusMetric) {
         this.statusMetric = statusMetric;
