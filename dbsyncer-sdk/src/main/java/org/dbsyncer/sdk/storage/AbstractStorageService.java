@@ -85,6 +85,10 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         try {
             String sharding = getSharding(type, metaId);
             deleteAll(sharding);
+            // 动态明细分表：清空后预建空表，避免详情 JOIN 查询报 Table not found
+            if (type == StorageEnum.TASK_DETAIL) {
+                ensureShard(type, sharding);
+            }
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         }

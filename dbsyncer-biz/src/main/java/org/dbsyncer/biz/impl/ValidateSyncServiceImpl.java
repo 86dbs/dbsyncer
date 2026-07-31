@@ -173,6 +173,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             // 合并任务公共字段
             mergeTaskColumn(task);
             String id = taskService.add(task);
+            taskProfile.ensureTaskDetailTable(id);
             preloadTemplate.reConnect(task);
             return id;
         } else {
@@ -186,6 +187,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             task.setTargetSchema(params.get("targetSchema"));
             // 先持久化再建连，才能拉取到所有表
             String id = taskService.add(task);
+            taskProfile.ensureTaskDetailTable(id);
             preloadTemplate.reConnect(task);
             ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
             // 勾选「匹配相似表」时仅走自动匹配，否则解析自定义表映射文本

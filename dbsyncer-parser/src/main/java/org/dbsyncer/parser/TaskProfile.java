@@ -25,6 +25,13 @@ public interface TaskProfile {
     void clearTaskRunResults(String taskId);
 
     /**
+     * 预建任务明细分表 {@code dbsyncer_task_detail_{taskId}}（仅结构，无数据）。
+     *
+     * @param taskId 任务 ID
+     */
+    void ensureTaskDetailTable(String taskId);
+
+    /**
      * 重置任务级 Meta 计数与 SNAPSHOT（保留行，state=READY）。
      */
     void resetTaskMeta(String taskId);

@@ -35,11 +35,12 @@ public class DatabaseSyncDetail {
     }
 
     public static DatabaseSyncDetail schemaSuccess(int tableIndex) {
-        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).success(1L);
+        // 结构迁移按「一张表」计：源端行数/成功数均为 1
+        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L).success(1L);
     }
 
     public static DatabaseSyncDetail schemaSkipped(int tableIndex) {
-        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex);
+        return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).sourceTotal(1L);
     }
 
     public static DatabaseSyncDetail rowData(int tableIndex) {

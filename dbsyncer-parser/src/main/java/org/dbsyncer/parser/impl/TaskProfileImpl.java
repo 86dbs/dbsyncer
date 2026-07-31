@@ -79,6 +79,14 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
+    public void ensureTaskDetailTable(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        storageService.ensure(StorageEnum.TASK_DETAIL, taskId);
+    }
+
+    @Override
     public void resetTaskMeta(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;

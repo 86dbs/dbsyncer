@@ -140,6 +140,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             }
             throw new BizException(e.getMessage(), e);
         }
+        // 预建明细分表，详情页 JOIN 查询不依赖任务是否已写出数据
+        taskProfile.ensureTaskDetailTable(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }

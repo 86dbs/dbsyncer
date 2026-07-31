@@ -151,6 +151,18 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         Object fixed = row.get(ConfigConstant.META_FIXED);
         Object state = row.get(ConfigConstant.META_STATE);
 
+        // 明细 DATA 中独立计数优先（结构/数据分两行，不能共用 meta、table_group）
+        Map<String, Object> detailContent = TaskDetailUtil.deserializeContent(row.get(ConfigConstant.BINLOG_DATA));
+        if (detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL) != null) {
+            sourceTotal = detailContent.get(ConfigConstant.TASK_SOURCE_TOTAL);
+        }
+        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL) != null) {
+            success = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL);
+        }
+        if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
+            fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
+        }
+
         putIfPresent(row, ConfigConstant.TASK_SOURCE_TABLE_NAME, sourceTable);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, sourceTable);
         Object displayTargetTable = targetTableName != null ? targetTableName : targetTable;
