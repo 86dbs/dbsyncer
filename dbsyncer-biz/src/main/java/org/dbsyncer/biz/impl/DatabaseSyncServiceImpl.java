@@ -33,13 +33,13 @@ import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseMapping;
-import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableMapping;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.TaskService;
+import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -128,7 +128,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // 任务需先落库（含任务级 Meta）才能按 taskId 建连与写 table_group；失败则整单回滚
         String taskId = taskService.add(task);
         try {
-            saveTableGroup(taskId, mappings);
+            tableGroupProfile.addTableGroupBatch(buildTableGroups(taskId, mappings));
         } catch (Exception e) {
             try {
                 taskService.delete(taskId);
@@ -162,10 +162,18 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         validateMappingConnectors(mappings);
         fillTaskOnEdit(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
-        // 重建映射：清运行结果 → 条件删旧 table_group+明细 Meta → 批量写入
+        // 先物化新映射（连库读元数据），失败则不碰旧 table_group
+        List<TableGroup> newGroups = buildTableGroups(id, mappings);
+        List<TableGroup> oldGroups = tableGroupProfile.getTableGroupAll(id);
+        try {
+            tableGroupProfile.removeTableGroupsByTaskId(id);
+            tableGroupProfile.addTableGroupBatch(newGroups);
+        } catch (Exception e) {
+            restoreTableGroups(id, oldGroups);
+            throw new BizException(e.getMessage(), e);
+        }
+        // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         taskProfile.clearTaskRunResults(id);
-        tableGroupProfile.removeTableGroupsByTaskId(id);
-        saveTableGroup(id, mappings);
         taskProfile.resetTaskMeta(id);
         return taskService.edit(task);
     }
@@ -451,8 +459,24 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setOverwriteData(task.isEnableCopyData() && StringUtil.isNotBlank(params.get("overwriteData")));
     }
 
-    private void clearTableGroups(String taskId) {
-        tableGroupProfile.removeTableGroupsByTaskId(taskId);
+    /**
+     * 编辑失败时恢复旧 table_group，避免任务无表映射。
+     * 运行历史分表在映射写成功后才清理，此处仍可保留旧明细。
+     */
+    private void restoreTableGroups(String taskId, List<TableGroup> oldGroups) {
+        try {
+            tableGroupProfile.removeTableGroupsByTaskId(taskId);
+        } catch (Exception cleanupEx) {
+            logger.error("编辑失败回滚：清理残留 table_group 失败: taskId={}", taskId, cleanupEx);
+        }
+        if (CollectionUtils.isEmpty(oldGroups)) {
+            return;
+        }
+        try {
+            tableGroupProfile.addTableGroupBatch(oldGroups);
+        } catch (Exception restoreEx) {
+            logger.error("编辑失败回滚：恢复旧 table_group 失败: taskId={}", taskId, restoreEx);
+        }
     }
 
     private void validateMappingConnectors(List<? extends DatabaseMapping> mappings) {
@@ -549,9 +573,13 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         return result;
     }
 
-    private void saveTableGroup(String taskId, List<DatabaseMappingVO> mappings) {
+
+    /**
+     * 按库映射物化 table_group（连源端读表元数据），不落库。
+     */
+    private List<TableGroup> buildTableGroups(String taskId, List<DatabaseMappingVO> mappings) {
         if (StringUtil.isBlank(taskId) || CollectionUtils.isEmpty(mappings)) {
-            return;
+            return Collections.emptyList();
         }
         List<TableGroup> groups = new ArrayList<>();
         int sortIndex = 0;
@@ -601,7 +629,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 groups.add(group);
             }
         }
-        tableGroupProfile.addTableGroupBatch(groups);
+        return groups;
     }
 
     public Map<String, Table> loadMetaTableMap(String taskId, DatabaseMappingVO ctx, List<String> tableNames) {
