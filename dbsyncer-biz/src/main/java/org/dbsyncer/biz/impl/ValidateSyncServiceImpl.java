@@ -33,7 +33,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.parser.util.TaskDetailGroupUtil;
+import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -106,7 +106,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private TableGroupProfile tableGroupProfile;
 
     @Resource
-    private TaskDetailGroupUtil taskDetailGroupUtil;
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private TableGroupService tableGroupService;
@@ -530,14 +530,14 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Predicate<Map<String, Object>> filter = buildDetailStatusFilter(StringUtil.trimToEmpty(params.get("detailStatus")));
         Comparator<Map<String, Object>> comparator = Comparator.comparingLong(
                 (Map<String, Object> row) -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL)))).reversed();
-        return taskDetailGroupUtil.queryJoinedResults(taskId, filter, comparator, pageNum, pageSize, null);
+        return taskDetailProfile.queryJoinedResults(taskId, filter, comparator, pageNum, pageSize, null);
     }
 
     @Override
     public Object getValidateResultDetail(String taskId, String id) {
         Assert.hasText(taskId, "taskId is required.");
         Assert.hasText(id, "id is required.");
-        return taskDetailGroupUtil.getJoinedDetail(taskId, id);
+        return taskDetailProfile.getJoinedDetail(taskId, id);
     }
 
     @Override

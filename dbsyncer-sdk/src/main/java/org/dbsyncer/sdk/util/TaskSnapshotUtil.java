@@ -3,13 +3,14 @@
  */
 package org.dbsyncer.sdk.util;
 
-import com.alibaba.fastjson2.TypeReference;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseSyncTableSnapshot;
+
+import com.alibaba.fastjson2.TypeReference;
 
 import java.util.HashMap;
 import java.util.Map;

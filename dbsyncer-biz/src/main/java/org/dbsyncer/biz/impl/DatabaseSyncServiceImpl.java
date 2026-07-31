@@ -33,7 +33,7 @@ import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseMapping;
-import org.dbsyncer.sdk.model.DatabaseSyncProcessor;
+import org.dbsyncer.sdk.util.DatabaseSyncProgressUtil;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -221,14 +221,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 if (vo != null) {
                     int tableCount = tableGroupProfile.getTableGroupCount(task.getId());
                     Meta taskMeta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
-                    boolean roundDone = taskMeta != null && DatabaseSyncProcessor.isRoundDone(taskMeta.getState());
-                    Map<Integer, Integer> mappingStatus = DatabaseSyncProcessor.readMappingStatus(
+                    boolean roundDone = taskMeta != null && DatabaseSyncProgressUtil.isRoundDone(taskMeta.getState());
+                    Map<Integer, Integer> mappingStatus = DatabaseSyncProgressUtil.readMappingStatus(
                             taskMeta == null ? null : taskMeta.getSnapshot());
                     List<CommonTaskSnapshot> tableSnapshots = collectTableSnapshots(task.getId());
-                    vo.setProgress(DatabaseSyncProcessor.calculateProgressPercent(
+                    vo.setProgress(DatabaseSyncProgressUtil.calculateProgressPercent(
                             task, tableCount, vo.getMappingCount(), roundDone, mappingStatus, tableSnapshots));
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(DatabaseSyncProcessor.countCompletedTables(
+                    vo.setCompletedTableCount(DatabaseSyncProgressUtil.countCompletedTables(
                             task, tableCount, roundDone, mappingStatus, tableSnapshots));
                     vo.setErrorCount(0L);
                     if (taskMeta != null) {

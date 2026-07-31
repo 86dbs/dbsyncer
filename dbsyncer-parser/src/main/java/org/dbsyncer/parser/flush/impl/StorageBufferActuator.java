@@ -58,27 +58,28 @@ public final class StorageBufferActuator extends AbstractBufferActuator<StorageR
 
     @Override
     protected String getPartitionKey(StorageRequest request) {
-        return request.getMetaId();
+        return request.getTaskDetailShardId();
     }
 
     @Override
     protected void partition(StorageRequest request, StorageResponse response) {
-        response.setMetaId(request.getMetaId());
+        response.setTaskDetailShardId(request.getTaskDetailShardId());
         response.getDataList().add(request.getRow());
     }
 
     @Override
     public void pull(StorageResponse response) {
-        String metaId = response.getMetaId();
-        // 严格走库 + 明细分表：写入 dbsyncer_task_detail_{metaId}(每个任务一张表)
-        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, metaId, response.getDataList()));
+        String shardId = response.getTaskDetailShardId();
+        // 严格走库 + 明细分表：写入 dbsyncer_task_detail_{taskId}
+        storageExecutor.execute(() -> storageService.addBatch(StorageEnum.TASK_DETAIL, shardId, response.getDataList()));
     }
 
     @Override
     protected void offerFailed(BlockingQueue<StorageRequest> queue, StorageRequest request) {
-        Meta meta = metaProfile.getMeta(request.getMetaId());
+        String shardId = request.getTaskDetailShardId();
+        Meta meta = metaProfile.getMetaByTaskId(shardId, TaskLevelEnum.TASK);
         if (meta == null) {
-            meta = metaProfile.getMetaByTaskId(request.getMetaId(), TaskLevelEnum.TASK);
+            meta = metaProfile.getMeta(shardId);
         }
         if (meta != null) {
             Mapping mapping = profileComponent.getMapping(meta.getTaskId());

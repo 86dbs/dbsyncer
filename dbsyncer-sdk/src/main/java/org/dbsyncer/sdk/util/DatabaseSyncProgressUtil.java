@@ -1,12 +1,13 @@
 /**
  * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
-package org.dbsyncer.sdk.model;
+package org.dbsyncer.sdk.util;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
-import org.dbsyncer.sdk.util.TaskSnapshotUtil;
+import org.dbsyncer.sdk.model.CommonTaskSnapshot;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,12 +18,13 @@ import java.util.Map;
  * 整库迁移任务进度计算（步骤计数法，基于 Meta 快照，稳定不漂移）。
  *
  * @author wuji
+ * @version 1.0.0
  */
-public final class DatabaseSyncProcessor {
+public final class DatabaseSyncProgressUtil {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
-    private DatabaseSyncProcessor() {
+    private DatabaseSyncProgressUtil() {
     }
 
     /**

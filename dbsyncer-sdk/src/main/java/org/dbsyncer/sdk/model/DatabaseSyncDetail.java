@@ -6,14 +6,13 @@ package org.dbsyncer.sdk.model;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
 
 /**
- * 整库迁移单表阶段终态结果
- *
+ * 整库迁移单表阶段终态明细。
  *
  * @author wuji
  * @version 1.0.0
  * @date 2026-05-29 16:00
  */
-public class DatabaseSyncDetailResult {
+public class DatabaseSyncDetail {
 
     private DatabaseMigrationDetailTypeEnum type;
     private int tableIndex;
@@ -28,27 +27,27 @@ public class DatabaseSyncDetailResult {
     private long failTotal;
     private String content;
 
-    public static DatabaseSyncDetailResult of(DatabaseMigrationDetailTypeEnum type, int tableIndex) {
-        DatabaseSyncDetailResult result = new DatabaseSyncDetailResult();
-        result.type = type;
-        result.tableIndex = tableIndex;
-        return result;
+    public static DatabaseSyncDetail of(DatabaseMigrationDetailTypeEnum type, int tableIndex) {
+        DatabaseSyncDetail detail = new DatabaseSyncDetail();
+        detail.type = type;
+        detail.tableIndex = tableIndex;
+        return detail;
     }
 
-    public static DatabaseSyncDetailResult schemaSuccess(int tableIndex) {
+    public static DatabaseSyncDetail schemaSuccess(int tableIndex) {
         return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex).success(1L);
     }
 
-    public static DatabaseSyncDetailResult schemaSkipped(int tableIndex) {
+    public static DatabaseSyncDetail schemaSkipped(int tableIndex) {
         return of(DatabaseMigrationDetailTypeEnum.TABLE_SCHEMA, tableIndex);
     }
 
-    public static DatabaseSyncDetailResult rowData(int tableIndex) {
+    public static DatabaseSyncDetail rowData(int tableIndex) {
         return of(DatabaseMigrationDetailTypeEnum.ROW_DATA, tableIndex);
     }
 
-    public DatabaseSyncDetailResult namespace(String sourceDatabase, String sourceSchema,
-                                              String targetDatabase, String targetSchema) {
+    public DatabaseSyncDetail namespace(String sourceDatabase, String sourceSchema,
+                                       String targetDatabase, String targetSchema) {
         this.sourceDatabase = sourceDatabase;
         this.sourceSchema = sourceSchema;
         this.targetDatabase = targetDatabase;
@@ -56,28 +55,28 @@ public class DatabaseSyncDetailResult {
         return this;
     }
 
-    public DatabaseSyncDetailResult tables(String sourceTable, String targetTable) {
+    public DatabaseSyncDetail tables(String sourceTable, String targetTable) {
         this.sourceTable = sourceTable;
         this.targetTable = targetTable;
         return this;
     }
 
-    public DatabaseSyncDetailResult sourceTotal(Long sourceTotal) {
+    public DatabaseSyncDetail sourceTotal(Long sourceTotal) {
         this.sourceTotal = sourceTotal;
         return this;
     }
 
-    public DatabaseSyncDetailResult success(long successTotal) {
+    public DatabaseSyncDetail success(long successTotal) {
         this.successTotal = successTotal;
         return this;
     }
 
-    public DatabaseSyncDetailResult fail(long failTotal) {
+    public DatabaseSyncDetail fail(long failTotal) {
         this.failTotal = failTotal;
         return this;
     }
 
-    public DatabaseSyncDetailResult content(String content) {
+    public DatabaseSyncDetail content(String content) {
         this.content = content;
         return this;
     }
