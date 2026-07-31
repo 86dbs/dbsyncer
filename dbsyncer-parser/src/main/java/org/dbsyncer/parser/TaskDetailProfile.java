@@ -4,10 +4,9 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 
-import java.util.Comparator;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * 任务执行明细（dbsyncer_task_detail）查询：与 meta / table_group 关联装配展示行。
@@ -19,19 +18,12 @@ import java.util.function.Predicate;
 public interface TaskDetailProfile {
 
     /**
-     * 查询校验/迁移结果列表(连表装配后应用侧过滤/排序/分页)。
+     * 连表查询校验/迁移结果列表（存储侧过滤、排序、分页）。
      *
-     * @param taskId     任务 ID
-     * @param filter     行过滤(可空)
-     * @param comparator 排序(可空)
-     * @param pageNum    页码
-     * @param pageSize   页大小
-     * @param detailType 明细 TYPE 过滤(可空)
+     * @param query 查询参数（含 taskId、分页、类型/状态筛选、指标与排序）
      * @return 分页结果
      */
-    Paging queryJoinedResults(String taskId, Predicate<Map<String, Object>> filter,
-                              Comparator<Map<String, Object>> comparator,
-                              int pageNum, int pageSize, String detailType);
+    Paging queryJoinedResults(TaskDetailQuery query);
 
     /**
      * 单条明细连表查询。

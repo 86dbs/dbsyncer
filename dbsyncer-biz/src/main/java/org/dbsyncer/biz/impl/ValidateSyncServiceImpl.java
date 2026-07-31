@@ -34,6 +34,8 @@ import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -72,7 +74,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -130,11 +131,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * 任务启停锁
      */
     private final static Object LOCK = new Object();
-
-    /**
-     * 明细分表单次加载上限(单个任务表组数量有限，一次装载后应用侧过滤/排序/分页)
-     */
-    private final static int MAX_DETAIL_PAGE_SIZE = 100000;
 
     @Override
     public ValidateSyncTaskVO get(String id) {
@@ -527,10 +523,11 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Assert.hasText(taskId, "taskId is required.");
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
-        Predicate<Map<String, Object>> filter = buildDetailStatusFilter(StringUtil.trimToEmpty(params.get("detailStatus")));
-        Comparator<Map<String, Object>> comparator = Comparator.comparingLong(
-                (Map<String, Object> row) -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL)))).reversed();
-        return taskDetailProfile.queryJoinedResults(taskId, filter, comparator, pageNum, pageSize, null);
+        String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
+        return taskDetailProfile.queryJoinedResults(TaskDetailQuery.of(taskId)
+                .page(pageNum, pageSize)
+                .detailStatus(StringUtil.isBlank(detailStatus) ? null : detailStatus)
+                .metric(TaskDetailMetricEnum.DIFF));
     }
 
     @Override
@@ -656,22 +653,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 按升序展示表
         Collections.sort(tables, Comparator.comparing(Table::getName));
         return tables;
-    }
-
-    /**
-     * 构建按执行结果(差异数)过滤的条件：success=无差异, fail=有差异
-     *
-     * @param detailStatus 前端筛选值
-     * @return 过滤器，无筛选时返回 null
-     */
-    private Predicate<Map<String, Object>> buildDetailStatusFilter(String detailStatus) {
-        if ("success".equalsIgnoreCase(detailStatus)) {
-            return row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) == 0L;
-        }
-        if ("fail".equalsIgnoreCase(detailStatus)) {
-            return row -> NumberUtil.toLong(String.valueOf(row.get(ConfigConstant.TASK_DIFF_TOTAL))) > 0L;
-        }
-        return null;
     }
 
     private void resetTableGroupAllIndex(String taskId) {

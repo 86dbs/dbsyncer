@@ -382,7 +382,8 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
             if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
                 return;
             }
-            if (meta.getFail().get() <= 0) {
+            long failCount = meta.getFail() != null ? meta.getFail().get() : 0L;
+            if (failCount <= 0) {
                 return;
             }
             Query query = new Query(1, 1);

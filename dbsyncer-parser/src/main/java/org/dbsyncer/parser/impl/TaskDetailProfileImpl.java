@@ -3,34 +3,32 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.storage.SqlQuery;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 /**
- * {@link TaskDetailProfile} 实现。
+ * {@link TaskDetailProfile} 实现：task_detail JOIN meta / table_group，存储侧分页。
  *
  * @author wuji
  * @version 1.0.0
@@ -39,141 +37,188 @@ import java.util.stream.Collectors;
 @Component
 public class TaskDetailProfileImpl implements TaskDetailProfile {
 
-    /**
-     * 明细分表分页拉取每页条数（需全量时循环翻页累加）
-     */
-    private static final int DETAIL_FETCH_PAGE_SIZE = 1000;
+    private static final Pattern TASK_ID_PATTERN = Pattern.compile("^[0-9A-Za-z]+$");
 
-    @Resource
-    private MetaProfile metaProfile;
+    private static final String SELECT_COLUMNS =
+            "d.ID AS id, d.CREATE_TIME AS createTime, d.UPDATE_TIME AS updateTime, "
+                    + "d.TABLE_GROUP_ID AS tableGroupId, d.TYPE AS type, d.TARGET_TABLE AS targetTable, "
+                    + "d.IS_SUCCESS AS isSuccess, d.ERROR AS error, d.DATA AS data, "
+                    + "tg.SOURCE_TABLE AS sourceTable, tg.TARGET_TABLE AS targetTableName, "
+                    + "tg.SOURCE_DATABASE AS sourceDatabase, tg.TARGET_DATABASE AS targetDatabase, "
+                    + "tg.SOURCE_SCHEMA AS sourceSchema, tg.TARGET_SCHEMA AS targetSchema, "
+                    + "tg.SOURCE_TOTAL AS sourceTotal, tg.TARGET_TOTAL AS targetTotal, "
+                    + "tg.SORT_INDEX AS sortIndex, "
+                    + "dm.TOTAL AS total, dm.SUCCESS AS success, dm.FAIL AS fail, "
+                    + "dm.DIFF AS diff, dm.FIXED AS fixed, dm.STATE AS state";
 
-    @Resource
-    private TableGroupProfile tableGroupProfile;
+    private static final String FROM_JOIN =
+            " FROM %s d "
+                    + "INNER JOIN dbsyncer_meta dm ON dm.TASK_ID = d.TABLE_GROUP_ID AND dm.IS_TASK_DETAIL = 1 "
+                    + "INNER JOIN dbsyncer_table_group tg ON tg.ID = d.TABLE_GROUP_ID ";
 
     @Resource
     private StorageService storageService;
 
     @Override
-    public Paging queryJoinedResults(String taskId, Predicate<Map<String, Object>> filter,
-                                     Comparator<Map<String, Object>> comparator,
-                                     int pageNum, int pageSize, String detailType) {
-        Map<String, Map<String, Object>> tableGroupDisplay = buildTableGroupDisplayMap(taskId);
-        List<Map<String, Object>> detailRows = queryDetailRows(taskId, detailType);
-        if (CollectionUtils.isEmpty(detailRows)) {
-            return TaskDetailUtil.pageDetails(null, filter, comparator, pageNum, pageSize);
-        }
-        List<String> tableGroupIds = detailRows.stream()
-                .map(row -> row.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
-                        ? null : String.valueOf(row.get(ConfigConstant.DATA_TABLE_GROUP_ID)))
-                .filter(StringUtil::isNotBlank)
-                .distinct()
-                .collect(Collectors.toList());
-        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(tableGroupIds);
+    public Paging queryJoinedResults(TaskDetailQuery query) {
+        Assert.notNull(query, "TaskDetailQuery can not be null.");
+        String taskId = query.getTaskId();
+        assertTaskId(taskId);
+        int safePageNum = Math.max(1, query.getPageNum());
+        int safePageSize = Math.max(1, query.getPageSize());
+        String detailTable = detailTableName(taskId);
 
-        List<Map<String, Object>> joined = new ArrayList<>(detailRows.size());
-        for (Map<String, Object> detailRow : detailRows) {
-            String tableGroupId = detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
-                    ? null : String.valueOf(detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID));
-            Map<String, Object> tgRow = tableGroupId == null ? null : tableGroupDisplay.get(tableGroupId);
-            Meta meta = tableGroupId == null ? null : metaMap.get(tableGroupId);
-            Map<String, Object> metaRow = meta == null ? null : TaskDetailUtil.toMetaDisplayMap(
-                    meta.getTotal() == null ? 0L : meta.getTotal().get(),
-                    meta.getSuccess() == null ? 0L : meta.getSuccess().get(),
-                    meta.getFail() == null ? 0L : meta.getFail().get(),
-                    meta.getDiff() == null ? 0L : meta.getDiff().get(),
-                    meta.getFixed() == null ? 0L : meta.getFixed().get(),
-                    meta.getState());
-            joined.add(TaskDetailUtil.assembleJoinedRow(detailRow, tgRow, metaRow));
+        List<Object> args = new ArrayList<>();
+        String where = buildWhere(taskId, query.getDetailType(), query.getDetailStatus(), query.getMetric(), null, args);
+        String orderSql = resolveOrderSql(query);
+
+        long total = queryCount(detailTable, where, args);
+        Paging paging = new Paging(safePageNum, safePageSize);
+        paging.setTotal(total);
+        if (total <= 0) {
+            paging.setData(Collections.emptyList());
+            return paging;
         }
-        return TaskDetailUtil.pageDetails(joined, filter, comparator, pageNum, pageSize);
+
+        String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where + orderSql;
+        List<Map<String, Object>> rows = storageService.queryList(
+                SqlQuery.of(sql, args.toArray()).page(safePageNum, safePageSize));
+        List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
+        if (!CollectionUtils.isEmpty(rows)) {
+            for (Map<String, Object> row : rows) {
+                data.add(toDisplayRow(row));
+            }
+        }
+        paging.setData(data);
+        return paging;
     }
 
     @Override
     public Map<String, Object> getJoinedDetail(String taskId, String detailId) {
-        if (StringUtil.isBlank(taskId) || StringUtil.isBlank(detailId)) {
+        assertTaskId(taskId);
+        if (StringUtil.isBlank(detailId)) {
             return null;
         }
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskDetailShardId(taskId);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, detailId);
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+        String detailTable = detailTableName(taskId);
+        List<Object> args = new ArrayList<>();
+        String where = buildWhere(taskId, null, null, null, detailId, args);
+        String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where;
+        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()).page(1, 1));
+        if (CollectionUtils.isEmpty(rows)) {
             return null;
         }
-        Object row = paging.getData().iterator().next();
-        if (!(row instanceof Map)) {
-            return null;
-        }
-        Map<String, Object> detailRow = new HashMap<>((Map<String, Object>) row);
-        String tableGroupId = detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID) == null
-                ? null : String.valueOf(detailRow.get(ConfigConstant.DATA_TABLE_GROUP_ID));
-        Map<String, Object> tgRow = tableGroupId == null ? null : buildTableGroupDisplayMap(taskId).get(tableGroupId);
-        Meta meta = StringUtil.isBlank(tableGroupId) ? null : metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
-        Map<String, Object> metaRow = meta == null ? null : TaskDetailUtil.toMetaDisplayMap(
-                meta.getTotal() == null ? 0L : meta.getTotal().get(),
-                meta.getSuccess() == null ? 0L : meta.getSuccess().get(),
-                meta.getFail() == null ? 0L : meta.getFail().get(),
-                meta.getDiff() == null ? 0L : meta.getDiff().get(),
-                meta.getFixed() == null ? 0L : meta.getFixed().get(),
-                meta.getState());
-        return TaskDetailUtil.assembleJoinedRow(detailRow, tgRow, metaRow);
+        return toDisplayRow(rows.get(0));
     }
 
-    /**
-     * 分页拉取任务明细分表全部行（每页 {@link #DETAIL_FETCH_PAGE_SIZE}，循环累加）。
-     */
-    private List<Map<String, Object>> queryDetailRows(String taskId, String detailType) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        Query query = new Query();
-        query.setType(StorageEnum.TASK_DETAIL);
-        query.setTaskDetailShardId(taskId);
-        query.setPageSize(DETAIL_FETCH_PAGE_SIZE);
+    private String resolveOrderSql(TaskDetailQuery query) {
+        if (query.getOrderBy() != null) {
+            return query.getOrderBy().getSql();
+        }
+        if (query.getMetric() != null) {
+            return query.getMetric().getOrderSql();
+        }
+        return TaskDetailOrderEnum.UPDATE_TIME.getSql();
+    }
+
+    private long queryCount(String detailTable, String where, List<Object> args) {
+        String sql = "SELECT COUNT(1) AS cnt " + String.format(FROM_JOIN, detailTable) + where;
+        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        if (CollectionUtils.isEmpty(rows)) {
+            return 0L;
+        }
+        Object cnt = rows.get(0).get("cnt");
+        if (cnt == null) {
+            cnt = rows.get(0).values().iterator().next();
+        }
+        return NumberUtil.toLong(String.valueOf(cnt));
+    }
+
+    private String buildWhere(String taskId, String detailType, String detailStatus,
+                              TaskDetailMetricEnum metric, String detailId, List<Object> args) {
+        StringBuilder where = new StringBuilder("WHERE tg.TASK_ID = ? ");
+        args.add(taskId);
+        if (StringUtil.isNotBlank(detailId)) {
+            where.append("AND d.ID = ? ");
+            args.add(detailId);
+        }
         if (StringUtil.isNotBlank(detailType)) {
-            query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, detailType);
+            where.append("AND d.TYPE = ? ");
+            args.add(detailType);
         }
-        while (true) {
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
+        if (StringUtil.isNotBlank(detailStatus)) {
+            TaskDetailMetricEnum statusMetric = metric == null ? TaskDetailMetricEnum.DIFF : metric;
+            String column = statusMetric.getColumn();
+            if (StringUtil.equalsIgnoreCase(ConfigConstant.META_SUCCESS, detailStatus)) {
+                where.append("AND ").append(column).append(" = 0 ");
+            } else if (StringUtil.equalsIgnoreCase(ConfigConstant.META_FAIL, detailStatus)) {
+                where.append("AND ").append(column).append(" > 0 ");
             }
-            for (Object item : paging.getData()) {
-                if (item instanceof Map) {
-                    rows.add(new HashMap<>((Map<String, Object>) item));
-                }
-            }
-            query.setPageNum(query.getPageNum() + 1);
         }
-        return rows;
+        return where.toString();
     }
 
-    private Map<String, Map<String, Object>> buildTableGroupDisplayMap(String taskId) {
-        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(taskId);
-        Map<String, Map<String, Object>> map = new HashMap<>();
-        if (CollectionUtils.isEmpty(groups)) {
-            return map;
+    private Map<String, Object> toDisplayRow(Map<String, Object> sqlRow) {
+        Map<String, Object> row = sqlRow == null ? new HashMap<>() : new HashMap<>(sqlRow);
+        TaskDetailUtil.mergeDetailRow(row);
+
+        Object sourceTable = row.get("sourceTable");
+        Object targetTableName = row.get("targetTableName");
+        Object targetTable = row.get(ConfigConstant.DETAIL_TARGET_TABLE);
+        Object sourceDatabase = row.get(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE);
+        Object sourceSchema = row.get(ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA);
+        Object targetDatabase = row.get(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE);
+        Object targetSchema = row.get(ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA);
+        Object sourceTotal = row.get(ConfigConstant.TASK_SOURCE_TOTAL);
+        Object targetTotal = row.get(ConfigConstant.TASK_TARGET_TOTAL);
+        Object sortIndex = row.get(ConfigConstant.TABLE_GROUP_SORT_INDEX);
+        Object total = row.get(ConfigConstant.META_TOTAL);
+        Object success = row.get(ConfigConstant.META_SUCCESS);
+        Object fail = row.get(ConfigConstant.META_FAIL);
+        Object diff = row.get(ConfigConstant.META_DIFF);
+        Object fixed = row.get(ConfigConstant.META_FIXED);
+        Object state = row.get(ConfigConstant.META_STATE);
+
+        putIfPresent(row, ConfigConstant.TASK_SOURCE_TABLE_NAME, sourceTable);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, sourceTable);
+        putIfPresent(row, ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName != null ? targetTableName : targetTable);
+        putIfPresent(row, ConfigConstant.DETAIL_TARGET_TABLE, targetTableName != null ? targetTableName : targetTable);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, targetTableName != null ? targetTableName : targetTable);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, sourceDatabase);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, sourceSchema);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, targetDatabase);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_SCHEMA, targetSchema);
+        putIfPresent(row, ConfigConstant.TASK_SOURCE_TOTAL, sourceTotal);
+        putIfPresent(row, ConfigConstant.TASK_TARGET_TOTAL, targetTotal);
+        putIfPresent(row, ConfigConstant.TABLE_GROUP_SORT_INDEX, sortIndex);
+        putIfPresent(row, ConfigConstant.TASK_DIFF_TOTAL, diff);
+        putIfPresent(row, ConfigConstant.TASK_FIXED_TOTAL, fixed);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, success);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, fail);
+        putIfPresent(row, ConfigConstant.META_TOTAL, total);
+        putIfPresent(row, ConfigConstant.META_STATE, state);
+        if (state != null) {
+            row.put(ConfigConstant.TASK_STATUS, state);
         }
-        for (TableGroup group : groups) {
-            Map<String, Object> row = new HashMap<>();
-            row.put(ConfigConstant.TABLE_GROUP_SORT_INDEX, group.getIndex());
-            row.put(ConfigConstant.TABLE_GROUP_SOURCE_DATABASE, group.getSourceDatabase());
-            row.put(ConfigConstant.TABLE_GROUP_TARGET_DATABASE, group.getTargetDatabase());
-            row.put(ConfigConstant.TABLE_GROUP_SOURCE_SCHEMA, group.getSourceSchema());
-            row.put(ConfigConstant.TABLE_GROUP_TARGET_SCHEMA, group.getTargetSchema());
-            row.put(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL, group.getSourceTotal());
-            row.put(ConfigConstant.TABLE_GROUP_TARGET_TOTAL, group.getTargetTotal());
-            Table sourceTable = group.getSourceTable();
-            Table targetTable = group.getTargetTable();
-            if (sourceTable != null) {
-                row.put(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, sourceTable.getName());
-            }
-            if (targetTable != null) {
-                row.put(ConfigConstant.TABLE_GROUP_TARGET_TABLE, targetTable.getName());
-            }
-            if (StringUtil.isNotBlank(group.getId())) {
-                map.put(group.getId(), row);
-            }
+        return row;
+    }
+
+    private void putIfPresent(Map<String, Object> row, String key, Object value) {
+        if (value == null) {
+            return;
         }
-        return map;
+        if (value instanceof String && StringUtil.isBlank((String) value)) {
+            return;
+        }
+        row.put(key, value);
+    }
+
+    private String detailTableName(String taskId) {
+        return "dbsyncer_task_detail_" + taskId;
+    }
+
+    private void assertTaskId(String taskId) {
+        if (StringUtil.isBlank(taskId) || !TASK_ID_PATTERN.matcher(taskId).matches()) {
+            throw new ParserException("非法任务ID");
+        }
     }
 }
