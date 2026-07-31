@@ -85,13 +85,27 @@ function createMetaSnapshotParams() {
 }
 
 
-function isOracleConnector($connector, connectorId) {
+function resolveConnectorType($connector, connectorId) {
     if (!$connector || !connectorId) {
-        return false;
+        return '';
     }
-    const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
-    // 达梦与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
-    return type && ['oracle', 'dameng'].indexOf(String(type).toLowerCase()) >= 0;
+    const $option = $connector.find('option[value="' + connectorId + '"]');
+    if (!$option.length) {
+        return '';
+    }
+    const dataType = ($option.attr('data-connector-type') || $option.data('connectorType') || '').toString().trim();
+    if (dataType) {
+        return dataType;
+    }
+    const text = $option.text() || '';
+    const match = text.match(/\(([^()]+)\)\s*$/);
+    return match && match[1] ? match[1].trim() : '';
+}
+
+function isOracleConnector($connector, connectorId) {
+    const type = resolveConnectorType($connector, connectorId);
+    // 达梦 / OceanBaseOracle 与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
+    return type && ['oracle', 'dameng', 'oceanbaseoracle'].indexOf(String(type).toLowerCase()) >= 0;
 }
 
 function toggleDatabaseFieldVisibility($database, hide) {
