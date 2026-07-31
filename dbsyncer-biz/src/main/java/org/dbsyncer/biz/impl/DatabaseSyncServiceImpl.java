@@ -135,6 +135,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             } catch (Exception cleanupEx) {
                 logger.error("整库迁移任务创建失败后回滚删除失败: id={}", taskId, cleanupEx);
             }
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
             throw new BizException(e.getMessage(), e);
         }
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
@@ -570,7 +573,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             );
 
             List<String> sourceNames = tableMappings.stream().map(TableMapping::getSourceTable).collect(Collectors.toList());
-            Map<String, Table> sourceMetaMap= loadMetaTableMap(taskId, mapping,sourceNames);
+            Map<String, Table> sourceMetaMap = loadMetaTableMap(taskId, mapping, sourceNames);
 
             for (TableMapping tableMapping : tableMappings) {
                 Table sourceTable = sourceMetaMap.get(tableMapping.getSourceTable());
@@ -601,9 +604,16 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         tableGroupProfile.addTableGroupBatch(groups);
     }
 
-    public Map<String, Table> loadMetaTableMap(String taskId,DatabaseMappingVO ctx, List<String> tableNames) {
-
-        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(taskId, ctx.getSourceConnectorId(),ctx.getSourceDatabase(),ctx.getSourceSchema(),ctx.getTargetConnectorId(),ctx.getTargetDatabase(),ctx.getTargetSchema(),true);
+    public Map<String, Table> loadMetaTableMap(String taskId, DatabaseMappingVO ctx, List<String> tableNames) {
+        DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(
+                taskId,
+                ctx.getSourceConnectorId(),
+                ctx.getSourceDatabase(),
+                ctx.getSourceSchema(),
+                ctx.getTargetConnectorId(),
+                ctx.getTargetDatabase(),
+                ctx.getTargetSchema(),
+                true);
         tableNames.stream().distinct().forEach(context::addTablePattern);
         List<MetaInfo> metaInfos = parserComponent.getMetaInfo(context);
         Map<String, Table> tableMap = new HashMap<>(metaInfos.size());

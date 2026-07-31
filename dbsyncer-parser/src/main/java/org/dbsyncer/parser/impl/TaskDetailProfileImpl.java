@@ -64,17 +64,17 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
             "sourceTotal", "targetTotal", "sortIndex",
             "total", "success", "fail", "diff", "fixed", "state"
     };
-    
+
     @Resource
     private StorageService storageService;
 
     @Override
     public Paging queryJoinedResults(TaskDetailQuery query) {
-        Assert.notNull(query, "TaskDetailQuery can not be null.");
+        Assert.notNull(query, "查询参数不能为空");
         String taskId = query.getTaskId();
         assertTaskId(taskId);
-        int safePageNum = Math.max(1, query.getPageNum());
-        int safePageSize = Math.max(1, query.getPageSize());
+        int pageNum = query.getPageNum();
+        int pageSize = query.getPageSize();
         String detailTable = detailTableName(taskId);
 
         List<Object> args = new ArrayList<>();
@@ -82,7 +82,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         String orderSql = resolveOrderSql(query);
 
         long total = queryCount(detailTable, where, args);
-        Paging paging = new Paging(safePageNum, safePageSize);
+        Paging paging = new Paging(pageNum, pageSize);
         paging.setTotal(total);
         if (total <= 0) {
             paging.setData(Collections.emptyList());
@@ -91,7 +91,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where + orderSql;
         List<Map<String, Object>> rows = storageService.queryList(
-                SqlQuery.of(sql, args.toArray()).page(safePageNum, safePageSize));
+                SqlQuery.of(sql, args.toArray()).page(pageNum, pageSize));
         List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
         if (!CollectionUtils.isEmpty(rows)) {
             for (Map<String, Object> row : rows) {
@@ -190,9 +190,10 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
         putIfPresent(row, ConfigConstant.TASK_SOURCE_TABLE_NAME, sourceTable);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, sourceTable);
-        putIfPresent(row, ConfigConstant.DATA_TARGET_TABLE_NAME, targetTableName != null ? targetTableName : targetTable);
-        putIfPresent(row, ConfigConstant.DETAIL_TARGET_TABLE, targetTableName != null ? targetTableName : targetTable);
-        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, targetTableName != null ? targetTableName : targetTable);
+        Object displayTargetTable = targetTableName != null ? targetTableName : targetTable;
+        putIfPresent(row, ConfigConstant.DATA_TARGET_TABLE_NAME, displayTargetTable);
+        putIfPresent(row, ConfigConstant.DETAIL_TARGET_TABLE, displayTargetTable);
+        putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_TABLE, displayTargetTable);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_DATABASE, sourceDatabase);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_SCHEMA, sourceSchema);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_TARGET_DATABASE, targetDatabase);
@@ -255,8 +256,6 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         }
         row.put(key, value);
     }
-
-
 
     private String detailTableName(String taskId) {
         return "dbsyncer_task_detail_" + taskId;

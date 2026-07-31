@@ -520,7 +520,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public Paging searchResult(Map<String, String> params) {
         String taskId = params.get("taskId");
-        Assert.hasText(taskId, "taskId is required.");
+        Assert.hasText(taskId, "任务ID不能为空");
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
@@ -532,15 +532,15 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public Object getValidateResultDetail(String taskId, String id) {
-        Assert.hasText(taskId, "taskId is required.");
-        Assert.hasText(id, "id is required.");
+        Assert.hasText(taskId, "任务ID不能为空");
+        Assert.hasText(id, "明细ID不能为空");
         return taskDetailProfile.getJoinedDetail(taskId, id);
     }
 
     @Override
     public Object manualReviseDetail(String taskId, String detailId) {
-        Assert.hasText(taskId, "taskId is required.");
-        Assert.hasText(detailId, "id is required.");
+        Assert.hasText(taskId, "任务ID不能为空");
+        Assert.hasText(detailId, "明细ID不能为空");
         return validateSyncDetailService.manualRevise(taskId, detailId);
     }
 
