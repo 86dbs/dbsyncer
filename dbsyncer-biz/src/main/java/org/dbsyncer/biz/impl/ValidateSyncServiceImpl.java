@@ -35,6 +35,7 @@ import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
@@ -525,16 +526,16 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
         return taskDetailProfile.queryResults(TaskDetailQuery.of(taskId)
-                .page(pageNum, pageSize)
-                .detailStatus(StringUtil.isBlank(detailStatus) ? null : detailStatus)
-                .statusMetric(TaskDetailMetricEnum.DIFF));
+                .setPage(pageNum, pageSize)
+                .setDetailStatus(TaskDetailStatusEnum.from(detailStatus))
+                .setStatusMetric(TaskDetailMetricEnum.DIFF));
     }
 
     @Override
     public Object getValidateResultDetail(String taskId, String id) {
         Assert.hasText(taskId, "任务ID不能为空");
         Assert.hasText(id, "明细ID不能为空");
-        return taskDetailProfile.getDetail(TaskDetailQuery.of(taskId).detailId(id));
+        return taskDetailProfile.getDetail(TaskDetailQuery.of(taskId).setDetailId(id));
     }
 
     @Override

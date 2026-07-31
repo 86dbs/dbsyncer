@@ -7,10 +7,9 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
 import org.dbsyncer.parser.model.TaskDetailQuery;
+import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.storage.SqlQuery;
 import org.dbsyncer.sdk.storage.StorageService;
@@ -24,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * {@link TaskDetailProfile} 实现：task_detail JOIN meta / table_group，存储侧分页。
@@ -35,8 +33,6 @@ import java.util.regex.Pattern;
  */
 @Component
 public class TaskDetailProfileImpl implements TaskDetailProfile {
-
-    private static final Pattern TASK_ID_PATTERN = Pattern.compile("^[0-9A-Za-z]+$");
 
     private static final String SELECT_COLUMNS =
             "d.ID AS id, d.CREATE_TIME AS createTime, d.UPDATE_TIME AS updateTime, "
@@ -71,14 +67,14 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     public Paging queryResults(TaskDetailQuery query) {
         Assert.notNull(query, "查询参数不能为空");
         String taskId = query.getTaskId();
-        assertTaskId(taskId);
+        TaskDetailQuerySupport.assertTaskId(taskId);
         int pageNum = query.getPageNum();
         int pageSize = query.getPageSize();
         String detailTable = detailTableName(taskId);
 
         List<Object> args = new ArrayList<>();
-        String where = buildWhere(query, args);
-        String orderSql = resolveOrderSql(query);
+        String where = TaskDetailQuerySupport.buildWhere(query, args);
+        String orderSql = TaskDetailQuerySupport.resolveOrderSql(query);
 
         long total = queryCount(detailTable, where, args);
         Paging paging = new Paging(pageNum, pageSize);
@@ -105,29 +101,19 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     public Map<String, Object> getDetail(TaskDetailQuery query) {
         Assert.notNull(query, "查询参数不能为空");
         String taskId = query.getTaskId();
-        assertTaskId(taskId);
+        TaskDetailQuerySupport.assertTaskId(taskId);
         if (StringUtil.isBlank(query.getDetailId())) {
             return null;
         }
         String detailTable = detailTableName(taskId);
         List<Object> args = new ArrayList<>();
-        String where = buildWhere(query, args);
+        String where = TaskDetailQuerySupport.buildWhere(query, args);
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where;
         List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()).page(1, 1));
         if (CollectionUtils.isEmpty(rows)) {
             return null;
         }
         return toDisplayRow(rows.get(0));
-    }
-
-    private String resolveOrderSql(TaskDetailQuery query) {
-        if (query.getOrderBy() != null) {
-            return query.getOrderBy().getSql();
-        }
-        if (query.getStatusMetric() != null) {
-            return query.getStatusMetric().getOrderSql();
-        }
-        return TaskDetailOrderEnum.UPDATE_TIME.getSql();
     }
 
     private long queryCount(String detailTable, String where, List<Object> args) {
@@ -141,29 +127,6 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
             cnt = rows.get(0).values().iterator().next();
         }
         return NumberUtil.toLong(String.valueOf(cnt));
-    }
-
-    private String buildWhere(TaskDetailQuery query, List<Object> args) {
-        StringBuilder where = new StringBuilder("WHERE tg.TASK_ID = ? ");
-        args.add(query.getTaskId());
-        if (StringUtil.isNotBlank(query.getDetailId())) {
-            where.append("AND d.ID = ? ");
-            args.add(query.getDetailId());
-        }
-        if (StringUtil.isNotBlank(query.getDetailType())) {
-            where.append("AND d.TYPE = ? ");
-            args.add(query.getDetailType());
-        }
-        if (StringUtil.isNotBlank(query.getDetailStatus())) {
-            Assert.notNull(query.getStatusMetric(), "按状态筛选时 statusMetric 不能为空");
-            String column = query.getStatusMetric().getColumn();
-            if (StringUtil.equalsIgnoreCase(ConfigConstant.META_SUCCESS, query.getDetailStatus())) {
-                where.append("AND ").append(column).append(" = 0 ");
-            } else if (StringUtil.equalsIgnoreCase(ConfigConstant.META_FAIL, query.getDetailStatus())) {
-                where.append("AND ").append(column).append(" > 0 ");
-            }
-        }
-        return where.toString();
     }
 
     private Map<String, Object> toDisplayRow(Map<String, Object> sqlRow) {
@@ -259,11 +222,5 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private String detailTableName(String taskId) {
         return "dbsyncer_task_detail_" + taskId;
-    }
-
-    private void assertTaskId(String taskId) {
-        if (StringUtil.isBlank(taskId) || !TASK_ID_PATTERN.matcher(taskId).matches()) {
-            throw new ParserException("非法任务ID");
-        }
     }
 }

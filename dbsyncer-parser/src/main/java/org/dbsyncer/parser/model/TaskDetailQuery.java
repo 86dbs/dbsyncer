@@ -5,6 +5,7 @@ package org.dbsyncer.parser.model;
 
 import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 
 /**
  * 任务明细查询参数。
@@ -20,7 +21,7 @@ public class TaskDetailQuery {
     private int pageNum = 1;
     private int pageSize = 10;
     private String detailType;
-    private String detailStatus;
+    private TaskDetailStatusEnum detailStatus;
     private TaskDetailMetricEnum statusMetric;
     private TaskDetailOrderEnum orderBy;
 
@@ -42,7 +43,7 @@ public class TaskDetailQuery {
     /**
      * 设置分页。
      */
-    public TaskDetailQuery page(int pageNum, int pageSize) {
+    public TaskDetailQuery setPage(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         return this;
@@ -51,7 +52,7 @@ public class TaskDetailQuery {
     /**
      * 按明细 ID 查询单条。
      */
-    public TaskDetailQuery detailId(String detailId) {
+    public TaskDetailQuery setDetailId(String detailId) {
         this.detailId = detailId;
         return this;
     }
@@ -59,25 +60,25 @@ public class TaskDetailQuery {
     /**
      * 按明细类型筛选。
      */
-    public TaskDetailQuery detailType(String detailType) {
+    public TaskDetailQuery setDetailType(String detailType) {
         this.detailType = detailType;
         return this;
     }
 
     /**
-     * 按明细状态筛选（success / fail）。
-     * <p>与 {@link #statusMetric(TaskDetailMetricEnum)} 成对使用，仅设状态不设指标会在查询时断言失败。
+     * 按明细状态筛选。
+     * <p>与 {@link #setStatusMetric(TaskDetailMetricEnum)} 成对使用，仅设状态不设指标会在查询时断言失败。
      */
-    public TaskDetailQuery detailStatus(String detailStatus) {
+    public TaskDetailQuery setDetailStatus(TaskDetailStatusEnum detailStatus) {
         this.detailStatus = detailStatus;
         return this;
     }
 
     /**
      * 状态筛选所依据的 Meta 指标（DIFF / FAIL）。
-     * <p>设置 {@link #detailStatus(String)} 时必填，禁止静默默认。
+     * <p>设置 {@link #setDetailStatus(TaskDetailStatusEnum)} 时必填，禁止静默默认。
      */
-    public TaskDetailQuery statusMetric(TaskDetailMetricEnum statusMetric) {
+    public TaskDetailQuery setStatusMetric(TaskDetailMetricEnum statusMetric) {
         this.statusMetric = statusMetric;
         return this;
     }
@@ -85,7 +86,7 @@ public class TaskDetailQuery {
     /**
      * 显式排序（与指标无关时使用）。
      */
-    public TaskDetailQuery orderBy(TaskDetailOrderEnum orderBy) {
+    public TaskDetailQuery setOrderBy(TaskDetailOrderEnum orderBy) {
         this.orderBy = orderBy;
         return this;
     }
@@ -110,7 +111,7 @@ public class TaskDetailQuery {
         return detailType;
     }
 
-    public String getDetailStatus() {
+    public TaskDetailStatusEnum getDetailStatus() {
         return detailStatus;
     }
 
