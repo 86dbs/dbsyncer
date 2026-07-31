@@ -69,7 +69,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     private StorageService storageService;
 
     @Override
-    public Paging queryJoinedResults(TaskDetailQuery query) {
+    public Paging queryResults(TaskDetailQuery query) {
         Assert.notNull(query, "查询参数不能为空");
         String taskId = query.getTaskId();
         assertTaskId(taskId);
@@ -78,7 +78,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         String detailTable = detailTableName(taskId);
 
         List<Object> args = new ArrayList<>();
-        String where = buildWhere(taskId, query.getDetailType(), query.getDetailStatus(), query.getMetric(), null, args);
+        String where = buildWhere(query, args);
         String orderSql = resolveOrderSql(query);
 
         long total = queryCount(detailTable, where, args);
@@ -103,14 +103,16 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
     }
 
     @Override
-    public Map<String, Object> getJoinedDetail(String taskId, String detailId) {
+    public Map<String, Object> getDetail(TaskDetailQuery query) {
+        Assert.notNull(query, "查询参数不能为空");
+        String taskId = query.getTaskId();
         assertTaskId(taskId);
-        if (StringUtil.isBlank(detailId)) {
+        if (StringUtil.isBlank(query.getDetailId())) {
             return null;
         }
         String detailTable = detailTableName(taskId);
         List<Object> args = new ArrayList<>();
-        String where = buildWhere(taskId, null, null, null, detailId, args);
+        String where = buildWhere(query, args);
         String sql = "SELECT " + SELECT_COLUMNS + String.format(FROM_JOIN, detailTable) + where;
         List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()).page(1, 1));
         if (CollectionUtils.isEmpty(rows)) {
@@ -123,8 +125,8 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         if (query.getOrderBy() != null) {
             return query.getOrderBy().getSql();
         }
-        if (query.getMetric() != null) {
-            return query.getMetric().getOrderSql();
+        if (query.getStatusMetric() != null) {
+            return query.getStatusMetric().getOrderSql();
         }
         return TaskDetailOrderEnum.UPDATE_TIME.getSql();
     }
@@ -142,24 +144,24 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         return NumberUtil.toLong(String.valueOf(cnt));
     }
 
-    private String buildWhere(String taskId, String detailType, String detailStatus,
-                              TaskDetailMetricEnum metric, String detailId, List<Object> args) {
+    private String buildWhere(TaskDetailQuery query, List<Object> args) {
         StringBuilder where = new StringBuilder("WHERE tg.TASK_ID = ? ");
-        args.add(taskId);
-        if (StringUtil.isNotBlank(detailId)) {
+        args.add(query.getTaskId());
+        if (StringUtil.isNotBlank(query.getDetailId())) {
             where.append("AND d.ID = ? ");
-            args.add(detailId);
+            args.add(query.getDetailId());
         }
-        if (StringUtil.isNotBlank(detailType)) {
+        if (StringUtil.isNotBlank(query.getDetailType())) {
             where.append("AND d.TYPE = ? ");
-            args.add(detailType);
+            args.add(query.getDetailType());
         }
-        if (StringUtil.isNotBlank(detailStatus)) {
-            TaskDetailMetricEnum statusMetric = metric == null ? TaskDetailMetricEnum.DIFF : metric;
+        if (StringUtil.isNotBlank(query.getDetailStatus())) {
+            TaskDetailMetricEnum statusMetric = query.getStatusMetric() == null
+                    ? TaskDetailMetricEnum.DIFF : query.getStatusMetric();
             String column = statusMetric.getColumn();
-            if (StringUtil.equalsIgnoreCase(ConfigConstant.META_SUCCESS, detailStatus)) {
+            if (StringUtil.equalsIgnoreCase(ConfigConstant.META_SUCCESS, query.getDetailStatus())) {
                 where.append("AND ").append(column).append(" = 0 ");
-            } else if (StringUtil.equalsIgnoreCase(ConfigConstant.META_FAIL, detailStatus)) {
+            } else if (StringUtil.equalsIgnoreCase(ConfigConstant.META_FAIL, query.getDetailStatus())) {
                 where.append("AND ").append(column).append(" > 0 ");
             }
         }

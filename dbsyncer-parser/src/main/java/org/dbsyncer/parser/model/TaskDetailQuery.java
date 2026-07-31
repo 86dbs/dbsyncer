@@ -7,7 +7,7 @@ import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
 import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
 
 /**
- * 任务明细连表查询参数。
+ * 任务明细查询参数。
  *
  * @author wuji
  * @version 1.0.0
@@ -16,11 +16,12 @@ import org.dbsyncer.parser.enums.TaskDetailOrderEnum;
 public class TaskDetailQuery {
 
     private String taskId;
+    private String detailId;
     private int pageNum = 1;
     private int pageSize = 10;
     private String detailType;
     private String detailStatus;
-    private TaskDetailMetricEnum metric;
+    private TaskDetailMetricEnum statusMetric;
     private TaskDetailOrderEnum orderBy;
 
     private TaskDetailQuery() {
@@ -28,6 +29,9 @@ public class TaskDetailQuery {
 
     /**
      * 按任务 ID 构建查询。
+     *
+     * @param taskId 任务 ID
+     * @return 查询参数
      */
     public static TaskDetailQuery of(String taskId) {
         TaskDetailQuery query = new TaskDetailQuery();
@@ -35,27 +39,50 @@ public class TaskDetailQuery {
         return query;
     }
 
+    /**
+     * 设置分页。
+     */
     public TaskDetailQuery page(int pageNum, int pageSize) {
         this.pageNum = pageNum;
         this.pageSize = pageSize;
         return this;
     }
 
+    /**
+     * 按明细 ID 查询单条。
+     */
+    public TaskDetailQuery detailId(String detailId) {
+        this.detailId = detailId;
+        return this;
+    }
+
+    /**
+     * 按明细类型筛选。
+     */
     public TaskDetailQuery detailType(String detailType) {
         this.detailType = detailType;
         return this;
     }
 
+    /**
+     * 按明细状态筛选（success / fail）。
+     */
     public TaskDetailQuery detailStatus(String detailStatus) {
         this.detailStatus = detailStatus;
         return this;
     }
 
-    public TaskDetailQuery metric(TaskDetailMetricEnum metric) {
-        this.metric = metric;
+    /**
+     * 状态筛选所依据的 Meta 指标。
+     */
+    public TaskDetailQuery statusMetric(TaskDetailMetricEnum statusMetric) {
+        this.statusMetric = statusMetric;
         return this;
     }
 
+    /**
+     * 显式排序（与指标无关时使用）。
+     */
     public TaskDetailQuery orderBy(TaskDetailOrderEnum orderBy) {
         this.orderBy = orderBy;
         return this;
@@ -63,6 +90,10 @@ public class TaskDetailQuery {
 
     public String getTaskId() {
         return taskId;
+    }
+
+    public String getDetailId() {
+        return detailId;
     }
 
     public int getPageNum() {
@@ -81,8 +112,8 @@ public class TaskDetailQuery {
         return detailStatus;
     }
 
-    public TaskDetailMetricEnum getMetric() {
-        return metric;
+    public TaskDetailMetricEnum getStatusMetric() {
+        return statusMetric;
     }
 
     public TaskDetailOrderEnum getOrderBy() {

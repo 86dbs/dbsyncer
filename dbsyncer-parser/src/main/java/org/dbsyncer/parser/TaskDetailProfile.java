@@ -18,19 +18,18 @@ import java.util.Map;
 public interface TaskDetailProfile {
 
     /**
-     * 连表查询校验/迁移结果列表（存储侧过滤、排序、分页）。
+     * 查询校验/迁移结果列表（存储侧过滤、排序、分页）。
      *
      * @param query 查询参数（含 taskId、分页、类型/状态筛选、指标与排序）
      * @return 分页结果
      */
-    Paging queryJoinedResults(TaskDetailQuery query);
+    Paging queryResults(TaskDetailQuery query);
 
     /**
-     * 单条明细连表查询。
+     * 查询单条明细。
      *
-     * @param taskId   任务 ID
-     * @param detailId 明细 ID
+     * @param query 查询参数（需含 taskId、detailId）
      * @return 展示行，不存在时 null
      */
-    Map<String, Object> getJoinedDetail(String taskId, String detailId);
+    Map<String, Object> getDetail(TaskDetailQuery query);
 }

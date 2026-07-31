@@ -524,17 +524,17 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
-        return taskDetailProfile.queryJoinedResults(TaskDetailQuery.of(taskId)
+        return taskDetailProfile.queryResults(TaskDetailQuery.of(taskId)
                 .page(pageNum, pageSize)
                 .detailStatus(StringUtil.isBlank(detailStatus) ? null : detailStatus)
-                .metric(TaskDetailMetricEnum.DIFF));
+                .statusMetric(TaskDetailMetricEnum.DIFF));
     }
 
     @Override
     public Object getValidateResultDetail(String taskId, String id) {
         Assert.hasText(taskId, "任务ID不能为空");
         Assert.hasText(id, "明细ID不能为空");
-        return taskDetailProfile.getJoinedDetail(taskId, id);
+        return taskDetailProfile.getDetail(TaskDetailQuery.of(taskId).detailId(id));
     }
 
     @Override
