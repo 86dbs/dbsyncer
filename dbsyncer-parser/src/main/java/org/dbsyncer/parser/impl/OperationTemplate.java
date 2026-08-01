@@ -24,6 +24,7 @@ import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -75,6 +76,7 @@ public final class OperationTemplate {
             if (type == StorageEnum.TASK && StringUtil.isNotBlank(configModel.getType())) {
                 condition = new Query();
                 condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, configModel.getType());
+                condition.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
             }
             return queryList(type, condition, valueType);
         } catch (Exception e) {

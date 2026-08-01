@@ -44,7 +44,7 @@ public interface MetaProfile {
     Map<String, Meta> getDetailMetaMap(List<String> refIds);
 
     /**
-     * Meta 计数原子增量(严格走库)：按 {@link MetaIncrement} 落库自增，可为负数。
+     * Meta 计数原子增量(严格走库)：按 {@link MetaIncrement} 落库自增
      */
     void incrementMeta(MetaIncrement increment);
 

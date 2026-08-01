@@ -187,7 +187,7 @@ public final class HierarchyIdBinaryCode {
     }
 
     /**
-     * 与 Microsoft.SqlServer.Types.SqlHierarchy.KnownPatterns 一致（正数 / 负数前缀表）。
+     * 与 Microsoft.SqlServer.Types.SqlHierarchy.KnownPatterns 一致
      */
     private static final class KnownPatterns {
 

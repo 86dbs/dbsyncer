@@ -136,11 +136,11 @@ public interface StorageService {
     void removeBatch(StorageEnum type, String metaId, List<String> ids);
 
     /**
-     * 原子增量更新（按列自增，如 COL = COL + ?），用于严格走库下的 Meta 计数
+     * 原子增量更新（按列自增，如 COL = GREATEST(COL + ?, 0)），用于严格走库下的 Meta 计数；结果小于 0 时钳为 0
      *
      * @param type   存储类型
      * @param id     记录主键
-     * @param deltas 列增量（key 为列 labelName，value 为增量值，可为负数）
+     * @param deltas 列增量（key 为列 labelName，value 为增量值）
      */
     void increment(StorageEnum type, String id, Map<String, Long> deltas);
 

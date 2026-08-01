@@ -248,7 +248,8 @@ public class H2StorageService extends AbstractStorageService {
                 sql.append(", ");
             }
             String quotation = connector.buildWithQuotation(column);
-            sql.append(quotation).append(" = ").append(quotation).append(" + ?");
+            // 原子加减，结果小于 0 时钳为 0
+            sql.append(quotation).append(" = GREATEST(").append(quotation).append(" + ?, 0)");
             args.add(entry.getValue());
             hasColumn = true;
         }

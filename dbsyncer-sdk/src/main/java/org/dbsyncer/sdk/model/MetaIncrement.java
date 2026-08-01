@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Meta 计数原子增量参数（可为负数）。
+ * Meta 计数原子增量参数
  *
  * @author wuji
  * @version 1.0.0
