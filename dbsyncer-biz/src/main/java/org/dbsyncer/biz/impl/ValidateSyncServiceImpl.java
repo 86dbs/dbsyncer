@@ -25,18 +25,18 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.parser.TaskDetailProfile;
-import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
-import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
-import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -49,7 +49,6 @@ import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -91,9 +90,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private ValidateSyncDetailService validateSyncDetailService;
-
-    @Resource
-    private StorageService storageService;
 
     @Resource
     private ProfileComponent profileComponent;
@@ -214,6 +210,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     /**
      * 匹配相似表
+     *
      */
     private void matchSimilarTableGroups(ValidateSyncTask validateSyncTask) {
         List<Table> sourceTables = validateSyncTask.getSourceTable();
@@ -296,7 +293,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      */
     private boolean addMatchedTableGroup(String taskId, Table sourceTable, Table targetTable, String fieldMappings) {
         try {
-            Map<String, String> params = new HashMap<>(8);
+            Map<String, String> params = new HashMap<>();
             params.put("taskId", taskId);
             params.put("sourceTable", sourceTable.getName());
             params.put("targetTable", targetTable.getName());
@@ -399,7 +396,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTask t = (ValidateSyncTask) task;
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
-
                     long errorCount = 0L;
                     Meta taskMeta = metaProfile.getMetaByTaskId(t.getId(), TaskLevelEnum.TASK);
                     if (taskMeta != null && taskMeta.getDiff() != null) {

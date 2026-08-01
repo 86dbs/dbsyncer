@@ -191,6 +191,7 @@ public class MetricReporter implements ScheduledTaskJob {
         try {
             running = true;
             // 仅任务级 Meta；看板指标按同步驱动分表统计
+            // TODO 1. 分页查询；2. 过滤只查数据同步任务，关联meta
             final List<Meta> metaAll = metaProfile.getTaskMetaAll().stream()
                     .filter(meta -> {
                         Mapping mapping = profileComponent.getMapping(meta.getTaskId());

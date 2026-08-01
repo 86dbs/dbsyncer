@@ -6,7 +6,7 @@ package org.dbsyncer.common.model;
 import org.dbsyncer.common.util.NumberUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * 游标分页结果（cursor 为字符串标识，兼容数字偏移游标）
@@ -24,7 +24,7 @@ public class CursorPageQuery<T> {
     private String cursor;
     private int pageSize;
     private boolean hasMore;
-    private Collection<T> data = new ArrayList<>();
+    private List<T> data = new ArrayList<>();
 
     public CursorPageQuery() {
     }
@@ -37,7 +37,7 @@ public class CursorPageQuery<T> {
      * @param cursor   游标
      * @param pageSize 每页条数
      */
-    protected void fill(Collection<T> data, long total, String cursor, int pageSize) {
+    protected void fill(List<T> data, long total, String cursor, int pageSize) {
         this.data = data;
         this.total = total;
         this.cursor = cursor;
@@ -79,11 +79,11 @@ public class CursorPageQuery<T> {
         this.hasMore = hasMore;
     }
 
-    public Collection<T> getData() {
+    public List<T> getData() {
         return data;
     }
 
-    public void setData(Collection<T> data) {
+    public void setData(List<T> data) {
         this.data = data;
     }
 }

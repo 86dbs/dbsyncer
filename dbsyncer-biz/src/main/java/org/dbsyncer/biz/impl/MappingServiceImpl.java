@@ -47,7 +47,6 @@ import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.spi.ConnectorService;
@@ -198,13 +197,13 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             taskProfile.clearTaskRunResults(id);
             taskProfile.resetTaskMeta(id);
             log(LogType.MappingLog.UPDATE, model);
+
             // 更新meta
             tableGroupService.updateMeta(mapping, metaSnapshot);
             profileComponent.editConfigModel(model);
         }
         // 统计总数
         submitMappingCountTask(mapping, metaSnapshot);
-
         return id;
     }
 
@@ -364,6 +363,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                 if (StringUtil.equals("success", detailStatus) && fail > 0) {
                     continue;
                 }
+
+                // TODO 不要使用魔法值
                 Map<String, Object> row = new HashMap<>();
                 row.put("tableGroupId", group.getId());
                 row.put("index", group.getIndex());
@@ -733,11 +734,8 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private void clearMetaIfFinished(String metaId) {
         Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态：success/fail 为库侧增量列，原子归零
+        // 完成任务则重置状态
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
-            metaProfile.incrementMeta(MetaIncrement.of(metaId)
-                    .success(-meta.getSuccess().get())
-                    .fail(-meta.getFail().get()));
             meta.getFail().set(0);
             meta.getSuccess().set(0);
             profileComponent.editConfigModel(meta);

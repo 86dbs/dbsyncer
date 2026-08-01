@@ -8,6 +8,7 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
@@ -78,11 +79,11 @@ public class ValidateSyncController extends BaseController {
     @GetMapping("/page/{page}")
     public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                            @RequestParam(value = "detailStatus", required = false) String detailStatus) {
-        if ("detail".equals(page)) {
+        if (StringUtil.equals("detail", page)) {
             model.put("taskId", id);
             model.put("taskList", validateSyncService.getAll());
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
-        } else if ("editTableGroup".equals(page)) {
+        } else if (StringUtil.equals("editTableGroup", page)) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);
             model.put("task", validateSyncService.get(tableGroup.getTaskId()));

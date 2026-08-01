@@ -42,7 +42,7 @@ public class CommonTask implements Serializable {
      * 任务状态, 0-未执行；1-执行中；2-执行成功；3-执行失败；
      * {@link CommonTaskStatusEnum}
      */
-    private Integer status;
+    private int status;
 
     /**
      * 任务类型
@@ -81,7 +81,7 @@ public class CommonTask implements Serializable {
         this.name = name;
     }
 
-    public Integer getStatus() {
+    public int getStatus() {
         return status;
     }
 

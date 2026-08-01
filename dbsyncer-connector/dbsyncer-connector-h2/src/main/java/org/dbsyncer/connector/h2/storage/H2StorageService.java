@@ -126,7 +126,7 @@ public class H2StorageService extends AbstractStorageService {
                 logger.debug("selectList skip missing table: {}", e.getMessage());
                 return new ArrayList<>();
             }
-            throw e instanceof RuntimeException ? (RuntimeException) e : new H2Exception(e);
+            throw new H2Exception(e);
         }
     }
 

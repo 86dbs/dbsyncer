@@ -59,8 +59,6 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Resource
     private BufferActuator storageBufferActuator;
 
-
-
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中

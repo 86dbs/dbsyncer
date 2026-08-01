@@ -43,28 +43,10 @@ public enum CommonTaskStatusEnum {
         return code;
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public static boolean isReady(Integer status) {
-        return status != null && status == READY.code;
-    }
-
-    public static boolean isReady(int status) {
-        return status == READY.code;
-    }
-
-    public static boolean isRunning(Integer status) {
-        return status != null && status == RUNNING.code;
-    }
+    public String getMessage() {return message;}
 
     public static boolean isRunning(int status) {
         return status == RUNNING.code;
-    }
-
-    public static boolean isStopping(Integer status) {
-        return status != null && status == STOPPING.code;
     }
 
     public static boolean isStopping(int status) {
@@ -79,19 +61,4 @@ public enum CommonTaskStatusEnum {
         return status == DONE.code;
     }
 
-    /**
-     * 未完成、可续跑（未运行 / 运行中 / 停止中）。
-     */
-    public static boolean isIncomplete(int status) {
-        return !isDone(status);
-    }
-
-    public static CommonTaskStatusEnum ofCode(int code) {
-        for (CommonTaskStatusEnum value : values()) {
-            if (value.code == code) {
-                return value;
-            }
-        }
-        return null;
-    }
 }

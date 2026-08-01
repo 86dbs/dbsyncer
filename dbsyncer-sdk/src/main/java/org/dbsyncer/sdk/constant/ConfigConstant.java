@@ -25,6 +25,11 @@ public class ConfigConstant {
      */
     public static final String SYSTEM = "system";
     public static final String USER = "user";
+    public static final String CONNECTOR = "connector";
+    public static final String MAPPING = "mapping";
+    public static final String TABLE_GROUP = "tableGroup";
+    public static final String META = "meta";
+    public static final String TASK = "task";
 
     /**
      * 用户表(dbsyncer_user)拆分列
@@ -38,15 +43,6 @@ public class ConfigConstant {
     public static final String USER_ROLE = "role";
     public static final String USER_EMAIL = "email";
     public static final String USER_PHONE = "phone";
-
-    public static final String CONNECTOR = "connector";
-    /**
-     * 同步任务类型(存入 dbsyncer_task.TYPE；历史名 mapping，表已并入 task)
-     */
-    public static final String MAPPING = "mapping";
-    public static final String TABLE_GROUP = "tableGroup";
-    public static final String META = "meta";
-    public static final String TASK = "task";
 
     /**
      * 表映射关系表(dbsyncer_table_group)拆分列

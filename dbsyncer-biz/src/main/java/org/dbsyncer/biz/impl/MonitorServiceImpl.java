@@ -62,8 +62,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -454,7 +456,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
         Query query = new Query(pageNum, pageSize);
         // 列表不查 DATA blob，详情弹窗再按 id 拉取
-        java.util.Set<String> selectFields = new java.util.HashSet<>();
+        Set<String> selectFields = new HashSet<>();
         selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
         selectFields.add(ConfigConstant.DATA_TABLE_GROUP_ID);
         selectFields.add(ConfigConstant.CONFIG_MODEL_TYPE);

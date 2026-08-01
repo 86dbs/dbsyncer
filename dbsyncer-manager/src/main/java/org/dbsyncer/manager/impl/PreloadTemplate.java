@@ -111,7 +111,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        // 严格走库：配置直查库；此处仅做运行态恢复（连接器预热 + 中断任务续跑）
 
         // Load plugins
         pluginFactory.loadPlugins();
@@ -125,7 +124,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         // 同步驱动：按任务级 Meta 恢复 Mapping
         launchSyncMappings();
 
-        // 订正校验 / 整库迁移：由 TaskService(企业门面已从 dbsyncer_task 加载) 恢复运行中任务
+        // 订正校验 / 整库迁移
         resumeValidateSyncTasks();
         resumeDatabaseSyncTasks();
 

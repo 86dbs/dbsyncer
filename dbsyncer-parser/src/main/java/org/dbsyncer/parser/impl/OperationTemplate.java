@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 操作配置模板（严格走库，去除内存全量缓存）
+ * 操作配置模板
  *
  * @author AE86
  * @version 1.0.0
@@ -115,7 +115,6 @@ public final class OperationTemplate {
         return (int) paging.getTotal();
     }
 
-
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;
@@ -139,6 +138,7 @@ public final class OperationTemplate {
         Assert.notNull(model, "ConfigModel can not be null.");
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
+        // TODO
         if (model instanceof UserConfig) {
             return syncUserConfig((UserConfig) model);
         }
@@ -345,7 +345,7 @@ public final class OperationTemplate {
     }
 
     /**
-     * 用户配置落库：一行一用户，按账号同步增删改。
+     * TODO 抽离出去，用户配置落库：一行一用户，按账号同步增删改。
      */
     private String syncUserConfig(UserConfig config) {
         List<UserInfo> users = config.getUserInfoList();

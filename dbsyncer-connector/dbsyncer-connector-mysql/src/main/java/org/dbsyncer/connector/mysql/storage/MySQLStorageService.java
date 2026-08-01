@@ -102,7 +102,7 @@ public class MySQLStorageService extends AbstractStorageService {
                 logger.debug("selectList skip missing table: {}", e.getMessage());
                 return new ArrayList<>();
             }
-            throw e instanceof RuntimeException ? (RuntimeException) e : new MySQLException(e.getMessage(), e);
+            throw new MySQLException(e.getMessage(), e);
         }
     }
 

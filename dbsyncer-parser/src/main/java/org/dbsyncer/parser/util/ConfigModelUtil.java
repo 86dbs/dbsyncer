@@ -162,7 +162,7 @@ public abstract class ConfigModelUtil {
             case ConfigConstant.META:
                 return StorageEnum.META;
             default:
-                // VALIDATE_SYNC / DATABASE_SYNC 等企业任务 type 也走 task 表
+                // TODO 统一定义在ConfigConstant， VALIDATE_SYNC / DATABASE_SYNC 等企业任务 type 也走 task 表
                 if (type.contains("SYNC") || type.contains("TASK")) {
                     return StorageEnum.TASK;
                 }

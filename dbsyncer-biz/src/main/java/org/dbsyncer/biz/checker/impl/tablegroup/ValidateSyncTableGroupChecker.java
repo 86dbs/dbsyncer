@@ -5,12 +5,11 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
-import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Filter;
@@ -35,9 +34,6 @@ import java.util.Map;
 public class ValidateSyncTableGroupChecker extends TableGroupChecker {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @Resource
     private TableGroupProfile tableGroupProfile;

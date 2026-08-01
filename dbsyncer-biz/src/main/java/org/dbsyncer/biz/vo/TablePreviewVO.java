@@ -4,8 +4,9 @@
 package org.dbsyncer.biz.vo;
 
 import org.dbsyncer.common.model.CursorPageQuery;
+import org.dbsyncer.sdk.model.Table;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,7 +16,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2026-07-15 13:46
  */
-public final class TablePreviewVO extends CursorPageQuery<Map<String, Object>> {
+public final class TablePreviewVO extends CursorPageQuery<Table> {
 
     /**
      * 各表类型数量统计，如 TABLE/VIEW
@@ -31,7 +32,7 @@ public final class TablePreviewVO extends CursorPageQuery<Map<String, Object>> {
      * @param pageSize 每页条数
      * @return 预览表 VO
      */
-    public static TablePreviewVO of(Collection<Map<String, Object>> data, long total, String cursor, int pageSize) {
+    public static TablePreviewVO of(List<Table> data, long total, String cursor, int pageSize) {
         TablePreviewVO vo = new TablePreviewVO();
         vo.fill(data, total, cursor, pageSize);
         return vo;

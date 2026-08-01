@@ -1,9 +1,8 @@
 package org.dbsyncer.parser.enums;
 
 /**
- * 任务级 Meta 运行态（与 {@code dbsyncer_meta.STATE}、CommonTaskStatusEnum 对齐）：
+ * 任务级 Meta 运行态
  * 0-未运行；1-运行中；2-停止中；3-已完成。
- * <p>调度生命周期仍用 {@code CommonTask.status}（跑完回 READY）；本枚举表示本轮业务是否完成。</p>
  *
  * @author AE86
  * @version 1.0.0
@@ -24,7 +23,7 @@ public enum MetaEnum {
      */
     STOPPING(2, "停止中"),
     /**
-     * 本轮已完成（再次启动视为整轮重跑）
+     * 已完成
      */
     DONE(3, "已完成");
 

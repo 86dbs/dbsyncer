@@ -6,8 +6,6 @@ import java.util.concurrent.RejectedExecutionHandler;
 
 public abstract class ThreadPoolUtil {
 
-    private static volatile ThreadPoolTaskExecutor sharedAsyncExecutor;
-
     /**
      * 新建线程池
      *
@@ -45,38 +43,6 @@ public abstract class ThreadPoolUtil {
         executor.setAwaitTerminationSeconds(30);
         executor.initialize();
         return executor;
-    }
-
-    /**
-     * 提交一次性异步任务（共享线程池，禁止 {@code new Thread}）。
-     *
-     * @param threadName 本次任务线程名
-     * @param runnable   任务体
-     */
-    public static void executeAsync(String threadName, Runnable runnable) {
-        getSharedAsyncExecutor().execute(() -> {
-            Thread current = Thread.currentThread();
-            String previous = current.getName();
-            if (threadName != null && !threadName.isEmpty()) {
-                current.setName(threadName);
-            }
-            try {
-                runnable.run();
-            } finally {
-                current.setName(previous);
-            }
-        });
-    }
-
-    private static ThreadPoolTaskExecutor getSharedAsyncExecutor() {
-        if (sharedAsyncExecutor == null) {
-            synchronized (ThreadPoolUtil.class) {
-                if (sharedAsyncExecutor == null) {
-                    sharedAsyncExecutor = newThreadPoolTaskExecutor(4, 32, 200, 60, "dbsyncer-async-");
-                }
-            }
-        }
-        return sharedAsyncExecutor;
     }
 
     private static RejectedExecutionHandler rejectedExecutionHandler() {

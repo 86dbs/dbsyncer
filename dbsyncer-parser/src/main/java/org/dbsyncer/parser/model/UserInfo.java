@@ -8,7 +8,7 @@ package org.dbsyncer.parser.model;
 public class UserInfo {
 
     /**
-     * 唯一ID(对应 dbsyncer_user.ID)
+     * 唯一ID
      */
     private String id;
 

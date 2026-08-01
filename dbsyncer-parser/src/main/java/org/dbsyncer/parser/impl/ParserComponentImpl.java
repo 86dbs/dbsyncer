@@ -5,6 +5,7 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.rsa.RsaManager;
+import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;

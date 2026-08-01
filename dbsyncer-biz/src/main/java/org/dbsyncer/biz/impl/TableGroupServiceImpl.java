@@ -14,18 +14,17 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.PickerUtil;
-import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.model.Field;
-import org.dbsyncer.sdk.model.MetaIncrement;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -177,10 +176,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "驱动meta不存在.");
 
-        // 清空状态：success/fail 为库侧增量列，先原子归零再清空内存态
-        metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
-                .success(-meta.getSuccess().get())
-                .fail(-meta.getFail().get()));
+        // 清空状态
         meta.clear();
 
         // 手动配置增量点

@@ -273,6 +273,7 @@ public class SimpleConnection implements Connection {
 
     @Override
     public void setSchema(String schema) throws SQLException {
+        // TODO 应下沉到OB处理
         try {
             connection.setSchema(schema);
         } catch (AbstractMethodError | UnsupportedOperationException e) {

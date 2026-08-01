@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 整库迁移业务实现
@@ -134,9 +135,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 taskService.delete(taskId);
             } catch (Exception cleanupEx) {
                 logger.error("整库迁移任务创建失败后回滚删除失败: id={}", taskId, cleanupEx);
-            }
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
             }
             throw new BizException(e.getMessage(), e);
         }
@@ -338,17 +336,14 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                 typeCounts.merge(type.toUpperCase(), 1, Integer::sum);
             }
 
-            int from = Math.min(offset, realTotal);
-            int to = Math.min(from + limit, realTotal);
-            List<Map<String, Object>> pageRows = new ArrayList<>();
-            for (int i = from; i < to; i++) {
-                Table table = tables.get(i);
-                Map<String, Object> row = new HashMap<>(4);
-                row.put("name", table.getName());
-                row.put("type", table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode());
-                pageRows.add(row);
-            }
-
+//            int from = Math.min(offset, realTotal);
+//            int to = Math.min(from + limit, realTotal);
+//            List<Table> pageRows = new ArrayList<>();
+//            for (int i = from; i < to; i++) {
+//                pageRows.add(tables.get(i));
+//            }
+            // TODO
+            List<Table> pageRows = tables.stream().skip(offset).limit(limit).collect(Collectors.toList());
             TablePreviewVO result = TablePreviewVO.of(pageRows, realTotal, String.valueOf(offset), limit);
             result.setTypeCounts(typeCounts);
             return result;
@@ -562,9 +557,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             groups.stream().sorted(Comparator.comparingInt(TableGroup::getIndex)).forEach(group -> {
                 Table sourceTable = group.getSourceTable();
                 Table targetTable = group.getTargetTable();
-                if (sourceTable != null && targetTable != null
-                        && StringUtil.isNotBlank(sourceTable.getName())
-                        && StringUtil.isNotBlank(targetTable.getName())) {
+                if (sourceTable != null && targetTable != null) {
                     tableMappings.add(DatabaseSyncMappingUtil.toTableMapping(
                             sourceTable.getName(), targetTable.getName(), group.getIndex()));
                 }
@@ -574,7 +567,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         return result;
     }
-
 
     /**
      * 按库映射物化 table_group（连源端读表元数据），不落库。

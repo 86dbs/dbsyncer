@@ -78,7 +78,6 @@ public class Meta extends ConfigModel {
         this.taskId = taskId;
     }
 
-
     public int getState() {
         return state;
     }

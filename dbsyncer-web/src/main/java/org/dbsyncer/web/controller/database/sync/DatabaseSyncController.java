@@ -89,7 +89,7 @@ public class DatabaseSyncController extends BaseController {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
             model.put("task", task);
-            int status = task.getStatus() != null ? task.getStatus() : CommonTaskStatusEnum.READY.getCode();
+            int status = task.getStatus();
             model.put("readOnly", CommonTaskStatusEnum.isRunning(status) || CommonTaskStatusEnum.isStopping(status));
         }
         return "database-sync/" + page;
