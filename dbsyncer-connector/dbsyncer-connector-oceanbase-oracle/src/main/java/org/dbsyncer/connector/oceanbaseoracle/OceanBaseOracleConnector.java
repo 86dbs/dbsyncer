@@ -9,13 +9,16 @@ import org.dbsyncer.connector.oceanbaseoracle.schema.OceanBaseOracleSchemaResolv
 import org.dbsyncer.connector.oceanbaseoracle.validator.OceanBaseOracleConfigValidator;
 import org.dbsyncer.connector.oracle.OracleConnector;
 import org.dbsyncer.sdk.SdkException;
+import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.config.SqlBuilderConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
+import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.connector.database.DatabaseTemplate;
+import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.DatabaseQuartzListener;
@@ -26,7 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Clob;
+import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,14 +60,12 @@ public final class OceanBaseOracleConnector extends OracleConnector {
     /**
      * oceanbase-client 的 DatabaseMetaData#getTables 在 Oracle 模式下常返回空
      * （tableNamePattern=null / 类型过滤不兼容），改为查数据字典。
+     * <p>整库迁移暂只列物理表；视图 SQL 备后用：
+     * {@code SELECT VIEW_NAME ... FROM ALL_VIEWS WHERE OWNER = ?}
+     * {@code SELECT MVIEW_NAME ... FROM ALL_MVIEWS WHERE OWNER = ?}
      */
     private static final String QUERY_TABLES =
-            "SELECT TABLE_NAME AS OBJECT_NAME, 'TABLE' AS OBJECT_TYPE FROM ALL_TABLES WHERE OWNER = ? "
-                    + "UNION ALL "
-                    + "SELECT VIEW_NAME AS OBJECT_NAME, 'VIEW' AS OBJECT_TYPE FROM ALL_VIEWS WHERE OWNER = ?";
-
-    private static final String QUERY_MVIEWS =
-            "SELECT MVIEW_NAME AS OBJECT_NAME, 'MATERIALIZED VIEW' AS OBJECT_TYPE FROM ALL_MVIEWS WHERE OWNER = ?";
+            "SELECT TABLE_NAME AS OBJECT_NAME, 'TABLE' AS OBJECT_TYPE FROM ALL_TABLES WHERE OWNER = ?";
 
     private static final String QUERY_COMPAT_MODE_V =
             "SELECT VALUE FROM V$OB_PARAMETERS WHERE NAME = 'ob_compatibility_mode'";
@@ -135,7 +139,8 @@ public final class OceanBaseOracleConnector extends OracleConnector {
     }
 
     /**
-     * 按 Schema(OWNER) 列出物理表/视图；不走 JDBC DatabaseMetaData，避免 oceanbase-client 空结果。
+     * 按 Schema(OWNER) 列出物理表；不走 JDBC DatabaseMetaData，避免 oceanbase-client 空结果。
+     * <p>整库迁移暂时不返回视图 / 物化视图。
      */
     @Override
     public List<Table> getTable(DatabaseConnectorInstance connectorInstance, ConnectorServiceContext context) {
@@ -148,19 +153,8 @@ public final class OceanBaseOracleConnector extends OracleConnector {
         }
         final String owner = schema.trim().toUpperCase(Locale.ROOT);
         return connectorInstance.execute(databaseTemplate -> {
-            List<Map<String, Object>> rows = new ArrayList<>();
-            List<Map<String, Object>> baseRows = databaseTemplate.queryForList(QUERY_TABLES, owner, owner);
-            if (!CollectionUtils.isEmpty(baseRows)) {
-                rows.addAll(baseRows);
-            }
-            try {
-                List<Map<String, Object>> mviewRows = databaseTemplate.queryForList(QUERY_MVIEWS, owner);
-                if (!CollectionUtils.isEmpty(mviewRows)) {
-                    rows.addAll(mviewRows);
-                }
-            } catch (Exception e) {
-                LOGGER.debug("Query ALL_MVIEWS skipped: {}", e.getMessage());
-            }
+            // 整库迁移暂不查 ALL_VIEWS / ALL_MVIEWS
+            List<Map<String, Object>> rows = databaseTemplate.queryForList(QUERY_TABLES, owner);
             if (CollectionUtils.isEmpty(rows)) {
                 return Collections.emptyList();
             }

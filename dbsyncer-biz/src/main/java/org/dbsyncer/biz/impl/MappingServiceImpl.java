@@ -15,6 +15,7 @@ import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -31,7 +32,6 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -364,18 +364,17 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
                     continue;
                 }
 
-                // TODO 不要使用魔法值
                 Map<String, Object> row = new HashMap<>();
-                row.put("tableGroupId", group.getId());
-                row.put("index", group.getIndex());
-                row.put("sourceTable", group.getSourceTable() == null ? "" : group.getSourceTable().getName());
-                row.put("targetTable", group.getTargetTable() == null ? "" : group.getTargetTable().getName());
-                row.put("successTotal", success);
-                row.put("failTotal", fail);
-                row.put("updateTime", updateTime > 0 ? updateTime : group.getUpdateTime());
+                row.put(ConfigConstant.DATA_TABLE_GROUP_ID, group.getId());
+                row.put(ConfigConstant.MAPPING_RESULT_INDEX, group.getIndex());
+                row.put(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, group.getSourceTable() == null ? StringUtil.EMPTY : group.getSourceTable().getName());
+                row.put(ConfigConstant.TABLE_GROUP_TARGET_TABLE, group.getTargetTable() == null ? StringUtil.EMPTY : group.getTargetTable().getName());
+                row.put(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, success);
+                row.put(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, fail);
+                row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime > 0 ? updateTime : group.getUpdateTime());
                 rows.add(row);
             }
-            rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get("index")))));
+            rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get(ConfigConstant.MAPPING_RESULT_INDEX)))));
         }
 
         Paging paging = new Paging(pageNum, pageSize);

@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.parser.strategy.impl;
 
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 
 /**

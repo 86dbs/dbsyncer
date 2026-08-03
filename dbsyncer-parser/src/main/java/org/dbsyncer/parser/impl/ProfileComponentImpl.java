@@ -3,12 +3,14 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.OperationConfig;
@@ -26,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link ProfileComponent} 实现（system/user/connector/mapping 等通用配置）。
+ * {@link ProfileComponent} 门面：User/Connector 委托独立 Profile，其余走通用存储模板。
  *
  * @Version 1.0.0
  * @Author AE86
@@ -38,9 +40,15 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Resource
     private OperationTemplate operationTemplate;
 
+    @Resource
+    private UserProfile userProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
+
     @Override
     public Connector parseConnector(String json) {
-        return operationTemplate.parseConnector(json);
+        return connectorProfile.parseConnector(json);
     }
 
     @Override
@@ -50,11 +58,17 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public String addConfigModel(ConfigModel model) {
+        if (model instanceof UserConfig) {
+            return userProfile.syncUserConfig((UserConfig) model);
+        }
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
     }
 
     @Override
     public String editConfigModel(ConfigModel model) {
+        if (model instanceof UserConfig) {
+            return userProfile.syncUserConfig((UserConfig) model);
+        }
         return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
     }
 
@@ -71,18 +85,17 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public UserConfig getUserConfig() {
-        List<UserConfig> list = operationTemplate.queryAll(UserConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        return userProfile.getUserConfig();
     }
 
     @Override
     public Connector getConnector(String connectorId) {
-        return operationTemplate.queryObject(Connector.class, connectorId);
+        return connectorProfile.getConnector(connectorId);
     }
 
     @Override
     public List<Connector> getConnectorAll() {
-        return operationTemplate.queryAll(Connector.class);
+        return connectorProfile.getConnectorAll();
     }
 
     @Override

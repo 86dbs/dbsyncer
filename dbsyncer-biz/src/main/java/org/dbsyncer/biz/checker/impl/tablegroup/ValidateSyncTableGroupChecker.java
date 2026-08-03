@@ -3,10 +3,10 @@
  */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.TableGroupProfile;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;

@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
+import org.dbsyncer.common.model.ConfigModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +12,9 @@ import java.util.List;
 /**
  * 订正校验任务配置（仅持久化配置到 {@code dbsyncer_task.JSON}）。
  * <p>表映射存 {@code dbsyncer_table_group}；运行进度与本轮完成态在 {@code dbsyncer_meta}。</p>
+ * @author wuji
  */
-public class ValidateSyncTask extends CommonTask {
+public class ValidateSyncTask extends ConfigModel {
     // 数据源连接器ID
     private String sourceConnectorId;
 

@@ -25,6 +25,7 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
+import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -602,6 +603,9 @@ public class H2StorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+
+        // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
+        boolean newStorageSchema = isNewStorageSchema();
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
                 createTableIfNotExist(tableName, e);
@@ -612,6 +616,72 @@ public class H2StorageService extends AbstractStorageService {
             TimeUnit.SECONDS.sleep(1);
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
+        }
+
+        // 兼容升级（临时脚本，若干版本后可删）
+        StorageDataMigrator migrator = new H2StorageDataMigrator(this, connectorInstance);
+        if (!newStorageSchema) {
+            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
+        }
+        migrator.run();
+        dropTaskStatusColumnIfPresent();
+    }
+
+    /**
+     * 是否已是新版本存储：关键拆表齐全，且 dbsyncer_task 无旧 STATUS 列。
+     */
+    private boolean isNewStorageSchema() {
+        String taskTable = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
+        return tableExists(PREFIX_TABLE.concat(StorageEnum.USER.getType()))
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.CONNECTOR.getType()))
+                && tableExists(taskTable)
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.TABLE_GROUP.getType()))
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()))
+                && !columnExists(taskTable, "STATUS");
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        if (StringUtil.isBlank(tableName) || StringUtil.isBlank(columnName)) {
+            return false;
+        }
+        try {
+            String sql = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = UPPER(?) AND UPPER(COLUMN_NAME) = UPPER(?)";
+            Long cnt = connectorInstance.execute(tpl -> tpl.queryForObject(sql, new Object[]{tableName, columnName}, Long.class));
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            logger.debug("columnExists({}.{}) failed: {}", tableName, columnName, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 删除旧 dbsyncer_task.STATUS 及依赖索引（与当前 DDL 对齐）。
+     */
+    private void dropTaskStatusColumnIfPresent() {
+        String table = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
+        if (!tableExists(table) || !columnExists(table, "STATUS")) {
+            return;
+        }
+        dropIndexIfExists(table, "IDX_TYPE_UPDATE_CREATE_TIME");
+        dropIndexIfExists(table, "IDX_STATUS_UPDATE_TIME");
+        try {
+            executeSql(String.format("ALTER TABLE %s DROP COLUMN %s",
+                    connector.buildWithQuotation(table),
+                    connector.buildWithQuotation("STATUS")));
+            logger.info("已删除 {}.STATUS", table);
+        } catch (Exception e) {
+            logger.warn("删除 {}.STATUS 失败: {}", table, e.getMessage());
+        }
+    }
+
+    private void dropIndexIfExists(String table, String indexName) {
+        if (!indexExists(table, indexName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("DROP INDEX IF EXISTS %s", connector.buildWithQuotation(indexName)));
+        } catch (Exception e) {
+            logger.debug("drop index {} on {} skip: {}", indexName, table, e.getMessage());
         }
     }
 
@@ -661,6 +731,12 @@ public class H2StorageService extends AbstractStorageService {
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
         if (StorageEnum.META.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_STATE_UPDATE_TIME", "`STATE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.TASK.getType().equals(type)) {
+            // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
+            createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
+            createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
         }
     }
 

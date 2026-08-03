@@ -1,8 +1,9 @@
 package org.dbsyncer.parser.util;
 
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserInfo;
@@ -139,9 +140,9 @@ public abstract class ConfigModelUtil {
 
     /**
      * 依据配置类型路由到对应的存储表。
-     * <p>同步 Mapping 已并入 dbsyncer_task，{@link ConfigConstant#MAPPING} 路由到 {@link StorageEnum#TASK}。
+     * <p>同步 Mapping 与企业任务（VALIDATE_SYNC / DATABASE_SYNC）均并入 {@code dbsyncer_task}。
      *
-     * @param type 配置类型 {@link ConfigConstant}
+     * @param type 配置类型 {@link ConfigConstant} / {@link CommonTaskTypeEnum#name()}
      * @return 存储枚举
      */
     public static StorageEnum getStorageEnum(String type) {
@@ -155,6 +156,8 @@ public abstract class ConfigModelUtil {
                 return StorageEnum.CONNECTOR;
             case ConfigConstant.MAPPING:
             case ConfigConstant.TASK:
+            case ConfigConstant.VALIDATE_SYNC:
+            case ConfigConstant.DATABASE_SYNC:
                 // 同步/校验/迁移统一存 dbsyncer_task
                 return StorageEnum.TASK;
             case ConfigConstant.TABLE_GROUP:
@@ -162,11 +165,8 @@ public abstract class ConfigModelUtil {
             case ConfigConstant.META:
                 return StorageEnum.META;
             default:
-                // TODO 统一定义在ConfigConstant， VALIDATE_SYNC / DATABASE_SYNC 等企业任务 type 也走 task 表
-                if (type.contains("SYNC") || type.contains("TASK")) {
-                    return StorageEnum.TASK;
-                }
-                return StorageEnum.CONFIG;
+                // 后续新增的 CommonTaskTypeEnum 仍走 task 表
+                return CommonTaskTypeEnum.parse(type) != null ? StorageEnum.TASK : StorageEnum.CONFIG;
         }
     }
 }

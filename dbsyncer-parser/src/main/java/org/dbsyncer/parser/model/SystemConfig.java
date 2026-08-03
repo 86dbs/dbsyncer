@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.model;
 
 import org.dbsyncer.common.model.ApiKeyConfig;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.RsaConfig;

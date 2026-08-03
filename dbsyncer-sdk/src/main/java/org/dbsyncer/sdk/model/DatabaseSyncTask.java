@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.sdk.model;
 
+import org.dbsyncer.common.model.ConfigModel;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +17,7 @@ import java.util.List;
  * @version 1.0.0
  * @date 2026-05-22 11:19
  */
-public class DatabaseSyncTask extends CommonTask {
+public class DatabaseSyncTask extends ConfigModel {
 
     /**
      * 是否复制表结构

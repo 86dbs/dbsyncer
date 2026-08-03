@@ -3,8 +3,9 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
@@ -14,13 +15,13 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
@@ -28,7 +29,6 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
@@ -37,7 +37,6 @@ import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
-import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.notice.MessageService;
@@ -107,7 +106,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     private boolean preloadCompleted;
 
     @Resource
-    private TaskService<CommonTask> taskService;
+    private TaskService<ConfigModel> taskService;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -322,11 +321,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * TaskService 企业实现启动时已从库加载缓存，此处只做连接器预热与运行中任务续跑。
      */
     private void resumeValidateSyncTasks() {
-        List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
+        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.VALIDATE_SYNC);
         if (CollectionUtils.isEmpty(taskAll)) {
             return;
         }
-        for (CommonTask commonTask : taskAll) {
+        for (ConfigModel commonTask : taskAll) {
             if (!(commonTask instanceof ValidateSyncTask)) {
                 continue;
             }
@@ -346,7 +345,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
      * 连接器在 Handler 启动时按 table_group 初始化，此处只续跑运行中任务。
      */
     private void resumeDatabaseSyncTasks() {
-        List<CommonTask> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
+        List<ConfigModel> taskAll = taskService.getTaskAll(CommonTaskTypeEnum.DATABASE_SYNC);
         if (CollectionUtils.isEmpty(taskAll)) {
             return;
         }
@@ -354,16 +353,21 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
-     * 将中断前处于运行态的通用任务重新拉起（先落库为 READY，再 start）。
+     * 将中断前 Meta.state=RUNNING 的任务重新拉起（先将 Meta 置 READY，再 start）。
      */
-    private void resumeRunningCommonTasks(List<CommonTask> taskAll) {
-        for (CommonTask task : taskAll) {
-            if (task == null || !CommonTaskStatusEnum.isRunning(task.getStatus())) {
+    private void resumeRunningCommonTasks(List<ConfigModel> taskAll) {
+        for (ConfigModel task : taskAll) {
+            if (task == null || StringUtil.isBlank(task.getId())) {
+                continue;
+            }
+            Meta meta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
+            if (meta == null || meta.getState() != MetaEnum.RUNNING.getCode()) {
                 continue;
             }
             try {
-                task.setStatus(CommonTaskStatusEnum.READY.getCode());
-                taskService.edit(task);
+                meta.setState(MetaEnum.READY.getCode());
+                meta.setUpdateTime(System.currentTimeMillis());
+                profileComponent.editConfigModel(meta);
                 taskService.start(task.getId());
                 logger.info("已恢复运行中任务: type={}, taskId={}, name={}", task.getType(), task.getId(), task.getName());
             } catch (Exception e) {

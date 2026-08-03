@@ -3,28 +3,26 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.sdk.notice.MessageService;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
-
+import org.dbsyncer.sdk.model.NoticeContent;
+import org.dbsyncer.sdk.notice.MessageService;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

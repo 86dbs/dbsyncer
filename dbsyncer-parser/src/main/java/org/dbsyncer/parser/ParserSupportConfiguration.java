@@ -4,10 +4,10 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
-import org.dbsyncer.sdk.model.CommonTask;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
@@ -53,15 +53,15 @@ public class ParserSupportConfiguration {
         if (taskService != null) {
             return taskService;
         }
-        return new TaskService<CommonTask>() {
+        return new TaskService<ConfigModel>() {
 
             @Override
-            public String add(CommonTask task) {
+            public String add(ConfigModel task) {
                 return StringUtil.EMPTY;
             }
 
             @Override
-            public String edit(CommonTask task) {
+            public String edit(ConfigModel task) {
                 return StringUtil.EMPTY;
             }
 
@@ -81,7 +81,7 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public CommonTask get(String id) {
+            public ConfigModel get(String id) {
                 return null;
             }
 
@@ -91,7 +91,7 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public List<CommonTask> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum) {
+            public List<ConfigModel> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum) {
                 return Collections.emptyList();
             }
 

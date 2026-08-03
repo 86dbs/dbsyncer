@@ -26,6 +26,7 @@ import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.storage.AbstractStorageService;
+import org.dbsyncer.sdk.storage.migrate.StorageDataMigrator;
 import org.dbsyncer.sdk.util.DatabaseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,7 @@ public class MySQLStorageService extends AbstractStorageService {
         logger.info("url:{}", url);
         database = DatabaseUtil.getDatabaseName(url);
         connectorInstance = new DatabaseConnectorInstance(config);
-        // 初始化表
+        // 初始化表（建表前检测新拆表，缺失则建表后数据升级）
         initTable();
     }
 
@@ -626,18 +627,82 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
+        boolean newStorageSchema = isNewStorageSchema();
         // 创建表
         tables.forEach((tableName, e) -> {
             if (e.isSystemTable()) {
                 createTableIfNotExist(tableName, e);
             }
         });
-
         // wait few seconds for execute sql
         try {
             TimeUnit.SECONDS.sleep(1);
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
+        }
+        // 兼容升级（临时脚本，若干版本后可删）：缺新拆表则拆分；始终幂等物化/预建 detail
+        StorageDataMigrator migrator = new MySQLStorageDataMigrator(this, connectorInstance, database);
+        if (!newStorageSchema) {
+            logger.info("未检测到完整新存储拆表（或仍含 task.STATUS），执行兼容升级");
+        }
+        migrator.run();
+        dropTaskStatusColumnIfPresent();
+    }
+
+    /**
+     * 是否已是新版本存储：关键拆表齐全，且 dbsyncer_task 无旧 STATUS 列。
+     */
+    private boolean isNewStorageSchema() {
+        String taskTable = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
+        return tableExists(PREFIX_TABLE.concat(StorageEnum.USER.getType()))
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.CONNECTOR.getType()))
+                && tableExists(taskTable)
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.TABLE_GROUP.getType()))
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()));
+    }
+
+    private boolean columnExists(String tableName, String columnName) {
+        if (StringUtil.isBlank(tableName) || StringUtil.isBlank(columnName) || StringUtil.isBlank(database)) {
+            return false;
+        }
+        try {
+            String sql = "SELECT COUNT(1) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?";
+            Long cnt = connectorInstance.execute(tpl -> tpl.queryForObject(sql, new Object[]{database, tableName, columnName}, Long.class));
+            return cnt != null && cnt > 0;
+        } catch (Exception e) {
+            logger.debug("columnExists({}.{}) failed: {}", tableName, columnName, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 删除旧 dbsyncer_task.STATUS 及依赖索引（与当前 DDL 对齐）。
+     */
+    private void dropTaskStatusColumnIfPresent() {
+        String table = PREFIX_TABLE.concat(StorageEnum.TASK.getType());
+        if (!tableExists(table) || !columnExists(table, "STATUS")) {
+            return;
+        }
+        // 旧索引可能含 STATUS，先尽量删除
+        dropIndexIfExists(table, "IDX_TYPE_UPDATE_CREATE_TIME");
+        dropIndexIfExists(table, "IDX_STATUS_UPDATE_TIME");
+        try {
+            executeSql(String.format("ALTER TABLE `%s` DROP COLUMN `STATUS`", table));
+            logger.info("已删除 {}.STATUS", table);
+        } catch (Exception e) {
+            logger.warn("删除 {}.STATUS 失败: {}", table, e.getMessage());
+        }
+    }
+
+    private void dropIndexIfExists(String table, String indexName) {
+        if (!indexExists(table, indexName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("DROP INDEX `%s` ON `%s`", indexName, table));
+        } catch (Exception e) {
+            logger.debug("drop index {} on {} skip: {}", indexName, table, e.getMessage());
         }
     }
 
@@ -684,6 +749,12 @@ public class MySQLStorageService extends AbstractStorageService {
         if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
             // 新表 DDL 已含该索引；仅对老表补齐，存在则跳过，避免 Duplicate key name 打 ERROR
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.TASK.getType().equals(type)) {
+            // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
+            createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
+            createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
         }
     }
 

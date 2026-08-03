@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
 

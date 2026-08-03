@@ -9,6 +9,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConfigImportService;
 import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -18,7 +19,6 @@ import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -28,7 +28,7 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
@@ -77,7 +77,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     private OperationTemplate operationTemplate;
 
     @Resource
-    private TaskService<CommonTask> taskService;
+    private TaskService<ConfigModel> taskService;
 
     @Resource
     private StorageService storageService;
@@ -264,7 +264,7 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     /**
      * 企业任务落库：直接写 dbsyncer_task，再用 edit 刷新 TaskService 内存缓存（不走 add，避免重复建 Meta）。
      */
-    private void persistEnterpriseTask(CommonTask task) {
+    private void persistEnterpriseTask(ConfigModel task) {
         Map<String, Object> params = new HashMap<>();
         params.put(ConfigConstant.CONFIG_MODEL_ID, task.getId());
         params.put(ConfigConstant.CONFIG_MODEL_NAME, task.getName());

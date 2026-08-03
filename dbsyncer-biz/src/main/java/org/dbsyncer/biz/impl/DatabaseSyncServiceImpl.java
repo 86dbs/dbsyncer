@@ -8,7 +8,6 @@ import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseMappingVO;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.TablePreviewVO;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
@@ -429,7 +428,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     private void fillTaskOnAdd(DatabaseSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setStatus(CommonTaskStatusEnum.READY.getCode());
             task.setType(CommonTaskTypeEnum.DATABASE_SYNC.name());
         }
         long now = Instant.now().toEpochMilli();

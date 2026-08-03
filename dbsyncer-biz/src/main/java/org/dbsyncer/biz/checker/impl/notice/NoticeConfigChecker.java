@@ -5,14 +5,14 @@ package org.dbsyncer.biz.checker.impl.notice;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.DingTalkNoticeChannel;
 import org.dbsyncer.common.model.HttpNoticeChannel;
 import org.dbsyncer.common.model.MailNoticeChannel;
 import org.dbsyncer.common.model.WeChatNoticeChannel;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;

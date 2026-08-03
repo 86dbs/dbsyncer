@@ -4,8 +4,8 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.SystemConfigVO;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.RsaVersion;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 
 import java.io.File;

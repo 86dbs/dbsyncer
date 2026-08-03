@@ -41,7 +41,7 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
@@ -338,7 +338,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
         newTask.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newTask.setName(newTask.getName() + "(复制)");
-        newTask.setStatus(CommonTaskStatusEnum.READY.getCode());
         newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
         newTask.setUpdateTime(System.currentTimeMillis());
         String newId = taskService.add(newTask);
@@ -668,7 +667,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
     }
 
-    private ValidateSyncTaskVO convertTask2Vo(CommonTask task) {
+    private ValidateSyncTaskVO convertTask2Vo(ConfigModel task) {
         if (task == null) {
             return null;
         }
@@ -678,13 +677,18 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = profileComponent.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
+        Meta taskMeta = metaProfile.getMetaByTaskId(validateSyncTask.getId(), TaskLevelEnum.TASK);
+        if (taskMeta != null) {
+            vo.setMetaState(taskMeta.getState());
+            vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
+            vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+        }
         return vo;
     }
 
     private void checkTask(ValidateSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setStatus(CommonTaskStatusEnum.READY.getCode());
             task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
         }
         long now = Instant.now().toEpochMilli();

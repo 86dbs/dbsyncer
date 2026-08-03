@@ -6,14 +6,15 @@ package org.dbsyncer.biz.impl;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConfigExportService;
 import org.dbsyncer.common.config.PackageFormatConfig;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.VersionInfo;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
@@ -56,6 +57,12 @@ public class ConfigExportServiceImpl implements ConfigExportService {
     private OperationTemplate operationTemplate;
 
     @Resource
+    private UserProfile userProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
+
+    @Resource
     private StorageService storageService;
 
     @Override
@@ -70,8 +77,10 @@ public class ConfigExportServiceImpl implements ConfigExportService {
         Map<String, Integer> counts = new LinkedHashMap<>();
         try (ZipOutputStream zos = new ZipOutputStream(out)) {
             counts.put(ConfigConstant.SYSTEM, writeJsonArray(zos, PackageFormatConfig.SYSTEM, operationTemplate.queryAll(SystemConfig.class)));
-            counts.put(ConfigConstant.USER, writeJsonArray(zos, PackageFormatConfig.USER, operationTemplate.queryAll(UserConfig.class)));
-            counts.put(ConfigConstant.CONNECTOR, writeJsonArray(zos, PackageFormatConfig.CONNECTOR, operationTemplate.queryAll(Connector.class)));
+            UserConfig userConfig = userProfile.getUserConfig();
+            counts.put(ConfigConstant.USER, writeJsonArray(zos, PackageFormatConfig.USER,
+                    userConfig == null ? Collections.emptyList() : Collections.singletonList(userConfig)));
+            counts.put(ConfigConstant.CONNECTOR, writeJsonArray(zos, PackageFormatConfig.CONNECTOR, connectorProfile.getConnectorAll()));
             List<String> taskIds = new ArrayList<>();
             counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
             counts.put(ConfigConstant.TABLE_GROUP, writeTableGroups(zos));

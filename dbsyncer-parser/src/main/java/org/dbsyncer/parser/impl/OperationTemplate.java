@@ -3,16 +3,15 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.GroupStrategyEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -20,15 +19,12 @@ import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.parser.model.UserInfo;
 import org.dbsyncer.parser.strategy.GroupStrategy;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
@@ -38,15 +34,13 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 操作配置模板
+ * 通用配置存储模板（不含 User / Connector 领域特例；见 {@link UserProfile} / {@link ConnectorProfile}）。
  *
  * @author AE86
  * @version 1.0.0
@@ -62,13 +56,13 @@ public final class OperationTemplate {
     private SnowflakeIdWorker snowflakeIdWorker;
 
     @Resource
-    private ConnectorFactory connectorFactory;
+    private UserProfile userProfile;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     public <T> List<T> queryAll(Class<T> valueType) {
         try {
-            if (UserConfig.class.equals(valueType)) {
-                return buildUserConfigList();
-            }
             ConfigModel configModel = (ConfigModel) valueType.newInstance();
             StorageEnum type = ConfigModelUtil.getStorageEnum(configModel.getType());
             // task 表混存多类任务，按 TYPE 过滤
@@ -138,10 +132,7 @@ public final class OperationTemplate {
         Assert.notNull(model, "ConfigModel can not be null.");
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
-        // TODO
-        if (model instanceof UserConfig) {
-            return syncUserConfig((UserConfig) model);
-        }
+        Assert.isTrue(!(model instanceof UserConfig), "UserConfig must go through UserProfile.syncUserConfig");
         if (CommandEnum.OPR_ADD == cmd) {
             if (StringUtil.isBlank(model.getId())) {
                 model.setId(String.valueOf(snowflakeIdWorker.nextId()));
@@ -238,11 +229,12 @@ public final class OperationTemplate {
     public Map<String, Object> buildExportSnapshot() {
         Map<String, Object> snapshot = new HashMap<>();
         List<Mapping> allMappings = queryAll(Mapping.class);
+        UserConfig userConfig = userProfile.getUserConfig();
 
         Map<String, List<? extends ConfigModel>> typedModels = new LinkedHashMap<String, List<? extends ConfigModel>>() {{
             put(ConfigConstant.SYSTEM, queryAll(org.dbsyncer.parser.model.SystemConfig.class));
-            put(ConfigConstant.USER, queryAll(org.dbsyncer.parser.model.UserConfig.class));
-            put(ConfigConstant.CONNECTOR, queryAll(org.dbsyncer.parser.model.Connector.class));
+            put(ConfigConstant.USER, userConfig == null ? Collections.emptyList() : Collections.singletonList(userConfig));
+            put(ConfigConstant.CONNECTOR, connectorProfile.getConnectorAll());
             put(ConfigConstant.MAPPING, allMappings);
             put(ConfigConstant.META, queryAll(Meta.class));
         }};
@@ -300,26 +292,6 @@ public final class OperationTemplate {
         return result;
     }
 
-    /**
-     * 连接器反序列化：config 为抽象 {@link ConnectorConfig}，按 connectorType 解析到具体实现类。
-     *
-     * @param json 连接器 JSON
-     * @return 连接器模型
-     */
-    public Connector parseConnector(String json) {
-        Map conn = JsonUtil.parseMap(json);
-        Map config = (Map) conn.remove("config");
-        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
-        Assert.notNull(connector, "Connector can not be null.");
-        if (config != null) {
-            String connectorType = (String) config.get("connectorType");
-            ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
-            Class<ConnectorConfig> configClass = connectorService.getConfigClass();
-            connector.setConfig(JsonUtil.jsonToObj(config.toString(), configClass));
-        }
-        return connector;
-    }
-
     private String newInstanceType(Class<?> clazz) {
         try {
             ConfigModel model = (ConfigModel) clazz.newInstance();
@@ -329,72 +301,10 @@ public final class OperationTemplate {
         }
     }
 
-    private <T> List<T> buildUserConfigList() {
-        List<UserInfo> users = queryAllUserInfos();
-        if (CollectionUtils.isEmpty(users)) {
-            return Collections.emptyList();
-        }
-        UserConfig config = new UserConfig();
-        config.setName("用户配置");
-        config.setUserInfoList(users);
-        return Collections.singletonList((T) config);
-    }
-
-    private List<UserInfo> queryAllUserInfos() {
-        return queryList(StorageEnum.USER, null, UserInfo.class);
-    }
-
     /**
-     * TODO 抽离出去，用户配置落库：一行一用户，按账号同步增删改。
-     */
-    private String syncUserConfig(UserConfig config) {
-        List<UserInfo> users = config.getUserInfoList();
-        if (CollectionUtils.isEmpty(users)) {
-            return config.getId();
-        }
-        long now = System.currentTimeMillis();
-        Map<String, UserInfo> existingByUsername = queryAllUserInfos().stream()
-                .collect(Collectors.toMap(UserInfo::getUsername, u -> u, (a, b) -> a));
-        Set<String> keepUsernames = new HashSet<>();
-        String firstId = null;
-        for (UserInfo user : users) {
-            keepUsernames.add(user.getUsername());
-            UserInfo existing = existingByUsername.get(user.getUsername());
-            if (existing != null) {
-                user.setId(existing.getId());
-                user.setCreateTime(existing.getCreateTime());
-            } else if (StringUtil.isBlank(user.getId())) {
-                user.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                user.setCreateTime(now);
-            }
-            user.setUpdateTime(now);
-            Map<String, Object> params = ConfigModelUtil.convertUserInfoToMap(user);
-            if (existing != null) {
-                storageService.edit(StorageEnum.USER, params);
-            } else {
-                storageService.add(StorageEnum.USER, params);
-            }
-            if (firstId == null) {
-                firstId = user.getId();
-            }
-        }
-        for (UserInfo existing : existingByUsername.values()) {
-            if (!keepUsernames.contains(existing.getUsername())) {
-                storageService.remove(StorageEnum.USER, existing.getId());
-            }
-        }
-        return firstId;
-    }
-
-    /**
-     * 存储行 → 模型。普通配置走 {@link ConfigModelUtil#parseFromRow}；
-     * Connector 因抽象 config 需按 connectorType 特殊还原。
+     * 存储行 → 模型（通用路径；Connector 请走 {@link ConnectorProfile}）。
      */
     private <T> T parseRow(Map row, Class<T> clazz) {
-        if (Connector.class.equals(clazz)) {
-            Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
-            return json == null ? null : (T) parseConnector(String.valueOf(json));
-        }
         return ConfigModelUtil.parseFromRow(row, clazz);
     }
 }

@@ -273,44 +273,12 @@ public class SimpleConnection implements Connection {
 
     @Override
     public void setSchema(String schema) throws SQLException {
-        // TODO 应下沉到OB处理
-        try {
-            connection.setSchema(schema);
-        } catch (AbstractMethodError | UnsupportedOperationException e) {
-            // oceanbase-client 等驱动未实现 JDBC 4.1 setSchema/getSchema，回退 ALTER SESSION
-            applySchemaByAlterSession(schema, e);
-        }
+        connection.setSchema(schema);
     }
 
     @Override
     public String getSchema() throws SQLException {
-        try {
-            return connection.getSchema();
-        } catch (AbstractMethodError | UnsupportedOperationException e) {
-            return null;
-        }
-    }
-
-    /**
-     * JDBC 驱动不支持 {@link Connection#setSchema(String)} 时，用 Oracle 兼容语法切换当前 Schema。
-     */
-    private void applySchemaByAlterSession(String schema, Throwable cause) throws SQLException {
-        if (schema == null || schema.trim().isEmpty()) {
-            return;
-        }
-        String normalized = schema.trim().toUpperCase();
-        // 仅允许简单标识符，避免 SQL 注入
-        if (!normalized.matches("[A-Z][A-Z0-9_#$]*")) {
-            throw new SQLException("Invalid schema name for ALTER SESSION fallback: " + schema, cause);
-        }
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("ALTER SESSION SET CURRENT_SCHEMA = " + normalized);
-        } catch (SQLException sqlEx) {
-            SQLException wrapped = new SQLException(
-                    "Driver does not support setSchema and ALTER SESSION fallback failed: " + sqlEx.getMessage(), sqlEx);
-            wrapped.initCause(cause);
-            throw wrapped;
-        }
+        return connection.getSchema();
     }
 
     @Override

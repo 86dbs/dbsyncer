@@ -115,7 +115,7 @@
     }
 
     function renderTaskDurationText(task) {
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         if (isRunning) {
             return '';
         }
@@ -132,7 +132,7 @@
             n = 0;
         }
         var taskId = String(task.id || '').replace(/'/g, '');
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         var progressRaw = task.progress;
         if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
             if (isRunning) {
@@ -221,13 +221,13 @@
                     + '</td>'
                     + '<td>' + mappingCount + '</td>'
                     + '<td>' + renderResultColumn(task) + '</td>'
-                    + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
+                    + '<td>' + renderTaskStateText(task.metaState || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
                     + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-sync/page/edit?id='
                     + taskId + '\')">'
                     + '<i class="fa fa-edit"></i></button>'
-                    + renderTaskStateButton(task.status || 0, task.id)
+                    + renderTaskStateButton(task.metaState || 0, task.id)
                     + '</div></td>'
                     + '</tr>';
             },

@@ -30,6 +30,11 @@ public class ConfigConstant {
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";
     public static final String TASK = "task";
+    /**
+     * 企业任务 type（存 {@code dbsyncer_task}），与 {@code CommonTaskTypeEnum#name()} 一致
+     */
+    public static final String VALIDATE_SYNC = "VALIDATE_SYNC";
+    public static final String DATABASE_SYNC = "DATABASE_SYNC";
 
     /**
      * 用户表(dbsyncer_user)拆分列
@@ -127,6 +132,11 @@ public class ConfigConstant {
     public static final String DATABASE_SYNC_DETAIL_TARGET_TABLE = "targetTable";
     public static final String DATABASE_SYNC_DETAIL_SUCCESS_TOTAL = "successTotal";
     public static final String DATABASE_SYNC_DETAIL_FAIL_TOTAL = "failTotal";
+
+    /**
+     * 驱动表映射运行结果行：TableGroup.index 模型字段（前端列表排序/展示）
+     */
+    public static final String MAPPING_RESULT_INDEX = "index";
 
     /**
      * 内部分页加载默认分页大小

@@ -8,7 +8,7 @@ import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
@@ -89,8 +89,8 @@ public class DatabaseSyncController extends BaseController {
             Assert.hasText(id, "任务 ID 不能为空");
             DatabaseSyncTaskVO task = databaseSyncService.get(id);
             model.put("task", task);
-            int status = task.getStatus();
-            model.put("readOnly", CommonTaskStatusEnum.isRunning(status) || CommonTaskStatusEnum.isStopping(status));
+            Integer metaState = task.getMetaState();
+            model.put("readOnly", metaState != null && MetaEnum.isRunning(metaState));
         }
         return "database-sync/" + page;
     }
