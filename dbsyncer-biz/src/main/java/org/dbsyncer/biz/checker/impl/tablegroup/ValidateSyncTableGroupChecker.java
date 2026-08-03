@@ -61,7 +61,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
         Assert.notNull(task, "task can not be null.");
 
         // 检查是否存在重复映射关系
-        checkRepeatedTable(tableGroupProfile.getTableGroupAll(taskId), sourceTable, targetTable);
+        checkRepeatedTable(taskId, sourceTable, targetTable);
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();

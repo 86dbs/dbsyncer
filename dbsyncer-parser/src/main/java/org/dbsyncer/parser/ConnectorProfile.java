@@ -29,4 +29,34 @@ public interface ConnectorProfile {
      * 全部连接器。
      */
     List<Connector> getConnectorAll();
+
+    /**
+     * 添加连接器。
+     */
+    String addConnector(Connector connector);
+
+    /**
+     * 批量添加连接器（配置包导入）。
+     */
+    void addConnectorBatch(List<Connector> connectors);
+
+    /**
+     * 更新连接器。
+     */
+    String updateConnector(Connector connector);
+
+    /**
+     * 删除连接器。
+     */
+    void removeConnector(String id);
+
+    /**
+     * 连接器总数。
+     */
+    int countConnectors();
+
+    /**
+     * 从 connector.json 数组批量导入。
+     */
+    void importConnectorsFromJson(String json);
 }

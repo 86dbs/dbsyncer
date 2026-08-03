@@ -17,16 +17,14 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.enums.GroupStrategyEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.impl.OperationTemplate;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
@@ -74,10 +72,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     public static final String DBS_VERSION_INFO = "versionInfo";
 
     @Resource
-    private OperationTemplate operationTemplate;
+    private ProfileComponent profileComponent;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -292,10 +290,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         for (String id : group.getIndex()) {
             Map m = map.get(id);
             ConfigModel model = (ConfigModel) commandEnum.getCommandExecutor().execute(new PreloadCommand(profileComponent, m.toString()));
-            operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, commandEnum.getGroupStrategyEnum()));
+            profileComponent.addConfigModel(model);
             // Load tableGroups
             if (CommandEnum.PRELOAD_MAPPING == commandEnum) {
-                reload(map, CommandEnum.PRELOAD_TABLE_GROUP, operationTemplate.getGroupId(model, GroupStrategyEnum.PRELOAD_TABLE_GROUP));
+                reload(map, CommandEnum.PRELOAD_TABLE_GROUP, tableGroupProfile.getPreloadGroupKey(model.getId()));
             }
         }
     }

@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +190,8 @@ public class MappingChecker extends AbstractChecker {
     }
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mapping.getId());
+        List<TableGroup> groupAll = new ArrayList<>();
+        tableGroupProfile.forEachTableGroupPage(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
         if (!CollectionUtils.isEmpty(groupAll)) {
             sortTableGroup(groupAll, params);
             // 合并配置

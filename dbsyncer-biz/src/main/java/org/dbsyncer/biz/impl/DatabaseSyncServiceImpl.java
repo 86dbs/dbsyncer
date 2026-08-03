@@ -29,6 +29,7 @@ import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.DatabaseSyncMappingUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.DatabaseMapping;
@@ -138,7 +139,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 预建明细分表，详情页 JOIN 查询不依赖任务是否已写出数据
-        taskProfile.ensureTaskDetailTable(taskId);
+        taskProfile.createRunDetailTable(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -163,7 +164,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         task.setDatabaseMappings(toPersistMappings(mappings));
         // 先物化新映射（连库读元数据），失败则不碰旧 table_group
         List<TableGroup> newGroups = buildTableGroups(id, mappings);
-        List<TableGroup> oldGroups = tableGroupProfile.getTableGroupAll(id);
+        List<TableGroup> oldGroups = new ArrayList<>();
+        tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, oldGroups::addAll);
         try {
             tableGroupProfile.removeTableGroupsByTaskId(id);
             tableGroupProfile.addTableGroupBatch(newGroups);
@@ -172,8 +174,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             throw new BizException(e.getMessage(), e);
         }
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
-        taskProfile.clearTaskRunResults(id);
-        taskProfile.resetTaskMeta(id);
+        taskProfile.clearRunData(id);
+        taskProfile.resetRunProgress(id);
         return taskService.edit(task);
     }
 
@@ -490,7 +492,8 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         if (task == null) {
             return null;
         }
-        List<TableGroup> tableGroups = tableGroupProfile.getTableGroupAll(task.getId());
+        List<TableGroup> tableGroups = new ArrayList<>();
+        tableGroupProfile.forEachTableGroupPage(task.getId(), ConfigConstant.PAGE_SIZE, tableGroups::addAll);
         List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
                 DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
         DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);
@@ -505,24 +508,18 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     }
 
     private List<CommonTaskSnapshot> collectTableSnapshots(String taskId) {
-        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(taskId);
-        if (CollectionUtils.isEmpty(groups)) {
+        List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
+        if (CollectionUtils.isEmpty(ids)) {
             return Collections.emptyList();
         }
-        List<String> ids = new ArrayList<>(groups.size());
-        for (TableGroup group : groups) {
-            if (group != null && StringUtil.isNotBlank(group.getId())) {
-                ids.add(group.getId());
-            }
-        }
         Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
-        List<CommonTaskSnapshot> snapshots = new ArrayList<>(groups.size());
-        for (TableGroup group : groups) {
-            if (group == null || StringUtil.isBlank(group.getId())) {
+        List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
+        for (String groupId : ids) {
+            if (StringUtil.isBlank(groupId)) {
                 snapshots.add(null);
                 continue;
             }
-            Meta meta = metaMap == null ? null : metaMap.get(group.getId());
+            Meta meta = metaMap == null ? null : metaMap.get(groupId);
             snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
         }
         return snapshots;

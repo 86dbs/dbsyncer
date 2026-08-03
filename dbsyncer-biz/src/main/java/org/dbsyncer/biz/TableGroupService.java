@@ -8,7 +8,6 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,14 +53,6 @@ public interface TableGroupService {
      * @return
      */
     TableGroup getTableGroup(String id);
-
-    /**
-     * 获取所有表关系
-     *
-     * @param mappingId
-     * @return
-     */
-    List<TableGroup> getTableGroupAll(String mappingId);
 
     /**
      * 分页搜索

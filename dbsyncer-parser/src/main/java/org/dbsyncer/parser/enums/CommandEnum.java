@@ -50,7 +50,7 @@ public enum CommandEnum {
     /**
      * 预加载TableGroup
      */
-    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, Preload::parseTableGroup, true, GroupStrategyEnum.TABLE),
+    PRELOAD_TABLE_GROUP(ConfigConstant.TABLE_GROUP, Preload::parseTableGroup, true),
 
     /**
      * 预加载Meta
@@ -72,24 +72,14 @@ public enum CommandEnum {
      */
     private final boolean preload;
 
-    /**
-     * 分组持久化策略
-     */
-    private final GroupStrategyEnum groupStrategyEnum;
-
     CommandEnum(String modelType, CommandExecutor commandExecutor) {
         this(modelType, commandExecutor, false);
     }
 
     CommandEnum(String modelType, CommandExecutor commandExecutor, boolean preload) {
-        this(modelType, commandExecutor, preload, GroupStrategyEnum.DEFAULT);
-    }
-
-    CommandEnum(String modelType, CommandExecutor commandExecutor, boolean preload, GroupStrategyEnum groupStrategyEnum) {
         this.modelType = modelType;
         this.commandExecutor = commandExecutor;
         this.preload = preload;
-        this.groupStrategyEnum = groupStrategyEnum;
     }
 
     public String getModelType() {
@@ -102,9 +92,5 @@ public enum CommandEnum {
 
     public CommandExecutor getCommandExecutor() {
         return commandExecutor;
-    }
-
-    public GroupStrategyEnum getGroupStrategyEnum() {
-        return groupStrategyEnum;
     }
 }

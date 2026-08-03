@@ -82,7 +82,7 @@ public class TableGroupChecker extends AbstractChecker {
         Assert.notNull(mapping, "mapping can not be null.");
 
         // 检查是否存在重复映射关系
-        checkRepeatedTable(tableGroupProfile.getTableGroupAll(mappingId), sourceTable, targetTable);
+        checkRepeatedTable(mappingId, sourceTable, targetTable);
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
@@ -207,9 +207,15 @@ public class TableGroupChecker extends AbstractChecker {
         return table;
     }
 
-    public void checkRepeatedTable(List<TableGroup> list, String sourceTable, String targetTable) {
-        if (!CollectionUtils.isEmpty(list)) {
-            for (TableGroup g : list) {
+    public void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
+        tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
+            }
+            for (TableGroup g : page) {
+                if (g == null || g.getSourceTable() == null || g.getTargetTable() == null) {
+                    continue;
+                }
                 // 数据源表和目标表都存在
                 if (StringUtil.equals(sourceTable, g.getSourceTable().getName()) && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
                     final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
@@ -217,7 +223,7 @@ public class TableGroupChecker extends AbstractChecker {
                     throw new RepeatedTableGroupException(error);
                 }
             }
-        }
+        });
     }
 
     public void matchFieldMapping(TableGroup tableGroup) {

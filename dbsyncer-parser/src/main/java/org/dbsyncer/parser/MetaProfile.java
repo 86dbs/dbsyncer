@@ -60,4 +60,34 @@ public interface MetaProfile {
      * 按 Meta 主键解析明细分表分片键（先查 Meta，再取 taskId）。
      */
     String resolveTaskDetailShardId(String metaId);
+
+    /**
+     * 添加 Meta。
+     */
+    String addMeta(Meta meta);
+
+    /**
+     * 批量添加 Meta（配置包导入）。
+     */
+    void addMetaBatch(List<Meta> metas);
+
+    /**
+     * 更新 Meta。
+     */
+    String updateMeta(Meta meta);
+
+    /**
+     * 删除 Meta。
+     */
+    void removeMeta(String id);
+
+    /**
+     * Meta 总数。
+     */
+    int countMeta();
+
+    /**
+     * 从 meta.json 数组批量导入。
+     */
+    void importMetaFromJson(String json);
 }

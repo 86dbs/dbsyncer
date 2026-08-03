@@ -32,4 +32,24 @@ public interface UserProfile {
      * @return 首个用户 id（兼容旧返回值）
      */
     String syncUserConfig(UserConfig config);
+
+    /**
+     * 用户行数。
+     */
+    int countUsers();
+
+    /**
+     * 从 user.json 数组导入。
+     */
+    void importFromJson(String json);
+
+    /**
+     * 用户 id 是否存在。
+     */
+    boolean existsUser(String id);
+
+    /**
+     * 删除用户行。
+     */
+    void removeUser(String id);
 }

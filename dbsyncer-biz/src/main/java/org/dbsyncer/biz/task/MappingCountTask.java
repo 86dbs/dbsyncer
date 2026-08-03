@@ -8,11 +8,12 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 统计驱动总数任务
@@ -43,21 +44,32 @@ public class MappingCountTask extends AbstractCountTask {
         if (shouldStop(mapping)) {
             return;
         }
-        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mappingId);
-        logger.info("正在统计:{}, {}张表", mapping.getName(), groupAll.size());
-        if (!CollectionUtils.isEmpty(groupAll)) {
-            for (TableGroup tableGroup : groupAll) {
-                // 驱动任务类型发生切换，提前释放任务
-                if (shouldStop(mapping)) {
-                    logger.warn("驱动被修改, 提前结束任务 ({},{})", mapping.getName(), mapping.getModel());
+        int groupCount = tableGroupProfile.getTableGroupCount(mappingId);
+        logger.info("正在统计:{}, {}张表", mapping.getName(), groupCount);
+        if (groupCount > 0) {
+            AtomicReference<Mapping> mappingRef = new AtomicReference<>(mapping);
+            tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
                     return;
                 }
-                mapping = profileComponent.getMapping(mappingId);
-                updateTableGroupCount(mapping, tableGroup);
-            }
+                for (TableGroup tableGroup : page) {
+                    if (tableGroup == null) {
+                        continue;
+                    }
+                    Mapping current = mappingRef.get();
+                    // 驱动任务类型发生切换，提前释放任务
+                    if (shouldStop(current)) {
+                        logger.warn("驱动被修改, 提前结束任务 ({},{})", current.getName(), current.getModel());
+                        return;
+                    }
+                    current = profileComponent.getMapping(mappingId);
+                    mappingRef.set(current);
+                    updateTableGroupCount(current, tableGroup);
+                }
+            });
             // 更新驱动meta
-            Meta meta = tableGroupService.updateMeta(mapping, metaSnapshot);
-            logger.info("完成统计:{}, {}张表, 总数:{}", mapping.getName(), groupAll.size(), meta.getTotal());
+            Meta meta = tableGroupService.updateMeta(mappingRef.get(), metaSnapshot);
+            logger.info("完成统计:{}, {}张表, 总数:{}", mappingRef.get().getName(), groupCount, meta.getTotal());
         }
     }
 

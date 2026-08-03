@@ -3,35 +3,61 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.config.PackageFormatConfig;
+import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.TaskImportResult;
+import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.Query;
+import org.dbsyncer.sdk.model.DatabaseSyncTask;
 import org.dbsyncer.sdk.model.MetaIncrement;
+import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.zip.ZipFile;
 
 /**
- * {@link TaskProfile} 实现（任务运行结果清理/重置）。
+ * {@link TaskProfile} 实现。
  *
  * @author wuji
  * @version 1.0.0
  */
 @Component
 public class TaskProfileImpl implements TaskProfile {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -45,14 +71,260 @@ public class TaskProfileImpl implements TaskProfile {
     @Resource
     private StorageService storageService;
 
+    @Resource
+    private SnowflakeIdWorker snowflakeIdWorker;
+
     @Override
-    public void removeDetailMetasByTaskId(String taskId) {
+    public <T extends ConfigModel> T getTask(String id, Class<T> clazz) {
+        return operationTemplate.queryObject(clazz, id);
+    }
+
+    @Override
+    public <T extends ConfigModel> List<T> listTasks(Class<T> clazz) {
+        try {
+            ConfigModel probe = (ConfigModel) clazz.newInstance();
+            Query condition = new Query();
+            if (StringUtil.isNotBlank(probe.getType())) {
+                condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, probe.getType());
+            }
+            condition.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+            return operationTemplate.queryList(StorageEnum.TASK, condition, clazz);
+        } catch (Exception e) {
+            throw new ParserException(e);
+        }
+    }
+
+    @Override
+    public String addTask(ConfigModel task) {
+        Assert.notNull(task, "Task can not be null.");
+        if (StringUtil.isBlank(task.getId())) {
+            task.setId(String.valueOf(snowflakeIdWorker.nextId()));
+        }
+        storageService.add(StorageEnum.TASK, ConfigModelUtil.convertModelToMap(task));
+        return task.getId();
+    }
+
+    @Override
+    public String updateTask(ConfigModel task) {
+        Assert.notNull(task, "Task can not be null.");
+        Assert.hasText(task.getId(), "Task id can not be empty.");
+        storageService.edit(StorageEnum.TASK, ConfigModelUtil.convertModelToMap(task));
+        return task.getId();
+    }
+
+    @Override
+    public List<String> addTaskBatch(List<? extends ConfigModel> tasks) {
+        if (CollectionUtils.isEmpty(tasks)) {
+            return Collections.emptyList();
+        }
+        List<Map> paramsList = new ArrayList<>(tasks.size());
+        for (ConfigModel task : tasks) {
+            Assert.notNull(task, "Task can not be null.");
+            if (StringUtil.isBlank(task.getId())) {
+                task.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            }
+            paramsList.add(ConfigModelUtil.convertModelToMap(task));
+        }
+        storageService.addBatch(StorageEnum.TASK, null, paramsList);
+        return tasks.stream().map(ConfigModel::getId).collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteTask(String id) {
+        if (StringUtil.isBlank(id)) {
+            return;
+        }
+        storageService.remove(StorageEnum.TASK, id);
+    }
+
+    @Override
+    public int countTasks(String type) {
+        Query condition = new Query();
+        if (StringUtil.isNotBlank(type)) {
+            condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, type);
+        }
+        return operationTemplate.count(StorageEnum.TASK, condition);
+    }
+
+    @Override
+    public List<String> listAllTaskIds() {
+        List<String> ids = new ArrayList<>();
+        Query query = new Query();
+        query.setType(StorageEnum.TASK);
+        query.setPageSize(ConfigConstant.PAGE_SIZE);
+        Set<String> selectFields = new HashSet<>();
+        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
+        query.setSelectFlied(selectFields);
+        while (true) {
+            Paging paging = storageService.query(query);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            for (Object item : paging.getData()) {
+                Map<String, Object> row = (Map<String, Object>) item;
+                ids.add(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
+            }
+            query.setPageNum(query.getPageNum() + 1);
+        }
+        return ids;
+    }
+
+    @Override
+    public boolean existsTask(String id) {
+        if (StringUtil.isBlank(id)) {
+            return false;
+        }
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.TASK);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        Paging paging = storageService.query(query);
+        return paging != null && !CollectionUtils.isEmpty(paging.getData());
+    }
+
+    @Override
+    public int countAllTasks() {
+        return countTasks(null);
+    }
+
+    @Override
+    public List<Map<String, Object>> listAllTaskJsonMaps() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        Query query = new Query();
+        query.setType(StorageEnum.TASK);
+        query.setPageSize(ConfigConstant.PAGE_SIZE);
+        while (true) {
+            Paging paging = storageService.query(query);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            List<Map> data = (List<Map>) paging.getData();
+            for (Map row : data) {
+                Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
+                if (json == null) {
+                    continue;
+                }
+                Map<String, Object> task = JsonUtil.parseMap(String.valueOf(json));
+                if (task != null) {
+                    result.add(task);
+                }
+            }
+            query.setPageNum(query.getPageNum() + 1);
+        }
+        return result;
+    }
+
+    @Override
+    public String importTask(ConfigModel task) {
+        Assert.notNull(task, "Task can not be null.");
+        Assert.hasText(task.getId(), "Import task id can not be empty.");
+        storageService.add(StorageEnum.TASK, ConfigModelUtil.convertModelToMap(task));
+        return task.getId();
+    }
+
+    @Override
+    public TaskImportResult importTasksFromJson(String json) {
+        if (StringUtil.isBlank(json)) {
+            return new TaskImportResult(0, Collections.emptyList());
+        }
+        List list = JsonUtil.parseList(json);
+        if (CollectionUtils.isEmpty(list)) {
+            return new TaskImportResult(0, Collections.emptyList());
+        }
+        List<Mapping> mappings = new ArrayList<>();
+        List<ConfigModel> enterpriseTasks = new ArrayList<>();
+        for (Object item : list) {
+            Map map = item instanceof Map ? (Map) item : JsonUtil.parseMap(JsonUtil.objToJson(item));
+            if (map == null) {
+                continue;
+            }
+            String type = map.get(ConfigConstant.CONFIG_MODEL_TYPE) == null
+                    ? null : String.valueOf(map.get(ConfigConstant.CONFIG_MODEL_TYPE));
+            String itemJson = JsonUtil.objToJson(map);
+            if (StringUtil.equals(ConfigConstant.MAPPING, type) || StringUtil.isBlank(type)) {
+                Mapping mapping = JsonUtil.jsonToObj(itemJson, Mapping.class);
+                if (mapping != null) {
+                    if (StringUtil.isBlank(mapping.getType())) {
+                        mapping.setType(ConfigConstant.MAPPING);
+                    }
+                    mappings.add(mapping);
+                }
+                continue;
+            }
+            CommonTaskTypeEnum taskType = CommonTaskTypeEnum.parse(type);
+            if (taskType == CommonTaskTypeEnum.VALIDATE_SYNC) {
+                ValidateSyncTask task = JsonUtil.jsonToObj(itemJson, ValidateSyncTask.class);
+                if (task != null) {
+                    importTask(task);
+                    enterpriseTasks.add(task);
+                }
+            } else if (taskType == CommonTaskTypeEnum.DATABASE_SYNC) {
+                DatabaseSyncTask task = JsonUtil.jsonToObj(itemJson, DatabaseSyncTask.class);
+                if (task != null) {
+                    importTask(task);
+                    enterpriseTasks.add(task);
+                }
+            } else {
+                logger.warn("跳过未知任务类型: type={}, id={}", type, map.get(ConfigConstant.CONFIG_MODEL_ID));
+            }
+        }
+        if (!CollectionUtils.isEmpty(mappings)) {
+            TaskSplitUtil.split(mappings, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addTaskBatch);
+        }
+        return new TaskImportResult(mappings.size(), enterpriseTasks);
+    }
+
+    @Override
+    public void importTaskDetailSchemasFromJson(String json) {
+        if (StringUtil.isBlank(json)) {
+            return;
+        }
+        Map map = JsonUtil.parseMap(json);
+        if (map == null) {
+            return;
+        }
+        Object taskIdsObj = map.get("taskIds");
+        if (!(taskIdsObj instanceof List)) {
+            return;
+        }
+        List<String> taskIds = new ArrayList<>();
+        for (Object item : (List) taskIdsObj) {
+            if (item == null) {
+                continue;
+            }
+            String taskId = String.valueOf(item);
+            if (StringUtil.isNotBlank(taskId)) {
+                taskIds.add(taskId);
+            }
+        }
+        createRunDetailTables(taskIds);
+    }
+
+    @Override
+    public TaskImportResult importTasksFromZip(ZipFile zip) throws IOException {
+        if (zip == null) {
+            return new TaskImportResult(0, Collections.emptyList());
+        }
+        String json = PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.TASK);
+        if (StringUtil.isBlank(json)) {
+            json = PackageZipUtil.readOptionalEntry(zip, PackageFormatConfig.MAPPING);
+        }
+        return importTasksFromJson(json);
+    }
+
+    @Override
+    public String exportTaskDetailSchemasJson(List<String> taskIds) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("taskIds", taskIds == null ? Collections.emptyList() : taskIds);
+        return JsonUtil.objToJson(payload);
+    }
+
+    @Override
+    public void deleteTableRunMeta(String taskId) {
         metaProfile.deleteMetaByTableGroupIds(tableGroupProfile.listTableGroupIds(taskId));
     }
 
     @Override
-    public void clearTaskRunResults(String taskId) {
-
+    public void clearRunData(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
@@ -62,7 +334,6 @@ public class TaskProfileImpl implements TaskProfile {
         if (CollectionUtils.isEmpty(groupIds)) {
             return;
         }
-        // 表映射仍保留时补回空明细 Meta，供续跑/重跑使用
         List<Meta> metas = new ArrayList<>(groupIds.size());
         long now = System.currentTimeMillis();
         for (String groupId : groupIds) {
@@ -73,13 +344,11 @@ public class TaskProfileImpl implements TaskProfile {
             meta.setUpdateTime(now);
             metas.add(meta);
         }
-        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, (models) -> {
-            operationTemplate.executeBatch(models, CommandEnum.OPR_ADD);
-        });
+        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, metaProfile::addMetaBatch);
     }
 
     @Override
-    public void ensureTaskDetailTable(String taskId) {
+    public void createRunDetailTable(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
@@ -87,7 +356,17 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public void resetTaskMeta(String taskId) {
+    public void createRunDetailTables(List<String> taskIds) {
+        if (CollectionUtils.isEmpty(taskIds)) {
+            return;
+        }
+        for (String taskId : taskIds) {
+            createRunDetailTable(taskId);
+        }
+    }
+
+    @Override
+    public void resetRunProgress(String taskId) {
         if (StringUtil.isBlank(taskId)) {
             return;
         }
@@ -95,18 +374,14 @@ public class TaskProfileImpl implements TaskProfile {
         if (meta == null) {
             return;
         }
-        // success/fail/diff/fixed 靠 increment 维护，edit 时 preserveMetaCounters 会保留库值，须先增量归零
         zeroTaskMetaCounters(meta);
         meta.clear();
         meta.setTaskId(taskId);
         meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         meta.setUpdateTime(System.currentTimeMillis());
-        operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_EDIT));
+        metaProfile.updateMeta(meta);
     }
 
-    /**
-     * 将任务级 Meta 计数原子归零（走 increment，避免 edit 被 preserve 覆盖）。
-     */
     private void zeroTaskMetaCounters(Meta meta) {
         long total = counterValue(meta.getTotal());
         long success = counterValue(meta.getSuccess());

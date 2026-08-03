@@ -4,18 +4,27 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
-import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
-import org.dbsyncer.parser.model.OperationConfig;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
@@ -24,11 +33,14 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * {@link ProfileComponent} 门面：User/Connector 委托独立 Profile，其余走通用存储模板。
+ * {@link ProfileComponent} 门面：各领域 Profile 委托 + 导出快照编排。
  *
  * @Version 1.0.0
  * @Author AE86
@@ -38,13 +50,22 @@ import java.util.Map;
 public class ProfileComponentImpl implements ProfileComponent {
 
     @Resource
-    private OperationTemplate operationTemplate;
-
-    @Resource
     private UserProfile userProfile;
 
     @Resource
     private ConnectorProfile connectorProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Override
     public Connector parseConnector(String json) {
@@ -61,7 +82,22 @@ public class ProfileComponentImpl implements ProfileComponent {
         if (model instanceof UserConfig) {
             return userProfile.syncUserConfig((UserConfig) model);
         }
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
+        if (model instanceof SystemConfig) {
+            return systemConfigProfile.saveSystemConfig((SystemConfig) model);
+        }
+        if (model instanceof Connector) {
+            return connectorProfile.addConnector((Connector) model);
+        }
+        if (model instanceof Meta) {
+            return metaProfile.addMeta((Meta) model);
+        }
+        if (model instanceof TableGroup) {
+            return tableGroupProfile.addTableGroup((TableGroup) model);
+        }
+        if (StorageEnum.TASK == ConfigModelUtil.getStorageEnum(model.getType())) {
+            return taskProfile.addTask(model);
+        }
+        throw new ParserException("Unsupported config type for add: " + model.getType());
     }
 
     @Override
@@ -69,18 +105,60 @@ public class ProfileComponentImpl implements ProfileComponent {
         if (model instanceof UserConfig) {
             return userProfile.syncUserConfig((UserConfig) model);
         }
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+        if (model instanceof SystemConfig) {
+            return systemConfigProfile.saveSystemConfig((SystemConfig) model);
+        }
+        if (model instanceof Connector) {
+            return connectorProfile.updateConnector((Connector) model);
+        }
+        if (model instanceof Meta) {
+            return metaProfile.updateMeta((Meta) model);
+        }
+        if (model instanceof TableGroup) {
+            return tableGroupProfile.editTableGroup((TableGroup) model);
+        }
+        if (StorageEnum.TASK == ConfigModelUtil.getStorageEnum(model.getType())) {
+            return taskProfile.updateTask(model);
+        }
+        throw new ParserException("Unsupported config type for edit: " + model.getType());
     }
 
     @Override
     public void removeConfigModel(String id) {
-        operationTemplate.remove(new OperationConfig(id));
+        if (StringUtil.isBlank(id)) {
+            return;
+        }
+        if (connectorProfile.getConnector(id) != null) {
+            connectorProfile.removeConnector(id);
+            return;
+        }
+        if (metaProfile.getMeta(id) != null) {
+            metaProfile.removeMeta(id);
+            return;
+        }
+        if (tableGroupProfile.getTableGroup(id) != null) {
+            tableGroupProfile.removeTableGroup(id);
+            return;
+        }
+        if (taskProfile.existsTask(id)) {
+            taskProfile.deleteTask(id);
+            return;
+        }
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig != null && id.equals(systemConfig.getId())) {
+            systemConfigProfile.removeSystemConfig(id);
+            return;
+        }
+        if (userProfile.existsUser(id)) {
+            userProfile.removeUser(id);
+            return;
+        }
+        throw new ParserException("Unknown config id: " + id);
     }
 
     @Override
     public SystemConfig getSystemConfig() {
-        List<SystemConfig> list = operationTemplate.queryAll(SystemConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        return systemConfigProfile.getSystemConfig();
     }
 
     @Override
@@ -100,17 +178,52 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public Mapping getMapping(String mappingId) {
-        return operationTemplate.queryObject(Mapping.class, mappingId);
+        return taskProfile.getTask(mappingId, Mapping.class);
     }
 
     @Override
     public List<Mapping> getMappingAll() {
-        return operationTemplate.queryAll(Mapping.class);
+        return taskProfile.listTasks(Mapping.class);
     }
 
     @Override
     public Map<String, Object> getConfigSnapshot() {
-        return operationTemplate.buildExportSnapshot();
+        Map<String, Object> snapshot = new HashMap<>();
+        List<Mapping> allMappings = taskProfile.listTasks(Mapping.class);
+        UserConfig userConfig = userProfile.getUserConfig();
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+
+        Map<String, List<? extends ConfigModel>> typedModels = new LinkedHashMap<String, List<? extends ConfigModel>>() {{
+            put(ConfigConstant.SYSTEM, systemConfig == null ? Collections.emptyList() : Collections.singletonList(systemConfig));
+            put(ConfigConstant.USER, userConfig == null ? Collections.emptyList() : Collections.singletonList(userConfig));
+            put(ConfigConstant.CONNECTOR, connectorProfile.getConnectorAll());
+            put(ConfigConstant.MAPPING, allMappings);
+            put(ConfigConstant.META, metaProfile.getMetaAll());
+        }};
+
+        typedModels.forEach((k, list) -> {
+            Group g = new Group();
+            list.forEach(m -> {
+                snapshot.put(m.getId(), m);
+                g.add(m.getId());
+            });
+            snapshot.put(k, g);
+        });
+
+        List<TableGroup> allGroups = tableGroupProfile.listTableGroupAll();
+        Map<String, Group> groupsByTaskId = new HashMap<>();
+        for (TableGroup tg : allGroups) {
+            if (tg == null || StringUtil.isBlank(tg.getTaskId())) {
+                continue;
+            }
+            snapshot.put(tg.getId(), tg);
+            groupsByTaskId.computeIfAbsent(tg.getTaskId(), id -> new Group()).add(tg.getId());
+        }
+        allMappings.forEach(mapping -> {
+            Group idGroup = groupsByTaskId.getOrDefault(mapping.getId(), new Group());
+            snapshot.put(tableGroupProfile.getPreloadGroupKey(mapping.getId()), idGroup);
+        });
+        return snapshot;
     }
 
     @Override

@@ -5,6 +5,7 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.model.UserConfig;
@@ -116,5 +117,50 @@ public class UserProfileImpl implements UserProfile {
             }
         }
         return firstId;
+    }
+
+    @Override
+    public int countUsers() {
+        Query query = new Query();
+        query.setType(StorageEnum.USER);
+        query.setQueryTotal(true);
+        query.setPageNum(1);
+        query.setPageSize(1);
+        Paging paging = storageService.query(query);
+        return paging == null ? 0 : (int) paging.getTotal();
+    }
+
+    @Override
+    public boolean existsUser(String id) {
+        if (StringUtil.isBlank(id)) {
+            return false;
+        }
+        Query query = new Query(1, 1);
+        query.setType(StorageEnum.USER);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        Paging paging = storageService.query(query);
+        return paging != null && !CollectionUtils.isEmpty(paging.getData());
+    }
+
+    @Override
+    public void removeUser(String id) {
+        if (StringUtil.isBlank(id)) {
+            return;
+        }
+        storageService.remove(StorageEnum.USER, id);
+    }
+
+    @Override
+    public void importFromJson(String json) {
+        if (StringUtil.isBlank(json)) {
+            return;
+        }
+        List<UserConfig> configs = JsonUtil.jsonToArray(json, UserConfig.class);
+        if (CollectionUtils.isEmpty(configs)) {
+            return;
+        }
+        for (UserConfig config : configs) {
+            syncUserConfig(config);
+        }
     }
 }

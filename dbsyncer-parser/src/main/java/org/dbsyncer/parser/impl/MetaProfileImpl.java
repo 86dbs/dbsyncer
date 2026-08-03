@@ -3,14 +3,18 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
+import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -48,7 +52,7 @@ public class MetaProfileImpl implements MetaProfile {
 
     @Override
     public List<Meta> getMetaAll() {
-        return operationTemplate.queryAll(Meta.class);
+        return operationTemplate.queryList(StorageEnum.META, null, Meta.class);
     }
 
     @Override
@@ -153,5 +157,50 @@ public class MetaProfileImpl implements MetaProfile {
             return resolveTaskDetailShardId(meta);
         }
         return metaId;
+    }
+
+    @Override
+    public String addMeta(Meta meta) {
+        return operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_ADD));
+    }
+
+    @Override
+    public void addMetaBatch(List<Meta> metas) {
+        if (CollectionUtils.isEmpty(metas)) {
+            return;
+        }
+        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, batch ->
+                operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD));
+    }
+
+    @Override
+    public String updateMeta(Meta meta) {
+        return operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_EDIT));
+    }
+
+    @Override
+    public void removeMeta(String id) {
+        operationTemplate.remove(new OperationConfig(id));
+    }
+
+    @Override
+    public int countMeta() {
+        return operationTemplate.count(StorageEnum.META, null);
+    }
+
+    @Override
+    public void importMetaFromJson(String json) {
+        if (StringUtil.isBlank(json)) {
+            return;
+        }
+        List<Meta> metas = JsonUtil.jsonToArray(json, Meta.class);
+        if (CollectionUtils.isEmpty(metas)) {
+            return;
+        }
+        if (metas.size() == 1) {
+            addMeta(metas.get(0));
+            return;
+        }
+        TaskSplitUtil.split(metas, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addMetaBatch);
     }
 }

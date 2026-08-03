@@ -33,8 +33,8 @@ public class TableGroupCountTask extends AbstractCountTask {
         if (shouldStop(mapping)) {
             return;
         }
-        List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(mappingId);
-        logger.info("正在统计:{}, {}张表", mapping.getName(), groupAll.size());
+        int groupCount = tableGroupProfile.getTableGroupCount(mappingId);
+        logger.info("正在统计:{}, {}张表", mapping.getName(), groupCount);
         if (!CollectionUtils.isEmpty(tableGroups)) {
             for (String tableGroupId : tableGroups) {
                 // 驱动任务类型发生切换，提前释放任务
@@ -48,7 +48,7 @@ public class TableGroupCountTask extends AbstractCountTask {
         }
         // 更新驱动meta
         Meta meta = tableGroupService.updateMeta(mapping, null);
-        logger.info("完成统计:{}, {}张表, 总数:{}", mapping.getName(), groupAll.size(), meta.getTotal());
+        logger.info("完成统计:{}, {}张表, 总数:{}", mapping.getName(), groupCount, meta.getTotal());
     }
 
     @Override

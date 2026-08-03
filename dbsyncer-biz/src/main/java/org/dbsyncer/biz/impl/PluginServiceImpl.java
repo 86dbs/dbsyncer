@@ -17,6 +17,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.plugin.PluginFactory;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Plugin;
 
 import org.springframework.beans.BeanUtils;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -110,17 +112,23 @@ public class PluginServiceImpl implements PluginService {
                 continue;
             }
 
-            List<TableGroup> tableGroupAll = tableGroupProfile.getTableGroupAll(m.getId());
-            if (CollectionUtils.isEmpty(tableGroupAll)) {
-                continue;
-            }
-            for (TableGroup t : tableGroupAll) {
-                Plugin p = t.getPlugin();
-                if (null != p) {
-                    putPluginMap(map, p.getClassName(), m.getName());
-                    break;
+            AtomicBoolean pluginFound = new AtomicBoolean(false);
+            tableGroupProfile.forEachTableGroupPage(m.getId(), ConfigConstant.PAGE_SIZE, page -> {
+                if (pluginFound.get() || CollectionUtils.isEmpty(page)) {
+                    return;
                 }
-            }
+                for (TableGroup t : page) {
+                    if (t == null) {
+                        continue;
+                    }
+                    Plugin p = t.getPlugin();
+                    if (p != null) {
+                        putPluginMap(map, p.getClassName(), m.getName());
+                        pluginFound.set(true);
+                        return;
+                    }
+                }
+            });
         }
 
         return map;

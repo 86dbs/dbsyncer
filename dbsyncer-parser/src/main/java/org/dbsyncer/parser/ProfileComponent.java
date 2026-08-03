@@ -21,7 +21,8 @@ import java.util.Map;
 /**
  * 配置文件组件门面（system/user/connector/mapping + 枚举查询等）。
  * <p>用户见 {@link UserProfile}；连接器见 {@link ConnectorProfile}；
- * 表映射见 {@link TableGroupProfile}；Meta 见 {@link MetaProfile}；任务运行结果见 {@link TaskProfile}。
+ * 表映射见 {@link TableGroupProfile}；Meta 见 {@link MetaProfile}；
+ * 任务配置与运行结果见 {@link TaskProfile}；系统配置见 {@link SystemConfigProfile}。
  * <p>{@link ConfigConstant}
  *
  * @Version 1.0.0

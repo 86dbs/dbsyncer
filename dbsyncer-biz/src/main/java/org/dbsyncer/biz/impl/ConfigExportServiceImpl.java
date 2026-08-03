@@ -7,31 +7,24 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.ConfigExportService;
 import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.VersionInfo;
-import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
-import org.dbsyncer.parser.impl.OperationTemplate;
-import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
-import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,16 +47,22 @@ import java.util.zip.ZipOutputStream;
 public class ConfigExportServiceImpl implements ConfigExportService {
 
     @Resource
-    private OperationTemplate operationTemplate;
-
-    @Resource
     private UserProfile userProfile;
 
     @Resource
     private ConnectorProfile connectorProfile;
 
     @Resource
-    private StorageService storageService;
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Override
     public void exportZip(OutputStream out, VersionInfo versionInfo) throws IOException {
@@ -76,15 +75,17 @@ public class ConfigExportServiceImpl implements ConfigExportService {
 
         Map<String, Integer> counts = new LinkedHashMap<>();
         try (ZipOutputStream zos = new ZipOutputStream(out)) {
-            counts.put(ConfigConstant.SYSTEM, writeJsonArray(zos, PackageFormatConfig.SYSTEM, operationTemplate.queryAll(SystemConfig.class)));
+            SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+            counts.put(ConfigConstant.SYSTEM, writeJsonArray(zos, PackageFormatConfig.SYSTEM,
+                    systemConfig == null ? Collections.emptyList() : Collections.singletonList(systemConfig)));
             UserConfig userConfig = userProfile.getUserConfig();
             counts.put(ConfigConstant.USER, writeJsonArray(zos, PackageFormatConfig.USER,
                     userConfig == null ? Collections.emptyList() : Collections.singletonList(userConfig)));
             counts.put(ConfigConstant.CONNECTOR, writeJsonArray(zos, PackageFormatConfig.CONNECTOR, connectorProfile.getConnectorAll()));
             List<String> taskIds = new ArrayList<>();
             counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
-            counts.put(ConfigConstant.TABLE_GROUP, writeTableGroups(zos));
-            counts.put(ConfigConstant.META, writeJsonArray(zos, PackageFormatConfig.META, operationTemplate.queryAll(Meta.class)));
+            counts.put(ConfigConstant.TABLE_GROUP, tableGroupProfile.writeTableGroupsToZip(zos));
+            counts.put(ConfigConstant.META, writeJsonArray(zos, PackageFormatConfig.META, metaProfile.getMetaAll()));
             counts.put(StorageEnum.TASK_DETAIL.getType(), writeTaskDetailSchemas(zos, taskIds));
             writeManifest(zos, versionInfo, counts);
         }
@@ -93,12 +94,12 @@ public class ConfigExportServiceImpl implements ConfigExportService {
     @Override
     public long estimateExportSize() {
         long rows = 0L;
-        rows += operationTemplate.count(StorageEnum.CONFIG, null);
-        rows += operationTemplate.count(StorageEnum.USER, null);
-        rows += operationTemplate.count(StorageEnum.CONNECTOR, null);
-        rows += operationTemplate.count(StorageEnum.TASK, null);
-        rows += operationTemplate.count(StorageEnum.TABLE_GROUP, null);
-        rows += operationTemplate.count(StorageEnum.META, null);
+        rows += systemConfigProfile.countSystemConfigs();
+        rows += userProfile.countUsers();
+        rows += connectorProfile.countConnectors();
+        rows += taskProfile.countAllTasks();
+        rows += tableGroupProfile.countTableGroups();
+        rows += metaProfile.countMeta();
         return Math.max(rows, 1L) * PackageFormatConfig.ESTIMATE_BYTES_PER_ROW;
     }
 
@@ -124,31 +125,12 @@ public class ConfigExportServiceImpl implements ConfigExportService {
      * @param taskIds 收集任务 ID，供导出 task_detail 分表结构清单
      */
     private int writeAllTasks(ZipOutputStream zos, List<String> taskIds) throws IOException {
-        List<Object> tasks = new ArrayList<>();
-        Query query = new Query();
-        query.setType(StorageEnum.TASK);
-        query.setPageSize(ConfigConstant.PAGE_SIZE);
-        while (true) {
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
+        List<Map<String, Object>> tasks = taskProfile.listAllTaskJsonMaps();
+        for (Map<String, Object> task : tasks) {
+            Object id = task.get(ConfigConstant.CONFIG_MODEL_ID);
+            if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
+                taskIds.add(String.valueOf(id));
             }
-            List<Map> data = (List<Map>) paging.getData();
-            for (Map row : data) {
-                Object json = row.get(ConfigConstant.CONFIG_MODEL_JSON);
-                if (json == null) {
-                    continue;
-                }
-                Map task = JsonUtil.parseMap(String.valueOf(json));
-                if (task != null) {
-                    tasks.add(task);
-                    Object id = task.get(ConfigConstant.CONFIG_MODEL_ID);
-                    if (id != null && StringUtil.isNotBlank(String.valueOf(id))) {
-                        taskIds.add(String.valueOf(id));
-                    }
-                }
-            }
-            query.setPageNum(query.getPageNum() + 1);
         }
         writeBytes(zos, PackageFormatConfig.TASK, JsonUtil.objToJson(tasks).getBytes(StandardCharsets.UTF_8));
         return tasks.size();
@@ -158,62 +140,9 @@ public class ConfigExportServiceImpl implements ConfigExportService {
      * 导出 task_detail 动态分表结构清单（仅 taskIds，不导出行数据）。
      */
     private int writeTaskDetailSchemas(ZipOutputStream zos, List<String> taskIds) throws IOException {
-        List<String> ids = taskIds == null ? Collections.emptyList() : taskIds;
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("taskIds", ids);
-        writeBytes(zos, PackageFormatConfig.TASK_DETAIL, JsonUtil.objToJson(payload).getBytes(StandardCharsets.UTF_8));
-        return ids.size();
-    }
-
-    private int writeTableGroups(ZipOutputStream zos) throws IOException {
-        Query query = new Query();
-        query.setType(StorageEnum.TABLE_GROUP);
-        query.setPageSize(ConfigConstant.PAGE_SIZE);
-        query.addOrderBy(ConfigConstant.TABLE_GROUP_TASK_ID, SortEnum.ASC);
-
-        String currentTaskId = null;
-        BufferedWriter writer = null;
-        int count = 0;
-        try {
-            while (true) {
-                Paging paging = storageService.query(query);
-                if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                    break;
-                }
-                List<Map> data = (List<Map>) paging.getData();
-                for (Map row : data) {
-                    TableGroup tg = ConfigModelUtil.parseFromRow(row, TableGroup.class);
-                    if (tg == null || StringUtil.isBlank(tg.getTaskId())) {
-                        continue;
-                    }
-                    if (!StringUtil.equals(currentTaskId, tg.getTaskId())) {
-                        flushWriter(writer);
-                        if (currentTaskId != null) {
-                            zos.closeEntry();
-                        }
-                        currentTaskId = tg.getTaskId();
-                        zos.putNextEntry(new ZipEntry(PackageFormatConfig.TABLE_GROUP_DIR + currentTaskId + PackageFormatConfig.NDJSON_SUFFIX));
-                        writer = new BufferedWriter(new OutputStreamWriter(zos, StandardCharsets.UTF_8));
-                    }
-                    writer.write(JsonUtil.objToJson(tg));
-                    writer.newLine();
-                    count++;
-                }
-                query.setPageNum(query.getPageNum() + 1);
-            }
-        } finally {
-            flushWriter(writer);
-            if (currentTaskId != null) {
-                zos.closeEntry();
-            }
-        }
-        return count;
-    }
-
-    private void flushWriter(BufferedWriter writer) throws IOException {
-        if (writer != null) {
-            writer.flush();
-        }
+        writeBytes(zos, PackageFormatConfig.TASK_DETAIL,
+                taskProfile.exportTaskDetailSchemasJson(taskIds).getBytes(StandardCharsets.UTF_8));
+        return taskIds == null ? 0 : taskIds.size();
     }
 
     private void writeBytes(ZipOutputStream zos, String entryName, byte[] bytes) throws IOException {

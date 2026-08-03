@@ -3,13 +3,17 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Connector;
+import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
@@ -32,6 +36,9 @@ import java.util.Map;
  */
 @Component
 public class ConnectorProfileImpl implements ConnectorProfile {
+
+    @Resource
+    private OperationTemplate operationTemplate;
 
     @Resource
     private StorageService storageService;
@@ -97,5 +104,53 @@ public class ConnectorProfileImpl implements ConnectorProfile {
             query.setPageNum(query.getPageNum() + 1);
         }
         return result;
+    }
+
+    @Override
+    public String addConnector(Connector connector) {
+        return operationTemplate.execute(new OperationConfig(connector, CommandEnum.OPR_ADD));
+    }
+
+    @Override
+    public void addConnectorBatch(List<Connector> connectors) {
+        if (CollectionUtils.isEmpty(connectors)) {
+            return;
+        }
+        TaskSplitUtil.split(connectors, ConfigConstant.PAGE_SIZE, batch ->
+                operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD));
+    }
+
+    @Override
+    public String updateConnector(Connector connector) {
+        return operationTemplate.execute(new OperationConfig(connector, CommandEnum.OPR_EDIT));
+    }
+
+    @Override
+    public void removeConnector(String id) {
+        operationTemplate.remove(new OperationConfig(id));
+    }
+
+    @Override
+    public int countConnectors() {
+        return operationTemplate.count(StorageEnum.CONNECTOR, null);
+    }
+
+    @Override
+    public void importConnectorsFromJson(String json) {
+        if (StringUtil.isBlank(json)) {
+            return;
+        }
+        List list = JsonUtil.parseList(json);
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<Connector> connectors = new ArrayList<>(list.size());
+        for (Object item : list) {
+            Connector connector = parseConnector(JsonUtil.objToJson(item));
+            if (connector != null) {
+                connectors.add(connector);
+            }
+        }
+        TaskSplitUtil.split(connectors, PackageFormatConfig.IMPORT_BATCH_SIZE, this::addConnectorBatch);
     }
 }

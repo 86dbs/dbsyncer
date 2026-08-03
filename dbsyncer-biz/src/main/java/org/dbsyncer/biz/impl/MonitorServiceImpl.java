@@ -227,13 +227,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 任务 Meta：success/fail 一并归零
         resetMetaCounters(meta);
         // 表级 Meta 删除
-        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(mapping.getId());
-        if (!CollectionUtils.isEmpty(groups)) {
-            for (TableGroup group : groups) {
-                if (group == null || StringUtil.isBlank(group.getId())) {
-                    continue;
+        List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupIds)) {
+            for (String groupId : groupIds) {
+                if (StringUtil.isNotBlank(groupId)) {
+                    removeTableMeta(groupId);
                 }
-                removeTableMeta(group.getId());
             }
         }
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;

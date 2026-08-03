@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
@@ -18,6 +20,7 @@ import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,14 +82,13 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
      * @param publishClosed 完成后是否发布关闭事件
      */
     public void runSync(Mapping mapping, boolean publishClosed) {
-        List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(mapping.getId());
-        Assert.notEmpty(list, "映射关系不能为空");
+        Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "映射关系不能为空");
         final String metaId = mapping.getMetaId();
         ExecutorService executor = Executors.newFixedThreadPool(mapping.getThreadNum());
         try {
             Task task = map.computeIfAbsent(metaId, k -> new Task(metaId));
             logger.info("开始全量同步：{}, {}", metaId, mapping.getName());
-            doTask(task, mapping, list, executor);
+            doTask(task, mapping, executor);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
@@ -117,7 +120,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         flush(event.getTask());
     }
 
-    private void doTask(Task task, Mapping mapping, List<TableGroup> list, Executor executor) {
+    private void doTask(Task task, Mapping mapping, Executor executor) {
         // 记录开始时间
         long now = Instant.now().toEpochMilli();
         task.setBeginTime(now);
@@ -133,15 +136,30 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         flush(task);
 
         int i = task.getTableGroupIndex();
-        while (i < list.size()) {
-            parserComponent.execute(task, mapping, list.get(i), executor);
-            if (!task.isRunning()) {
+        int pageSize = ConfigConstant.PAGE_SIZE;
+        while (task.isRunning()) {
+            int pageNum = i / pageSize + 1;
+            int offsetInPage = i % pageSize;
+            Paging<TableGroup> paging = tableGroupProfile.queryTableGroup(mapping.getId(), null, pageNum, pageSize);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 break;
             }
-            task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
-            task.setCursors(null);
-            task.setTableGroupIndex(++i);
-            flush(task);
+            List<TableGroup> page = new ArrayList<>(paging.getData());
+            boolean finishedPage = true;
+            for (int j = offsetInPage; j < page.size(); j++) {
+                parserComponent.execute(task, mapping, page.get(j), executor);
+                if (!task.isRunning()) {
+                    finishedPage = false;
+                    break;
+                }
+                task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
+                task.setCursors(null);
+                task.setTableGroupIndex(++i);
+                flush(task);
+            }
+            if (!finishedPage || page.size() < pageSize) {
+                break;
+            }
         }
 
         // 记录结束时间

@@ -11,6 +11,7 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogType;
@@ -160,15 +161,12 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     }
 
     @Override
-    public List<TableGroup> getTableGroupAll(String mappingId) {
-        return tableGroupProfile.getSortedTableGroupAll(mappingId);
-    }
-
-    @Override
     public Paging<TableGroup> search(Map<String, String> params) {
         String mappingId = params.get("mappingId");
         Assert.hasText(mappingId, "Mapping id can not be null");
-        return searchConfigModel(params, getTableGroupAll(mappingId));
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        return tableGroupProfile.queryTableGroup(mappingId, params.get("searchKey"), pageNum, pageSize);
     }
 
     @Override
@@ -199,42 +197,51 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (ModelEnum.isFull(model)) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
-            List<TableGroup> groupAll = tableGroupProfile.getTableGroupAll(meta.getTaskId());
-            if (!CollectionUtils.isEmpty(groupAll)) {
+            tableGroupProfile.forEachTableGroupPage(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
-                    count.getAndAdd(g.getSourceTable().getCount());
+                    if (g != null && g.getSourceTable() != null) {
+                        count.getAndAdd(g.getSourceTable().getCount());
+                    }
                 }
-            }
+            });
             meta.setTotal(count);
         }
     }
 
     private void resetTableGroupAllIndex(String mappingId) {
         synchronized (LOCK) {
-            List<TableGroup> list = tableGroupProfile.getSortedTableGroupAll(mappingId);
-            int size = list.size();
-            int i = size;
-            while (i > 0) {
-                TableGroup g = list.get(size - i);
-                g.setIndex(i);
+            List<String> orderedIds = new ArrayList<>();
+            tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+                for (TableGroup g : page) {
+                    if (g != null && StringUtil.isNotBlank(g.getId())) {
+                        orderedIds.add(g.getId());
+                    }
+                }
+            });
+            int i = orderedIds.size();
+            for (String id : orderedIds) {
+                TableGroup g = tableGroupProfile.getTableGroup(id);
+                if (g == null) {
+                    continue;
+                }
+                g.setIndex(i--);
                 profileComponent.editConfigModel(g);
-                i--;
             }
         }
     }
 
     private void mergeMappingColumn(Mapping mapping) {
-        List<TableGroup> groups = tableGroupProfile.getTableGroupAll(mapping.getId());
-
         List<Field> sourceColumn = null;
         List<Field> targetColumn = null;
-        for (TableGroup g : groups) {
-            sourceColumn = PickerUtil.pickCommonFields(sourceColumn, g.getSourceTable().getColumn());
-            targetColumn = PickerUtil.pickCommonFields(targetColumn, g.getTargetTable().getColumn());
-        }
-
-        mapping.setSourceColumn(sourceColumn);
-        mapping.setTargetColumn(targetColumn);
+        final List<Field>[] holder = new List[]{sourceColumn, targetColumn};
+        tableGroupProfile.forEachTableGroupPage(mapping.getId(), ConfigConstant.PAGE_SIZE, groups -> {
+            for (TableGroup g : groups) {
+                holder[0] = PickerUtil.pickCommonFields(holder[0], g.getSourceTable().getColumn());
+                holder[1] = PickerUtil.pickCommonFields(holder[1], g.getTargetTable().getColumn());
+            }
+        });
+        mapping.setSourceColumn(holder[0]);
+        mapping.setTargetColumn(holder[1]);
         profileComponent.editConfigModel(mapping);
     }
 
