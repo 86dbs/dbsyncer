@@ -3,16 +3,12 @@
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.config.PackageFormatConfig;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.PackageZipUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Meta;
@@ -32,10 +28,6 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -43,9 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 /**
  * {@link TableGroupProfile} 实现（dbsyncer_table_group）。
@@ -285,91 +274,25 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
 
     @Override
-    public void importTableGroupBatch(List<TableGroup> models) {
+    public void addTableGroupBatchWithoutMeta(List<TableGroup> models) {
         if (CollectionUtils.isEmpty(models)) {
             return;
         }
+        long now = System.currentTimeMillis();
+        for (TableGroup model : models) {
+            if (model == null) {
+                continue;
+            }
+            // 配置包 NDJSON 可能缺 createTime/updateTime，库列 NOT NULL
+            if (model.getCreateTime() == null) {
+                model.setCreateTime(now);
+            }
+            if (model.getUpdateTime() == null) {
+                model.setUpdateTime(now);
+            }
+        }
         TaskSplitUtil.split(models, ConfigConstant.PAGE_SIZE, batch ->
                 operationTemplate.executeBatch(batch, CommandEnum.OPR_ADD));
-    }
-
-    @Override
-    public void importTableGroupNdjsonLines(List<String> ndjsonLines) {
-        if (CollectionUtils.isEmpty(ndjsonLines)) {
-            return;
-        }
-        List<TableGroup> buffer = new ArrayList<>(PackageFormatConfig.IMPORT_BATCH_SIZE);
-        for (String line : ndjsonLines) {
-            if (StringUtil.isBlank(line)) {
-                continue;
-            }
-            TableGroup tg = JsonUtil.jsonToObj(line, TableGroup.class);
-            if (tg == null) {
-                continue;
-            }
-            buffer.add(tg);
-            if (buffer.size() >= PackageFormatConfig.IMPORT_BATCH_SIZE) {
-                importTableGroupBatch(new ArrayList<>(buffer));
-                buffer.clear();
-            }
-        }
-        if (!CollectionUtils.isEmpty(buffer)) {
-            importTableGroupBatch(new ArrayList<>(buffer));
-        }
-    }
-
-    @Override
-    public void importFromZip(ZipFile zip) throws IOException {
-        if (zip == null) {
-            return;
-        }
-        List<String> buffer = new ArrayList<>(PackageFormatConfig.IMPORT_BATCH_SIZE);
-        PackageZipUtil.pageScanTableGroupNdjsonLines(zip, line -> {
-            buffer.add(line);
-            if (buffer.size() >= PackageFormatConfig.IMPORT_BATCH_SIZE) {
-                importTableGroupNdjsonLines(new ArrayList<>(buffer));
-                buffer.clear();
-            }
-        });
-        if (!CollectionUtils.isEmpty(buffer)) {
-            importTableGroupNdjsonLines(buffer);
-        }
-    }
-
-    @Override
-    public int writeTableGroupsToZip(ZipOutputStream zos) throws IOException {
-        if (zos == null) {
-            return 0;
-        }
-        String[] currentTaskId = {null};
-        BufferedWriter[] writer = {null};
-        int[] count = {0};
-        try {
-            pageScanTableGroupsByTaskId(tg -> {
-                try {
-                    if (!StringUtil.equals(currentTaskId[0], tg.getTaskId())) {
-                        flushWriter(writer[0]);
-                        if (currentTaskId[0] != null) {
-                            zos.closeEntry();
-                        }
-                        currentTaskId[0] = tg.getTaskId();
-                        zos.putNextEntry(new ZipEntry(PackageFormatConfig.TABLE_GROUP_DIR + currentTaskId[0] + PackageFormatConfig.NDJSON_SUFFIX));
-                        writer[0] = new BufferedWriter(new OutputStreamWriter(zos, StandardCharsets.UTF_8));
-                    }
-                    writer[0].write(JsonUtil.objToJson(tg));
-                    writer[0].newLine();
-                    count[0]++;
-                } catch (IOException e) {
-                    throw new ParserException("导出 table_group 失败: " + e.getMessage(), e);
-                }
-            });
-        } finally {
-            flushWriter(writer[0]);
-            if (currentTaskId[0] != null) {
-                zos.closeEntry();
-            }
-        }
-        return count[0];
     }
 
     @Override
@@ -419,12 +342,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     private static int normalizePageSize(int pageSize) {
         return pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
-    }
-
-    private static void flushWriter(BufferedWriter writer) throws IOException {
-        if (writer != null) {
-            writer.flush();
-        }
     }
 
 }

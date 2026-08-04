@@ -140,9 +140,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         String suffix = filename.substring(filename.lastIndexOf(".") + 1);
         FileSuffixEnum fileSuffix = FileSuffixEnum.getFileSuffix(suffix);
         Assert.notNull(fileSuffix, "Illegal file suffix");
-        boolean supported = FileSuffixEnum.JSON == fileSuffix || FileSuffixEnum.ZIP == fileSuffix;
-        Assert.isTrue(supported, String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 或 \"%s\" 的文件扩展名。",
-                filename, FileSuffixEnum.ZIP.getName(), FileSuffixEnum.JSON.getName()));
+        boolean supported = FileSuffixEnum.ZIP == fileSuffix;
+        Assert.isTrue(supported, String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。",
+                filename, FileSuffixEnum.ZIP.getName()));
     }
 
     @Override

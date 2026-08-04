@@ -46,14 +46,14 @@
                     </div>
                     <div class="upload-text">点击或拖拽文件到此处上传</div>
                     <div class="upload-hint">
-                        支持扩展名：.zip / .json<br>
+                        支持扩展名：.zip<br>
                         单次最多上传 5 个文件
                     </div>
                     <div class="upload-button">选择文件</div>
                     <input type="file"
                            class="upload-input"
                            id="fileConfig"
-                           accept=".zip,.json,application/zip,application/json"
+                           accept=".zip,application/zip"
                            multiple>
                 </div>
                 <div class="upload-list" data-upload-list></div>
@@ -66,7 +66,7 @@
 $(function() {
     initFileUpload('#configUploader', {
         uploadUrl: $basePath + '/config/upload',
-        accept: ['.zip', '.json'],
+        accept: ['.zip'],
         maxFiles: 5,
         maxSize: 50 * 1024 * 1024, // 50MB
         onSuccess: function(file, response) {

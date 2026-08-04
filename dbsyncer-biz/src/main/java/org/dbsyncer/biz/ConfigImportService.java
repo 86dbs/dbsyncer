@@ -6,7 +6,7 @@ package org.dbsyncer.biz;
 import java.io.File;
 
 /**
- * 配置导入（支持 ZIP formatVersion=2 与旧版单体 JSON）。
+ * 配置导入（ZIP formatVersion=2）。
  *
  * @author wuji
  * @version 1.0.0
@@ -15,7 +15,7 @@ import java.io.File;
 public interface ConfigImportService {
 
     /**
-     * 从文件导入配置；按后缀分发 ZIP / JSON。
+     * 从 ZIP 配置包导入。
      *
      * @param file 临时配置文件
      */

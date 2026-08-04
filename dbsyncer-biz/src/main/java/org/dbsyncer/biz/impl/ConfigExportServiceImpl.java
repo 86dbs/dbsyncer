@@ -23,8 +23,10 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,7 +86,7 @@ public class ConfigExportServiceImpl implements ConfigExportService {
             counts.put(ConfigConstant.CONNECTOR, writeJsonArray(zos, PackageFormatConfig.CONNECTOR, connectorProfile.getConnectorAll()));
             List<String> taskIds = new ArrayList<>();
             counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
-            counts.put(ConfigConstant.TABLE_GROUP, tableGroupProfile.writeTableGroupsToZip(zos));
+            counts.put(ConfigConstant.TABLE_GROUP, writeTableGroupsToZip(zos));
             counts.put(ConfigConstant.META, metaProfile.writeMetasToZip(zos));
             counts.put(StorageEnum.TASK_DETAIL.getType(), writeTaskDetailSchemas(zos, taskIds));
             writeManifest(zos, versionInfo, counts);
@@ -145,9 +147,50 @@ public class ConfigExportServiceImpl implements ConfigExportService {
         return taskIds == null ? 0 : taskIds.size();
     }
 
+    /**
+     * 按 taskId 分文件写出 table_group NDJSON。
+     */
+    private int writeTableGroupsToZip(ZipOutputStream zos) throws IOException {
+        String[] currentTaskId = {null};
+        BufferedWriter[] writer = {null};
+        int[] count = {0};
+        try {
+            tableGroupProfile.pageScanTableGroupsByTaskId(tg -> {
+                try {
+                    if (!StringUtil.equals(currentTaskId[0], tg.getTaskId())) {
+                        flushWriter(writer[0]);
+                        if (currentTaskId[0] != null) {
+                            zos.closeEntry();
+                        }
+                        currentTaskId[0] = tg.getTaskId();
+                        zos.putNextEntry(new ZipEntry(PackageFormatConfig.TABLE_GROUP_DIR + currentTaskId[0] + PackageFormatConfig.NDJSON_SUFFIX));
+                        writer[0] = new BufferedWriter(new OutputStreamWriter(zos, StandardCharsets.UTF_8));
+                    }
+                    writer[0].write(JsonUtil.objToJson(tg));
+                    writer[0].newLine();
+                    count[0]++;
+                } catch (IOException e) {
+                    throw new BizException("导出 table_group 失败: " + e.getMessage(), e);
+                }
+            });
+        } finally {
+            flushWriter(writer[0]);
+            if (currentTaskId[0] != null) {
+                zos.closeEntry();
+            }
+        }
+        return count[0];
+    }
+
     private void writeBytes(ZipOutputStream zos, String entryName, byte[] bytes) throws IOException {
         zos.putNextEntry(new ZipEntry(entryName));
         zos.write(bytes);
         zos.closeEntry();
+    }
+
+    private static void flushWriter(BufferedWriter writer) throws IOException {
+        if (writer != null) {
+            writer.flush();
+        }
     }
 }

@@ -212,7 +212,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     /**
      * 配置导入完成后的收尾：重建连接实例，恢复同步驱动与企业任务。
-     * ZIP / 旧 JSON 导入共用。
      */
     public void afterConfigImport() {
         loadConnectorInstance();

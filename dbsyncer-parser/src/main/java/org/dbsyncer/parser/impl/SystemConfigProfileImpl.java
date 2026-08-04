@@ -9,7 +9,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
@@ -38,13 +40,22 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
 
     @Override
     public SystemConfig getSystemConfig() {
-        List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, null, SystemConfig.class);
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
+        List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
         return CollectionUtils.isEmpty(list) ? null : list.get(0);
     }
 
     @Override
     public String saveSystemConfig(SystemConfig config) {
         Assert.notNull(config, "SystemConfig can not be null.");
+        long now = System.currentTimeMillis();
+        if (config.getCreateTime() == null) {
+            config.setCreateTime(now);
+        }
+        if (config.getUpdateTime() == null) {
+            config.setUpdateTime(now);
+        }
         if (StringUtil.isBlank(config.getId())) {
             config.setId(String.valueOf(snowflakeIdWorker.nextId()));
             storageService.add(StorageEnum.CONFIG, ConfigModelUtil.convertModelToMap(config));

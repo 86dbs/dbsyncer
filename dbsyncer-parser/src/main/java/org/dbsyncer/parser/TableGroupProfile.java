@@ -7,14 +7,12 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.storage.SqlQuery;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 /**
  * 表映射关系配置（dbsyncer_table_group）操作。
+ * <p>配置包 ZIP/NDJSON 的导入导出编排在 biz 的 {@code ConfigImportService}/{@code ConfigExportService}。
  *
  * @author wuji
  * @version 1.0.0
@@ -32,6 +30,11 @@ public interface TableGroupProfile {
      * @param models TableGroup 列表
      */
     void addTableGroupBatch(List<TableGroup> models);
+
+    /**
+     * 批量写入 table_group 行（不预建表级 Meta；配置包还原时 Meta 另路径导入）。
+     */
+    void addTableGroupBatchWithoutMeta(List<TableGroup> models);
 
     String editTableGroup(TableGroup model);
 
@@ -84,33 +87,14 @@ public interface TableGroupProfile {
     boolean existsTableGroup(String taskId, String sourceTable, String targetTable);
 
     List<String> listTableGroupIds(String taskId);
+
     /**
      * 表映射总数。
      */
     int countTableGroups();
 
     /**
-     * 批量导入表映射（不预建表级 Meta，供配置包还原）。
-     */
-    void importTableGroupBatch(List<TableGroup> models);
-
-    /**
-     * 从 NDJSON 行批量导入（内部按批次刷库）。
-     */
-    void importTableGroupNdjsonLines(List<String> ndjsonLines);
-
-    /**
-     * 从 ZIP 导入 table_group/*.ndjson。
-     */
-    void importFromZip(ZipFile zip) throws IOException;
-
-    /**
-     * 导出 table_group 到 ZIP（按 taskId 分 NDJSON 文件）。
-     */
-    int writeTableGroupsToZip(ZipOutputStream zos) throws IOException;
-
-    /**
-     * 按 taskId 升序遍历全部表映射（ZIP 导出 NDJSON）。
+     * 按 taskId 升序遍历全部表映射。
      */
     void pageScanTableGroupsByTaskId(Consumer<TableGroup> consumer);
 

@@ -64,7 +64,7 @@ public interface SystemConfigService {
     void checkFileSuffix(String filename);
 
     /**
-     * 更新配置（支持 .zip / .json）
+     * 更新配置（仅支持 .zip）
      *
      * @param file
      */
