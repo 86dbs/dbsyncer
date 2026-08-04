@@ -10,6 +10,7 @@ import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
+import org.dbsyncer.biz.task.MappingMatchTableTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
@@ -139,9 +140,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         refreshMappingTables(id);
         Mapping mapping = profileComponent.getMapping(id);
 
-        // 匹配相似表 on
+        // 匹配相似表（异步）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            matchSimilarTableGroups(mapping);
+            submitMappingMatchTableTask(mapping);
             return id;
         }
 
@@ -407,7 +408,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         synchronized (LOCK) {
             assertRunning(metaId);
-
+            Assert.isTrue(!dispatchTaskService.isRunning(id), "驱动表映射正在匹配或统计中，请稍候再启动");
             // 启动
             managerFactory.start(mapping);
 
@@ -578,6 +579,22 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         dispatchTaskService.execute(task);
     }
 
+    /**
+     * 提交异步匹配相似表任务（结束后会继续提交统计）
+     */
+    private void submitMappingMatchTableTask(Mapping mapping) {
+        MappingMatchTableTask task = new MappingMatchTableTask();
+        task.setMappingId(mapping.getId());
+        task.setTableGroupService(tableGroupService);
+        task.setProfileComponent(profileComponent);
+        task.setParserComponent(parserComponent);
+        task.setTableGroupProfile(tableGroupProfile);
+        task.setConnectorFactory(connectorFactory);
+        task.setRsaManager(rsaManager);
+        task.setDispatchTaskService(dispatchTaskService);
+        dispatchTaskService.execute(task);
+    }
+
     private List<Table> updateConnectorTables(Mapping mapping, String suffix) {
         boolean isSource = StringUtil.equals(ConnectorInstanceUtil.SOURCE_SUFFIX, suffix);
         DefaultConnectorServiceContext context = ConnectorServiceContextUtil.buildConnectorServiceContext(mapping, isSource);
@@ -685,36 +702,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             rows.add(row);
         }
         return rows;
-    }
-
-    /**
-     * 匹配相似表
-     *
-     * @param model
-     */
-    private void matchSimilarTableGroups(ConfigModel model) {
-        Mapping mapping = (Mapping) model;
-        List<Table> sourceTables = mapping.getSourceTable();
-        List<Table> targetTables = mapping.getTargetTable();
-        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
-        }
-        // 优化匹配性能
-        Map<String, Table> targetTableMap = targetTables.stream().collect(Collectors.toMap(table -> table.getName().toUpperCase(), table -> table));
-
-        // 匹配相似表
-        for (Table sourceTable : sourceTables) {
-            if (StringUtil.isBlank(sourceTable.getName())) {
-                continue;
-            }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
-                // 仅支持表类型
-                if (TableTypeEnum.isTable(targetTable.getType())) {
-                    addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
-                }
-                return targetTable;
-            });
-        }
     }
 
     /**

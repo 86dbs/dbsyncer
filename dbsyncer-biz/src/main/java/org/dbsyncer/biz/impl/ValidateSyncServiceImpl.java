@@ -8,7 +8,9 @@ import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
+import org.dbsyncer.biz.task.ValidateSyncMatchTableTask;
 import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
@@ -124,6 +126,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Resource
     private ValidateSyncTableGroupChecker validateSyncTableGroupChecker;
 
+    @Resource
+    private DispatchTaskService dispatchTaskService;
+
     /**
      * 任务启停锁
      */
@@ -191,9 +196,14 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             taskProfile.createRunDetailTable(id);
             preloadTemplate.reConnect(task);
             ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
-            // 勾选「匹配相似表」时仅走自动匹配，否则解析自定义表映射文本
+            // 勾选「匹配相似表」时异步自动匹配，否则解析自定义表映射文本
             if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-                matchSimilarTableGroups(validateSyncTask);
+                List<Table> sourceTables = validateSyncTask.getSourceTable();
+                List<Table> targetTables = validateSyncTask.getTargetTable();
+                if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
+                    throw new BizException("未获取到源库或目标库表列表，无法匹配相似表");
+                }
+                submitValidateSyncMatchTableTask(id);
             } else {
                 String tableGroups = params.get("tableGroups");
                 if (StringUtil.isNotBlank(tableGroups)) {
@@ -214,39 +224,14 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     /**
-     * 匹配相似表
-     *
+     * 提交异步匹配相似表任务
      */
-    private void matchSimilarTableGroups(ValidateSyncTask validateSyncTask) {
-        List<Table> sourceTables = validateSyncTask.getSourceTable();
-        List<Table> targetTables = validateSyncTask.getTargetTable();
-        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            throw new BizException("未获取到源库或目标库表列表，无法匹配相似表");
-        }
-        // 同名目标表只保留首次出现，避免 toMap 在重名时抛异常
-        Map<String, Table> targetTableMap = new LinkedHashMap<>();
-        for (Table table : targetTables) {
-            if (table == null || StringUtil.isBlank(table.getName())) {
-                continue;
-            }
-            targetTableMap.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
-        }
-
-        for (Table sourceTable : sourceTables) {
-            if (sourceTable == null || StringUtil.isBlank(sourceTable.getName())) {
-                continue;
-            }
-            Table targetTable = targetTableMap.get(sourceTable.getName().toUpperCase(Locale.ROOT));
-            if (targetTable == null) {
-                continue;
-            }
-            // 仅匹配物理表；type 为空时按表处理（部分驱动元数据可能缺 TABLE_TYPE）
-            String targetType = targetTable.getType();
-            if (StringUtil.isNotBlank(targetType) && !TableTypeEnum.isTable(targetType)) {
-                continue;
-            }
-            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable, StringUtil.EMPTY);
-        }
+    private void submitValidateSyncMatchTableTask(String taskId) {
+        ValidateSyncMatchTableTask task = new ValidateSyncMatchTableTask();
+        task.setTaskId(taskId);
+        task.setTaskService(taskService);
+        task.setValidateSyncService(this);
+        dispatchTaskService.execute(task);
     }
 
     /**
@@ -382,6 +367,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public String start(String id) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(id) > 0, "任务未配置表映射，无法启动");
+        Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
         taskService.start(id);
         return "启动成功";
     }
