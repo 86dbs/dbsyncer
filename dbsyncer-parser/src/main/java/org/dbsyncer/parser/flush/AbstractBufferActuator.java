@@ -9,7 +9,7 @@ import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.model.Meta;
 
 import org.slf4j.Logger;
@@ -111,7 +111,7 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
      */
     public boolean isRunning(BufferRequest request) {
         Meta meta = metaProfile.getMeta(request.getMetaId());
-        return meta != null && MetaEnum.isRunning(meta.getState());
+        return meta != null && CommonTaskStatusEnum.isRunning(meta.getState());
     }
 
     /**

@@ -100,9 +100,6 @@ public class DatabaseConnectorInstance implements ConnectorInstance<DatabaseConf
             } catch (SQLException e) {
                 logger.warn("Failed to set catalog/schema: {}", e.getMessage());
                 // 不抛出异常，允许连接继续使用
-            } catch (AbstractMethodError | UnsupportedOperationException e) {
-                // 非 Oracle 系驱动若未实现 setSchema，由对应连接器 connect() 自行处理；此处仅告警
-                logger.warn("JDBC driver does not support setCatalog/setSchema: {}", e.getMessage());
             }
         }
         return connection;

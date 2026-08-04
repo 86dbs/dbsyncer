@@ -134,7 +134,7 @@ public final class DatabaseSyncProgressUtil {
     }
 
     /**
-     * 任务级 Meta.state 是否为本轮已完成（与 CommonTaskStatusEnum.DONE / MetaEnum.DONE 同码）。
+     * 任务级 Meta.state 是否为本轮已完成（与 {@link org.dbsyncer.common.enums.CommonTaskStatusEnum#DONE} 同码）。
      */
     public static boolean isRoundDone(Integer metaState) {
         return CommonTaskStatusEnum.isDone(metaState);

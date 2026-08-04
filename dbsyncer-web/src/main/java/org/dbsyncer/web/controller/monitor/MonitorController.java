@@ -102,7 +102,6 @@ public class MonitorController extends BaseController {
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
-        model.put("meta", monitorService.getMetaAll());
         return "monitor/list.html";
     }
 
@@ -133,6 +132,18 @@ public class MonitorController extends BaseController {
     public void deleteExpiredDataAndLog() {
         if (preloadTemplate.isPreloadCompleted()) {
             monitorService.deleteExpiredDataAndLog();
+        }
+    }
+
+    @PostMapping("/queryMeta")
+    @ResponseBody
+    public RestResult queryMeta(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.queryMeta(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
         }
     }
 

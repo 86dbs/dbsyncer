@@ -43,10 +43,15 @@ public enum CommonTaskStatusEnum {
         return code;
     }
 
-    public String getMessage() {return message;}
+    public String getMessage() {
+        return message;
+    }
 
+    /**
+     * 运行中或停止中（尚未回到未运行/已完成）
+     */
     public static boolean isRunning(int status) {
-        return status == RUNNING.code;
+        return status == RUNNING.code || status == STOPPING.code;
     }
 
     public static boolean isStopping(int status) {

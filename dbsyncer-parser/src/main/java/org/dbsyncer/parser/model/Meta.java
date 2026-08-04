@@ -1,7 +1,7 @@
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.HashMap;
@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>主键 {@code id} 为雪花，与业务实体 ID 解耦。
  * <p>关联键 {@code taskId}：任务级（{@code isTaskDetail=0}）为任务/Mapping ID；
  * 表级（{@code isTaskDetail=1}）为 {@code table_group.id}。
+
  * <p>明细分表 {@code dbsyncer_task_detail_{taskId}} 分片使用任务级 Meta 的 taskId，不是 Meta 主键。
  *
  * @author AE86
@@ -27,7 +28,7 @@ public class Meta extends ConfigModel {
     private String taskId;
 
     /**
-     * {@link MetaEnum}
+     * {@link CommonTaskStatusEnum}
      */
     private int state;
 
@@ -59,7 +60,7 @@ public class Meta extends ConfigModel {
     }
 
     private void init() {
-        this.state = MetaEnum.READY.getCode();
+        this.state = CommonTaskStatusEnum.READY.getCode();
         this.isTaskDetail = 0;
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);

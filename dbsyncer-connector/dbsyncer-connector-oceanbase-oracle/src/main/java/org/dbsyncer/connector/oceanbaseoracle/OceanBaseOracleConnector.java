@@ -101,6 +101,21 @@ public final class OceanBaseOracleConnector extends OracleConnector {
         return schemaResolver;
     }
 
+    /**
+     * oceanbase-client 的 {@code Connection#setSchema} 会内部调用未实现的 {@code getSchema()}，
+     * 抛出 {@link AbstractMethodError}。此处不走 JDBC setSchema，schema 仅保存在实例上供 SQL OWNER 限定；
+     * 需要切换会话时由 {@code ALTER SESSION SET CURRENT_SCHEMA} 处理（如 DDL）。
+     */
+    @Override
+    public ConnectorInstance connect(DatabaseConfig config, ConnectorServiceContext context) {
+        return new DatabaseConnectorInstance(config, context.getCatalog(), context.getSchema()) {
+            @Override
+            public Connection getConnection() throws Exception {
+                return getDataSource().getConnection();
+            }
+        };
+    }
+
     @Override
     public Listener getListener(String listenerType) {
         if (ListenerTypeEnum.isTiming(listenerType)) {

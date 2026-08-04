@@ -33,6 +33,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -61,7 +62,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +89,9 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -142,18 +146,35 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public List<MetaVO> getMetaAll() {
-        // 仅同步驱动任务级 Meta（mapping）；企业校验/迁移 Meta 不进监控列表
-        List<MetaVO> result = new ArrayList<>();
-        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
-            for (Meta meta : page) {
-                MetaVO vo = convertMeta2Vo(meta);
-                if (vo != null) {
-                    result.add(vo);
-                }
+    public Paging<MetaVO> queryMeta(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 50);
+        String searchKey = params.get("searchKey");
+        // 按驱动任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
+        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<MetaVO> result = new Paging<>(pageNum, pageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<MetaVO> rows = new ArrayList<>(paging.getData().size());
+        for (Mapping mapping : paging.getData()) {
+            if (mapping == null || StringUtil.isBlank(mapping.getMetaId())) {
+                continue;
             }
-        });
-        result.sort(Comparator.comparing(MetaVO::getUpdateTime).reversed());
+            Meta meta = metaProfile.getMeta(mapping.getMetaId());
+            if (meta == null) {
+                continue;
+            }
+            MetaVO vo = convertMeta2Vo(meta);
+            if (vo != null) {
+                rows.add(vo);
+            }
+        }
+        result.setData(rows);
         return result;
     }
 
@@ -581,9 +602,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private String getDefaultMetaId(String id) {
         if (StringUtil.isBlank(id)) {
-            List<MetaVO> list = getMetaAll();
-            if (!CollectionUtils.isEmpty(list)) {
-                return list.get(0).getId();
+            Map<String, String> params = new HashMap<>();
+            params.put("pageNum", "1");
+            params.put("pageSize", "1");
+            Paging<MetaVO> paging = queryMeta(params);
+            if (paging != null && !CollectionUtils.isEmpty(paging.getData())) {
+                return paging.getData().iterator().next().getId();
             }
         }
         return id;

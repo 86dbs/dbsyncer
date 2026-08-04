@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -12,7 +13,6 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -50,7 +50,7 @@ public class BaseServiceImpl {
         Meta meta = metaProfile.getMeta(metaId);
         if (null != meta) {
             int state = meta.getState();
-            return MetaEnum.isRunning(state);
+            return CommonTaskStatusEnum.isRunning(state);
         }
         return false;
     }

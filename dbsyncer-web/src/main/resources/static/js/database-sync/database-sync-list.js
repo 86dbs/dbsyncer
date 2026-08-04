@@ -4,7 +4,7 @@
 (function (window) {
     'use strict';
 
-    /** 与 MetaEnum.DONE / CommonTaskStatusEnum.DONE 对齐：本轮业务已完成 */
+    /** 与 CommonTaskStatusEnum.DONE 对齐：本轮业务已完成 */
     var META_STATE_DONE = 3;
 
     function databaseSyncStart(taskId) {

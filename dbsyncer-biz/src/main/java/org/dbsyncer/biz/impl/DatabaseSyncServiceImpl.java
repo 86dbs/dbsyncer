@@ -121,6 +121,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         normalizeAndSortMappings(mappings);
         validateMappingConnectors(mappings);
+        validateTableMappings(mappings);
 
         DatabaseSyncTask task = new DatabaseSyncTask();
         fillTaskOnAdd(task, params);
@@ -159,6 +160,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         normalizeAndSortMappings(mappings);
         validateMappingConnectors(mappings);
+        validateTableMappings(mappings);
         fillTaskOnEdit(task, params);
         task.setDatabaseMappings(toPersistMappings(mappings));
         // 先物化新映射（连库读元数据），失败则不碰旧 table_group
@@ -474,6 +476,30 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             }
             if (StringUtil.isBlank(mapping.getTargetConnectorId())) {
                 throw new BizException("库映射 " + (i + 1) + " 缺少目标端连接器");
+            }
+        }
+    }
+
+    /**
+     * 表映射目标表名不能为空（add/edit 对称校验）
+     */
+    private void validateTableMappings(List<DatabaseMappingVO> mappings) {
+        if (CollectionUtils.isEmpty(mappings)) {
+            return;
+        }
+        for (int i = 0; i < mappings.size(); i++) {
+            List<TableMapping> tableMappings = mappings.get(i).getTableMappings();
+            if (CollectionUtils.isEmpty(tableMappings)) {
+                continue;
+            }
+            for (TableMapping row : tableMappings) {
+                if (row == null) {
+                    continue;
+                }
+                if (StringUtil.isBlank(row.getTargetTable())) {
+                    String source = StringUtil.isNotBlank(row.getSourceTable()) ? row.getSourceTable() : "";
+                    throw new BizException(String.format("库映射 %d：源表「%s」的目标表名不能为空", i + 1, source));
+                }
             }
         }
     }

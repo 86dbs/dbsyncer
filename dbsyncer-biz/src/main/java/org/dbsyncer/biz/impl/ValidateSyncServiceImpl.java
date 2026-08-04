@@ -399,7 +399,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                     vo.setErrorCount(errorCount);
                     int tableCount = tableGroupProfile.getTableGroupCount(t.getId());
                     vo.setTotalTableCount(tableCount);
-                    boolean roundDone = taskMeta != null && org.dbsyncer.parser.enums.MetaEnum.isDone(taskMeta.getState());
+                    boolean roundDone = taskMeta != null && CommonTaskStatusEnum.isDone(taskMeta.getState());
                     List<CommonTaskSnapshot> tableSnapshots = collectValidateTableSnapshots(t.getId());
                     vo.setCompletedTableCount(countCompletedTables(roundDone, tableCount, tableSnapshots));
                     vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));

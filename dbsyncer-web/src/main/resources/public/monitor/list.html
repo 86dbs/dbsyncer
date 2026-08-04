@@ -87,10 +87,7 @@
             <!-- 表格工具栏 -->
             <div class="grid grid-cols-6 items-center">
                 <div class="lg:col-span-3">
-                    <select id="searchActuatorMeta" class="form-control">
-                        <option value="" selected="selected">无</option>
-                        <option th:each="m,s:${meta}" th:value="${m?.id}" th:text="${m?.mappingName} +' (' + ${m?.model} +')'"/>
-                    </select>
+                    <select id="searchActuatorMeta" class="form-control"></select>
                 </div>
                 <div id="searchActuator" class="lg:col-span-3 search-wrapper">
                     <i class="fa fa-search search-icon"></i>

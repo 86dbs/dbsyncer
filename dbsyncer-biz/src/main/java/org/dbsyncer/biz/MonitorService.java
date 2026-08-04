@@ -21,11 +21,12 @@ import java.util.Map;
 public interface MonitorService {
 
     /**
-     * 获取驱动元信息列表
+     * 分页查询驱动元信息（供监控页下拉远程搜索）
      *
-     * @return
+     * @param params pageNum、pageSize、searchKey
+     * @return 分页结果
      */
-    List<MetaVO> getMetaAll();
+    Paging<MetaVO> queryMeta(Map<String, String> params);
 
     /**
      * 获取驱动元信息

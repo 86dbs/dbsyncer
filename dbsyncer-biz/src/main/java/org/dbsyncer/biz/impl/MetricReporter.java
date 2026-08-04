@@ -24,7 +24,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
@@ -235,7 +235,7 @@ public class MetricReporter implements ScheduledTaskJob {
                     lastWeek.incrementAndGet();
                 }
                 // 统计运行中
-                if (MetaEnum.isRunning(meta.getState())) {
+                if (CommonTaskStatusEnum.isRunning(meta.getState())) {
                     running.incrementAndGet();
                 }
                 // 统计失败数

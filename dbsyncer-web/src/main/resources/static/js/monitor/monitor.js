@@ -138,9 +138,46 @@ function bindQueryActuatorEvent() {
         pagination.doSearch(params());
     }
 
-    // 驱动下拉（跳过初始化回调，避免初始化时触发搜索）
+    // 驱动下拉（远程分页搜索，跳过初始化回调避免重复请求）
     metaSelect = $('#searchActuatorMeta').dbSelect({
         type: 'single',
+        remoteSearch: true,
+        pageSize: 50,
+        keywordDebounceMs: 300,
+        loadOptions: function (query, onSuccess, onError) {
+            doPoster('/monitor/queryMeta', {
+                pageNum: query.pageNum,
+                pageSize: query.pageSize,
+                searchKey: query.searchKey || ''
+            }, function (res) {
+                if (res.success === true) {
+                    const paging = res.data || {};
+                    const rows = Array.isArray(paging.data) ? paging.data : [];
+                    let converted = rows.map(function (row) {
+                        const name = row.mappingName || '';
+                        const model = row.model || '';
+                        return {
+                            label: name + ' (' + model + ')',
+                            value: row.id || ''
+                        };
+                    });
+                    if (Number(query.pageNum) === 1) {
+                        converted = [{ label: '无', value: '' }].concat(converted);
+                    }
+                    onSuccess({
+                        pageNum: paging.pageNum || query.pageNum,
+                        pageSize: paging.pageSize || query.pageSize,
+                        total: paging.total || 0,
+                        data: converted
+                    });
+                } else {
+                    bootGrowl(res.message || '加载驱动列表失败', 'danger');
+                    if (typeof onError === 'function') {
+                        onError();
+                    }
+                }
+            });
+        },
         onSelect: search
     });
 

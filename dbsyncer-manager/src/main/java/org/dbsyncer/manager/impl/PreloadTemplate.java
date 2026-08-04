@@ -21,7 +21,7 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
@@ -251,10 +251,10 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 try {
                     reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
-                    if (MetaEnum.RUNNING.getCode() == meta.getState()) {
+                    if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
                         managerFactory.start(mapping, true);
-                    } else if (MetaEnum.STOPPING.getCode() == meta.getState()) {
-                        managerFactory.changeMetaState(meta.getId(), MetaEnum.READY);
+                    } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
+                        managerFactory.changeMetaState(meta.getId(), CommonTaskStatusEnum.READY);
                     }
                 } catch (Exception e) {
                     logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
@@ -373,11 +373,11 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                 continue;
             }
             Meta meta = metaProfile.getMetaByTaskId(task.getId(), TaskLevelEnum.TASK);
-            if (meta == null || meta.getState() != MetaEnum.RUNNING.getCode()) {
+            if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                 continue;
             }
             try {
-                meta.setState(MetaEnum.READY.getCode());
+                meta.setState(CommonTaskStatusEnum.READY.getCode());
                 meta.setUpdateTime(System.currentTimeMillis());
                 profileComponent.editConfigModel(meta);
                 taskService.start(task.getId());

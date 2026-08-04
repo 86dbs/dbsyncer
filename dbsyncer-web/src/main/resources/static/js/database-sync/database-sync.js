@@ -2012,6 +2012,46 @@
         renderDetailTablePage(reset ? 1 : state.detailPageNum);
     }
 
+    function findFirstEmptyTargetTable() {
+        for (let i = 0; i < state.mappings.length; i++) {
+            const tables = state.mappings[i].tableMappings || [];
+            for (let j = 0; j < tables.length; j++) {
+                const row = tables[j];
+                if (!row || !String(row.targetTable || '').trim()) {
+                    return {
+                        mappingIndex: i,
+                        rowIndex: j,
+                        sourceTable: (row && row.sourceTable) || ''
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 校验目标表名非空；失败时定位到对应库映射并聚焦输入框。
+     * @returns {boolean} true 表示通过
+     */
+    function validateTargetTablesNotEmpty() {
+        const hit = findFirstEmptyTargetTable();
+        if (!hit) {
+            return true;
+        }
+        const sourceLabel = hit.sourceTable ? '源表「' + hit.sourceTable + '」' : '存在表';
+        bootGrowl('库映射 #' + (hit.mappingIndex + 1) + '：' + sourceLabel + '的目标表名不能为空', 'warning');
+        state.activeMappingIndex = hit.mappingIndex;
+        renderMappingSidebar();
+        renderMappingDetail(false);
+        const page = Math.floor(hit.rowIndex / DETAIL_PAGE_SIZE) + 1;
+        renderDetailTablePage(page);
+        const $input = $('#mappingDetailTableBody .db-tgt-tbl[data-r="' + hit.rowIndex + '"]');
+        if ($input.length) {
+            $input.focus().select();
+        }
+        return false;
+    }
+
     function bindMappingDetailEvents() {
         $('#mappingDetailTableBody .db-tgt-tbl').off('change.detailTgtTbl').on('change.detailTgtTbl', function () {
             const b = Number($(this).data('b'));
@@ -2391,6 +2431,9 @@
                     bootGrowl('库映射 #' + (i + 1) + '：目标连接器必须与源端连接器同类型', 'warning');
                     return;
                 }
+            }
+            if (!validateTargetTablesNotEmpty()) {
+                return;
             }
             const btn = $(this);
             const original = btn.html();
