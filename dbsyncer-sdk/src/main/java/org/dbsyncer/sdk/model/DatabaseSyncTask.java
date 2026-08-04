@@ -4,6 +4,7 @@
 package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,10 @@ import java.util.List;
  * @date 2026-05-22 11:19
  */
 public class DatabaseSyncTask extends ConfigModel {
+
+    public DatabaseSyncTask() {
+        super.setType(ConfigConstant.DATABASE_SYNC);
+    }
 
     /**
      * 是否复制表结构

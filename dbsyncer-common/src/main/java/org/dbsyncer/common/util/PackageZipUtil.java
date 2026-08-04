@@ -75,7 +75,7 @@ public final class PackageZipUtil {
     /**
      * 遍历 table_group/*.ndjson 中非空行。
      */
-    public static void forEachTableGroupNdjsonLine(ZipFile zip, Consumer<String> lineConsumer) throws IOException {
+    public static void pageScanTableGroupNdjsonLines(ZipFile zip, Consumer<String> lineConsumer) throws IOException {
         if (zip == null || lineConsumer == null) {
             return;
         }

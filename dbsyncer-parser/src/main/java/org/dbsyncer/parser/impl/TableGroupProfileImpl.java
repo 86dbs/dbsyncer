@@ -174,7 +174,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public void forEachTableGroupPage(String mappingId, int pageSize, Consumer<List<TableGroup>> pageConsumer) {
+    public void pageScanTableGroups(String mappingId, int pageSize, Consumer<List<TableGroup>> pageConsumer) {
         if (StringUtil.isBlank(mappingId) || pageConsumer == null) {
             return;
         }
@@ -221,6 +221,18 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         Query condition = new Query();
         condition.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, mappingId);
         return operationTemplate.count(StorageEnum.TABLE_GROUP, condition);
+    }
+
+    @Override
+    public boolean existsTableGroup(String taskId, String sourceTable, String targetTable) {
+        if (StringUtil.isBlank(taskId) || StringUtil.isBlank(sourceTable) || StringUtil.isBlank(targetTable)) {
+            return false;
+        }
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
+        condition.addFilter(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, sourceTable);
+        condition.addFilter(ConfigConstant.TABLE_GROUP_TARGET_TABLE, targetTable);
+        return operationTemplate.count(StorageEnum.TABLE_GROUP, condition) > 0;
     }
 
     private void addTableGroupDetailMeta(String tableGroupId) {
@@ -270,10 +282,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         return groupIds;
     }
 
-    @Override
-    public List<TableGroup> listTableGroupAll() {
-        return operationTemplate.queryList(StorageEnum.TABLE_GROUP, null, TableGroup.class);
-    }
+
 
     @Override
     public void importTableGroupBatch(List<TableGroup> models) {
@@ -315,7 +324,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
             return;
         }
         List<String> buffer = new ArrayList<>(PackageFormatConfig.IMPORT_BATCH_SIZE);
-        PackageZipUtil.forEachTableGroupNdjsonLine(zip, line -> {
+        PackageZipUtil.pageScanTableGroupNdjsonLines(zip, line -> {
             buffer.add(line);
             if (buffer.size() >= PackageFormatConfig.IMPORT_BATCH_SIZE) {
                 importTableGroupNdjsonLines(new ArrayList<>(buffer));
@@ -336,7 +345,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         BufferedWriter[] writer = {null};
         int[] count = {0};
         try {
-            forEachTableGroupSortedByTaskId(tg -> {
+            pageScanTableGroupsByTaskId(tg -> {
                 try {
                     if (!StringUtil.equals(currentTaskId[0], tg.getTaskId())) {
                         flushWriter(writer[0]);
@@ -369,7 +378,7 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
-    public void forEachTableGroupSortedByTaskId(Consumer<TableGroup> consumer) {
+    public void pageScanTableGroupsByTaskId(Consumer<TableGroup> consumer) {
         if (consumer == null) {
             return;
         }

@@ -18,6 +18,7 @@ import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.enums.MetaEnum;
@@ -49,6 +50,7 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -79,6 +81,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private ManagerFactory managerFactory;
@@ -218,33 +223,43 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     /**
      * 恢复同步驱动(Mapping)。
-     * <p>只处理任务级 Meta({@code isTaskDetail=0})；明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
-     * Mapping 已并入 {@code dbsyncer_task}，通过 {@link Meta#getTaskId()} 关联。
+     * <p>先按任务类型 {@code mapping} 分页拉取任务，再批量查任务级 Meta（{@code isTaskDetail=0}），
+     * 避免一次性加载全部 Meta。明细级 Meta 属于校验/迁移结果或表级进度，不参与驱动启停。
      */
     private void launchSyncMappings() {
-        List<Meta> metas = metaProfile.getTaskMetaAll();
-        if (CollectionUtils.isEmpty(metas)) {
-            return;
-        }
-        metas.forEach(meta -> {
-            try {
-                if (StringUtil.isBlank(meta.getTaskId())) {
-                    return;
+        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+            if (CollectionUtils.isEmpty(mappings)) {
+                return;
+            }
+            List<String> taskIds = new ArrayList<>();
+            for (Mapping mapping : mappings) {
+                if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
+                    taskIds.add(mapping.getId());
                 }
-                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
-                // 校验/迁移也有任务级 Meta，但 TYPE 不是 mapping，跳过
-                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
-                    return;
+            }
+            Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+            if (CollectionUtils.isEmpty(metaMap)) {
+                return;
+            }
+            for (Mapping mapping : mappings) {
+                if (mapping == null || StringUtil.isBlank(mapping.getId())) {
+                    continue;
                 }
-                reConnect(mapping);
-                // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
-                if (MetaEnum.RUNNING.getCode() == meta.getState()) {
-                    managerFactory.start(mapping, true);
-                } else if (MetaEnum.STOPPING.getCode() == meta.getState()) {
-                    managerFactory.changeMetaState(meta.getId(), MetaEnum.READY);
+                Meta meta = metaMap.get(mapping.getId());
+                if (meta == null) {
+                    continue;
                 }
-            } catch (Exception e) {
-                logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), meta.getTaskId(), e.getMessage(), e);
+                try {
+                    reConnect(mapping);
+                    // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
+                    if (MetaEnum.RUNNING.getCode() == meta.getState()) {
+                        managerFactory.start(mapping, true);
+                    } else if (MetaEnum.STOPPING.getCode() == meta.getState()) {
+                        managerFactory.changeMetaState(meta.getId(), MetaEnum.READY);
+                    }
+                } catch (Exception e) {
+                    logger.error("恢复同步驱动失败, metaId={}, taskId={}, err={}", meta.getId(), mapping.getId(), e.getMessage(), e);
+                }
             }
         });
     }

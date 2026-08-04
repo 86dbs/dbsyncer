@@ -191,7 +191,7 @@ public class MappingChecker extends AbstractChecker {
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
         List<TableGroup> groupAll = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
         if (!CollectionUtils.isEmpty(groupAll)) {
             sortTableGroup(groupAll, params);
             // 合并配置

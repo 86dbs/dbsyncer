@@ -25,9 +25,16 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * {@link MetaProfile} 实现（dbsyncer_meta）。
@@ -51,15 +58,56 @@ public class MetaProfileImpl implements MetaProfile {
     }
 
     @Override
-    public List<Meta> getMetaAll() {
-        return operationTemplate.queryList(StorageEnum.META, null, Meta.class);
+    public Paging<Meta> queryMeta(Integer isTaskDetail, int pageNum, int pageSize) {
+        int safePageNum = pageNum > 0 ? pageNum : 1;
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
+        Query query = new Query(safePageNum, safePageSize);
+        query.setType(StorageEnum.META);
+        if (isTaskDetail != null) {
+            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, isTaskDetail);
+        }
+        Paging paging = storageService.query(query);
+        Paging<Meta> result = new Paging<>(safePageNum, safePageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<Meta> metas = new ArrayList<>(paging.getData().size());
+        for (Object item : paging.getData()) {
+            if (!(item instanceof Map)) {
+                continue;
+            }
+            Meta meta = ConfigModelUtil.parseFromRow((Map) item, Meta.class);
+            if (meta != null) {
+                metas.add(meta);
+            }
+        }
+        result.setData(metas);
+        return result;
     }
 
     @Override
-    public List<Meta> getTaskMetaAll() {
-        Query condition = new Query();
-        condition.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 0);
-        return operationTemplate.queryList(StorageEnum.META, condition, Meta.class);
+    public void pageScanMetas(Integer isTaskDetail, int pageSize, Consumer<List<Meta>> pageConsumer) {
+        if (pageConsumer == null) {
+            return;
+        }
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
+        int pageNum = 1;
+        while (true) {
+            Paging<Meta> paging = queryMeta(isTaskDetail, pageNum, safePageSize);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            List<Meta> page = new ArrayList<>(paging.getData());
+            pageConsumer.accept(page);
+            if (page.size() < safePageSize) {
+                break;
+            }
+            pageNum++;
+        }
     }
 
     @Override
@@ -78,9 +126,18 @@ public class MetaProfileImpl implements MetaProfile {
     }
 
     @Override
+    public Map<String, Meta> getTaskMetaMap(List<String> taskIds) {
+        return queryMetaMapByTaskIds(taskIds, TaskLevelEnum.TASK);
+    }
+
+    @Override
     public Map<String, Meta> getDetailMetaMap(List<String> refIds) {
+        return queryMetaMapByTaskIds(refIds, TaskLevelEnum.TASK_DETAIL);
+    }
+
+    private Map<String, Meta> queryMetaMapByTaskIds(List<String> refIds, TaskLevelEnum taskLevelEnum) {
         Map<String, Meta> result = new java.util.HashMap<>();
-        if (CollectionUtils.isEmpty(refIds)) {
+        if (CollectionUtils.isEmpty(refIds) || taskLevelEnum == null) {
             return result;
         }
         List<String> ids = refIds.stream().filter(StringUtil::isNotBlank).distinct().collect(Collectors.toList());
@@ -90,8 +147,8 @@ public class MetaProfileImpl implements MetaProfile {
         TaskSplitUtil.split(ids, ConfigConstant.PAGE_SIZE, (batch) -> {
             Query query = new Query(1, batch.size());
             query.setType(StorageEnum.META);
-            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, 1);
-            query.addFilter(ConfigConstant.META_TASK_ID, org.dbsyncer.sdk.enums.FilterEnum.IN, String.join(StringUtil.COMMA, batch));
+            query.addFilter(ConfigConstant.META_IS_TASK_DETAIL, taskLevelEnum.getCode());
+            query.addFilter(ConfigConstant.META_TASK_ID, FilterEnum.IN, String.join(StringUtil.COMMA, batch));
             Paging paging = storageService.query(query);
             if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
                 return;
@@ -186,6 +243,48 @@ public class MetaProfileImpl implements MetaProfile {
     @Override
     public int countMeta() {
         return operationTemplate.count(StorageEnum.META, null);
+    }
+
+    @Override
+    public int writeMetasToZip(ZipOutputStream zos) throws IOException {
+        if (zos == null) {
+            return 0;
+        }
+        zos.putNextEntry(new ZipEntry(PackageFormatConfig.META));
+        int[] count = {0};
+        boolean[] first = {true};
+        try {
+            OutputStreamWriter writer = new OutputStreamWriter(zos, StandardCharsets.UTF_8);
+            writer.write('[');
+            pageScanMetas(null, ConfigConstant.PAGE_SIZE, page -> {
+                try {
+                    for (Meta meta : page) {
+                        if (meta == null) {
+                            continue;
+                        }
+                        if (!first[0]) {
+                            writer.write(',');
+                        }
+                        first[0] = false;
+                        writer.write(JsonUtil.objToJson(meta));
+                        count[0]++;
+                    }
+                    writer.flush();
+                } catch (IOException e) {
+                    throw new ParserException("导出 meta 失败: " + e.getMessage(), e);
+                }
+            });
+            writer.write(']');
+            writer.flush();
+        } catch (ParserException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            }
+            throw e;
+        } finally {
+            zos.closeEntry();
+        }
+        return count[0];
     }
 
     @Override

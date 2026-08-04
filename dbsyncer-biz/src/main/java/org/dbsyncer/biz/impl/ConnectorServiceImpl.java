@@ -16,6 +16,7 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -54,6 +55,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -98,16 +102,18 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public String remove(String id) {
-        List<Mapping> mappingAll = profileComponent.getMappingAll();
-        if (!CollectionUtils.isEmpty(mappingAll)) {
-            mappingAll.forEach(mapping -> {
+        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappingAll -> {
+            if (CollectionUtils.isEmpty(mappingAll)) {
+                return;
+            }
+            for (Mapping mapping : mappingAll) {
                 if (StringUtil.equals(mapping.getSourceConnectorId(), id) || StringUtil.equals(mapping.getTargetConnectorId(), id)) {
                     String error = String.format("驱动“%s”正在使用，请先删除", mapping.getName());
                     logger.error(error);
                     throw new BizException(error);
                 }
-            });
-        }
+            }
+        });
 
         Connector connector = profileComponent.getConnector(id);
         if (connector != null) {

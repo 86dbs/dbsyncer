@@ -12,10 +12,10 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Plugin;
@@ -45,7 +45,7 @@ public class PluginServiceImpl implements PluginService {
     private PluginFactory pluginFactory;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -100,37 +100,36 @@ public class PluginServiceImpl implements PluginService {
 
     private Map<String, List<String>> getPluginClassNameMap() {
         Map<String, List<String>> map = new ConcurrentHashMap<>();
-        List<Mapping> mappingAll = profileComponent.getMappingAll();
-        if (CollectionUtils.isEmpty(mappingAll)) {
-            return map;
-        }
-
-        for (Mapping m : mappingAll) {
-            Plugin plugin = m.getPlugin();
-            if (null != plugin) {
-                putPluginMap(map, plugin.getClassName(), m.getName());
-                continue;
+        taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappingAll -> {
+            if (CollectionUtils.isEmpty(mappingAll)) {
+                return;
             }
-
-            AtomicBoolean pluginFound = new AtomicBoolean(false);
-            tableGroupProfile.forEachTableGroupPage(m.getId(), ConfigConstant.PAGE_SIZE, page -> {
-                if (pluginFound.get() || CollectionUtils.isEmpty(page)) {
-                    return;
+            for (Mapping m : mappingAll) {
+                Plugin plugin = m.getPlugin();
+                if (null != plugin) {
+                    putPluginMap(map, plugin.getClassName(), m.getName());
+                    continue;
                 }
-                for (TableGroup t : page) {
-                    if (t == null) {
-                        continue;
-                    }
-                    Plugin p = t.getPlugin();
-                    if (p != null) {
-                        putPluginMap(map, p.getClassName(), m.getName());
-                        pluginFound.set(true);
+
+                AtomicBoolean pluginFound = new AtomicBoolean(false);
+                tableGroupProfile.pageScanTableGroups(m.getId(), ConfigConstant.PAGE_SIZE, page -> {
+                    if (pluginFound.get() || CollectionUtils.isEmpty(page)) {
                         return;
                     }
-                }
-            });
-        }
-
+                    for (TableGroup t : page) {
+                        if (t == null) {
+                            continue;
+                        }
+                        Plugin p = t.getPlugin();
+                        if (p != null) {
+                            putPluginMap(map, p.getClassName(), m.getName());
+                            pluginFound.set(true);
+                            return;
+                        }
+                    }
+                });
+            }
+        });
         return map;
     }
 

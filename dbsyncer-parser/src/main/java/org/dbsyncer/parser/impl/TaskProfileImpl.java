@@ -10,8 +10,8 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.PackageZipUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserException;
@@ -39,12 +39,11 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
@@ -80,17 +79,62 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public <T extends ConfigModel> List<T> listTasks(Class<T> clazz) {
+    public <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey) {
+        Assert.notNull(clazz, "Task class can not be null.");
+        int safePageNum = pageNum > 0 ? pageNum : 1;
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         try {
             ConfigModel probe = (ConfigModel) clazz.newInstance();
-            Query condition = new Query();
+            Query query = new Query(safePageNum, safePageSize);
+            query.setType(StorageEnum.TASK);
             if (StringUtil.isNotBlank(probe.getType())) {
-                condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, probe.getType());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, probe.getType());
             }
-            condition.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
-            return operationTemplate.queryList(StorageEnum.TASK, condition, clazz);
+            if (StringUtil.isNotBlank(searchKey)) {
+                query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
+            }
+            query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+            Paging paging = storageService.query(query);
+            Paging<T> result = new Paging<>(safePageNum, safePageSize);
+            if (paging == null) {
+                return result;
+            }
+            result.setTotal(paging.getTotal());
+            if (CollectionUtils.isEmpty(paging.getData())) {
+                return result;
+            }
+            List<T> tasks = new ArrayList<>(paging.getData().size());
+            for (Object item : paging.getData()) {
+                T task = ConfigModelUtil.parseFromRow((Map) item, clazz);
+                if (task != null) {
+                    tasks.add(task);
+                }
+            }
+            result.setData(tasks);
+            return result;
         } catch (Exception e) {
             throw new ParserException(e);
+        }
+    }
+
+    @Override
+    public <T extends ConfigModel> void pageScanTasks(Class<T> clazz, int pageSize, Consumer<List<T>> pageConsumer) {
+        if (clazz == null || pageConsumer == null) {
+            return;
+        }
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
+        int pageNum = 1;
+        while (true) {
+            Paging<T> paging = queryTasks(clazz, pageNum, safePageSize,null);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            List<T> page = new ArrayList<>(paging.getData());
+            pageConsumer.accept(page);
+            if (page.size() < safePageSize) {
+                break;
+            }
+            pageNum++;
         }
     }
 
@@ -113,9 +157,9 @@ public class TaskProfileImpl implements TaskProfile {
     }
 
     @Override
-    public List<String> addTaskBatch(List<? extends ConfigModel> tasks) {
+    public void addTaskBatch(List<? extends ConfigModel> tasks) {
         if (CollectionUtils.isEmpty(tasks)) {
-            return Collections.emptyList();
+            return;
         }
         List<Map> paramsList = new ArrayList<>(tasks.size());
         for (ConfigModel task : tasks) {
@@ -126,7 +170,7 @@ public class TaskProfileImpl implements TaskProfile {
             paramsList.add(ConfigModelUtil.convertModelToMap(task));
         }
         storageService.addBatch(StorageEnum.TASK, null, paramsList);
-        return tasks.stream().map(ConfigModel::getId).collect(Collectors.toList());
+        tasks.stream().map(ConfigModel::getId).collect(Collectors.toList());
     }
 
     @Override
@@ -144,29 +188,6 @@ public class TaskProfileImpl implements TaskProfile {
             condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, type);
         }
         return operationTemplate.count(StorageEnum.TASK, condition);
-    }
-
-    @Override
-    public List<String> listAllTaskIds() {
-        List<String> ids = new ArrayList<>();
-        Query query = new Query();
-        query.setType(StorageEnum.TASK);
-        query.setPageSize(ConfigConstant.PAGE_SIZE);
-        Set<String> selectFields = new HashSet<>();
-        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
-        query.setSelectFlied(selectFields);
-        while (true) {
-            Paging paging = storageService.query(query);
-            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-                break;
-            }
-            for (Object item : paging.getData()) {
-                Map<String, Object> row = (Map<String, Object>) item;
-                ids.add(String.valueOf(row.get(ConfigConstant.CONFIG_MODEL_ID)));
-            }
-            query.setPageNum(query.getPageNum() + 1);
-        }
-        return ids;
     }
 
     @Override

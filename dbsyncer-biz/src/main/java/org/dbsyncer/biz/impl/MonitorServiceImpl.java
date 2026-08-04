@@ -144,11 +144,17 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     @Override
     public List<MetaVO> getMetaAll() {
         // 仅同步驱动任务级 Meta（mapping）；企业校验/迁移 Meta 不进监控列表
-        return metaProfile.getTaskMetaAll().stream()
-                .map(this::convertMeta2Vo)
-                .filter(java.util.Objects::nonNull)
-                .sorted(Comparator.comparing(MetaVO::getUpdateTime).reversed())
-                .collect(Collectors.toList());
+        List<MetaVO> result = new ArrayList<>();
+        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+            for (Meta meta : page) {
+                MetaVO vo = convertMeta2Vo(meta);
+                if (vo != null) {
+                    result.add(vo);
+                }
+            }
+        });
+        result.sort(Comparator.comparing(MetaVO::getUpdateTime).reversed());
+        return result;
     }
 
     @Override
@@ -369,34 +375,30 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public void run() {
-        // 预警：仅任务级 Meta
-        List<Meta> metaAll = metaProfile.getTaskMetaAll();
-        if (CollectionUtils.isEmpty(metaAll)) {
-            return;
-        }
-
+        // 预警：仅任务级 Meta，分页扫描
         MappingErrorContent content = new MappingErrorContent();
-
         long endTime = System.currentTimeMillis();
-        metaAll.forEach(meta -> {
-            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
-            if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
-                return;
-            }
-            long failCount = meta.getFail() != null ? meta.getFail().get() : 0L;
-            if (failCount <= 0) {
-                return;
-            }
-            Query query = new Query(1, 1);
-            query.setType(StorageEnum.TASK_DETAIL);
-            query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
-            query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
-            query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
-            query.setQueryTotal(true);
-            query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
-            Paging queryTemp = storageService.query(query);
-            if (queryTemp.getTotal() > 0) {
-                writeMappingReport(meta, content);
+        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+            for (Meta meta : page) {
+                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
+                    continue;
+                }
+                long failCount = meta.getFail() != null ? meta.getFail().get() : 0L;
+                if (failCount <= 0) {
+                    continue;
+                }
+                Query query = new Query(1, 1);
+                query.setType(StorageEnum.TASK_DETAIL);
+                query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
+                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
+                query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
+                query.setQueryTotal(true);
+                query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
+                Paging queryTemp = storageService.query(query);
+                if (queryTemp.getTotal() > 0) {
+                    writeMappingReport(meta, content);
+                }
             }
         });
         //重置上一次的时间
@@ -488,17 +490,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         // 明细分表：逐个任务分表按过期时间清理
         int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
         long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
-        List<Meta> metaAll = metaProfile.getTaskMetaAll();
-        if (CollectionUtils.isEmpty(metaAll)) {
-            return;
-        }
-        for (Meta meta : metaAll) {
-            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
-            if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
-                continue;
+        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+            for (Meta meta : page) {
+                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
+                    continue;
+                }
+                deleteExpiredTaskDetails(meta, expiredTime);
             }
-            deleteExpiredTaskDetails(meta, expiredTime);
-        }
+        });
     }
 
     private void deleteExpiredTaskDetails(Meta meta, long expiredTime) {

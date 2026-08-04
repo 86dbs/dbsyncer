@@ -84,23 +84,28 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
             int tableSize = sourceTableArray.length;
             Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 
-            String id = null;
-            List<String> list = new ArrayList<>();
+            int baseIndex = tableGroupProfile.getTableGroupCount(mappingId);
+            params.put("skipRepeatedCheck", Boolean.TRUE.toString());
+            List<TableGroup> models = new ArrayList<>(tableSize);
             for (int i = 0; i < tableSize; i++) {
                 params.put("sourceTable", sourceTableArray[i]);
                 params.put("targetTable", targetTableArray[i]);
                 TableGroup model = (TableGroup) tableGroupChecker.checkAddConfigModel(params);
                 log(LogType.TableGroupLog.INSERT, model);
-                int tableGroupCount = tableGroupProfile.getTableGroupCount(mappingId);
-                model.setIndex(tableGroupCount + 1);
-                id = tableGroupProfile.addTableGroup(model);
-                list.add(id);
+                model.setIndex(baseIndex + i + 1);
+                models.add(model);
+            }
+            tableGroupProfile.addTableGroupBatch(models);
+
+            List<String> list = new ArrayList<>(models.size());
+            for (TableGroup model : models) {
+                list.add(model.getId());
             }
             submitTableGroupCountTask(mapping, list);
 
             // 合并驱动公共字段
             mergeMappingColumn(mapping);
-            return 1 < tableSize ? String.valueOf(tableSize) : id;
+            return 1 < tableSize ? String.valueOf(tableSize) : list.get(0);
         }
     }
 
@@ -197,7 +202,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         if (ModelEnum.isFull(model)) {
             // 统计tableGroup总条数
             AtomicLong count = new AtomicLong(0);
-            tableGroupProfile.forEachTableGroupPage(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
+            tableGroupProfile.pageScanTableGroups(meta.getTaskId(), ConfigConstant.PAGE_SIZE, groupAll -> {
                 for (TableGroup g : groupAll) {
                     if (g != null && g.getSourceTable() != null) {
                         count.getAndAdd(g.getSourceTable().getCount());
@@ -211,7 +216,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
     private void resetTableGroupAllIndex(String mappingId) {
         synchronized (LOCK) {
             List<String> orderedIds = new ArrayList<>();
-            tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+            tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, page -> {
                 for (TableGroup g : page) {
                     if (g != null && StringUtil.isNotBlank(g.getId())) {
                         orderedIds.add(g.getId());
@@ -234,7 +239,7 @@ public class TableGroupServiceImpl extends BaseServiceImpl implements TableGroup
         List<Field> sourceColumn = null;
         List<Field> targetColumn = null;
         final List<Field>[] holder = new List[]{sourceColumn, targetColumn};
-        tableGroupProfile.forEachTableGroupPage(mapping.getId(), ConfigConstant.PAGE_SIZE, groups -> {
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groups -> {
             for (TableGroup g : groups) {
                 holder[0] = PickerUtil.pickCommonFields(holder[0], g.getSourceTable().getColumn());
                 holder[1] = PickerUtil.pickCommonFields(holder[1], g.getTargetTable().getColumn());

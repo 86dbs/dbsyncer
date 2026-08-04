@@ -4,11 +4,15 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.model.MetaIncrement;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 任务执行结果表（dbsyncer_meta）查询与计数操作。
@@ -24,19 +28,32 @@ public interface MetaProfile {
     Meta getMeta(String metaId);
 
     /**
-     * 全部 Meta（含明细级）。优先使用 {@link #getTaskMetaAll()}。
+     * 分页查询 Meta。
+     *
+     * @param isTaskDetail 可选；null 不过滤，0 任务级，1 明细级
+     * @param pageNum      页码（从 1 起）
+     * @param pageSize     每页条数；非法时回落
      */
-    List<Meta> getMetaAll();
+    Paging<Meta> queryMeta(Integer isTaskDetail, int pageNum, int pageSize);
 
     /**
-     * 仅任务级 Meta（IS_TASK_DETAIL=0）。
+     * 分页回调遍历 Meta（避免一次性装入内存）。
+     *
+     * @param isTaskDetail 可选；null 不过滤，0 任务级，1 明细级
+     * @param pageSize     每页条数；非法时回落
+     * @param pageConsumer 页回调
      */
-    List<Meta> getTaskMetaAll();
+    void pageScanMetas(Integer isTaskDetail, int pageSize, Consumer<List<Meta>> pageConsumer);
 
     /**
      * 按关联 ID + 任务层级查询 Meta（任务级：taskId=任务ID；明细级：taskId=table_group.id）。
      */
     Meta getMetaByTaskId(String refId, TaskLevelEnum taskLevelEnum);
+
+    /**
+     * 批量按任务 ID 查询任务级 Meta（IS_TASK_DETAIL=0），key=taskId。
+     */
+    Map<String, Meta> getTaskMetaMap(List<String> taskIds);
 
     /**
      * 批量按关联 ID 查询明细级 Meta（IS_TASK_DETAIL=1）。
@@ -85,6 +102,13 @@ public interface MetaProfile {
      * Meta 总数。
      */
     int countMeta();
+
+    /**
+     * 导出全部 Meta 到 ZIP（meta.json 数组，分页流式写出）。
+     *
+     * @return 写出条数
+     */
+    int writeMetasToZip(ZipOutputStream zos) throws IOException;
 
     /**
      * 从 meta.json 数组批量导入。

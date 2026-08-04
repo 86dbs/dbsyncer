@@ -4,15 +4,17 @@
 package org.dbsyncer.parser;
 
 import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.TaskImportResult;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.zip.ZipFile;
 
 /**
- * 任务域统一入口：{@code dbsyncer_task} 配置 CRUD（Mapping / ValidateSync / DatabaseSync 等），
+ * 任务域统一入口
  * 以及任务运行结果（Meta、TASK_DETAIL）的清理与重置。
  *
  * @author wuji
@@ -20,7 +22,6 @@ import java.util.zip.ZipFile;
  */
 public interface TaskProfile {
 
-    // ---------- 任务配置（dbsyncer_task） ----------
 
     /**
      * 按 id 查询一条任务配置。
@@ -28,9 +29,16 @@ public interface TaskProfile {
     <T extends ConfigModel> T getTask(String id, Class<T> clazz);
 
     /**
-     * 按模型类型查询全部任务（如 {@code Mapping.class} → TYPE=MAPPING，按更新时间降序）。
+     * 按模型类型分页查询任务，可选按名称模糊搜索。
+     *
+     * @param searchKey 可选；非空时对 {@code name} 做 LIKE
      */
-    <T extends ConfigModel> List<T> listTasks(Class<T> clazz);
+    <T extends ConfigModel> Paging<T> queryTasks(Class<T> clazz, int pageNum, int pageSize, String searchKey);
+
+    /**
+     * 按模型类型分页回调遍历全部任务。
+     */
+    <T extends ConfigModel> void pageScanTasks(Class<T> clazz, int pageSize, Consumer<List<T>> pageConsumer);
 
     /**
      * 新增任务配置。
@@ -45,7 +53,7 @@ public interface TaskProfile {
     /**
      * 批量新增任务配置。
      */
-    List<String> addTaskBatch(List<? extends ConfigModel> tasks);
+    void addTaskBatch(List<? extends ConfigModel> tasks);
 
     /**
      * 删除任务配置（仅删 task 表行）。
@@ -56,11 +64,6 @@ public interface TaskProfile {
      * 按 TYPE 统计任务数量。
      */
     int countTasks(String type);
-
-    /**
-     * 分页扫描全部任务 id。
-     */
-    List<String> listAllTaskIds();
 
     /**
      * 任务 id 是否存在于 {@code dbsyncer_task}。

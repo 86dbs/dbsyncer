@@ -16,28 +16,22 @@ import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.enums.ConvertEnum;
 import org.dbsyncer.parser.model.Connector;
-import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
-import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * {@link ProfileComponent} 门面：各领域 Profile 委托 + 导出快照编排。
@@ -179,51 +173,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public Mapping getMapping(String mappingId) {
         return taskProfile.getTask(mappingId, Mapping.class);
-    }
-
-    @Override
-    public List<Mapping> getMappingAll() {
-        return taskProfile.listTasks(Mapping.class);
-    }
-
-    @Override
-    public Map<String, Object> getConfigSnapshot() {
-        Map<String, Object> snapshot = new HashMap<>();
-        List<Mapping> allMappings = taskProfile.listTasks(Mapping.class);
-        UserConfig userConfig = userProfile.getUserConfig();
-        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
-
-        Map<String, List<? extends ConfigModel>> typedModels = new LinkedHashMap<String, List<? extends ConfigModel>>() {{
-            put(ConfigConstant.SYSTEM, systemConfig == null ? Collections.emptyList() : Collections.singletonList(systemConfig));
-            put(ConfigConstant.USER, userConfig == null ? Collections.emptyList() : Collections.singletonList(userConfig));
-            put(ConfigConstant.CONNECTOR, connectorProfile.getConnectorAll());
-            put(ConfigConstant.MAPPING, allMappings);
-            put(ConfigConstant.META, metaProfile.getMetaAll());
-        }};
-
-        typedModels.forEach((k, list) -> {
-            Group g = new Group();
-            list.forEach(m -> {
-                snapshot.put(m.getId(), m);
-                g.add(m.getId());
-            });
-            snapshot.put(k, g);
-        });
-
-        List<TableGroup> allGroups = tableGroupProfile.listTableGroupAll();
-        Map<String, Group> groupsByTaskId = new HashMap<>();
-        for (TableGroup tg : allGroups) {
-            if (tg == null || StringUtil.isBlank(tg.getTaskId())) {
-                continue;
-            }
-            snapshot.put(tg.getId(), tg);
-            groupsByTaskId.computeIfAbsent(tg.getTaskId(), id -> new Group()).add(tg.getId());
-        }
-        allMappings.forEach(mapping -> {
-            Group idGroup = groupsByTaskId.getOrDefault(mapping.getId(), new Group());
-            snapshot.put(tableGroupProfile.getPreloadGroupKey(mapping.getId()), idGroup);
-        });
-        return snapshot;
     }
 
     @Override

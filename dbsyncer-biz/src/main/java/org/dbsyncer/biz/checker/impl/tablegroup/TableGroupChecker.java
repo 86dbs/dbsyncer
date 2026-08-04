@@ -81,8 +81,10 @@ public class TableGroupChecker extends AbstractChecker {
         Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
-        // 检查是否存在重复映射关系
-        checkRepeatedTable(mappingId, sourceTable, targetTable);
+        // 检查是否存在重复映射关系（批量新增可由 Service 预检后跳过）
+        if (!StringUtil.equals(params.get("skipRepeatedCheck"), Boolean.TRUE.toString())) {
+            checkRepeatedTable(mappingId, sourceTable, targetTable);
+        }
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
@@ -208,22 +210,11 @@ public class TableGroupChecker extends AbstractChecker {
     }
 
     public void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
-        tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
-            if (CollectionUtils.isEmpty(page)) {
-                return;
-            }
-            for (TableGroup g : page) {
-                if (g == null || g.getSourceTable() == null || g.getTargetTable() == null) {
-                    continue;
-                }
-                // 数据源表和目标表都存在
-                if (StringUtil.equals(sourceTable, g.getSourceTable().getName()) && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
-                    final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
-                    logger.error(error);
-                    throw new RepeatedTableGroupException(error);
-                }
-            }
-        });
+        if (tableGroupProfile.existsTableGroup(mappingId, sourceTable, targetTable)) {
+            final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
+            logger.error(error);
+            throw new RepeatedTableGroupException(error);
+        }
     }
 
     public void matchFieldMapping(TableGroup tableGroup) {

@@ -330,7 +330,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
      */
     private List<TableGroup> loadSortedTableGroups(String mappingId) {
         List<TableGroup> list = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, list::addAll);
+        tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, list::addAll);
         return list;
     }
 

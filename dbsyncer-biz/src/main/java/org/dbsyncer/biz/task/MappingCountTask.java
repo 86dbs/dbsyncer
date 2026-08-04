@@ -48,7 +48,7 @@ public class MappingCountTask extends AbstractCountTask {
         logger.info("正在统计:{}, {}张表", mapping.getName(), groupCount);
         if (groupCount > 0) {
             AtomicReference<Mapping> mappingRef = new AtomicReference<>(mapping);
-            tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+            tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, page -> {
                 if (CollectionUtils.isEmpty(page)) {
                     return;
                 }

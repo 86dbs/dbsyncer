@@ -85,7 +85,7 @@ public class ConfigExportServiceImpl implements ConfigExportService {
             List<String> taskIds = new ArrayList<>();
             counts.put(ConfigConstant.TASK, writeAllTasks(zos, taskIds));
             counts.put(ConfigConstant.TABLE_GROUP, tableGroupProfile.writeTableGroupsToZip(zos));
-            counts.put(ConfigConstant.META, writeJsonArray(zos, PackageFormatConfig.META, metaProfile.getMetaAll()));
+            counts.put(ConfigConstant.META, metaProfile.writeMetasToZip(zos));
             counts.put(StorageEnum.TASK_DETAIL.getType(), writeTaskDetailSchemas(zos, taskIds));
             writeManifest(zos, versionInfo, counts);
         }

@@ -61,7 +61,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 整库迁移业务实现
@@ -165,7 +164,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // 先物化新映射（连库读元数据），失败则不碰旧 table_group
         List<TableGroup> newGroups = buildTableGroups(id, mappings);
         List<TableGroup> oldGroups = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, oldGroups::addAll);
+        tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, oldGroups::addAll);
         try {
             tableGroupProfile.removeTableGroupsByTaskId(id);
             tableGroupProfile.addTableGroupBatch(newGroups);
@@ -329,21 +328,12 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                         .collect(Collectors.toList());
             }
             tables.sort(Comparator.comparing(Table::getName, String.CASE_INSENSITIVE_ORDER));
-
             int realTotal = tables.size();
             Map<String, Integer> typeCounts = new HashMap<>(4);
             for (Table table : tables) {
                 String type = table.getType() != null ? table.getType() : TableTypeEnum.TABLE.getCode();
                 typeCounts.merge(type.toUpperCase(), 1, Integer::sum);
             }
-
-//            int from = Math.min(offset, realTotal);
-//            int to = Math.min(from + limit, realTotal);
-//            List<Table> pageRows = new ArrayList<>();
-//            for (int i = from; i < to; i++) {
-//                pageRows.add(tables.get(i));
-//            }
-            // TODO
             List<Table> pageRows = tables.stream().skip(offset).limit(limit).collect(Collectors.toList());
             TablePreviewVO result = TablePreviewVO.of(pageRows, realTotal, String.valueOf(offset), limit);
             result.setTypeCounts(typeCounts);
@@ -493,7 +483,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             return null;
         }
         List<TableGroup> tableGroups = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(task.getId(), ConfigConstant.PAGE_SIZE, tableGroups::addAll);
+        tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, tableGroups::addAll);
         List<DatabaseMappingVO> mappingViews = buildDatabaseMappingVo(
                 DatabaseSyncMappingUtil.sortByIndex(task.getDatabaseMappings()), tableGroups);
         DatabaseMappingVO first = CollectionUtils.isEmpty(mappingViews) ? null : mappingViews.get(0);

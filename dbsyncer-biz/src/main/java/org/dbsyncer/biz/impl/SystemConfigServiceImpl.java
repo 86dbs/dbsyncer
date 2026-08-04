@@ -11,14 +11,21 @@ import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.enums.FileSuffixEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.RsaVersion;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -46,6 +53,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Resource
     private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private PreloadTemplate preloadTemplate;
@@ -113,8 +123,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
         list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(profileComponent.getMappingAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(metaProfile.getTaskMetaAll().stream().limit(5).collect(Collectors.toList()));
+        Paging<Mapping> mappingPaging = taskProfile.queryTasks(Mapping.class, 1, 5, null);
+        if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
+            list.addAll(mappingPaging.getData());
+        }
+        Paging<Meta> metaPaging = metaProfile.queryMeta(TaskLevelEnum.TASK.getCode(), 1, 5);
+        if (metaPaging != null && !CollectionUtils.isEmpty(metaPaging.getData())) {
+            list.addAll(metaPaging.getData());
+        }
         return list;
     }
 

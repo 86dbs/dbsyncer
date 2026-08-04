@@ -59,9 +59,9 @@ import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -172,7 +172,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
-        tableGroupProfile.forEachTableGroupPage(mapping.getId(), ConfigConstant.PAGE_SIZE, groupList -> {
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupList -> {
             if (CollectionUtils.isEmpty(groupList)) {
                 return;
             }
@@ -305,7 +305,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         MappingVO vo = convertMapping2Vo(mapping);
         final Set<String> sTables = new HashSet<>();
         final Set<String> tTables = new HashSet<>();
-        tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, page -> {
+        tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
             }
@@ -329,13 +329,27 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public List<MappingVO> getMappingAll() {
-        return profileComponent.getMappingAll().stream().map(this::convertMapping2Vo).sorted(Comparator.comparing(MappingVO::getUpdateTime).reversed()).collect(Collectors.toList());
-    }
-
-    @Override
     public Paging<MappingVO> search(Map<String, String> params) {
-        return searchConfigModel(params, getMappingAll());
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String searchKey = params.get("searchKey");
+        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+        for (Mapping mapping : paging.getData()) {
+            if (mapping != null) {
+                rows.add(convertMapping2Vo(mapping));
+            }
+        }
+        result.setData(rows);
+        return result;
     }
 
     @Override
@@ -364,7 +378,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
 
         List<Map<String, Object>> rows = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+        tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
             }
@@ -454,7 +468,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Set<String> mappedTableNames;
         if (excludeMapped) {
             mappedTableNames = new HashSet<>();
-            tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, page -> {
+            tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
                 if (CollectionUtils.isEmpty(page)) {
                     return;
                 }

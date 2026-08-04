@@ -157,7 +157,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             task.setBatchNum(mapping.getBatchNum());
             task.setThreadNum(mapping.getThreadNum());
             // 复制表组列表
-            tableGroupProfile.forEachTableGroupPage(mappingId, ConfigConstant.PAGE_SIZE, tableGroupAll -> {
+            tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, tableGroupAll -> {
                 if (CollectionUtils.isEmpty(tableGroupAll)) {
                     return;
                 }
@@ -325,7 +325,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         taskProfile.clearRunData(task.getId());
         taskProfile.resetRunProgress(task.getId());
         List<TableGroup> groupAll = new ArrayList<>();
-        tableGroupProfile.forEachTableGroupPage(task.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+        tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
         if (!CollectionUtils.isEmpty(groupAll)) {
             mappingChecker.sortTableGroup(groupAll, params);
             for (TableGroup g : groupAll) {
@@ -348,7 +348,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         newTask.setUpdateTime(System.currentTimeMillis());
         String newId = taskService.add(newTask);
         // 深拷贝 table_group（关联已下沉到该表）
-        tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, sourceGroups -> {
+        tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, sourceGroups -> {
             if (CollectionUtils.isEmpty(sourceGroups)) {
                 return;
             }
@@ -466,7 +466,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Set<String> mappedTableNames;
         if (excludeMapped) {
             mappedTableNames = new HashSet<>();
-            tableGroupProfile.forEachTableGroupPage(id, ConfigConstant.PAGE_SIZE, page -> {
+            tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
                 if (CollectionUtils.isEmpty(page)) {
                     return;
                 }
@@ -673,7 +673,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private void resetTableGroupAllIndex(String taskId) {
         synchronized (LOCK) {
             List<String> orderedIds = new ArrayList<>();
-            tableGroupProfile.forEachTableGroupPage(taskId, ConfigConstant.PAGE_SIZE, page -> {
+            tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
                 for (TableGroup g : page) {
                     if (g != null && StringUtil.isNotBlank(g.getId())) {
                         orderedIds.add(g.getId());
@@ -772,7 +772,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private void mergeTaskColumn(ValidateSyncTask task) {
         List<Field> sourceColumn = null;
         final List<Field>[] holder = new List[]{sourceColumn};
-        tableGroupProfile.forEachTableGroupPage(task.getId(), ConfigConstant.PAGE_SIZE, groups -> {
+        tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groups -> {
             for (TableGroup g : groups) {
                 if (g == null || g.getSourceTable() == null || CollectionUtils.isEmpty(g.getSourceTable().getColumn())) {
                     continue;

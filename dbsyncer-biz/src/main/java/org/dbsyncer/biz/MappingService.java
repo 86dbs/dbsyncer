@@ -73,13 +73,6 @@ public interface MappingService {
     MappingVO getMapping(String id, Integer exclude);
 
     /**
-     * 获取所有驱动
-     *
-     * @return
-     */
-    List<MappingVO> getMappingAll();
-
-    /**
      * 分页搜索
      *
      * @param params

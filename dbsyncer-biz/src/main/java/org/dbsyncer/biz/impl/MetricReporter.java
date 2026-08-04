@@ -21,14 +21,15 @@ import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -74,6 +75,9 @@ public class MetricReporter implements ScheduledTaskJob {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
 
     @Resource
     private MetaProfile metaProfile;
@@ -190,14 +194,23 @@ public class MetricReporter implements ScheduledTaskJob {
         // 刷新报表
         try {
             running = true;
-            // 仅任务级 Meta；看板指标按同步驱动分表统计
-            // TODO 1. 分页查询；2. 过滤只查数据同步任务，关联meta
-            final List<Meta> metaAll = metaProfile.getTaskMetaAll().stream()
-                    .filter(meta -> {
-                        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
-                        return mapping != null && StringUtil.equals(ConfigConstant.MAPPING, mapping.getType());
-                    })
-                    .collect(Collectors.toList());
+            // 先分页扫描同步任务(Mapping)，再按任务 ID 批量 IN 查任务级 Meta
+            final List<Meta> metaAll = new ArrayList<>();
+            taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+                if (CollectionUtils.isEmpty(mappings)) {
+                    return;
+                }
+                List<String> taskIds = new ArrayList<>();
+                for (Mapping mapping : mappings) {
+                    if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
+                        taskIds.add(mapping.getId());
+                    }
+                }
+                Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+                if (!CollectionUtils.isEmpty(metaMap)) {
+                    metaAll.addAll(metaMap.values());
+                }
+            });
             if (CollectionUtils.isEmpty(metaAll)) {
                 dashboardMetric.reset();
                 return;

@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,11 @@ import java.util.List;
  * @author wuji
  */
 public class ValidateSyncTask extends ConfigModel {
+
+    public ValidateSyncTask() {
+        super.setType(ConfigConstant.VALIDATE_SYNC);
+    }
+
     // 数据源连接器ID
     private String sourceConnectorId;
 

@@ -65,7 +65,7 @@ public interface TableGroupProfile {
      * @param pageSize     每页条数；非法时回落 {@link org.dbsyncer.sdk.constant.ConfigConstant#PAGE_SIZE}
      * @param pageConsumer 页回调
      */
-    void forEachTableGroupPage(String mappingId, int pageSize, Consumer<List<TableGroup>> pageConsumer);
+    void pageScanTableGroups(String mappingId, int pageSize, Consumer<List<TableGroup>> pageConsumer);
 
     /**
      * 按 SQL 查询表映射（透传执行，结果按 TableGroup 反序列化）。
@@ -78,12 +78,16 @@ public interface TableGroupProfile {
 
     int getTableGroupCount(String mappingId);
 
-    List<String> listTableGroupIds(String taskId);
-
     /**
-     * 全部表映射（导出快照等场景）。
+     * 是否已存在相同源表+目标表映射（库侧等值查询，不扫全表）。
      */
-    List<TableGroup> listTableGroupAll();
+    boolean existsTableGroup(String taskId, String sourceTable, String targetTable);
+
+    List<String> listTableGroupIds(String taskId);
+    /**
+     * 表映射总数。
+     */
+    int countTableGroups();
 
     /**
      * 批量导入表映射（不预建表级 Meta，供配置包还原）。
@@ -106,14 +110,9 @@ public interface TableGroupProfile {
     int writeTableGroupsToZip(ZipOutputStream zos) throws IOException;
 
     /**
-     * 表映射总数。
-     */
-    int countTableGroups();
-
-    /**
      * 按 taskId 升序遍历全部表映射（ZIP 导出 NDJSON）。
      */
-    void forEachTableGroupSortedByTaskId(Consumer<TableGroup> consumer);
+    void pageScanTableGroupsByTaskId(Consumer<TableGroup> consumer);
 
     /**
      * 旧版 JSON 导入/导出快照中，任务下 table_group 分组键（{@code tableGroup_{taskId}}）。
