@@ -11,21 +11,26 @@
         var manualReviseSubmitting = false;
         var diffModalInstance = null;
         var currentDetailContent = null;
+        var $taskSelect = $('#detailTaskSelect');
+        var defaultTaskId = currentTaskId || $taskSelect.attr('data-default-id') || '';
+        var defaultTaskName = config.taskName || $taskSelect.attr('data-default-label') || defaultTaskId;
 
         window.backIndexPage = function () {
             doLoader('/validate-sync/list');
         };
 
-        $('#detailTaskSelect').dbSelect({
-            type: 'single',
+        $taskSelect.dbSelect(buildRemotePagingSelectOptions({
+            url: '/validate-sync/search',
+            defaultValue: defaultTaskId,
+            defaultLabel: defaultTaskName,
             onSelect: function (selected) {
-                var selectedId = selected.value || selected;
+                var selectedId = Array.isArray(selected) ? (selected[0] || '') : (selected.value || selected);
                 if (selectedId && selectedId !== currentTaskId) {
                     currentTaskId = selectedId;
                     doLoader('/validate-sync/page/detail?id=' + currentTaskId);
                 }
             }
-        });
+        }));
 
         function getFilterValue(selector) {
             var api = $(selector).data('dbSelect');

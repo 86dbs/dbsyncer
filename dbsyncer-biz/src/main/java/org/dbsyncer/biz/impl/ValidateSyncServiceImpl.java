@@ -309,14 +309,30 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         checkTask(task, params);
         taskProfile.clearRunData(task.getId());
         taskProfile.resetRunProgress(task.getId());
-        List<TableGroup> groupAll = new ArrayList<>();
-        tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
-        if (!CollectionUtils.isEmpty(groupAll)) {
-            mappingChecker.sortTableGroup(groupAll, params);
-            for (TableGroup g : groupAll) {
-                validateSyncTableGroupChecker.mergeConfig(task, g);
-                profileComponent.editConfigModel(g);
+        String sortedIds = params.get("sortedTableGroupIds");
+        if (StringUtil.isNotBlank(sortedIds)) {
+            List<TableGroup> groupAll = new ArrayList<>();
+            tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                mappingChecker.sortTableGroup(groupAll, params);
+                for (TableGroup g : groupAll) {
+                    validateSyncTableGroupChecker.mergeConfig(task, g);
+                    profileComponent.editConfigModel(g);
+                }
             }
+        } else {
+            tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
+                    return;
+                }
+                for (TableGroup g : page) {
+                    if (g == null) {
+                        continue;
+                    }
+                    validateSyncTableGroupChecker.mergeConfig(task, g);
+                    profileComponent.editConfigModel(g);
+                }
+            });
         }
         return taskService.edit(task);
     }

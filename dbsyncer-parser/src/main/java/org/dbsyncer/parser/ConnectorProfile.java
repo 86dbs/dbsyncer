@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Connector;
 
 import java.util.List;
@@ -29,6 +30,15 @@ public interface ConnectorProfile {
      * 全部连接器。
      */
     List<Connector> getConnectorAll();
+
+    /**
+     * 分页查询连接器（按名称模糊、更新时间倒序）。
+     *
+     * @param pageNum   页码，从 1 开始
+     * @param pageSize  每页大小
+     * @param searchKey 名称关键字，可空
+     */
+    Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey);
 
     /**
      * 添加连接器。

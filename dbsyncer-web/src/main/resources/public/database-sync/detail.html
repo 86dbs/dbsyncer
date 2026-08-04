@@ -10,9 +10,8 @@
         <div class="grid grid-cols-6 items-center mb-4">
             <div class="lg:col-span-2 flex items-center">
                 <label class="form-label mr-3 whitespace-nowrap">选择任务</label>
-                <select id="detailTaskSelect" class="form-control">
-                    <option th:each="t : ${taskList}" th:value="${t.id}" th:text="${t.name}" th:selected="${t.id == taskId}"></option>
-                </select>
+                <select id="detailTaskSelect" class="form-control"
+                        th:attr="data-default-id=${taskId}, data-default-label=${taskName}"></select>
             </div>
             <div class="lg:col-span-2 flex items-center">
                 <label class="form-label mr-3 whitespace-nowrap">迁移类型</label>

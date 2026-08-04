@@ -11,8 +11,10 @@ import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.parser.ConnectorProfile;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
@@ -55,6 +57,9 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private ConnectorProfile connectorProfile;
 
     @Resource
     private TaskProfile taskProfile;
@@ -163,7 +168,31 @@ public class ConnectorServiceImpl extends BaseServiceImpl implements ConnectorSe
 
     @Override
     public Paging<ConnectorVO> search(Map<String, String> params) {
-        return searchConfigModel(params, getConnectorAll());
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String searchKey = params.get("searchKey");
+        boolean relationOnly = StringUtil.equals("1", params.get("relationOnly"));
+        Paging<Connector> paging = connectorProfile.queryConnectors(pageNum, pageSize, searchKey);
+        Paging<ConnectorVO> result = new Paging<>(pageNum, pageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<ConnectorVO> rows = new ArrayList<>(paging.getData().size());
+        for (Connector connector : paging.getData()) {
+            if (connector == null) {
+                continue;
+            }
+            if (relationOnly && !isRelationalDatabaseConnector(connector)) {
+                continue;
+            }
+            rows.add(convertConnector2Vo(connector));
+        }
+        result.setData(rows);
+        return result;
     }
 
     @Override

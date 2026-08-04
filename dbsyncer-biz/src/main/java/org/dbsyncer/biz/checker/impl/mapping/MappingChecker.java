@@ -190,16 +190,34 @@ public class MappingChecker extends AbstractChecker {
     }
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = new ArrayList<>();
-        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
-        if (!CollectionUtils.isEmpty(groupAll)) {
+        String sortedIds = params == null ? null : params.get("sortedTableGroupIds");
+        if (StringUtil.isNotBlank(sortedIds)) {
+            // 手动排序需要全集才能重排 index
+            List<TableGroup> groupAll = new ArrayList<>();
+            tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+            if (CollectionUtils.isEmpty(groupAll)) {
+                return;
+            }
             sortTableGroup(groupAll, params);
-            // 合并配置
             for (TableGroup g : groupAll) {
                 tableGroupChecker.mergeConfig(mapping, g);
                 profileComponent.editConfigModel(g);
             }
+            return;
         }
+        // 无排序：按页合并，避免整表进内存
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
+            }
+            for (TableGroup g : page) {
+                if (g == null) {
+                    continue;
+                }
+                tableGroupChecker.mergeConfig(mapping, g);
+                profileComponent.editConfigModel(g);
+            }
+        });
     }
 
     public void sortTableGroup(List<TableGroup> groupAll, Map<String, String> params) {

@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.web.controller.database.sync;
 
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DatabaseSyncService;
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
 import org.dbsyncer.biz.vo.EditionInfoVO;
@@ -40,9 +39,6 @@ public class DatabaseSyncController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private DatabaseSyncService databaseSyncService;
 
     @Resource
@@ -66,7 +62,6 @@ public class DatabaseSyncController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorRelation());
         model.put("readOnly", false);
         return "database-sync/add";
     }
@@ -78,11 +73,11 @@ public class DatabaseSyncController extends BaseController {
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                       @RequestParam(value = "detailStatus", required = false) String detailStatus,
                       @RequestParam(value = "detailType", required = false) String detailType) {
-        model.put("connectors", connectorService.getConnectorAll());
         if ("detail".equals(page)) {
             Assert.hasText(id, "任务 ID 不能为空");
+            DatabaseSyncTaskVO task = databaseSyncService.get(id);
             model.put("taskId", id);
-            model.put("taskList", databaseSyncService.getAll());
+            model.put("taskName", task != null ? task.getName() : id);
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
             model.put("detailType", detailType == null ? "" : detailType.trim());
         } else if ("edit".equals(page)) {

@@ -46,11 +46,7 @@
                         <label class="form-label">
                             <i class="fa fa-database text-primary"></i> 数据源<strong class="text-primary">*</strong>
                         </label>
-                        <select name="sourceConnectorId" id="sourceConnectorId" class="form-control">
-                            <option th:each="c,s:${connectors}" th:value="${c?.id}"
-                                    th:attr="data-connector-type=${c?.config?.connectorType}"
-                                    th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                        </select>
+                        <select name="sourceConnectorId" id="sourceConnectorId" class="form-control"></select>
                     </div>
 
                     <!-- 目标源 -->
@@ -58,11 +54,7 @@
                         <label class="form-label">
                             <i class="fa fa-database text-success"></i> 目标源<strong class="text-primary">*</strong>
                         </label>
-                        <select name="targetConnectorId" id="targetConnectorId" class="form-control">
-                            <option th:each="c,s:${connectors}" th:value="${c?.id}"
-                                    th:attr="data-connector-type=${c?.config?.connectorType}"
-                                    th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                        </select>
+                        <select name="targetConnectorId" id="targetConnectorId" class="form-control"></select>
                     </div>
                 </div>
 
@@ -147,16 +139,18 @@
 
 <script>
     function resolveConnectorType($connector, connectorId) {
+        if (typeof resolveConnectorTypeFromSelect === 'function') {
+            const dataType = resolveConnectorTypeFromSelect($connector, connectorId);
+            if (dataType) {
+                return dataType;
+            }
+        }
         if (!$connector || !connectorId) {
             return '';
         }
         const $option = $connector.find('option[value="' + connectorId + '"]');
         if (!$option.length) {
             return '';
-        }
-        const dataType = ($option.attr('data-connector-type') || $option.data('connectorType') || '').toString().trim();
-        if (dataType) {
-            return dataType;
         }
         const text = $option.text() || '';
         const match = text.match(/\(([^()]+)\)\s*$/);
@@ -242,17 +236,14 @@
                 }
             }
         });
-        let connectorSelect = $connector.dbSelect({
-            type: 'single',
+        const connectorSelect = $connector.dbSelect(buildRemoteConnectorSelectOptions({
             onSelect: function (connectorId) {
-                // 更新当前组的连接器ID
                 currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
                 onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
             }
-        });
+        }));
 
-        // 初始化：如果有默认选中的连接器，设置初始值
-        let selected = connectorSelect.getValues();
+        const selected = connectorSelect.getValues();
         if (selected.length >= 1) {
             currentConnectorId = selected[0];
             onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
@@ -292,34 +283,14 @@
     }
 
     /**
-     * 加载同步任务下拉数据,（需用户显式选择）。
+     * 同步任务下拉（远程分页，需用户显式选择）。
      */
     function initMappingSelect() {
-        let taskSelect = $("#mappingTask").dbSelect({
-            type: 'single',
-            onSelect: function (selected) {
-
+        $("#mappingTask").dbSelect(buildRemotePagingSelectOptions({
+            url: '/mapping/search',
+            onSelect: function () {
             }
-        });
-        doPoster('/mapping/search', {"pageSize": 1000}, function (response) {
-            if (response.success && response.data) {
-                const data = response.data;
-                let array = [];
-                if (data) {
-                    const mappings = data.data;
-                    if (mappings.length > 0) {
-                        mappings.forEach(function (mapping) {
-                            array.push({label: mapping.name, value: mapping.id, disabled: false})
-                        });
-                    }
-                }
-                taskSelect.setData(array);
-                // setData 会默认选中第一个非空 value，此处强制保持「未选择真实任务」状态
-                taskSelect.clear();
-            } else {
-                bootGrowl("获取同步任务失败: " + response.message, "danger");
-            }
-        })
+        }));
     }
 
     /**

@@ -38,8 +38,12 @@
     let sourceConnectorSelect = null;
     let targetConnectorSelect = null;
     let pickerTargetConnectorSelect = null;
-    /** 页面加载时的全部连接器选项，用于按源端类型筛选目标连接器 */
-    let allConnectorOptions = [];
+    /** 连接器类型/名称缓存（远程分页累积） */
+    let connectorTypeCache = {};
+    let connectorLabelCache = {};
+    /** 目标连接远程配置（preferredType 随源端变化） */
+    let targetConnectorRemoteExtra = null;
+    let pickerTargetConnectorRemoteExtra = null;
     /** 暂不支持作为源端的连接器类型 */
     const UNSUPPORTED_SOURCE_CONNECTOR_TYPES = [];
     let tableTreeScrollBound = false;
@@ -62,47 +66,87 @@
         return page.mode === 'edit';
     }
 
-    function getConnectorTypeFromOption($option) {
-        if (!$option || !$option.length) {
-            return '';
+    function rememberConnectorMeta(id, type, label) {
+        if (!id) {
+            return;
         }
-        const dataType = ($option.attr('data-connector-type') || '').trim();
-        if (dataType) {
-            return dataType;
+        if (type) {
+            connectorTypeCache[id] = String(type).trim();
         }
-        const text = $option.text() || '';
-        const match = text.match(/\(([^()]+)\)\s*$/);
-        return match && match[1] ? match[1].trim() : '';
+        if (label) {
+            connectorLabelCache[id] = String(label).trim();
+        }
+    }
+
+    function formatConnectorOptionLabel(name, type) {
+        const n = name || '';
+        const t = type || '';
+        return t ? (n + '(' + t + ')') : n;
+    }
+
+    function resolveConnectorMetaFromTask() {
+        const task = page.task || {};
+        const mappings = task.databaseMappings || [];
+        const first = mappings.length ? mappings[0] : null;
+        const sourceConnector = task.sourceConnector || {};
+        const targetConnector = task.targetConnector || {};
+        const sourceId = (first && first.sourceConnectorId) || sourceConnector.id || '';
+        const targetId = (first && first.targetConnectorId) || targetConnector.id || '';
+        const sourceType = (sourceConnector.config && sourceConnector.config.connectorType) || '';
+        const targetType = (targetConnector.config && targetConnector.config.connectorType) || '';
+        const sourceLabel = formatConnectorOptionLabel(sourceConnector.name, sourceType) || sourceId;
+        const targetLabel = formatConnectorOptionLabel(targetConnector.name, targetType) || targetId;
+        if (sourceId) {
+            rememberConnectorMeta(sourceId, sourceType, sourceLabel);
+        }
+        if (targetId) {
+            rememberConnectorMeta(targetId, targetType, targetLabel);
+        }
+        return {
+            sourceId: sourceId,
+            sourceType: sourceType,
+            sourceLabel: sourceLabel,
+            targetId: targetId,
+            targetType: targetType,
+            targetLabel: targetLabel
+        };
+    }
+
+    function wrapRemoteConnectorOptions(extra) {
+        const base = buildRemoteConnectorSelectOptions(extra);
+        const originLoad = base.loadOptions;
+        base.loadOptions = function (query, onSuccess, onError) {
+            originLoad(query, function (result) {
+                const rows = result && Array.isArray(result.data) ? result.data : [];
+                rows.forEach(function (item) {
+                    if (!item || !item.value) {
+                        return;
+                    }
+                    rememberConnectorMeta(
+                        item.value,
+                        item.data && item.data.connectorType,
+                        item.label
+                    );
+                });
+                onSuccess(result);
+            }, onError);
+        };
+        return base;
     }
 
     function getConnectorTypeBySelect(selectId, connectorId) {
         if (!connectorId) {
             return '';
         }
-        const $option = $('#' + selectId + ' option[value="' + connectorId + '"]');
-        if ($option.length) {
-            return getConnectorTypeFromOption($option);
-        }
-        const cached = allConnectorOptions.find(function (item) {
-            return item.value === connectorId;
-        });
-        return cached ? cached.connectorType : '';
-    }
-
-    function initConnectorOptionsCache() {
-        allConnectorOptions = [];
-        $('#sourceConnectorId option').each(function () {
-            const value = ($(this).val() || '').trim();
-            if (!value) {
-                return;
+        const $el = $('#' + selectId);
+        if ($el.length && typeof resolveConnectorTypeFromSelect === 'function') {
+            const fromSelect = resolveConnectorTypeFromSelect($el, connectorId);
+            if (fromSelect) {
+                rememberConnectorMeta(connectorId, fromSelect, '');
+                return fromSelect;
             }
-            allConnectorOptions.push({
-                label: $(this).text().trim(),
-                value: value,
-                connectorType: getConnectorTypeFromOption($(this)),
-                disabled: !!$(this).prop('disabled')
-            });
-        });
+        }
+        return connectorTypeCache[connectorId] || '';
     }
 
     function isSameConnectorType(sourceConnectorId, targetConnectorId) {
@@ -111,39 +155,29 @@
         return !!(sourceType && targetType && sourceType === targetType);
     }
 
-    function buildTargetConnectorSelectOptions(sourceConnectorId, currentTargetId) {
-        const sourceType = normalizeConnectorType(getConnectorTypeById(sourceConnectorId));
-        const filtered = sourceType
-            ? allConnectorOptions.filter(function (item) {
-                return normalizeConnectorType(item.connectorType) === sourceType;
-            })
-            : [];
-        const options = [{ label: '请选择连接器', value: '', disabled: false }].concat(
-            filtered.map(function (item) {
-                return { label: item.label, value: item.value, disabled: item.disabled };
-            })
-        );
-        const current = currentTargetId || '';
-        const validCurrent = current && filtered.some(function (item) {
-            return item.value === current;
-        });
-        return {
-            options: options,
-            nextId: validCurrent ? current : ''
-        };
-    }
-
-    function applyTargetConnectorSelect(select, options, nextId) {
-        if (!select || typeof select.setData !== 'function') {
-            return;
+    function syncTargetSelectPreferredType(select, remoteExtra, sourceConnectorId, currentId, onAssigned) {
+        if (!select || !remoteExtra) {
+            return '';
         }
+        const sourceType = normalizeConnectorType(getConnectorTypeById(sourceConnectorId));
+        remoteExtra.preferredType = sourceType || '';
+        const curType = normalizeConnectorType(getConnectorTypeById(currentId));
+        const nextId = (sourceType && curType && sourceType === curType) ? (currentId || '') : '';
         suppressConnectorSelect = true;
         try {
-            select.setData(options);
-            select.setValues(nextId ? [nextId] : [], true);
+            if (typeof select.setValues === 'function') {
+                select.setValues(nextId ? [nextId] : [], true);
+            }
+            if (typeof select.reloadRemote === 'function') {
+                select.reloadRemote('');
+            }
         } finally {
             suppressConnectorSelect = false;
         }
+        if (typeof onAssigned === 'function') {
+            onAssigned(nextId);
+        }
+        return nextId;
     }
 
     /**
@@ -156,26 +190,44 @@
         if (targetConnectorSelect && hasDetailTargetPanel()) {
             const detailSourceId = block ? getMappingSourceConnectorId(block) : state.source.connectorId;
             const detailTargetId = block ? getMappingTargetConnectorId(block) : state.target.connectorId;
-            const detail = buildTargetConnectorSelectOptions(detailSourceId, detailTargetId);
-            applyTargetConnectorSelect(targetConnectorSelect, detail.options, detail.nextId);
+            const nextId = syncTargetSelectPreferredType(
+                targetConnectorSelect,
+                targetConnectorRemoteExtra,
+                detailSourceId,
+                detailTargetId,
+                function (id) {
+                    if (block) {
+                        block.targetConnectorId = id;
+                    }
+                    state.target.connectorId = id;
+                }
+            );
             if (block) {
-                state.target.connectorId = block.targetConnectorId || detail.nextId;
+                state.target.connectorId = block.targetConnectorId || nextId;
             }
         }
 
         if (pickerTargetConnectorSelect) {
             const pickerTargetId = getPickerTargetConnectorId() || state.target.connectorId;
-            const picker = buildTargetConnectorSelectOptions(state.source.connectorId, pickerTargetId);
-            applyTargetConnectorSelect(pickerTargetConnectorSelect, picker.options, picker.nextId);
+            const nextId = syncTargetSelectPreferredType(
+                pickerTargetConnectorSelect,
+                pickerTargetConnectorRemoteExtra,
+                state.source.connectorId,
+                pickerTargetId,
+                null
+            );
             if (isPickerModalOpen()) {
-                state.target.connectorId = picker.nextId;
+                state.target.connectorId = nextId;
             }
         } else if (!block || !hasDetailTargetPanel()) {
-            const global = buildTargetConnectorSelectOptions(state.source.connectorId, state.target.connectorId);
-            if (targetConnectorSelect) {
-                applyTargetConnectorSelect(targetConnectorSelect, global.options, global.nextId);
-            }
-            state.target.connectorId = global.nextId;
+            const nextId = syncTargetSelectPreferredType(
+                targetConnectorSelect,
+                targetConnectorRemoteExtra,
+                state.source.connectorId,
+                state.target.connectorId,
+                null
+            );
+            state.target.connectorId = nextId;
         }
     }
 
@@ -189,44 +241,6 @@
 
     function isUnsupportedSourceConnector(connectorId) {
         return isUnsupportedSourceConnectorType(getConnectorTypeById(connectorId));
-    }
-
-    function isSourceConnectorOptionDisabled(connectorType) {
-        return isUnsupportedSourceConnectorType(connectorType);
-    }
-
-    function refreshSourceConnectorOptions() {
-        if (!sourceConnectorSelect || typeof sourceConnectorSelect.setData !== 'function') {
-            return;
-        }
-        const options = [{ label: '请选择连接器', value: '', disabled: false }].concat(
-            allConnectorOptions.map(function (item) {
-                return {
-                    label: item.label,
-                    value: item.value,
-                    disabled: isSourceConnectorOptionDisabled(item.connectorType)
-                };
-            })
-        );
-        const current = state.source.connectorId || '';
-        const keepDisabledSelection = isEditMode() && current && isUnsupportedSourceConnector(current);
-        const validCurrent = current && options.some(function (item) {
-            return item.value === current && (!item.disabled || keepDisabledSelection);
-        });
-        const nextId = validCurrent ? current : '';
-        suppressConnectorSelect = true;
-        try {
-            sourceConnectorSelect.setData(options);
-            sourceConnectorSelect.setValues(nextId ? [nextId] : [], true);
-        } finally {
-            suppressConnectorSelect = false;
-        }
-        if (!validCurrent && current) {
-            state.source.connectorId = '';
-            lastSourceConnectorId = '';
-        } else {
-            state.source.connectorId = nextId;
-        }
     }
 
     function isOracleConnector(connectorId) {
@@ -246,6 +260,9 @@
     function getConnectorTypeById(connectorId) {
         if (!connectorId) {
             return '';
+        }
+        if (connectorTypeCache[connectorId]) {
+            return connectorTypeCache[connectorId];
         }
         let type = getConnectorTypeBySelect('pickerTargetConnectorId', connectorId);
         if (!type) {
@@ -520,11 +537,9 @@
         if (!connectorId) {
             return '';
         }
-        const found = allConnectorOptions.find(function (item) {
-            return item.value === connectorId;
-        });
-        if (found && found.label) {
-            return found.label.replace(/\([^)]*\)\s*$/, '').trim() || connectorId;
+        const cachedLabel = connectorLabelCache[connectorId];
+        if (cachedLabel) {
+            return cachedLabel.replace(/\([^)]*\)\s*$/, '').trim() || connectorId;
         }
         return getConnectorLabel('targetConnectorId', connectorId)
             || getConnectorLabel('sourceConnectorId', connectorId)
@@ -1522,18 +1537,29 @@
             }
         });
 
-        pickerTargetConnectorSelect = $('#pickerTargetConnectorId').dbSelect({
-            type: 'single',
+        pickerTargetConnectorRemoteExtra = {
+            relationOnly: true,
+            preferredType: normalizeConnectorType(getConnectorTypeById(state.source.connectorId)),
             disabled: isReadOnly() || isAppendTablePickerMode(),
+            defaultValue: state.target.connectorId || '',
+            defaultLabel: connectorLabelCache[state.target.connectorId] || state.target.connectorId || '',
+            defaultType: getConnectorTypeById(state.target.connectorId),
             onSelect: function (ids) {
                 if (suppressConnectorSelect || isAppendTablePickerMode()) {
                     return;
                 }
-                state.target.connectorId = ids.length ? ids[0] : '';
+                const id = ids.length ? ids[0] : '';
+                if (id) {
+                    rememberConnectorMeta(id, getConnectorTypeBySelect('pickerTargetConnectorId', id), '');
+                }
+                state.target.connectorId = id;
                 updateTargetSchemaVisibility();
                 updateTargetDatabaseFieldVisibility();
             }
-        });
+        };
+        pickerTargetConnectorSelect = $('#pickerTargetConnectorId').dbSelect(
+            wrapRemoteConnectorOptions(pickerTargetConnectorRemoteExtra)
+        );
 
         refreshTargetConnectorOptions();
 
@@ -2363,30 +2389,45 @@
 
         initSyncStrategyCheckboxStyle();
         bindSyncStrategyEvents();
-        initConnectorOptionsCache();
 
-        sourceConnectorSelect = $('#sourceConnectorId').dbSelect({
-            type: 'single',
-            disabled: isReadOnly(),
-            onSelect: function (ids) {
-                if (suppressConnectorSelect) {
-                    return;
-                }
-                onSourceConnectorChange(ids.length ? ids[0] : '');
-                updateSourceDatabaseFieldVisibility();
-                updateTargetSchemaVisibility();
-            }
-        });
-        refreshSourceConnectorOptions();
+        const connectorMeta = resolveConnectorMetaFromTask();
+        const sourceType = connectorMeta.sourceType || '';
 
-        targetConnectorSelect = $('#targetConnectorId').dbSelect({
-            type: 'single',
+        sourceConnectorSelect = $('#sourceConnectorId').dbSelect(wrapRemoteConnectorOptions({
+            relationOnly: true,
             disabled: isReadOnly(),
+            defaultValue: connectorMeta.sourceId,
+            defaultLabel: connectorMeta.sourceLabel,
+            defaultType: connectorMeta.sourceType,
             onSelect: function (ids) {
                 if (suppressConnectorSelect) {
                     return;
                 }
                 const id = ids.length ? ids[0] : '';
+                if (id) {
+                    rememberConnectorMeta(id, getConnectorTypeBySelect('sourceConnectorId', id), '');
+                }
+                onSourceConnectorChange(id);
+                updateSourceDatabaseFieldVisibility();
+                updateTargetSchemaVisibility();
+            }
+        }));
+
+        targetConnectorRemoteExtra = {
+            relationOnly: true,
+            preferredType: normalizeConnectorType(sourceType),
+            disabled: isReadOnly(),
+            defaultValue: connectorMeta.targetId,
+            defaultLabel: connectorMeta.targetLabel,
+            defaultType: connectorMeta.targetType,
+            onSelect: function (ids) {
+                if (suppressConnectorSelect) {
+                    return;
+                }
+                const id = ids.length ? ids[0] : '';
+                if (id) {
+                    rememberConnectorMeta(id, getConnectorTypeBySelect('targetConnectorId', id), '');
+                }
                 state.target.connectorId = id;
                 const block = getActiveMappingBlock();
                 if (block) {
@@ -2401,7 +2442,10 @@
                 updateTargetSchemaVisibility();
                 updateTargetDatabaseFieldVisibility();
             }
-        });
+        };
+        targetConnectorSelect = $('#targetConnectorId').dbSelect(
+            wrapRemoteConnectorOptions(targetConnectorRemoteExtra)
+        );
 
         bindDetailPanelEvents();
         refreshTargetConnectorOptions();

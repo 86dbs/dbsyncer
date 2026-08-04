@@ -15,6 +15,7 @@ import org.dbsyncer.parser.enums.CommandEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.SortEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.model.ConnectorConfig;
@@ -103,6 +104,43 @@ public class ConnectorProfileImpl implements ConnectorProfile {
             }
             query.setPageNum(query.getPageNum() + 1);
         }
+        return result;
+    }
+
+    @Override
+    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey) {
+        int safePageNum = pageNum > 0 ? pageNum : 1;
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
+        Query query = new Query(safePageNum, safePageSize);
+        query.setType(StorageEnum.CONNECTOR);
+        if (StringUtil.isNotBlank(searchKey)) {
+            query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
+        }
+        query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
+        Paging paging = storageService.query(query);
+        Paging<Connector> result = new Paging<>(safePageNum, safePageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<Connector> rows = new ArrayList<>(paging.getData().size());
+        for (Object item : paging.getData()) {
+            if (!(item instanceof Map)) {
+                continue;
+            }
+            Object json = ((Map) item).get(ConfigConstant.CONFIG_MODEL_JSON);
+            if (json == null) {
+                continue;
+            }
+            Connector connector = parseConnector(String.valueOf(json));
+            if (connector != null) {
+                rows.add(connector);
+            }
+        }
+        result.setData(rows);
         return result;
     }
 

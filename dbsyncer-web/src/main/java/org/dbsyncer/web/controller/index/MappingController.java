@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.web.controller.index;
 
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.model.DataSyncRequest;
@@ -39,9 +38,6 @@ public class MappingController extends BaseController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private MappingService mappingService;
 
     @Resource
@@ -60,7 +56,6 @@ public class MappingController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String page(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorAll());
         return "mapping/add";
     }
 
@@ -96,7 +91,6 @@ public class MappingController extends BaseController {
             return "mapping/events";
         }
         model.put("mapping", mappingService.getMapping(id, exclude));
-        model.put("connectors", connectorService.getConnectorAll());
         initConfig(model);
         return "mapping/" + page;
     }

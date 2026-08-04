@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.web.controller.validate.sync;
 
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.sdk.spi.LicenseService;
@@ -44,9 +44,6 @@ public class ValidateSyncController extends BaseController {
     private ValidateSyncService validateSyncService;
 
     @Resource
-    private ConnectorService connectorService;
-
-    @Resource
     private TableGroupService tableGroupService;
 
     @Resource
@@ -69,7 +66,6 @@ public class ValidateSyncController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorAll());
         return "validate-sync/add";
     }
 
@@ -81,7 +77,8 @@ public class ValidateSyncController extends BaseController {
                            @RequestParam(value = "detailStatus", required = false) String detailStatus) {
         if (StringUtil.equals("detail", page)) {
             model.put("taskId", id);
-            model.put("taskList", validateSyncService.getAll());
+            ValidateSyncTaskVO detailTask = validateSyncService.get(id);
+            model.put("taskName", detailTask != null ? detailTask.getName() : id);
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
         } else if (StringUtil.equals("editTableGroup", page)) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
