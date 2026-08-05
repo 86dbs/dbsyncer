@@ -53,6 +53,7 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setConfig(config);
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+        applySourceTargetFlags(connector, params);
         // 校验并修改配置
         validateAndModifyConfig(config, params);
         // 连接并获取数据库列表
@@ -71,12 +72,24 @@ public class ConnectorChecker extends AbstractChecker {
         ConnectorConfig config = connector.getConfig();
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+        applySourceTargetFlags(connector, params);
         // 校验并修改配置
         validateAndModifyConfig(config, params);
         // 获取数据库列表
         connectAndLoadDatabases(connector, config);
 
         return connector;
+    }
+
+    /**
+     * 解析并校验「可作为源 / 可作为目标」开关（至少开启一个）。
+     */
+    private void applySourceTargetFlags(Connector connector, Map<String, String> params) {
+        boolean isSource = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_SOURCE));
+        boolean isTarget = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_TARGET));
+        Assert.isTrue(isSource || isTarget, "至少开启「可作为源」或「可作为目标」之一");
+        connector.setIsSource(isSource);
+        connector.setIsTarget(isTarget);
     }
 
     /**

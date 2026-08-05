@@ -306,6 +306,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         if (task == null) {
             throw new BizException("任务不存在");
         }
+        assertRunning(task.getId());
         checkTask(task, params);
         taskProfile.clearRunData(task.getId());
         taskProfile.resetRunProgress(task.getId());

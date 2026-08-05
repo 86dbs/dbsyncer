@@ -170,7 +170,7 @@ function onConnectorChange(connectorId, dbSelect, schemaSelect, $connector, $dat
     });
 }
 
-function initDBSelect($connector, $database, $schema) {
+function initDBSelect($connector, $database, $schema, role) {
     // 为每个 select 组维护独立的连接器ID，避免上下文串用
     let currentConnectorId = null;
     const defaultDatabase = $database.data("database") || '';
@@ -190,6 +190,7 @@ function initDBSelect($connector, $database, $schema) {
         }
     });
     const connectorSelect = $connector.dbSelect(buildRemoteConnectorSelectOptions({
+        role: role,
         defaultValue: $connector.data('defaultId') || '',
         defaultLabel: $connector.data('defaultLabel') || '',
         defaultType: $connector.data('defaultType') || '',
@@ -214,8 +215,8 @@ $(function () {
         doLoader('/mapping/list');
     };
 
-    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
-    initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
+    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'), 'source');
+    initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'), 'target');
     // 绑定全量+增量切换事件
     bindMappingModelChange();
     // 绑定日志+定时切换事件

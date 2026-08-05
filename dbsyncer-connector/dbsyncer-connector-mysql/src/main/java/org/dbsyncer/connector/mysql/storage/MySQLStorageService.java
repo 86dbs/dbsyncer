@@ -583,7 +583,9 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.USER_ROLE, ConfigConstant.USER_EMAIL, ConfigConstant.USER_PHONE);
         List<Field> userFields = builder.getFields();
 
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME, ConfigConstant.CONFIG_MODEL_JSON);
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CONFIG_MODEL_TYPE,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
+                ConfigConstant.CONNECTOR_IS_SOURCE, ConfigConstant.CONNECTOR_IS_TARGET, ConfigConstant.CONFIG_MODEL_JSON);
         List<Field> connectorFields = builder.getFields();
 
         // 表映射关系：关联信息拆分列 + json(字段映射/command等)
@@ -741,6 +743,11 @@ public class MySQLStorageService extends AbstractStorageService {
      * @param table 已带前缀的表名
      */
     private void upgradeTableColumns(String type, String table) {
+        if (StorageEnum.CONNECTOR.getType().equals(type)) {
+            addColumnIfNotExist(table, "IS_SOURCE", "tinyint NOT NULL DEFAULT 1 COMMENT '作为源标识, 0-否 1-是'");
+            addColumnIfNotExist(table, "IS_TARGET", "tinyint NOT NULL DEFAULT 1 COMMENT '作为目标标识, 0-否 1-是'");
+            return;
+        }
         if (StorageEnum.TABLE_GROUP.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_TG_MAPPING",
                     "`TASK_ID`,`SOURCE_CONNECTOR_ID`,`TARGET_CONNECTOR_ID`,`SOURCE_DATABASE`,`TARGET_DATABASE`,`SOURCE_SCHEMA`,`TARGET_SCHEMA`,`SORT_INDEX`");
@@ -755,6 +762,21 @@ public class MySQLStorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+        }
+    }
+
+    /**
+     * 列不存在则追加。
+     */
+    private void addColumnIfNotExist(String table, String columnName, String columnDef) {
+        if (columnExists(table, columnName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("ALTER TABLE `%s` ADD COLUMN `%s` %s", table, columnName, columnDef));
+            logger.info("已补齐 {}.{}", table, columnName);
+        } catch (Exception e) {
+            logger.warn("补齐 {}.{} 失败: {}", table, columnName, e.getMessage());
         }
     }
 
@@ -855,6 +877,8 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.CONNECTOR_IS_SOURCE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CONNECTOR_IS_TARGET, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.DATA_TABLE_GROUP_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.DATA_ERROR, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.BINLOG_DATA, "VARBINARY", Types.BLOB),

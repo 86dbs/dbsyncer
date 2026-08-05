@@ -1539,6 +1539,7 @@
 
         pickerTargetConnectorRemoteExtra = {
             relationOnly: true,
+            role: 'target',
             preferredType: normalizeConnectorType(getConnectorTypeById(state.source.connectorId)),
             disabled: isReadOnly() || isAppendTablePickerMode(),
             defaultValue: state.target.connectorId || '',
@@ -2395,6 +2396,7 @@
 
         sourceConnectorSelect = $('#sourceConnectorId').dbSelect(wrapRemoteConnectorOptions({
             relationOnly: true,
+            role: 'source',
             disabled: isReadOnly(),
             defaultValue: connectorMeta.sourceId,
             defaultLabel: connectorMeta.sourceLabel,
@@ -2415,6 +2417,7 @@
 
         targetConnectorRemoteExtra = {
             relationOnly: true,
+            role: 'target',
             preferredType: normalizeConnectorType(sourceType),
             disabled: isReadOnly(),
             defaultValue: connectorMeta.targetId,

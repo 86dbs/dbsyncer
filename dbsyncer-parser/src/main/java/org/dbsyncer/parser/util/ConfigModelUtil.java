@@ -4,6 +4,7 @@ import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserInfo;
@@ -40,6 +41,13 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, model.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, model.getUpdateTime());
         params.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJson(model));
+
+        // 连接器：源/目标角色落拆分列（1/0），便于 search 按角色过滤
+        if (model instanceof Connector) {
+            Connector connector = (Connector) model;
+            params.put(ConfigConstant.CONNECTOR_IS_SOURCE, connector.isSource() ? 1 : 0);
+            params.put(ConfigConstant.CONNECTOR_IS_TARGET, connector.isTarget() ? 1 : 0);
+        }
 
         // 表映射关系：关联信息落拆分列
         if (model instanceof TableGroup) {

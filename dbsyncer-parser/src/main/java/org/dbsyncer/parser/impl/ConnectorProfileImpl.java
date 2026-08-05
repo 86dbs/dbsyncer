@@ -108,13 +108,18 @@ public class ConnectorProfileImpl implements ConnectorProfile {
     }
 
     @Override
-    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey) {
+    public Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role) {
         int safePageNum = pageNum > 0 ? pageNum : 1;
         int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         Query query = new Query(safePageNum, safePageSize);
         query.setType(StorageEnum.CONNECTOR);
         if (StringUtil.isNotBlank(searchKey)) {
             query.addFilter(ConfigConstant.CONFIG_MODEL_NAME, searchKey, false);
+        }
+        if (StringUtil.equalsIgnoreCase("source", role)) {
+            query.addFilter(ConfigConstant.CONNECTOR_IS_SOURCE, 1);
+        } else if (StringUtil.equalsIgnoreCase("target", role)) {
+            query.addFilter(ConfigConstant.CONNECTOR_IS_TARGET, 1);
         }
         query.addOrderBy(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, SortEnum.DESC);
         Paging paging = storageService.query(query);

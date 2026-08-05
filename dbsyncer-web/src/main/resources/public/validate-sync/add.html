@@ -223,7 +223,7 @@
         })
     }
 
-    function initDBSelect($connector, $database, $schema) {
+    function initDBSelect($connector, $database, $schema, role) {
         // 为每个 select 组维护独立的连接器ID，避免上下文串用
         let currentConnectorId = null;
 
@@ -237,6 +237,7 @@
             }
         });
         const connectorSelect = $connector.dbSelect(buildRemoteConnectorSelectOptions({
+            role: role,
             onSelect: function (connectorId) {
                 currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
                 onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
@@ -308,8 +309,8 @@
     }
 
     $(document).ready(function() {
-        initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
-        initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
+        initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'), 'source');
+        initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'), 'target');
 
         bindCreateTypeChange();
         initMappingSelect();

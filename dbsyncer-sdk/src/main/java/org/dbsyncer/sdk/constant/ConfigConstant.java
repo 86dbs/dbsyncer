@@ -26,6 +26,14 @@ public class ConfigConstant {
     public static final String SYSTEM = "system";
     public static final String USER = "user";
     public static final String CONNECTOR = "connector";
+    /**
+     * 连接器可作为源端（拆分列 IS_SOURCE，1-是 0-否）
+     */
+    public static final String CONNECTOR_IS_SOURCE = "isSource";
+    /**
+     * 连接器可作为目标端（拆分列 IS_TARGET，1-是 0-否）
+     */
+    public static final String CONNECTOR_IS_TARGET = "isTarget";
     public static final String MAPPING = "mapping";
     public static final String TABLE_GROUP = "tableGroup";
     public static final String META = "meta";

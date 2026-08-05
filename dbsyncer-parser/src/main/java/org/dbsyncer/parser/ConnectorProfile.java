@@ -37,8 +37,9 @@ public interface ConnectorProfile {
      * @param pageNum   页码，从 1 开始
      * @param pageSize  每页大小
      * @param searchKey 名称关键字，可空
+     * @param role      角色过滤：{@code source} 仅 IS_SOURCE=1，{@code target} 仅 IS_TARGET=1，其它不过滤
      */
-    Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey);
+    Paging<Connector> queryConnectors(int pageNum, int pageSize, String searchKey, String role);
 
     /**
      * 添加连接器。

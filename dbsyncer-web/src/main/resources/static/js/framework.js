@@ -1157,7 +1157,7 @@ function convertConnectorPagingToSelectData(paging, preferredType) {
 
 /**
  * 构建远程连接器 dbSelect 配置（库侧分页）。
- * @param {Object} extra defaultValue/defaultLabel/defaultType/relationOnly/preferredType/pageSize/disabled/onSelect
+ * @param {Object} extra defaultValue/defaultLabel/defaultType/relationOnly/preferredType/role/pageSize/disabled/onSelect
  */
 function buildRemoteConnectorSelectOptions(extra) {
     extra = extra || {};
@@ -1185,6 +1185,9 @@ function buildRemoteConnectorSelectOptions(extra) {
             };
             if (extra.relationOnly) {
                 params.relationOnly = '1';
+            }
+            if (extra.role === 'source' || extra.role === 'target') {
+                params.role = extra.role;
             }
             doPoster('/connector/search', params, function (res) {
                 if (res.success === true) {
