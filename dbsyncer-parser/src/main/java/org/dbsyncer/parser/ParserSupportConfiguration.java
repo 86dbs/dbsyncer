@@ -118,7 +118,7 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public void syncTaskDetails(String taskId) {
+            public void syncTaskTableMetaDetails(String taskId) {
                 // open-source 无企业实现时为空操作
             }
 
@@ -155,7 +155,7 @@ public class ParserSupportConfiguration {
             }
 
             @Override
-            public void syncTaskDetails(String taskId) {
+            public void syncTaskTableMetaDetails(String taskId) {
                 // open-source 无企业实现时为空操作
             }
 

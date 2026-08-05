@@ -733,6 +733,7 @@ public class H2StorageService extends AbstractStorageService {
             // H2 索引名全局唯一：按表名哈希后缀，避免多分表冲突
             String suffix = Integer.toHexString(table.hashCode() & 0xffff);
             createIndexIfNotExist(table, "IDX_TG_UPD_" + suffix, "`TABLE_GROUP_ID`,`UPDATE_TIME`");
+            createUniqueIndexIfNotExist(table, "UK_TG_TYPE_" + suffix, "`TABLE_GROUP_ID`,`TYPE`");
             return;
         }
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
@@ -782,6 +783,20 @@ public class H2StorageService extends AbstractStorageService {
                 connector.buildWithQuotation(indexName),
                 connector.buildWithQuotation(table),
                 indexColumns));
+    }
+
+    private void createUniqueIndexIfNotExist(String table, String indexName, String indexColumns) {
+        if (indexExists(table, indexName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("CREATE UNIQUE INDEX %s ON %s (%s)",
+                    connector.buildWithQuotation(indexName),
+                    connector.buildWithQuotation(table),
+                    indexColumns));
+        } catch (Exception e) {
+            logger.warn("skip create unique {} on {}: {}", indexName, table, e.getMessage());
+        }
     }
 
     private List<String> buildPrimaryKeys(List<Field> fields) {

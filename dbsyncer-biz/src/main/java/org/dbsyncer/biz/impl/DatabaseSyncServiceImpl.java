@@ -140,7 +140,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         }
         // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
         taskProfile.createRunDetailTable(taskId);
-        databaseSyncDetailService.syncTaskDetails(taskId);
+        databaseSyncDetailService.syncTaskTableMetaDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -180,7 +180,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         taskProfile.resetRunProgress(id);
         String editedId = taskService.edit(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
-        databaseSyncDetailService.syncTaskDetails(editedId);
+        databaseSyncDetailService.syncTaskTableMetaDetails(editedId);
         return editedId;
     }
 

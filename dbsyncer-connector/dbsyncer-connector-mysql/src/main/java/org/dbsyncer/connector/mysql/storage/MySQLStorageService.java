@@ -756,6 +756,8 @@ public class MySQLStorageService extends AbstractStorageService {
         if (StorageEnum.TASK_DETAIL.getType().equals(type)) {
             // 新表 DDL 已含该索引；仅对老表补齐，存在则跳过，避免 Duplicate key name 打 ERROR
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");
+            // 对齐键唯一：同表同类型仅一行（老表若有重复会建索引失败，需先跑 align 去重）
+            createUniqueIndexIfNotExist(table, "UK_TG_TYPE", "`TABLE_GROUP_ID`,`TYPE`");
             return;
         }
         if (StorageEnum.META.getType().equals(type)) {
@@ -796,6 +798,20 @@ public class MySQLStorageService extends AbstractStorageService {
             executeSql(String.format("CREATE INDEX `%s` ON `%s` (%s)", indexName, table, indexColumns));
         } catch (Exception e) {
             logger.debug("skip create {} on {}: {}", indexName, table, e.getMessage());
+        }
+    }
+
+    /**
+     * 唯一索引不存在则创建。
+     */
+    private void createUniqueIndexIfNotExist(String table, String indexName, String indexColumns) {
+        if (indexExists(table, indexName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("CREATE UNIQUE INDEX `%s` ON `%s` (%s)", indexName, table, indexColumns));
+        } catch (Exception e) {
+            logger.warn("skip create unique {} on {}: {}", indexName, table, e.getMessage());
         }
     }
 

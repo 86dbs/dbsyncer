@@ -180,7 +180,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             mergeTaskColumn(task);
             String id = taskService.add(task);
             taskProfile.createRunDetailTable(id);
-            validateSyncDetailService.syncTaskDetails(id);
+            validateSyncDetailService.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
             return id;
         } else {
@@ -210,7 +210,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 if (StringUtil.isNotBlank(tableGroups)) {
                     matchCustomizedTableGroups(validateSyncTask, tableGroups);
                 }
-                validateSyncDetailService.syncTaskDetails(id);
+                validateSyncDetailService.syncTaskTableMetaDetails(id);
             }
             return id;
         }
@@ -339,7 +339,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
         String id = taskService.edit(task);
         // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
-        validateSyncDetailService.syncTaskDetails(id);
+        validateSyncDetailService.syncTaskTableMetaDetails(id);
         return id;
     }
 
@@ -377,7 +377,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         });
         preloadTemplate.reConnect(newTask);
         taskProfile.createRunDetailTable(newId);
-        validateSyncDetailService.syncTaskDetails(newId);
+        validateSyncDetailService.syncTaskTableMetaDetails(newId);
         return newId;
     }
 
@@ -635,7 +635,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 return 1 < tableSize ? String.valueOf(tableSize) : id;
             } finally {
                 // 表映射变更后对齐明细
-                validateSyncDetailService.syncTaskDetails(taskId);
+                validateSyncDetailService.syncTaskTableMetaDetails(taskId);
             }
         }
     }
@@ -672,7 +672,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 重置排序
         resetTableGroupAllIndex(taskId);
         // 对齐删除已无表映射的明细
-        validateSyncDetailService.syncTaskDetails(taskId);
+        validateSyncDetailService.syncTaskTableMetaDetails(taskId);
         return taskId;
     }
 

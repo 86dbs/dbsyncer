@@ -31,7 +31,7 @@ public interface DatabaseSyncDetailService {
      *
      * @param taskId 迁移任务ID
      */
-    void syncTaskDetails(String taskId);
+    void syncTaskTableMetaDetails(String taskId);
 
     /**
      * 整轮重跑前：重置全部明细状态为未运行，并清空差异载荷（不删行）。
