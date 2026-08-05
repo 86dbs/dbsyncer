@@ -22,8 +22,7 @@ public final class DamengDoubleType extends DoubleType {
 
     private enum TypeEnum {
         DOUBLE("DOUBLE"),
-        DOUBLE_PRECISION("DOUBLE PRECISION"),
-        FLOAT("FLOAT");
+        DOUBLE_PRECISION("DOUBLE PRECISION");
 
         private final String value;
 

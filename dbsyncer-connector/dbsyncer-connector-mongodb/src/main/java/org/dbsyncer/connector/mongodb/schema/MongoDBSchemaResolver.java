@@ -26,8 +26,7 @@ public final class MongoDBSchemaResolver extends AbstractSchemaResolver {
 
     @Override
     protected void initDataTypeMapping(Map<String, DataType> mapping) {
-        Stream.of(new MongoDBStringType(), new MongoDBIntType(), new MongoDBLongType(), new MongoDBDecimalType(),
-                        new MongoDBDoubleType(), new MongoDBTimestampType(), new MongoDBBooleanType())
+        Stream.of(new MongoDBStringType(), new MongoDBIntType(), new MongoDBLongType(), new MongoDBDecimalType(), new MongoDBDoubleType(), new MongoDBTimestampType(), new MongoDBBooleanType())
                 .forEach(t -> t.getSupportedTypeName().forEach(typeName -> {
                     if (mapping.containsKey(typeName)) {
                         throw new MongoDBException("Duplicate type name: " + typeName);

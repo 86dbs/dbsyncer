@@ -19,13 +19,22 @@ import java.util.stream.Collectors;
  */
 public final class DamengFloatType extends FloatType {
 
+
     private enum TypeEnum {
-        REAL
+        REAL("REAL"),
+        FLOAT("FLOAT");
+        private final String value;
+        TypeEnum(String value) {
+            this.value = value;
+        }
+        public String getValue() {
+            return value;
+        }
     }
 
     @Override
     public Set<String> getSupportedTypeName() {
-        return Arrays.stream(TypeEnum.values()).map(Enum::name).collect(Collectors.toSet());
+        return Arrays.stream(DamengFloatType.TypeEnum.values()).map(DamengFloatType.TypeEnum::getValue).collect(Collectors.toSet());
     }
 
     @Override
