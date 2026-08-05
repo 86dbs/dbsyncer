@@ -175,6 +175,11 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         if (detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL) != null) {
             fail = detailContent.get(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL);
         }
+        // 类型级生命周期优先 DATA.status；表级回退 meta.state
+        Object detailStatus = detailContent.get(ConfigConstant.TASK_STATUS);
+        if (detailStatus != null) {
+            state = detailStatus;
+        }
 
         putIfPresent(row, ConfigConstant.TASK_SOURCE_TABLE_NAME, sourceTable);
         putIfPresent(row, ConfigConstant.DATABASE_SYNC_DETAIL_SOURCE_TABLE, sourceTable);
@@ -196,6 +201,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
         putIfPresent(row, ConfigConstant.META_TOTAL, total);
         putIfPresent(row, ConfigConstant.META_STATE, state);
         if (state != null) {
+            // 展示用 status：已优先取 DATA.status，否则 meta.state
             row.put(ConfigConstant.TASK_STATUS, state);
         }
         return row;

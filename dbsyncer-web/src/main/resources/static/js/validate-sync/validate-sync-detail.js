@@ -114,7 +114,7 @@
         }
 
         function getExecutionDetail(row) {
-            var parts = [getStatusBadge(row.isSuccess)];
+            var parts = [getStatusBadge(row.status != null ? row.status : row.state)];
             var duration = getElapsedDuration(row);
             if (duration) {
                 parts.push(duration);

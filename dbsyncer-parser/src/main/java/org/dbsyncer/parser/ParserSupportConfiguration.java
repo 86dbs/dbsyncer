@@ -111,7 +111,27 @@ public class ParserSupportConfiguration {
         if (service != null) {
             return service;
         }
-        return params -> null;
+        return new DatabaseSyncDetailService() {
+            @Override
+            public Paging result(Map<String, String> params) {
+                return null;
+            }
+
+            @Override
+            public void syncTaskDetails(String taskId) {
+                // open-source 无企业实现时为空操作
+            }
+
+            @Override
+            public void resetTaskDetailsForNewRound(String taskId) {
+                // open-source 无企业实现时为空操作
+            }
+
+            @Override
+            public void markRunningDetailsDone(String taskId) {
+                // open-source 无企业实现时为空操作
+            }
+        };
     }
 
     @Bean
@@ -132,6 +152,21 @@ public class ParserSupportConfiguration {
             @Override
             public Map<String, Object> manualRevise(String taskId, String detailId) {
                 return null;
+            }
+
+            @Override
+            public void syncTaskDetails(String taskId) {
+                // open-source 无企业实现时为空操作
+            }
+
+            @Override
+            public void resetTaskDetailsForNewRound(String taskId) {
+                // open-source 无企业实现时为空操作
+            }
+
+            @Override
+            public void markRunningDetailsDone(String taskId) {
+                // open-source 无企业实现时为空操作
             }
         };
     }

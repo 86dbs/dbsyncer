@@ -138,8 +138,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
             }
             throw new BizException(e.getMessage(), e);
         }
-        // 预建明细分表，详情页 JOIN 查询不依赖任务是否已写出数据
+        // 预建明细分表并对齐明细行，详情页 JOIN 查询不依赖任务是否已写出数据
         taskProfile.createRunDetailTable(taskId);
+        databaseSyncDetailService.syncTaskDetails(taskId);
         logger.info("整库迁移任务已保存: id={}, name={}, mappingCount={}", taskId, name, mappings.size());
         return taskId;
     }
@@ -177,7 +178,10 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
         // 映射落库成功后再清运行结果与任务级 Meta，避免写失败留下半残任务
         taskProfile.clearRunData(id);
         taskProfile.resetRunProgress(id);
-        return taskService.edit(task);
+        String editedId = taskService.edit(task);
+        // 编辑会清空运行明细，按当前表映射与开启类型重新对齐
+        databaseSyncDetailService.syncTaskDetails(editedId);
+        return editedId;
     }
 
     private void checkDatabaseMapping(List<DatabaseMappingVO> mappings) {

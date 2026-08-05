@@ -180,6 +180,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             mergeTaskColumn(task);
             String id = taskService.add(task);
             taskProfile.createRunDetailTable(id);
+            validateSyncDetailService.syncTaskDetails(id);
             preloadTemplate.reConnect(task);
             return id;
         } else {
@@ -209,6 +210,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 if (StringUtil.isNotBlank(tableGroups)) {
                     matchCustomizedTableGroups(validateSyncTask, tableGroups);
                 }
+                validateSyncDetailService.syncTaskDetails(id);
             }
             return id;
         }
@@ -335,7 +337,10 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 }
             });
         }
-        return taskService.edit(task);
+        String id = taskService.edit(task);
+        // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
+        validateSyncDetailService.syncTaskDetails(id);
+        return id;
     }
 
     @Override
@@ -371,6 +376,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             }
         });
         preloadTemplate.reConnect(newTask);
+        taskProfile.createRunDetailTable(newId);
+        validateSyncDetailService.syncTaskDetails(newId);
         return newId;
     }
 
@@ -603,28 +610,33 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask task = taskService.get(taskId);
         assertRunning(task.getId());
         synchronized (LOCK) {
-            // table1, table2
-            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
-            String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
-            int tableSize = sourceTableArray.length;
-            Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+            try {
+                // table1, table2
+                String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+                String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
+                int tableSize = sourceTableArray.length;
+                Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 
-            String id = null;
-            List<String> list = new ArrayList<>();
-            for (int i = 0; i < tableSize; i++) {
-                params.put("sourceTable", sourceTableArray[i]);
-                params.put("targetTable", targetTableArray[i]);
-                TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
-                validateSyncTableGroupChecker.mergeConfig(task, model);
-                log(LogType.TableGroupLog.INSERT, task, model);
-                int tableGroupCount = tableGroupProfile.getTableGroupCount(taskId);
-                model.setIndex(tableGroupCount + 1);
-                id = tableGroupProfile.addTableGroup(model);
-                list.add(id);
+                String id = null;
+                List<String> list = new ArrayList<>();
+                for (int i = 0; i < tableSize; i++) {
+                    params.put("sourceTable", sourceTableArray[i]);
+                    params.put("targetTable", targetTableArray[i]);
+                    TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
+                    validateSyncTableGroupChecker.mergeConfig(task, model);
+                    log(LogType.TableGroupLog.INSERT, task, model);
+                    int tableGroupCount = tableGroupProfile.getTableGroupCount(taskId);
+                    model.setIndex(tableGroupCount + 1);
+                    id = tableGroupProfile.addTableGroup(model);
+                    list.add(id);
+                }
+                // 合并任务公共字段
+                mergeTaskColumn(task);
+                return 1 < tableSize ? String.valueOf(tableSize) : id;
+            } finally {
+                // 表映射变更后对齐明细
+                validateSyncDetailService.syncTaskDetails(taskId);
             }
-            // 合并任务公共字段
-            mergeTaskColumn(task);
-            return 1 < tableSize ? String.valueOf(tableSize) : id;
         }
     }
 
@@ -659,6 +671,8 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         mergeTaskColumn(task);
         // 重置排序
         resetTableGroupAllIndex(taskId);
+        // 对齐删除已无表映射的明细
+        validateSyncDetailService.syncTaskDetails(taskId);
         return taskId;
     }
 

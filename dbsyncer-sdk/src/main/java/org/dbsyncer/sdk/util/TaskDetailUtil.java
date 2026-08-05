@@ -132,9 +132,8 @@ public abstract class TaskDetailUtil {
     }
 
     /**
-     * 读明细行时把 DATA blob 的结构化字段合并回行 Map，并补齐前端所需的 status(取自 isSuccess)。
-     * <p>
-     * {@code isSuccess} 存 {@link org.dbsyncer.common.enums.CommonTaskStatusEnum} 编码。
+     * 装配明细行时把 DATA blob 的结构化字段合并回行 Map。
+     * <p>{@code isSuccess} 为成败（同步事件 0/1）；生命周期展示用 {@code status}/{@code state}。
      *
      * @param row 明细行(键为 labelName)
      * @return 合并后的行 Map
@@ -146,10 +145,6 @@ public abstract class TaskDetailUtil {
         Map<String, Object> content = deserializeContent(row.get(ConfigConstant.BINLOG_DATA));
         if (!content.isEmpty()) {
             content.forEach(row::putIfAbsent);
-        }
-        // isSuccess 存 CommonTaskStatusEnum 编码，前端读 status
-        if (!row.containsKey(ConfigConstant.TASK_STATUS) && row.containsKey(ConfigConstant.DETAIL_IS_SUCCESS)) {
-            row.put(ConfigConstant.TASK_STATUS, row.get(ConfigConstant.DETAIL_IS_SUCCESS));
         }
         // TARGET_TABLE(targetTable) 映射为前端 VO 所需 targetTableName
         if (!row.containsKey(ConfigConstant.DATA_TARGET_TABLE_NAME) && row.containsKey(ConfigConstant.DETAIL_TARGET_TABLE)) {
