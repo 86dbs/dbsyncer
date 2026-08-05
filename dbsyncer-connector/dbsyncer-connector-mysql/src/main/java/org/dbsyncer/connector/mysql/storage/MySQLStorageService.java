@@ -758,6 +758,11 @@ public class MySQLStorageService extends AbstractStorageService {
             createIndexIfNotExist(table, "IDX_TG_UPDATE", "`TABLE_GROUP_ID`,`UPDATE_TIME`");
             return;
         }
+        if (StorageEnum.META.getType().equals(type)) {
+            // 补齐与查询模式匹配的索引：getMetaByTaskId / getDetailMetaMap / clearRunData
+            createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
+            return;
+        }
         if (StorageEnum.TASK.getType().equals(type)) {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");

@@ -236,6 +236,25 @@ public class MetaProfileImpl implements MetaProfile {
     }
 
     @Override
+    public void updateMetaBatch(List<Meta> metas) {
+        if (CollectionUtils.isEmpty(metas)) {
+            return;
+        }
+        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, batch -> {
+            List<Map> paramsList = new ArrayList<>(batch.size());
+            for (Meta meta : batch) {
+                if (meta == null || StringUtil.isBlank(meta.getId())) {
+                    continue;
+                }
+                paramsList.add(ConfigModelUtil.convertModelToMap(meta));
+            }
+            if (!CollectionUtils.isEmpty(paramsList)) {
+                storageService.editBatch(StorageEnum.META, null, paramsList);
+            }
+        });
+    }
+
+    @Override
     public void removeMeta(String id) {
         operationTemplate.remove(new OperationConfig(id));
     }

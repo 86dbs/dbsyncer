@@ -738,6 +738,8 @@ public class H2StorageService extends AbstractStorageService {
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
         if (StorageEnum.META.getType().equals(type)) {
             createIndexIfNotExist(table, "IDX_STATE_UPDATE_TIME", "`STATE`,`UPDATE_TIME`");
+            // 对齐 MySQL：按 TASK_ID + IS_TASK_DETAIL 查询/重置明细 Meta
+            createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }
         if (StorageEnum.TASK.getType().equals(type)) {

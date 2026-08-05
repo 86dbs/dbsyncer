@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.config.PackageFormatConfig;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
@@ -350,22 +351,61 @@ public class TaskProfileImpl implements TaskProfile {
             return;
         }
         List<String> groupIds = tableGroupProfile.listTableGroupIds(taskId);
-        metaProfile.deleteMetaByTableGroupIds(groupIds);
         storageService.clear(StorageEnum.TASK_DETAIL, taskId);
         if (CollectionUtils.isEmpty(groupIds)) {
             return;
         }
-        List<Meta> metas = new ArrayList<>(groupIds.size());
+        // 就地重置已有明细 Meta，避免 delete + insert 写放大；缺失的再补插
+        Map<String, Meta> existing = metaProfile.getDetailMetaMap(groupIds);
         long now = System.currentTimeMillis();
+        List<Meta> toUpdate = new ArrayList<>();
+        List<Meta> toAdd = new ArrayList<>();
         for (String groupId : groupIds) {
-            Meta meta = new Meta();
-            meta.setTaskId(groupId);
-            meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
-            meta.setCreateTime(now);
-            meta.setUpdateTime(now);
-            metas.add(meta);
+            Meta meta = existing.get(groupId);
+            if (meta != null) {
+                if (isDetailMetaClean(meta)) {
+                    continue;
+                }
+                resetDetailMeta(meta, groupId, now);
+                toUpdate.add(meta);
+            } else {
+                Meta created = new Meta();
+                resetDetailMeta(created, groupId, now);
+                created.setCreateTime(now);
+                toAdd.add(created);
+            }
         }
-        TaskSplitUtil.split(metas, ConfigConstant.PAGE_SIZE, metaProfile::addMetaBatch);
+        if (!CollectionUtils.isEmpty(toUpdate)) {
+            metaProfile.updateMetaBatch(toUpdate);
+        }
+        if (!CollectionUtils.isEmpty(toAdd)) {
+            TaskSplitUtil.split(toAdd, ConfigConstant.PAGE_SIZE, metaProfile::addMetaBatch);
+        }
+    }
+
+    /**
+     * 明细 Meta 归零：状态 READY、计数清零、快照清空。{@link Meta#clear()} 会把 isTaskDetail 置 0，须再写回明细层级。
+     */
+    private void resetDetailMeta(Meta meta, String groupId, long now) {
+        meta.clear();
+        meta.setTaskId(groupId);
+        meta.setIsTaskDetail(TaskLevelEnum.TASK_DETAIL.getCode());
+        meta.setUpdateTime(now);
+    }
+
+    private boolean isDetailMetaClean(Meta meta) {
+        if (meta == null) {
+            return false;
+        }
+        if (meta.getState() != CommonTaskStatusEnum.READY.getCode()) {
+            return false;
+        }
+        if (counterValue(meta.getTotal()) != 0L || counterValue(meta.getSuccess()) != 0L
+                || counterValue(meta.getFail()) != 0L || counterValue(meta.getDiff()) != 0L
+                || counterValue(meta.getFixed()) != 0L) {
+            return false;
+        }
+        return meta.getSnapshot() == null || meta.getSnapshot().isEmpty();
     }
 
     @Override

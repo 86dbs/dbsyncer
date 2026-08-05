@@ -94,6 +94,11 @@ public interface MetaProfile {
     String updateMeta(Meta meta);
 
     /**
+     * 批量更新 Meta（就地重置进度等场景，避免删插放大）。
+     */
+    void updateMetaBatch(List<Meta> metas);
+
+    /**
      * 删除 Meta。
      */
     void removeMeta(String id);

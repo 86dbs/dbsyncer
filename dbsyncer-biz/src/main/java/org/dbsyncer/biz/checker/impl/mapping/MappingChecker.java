@@ -198,14 +198,23 @@ public class MappingChecker extends AbstractChecker {
             if (CollectionUtils.isEmpty(groupAll)) {
                 return;
             }
+            Map<String, Integer> indexBefore = snapshotIndexes(groupAll);
+            Map<String, Map<String, String>> commandBefore = snapshotCommands(groupAll);
             sortTableGroup(groupAll, params);
             for (TableGroup g : groupAll) {
+                if (g == null) {
+                    continue;
+                }
                 tableGroupChecker.mergeConfig(mapping, g);
-                profileComponent.editConfigModel(g);
+                Integer oldIndex = indexBefore.get(g.getId());
+                boolean indexChanged = oldIndex == null || oldIndex != g.getIndex();
+                if (indexChanged || !commandEquals(commandBefore.get(g.getId()), g.getCommand())) {
+                    profileComponent.editConfigModel(g);
+                }
             }
             return;
         }
-        // 无排序：按页合并，避免整表进内存
+        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE
         tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, page -> {
             if (CollectionUtils.isEmpty(page)) {
                 return;
@@ -214,10 +223,55 @@ public class MappingChecker extends AbstractChecker {
                 if (g == null) {
                     continue;
                 }
+                Map<String, String> before = copyCommand(g.getCommand());
                 tableGroupChecker.mergeConfig(mapping, g);
-                profileComponent.editConfigModel(g);
+                if (!commandEquals(before, g.getCommand())) {
+                    profileComponent.editConfigModel(g);
+                }
             }
         });
+    }
+
+    private Map<String, Integer> snapshotIndexes(List<TableGroup> groups) {
+        Map<String, Integer> map = new HashMap<>(groups.size());
+        for (TableGroup g : groups) {
+            if (g != null && StringUtil.isNotBlank(g.getId())) {
+                map.put(g.getId(), g.getIndex());
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Map<String, String>> snapshotCommands(List<TableGroup> groups) {
+        Map<String, Map<String, String>> map = new HashMap<>(groups.size());
+        for (TableGroup g : groups) {
+            if (g != null && StringUtil.isNotBlank(g.getId())) {
+                map.put(g.getId(), copyCommand(g.getCommand()));
+            }
+        }
+        return map;
+    }
+
+    private Map<String, String> copyCommand(Map<String, String> command) {
+        if (command == null || command.isEmpty()) {
+            return null;
+        }
+        return new HashMap<>(command);
+    }
+
+    private boolean commandEquals(Map<String, String> before, Map<String, String> after) {
+        if (before == after) {
+            return true;
+        }
+        boolean beforeEmpty = before == null || before.isEmpty();
+        boolean afterEmpty = after == null || after.isEmpty();
+        if (beforeEmpty && afterEmpty) {
+            return true;
+        }
+        if (beforeEmpty || afterEmpty) {
+            return false;
+        }
+        return before.equals(after);
     }
 
     public void sortTableGroup(List<TableGroup> groupAll, Map<String, String> params) {
