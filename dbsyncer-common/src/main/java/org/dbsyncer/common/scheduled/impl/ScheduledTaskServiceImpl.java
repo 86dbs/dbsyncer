@@ -4,7 +4,6 @@ import org.dbsyncer.common.CommonException;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.UUIDUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -13,7 +12,6 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -71,7 +69,7 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService, Disposabl
     private void apply(String key, ScheduledFutureMapper scheduledFutureMapper) {
         final ScheduledFuture scheduledFuture = map.get(key);
         if (null != scheduledFuture && !scheduledFuture.isCancelled()) {
-            String msg = String.format(">>>>>> 任务已启动 %s  >>>>>>", key);
+            String msg = "任务已启动";
             logger.error(msg);
             throw new CommonException(msg);
         }
