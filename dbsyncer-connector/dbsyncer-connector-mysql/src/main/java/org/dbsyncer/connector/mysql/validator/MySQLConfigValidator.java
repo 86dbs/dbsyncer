@@ -15,7 +15,7 @@ import java.util.Map;
  * @version 1.0.0
  * @date 2020-01-08 15:17
  */
-public final class MySQLConfigValidator extends AbstractDataBaseConfigValidator {
+public class MySQLConfigValidator extends AbstractDataBaseConfigValidator {
 
     @Override
     public void modify(AbstractDatabaseConnector connectorService, DatabaseConfig connectorConfig, Map<String, String> params) {

@@ -5,6 +5,12 @@ SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 DBS_HOME=$(cd "$SCRIPT_DIR/.."; pwd)
 echo "DBS_HOME=$DBS_HOME"
 
+# 自动检测同目录下的 jre8
+if [[ -z "${JRE_HOME:-}" && -d "$DBS_HOME/jre8" ]]; then
+  export JRE_HOME="$DBS_HOME/jre8"
+  echo "Using embedded JRE8: $JRE_HOME"
+fi
+
 # 确保 conf 目录存在
 if [ ! -d "$DBS_HOME/conf" ]; then
   mkdir -p "$DBS_HOME/conf"
@@ -33,6 +39,19 @@ fi
 ###########################################################################
 # JRE 扩展目录：须包含 sunjce_provider，否则 TLS 报 SunTls12RsaPremasterSecret KeyGenerator not available
 resolve_jre_ext_dir() {
+  # 优先使用 JRE_HOME
+  if [[ -n "${JRE_HOME:-}" ]]; then
+    if [[ -d "$JRE_HOME/lib/ext" ]]; then
+      echo "$JRE_HOME/lib/ext"
+      return
+    fi
+    if [[ -d "$JRE_HOME/jre/lib/ext" ]]; then
+      echo "$JRE_HOME/jre/lib/ext"
+      return
+    fi
+  fi
+
+  # 回退：查找系统 Java
   local java_home_prop
   if ! command -v java >/dev/null 2>&1; then
     echo ""
@@ -43,16 +62,7 @@ resolve_jre_ext_dir() {
     echo "$java_home_prop/lib/ext"
     return
   fi
-  if [[ -n "${JAVA_HOME:-}" ]]; then
-    if [[ -d "$JAVA_HOME/jre/lib/ext" ]]; then
-      echo "$JAVA_HOME/jre/lib/ext"
-      return
-    fi
-    if [[ -d "$JAVA_HOME/lib/ext" ]]; then
-      echo "$JAVA_HOME/lib/ext"
-      return
-    fi
-  fi
+
   echo ""
 }
 
@@ -64,8 +74,6 @@ fi
 echo "JAVA_EXT_DIR=$JAVA_EXT_DIR"
 
 ###########################################################################
-# set up environment for Java
-#JAVA_HOME=/opt/jdk1.8.0_202
 # 构建 JVM 参数
 JAVA_OPTS=()
 
@@ -119,10 +127,23 @@ JAVA_OPTS+=("-Duser.dir=$DBS_HOME")
 # 5. 主类
 APP="org.dbsyncer.web.Application"
 
+# 确定 java 路径：优先 jre8，否则使用系统 java
+if [[ -n "${JRE_HOME:-}" ]]; then
+  if [[ -x "$JRE_HOME/bin/java" ]]; then
+    JAVA_BIN="$JRE_HOME/bin/java"
+  elif [[ -x "$JRE_HOME/jre/bin/java" ]]; then
+    JAVA_BIN="$JRE_HOME/jre/bin/java"
+  else
+    JAVA_BIN="java"
+  fi
+else
+  JAVA_BIN="java"
+fi
+
 # execute command
 echo "Starting DBSyncer Application..."
 
-nohup java "${JAVA_OPTS[@]}" "$APP" > /dev/null 2>&1 &
+nohup "$JAVA_BIN" "${JAVA_OPTS[@]}" "$APP" > /dev/null 2>&1 &
 APP_PID=$!
 
 # 保存 PID 并反馈结果

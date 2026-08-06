@@ -10,11 +10,13 @@ import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.task.MappingCountTask;
+import org.dbsyncer.biz.task.MappingMatchTableTask;
 import org.dbsyncer.biz.vo.MappingCustomTableVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -25,10 +27,12 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -58,6 +62,7 @@ import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -93,6 +98,15 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private ProfileComponent profileComponent;
 
     @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
     private MonitorService monitorService;
 
     @Resource
@@ -122,22 +136,23 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.INSERT, model);
 
         String id = profileComponent.addConfigModel(model);
-        // 加载驱动表
+        // 加载驱动表（写入持久化 Mapping，需重新取出后再匹配）
         refreshMappingTables(id);
+        Mapping mapping = profileComponent.getMapping(id);
 
-        // 匹配相似表 on
+        // 匹配相似表（异步）
         if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-            matchSimilarTableGroups(model);
+            submitMappingMatchTableTask(mapping);
             return id;
         }
 
         // 自定义表映射关系
         String tableGroups = params.get("tableGroups");
         if (StringUtil.isNotBlank(tableGroups)) {
-            matchCustomizedTableGroups(model, tableGroups);
+            matchCustomizedTableGroups(mapping, tableGroups);
         }
         // 统计总数
-        submitMappingCountTask((Mapping) model, null);
+        submitMappingCountTask(mapping, null);
         return id;
     }
 
@@ -158,17 +173,22 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         log(LogType.MappingLog.COPY, newMapping);
 
         // 复制映射表关系
-        List<TableGroup> groupList = profileComponent.getTableGroupAll(mapping.getId());
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(tableGroup -> {
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupList -> {
+            if (CollectionUtils.isEmpty(groupList)) {
+                return;
+            }
+            for (TableGroup tableGroup : groupList) {
+                if (tableGroup == null) {
+                    continue;
+                }
                 String tableGroupJson = JsonUtil.objToJson(tableGroup);
                 TableGroup newTableGroup = JsonUtil.jsonToObj(tableGroupJson, TableGroup.class);
                 newTableGroup.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                newTableGroup.setMappingId(newMapping.getId());
-                profileComponent.addTableGroup(newTableGroup);
+                newTableGroup.setTaskId(newMapping.getId());
+                tableGroupProfile.addTableGroup(newTableGroup);
                 log(LogType.TableGroupLog.COPY, newTableGroup);
-            });
-        }
+            }
+        });
         return newMapping.getId();
     }
 
@@ -180,6 +200,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         synchronized (LOCK) {
             assertRunning(mapping.getMetaId());
             Mapping model = (Mapping) mappingChecker.checkEditConfigModel(params);
+            // 校验通过后再清空运行结果，避免校验失败时不可逆抹掉历史明细
+            taskProfile.clearRunData(id);
+            taskProfile.resetRunProgress(id);
             log(LogType.MappingLog.UPDATE, model);
 
             // 更新meta
@@ -195,23 +218,20 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String remove(String id) {
         Mapping mapping = assertMappingExist(id);
         String metaId = mapping.getMetaId();
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         synchronized (LOCK) {
             assertRunning(metaId);
-
             // 删除数据
             monitorService.clearData(metaId);
             log(LogType.MetaLog.CLEAR, meta);
 
-            // 删除meta
+            // 条件删除 table_group + 明细 Meta，并清运行结果
+            taskProfile.clearRunData(id);
+            tableGroupProfile.removeTableGroupsByTaskId(id);
+
+            // 删除任务级 meta
             profileComponent.removeConfigModel(metaId);
             log(LogType.MetaLog.DELETE, meta);
-
-            // 删除tableGroup
-            List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
-            if (!CollectionUtils.isEmpty(groupList)) {
-                groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
-            }
 
             // 删除驱动表映射关系
             tableGroupContext.clear(metaId);
@@ -271,43 +291,76 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
             vo.setMainTables(mainTables.stream().sorted(Comparator.comparing(Table::getName)).collect(Collectors.toList()));
         }
         // 元信息
-        vo.setMeta(profileComponent.getMeta(mapping.getMetaId()));
+        vo.setMeta(metaProfile.getMeta(mapping.getMetaId()));
         return vo;
-    }
-
-    @Override
-    public MappingVO getMapping(String id, Integer exclude) {
-        Mapping mapping = profileComponent.getMapping(id);
-        // 显示所有表
-        if (exclude != null && exclude == 1) {
-            return convertMapping2Vo(mapping);
-        }
-        // 过滤已映射的表
-        MappingVO vo = convertMapping2Vo(mapping);
-        List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(id);
-        if (!CollectionUtils.isEmpty(tableGroupAll)) {
-            final Set<String> sTables = new HashSet<>();
-            final Set<String> tTables = new HashSet<>();
-            tableGroupAll.forEach(tableGroup -> {
-                sTables.add(tableGroup.getSourceTable().getName());
-                tTables.add(tableGroup.getTargetTable().getName());
-            });
-            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !CollectionUtils.isEmpty(sTables) && !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !CollectionUtils.isEmpty(tTables) && !tTables.contains(t.getName())).collect(Collectors.toList()));
-            sTables.clear();
-            tTables.clear();
-        }
-        return vo;
-    }
-
-    @Override
-    public List<MappingVO> getMappingAll() {
-        return profileComponent.getMappingAll().stream().map(this::convertMapping2Vo).sorted(Comparator.comparing(MappingVO::getUpdateTime).reversed()).collect(Collectors.toList());
     }
 
     @Override
     public Paging<MappingVO> search(Map<String, String> params) {
-        return searchConfigModel(params, getMappingAll());
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String searchKey = params.get("searchKey");
+        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<MappingVO> result = new Paging<>(pageNum, pageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<MappingVO> rows = new ArrayList<>(paging.getData().size());
+        for (Mapping mapping : paging.getData()) {
+            if (mapping != null) {
+                rows.add(convertMapping2Vo(mapping));
+            }
+        }
+        result.setData(rows);
+        return result;
+    }
+
+    @Override
+    public Paging searchTableGroupResult(Map<String, String> params) {
+        String mappingId = params.get(ConfigConstant.CONFIG_MODEL_ID);
+        if (StringUtil.isBlank(mappingId)) {
+            mappingId = params.get("id");
+        }
+        Assert.hasText(mappingId, "驱动ID不能为空.");
+        assertMappingExist(mappingId);
+
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
+        String detailStatus = params.get("detailStatus");
+
+        if (StringUtil.isBlank(detailStatus)) {
+            Paging<TableGroup> groupPage = tableGroupProfile.queryTableGroup(mappingId, null, pageNum, pageSize);
+            Collection<TableGroup> groups = groupPage.getData();
+            Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(collectTableGroupIds(groups));
+            List<Map<String, Object>> rows = buildTableGroupResultRows(groups, metaMap, null);
+            rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get(ConfigConstant.MAPPING_RESULT_INDEX)))));
+            Paging paging = new Paging(pageNum, pageSize);
+            paging.setTotal(groupPage.getTotal());
+            paging.setData(rows);
+            return paging;
+        }
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
+            }
+            Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(collectTableGroupIds(page));
+            rows.addAll(buildTableGroupResultRows(page, metaMap, detailStatus));
+        });
+        rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get(ConfigConstant.MAPPING_RESULT_INDEX)))));
+
+        Paging paging = new Paging(pageNum, pageSize);
+        paging.setTotal(rows.size());
+        if (!CollectionUtils.isEmpty(rows)) {
+            int offset = (pageNum * pageSize) - pageSize;
+            paging.setData(rows.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
+        }
+        return paging;
     }
 
     @Override
@@ -321,7 +374,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
         synchronized (LOCK) {
             assertRunning(metaId);
-
+            Assert.isTrue(!dispatchTaskService.isRunning(id), "驱动表映射正在匹配或统计中，请稍候再启动");
             // 启动
             managerFactory.start(mapping);
 
@@ -381,12 +434,21 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         // 3. 已映射表名集合（需要排除的）
         Set<String> mappedTableNames;
         if (excludeMapped) {
-            mappedTableNames = tableGroupService.getTableGroupAll(id).stream()
-                    .map(g -> isSource ? g.getSourceTable() : g.getTargetTable())
-                    .filter(Objects::nonNull)
-                    .map(Table::getName)
-                    .filter(StringUtil::isNotBlank)
-                    .collect(Collectors.toSet());
+            mappedTableNames = new HashSet<>();
+            tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
+                    return;
+                }
+                for (TableGroup g : page) {
+                    if (g == null) {
+                        continue;
+                    }
+                    Table t = isSource ? g.getSourceTable() : g.getTargetTable();
+                    if (t != null && StringUtil.isNotBlank(t.getName())) {
+                        mappedTableNames.add(t.getName());
+                    }
+                }
+            });
         } else {
             mappedTableNames = Collections.emptySet();
         }
@@ -476,9 +538,26 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         task.setMetaSnapshot(metaSnapshot);
         task.setParserComponent(parserComponent);
         task.setProfileComponent(profileComponent);
+        task.setTableGroupProfile(tableGroupProfile);
         task.setTableGroupService(tableGroupService);
         task.setConnectorFactory(connectorFactory);
         task.setRsaManager(rsaManager);
+        dispatchTaskService.execute(task);
+    }
+
+    /**
+     * 提交异步匹配相似表任务（结束后会继续提交统计）
+     */
+    private void submitMappingMatchTableTask(Mapping mapping) {
+        MappingMatchTableTask task = new MappingMatchTableTask();
+        task.setMappingId(mapping.getId());
+        task.setTableGroupService(tableGroupService);
+        task.setProfileComponent(profileComponent);
+        task.setParserComponent(parserComponent);
+        task.setTableGroupProfile(tableGroupProfile);
+        task.setConnectorFactory(connectorFactory);
+        task.setRsaManager(rsaManager);
+        task.setDispatchTaskService(dispatchTaskService);
         dispatchTaskService.execute(task);
     }
 
@@ -514,7 +593,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Assert.notNull(mapping, "Mapping can not be null.");
 
         // 元信息
-        Meta meta = profileComponent.getMeta(mapping.getMetaId());
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
         Assert.notNull(meta, "Meta can not be null.");
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
@@ -524,6 +603,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
         MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
+        // 全量表列表体积大，下拉/搜索走 searchTables 分页；VO 不回传
+        vo.setSourceTable(null);
+        vo.setTargetTable(null);
         return vo;
     }
 
@@ -543,38 +625,52 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      * 检查映射关系
      */
     private void assertTableGroupExist(String mappingId) {
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
-        Assert.notEmpty(list, "映射关系不能为空");
+        Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
     }
 
-    /**
-     * 匹配相似表
-     *
-     * @param model
-     */
-    private void matchSimilarTableGroups(ConfigModel model) {
-        Mapping mapping = (Mapping) model;
-        List<Table> sourceTables = mapping.getSourceTable();
-        List<Table> targetTables = mapping.getTargetTable();
-        if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
+    private List<String> collectTableGroupIds(Collection<TableGroup> groups) {
+        List<String> groupIds = new ArrayList<>();
+        if (CollectionUtils.isEmpty(groups)) {
+            return groupIds;
         }
-        // 优化匹配性能
-        Map<String, Table> targetTableMap = targetTables.stream().collect(Collectors.toMap(table -> table.getName().toUpperCase(), table -> table));
+        for (TableGroup group : groups) {
+            if (group != null && StringUtil.isNotBlank(group.getId())) {
+                groupIds.add(group.getId());
+            }
+        }
+        return groupIds;
+    }
 
-        // 匹配相似表
-        for (Table sourceTable : sourceTables) {
-            if (StringUtil.isBlank(sourceTable.getName())) {
+    private List<Map<String, Object>> buildTableGroupResultRows(Collection<TableGroup> groups, Map<String, Meta> metaMap, String detailStatus) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (CollectionUtils.isEmpty(groups)) {
+            return rows;
+        }
+        for (TableGroup group : groups) {
+            if (group == null || StringUtil.isBlank(group.getId())) {
                 continue;
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(), (k, targetTable) -> {
-                // 仅支持表类型
-                if (TableTypeEnum.isTable(targetTable.getType())) {
-                    addTableGroup(mapping.getId(), sourceTable.getName(), targetTable.getName(), StringUtil.EMPTY);
-                }
-                return targetTable;
-            });
+            Meta tableMeta = metaMap == null ? null : metaMap.get(group.getId());
+            long success = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
+            long fail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
+            if (StringUtil.equals("fail", detailStatus) && fail <= 0) {
+                continue;
+            }
+            if (StringUtil.equals("success", detailStatus) && fail > 0) {
+                continue;
+            }
+            long updateTime = tableMeta != null ? tableMeta.getUpdateTime() : 0L;
+            Map<String, Object> row = new HashMap<>();
+            row.put(ConfigConstant.DATA_TABLE_GROUP_ID, group.getId());
+            row.put(ConfigConstant.MAPPING_RESULT_INDEX, group.getIndex());
+            row.put(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, group.getSourceTable() == null ? StringUtil.EMPTY : group.getSourceTable().getName());
+            row.put(ConfigConstant.TABLE_GROUP_TARGET_TABLE, group.getTargetTable() == null ? StringUtil.EMPTY : group.getTargetTable().getName());
+            row.put(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, success);
+            row.put(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, fail);
+            row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime > 0 ? updateTime : group.getUpdateTime());
+            rows.add(row);
         }
+        return rows;
     }
 
     /**
@@ -654,7 +750,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private void clearMetaIfFinished(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
         // 完成任务则重置状态
         if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {

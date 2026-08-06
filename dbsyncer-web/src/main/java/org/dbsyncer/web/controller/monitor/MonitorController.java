@@ -20,13 +20,13 @@ import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.NumberUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -41,18 +41,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import oshi.SystemInfo;
-import oshi.hardware.CentralProcessor;
-import oshi.hardware.GlobalMemory;
-
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -108,12 +102,6 @@ public class MonitorController extends BaseController {
 
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
-        Map<String, String> params = getParams(request);
-        model.put("metaId", monitorService.getDefaultMetaId(params));
-        model.put("meta", monitorService.getMetaAll());
-        model.put("storageDataStatus", monitorService.getStorageDataStatusEnumAll());
-        model.put("dataStatus", NumberUtil.toInt(params.get("dataStatus"), -1));
-        model.put("pagingData", monitorService.queryData(params));
         return "monitor/list.html";
     }
 
@@ -121,7 +109,7 @@ public class MonitorController extends BaseController {
     public String page(ModelMap model, String metaId, String messageId) {
         MetaVO metaVo = monitorService.getMetaVo(metaId);
         model.put("meta", metaVo);
-        model.put("mapping", mappingService.getMapping(metaVo.getMappingId()));
+        model.put("mapping", mappingService.getMapping(metaVo.getTaskId()));
         model.put("message", dataSyncService.getMessageVo(metaId, messageId));
         return "monitor/retry.html";
     }
@@ -144,6 +132,18 @@ public class MonitorController extends BaseController {
     public void deleteExpiredDataAndLog() {
         if (preloadTemplate.isPreloadCompleted()) {
             monitorService.deleteExpiredDataAndLog();
+        }
+    }
+
+    @PostMapping("/queryMeta")
+    @ResponseBody
+    public RestResult queryMeta(HttpServletRequest request) {
+        try {
+            Map<String, String> params = getParams(request);
+            return RestResult.restSuccess(monitorService.queryMeta(params));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
         }
     }
 
@@ -185,9 +185,32 @@ public class MonitorController extends BaseController {
 
     @PostMapping("/clearData")
     @ResponseBody
-    public RestResult clearData(String id) {
+    public RestResult clearData(HttpServletRequest request) {
         try {
-            return RestResult.restSuccess(monitorService.clearData(id));
+            Map<String, String> params = getParams(request);
+            String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
+            if (StringUtil.isBlank(id)) {
+                id = params.get("id");
+            }
+            String tableGroupId = params.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+            if (StringUtil.isBlank(tableGroupId)) {
+                tableGroupId = params.get("tableGroupId");
+            }
+            return RestResult.restSuccess(monitorService.clearData(id, tableGroupId));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 按需获取单条同步数据字段详情（不解列表 blob）
+     */
+    @PostMapping("/getDataDetail")
+    @ResponseBody
+    public RestResult getDataDetail(String metaId, String messageId) {
+        try {
+            return RestResult.restSuccess(dataSyncService.getMessageVo(metaId, messageId));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

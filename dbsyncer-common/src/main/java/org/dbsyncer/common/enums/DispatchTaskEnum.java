@@ -15,6 +15,12 @@ public enum DispatchTaskEnum {
     /* 统计驱动总数 */
     MAPPING_COUNT("统计驱动总数"),
 
+    /* 匹配相似表 */
+    MAPPING_MATCH_TABLE("匹配相似表"),
+
+    /* 订正校验匹配相似表 */
+    VALIDATE_SYNC_MATCH_TABLE("订正校验匹配相似表"),
+
     /* 统计驱动表总数 */
     TABLE_GROUP_COUNT("统计驱动表总数");
 

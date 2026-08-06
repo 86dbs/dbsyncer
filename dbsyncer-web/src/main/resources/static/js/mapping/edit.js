@@ -85,12 +85,28 @@ function createMetaSnapshotParams() {
 }
 
 
-function isOracleConnector($connector, connectorId) {
-    if (!$connector || !connectorId) {
-        return false;
+function resolveConnectorType($connector, connectorId) {
+    const fromSelect = typeof resolveConnectorTypeFromSelect === 'function'
+        ? resolveConnectorTypeFromSelect($connector, connectorId) : '';
+    if (fromSelect) {
+        return fromSelect;
     }
-    const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
-    return type && String(type).toLowerCase() === 'oracle';
+    if (!$connector || !connectorId) {
+        return '';
+    }
+    const $option = $connector.find('option[value="' + connectorId + '"]');
+    if (!$option.length) {
+        return '';
+    }
+    const text = $option.text() || '';
+    const match = text.match(/\(([^()]+)\)\s*$/);
+    return match && match[1] ? match[1].trim() : '';
+}
+
+function isOracleConnector($connector, connectorId) {
+    const type = resolveConnectorType($connector, connectorId);
+    // 达梦 / OceanBaseOracle 与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
+    return type && ['oracle', 'dameng', 'oceanbaseoracle'].indexOf(String(type).toLowerCase()) >= 0;
 }
 
 function toggleDatabaseFieldVisibility($database, hide) {
@@ -154,7 +170,7 @@ function onConnectorChange(connectorId, dbSelect, schemaSelect, $connector, $dat
     });
 }
 
-function initDBSelect($connector, $database, $schema) {
+function initDBSelect($connector, $database, $schema, role) {
     // 为每个 select 组维护独立的连接器ID，避免上下文串用
     let currentConnectorId = null;
     const defaultDatabase = $database.data("database") || '';
@@ -173,13 +189,17 @@ function initDBSelect($connector, $database, $schema) {
             }
         }
     });
-    const connectorSelect = $connector.dbSelect({
-        type: 'single',
+    const connectorSelect = $connector.dbSelect(buildRemoteConnectorSelectOptions({
+        role: role,
+        defaultValue: $connector.data('defaultId') || '',
+        defaultLabel: $connector.data('defaultLabel') || '',
+        defaultType: $connector.data('defaultType') || '',
+        preferredType: $connector.data('defaultType') || '',
         onSelect: function (connectorId) {
             currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
             onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
         }
-    });
+    }));
 
     // 初始化：如果有默认选中的连接器，加载库列表
     const selected = connectorSelect.getValues();
@@ -195,8 +215,8 @@ $(function () {
         doLoader('/mapping/list');
     };
 
-    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
-    initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
+    initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'), 'source');
+    initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'), 'target');
     // 绑定全量+增量切换事件
     bindMappingModelChange();
     // 绑定日志+定时切换事件

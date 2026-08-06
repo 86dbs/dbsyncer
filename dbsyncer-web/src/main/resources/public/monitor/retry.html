@@ -33,6 +33,7 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             <div>
                 <input type="hidden" name="metaId" th:value="${meta?.id}"/>
                 <input type="hidden" name="messageId" th:value="${message?.id}"/>
+                <input type="hidden" name="mappingId" th:value="${mapping?.id}"/>
                 <input type="hidden" name="retryDataParams"/>
             </div>
 
@@ -139,10 +140,14 @@ xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
             });
         });
 
-        // 返回函数
+        // 返回函数（回到同步任务详情）
         window.backIndexPage = () => {
-            const metaId = $("input[name='metaId']").val();
-            doLoader(`/monitor?id=${metaId}`);
+            const mappingId = $("input[name='mappingId']").val();
+            if (mappingId) {
+                doLoader('/mapping/page/detail?id=' + mappingId);
+                return;
+            }
+            doLoader('/mapping/list');
         };
     });
 </script>

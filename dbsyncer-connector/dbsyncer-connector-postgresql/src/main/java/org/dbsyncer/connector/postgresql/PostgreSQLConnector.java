@@ -36,11 +36,11 @@ import java.util.Properties;
 /**
  * PostgreSQL连接器实现
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2022-05-22 22:56
+ * @author AE86
+ * @version 1.0.0
+ * @date 2022-05-22 22:56
  */
-public final class PostgreSQLConnector extends AbstractDatabaseConnector {
+public class PostgreSQLConnector extends AbstractDatabaseConnector {
 
     private final String QUERY_DATABASE = "SELECT datname FROM pg_database WHERE datistemplate = FALSE order by datname";
     private final String QUERY_SCHEMA = "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name NOT IN ('information_schema') ORDER BY schema_name";

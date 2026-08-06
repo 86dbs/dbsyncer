@@ -1,11 +1,11 @@
 CREATE TABLE `dbsyncer_task` (
-      `ID` varchar(64) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '唯一ID',
-      `NAME` varchar(50) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务名称',
-      `STATUS` tinyint NOT NULL DEFAULT '0' COMMENT '任务状态, 0-未执行；1-执行中；2-执行成功；3-执行失败；',
-      `TYPE` varchar(32) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '任务类型',
-      `JSON` mediumtext CHARACTER SET utf8 COLLATE utf8_bin NOT NULL COMMENT '配置信息',
-      `CREATE_TIME` bigint(0) NOT NULL COMMENT '创建时间',
-      `UPDATE_TIME` bigint(0) NOT NULL COMMENT '修改时间',
-      PRIMARY KEY (`ID`) USING BTREE,
-      KEY `IDX_TYPE_UPDATE_CREATE_TIME` (`STATUS`,`UPDATE_TIME`,`TYPE`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = '任务配置表' ROW_FORMAT = Dynamic;
+  `ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '唯一ID',
+  `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
+  `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
+  `NAME` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务名称',
+  `TYPE` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务类型, 数据同步/订正校验/整库迁移',
+  `JSON` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '配置信息',
+  PRIMARY KEY (`ID`) USING BTREE,
+  KEY `IDX_UPDATE_TIME` (`UPDATE_TIME`) USING BTREE,
+  KEY `IDX_TYPE_UPDATE_TIME` (`TYPE`, `UPDATE_TIME`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin COMMENT = '任务配置表' ROW_FORMAT = Dynamic;

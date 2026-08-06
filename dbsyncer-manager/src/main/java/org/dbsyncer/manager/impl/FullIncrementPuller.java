@@ -12,6 +12,7 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,9 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private FullPuller fullPuller;
@@ -72,7 +76,7 @@ public final class FullIncrementPuller extends AbstractPuller {
 
     private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
-            Meta meta = profileComponent.getMeta(metaId);
+            Meta meta = metaProfile.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
                 //重启恢复是如果是增量阶段直接启动增量任务
                 incrementPuller.start(mapping, autoRecovery);
@@ -144,7 +148,7 @@ public final class FullIncrementPuller extends AbstractPuller {
      * 标记状态
      */
     private void markFullIncrementPhase(String metaId, String phase) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
 
         //清除全量标记

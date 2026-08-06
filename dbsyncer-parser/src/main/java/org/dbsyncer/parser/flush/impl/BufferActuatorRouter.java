@@ -4,6 +4,7 @@
 package org.dbsyncer.parser.flush.impl;
 
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.AbstractBufferActuator;
@@ -12,14 +13,12 @@ import org.dbsyncer.parser.model.WriterRequest;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +56,12 @@ public final class BufferActuatorRouter implements DisposableBean {
         event.getChangedOffset().setMetaId(metaId);
         // 打印trace信息
         printTraceInfo(event);
-        router.compute(metaId, (k, processor)-> {
+        router.compute(metaId, (k, processor) -> {
             if (processor == null) {
                 offer(generalBufferActuator, event);
                 return null;
             }
-
-            processor.compute(event.getSourceTableName(), (x, actuator)-> {
+            processor.compute(event.getSourceTableName(), (x, actuator) -> {
                 if (actuator == null) {
                     offer(generalBufferActuator, event);
                     return null;
@@ -76,33 +74,43 @@ public final class BufferActuatorRouter implements DisposableBean {
     }
 
     public void bind(String metaId, List<TableGroup> tableGroups) {
-        router.computeIfAbsent(metaId, k-> {
+        if (StringUtil.isBlank(metaId) || tableGroups == null) {
+            return;
+        }
+        final int maxBufferActuatorSize = profileComponent.getSystemConfig() == null ? 50 : profileComponent.getSystemConfig().getMaxBufferActuatorSize();
+        router.computeIfAbsent(metaId, k -> {
             Map<String, TableGroupBufferActuator> processor = new ConcurrentHashMap<>();
             for (TableGroup tableGroup : tableGroups) {
+                if (tableGroup == null || tableGroup.getSourceTable() == null
+                        || StringUtil.isBlank(tableGroup.getSourceTable().getName())) {
+                    logger.warn("Skip bind tableGroup with empty source table, metaId={}", metaId);
+                    continue;
+                }
                 // 超过执行器上限
-                if (processor.size() >= profileComponent.getSystemConfig().getMaxBufferActuatorSize()) {
-                    logger.warn("Not allowed more than table processor limited size:{}", profileComponent.getSystemConfig().getMaxBufferActuatorSize());
+                if (processor.size() >= maxBufferActuatorSize) {
+                    logger.warn("Not allowed more than table processor limited size:{}", maxBufferActuatorSize);
                     break;
                 }
                 final String tableName = tableGroup.getSourceTable().getName();
-                processor.computeIfAbsent(tableName, name-> {
-                    TableGroupBufferActuator newBufferActuator = null;
-                    try {
-                        newBufferActuator = (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
-                        newBufferActuator.setTableName(name);
-                        newBufferActuator.buildConfig();
-                    } catch (CloneNotSupportedException ex) {
-                        logger.error(ex.getMessage(), ex);
-                    }
-                    return newBufferActuator;
-                });
+                if (processor.containsKey(tableName)) {
+                    continue;
+                }
+                try {
+                    TableGroupBufferActuator newBufferActuator =
+                            (TableGroupBufferActuator) tableGroupBufferActuatorService.clone();
+                    newBufferActuator.setTableName(tableName);
+                    newBufferActuator.buildConfig();
+                    processor.put(tableName, newBufferActuator);
+                } catch (CloneNotSupportedException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
             }
             return processor;
         });
     }
 
     public void unbind(String metaId) {
-        router.computeIfPresent(metaId, (k, processor)-> {
+        router.computeIfPresent(metaId, (k, processor) -> {
             processor.values().forEach(TableGroupBufferActuator::stop);
             return null;
         });
@@ -129,19 +137,19 @@ public final class BufferActuatorRouter implements DisposableBean {
 
     @Override
     public void destroy() {
-        router.values().forEach(map->map.values().forEach(TableGroupBufferActuator::stop));
+        router.values().forEach(map -> map.values().forEach(TableGroupBufferActuator::stop));
         router.clear();
     }
 
     public AtomicLong getQueueSize() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map->map.values().forEach(actuator->total.addAndGet(actuator.getQueue().size())));
+        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueue().size())));
         return total;
     }
 
     public AtomicLong getQueueCapacity() {
         AtomicLong total = new AtomicLong();
-        router.values().forEach(map->map.values().forEach(actuator->total.addAndGet(actuator.getQueueCapacity())));
+        router.values().forEach(map -> map.values().forEach(actuator -> total.addAndGet(actuator.getQueueCapacity())));
         return total;
     }
 

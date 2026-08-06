@@ -4,24 +4,22 @@
 package org.dbsyncer.biz.checker;
 
 import org.dbsyncer.biz.enums.SafeInfoEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.AbstractConfigModel;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Convert;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Plugin;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;

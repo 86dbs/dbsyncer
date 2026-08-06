@@ -15,9 +15,18 @@ import java.util.List;
 public interface PluginService {
 
     /**
-     * 获取所有插件
+     * 获取已安装插件列表（轻量，不含驱动关联信息）。
+     * 用于驱动/表映射编辑页下拉，避免扫描全部任务。
      *
-     * @return
+     * @return 已安装插件
+     */
+    List<PluginVO> listPlugins();
+
+    /**
+     * 获取所有插件（含正在使用该插件的驱动名称）。
+     * 仅插件管理页使用，会扫描全部驱动与表映射。
+     *
+     * @return 插件及关联驱动名
      */
     List<PluginVO> getPluginAll();
 

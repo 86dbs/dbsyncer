@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+      xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<div th:fragment="content">
+    <div class="grid grid-cols-2">
+        <div class="form-item">
+            <label class="form-label">主机<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="host" type="text" maxlength="100" required placeholder="127.0.0.1"
+                       th:value="${connector?.config?.host}?: '127.0.0.1'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">端口<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="port" type="number" maxlength="64" required placeholder="27017"
+                       th:value="${connector?.config?.port}?: '27017'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">用户名</label>
+            <div class="form-control-area">
+                <input class="form-control" maxlength="64" name="username" placeholder="请输入用户名"
+                       th:value="${connector?.config?.username}" type="text"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">密码</label>
+            <div class="form-control-area">
+                <input class="form-control" maxlength="64" name="password" placeholder="请输入密码"
+                       type="password" th:value="${connector?.config?.password}"/>
+            </div>
+        </div>
+
+        <div class="form-item">
+            <label class="form-label">数据库名<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" required maxlength="64" name="database" placeholder="请输入数据库名"
+                       type="text" th:value="${connector?.config?.database}?: 'test'"/>
+            </div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">认证库</label>
+            <div class="form-control-area">
+                <input class="form-control" maxlength="64" name="authDatabase" placeholder="admin"
+                       type="text" th:value="${connector?.config?.authDatabase}?: 'admin'"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 mt-5">
+        <div class="form-item">
+            <label class="form-label">最大连接数<strong class="text-primary">*</strong></label>
+            <div class="form-control-area">
+                <input class="form-control" name="maxPoolSize" type="number" required min="1" max="512"
+                       th:value="${connector?.config?.maxPoolSize}?:64" placeholder="默认64"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">连接参数</label>
+            <div class="form-control-area">
+                <textarea name="properties" class="form-control" maxlength="1024" rows="5"
+                          th:text="${connector?.config?.propertiesText} ?: 'retryWrites=true&amp;w=majority'"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="grid mt-5">
+        <div class="form-item">
+            <label class="form-label">说明</label>
+            <div class="form-control-area text-xs text-muted">
+                日志增量（Change Stream）需要 MongoDB 副本集或分片集群；单机部署不支持实时增量。
+            </div>
+        </div>
+    </div>
+</div>
+
+</html>

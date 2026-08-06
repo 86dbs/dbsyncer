@@ -8,6 +8,7 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -22,7 +23,7 @@ import java.util.Properties;
 
 @EnableAsync
 @EnableScheduling
-@SpringBootApplication(scanBasePackages = "org.dbsyncer", exclude = DataSourceAutoConfiguration.class)
+@SpringBootApplication(scanBasePackages = "org.dbsyncer", exclude = {DataSourceAutoConfiguration.class, MongoAutoConfiguration.class})
 public class Application {
 
     public static void main(String[] args) throws IOException {
@@ -49,6 +50,7 @@ public class Application {
         properties.put("management.endpoints.web.exposure.include", "*");
         properties.put("management.endpoint.health.show-details", "always");
         properties.put("management.health.elasticsearch.enabled", false);
+        properties.put("management.health.mongo.enabled", false);
         application.setDefaultProperties(properties);
     }
 

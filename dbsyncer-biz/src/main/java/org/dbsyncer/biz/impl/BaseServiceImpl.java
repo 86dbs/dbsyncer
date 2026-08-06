@@ -3,27 +3,26 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
-import org.dbsyncer.sdk.notice.MessageService;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.sdk.model.NoticeContent;
 import org.dbsyncer.sdk.enums.ModelEnum;
-
+import org.dbsyncer.sdk.model.NoticeContent;
+import org.dbsyncer.sdk.notice.MessageService;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +31,9 @@ public class BaseServiceImpl {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private LogService logService;
@@ -45,10 +47,10 @@ public class BaseServiceImpl {
     protected final static Object LOCK = new Object();
 
     protected boolean isRunning(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         if (null != meta) {
             int state = meta.getState();
-            return MetaEnum.isRunning(state);
+            return CommonTaskStatusEnum.isRunning(state);
         }
         return false;
     }
@@ -81,7 +83,7 @@ public class BaseServiceImpl {
 
     protected void log(LogType log, TableGroup tableGroup) {
         if (null != tableGroup) {
-            Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+            Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
             if (null != mapping) {
                 // 新增驱动知识库(全量)映射关系:[My_User] >> [My_User_Target]
                 String name = mapping.getName();

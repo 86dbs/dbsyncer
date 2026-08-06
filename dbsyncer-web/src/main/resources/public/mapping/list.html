@@ -124,7 +124,8 @@ $(document).ready(function() {
                 <tr>
                     <td>${index}</td>
                     <td title="${escapeHtml(mapping.name)}">
-                        <span>${escapeHtml(mapping.name)}</span>
+                        <a href="javascript:void(0)" class="text-primary hover:underline cursor-pointer" title="点击查看详情"
+                           onclick="doLoader('/mapping/page/detail?id=${mapping.id}')">${escapeHtml(mapping.name)}</a>
                     </td>
                     <td title="${escapeHtml(mapping.sourceConnector.name || '')} > ${escapeHtml(mapping.targetConnector.name || '')}">
                         <div class="flex items-center">

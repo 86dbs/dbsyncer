@@ -42,7 +42,7 @@ public class PluginController {
 
     @RequestMapping("")
     public String index(ModelMap model) {
-        model.put("plugins", pluginService.getPluginAll());
+        model.put("plugins", pluginService.listPlugins());
         model.put("version", appConfig.getVersion());
         return "plugin/list";
     }

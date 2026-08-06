@@ -4,6 +4,9 @@
 (function (window) {
     'use strict';
 
+    /** 与 CommonTaskStatusEnum.DONE 对齐：本轮业务已完成 */
+    var META_STATE_DONE = 3;
+
     function databaseSyncStart(taskId) {
         doPoster('/database-sync/start', { id: taskId }, function (response) {
             if (response.success) {
@@ -64,6 +67,14 @@
                 text: '停止中',
                 disabled: true,
                 class: 'badge-warning'
+            },
+            3: {
+                icon: 'fa-play',
+                title: '启动',
+                onclick: "databaseSyncStart('" + taskId + "')",
+                disabled: false,
+                class: 'badge-primary',
+                text: '已完成'
             }
         };
     }
@@ -81,7 +92,7 @@
         const onclickAttr = config.onclick ? ' onclick="' + config.onclick + '"' : '';
         let html = '<button class="table-action-btn play" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
             + '<i class="fa ' + config.icon + '"></i></button>';
-        if (state === 0) {
+        if (state === 0 || state === 3) {
             html += '<button class="table-action-btn delete" title="删除" onclick="databaseSyncRemove(\'' + taskId + '\')">'
                 + '<i class="fa fa-trash"></i></button>';
         }
@@ -104,7 +115,7 @@
     }
 
     function renderTaskDurationText(task) {
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         if (isRunning) {
             return '';
         }
@@ -121,7 +132,7 @@
             n = 0;
         }
         var taskId = String(task.id || '').replace(/'/g, '');
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         var progressRaw = task.progress;
         if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
             if (isRunning) {
@@ -148,7 +159,7 @@
             } else if (progress >= 60) {
                 state = 'warning';
             }
-        } else if (Number(task.processed) !== 1 && Number(task.endTime) > 0 && progress < 100) {
+        } else if (Number(task.metaState) !== META_STATE_DONE && Number(task.endTime) > 0 && progress < 100) {
             state = 'warning';
         } else if (n > 0) {
             state = 'danger';
@@ -210,13 +221,13 @@
                     + '</td>'
                     + '<td>' + mappingCount + '</td>'
                     + '<td>' + renderResultColumn(task) + '</td>'
-                    + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
+                    + '<td>' + renderTaskStateText(task.metaState || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
                     + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/database-sync/page/edit?id='
                     + taskId + '\')">'
                     + '<i class="fa fa-edit"></i></button>'
-                    + renderTaskStateButton(task.status || 0, task.id)
+                    + renderTaskStateButton(task.metaState || 0, task.id)
                     + '</div></td>'
                     + '</tr>';
             },

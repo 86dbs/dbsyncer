@@ -39,12 +39,12 @@ public abstract class BaseController {
     }
 
     /**
-     * 初始化: 条件/转换/插件
+     * 初始化: 条件/转换/插件（插件仅加载已安装列表，不含全库关联扫描）
      */
     protected void initConfig(ModelMap model) {
         model.put("condition", filterService.getCondition());
         model.put("convert", convertService.getConvertEnumAll());
-        model.put("plugin", pluginService.getPluginAll());
+        model.put("plugin", pluginService.listPlugins());
     }
 
     /**

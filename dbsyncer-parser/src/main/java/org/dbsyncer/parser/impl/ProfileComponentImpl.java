@@ -1,43 +1,41 @@
 /**
- * DBSyncer Copyright 2020-2023 All Rights Reserved.
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
  */
 package org.dbsyncer.parser.impl;
 
-import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
-import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.ConnectorProfile;
+import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ParserException;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.SystemConfigProfile;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.UserProfile;
 import org.dbsyncer.parser.enums.ConvertEnum;
-import org.dbsyncer.parser.enums.GroupStrategyEnum;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.model.QueryConfig;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.UserConfig;
+import org.dbsyncer.parser.util.ConfigModelUtil;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
-import org.dbsyncer.sdk.model.ConnectorConfig;
-import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
+ * {@link ProfileComponent} 门面：各领域 Profile 委托 + 导出快照编排。
+ *
  * @Version 1.0.0
  * @Author AE86
  * @Date 2023-11-13 21:16
@@ -46,23 +44,26 @@ import java.util.stream.Collectors;
 public class ProfileComponentImpl implements ProfileComponent {
 
     @Resource
-    private OperationTemplate operationTemplate;
+    private UserProfile userProfile;
 
     @Resource
-    private ConnectorFactory connectorFactory;
+    private ConnectorProfile connectorProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Override
     public Connector parseConnector(String json) {
-        Map conn = JsonUtil.parseMap(json);
-        Map config = (Map) conn.remove("config");
-        Connector connector = JsonUtil.jsonToObj(conn.toString(), Connector.class);
-        Assert.notNull(connector, "Connector can not be null.");
-        String connectorType = (String) config.get("connectorType");
-        ConnectorService connectorService = connectorFactory.getConnectorService(connectorType);
-        Class<ConnectorConfig> configClass = connectorService.getConfigClass();
-        connector.setConfig(JsonUtil.jsonToObj(config.toString(), configClass));
-
-        return connector;
+        return connectorProfile.parseConnector(json);
     }
 
     @Override
@@ -72,101 +73,106 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public String addConfigModel(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD));
+        if (model instanceof UserConfig) {
+            return userProfile.syncUserConfig((UserConfig) model);
+        }
+        if (model instanceof SystemConfig) {
+            return systemConfigProfile.saveSystemConfig((SystemConfig) model);
+        }
+        if (model instanceof Connector) {
+            return connectorProfile.addConnector((Connector) model);
+        }
+        if (model instanceof Meta) {
+            return metaProfile.addMeta((Meta) model);
+        }
+        if (model instanceof TableGroup) {
+            return tableGroupProfile.addTableGroup((TableGroup) model);
+        }
+        if (StorageEnum.TASK == ConfigModelUtil.getStorageEnum(model.getType())) {
+            return taskProfile.addTask(model);
+        }
+        throw new ParserException("Unsupported config type for add: " + model.getType());
     }
 
     @Override
     public String editConfigModel(ConfigModel model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT));
+        if (model instanceof UserConfig) {
+            return userProfile.syncUserConfig((UserConfig) model);
+        }
+        if (model instanceof SystemConfig) {
+            return systemConfigProfile.saveSystemConfig((SystemConfig) model);
+        }
+        if (model instanceof Connector) {
+            return connectorProfile.updateConnector((Connector) model);
+        }
+        if (model instanceof Meta) {
+            return metaProfile.updateMeta((Meta) model);
+        }
+        if (model instanceof TableGroup) {
+            return tableGroupProfile.editTableGroup((TableGroup) model);
+        }
+        if (StorageEnum.TASK == ConfigModelUtil.getStorageEnum(model.getType())) {
+            return taskProfile.updateTask(model);
+        }
+        throw new ParserException("Unsupported config type for edit: " + model.getType());
     }
 
     @Override
     public void removeConfigModel(String id) {
-        operationTemplate.remove(new OperationConfig(id));
+        if (StringUtil.isBlank(id)) {
+            return;
+        }
+        if (connectorProfile.getConnector(id) != null) {
+            connectorProfile.removeConnector(id);
+            return;
+        }
+        if (metaProfile.getMeta(id) != null) {
+            metaProfile.removeMeta(id);
+            return;
+        }
+        if (tableGroupProfile.getTableGroup(id) != null) {
+            tableGroupProfile.removeTableGroup(id);
+            return;
+        }
+        if (taskProfile.existsTask(id)) {
+            taskProfile.deleteTask(id);
+            return;
+        }
+        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        if (systemConfig != null && id.equals(systemConfig.getId())) {
+            systemConfigProfile.removeSystemConfig(id);
+            return;
+        }
+        if (userProfile.existsUser(id)) {
+            userProfile.removeUser(id);
+            return;
+        }
+        throw new ParserException("Unknown config id: " + id);
     }
 
     @Override
     public SystemConfig getSystemConfig() {
-        List<SystemConfig> list = operationTemplate.queryAll(SystemConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        return systemConfigProfile.getSystemConfig();
     }
 
     @Override
     public UserConfig getUserConfig() {
-        List<UserConfig> list = operationTemplate.queryAll(UserConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        return userProfile.getUserConfig();
     }
 
     @Override
     public Connector getConnector(String connectorId) {
-        return operationTemplate.queryObject(Connector.class, connectorId);
+        return connectorProfile.getConnector(connectorId);
     }
 
     @Override
     public List<Connector> getConnectorAll() {
-        return operationTemplate.queryAll(Connector.class);
+        return connectorProfile.getConnectorAll();
     }
 
     @Override
     public Mapping getMapping(String mappingId) {
-        return operationTemplate.queryObject(Mapping.class, mappingId);
-    }
-
-    @Override
-    public List<Mapping> getMappingAll() {
-        return operationTemplate.queryAll(Mapping.class);
-    }
-
-    @Override
-    public String addTableGroup(TableGroup model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public List<String> addTableGroupBatch(List<TableGroup> models) {
-        return operationTemplate.executeBatch(models, CommandEnum.OPR_ADD, GroupStrategyEnum.TABLE);
-    }
-
-    @Override
-    public String editTableGroup(TableGroup model) {
-        return operationTemplate.execute(new OperationConfig(model, CommandEnum.OPR_EDIT, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public void removeTableGroup(String id) {
-        operationTemplate.remove(new OperationConfig(id, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public TableGroup getTableGroup(String tableGroupId) {
-        return operationTemplate.queryObject(TableGroup.class, tableGroupId);
-    }
-
-    @Override
-    public List<TableGroup> getTableGroupAll(String mappingId) {
-        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
-        return operationTemplate.queryAll(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public List<TableGroup> getSortedTableGroupAll(String mappingId) {
-        return getTableGroupAll(mappingId).stream().sorted(Comparator.comparing(TableGroup::getIndex).reversed()).collect(Collectors.toList());
-    }
-
-    @Override
-    public int getTableGroupCount(String mappingId) {
-        TableGroup tableGroup = new TableGroup().setMappingId(mappingId);
-        return operationTemplate.queryCount(new QueryConfig<>(tableGroup, GroupStrategyEnum.TABLE));
-    }
-
-    @Override
-    public Meta getMeta(String metaId) {
-        return operationTemplate.queryObject(Meta.class, metaId);
-    }
-
-    @Override
-    public List<Meta> getMetaAll() {
-        return operationTemplate.queryAll(Meta.class);
+        return taskProfile.getTask(mappingId, Mapping.class);
     }
 
     @Override

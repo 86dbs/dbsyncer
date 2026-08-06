@@ -11,7 +11,6 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.StorageStrategyEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
-
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 
@@ -39,6 +38,8 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids);
 
+    protected abstract void batchIncrement(StorageEnum type, String sharding, String id, Map<String, Long> deltas);
+
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
         return StorageStrategyEnum.getStrategy(type).createSharding(getSeparator(), collectionId);
@@ -55,6 +56,12 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             return select(sharding, query);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
+        } catch (SdkException e) {
+            // 动态分表尚未创建（任务未启动/无明细）时按空结果返回
+            if (isMissingStorageTable(e)) {
+                return new Paging(query.getPageNum(), query.getPageSize());
+            }
+            throw e;
         }
         return new Paging(query.getPageNum(), query.getPageSize());
     }
@@ -79,10 +86,31 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         try {
             String sharding = getSharding(type, metaId);
             deleteAll(sharding);
+            // 动态明细分表：清空后预建空表，避免详情 JOIN 查询报 Table not found
+            if (type == StorageEnum.TASK_DETAIL) {
+                ensureShard(type, sharding);
+            }
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
         }
     }
+
+    @Override
+    public void ensure(StorageEnum type, String metaId) {
+        try {
+            ensureShard(type, getSharding(type, metaId));
+        } catch (NullExecutorException e) {
+            // 未知存储类型等，忽略
+        }
+    }
+
+    /**
+     * 确保分片物理表存在（仅 DDL，不写数据）。
+     *
+     * @param type     存储类型
+     * @param sharding 分片名（如 task_detail_{taskId}）
+     */
+    protected abstract void ensureShard(StorageEnum type, String sharding);
 
     @Override
     public void add(StorageEnum type, Map params) {
@@ -135,6 +163,39 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
     }
 
+    @Override
+    public void increment(StorageEnum type, String id, Map<String, Long> deltas) {
+        try {
+            batchIncrement(type, getSharding(type, null), id, deltas);
+        } catch (NullExecutorException e) {
+            // 存储表不存在或已删除，请重试
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> queryList(SqlQuery query) {
+        Assert.notNull(query, "SqlQuery can not be null.");
+        Assert.hasText(query.getSql(), "sql can not be empty.");
+        try {
+            if (query.isPaged()) {
+                return selectList(query.getSql(), query.getPageNum(), query.getPageSize(), query.getArgs());
+            }
+            return selectList(query.getSql(), query.getArgs());
+        } catch (NullExecutorException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 原生 SQL 查询。
+     */
+    protected abstract List<Map<String, Object>> selectList(String sql, Object[] args);
+
+    /**
+     * 原生 SQL 分页查询（由实现类按方言追加 LIMIT）。
+     */
+    protected abstract List<Map<String, Object>> selectList(String sql, int pageNum, int pageSize, Object[] args);
+
     private List<Map> newArrayList(Map params) {
         List<Map> list = new ArrayList<>();
         list.add(params);
@@ -145,5 +206,15 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         List<String> list = new ArrayList<>();
         list.add(id);
         return list;
+    }
+
+    private boolean isMissingStorageTable(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            String msg = t.getMessage();
+            if (msg != null && (msg.contains("doesn't exist") || msg.contains("Unknown table") || msg.contains("not found"))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

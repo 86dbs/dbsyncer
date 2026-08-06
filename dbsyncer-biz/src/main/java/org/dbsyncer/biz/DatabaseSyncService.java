@@ -4,6 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.DatabaseSyncTaskVO;
+import org.dbsyncer.biz.vo.TablePreviewVO;
 import org.dbsyncer.common.model.Paging;
 
 import java.util.List;
@@ -80,7 +81,7 @@ public interface DatabaseSyncService {
      * @param params connectorId、database、schema、searchKey、offset、limit
      * @return 分页数据及类型统计
      */
-    Map<String, Object> previewTables(Map<String, String> params);
+    TablePreviewVO previewTables(Map<String, String> params);
 
     /**
      * 全部任务（详情页任务下拉）

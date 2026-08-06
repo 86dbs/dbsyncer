@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.apache.lucene.index.IndexableField;
 import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MonitorService;
@@ -21,6 +20,7 @@ import org.dbsyncer.biz.vo.DataVO;
 import org.dbsyncer.biz.vo.LogVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.MetricResponseVO;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -30,9 +30,13 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.model.ConnectorOfflineContent;
 import org.dbsyncer.plugin.model.MappingErrorContent;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -40,9 +44,9 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.filter.BooleanFilter;
-import org.dbsyncer.sdk.filter.FieldResolver;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
+import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
@@ -55,13 +59,14 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -81,6 +86,15 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private DataSyncService dataSyncService;
@@ -132,16 +146,45 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     @Override
-    public List<MetaVO> getMetaAll() {
-        return profileComponent.getMetaAll().stream().map(this::convertMeta2Vo).sorted(Comparator.comparing(MetaVO::getUpdateTime).reversed()).collect(Collectors.toList());
+    public Paging<MetaVO> queryMeta(Map<String, String> params) {
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 50);
+        String searchKey = params.get("searchKey");
+        // 按驱动任务分页，避免扫全量 Meta（含校验/迁移等非同步任务）
+        Paging<Mapping> paging = taskProfile.queryTasks(Mapping.class, pageNum, pageSize, searchKey);
+        Paging<MetaVO> result = new Paging<>(pageNum, pageSize);
+        if (paging == null) {
+            return result;
+        }
+        result.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return result;
+        }
+        List<MetaVO> rows = new ArrayList<>(paging.getData().size());
+        for (Mapping mapping : paging.getData()) {
+            if (mapping == null || StringUtil.isBlank(mapping.getMetaId())) {
+                continue;
+            }
+            Meta meta = metaProfile.getMeta(mapping.getMetaId());
+            if (meta == null) {
+                continue;
+            }
+            MetaVO vo = convertMeta2Vo(meta);
+            if (vo != null) {
+                rows.add(vo);
+            }
+        }
+        result.setData(rows);
+        return result;
     }
 
     @Override
     public MetaVO getMetaVo(String metaId) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "The meta is null.");
-
-        return convertMeta2Vo(meta);
+        MetaVO vo = convertMeta2Vo(meta);
+        Assert.notNull(vo, String.format("驱动不存在. metaId:%s, taskId:%s", meta.getId(), meta.getTaskId()));
+        return vo;
     }
 
     @Override
@@ -157,15 +200,23 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String error = params.get(ConfigConstant.DATA_ERROR);
         String status = params.get("status");
+        String tableGroupId = params.get(ConfigConstant.DATA_TABLE_GROUP_ID);
+        if (StringUtil.isBlank(tableGroupId)) {
+            tableGroupId = params.get("tableGroupId");
+        }
 
-        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status);
+        Paging paging = queryData(getDefaultMetaId(id), pageNum, pageSize, error, status, tableGroupId);
         List<Map> data = (List<Map>) paging.getData();
         List<DataVO> list = new ArrayList<>();
         for (Map row : data) {
             try {
+                // 精简分表列映射到 DataVO：TYPE→event, IS_SUCCESS→success, TARGET_TABLE→targetTableName
+                row.put("event", row.get(ConfigConstant.CONFIG_MODEL_TYPE));
+                row.put("success", row.get(ConfigConstant.DETAIL_IS_SUCCESS));
+                row.put(ConfigConstant.DATA_TARGET_TABLE_NAME, row.get(ConfigConstant.DETAIL_TARGET_TABLE));
                 DataVO dataVo = convert2Vo(row, DataVO.class);
-                Map binlogData = dataSyncService.getBinlogData(row, true);
-                dataVo.setJson(JsonUtil.objToJsonSafe(binlogData));
+                // 列表不解 blob，字段详情按需拉取
+                dataVo.setJson(null);
                 list.add(dataVo);
             } catch (Exception e) {
                 logger.error(e.getLocalizedMessage(), e);
@@ -177,17 +228,111 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public String clearData(String id) {
+        return clearData(id, null);
+    }
+
+    @Override
+    public String clearData(String id, String tableGroupId) {
         Assert.hasText(id, "驱动不存在.");
-        Meta meta = profileComponent.getMeta(id);
-        meta.getFail().getAndSet(0);
-        // 让定时任务触发更新meta
-        meta.setUpdateTime(Instant.now().toEpochMilli());
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+        Meta meta = metaProfile.getMeta(id);
+        Assert.notNull(meta, "驱动不存在.");
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        Assert.notNull(mapping, "驱动不存在.");
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
+
+        if (StringUtil.isNotBlank(tableGroupId)) {
+            TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
+            Assert.notNull(tableGroup, "表映射不存在.");
+            Assert.isTrue(StringUtil.equals(tableGroup.getTaskId(), mapping.getId()), "表映射不属于当前驱动.");
+            clearTableGroupData(meta, shardId, tableGroupId);
+            LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+            String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
+            logService.log(log, "%s:%s(%s) tableGroup=%s", log.getMessage(), mapping.getName(), model, tableGroupId);
+            return "清空当前表同步数据成功";
+        }
+
+        // 任务 Meta：success/fail 一并归零
+        resetMetaCounters(meta);
+        // 表级 Meta 删除
+        List<String> groupIds = tableGroupProfile.listTableGroupIds(mapping.getId());
+        if (!CollectionUtils.isEmpty(groupIds)) {
+            for (String groupId : groupIds) {
+                if (StringUtil.isNotBlank(groupId)) {
+                    removeTableMeta(groupId);
+                }
+            }
+        }
         LogType.MappingLog log = LogType.MappingLog.CLEAR_DATA;
+        String model = ModelEnum.getModelEnum(mapping.getModel()).getName();
         logService.log(log, "%s:%s(%s)", log.getMessage(), mapping.getName(), model);
-        storageService.clear(StorageEnum.DATA, id);
+        clearTaskDetailShards(meta);
         return "清空同步数据成功";
+    }
+
+    private void clearTableGroupData(Meta taskMeta, String shardId, String tableGroupId) {
+        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        long tableSuccess = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
+        long tableFail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
+        if (tableSuccess != 0 || tableFail != 0) {
+            metaProfile.incrementMeta(MetaIncrement.of(taskMeta.getId())
+                    .success(-tableSuccess)
+                    .fail(-tableFail));
+        }
+        removeTableMeta(tableGroupId);
+
+        deleteTableGroupDetails(taskMeta, shardId, tableGroupId);
+    }
+
+    /**
+     * 删除表级同步明细；兼容历史雪花主键分表。
+     */
+    private void deleteTableGroupDetails(Meta taskMeta, String shardId, String tableGroupId) {
+        deleteTableGroupDetailsByShard(shardId, tableGroupId);
+        if (taskMeta != null && StringUtil.isNotBlank(taskMeta.getId()) && !StringUtil.equals(taskMeta.getId(), shardId)) {
+            deleteTableGroupDetailsByShard(taskMeta.getId(), tableGroupId);
+        }
+    }
+
+    private void deleteTableGroupDetailsByShard(String shardId, String tableGroupId) {
+        Query query = new Query();
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(shardId);
+        query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
+        storageService.delete(query);
+    }
+
+    /**
+     * 清空明细分表；兼容历史雪花主键分表。
+     */
+    private void clearTaskDetailShards(Meta meta) {
+        if (meta == null) {
+            return;
+        }
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
+        storageService.clear(StorageEnum.TASK_DETAIL, shardId);
+        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
+            storageService.clear(StorageEnum.TASK_DETAIL, meta.getId());
+        }
+    }
+
+    private void resetMetaCounters(Meta meta) {
+        if (meta == null) {
+            return;
+        }
+        long success = meta.getSuccess() != null ? meta.getSuccess().get() : 0L;
+        long fail = meta.getFail() != null ? meta.getFail().get() : 0L;
+        if (success != 0 || fail != 0) {
+            metaProfile.incrementMeta(MetaIncrement.of(meta.getId())
+                    .success(-success)
+                    .fail(-fail));
+        }
+    }
+
+    private void removeTableMeta(String tableGroupId) {
+        Meta tableMeta = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        if (tableMeta != null) {
+            profileComponent.removeConfigModel(tableMeta.getId());
+        }
     }
 
     @Override
@@ -251,25 +396,26 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     @Override
     public void run() {
-        // 预警：驱动出现失败记录，发送通知消息
-        List<Meta> metaAll = profileComponent.getMetaAll();
-        if (CollectionUtils.isEmpty(metaAll)) {
-            return;
-        }
-
+        // 预警：仅任务级 Meta，分页扫描
         MappingErrorContent content = new MappingErrorContent();
-
         long endTime = System.currentTimeMillis();
-        metaAll.forEach(meta -> {
-            // 统计运行中和失败数
-            if (meta.getFail().get() > 0) {
+        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+            for (Meta meta : page) {
+                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
+                    continue;
+                }
+                long failCount = meta.getFail() != null ? meta.getFail().get() : 0L;
+                if (failCount <= 0) {
+                    continue;
+                }
                 Query query = new Query(1, 1);
-                query.setType(StorageEnum.DATA);
+                query.setType(StorageEnum.TASK_DETAIL);
+                query.setMetaId(metaProfile.resolveTaskDetailShardId(meta));
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.GT_AND_EQUAL, LAST_EXECUTE_TIME.longValue());
                 query.addFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT_AND_EQUAL, endTime);
                 query.setQueryTotal(true);
-                query.addFilter(ConfigConstant.DATA_SUCCESS, 0);
-                query.setMetaId(meta.getId());
+                query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, 0);
                 Paging queryTemp = storageService.query(query);
                 if (queryTemp.getTotal() > 0) {
                     writeMappingReport(meta, content);
@@ -310,7 +456,7 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private void writeMappingReport(Meta meta, MappingErrorContent content) {
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         if (null != mapping) {
             ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
             MappingErrorContent.ErrorItem item = new MappingErrorContent.ErrorItem();
@@ -325,43 +471,71 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
         }
     }
 
-    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status) {
+    private Paging queryData(String metaId, int pageNum, int pageSize, String error, String status, String tableGroupId) {
         // 没有驱动
         if (StringUtil.isBlank(metaId)) {
             return new Paging(pageNum, pageSize);
         }
         Query query = new Query(pageNum, pageSize);
-        Map<String, FieldResolver> fieldResolvers = new ConcurrentHashMap<>();
-        fieldResolvers.put(ConfigConstant.BINLOG_DATA, (FieldResolver<IndexableField>) field -> field.binaryValue().bytes);
-        query.setFieldResolverMap(fieldResolvers);
+        // 列表不查 DATA blob，详情弹窗再按 id 拉取
+        Set<String> selectFields = new HashSet<>();
+        selectFields.add(ConfigConstant.CONFIG_MODEL_ID);
+        selectFields.add(ConfigConstant.DATA_TABLE_GROUP_ID);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_TYPE);
+        selectFields.add(ConfigConstant.DETAIL_TARGET_TABLE);
+        selectFields.add(ConfigConstant.DETAIL_IS_SUCCESS);
+        selectFields.add(ConfigConstant.DATA_ERROR);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
+        selectFields.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        query.setSelectFlied(selectFields);
 
+        // 明细分表：查询 dbsyncer_task_detail_{taskId}
+        Meta meta = metaProfile.getMeta(metaId);
+        query.setMetaId(meta != null ? metaProfile.resolveTaskDetailShardId(meta) : metaId);
         // 查询异常信息
         if (StringUtil.isNotBlank(error)) {
             query.addFilter(ConfigConstant.DATA_ERROR, error, true);
         }
         // 查询数据状态
         if (StringUtil.isNotBlank(status) && !StringUtil.equals("-1", status)) {
-            query.addFilter(ConfigConstant.DATA_SUCCESS, NumberUtil.toInt(status));
+            query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, NumberUtil.toInt(status));
         }
-        query.setMetaId(metaId);
-        query.setType(StorageEnum.DATA);
+        if (StringUtil.isNotBlank(tableGroupId)) {
+            query.addFilter(ConfigConstant.DATA_TABLE_GROUP_ID, tableGroupId);
+        }
+        query.setType(StorageEnum.TASK_DETAIL);
         return storageService.query(query);
     }
 
     private void deleteExpiredData() {
-        List<MetaVO> metaAll = getMetaAll();
-        if (!CollectionUtils.isEmpty(metaAll)) {
-            Query query = new Query();
-            query.setType(StorageEnum.DATA);
-            int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
-            long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
-            LongFilter expiredFilter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime);
-            query.setBooleanFilter(new BooleanFilter().add(expiredFilter));
-            metaAll.forEach(metaVo -> {
-                query.setMetaId(metaVo.getId());
-                storageService.delete(query);
-            });
+        // 明细分表：逐个任务分表按过期时间清理
+        int expireDataDays = systemConfigService.getSystemConfig().getExpireDataDays();
+        long expiredTime = Timestamp.valueOf(LocalDateTime.now().minusDays(expireDataDays)).getTime();
+        metaProfile.pageScanMetas(TaskLevelEnum.TASK.getCode(), ConfigConstant.PAGE_SIZE, page -> {
+            for (Meta meta : page) {
+                Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+                if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())) {
+                    continue;
+                }
+                deleteExpiredTaskDetails(meta, expiredTime);
+            }
+        });
+    }
+
+    private void deleteExpiredTaskDetails(Meta meta, long expiredTime) {
+        String shardId = metaProfile.resolveTaskDetailShardId(meta);
+        deleteExpiredTaskDetailsByShard(shardId, expiredTime);
+        if (StringUtil.isNotBlank(meta.getId()) && !StringUtil.equals(meta.getId(), shardId)) {
+            deleteExpiredTaskDetailsByShard(meta.getId(), expiredTime);
         }
+    }
+
+    private void deleteExpiredTaskDetailsByShard(String shardId, long expiredTime) {
+        Query query = new Query();
+        query.setType(StorageEnum.TASK_DETAIL);
+        query.setMetaId(shardId);
+        query.setBooleanFilter(new BooleanFilter().add(new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, expiredTime)));
+        storageService.delete(query);
     }
 
     private void deleteExpiredLog() {
@@ -410,8 +584,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
     }
 
     private MetaVO convertMeta2Vo(Meta meta) {
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
-        Assert.notNull(mapping, String.format("驱动不存在. metaId:%s, mappingId:%s", meta.getId(), meta.getMappingId()));
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+        // 非同步驱动（校验/迁移等）跳过
+        if (mapping == null || !StringUtil.equals(ConfigConstant.MAPPING, mapping.getType())
+                || StringUtil.isBlank(mapping.getModel())) {
+            return null;
+        }
         ModelEnum modelEnum = ModelEnum.getModelEnum(mapping.getModel());
         MetaVO metaVo = new MetaVO(modelEnum.getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
@@ -424,9 +602,12 @@ public class MonitorServiceImpl extends BaseServiceImpl implements MonitorServic
 
     private String getDefaultMetaId(String id) {
         if (StringUtil.isBlank(id)) {
-            List<MetaVO> list = getMetaAll();
-            if (!CollectionUtils.isEmpty(list)) {
-                return list.get(0).getId();
+            Map<String, String> params = new HashMap<>();
+            params.put("pageNum", "1");
+            params.put("pageSize", "1");
+            Paging<MetaVO> paging = queryMeta(params);
+            if (paging != null && !CollectionUtils.isEmpty(paging.getData())) {
+                return paging.getData().iterator().next().getId();
             }
         }
         return id;

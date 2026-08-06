@@ -76,9 +76,17 @@
             2: {
                 icon: 'fa-spinner fa-spin',
                 title: '停止中',
-                text: ' 停止中',
+                text: '停止中',
                 disabled: true,
                 class: 'badge-warning'
+            },
+            3: {
+                icon: 'fa-play',
+                title: '启动',
+                onclick: "changeTaskState('" + taskId + "', '/validate-sync/start', '启动')",
+                disabled: false,
+                class: 'badge-primary',
+                text: '已完成'
             }
         };
     }
@@ -108,7 +116,7 @@
             '<button class="table-action-btn play" data-id="' + mappingId + '" title="' + config.title + '"' + onclickAttr + disabledAttr + '>'
             + '<i class="fa ' + config.icon + '"></i></button>'
         );
-        if (state === 0) {
+        if (state === 0 || state === 3) {
             stateBtn.push(
                 '<button class="table-action-btn delete" title="删除" onclick="deleteTask(\'' + mappingId + '\')">'
                 + '<i class="fa fa-trash"></i></button>'
@@ -133,7 +141,7 @@
     }
 
     function renderTaskDurationText(task) {
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         if (isRunning) {
             return '';
         }
@@ -150,7 +158,7 @@
             n = 0;
         }
         var taskId = String(task.id || '').replace(/'/g, '');
-        var isRunning = Number(task.status) === 1;
+        var isRunning = Number(task.metaState) === 1;
         var progressRaw = task.progress;
         if (progressRaw === null || progressRaw === undefined || progressRaw === '') {
             if (isRunning) {
@@ -254,12 +262,12 @@
                     + '</td>'
                     + '<td>' + renderTaskTriggerText(task.trigger) + '</td>'
                     + '<td>' + renderResultColumn(task) + '</td>'
-                    + '<td>' + renderTaskStateText(task.status || 0) + '</td>'
+                    + '<td>' + renderTaskStateText(task.metaState || 0) + '</td>'
                     + '<td>' + formatDate(task.updateTime || '') + '</td>'
                     + '<td><div class="flex items-center">'
                     + '<button class="table-action-btn view" title="修改" onclick="doLoader(\'/validate-sync/page/edit?id=' + task.id + '\')">'
                     + '<i class="fa fa-edit"></i></button>'
-                    + renderTaskStateButton(task.status || 0, task.id)
+                    + renderTaskStateButton(task.metaState || 0, task.id)
                     + '</div></td>'
                     + '</tr>';
             },

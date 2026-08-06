@@ -808,10 +808,8 @@ function renderLicenseProductList($dropdownMenu, $productDivider, products) {
 
 // ******************* 驱动表格展示内容 ***************************
 function showMappingError(metaId){
-    doLoader('/monitor?dataStatus=0&id='+metaId);
-    // 激活监控菜单
-    $('.sidebar-item').removeClass('active');
-    $('.sidebar-item[url="/monitor"]').addClass('active');
+    // 兼容旧调用：失败明细已迁移到同步任务详情
+    doLoader('/mapping/list');
 }
 
 function getStateConfig(mappingId) {
@@ -1002,11 +1000,12 @@ function renderFullSyncResult(meta) {
 }
 
 // 同步失败行
-function renderMappingFailLine(meta) {
+function renderMappingFailLine(meta, mappingId) {
     if (!meta.fail || meta.fail <= 0) {
         return '';
     }
-    return `<div class="text-xs mt-1">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败日志' onclick="showMappingError('${meta.id}')">查看日志</span></div>`;
+    const id = mappingId || '';
+    return `<div class="text-xs mt-1">失败: <span class="text-error">${formatCount(meta.fail)}</span> <span class="hover-underline cursor-pointer text-error" title='查看失败详情' onclick="doLoader('/mapping/page/detail?id=${id}&detailStatus=fail')">查看详情</span></div>`;
 }
 
 // 根据同步结果生成内容
@@ -1015,7 +1014,7 @@ function renderSyncResult(mapping) {
     if (!meta) return '';
 
     if (mapping.model === 'fullIncrement') {
-        return renderFullIncrementSyncResult(meta) + renderMappingFailLine(meta);
+        return renderFullIncrementSyncResult(meta) + renderMappingFailLine(meta, mapping.id);
     }
 
     const content = [];
@@ -1024,7 +1023,7 @@ function renderSyncResult(mapping) {
     } else {
         content.push(`<div class="text-xs">成功: ${formatCount(meta.success || 0)}</div>`);
     }
-    content.push(renderMappingFailLine(meta));
+    content.push(renderMappingFailLine(meta, mapping.id));
     return content.join('');
 }
 
@@ -1131,3 +1130,163 @@ $(function () {
         }
     });
 });
+/**
+ * 连接器分页 → dbSelect 选项
+ */
+function convertConnectorPagingToSelectData(paging, preferredType) {
+    const rows = paging && Array.isArray(paging.data) ? paging.data : [];
+    const preferred = preferredType ? String(preferredType).trim() : '';
+    const list = [];
+    rows.forEach(function (row) {
+        if (!row || !row.id) {
+            return;
+        }
+        const type = (row.config && row.config.connectorType) ? String(row.config.connectorType) : '';
+        if (preferred && type && preferred.toLowerCase() !== type.toLowerCase()) {
+            return;
+        }
+        const name = row.name || '';
+        list.push({
+            label: type ? (name + '(' + type + ')') : name,
+            value: row.id,
+            data: {connectorType: type}
+        });
+    });
+    return list;
+}
+
+/**
+ * 构建远程连接器 dbSelect 配置（库侧分页）。
+ * @param {Object} extra defaultValue/defaultLabel/defaultType/relationOnly/preferredType/role/pageSize/disabled/onSelect
+ */
+function buildRemoteConnectorSelectOptions(extra) {
+    extra = extra || {};
+    const initialData = [];
+    if (extra.defaultValue) {
+        initialData.push({
+            label: extra.defaultLabel || extra.defaultValue,
+            value: extra.defaultValue,
+            data: {connectorType: extra.defaultType || ''}
+        });
+    }
+    return {
+        type: 'single',
+        remoteSearch: true,
+        pageSize: extra.pageSize || 50,
+        keywordDebounceMs: 300,
+        disabled: !!extra.disabled,
+        defaultValue: extra.defaultValue ? [extra.defaultValue] : null,
+        data: initialData,
+        loadOptions: function (query, onSuccess, onError) {
+            const params = {
+                pageNum: query.pageNum,
+                pageSize: query.pageSize,
+                searchKey: query.searchKey || ''
+            };
+            if (extra.relationOnly) {
+                params.relationOnly = '1';
+            }
+            if (extra.role === 'source' || extra.role === 'target') {
+                params.role = extra.role;
+            }
+            doPoster('/connector/search', params, function (res) {
+                if (res.success === true) {
+                    const paging = res.data || {};
+                    onSuccess({
+                        pageNum: paging.pageNum || query.pageNum,
+                        pageSize: paging.pageSize || query.pageSize,
+                        total: paging.total || 0,
+                        data: convertConnectorPagingToSelectData(paging, extra.preferredType)
+                    });
+                } else {
+                    bootGrowl(res.message || '加载连接器失败', 'danger');
+                    if (typeof onError === 'function') {
+                        onError();
+                    }
+                }
+            });
+        },
+        onSelect: extra.onSelect
+    };
+}
+
+/**
+ * 从 dbSelect 选中项解析连接器类型（优先 data.connectorType）。
+ */
+function resolveConnectorTypeFromSelect($connector, connectorId) {
+    const api = $connector && $connector.data ? $connector.data('dbSelect') : null;
+    if (api && typeof api.getSelectedItems === 'function') {
+        const items = api.getSelectedItems() || [];
+        if (items.length && items[0] && items[0].data && items[0].data.connectorType) {
+            return String(items[0].data.connectorType).trim();
+        }
+    }
+    if (!connectorId || !$connector || !$connector.length) {
+        return '';
+    }
+    const $option = $connector.find('option[value="' + connectorId + '"]');
+    if ($option.length) {
+        return ($option.attr('data-connector-type') || $option.data('connectorType') || '').toString().trim();
+    }
+    return '';
+}
+
+/**
+ * 通用远程分页下拉（ConfigModel 风格：id + name）。
+ * @param {Object} extra url/defaultValue/defaultLabel/pageSize/onSelect/convertRow/params
+ */
+function buildRemotePagingSelectOptions(extra) {
+    extra = extra || {};
+    const initialData = [];
+    if (extra.defaultValue) {
+        initialData.push({
+            label: extra.defaultLabel || extra.defaultValue,
+            value: extra.defaultValue
+        });
+    }
+    return {
+        type: 'single',
+        remoteSearch: true,
+        pageSize: extra.pageSize || 50,
+        keywordDebounceMs: 300,
+        defaultValue: extra.defaultValue ? [extra.defaultValue] : null,
+        data: initialData,
+        loadOptions: function (query, onSuccess, onError) {
+            const params = $.extend({}, extra.params || {}, {
+                pageNum: query.pageNum,
+                pageSize: query.pageSize,
+                searchKey: query.searchKey || ''
+            });
+            doPoster(extra.url, params, function (res) {
+                if (res.success === true) {
+                    const paging = res.data || {};
+                    const rows = Array.isArray(paging.data) ? paging.data : [];
+                    const convert = typeof extra.convertRow === 'function'
+                        ? extra.convertRow
+                        : function (row) {
+                            return row && row.id ? {label: row.name || row.id, value: row.id} : null;
+                        };
+                    const data = [];
+                    rows.forEach(function (row) {
+                        const item = convert(row);
+                        if (item) {
+                            data.push(item);
+                        }
+                    });
+                    onSuccess({
+                        pageNum: paging.pageNum || query.pageNum,
+                        pageSize: paging.pageSize || query.pageSize,
+                        total: paging.total || 0,
+                        data: data
+                    });
+                } else {
+                    bootGrowl(res.message || '加载失败', 'danger');
+                    if (typeof onError === 'function') {
+                        onError();
+                    }
+                }
+            });
+        },
+        onSelect: extra.onSelect
+    };
+}

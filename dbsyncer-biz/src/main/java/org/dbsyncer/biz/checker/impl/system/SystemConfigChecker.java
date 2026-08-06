@@ -5,24 +5,22 @@ package org.dbsyncer.biz.checker.impl.system;
 
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.impl.ApiKeyManager;
-import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.model.ApiKeyConfig;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.IpWhitelistConfig;
 import org.dbsyncer.common.model.RsaConfig;
+import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.util.BeanUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
-
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

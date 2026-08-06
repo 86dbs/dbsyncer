@@ -6,8 +6,8 @@ package org.dbsyncer.storage;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
+import org.dbsyncer.connector.h2.storage.H2StorageService;
 import org.dbsyncer.sdk.storage.StorageService;
-import org.dbsyncer.storage.impl.DiskStorageService;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.origin.OriginTrackedValue;
@@ -76,8 +76,8 @@ public class StorageSupportConfiguration {
             }
         }
 
-        // 默认磁盘存储
-        DiskStorageService storageService = new DiskStorageService(scheduledTaskService);
+        // 默认H2存储
+        H2StorageService storageService = new H2StorageService();
         storageService.init(properties);
         return storageService;
     }

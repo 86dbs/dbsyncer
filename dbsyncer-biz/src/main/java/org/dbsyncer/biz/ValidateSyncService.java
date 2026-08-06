@@ -109,18 +109,20 @@ public interface ValidateSyncService {
     /**
      * 按明细主键查询单条（含完整 CONTENT）。
      *
-     * @param id 明细 ID
+     * @param taskId 校验任务ID(明细分表定位)
+     * @param id     明细 ID
      * @return 单条 Map，不存在返回 null
      */
-    Object getValidateResultDetail(String id);
+    Object getValidateResultDetail(String taskId, String id);
 
     /**
      * 对单条校验明细中尚未订正的差异执行手动订正。
      *
+     * @param taskId   校验任务ID(明细分表定位)
      * @param detailId 明细主键
      * @return 更新后的明细
      */
-    Object manualReviseDetail(String detailId);
+    Object manualReviseDetail(String taskId, String detailId);
 
     String addTableGroup(Map<String, String> params);
 

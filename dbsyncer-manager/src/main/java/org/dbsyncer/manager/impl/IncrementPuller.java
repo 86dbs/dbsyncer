@@ -13,8 +13,10 @@ import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.manager.ManagerException;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupContext;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
@@ -28,6 +30,7 @@ import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -86,6 +89,12 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private ProfileComponent profileComponent;
 
     @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
     private PluginFactory pluginFactory;
 
     @Resource
@@ -117,9 +126,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Assert.notNull(connector, "连接器不能为空.");
         Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mappingId);
-        Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
-        Meta meta = profileComponent.getMeta(metaId);
+        Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
+        List<TableGroup> list = loadSortedTableGroups(mappingId);
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
 
         Thread worker = new Thread(() -> {
@@ -184,9 +193,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Assert.notNull(connector, "连接器不能为空.");
         Connector targetConnector = profileComponent.getConnector(mapping.getTargetConnectorId());
         Assert.notNull(targetConnector, "目标连接器不能为空.");
-        List<TableGroup> list = profileComponent.getSortedTableGroupAll(mapping.getId());
-        Assert.notEmpty(list, "表映射关系不能为空，请先添加源表到目标表关系.");
-        Meta meta = profileComponent.getMeta(metaId);
+        Assert.isTrue(tableGroupProfile.getTableGroupCount(mapping.getId()) > 0, "表映射关系不能为空，请先添加源表到目标表关系.");
+        List<TableGroup> list = loadSortedTableGroups(mapping.getId());
+        Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Meta不能为空.");
         Listener listener = buildListener(mapping, connector, targetConnector, list, meta);
         Map<String, String> snapshot = meta.getSnapshot();
@@ -238,7 +247,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, profileComponent, pluginFactory, logService, meta.getId(), list));
+        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, profileComponent, pluginFactory, logService, meta.getId(), list));
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {
@@ -314,6 +323,15 @@ public final class IncrementPuller extends AbstractPuller implements Application
             default:
                 break;
         }
+    }
+
+    /**
+     * 按页拉取表映射（sortIndex 降序），供监听器注册使用。
+     */
+    private List<TableGroup> loadSortedTableGroups(String mappingId) {
+        List<TableGroup> list = new ArrayList<>();
+        tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, list::addAll);
+        return list;
     }
 
 }

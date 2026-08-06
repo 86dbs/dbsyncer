@@ -21,11 +21,12 @@ import java.util.Map;
 public interface MonitorService {
 
     /**
-     * 获取驱动元信息列表
+     * 分页查询驱动元信息（供监控页下拉远程搜索）
      *
-     * @return
+     * @param params pageNum、pageSize、searchKey
+     * @return 分页结果
      */
-    List<MetaVO> getMetaAll();
+    Paging<MetaVO> queryMeta(Map<String, String> params);
 
     /**
      * 获取驱动元信息
@@ -54,10 +55,19 @@ public interface MonitorService {
     /**
      * 清空驱动同步数据
      *
-     * @param id
+     * @param id 任务 Meta ID
      * @return
      */
     String clearData(String id);
+
+    /**
+     * 清空驱动同步数据；tableGroupId 非空时仅清空该表映射下明细与表级 Meta。
+     *
+     * @param id           任务 Meta ID
+     * @param tableGroupId 表映射 ID，空则清空全部
+     * @return
+     */
+    String clearData(String id, String tableGroupId);
 
     /**
      * 查询操作日志

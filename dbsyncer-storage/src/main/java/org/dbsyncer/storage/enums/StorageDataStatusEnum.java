@@ -6,9 +6,9 @@ package org.dbsyncer.storage.enums;
 /**
  * 同步数据状态枚举
  *
- * @Author AE86
- * @Version 1.0.0
- * @Date 2021-03-10 20:31
+ * @author AE86
+ * @version 1.0.0
+ * @date 2021-03-10 20:31
  */
 public enum StorageDataStatusEnum {
 

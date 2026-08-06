@@ -1,6 +1,7 @@
 package org.dbsyncer.parser.model;
 
-import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 
 import java.util.HashMap;
@@ -8,11 +9,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * <p>驱动同步元信息</p>
- * <pre>
- *     全量同步: 存放分页数
- *     增量同步:定时>时间戳; 日志>binlogFileName/binlogPosition/主从节点信息等
- * </pre>
+ * 任务执行结果(dbsyncer_meta)。
+ * <p>主键 {@code id} 为雪花，与业务实体 ID 解耦。
+ * <p>关联键 {@code taskId}：任务级（{@code isTaskDetail=0}）为任务/Mapping ID；
+ * 表级（{@code isTaskDetail=1}）为 {@code table_group.id}。
+
+ * <p>明细分表 {@code dbsyncer_task_detail_{taskId}} 分片使用任务级 Meta 的 taskId，不是 Meta 主键。
  *
  * @author AE86
  * @version 1.0.0
@@ -20,16 +22,26 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Meta extends ConfigModel {
 
-    private String mappingId;
+    /**
+     * 关联 ID：任务级为任务/Mapping ID；表级为 table_group.id
+     */
+    private String taskId;
 
     /**
-     * {@link MetaEnum}
+     * {@link CommonTaskStatusEnum}
      */
     private int state;
+
+    /**
+     * 是否任务明细：0-任务级 1-明细级
+     */
+    private int isTaskDetail;
 
     private AtomicLong total;
     private AtomicLong success;
     private AtomicLong fail;
+    private AtomicLong diff;
+    private AtomicLong fixed;
     private Map<String, String> snapshot;
     private long beginTime;
     private long endTime;
@@ -48,21 +60,24 @@ public class Meta extends ConfigModel {
     }
 
     private void init() {
-        this.state = MetaEnum.READY.getCode();
+        this.state = CommonTaskStatusEnum.READY.getCode();
+        this.isTaskDetail = 0;
         this.total = new AtomicLong(0);
         this.success = new AtomicLong(0);
         this.fail = new AtomicLong(0);
+        this.diff = new AtomicLong(0);
+        this.fixed = new AtomicLong(0);
         this.snapshot = new HashMap<>();
         this.beginTime = 0L;
         this.endTime = 0L;
     }
 
-    public String getMappingId() {
-        return mappingId;
+    public String getTaskId() {
+        return taskId;
     }
 
-    public void setMappingId(String mappingId) {
-        this.mappingId = mappingId;
+    public void setTaskId(String taskId) {
+        this.taskId = taskId;
     }
 
     public int getState() {
@@ -71,6 +86,18 @@ public class Meta extends ConfigModel {
 
     public void setState(int state) {
         this.state = state;
+    }
+
+    public int getIsTaskDetail() {
+        return isTaskDetail;
+    }
+
+    public void setIsTaskDetail(int isTaskDetail) {
+        this.isTaskDetail = isTaskDetail;
+    }
+
+    public boolean isTaskDetail() {
+        return isTaskDetail == 1;
     }
 
     public AtomicLong getTotal() {
@@ -95,6 +122,22 @@ public class Meta extends ConfigModel {
 
     public void setFail(AtomicLong fail) {
         this.fail = fail;
+    }
+
+    public AtomicLong getDiff() {
+        return diff;
+    }
+
+    public void setDiff(AtomicLong diff) {
+        this.diff = diff;
+    }
+
+    public AtomicLong getFixed() {
+        return fixed;
+    }
+
+    public void setFixed(AtomicLong fixed) {
+        this.fixed = fixed;
     }
 
     public Map<String, String> getSnapshot() {

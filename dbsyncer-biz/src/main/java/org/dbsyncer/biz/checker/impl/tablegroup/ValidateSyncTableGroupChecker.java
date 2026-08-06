@@ -3,10 +3,10 @@
  */
 package org.dbsyncer.biz.checker.impl.tablegroup;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
@@ -36,7 +36,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private TaskService<ValidateSyncTask> taskService;
@@ -61,11 +61,11 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
         Assert.notNull(task, "task can not be null.");
 
         // 检查是否存在重复映射关系
-        checkRepeatedTable(profileComponent.getTableGroupAll(taskId), sourceTable, targetTable);
+        checkRepeatedTable(taskId, sourceTable, targetTable);
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(taskId);
+        tableGroup.setTaskId(taskId);
         Table source = findTable(task.getSourceTable(), sourceTable, sourceType);
         Table target = findTable(task.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(task, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
@@ -89,7 +89,7 @@ public class ValidateSyncTableGroupChecker extends TableGroupChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");

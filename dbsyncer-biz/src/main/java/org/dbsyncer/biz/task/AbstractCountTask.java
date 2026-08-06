@@ -9,6 +9,7 @@ import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
@@ -42,6 +43,8 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     protected ProfileComponent profileComponent;
 
+    protected TableGroupProfile tableGroupProfile;
+
     protected TableGroupService tableGroupService;
 
     protected ConnectorFactory connectorFactory;
@@ -58,6 +61,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
 
     public void setProfileComponent(ProfileComponent profileComponent) {
         this.profileComponent = profileComponent;
+    }
+
+    public void setTableGroupProfile(TableGroupProfile tableGroupProfile) {
+        this.tableGroupProfile = tableGroupProfile;
     }
 
     public void setTableGroupService(TableGroupService tableGroupService) {

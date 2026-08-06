@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.parser.model;
 
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Plugin;
 

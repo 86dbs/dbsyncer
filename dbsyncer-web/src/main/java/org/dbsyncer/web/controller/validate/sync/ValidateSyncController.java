@@ -3,19 +3,25 @@
  */
 package org.dbsyncer.web.controller.validate.sync;
 
-import org.dbsyncer.biz.ConnectorService;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
-import org.dbsyncer.sdk.spi.LicenseService;
+import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -36,9 +42,6 @@ public class ValidateSyncController extends BaseController {
 
     @Resource
     private ValidateSyncService validateSyncService;
-
-    @Resource
-    private ConnectorService connectorService;
 
     @Resource
     private TableGroupService tableGroupService;
@@ -63,7 +66,6 @@ public class ValidateSyncController extends BaseController {
      */
     @GetMapping("/pageAdd")
     public String pageAdd(ModelMap model) {
-        model.put("connectors", connectorService.getConnectorAll());
         return "validate-sync/add";
     }
 
@@ -73,14 +75,15 @@ public class ValidateSyncController extends BaseController {
     @GetMapping("/page/{page}")
     public String pageEdit(ModelMap model, @PathVariable("page") String page, @RequestParam("id") String id,
                            @RequestParam(value = "detailStatus", required = false) String detailStatus) {
-        if (page.equals("detail")) {
+        if (StringUtil.equals("detail", page)) {
             model.put("taskId", id);
-            model.put("taskList", validateSyncService.getAll());
+            ValidateSyncTaskVO detailTask = validateSyncService.get(id);
+            model.put("taskName", detailTask != null ? detailTask.getName() : id);
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
-        } else if (page.equals("editTableGroup")) {
+        } else if (StringUtil.equals("editTableGroup", page)) {
             TableGroup tableGroup = tableGroupService.getTableGroup(id);
             model.put("tableGroup", tableGroup);
-            model.put("task", validateSyncService.get(tableGroup.getMappingId()));
+            model.put("task", validateSyncService.get(tableGroup.getTaskId()));
         } else {
             model.put("task", validateSyncService.get(id));
         }
@@ -303,9 +306,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/getResultDetail")
     @ResponseBody
-    public RestResult getResultDetail(@RequestParam("id") String id) {
+    public RestResult getResultDetail(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            Object detail = validateSyncService.getValidateResultDetail(id);
+            Object detail = validateSyncService.getValidateResultDetail(taskId, id);
             if (detail == null) {
                 return RestResult.restFail("记录不存在", 404);
             }
@@ -321,9 +324,9 @@ public class ValidateSyncController extends BaseController {
      */
     @PostMapping("/manualRevise")
     @ResponseBody
-    public RestResult manualRevise(@RequestParam("id") String id) {
+    public RestResult manualRevise(@RequestParam("taskId") String taskId, @RequestParam("id") String id) {
         try {
-            return RestResult.restSuccess(validateSyncService.manualReviseDetail(id));
+            return RestResult.restSuccess(validateSyncService.manualReviseDetail(taskId, id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

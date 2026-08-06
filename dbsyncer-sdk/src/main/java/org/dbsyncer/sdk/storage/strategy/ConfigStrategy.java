@@ -7,7 +7,7 @@ import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.storage.Strategy;
 
 /**
- * 配置：Connector、Mapping、TableGroup、Meta、ProjectGroup、SystemConfig、UserConfig
+ * 配置：Connector、Mapping、TableGroup、Meta、SystemConfig、UserConfig
  *
  * @Author AE86
  * @Version 1.0.0

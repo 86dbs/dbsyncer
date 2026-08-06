@@ -46,6 +46,9 @@ public class DefaultConnectorServiceContext implements ConnectorServiceContext {
         if (tablePatterns == null) {
             tablePatterns = new ArrayList<>();
         }
+        if (tablePattern != null && (tablePattern.getType() == null || tablePattern.getType().isEmpty())) {
+            tablePattern.setType(TableTypeEnum.TABLE.getCode());
+        }
         tablePatterns.add(tablePattern);
     }
 

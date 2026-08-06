@@ -11,21 +11,26 @@
         var manualReviseSubmitting = false;
         var diffModalInstance = null;
         var currentDetailContent = null;
+        var $taskSelect = $('#detailTaskSelect');
+        var defaultTaskId = currentTaskId || $taskSelect.attr('data-default-id') || '';
+        var defaultTaskName = config.taskName || $taskSelect.attr('data-default-label') || defaultTaskId;
 
         window.backIndexPage = function () {
             doLoader('/validate-sync/list');
         };
 
-        $('#detailTaskSelect').dbSelect({
-            type: 'single',
+        $taskSelect.dbSelect(buildRemotePagingSelectOptions({
+            url: '/validate-sync/search',
+            defaultValue: defaultTaskId,
+            defaultLabel: defaultTaskName,
             onSelect: function (selected) {
-                var selectedId = selected.value || selected;
+                var selectedId = Array.isArray(selected) ? (selected[0] || '') : (selected.value || selected);
                 if (selectedId && selectedId !== currentTaskId) {
                     currentTaskId = selectedId;
                     doLoader('/validate-sync/page/detail?id=' + currentTaskId);
                 }
             }
-        });
+        }));
 
         function getFilterValue(selector) {
             var api = $(selector).data('dbSelect');
@@ -67,13 +72,18 @@
             tableSchema: 'badge-info',
             index: 'badge-warning'
         };
+        // 与 CommonTaskStatusEnum 对齐：0未运行 / 1运行中 / 2停止中 / 3已完成
         var statusTextMap = {
-            0: '运行中',
-            1: '已完成'
+            0: '未运行',
+            1: '运行中',
+            2: '停止中',
+            3: '已完成'
         };
         var statusBadgeMap = {
-            0: 'badge-success',
-            1: 'badge-info'
+            0: 'badge-info',
+            1: 'badge-success',
+            2: 'badge-warning',
+            3: 'badge-info'
         };
 
         function getStatusBadge(status) {
@@ -104,7 +114,7 @@
         }
 
         function getExecutionDetail(row) {
-            var parts = [getStatusBadge(row.status)];
+            var parts = [getStatusBadge(row.status != null ? row.status : row.state)];
             var duration = getElapsedDuration(row);
             if (duration) {
                 parts.push(duration);
@@ -352,7 +362,7 @@
                     if (confirmBtn) {
                         confirmBtn.disabled = true;
                     }
-                    doPoster('/validate-sync/manualRevise', { id: currentDetailId }, function (res) {
+                    doPoster('/validate-sync/manualRevise', { taskId: currentTaskId, id: currentDetailId }, function (res) {
                         manualReviseSubmitting = false;
                         if (confirmBtn) {
                             confirmBtn.disabled = false;
@@ -418,7 +428,7 @@
             if (!detailId) {
                 return;
             }
-            doPoster('/validate-sync/getResultDetail', { id: detailId }, function (res) {
+            doPoster('/validate-sync/getResultDetail', { taskId: currentTaskId, id: detailId }, function (res) {
                 if (!res.success) {
                     bootGrowl(res.message || '加载失败', 'danger');
                     return;

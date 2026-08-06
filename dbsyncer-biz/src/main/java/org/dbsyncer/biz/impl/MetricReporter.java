@@ -21,8 +21,10 @@ import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
@@ -38,7 +40,6 @@ import org.dbsyncer.sdk.filter.impl.IntFilter;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -46,7 +47,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -75,6 +75,12 @@ public class MetricReporter implements ScheduledTaskJob {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
 
     @Resource
     private BufferActuator generalBufferActuator;
@@ -143,8 +149,8 @@ public class MetricReporter implements ScheduledTaskJob {
     }
 
     private void getMetricResponseInfo(String metaId, Map<String, TableGroupBufferActuator> group, String searchKey, List<MetricResponseInfo> tableList) {
-        Meta meta = profileComponent.getMeta(metaId);
-        Mapping mapping = profileComponent.getMapping(meta.getMappingId());
+        Meta meta = metaProfile.getMeta(metaId);
+        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
         String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
         group.forEach((k, actuator)-> {
             if (StringUtil.isNotBlank(searchKey)) {
@@ -188,7 +194,23 @@ public class MetricReporter implements ScheduledTaskJob {
         // 刷新报表
         try {
             running = true;
-            final List<Meta> metaAll = profileComponent.getMetaAll();
+            // 先分页扫描同步任务(Mapping)，再按任务 ID 批量 IN 查任务级 Meta
+            final List<Meta> metaAll = new ArrayList<>();
+            taskProfile.pageScanTasks(Mapping.class, ConfigConstant.PAGE_SIZE, mappings -> {
+                if (CollectionUtils.isEmpty(mappings)) {
+                    return;
+                }
+                List<String> taskIds = new ArrayList<>();
+                for (Mapping mapping : mappings) {
+                    if (mapping != null && StringUtil.isNotBlank(mapping.getId())) {
+                        taskIds.add(mapping.getId());
+                    }
+                }
+                Map<String, Meta> metaMap = metaProfile.getTaskMetaMap(taskIds);
+                if (!CollectionUtils.isEmpty(metaMap)) {
+                    metaAll.addAll(metaMap.values());
+                }
+            });
             if (CollectionUtils.isEmpty(metaAll)) {
                 dashboardMetric.reset();
                 return;
@@ -213,7 +235,7 @@ public class MetricReporter implements ScheduledTaskJob {
                     lastWeek.incrementAndGet();
                 }
                 // 统计运行中
-                if (MetaEnum.isRunning(meta.getState())) {
+                if (CommonTaskStatusEnum.isRunning(meta.getState())) {
                     running.incrementAndGet();
                 }
                 // 统计失败数
@@ -303,7 +325,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingSuccess(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.SUCCESS.getValue()));
     }
 
     /**
@@ -313,7 +335,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingFail(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DETAIL_IS_SUCCESS, StorageDataStatusEnum.FAIL.getValue()));
     }
 
     /**
@@ -327,7 +349,7 @@ public class MetricReporter implements ScheduledTaskJob {
     private long getMappingDataCount(List<Meta> metaAll, long time, StorageDataStatusEnum status) {
         return queryMappingMetricCount(metaAll, (query)-> {
             LongFilter filter = new LongFilter(ConfigConstant.CONFIG_MODEL_CREATE_TIME, FilterEnum.LT, time);
-            IntFilter success = new IntFilter(ConfigConstant.DATA_SUCCESS, status.getValue());
+            IntFilter success = new IntFilter(ConfigConstant.DETAIL_IS_SUCCESS, status.getValue());
             query.setBooleanFilter(new BooleanFilter().add(filter).add(success));
         });
     }
@@ -353,7 +375,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingInsert(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_INSERT));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_INSERT));
     }
 
     /**
@@ -363,7 +385,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingUpdate(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_UPDATE));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_UPDATE));
     }
 
     /**
@@ -373,7 +395,7 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDelete(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_DELETE));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_DELETE));
     }
 
     /**
@@ -383,23 +405,25 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     private long getMappingDll(List<Meta> metaAll) {
-        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.DATA_EVENT, ConnectorConstant.OPERTION_ALTER));
+        return queryMappingMetricCount(metaAll, (query)->query.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConnectorConstant.OPERTION_ALTER));
     }
 
     private long queryMappingMetricCount(List<Meta> metaAll, Consumer<Query> operation) {
-        AtomicLong total = new AtomicLong(0);
-        if (!CollectionUtils.isEmpty(metaAll)) {
+        if (CollectionUtils.isEmpty(metaAll)) {
+            return 0L;
+        }
+        // 明细分表：逐任务分表(dbsyncer_task_detail_{taskId})统计后累加
+        long total = 0L;
+        for (Meta meta : metaAll) {
             Query query = new Query(1, 1);
             query.setQueryTotal(true);
-            query.setType(StorageEnum.DATA);
+            query.setType(StorageEnum.TASK_DETAIL);
+            query.setMetaId(StringUtil.isNotBlank(meta.getTaskId()) ? meta.getTaskId() : meta.getId());
             operation.accept(query);
-            metaAll.forEach(meta-> {
-                query.setMetaId(meta.getId());
-                Paging paging = storageService.query(query);
-                total.getAndAdd(paging.getTotal());
-            });
+            Paging paging = storageService.query(query);
+            total += paging.getTotal();
         }
-        return total.get();
+        return total;
     }
 
     private MetricResponseInfo collect(BufferActuator bufferActuator, String code, String group, String metricName) {
