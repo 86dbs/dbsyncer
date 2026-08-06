@@ -29,6 +29,12 @@ import java.util.concurrent.Executor;
 @Component
 public class LogServiceImpl implements LogService {
 
+    /**
+     * 与 {@link org.dbsyncer.parser.model.SystemConfig} 默认 maxStorageErrorLength 对齐；
+     * 系统配置尚未入库时兜底，避免异步写日志 NPE。
+     */
+    private static final int DEFAULT_MAX_STORAGE_ERROR_LENGTH = 8192;
+
     @Resource
     private StorageService storageService;
 
@@ -57,14 +63,22 @@ public class LogServiceImpl implements LogService {
     }
 
     private void asyncWrite(String type, String error) {
-        storageExecutor.execute(()-> {
-            Map<String, Object> params = new HashMap();
+        storageExecutor.execute(() -> {
+            Map<String, Object> params = new HashMap<>();
             params.put(ConfigConstant.CONFIG_MODEL_ID, String.valueOf(snowflakeIdWorker.nextId()));
             params.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
-            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, profileComponent.getSystemConfig().getMaxStorageErrorLength()));
+            params.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.substring(error, 0, resolveMaxStorageErrorLength()));
             params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, Instant.now().toEpochMilli());
             storageService.add(StorageEnum.LOG, params);
         });
+    }
+
+    private int resolveMaxStorageErrorLength() {
+        if (profileComponent == null || profileComponent.getSystemConfig() == null) {
+            return DEFAULT_MAX_STORAGE_ERROR_LENGTH;
+        }
+        int max = profileComponent.getSystemConfig().getMaxStorageErrorLength();
+        return max > 0 ? max : DEFAULT_MAX_STORAGE_ERROR_LENGTH;
     }
 
 }
