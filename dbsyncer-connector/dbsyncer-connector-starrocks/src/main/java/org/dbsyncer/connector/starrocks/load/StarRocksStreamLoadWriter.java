@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.connector.starrocks.load;
 
+import com.alibaba.fastjson2.JSON;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -11,6 +12,7 @@ import org.dbsyncer.connector.starrocks.StarRocksException;
 import org.dbsyncer.connector.starrocks.constant.StarRocksConstant;
 import org.dbsyncer.sdk.config.DatabaseConfig;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.plugin.PluginContext;
 
 import org.slf4j.Logger;
@@ -24,9 +26,15 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -53,13 +61,15 @@ public final class StarRocksStreamLoadWriter {
         DatabaseConfig config = connectorInstance.getConfig();
         String database = resolveDatabase(connectorInstance, config);
         String table = context.getTargetTable().getName();
+        Set<String> binaryFields = resolveBinaryFields(context.getTargetFields(), data);
         String body = buildJsonLines(data);
+        String columns = buildColumnsHeader(context.getTargetFields(), data, binaryFields);
         String label = buildLabel(context.getTraceId());
         String loadUrl = buildStreamLoadUrl(config, database, table);
 
         Result result = new Result();
         try {
-            String response = executeStreamLoad(config, loadUrl, label, body);
+            String response = executeStreamLoad(config, loadUrl, label, body, columns);
             parseResponse(response, data, result);
         } catch (Exception e) {
             result.addFailData(data);
@@ -80,12 +90,104 @@ public final class StarRocksStreamLoadWriter {
         return database;
     }
 
+    /**
+     * JSON Stream Load 不支持原生 BINARY；byte[] 全程 Base64（不做长度截断），
+     * 再配合 columns=to_binary(..., 'encode64') 还原为 VARBINARY。
+     */
     private String buildJsonLines(List<Map> data) {
         StringBuilder builder = new StringBuilder();
         for (Map row : data) {
-            builder.append(JsonUtil.objToJsonSafe(row)).append('\n');
+            builder.append(JSON.toJSONString(encodeRowForJson(row))).append('\n');
         }
         return builder.toString();
+    }
+
+    private Map<String, Object> encodeRowForJson(Map row) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (row == null) {
+            return out;
+        }
+        for (Object entryObj : row.entrySet()) {
+            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) entryObj;
+            if (entry.getKey() == null) {
+                continue;
+            }
+            String key = String.valueOf(entry.getKey());
+            Object value = entry.getValue();
+            if (value instanceof byte[]) {
+                out.put(key, Base64.getEncoder().encodeToString((byte[]) value));
+            } else {
+                out.put(key, value);
+            }
+        }
+        return out;
+    }
+
+    private Set<String> resolveBinaryFields(List<Field> fields, List<Map> data) {
+        Set<String> binaryFields = new HashSet<>();
+        if (!CollectionUtils.isEmpty(fields)) {
+            for (Field field : fields) {
+                if (field != null && isBinaryType(field.getTypeName())) {
+                    binaryFields.add(field.getName());
+                }
+            }
+        }
+        for (Map row : data) {
+            if (row == null) {
+                continue;
+            }
+            for (Object entryObj : row.entrySet()) {
+                Map.Entry<?, ?> entry = (Map.Entry<?, ?>) entryObj;
+                if (entry.getKey() != null && entry.getValue() instanceof byte[]) {
+                    binaryFields.add(String.valueOf(entry.getKey()));
+                }
+            }
+        }
+        return binaryFields;
+    }
+
+    private boolean isBinaryType(String typeName) {
+        if (StringUtil.isBlank(typeName)) {
+            return false;
+        }
+        String type = typeName.trim().toUpperCase(Locale.ROOT);
+        return type.contains("BINARY") || type.endsWith("BLOB");
+    }
+
+    /**
+     * 有二进制列时声明 columns，用 to_binary(..., 'encode64') 把 JSON 中的 Base64 还原为 VARBINARY。
+     */
+    private String buildColumnsHeader(List<Field> fields, List<Map> data, Set<String> binaryFields) {
+        if (CollectionUtils.isEmpty(binaryFields)) {
+            return null;
+        }
+        LinkedHashSet<String> columnNames = new LinkedHashSet<>();
+        if (!CollectionUtils.isEmpty(fields)) {
+            for (Field field : fields) {
+                if (field != null && StringUtil.isNotBlank(field.getName())) {
+                    columnNames.add(field.getName());
+                }
+            }
+        }
+        if (columnNames.isEmpty() && !CollectionUtils.isEmpty(data) && data.get(0) != null) {
+            for (Object key : data.get(0).keySet()) {
+                if (key != null) {
+                    columnNames.add(String.valueOf(key));
+                }
+            }
+        }
+        if (columnNames.isEmpty()) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>(columnNames.size());
+        for (String name : columnNames) {
+            if (binaryFields.contains(name)) {
+                parts.add(name + "=to_binary(" + name + ", 'encode64')");
+            } else {
+                parts.add(name);
+            }
+        }
+        return StringUtil.join(parts, StringUtil.COMMA);
     }
 
     private String buildLabel(String traceId) {
@@ -98,10 +200,10 @@ public final class StarRocksStreamLoadWriter {
                 config.getHost(), StarRocksConstant.getHttpPort(config), database, table);
     }
 
-    private String executeStreamLoad(DatabaseConfig config, String loadUrl, String label, String body) throws IOException {
+    private String executeStreamLoad(DatabaseConfig config, String loadUrl, String label, String body, String columns) throws IOException {
         String currentUrl = loadUrl;
         for (int redirectCount = 0; redirectCount < 3; redirectCount++) {
-            HttpURLConnection connection = openConnection(config, currentUrl, label);
+            HttpURLConnection connection = openConnection(config, currentUrl, label, columns);
             try {
                 writeBody(connection, body);
                 int statusCode = connection.getResponseCode();
@@ -122,7 +224,7 @@ public final class StarRocksStreamLoadWriter {
         throw new StarRocksException("Stream Load 重定向次数过多");
     }
 
-    private HttpURLConnection openConnection(DatabaseConfig config, String loadUrl, String label) throws IOException {
+    private HttpURLConnection openConnection(DatabaseConfig config, String loadUrl, String label, String columns) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) new URL(loadUrl).openConnection();
         connection.setInstanceFollowRedirects(false);
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
@@ -135,6 +237,9 @@ public final class StarRocksStreamLoadWriter {
         connection.setRequestProperty("read_json_by_line", "true");
         connection.setRequestProperty("Expect", "100-continue");
         connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+        if (StringUtil.isNotBlank(columns)) {
+            connection.setRequestProperty("columns", columns);
+        }
         return connection;
     }
 

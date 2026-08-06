@@ -133,6 +133,8 @@ public final class DorisStreamLoadWriter {
         connection.setRequestProperty("label", label);
         connection.setRequestProperty("format", "json");
         connection.setRequestProperty("read_json_by_line", "true");
+        // 与 JDBC serverTimezone 对齐；带时区的时间串按此时区解释，无时区串保持墙钟不变
+        connection.setRequestProperty("timezone", "Asia/Shanghai");
         connection.setRequestProperty("Expect", "100-continue");
         connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
         return connection;

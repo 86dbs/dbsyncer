@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.connector.starrocks.StarRocksException;
 import org.dbsyncer.connector.starrocks.schema.support.StarRocksBooleanType;
+import org.dbsyncer.connector.starrocks.schema.support.StarRocksBytesType;
 import org.dbsyncer.connector.starrocks.schema.support.StarRocksLargeIntType;
 import org.dbsyncer.connector.starrocks.schema.support.StarRocksStringType;
 import org.dbsyncer.sdk.model.Field;
@@ -28,6 +29,7 @@ public final class StarRocksSchemaResolver extends MySQLSchemaResolver {
     private static final Map<String, DataType> STARROCKS_TYPES = new HashMap<>();
 
     static {
+        register(new StarRocksBytesType());
         register(new StarRocksStringType());
         register(new StarRocksLargeIntType());
         register(new StarRocksBooleanType());

@@ -6,8 +6,10 @@ package org.dbsyncer.connector.doris.schema;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.doris.DorisException;
 import org.dbsyncer.connector.doris.schema.support.DorisBooleanType;
+import org.dbsyncer.connector.doris.schema.support.DorisBytesType;
 import org.dbsyncer.connector.doris.schema.support.DorisLargeIntType;
 import org.dbsyncer.connector.doris.schema.support.DorisStringType;
+import org.dbsyncer.connector.doris.schema.support.DorisTimestampType;
 import org.dbsyncer.connector.mysql.schema.MySQLSchemaResolver;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.DataType;
@@ -28,6 +30,8 @@ public final class DorisSchemaResolver extends MySQLSchemaResolver {
     private static final Map<String, DataType> DORIS_TYPES = new HashMap<>();
 
     static {
+        register(new DorisBytesType());
+        register(new DorisTimestampType());
         register(new DorisStringType());
         register(new DorisLargeIntType());
         register(new DorisBooleanType());

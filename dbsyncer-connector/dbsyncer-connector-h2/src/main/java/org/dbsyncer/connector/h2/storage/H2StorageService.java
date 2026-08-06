@@ -733,7 +733,6 @@ public class H2StorageService extends AbstractStorageService {
             // H2 索引名全局唯一：按表名哈希后缀，避免多分表冲突
             String suffix = Integer.toHexString(table.hashCode() & 0xffff);
             createIndexIfNotExist(table, "IDX_TG_UPD_" + suffix, "`TABLE_GROUP_ID`,`UPDATE_TIME`");
-            createUniqueIndexIfNotExist(table, "UK_TG_TYPE_" + suffix, "`TABLE_GROUP_ID`,`TYPE`");
             return;
         }
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引

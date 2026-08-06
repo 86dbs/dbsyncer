@@ -42,6 +42,8 @@ public final class DorisConstant {
         putIfAbsent(properties, "useUnicode", "true");
         putIfAbsent(properties, "characterEncoding", "UTF-8");
         putIfAbsent(properties, "useSSL", "false");
+        // 与 StarRocks/MySQL 默认一致，避免 DATETIME/TIMESTAMP 经 JDBC 绑参时出现 ±8 小时偏移
+        putIfAbsent(properties, "serverTimezone", "Asia/Shanghai");
     }
 
     public static void enrichExtInfo(DatabaseConfig config, String httpPort, String writeMode) {
