@@ -784,20 +784,6 @@ public class H2StorageService extends AbstractStorageService {
                 indexColumns));
     }
 
-    private void createUniqueIndexIfNotExist(String table, String indexName, String indexColumns) {
-        if (indexExists(table, indexName)) {
-            return;
-        }
-        try {
-            executeSql(String.format("CREATE UNIQUE INDEX %s ON %s (%s)",
-                    connector.buildWithQuotation(indexName),
-                    connector.buildWithQuotation(table),
-                    indexColumns));
-        } catch (Exception e) {
-            logger.warn("skip create unique {} on {}: {}", indexName, table, e.getMessage());
-        }
-    }
-
     private List<String> buildPrimaryKeys(List<Field> fields) {
         List<String> primaryKeys = new ArrayList<>();
         for (Field field : fields) {

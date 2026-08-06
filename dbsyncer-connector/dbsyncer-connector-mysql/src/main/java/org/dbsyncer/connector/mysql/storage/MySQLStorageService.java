@@ -800,20 +800,6 @@ public class MySQLStorageService extends AbstractStorageService {
         }
     }
 
-    /**
-     * 唯一索引不存在则创建。
-     */
-    private void createUniqueIndexIfNotExist(String table, String indexName, String indexColumns) {
-        if (indexExists(table, indexName)) {
-            return;
-        }
-        try {
-            executeSql(String.format("CREATE UNIQUE INDEX `%s` ON `%s` (%s)", indexName, table, indexColumns));
-        } catch (Exception e) {
-            logger.warn("skip create unique {} on {}: {}", indexName, table, e.getMessage());
-        }
-    }
-
     private boolean indexExists(String table, String indexName) {
         try {
             Long count = connectorInstance.execute(databaseTemplate ->
