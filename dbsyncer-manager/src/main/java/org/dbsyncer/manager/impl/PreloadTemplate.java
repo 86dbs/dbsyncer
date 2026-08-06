@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.ConfigModel;
@@ -21,7 +22,6 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
@@ -135,10 +135,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     public void loadNotificationChannel() {
         try {
-            SystemConfig systemConfig = profileComponent.getSystemConfig();
-            if (null == systemConfig) {
-                return;
-            }
+            SystemConfig systemConfig = initSystemConfigIfAbsent();
             NoticeConfig noticeConfig = systemConfig.getNoticeConfig();
             if (null == noticeConfig) {
                 return;
@@ -181,6 +178,26 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    /**
+     * 启动时若无系统配置则写入默认行，避免后续 getSystemConfig() 为空 NPE。
+     *
+     * @return 已有或新建的系统配置
+     */
+    private SystemConfig initSystemConfigIfAbsent() {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig != null) {
+            return systemConfig;
+        }
+        systemConfig = new SystemConfig();
+        systemConfig.setName("系统配置");
+        long now = System.currentTimeMillis();
+        systemConfig.setCreateTime(now);
+        systemConfig.setUpdateTime(now);
+        profileComponent.addConfigModel(systemConfig);
+        logger.warn("No system config found, created default system config");
+        return systemConfig;
     }
 
     /**
