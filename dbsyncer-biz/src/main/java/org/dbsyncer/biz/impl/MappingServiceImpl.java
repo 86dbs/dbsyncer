@@ -296,40 +296,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     @Override
-    public MappingVO getMapping(String id, Integer exclude) {
-        Mapping mapping = profileComponent.getMapping(id);
-        // 显示所有表
-        if (exclude != null && exclude == 1) {
-            return convertMapping2Vo(mapping);
-        }
-        // 过滤已映射的表
-        MappingVO vo = convertMapping2Vo(mapping);
-        final Set<String> sTables = new HashSet<>();
-        final Set<String> tTables = new HashSet<>();
-        tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
-            if (CollectionUtils.isEmpty(page)) {
-                return;
-            }
-            for (TableGroup tableGroup : page) {
-                if (tableGroup == null) {
-                    continue;
-                }
-                if (tableGroup.getSourceTable() != null && StringUtil.isNotBlank(tableGroup.getSourceTable().getName())) {
-                    sTables.add(tableGroup.getSourceTable().getName());
-                }
-                if (tableGroup.getTargetTable() != null && StringUtil.isNotBlank(tableGroup.getTargetTable().getName())) {
-                    tTables.add(tableGroup.getTargetTable().getName());
-                }
-            }
-        });
-        if (!sTables.isEmpty() || !tTables.isEmpty()) {
-            vo.setSourceTable(mapping.getSourceTable().stream().filter(t -> !sTables.contains(t.getName())).collect(Collectors.toList()));
-            vo.setTargetTable(mapping.getTargetTable().stream().filter(t -> !tTables.contains(t.getName())).collect(Collectors.toList()));
-        }
-        return vo;
-    }
-
-    @Override
     public Paging<MappingVO> search(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
@@ -637,6 +603,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         Connector t = profileComponent.getConnector(mapping.getTargetConnectorId());
         MappingVO vo = new MappingVO(s, t, metaVo);
         BeanUtils.copyProperties(mapping, vo);
+        // 全量表列表体积大，下拉/搜索走 searchTables 分页；VO 不回传
+        vo.setSourceTable(null);
+        vo.setTargetTable(null);
         return vo;
     }
 

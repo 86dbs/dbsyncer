@@ -19,13 +19,11 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Plugin;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,19 +52,32 @@ public class PluginServiceImpl implements PluginService {
     private LogService logService;
 
     @Override
+    public List<PluginVO> listPlugins() {
+        List<Plugin> pluginAll = pluginFactory.getPluginAll();
+        if (CollectionUtils.isEmpty(pluginAll)) {
+            return new ArrayList<>();
+        }
+        return pluginAll.stream().map(this::toPluginVO).collect(Collectors.toList());
+    }
+
+    @Override
     public List<PluginVO> getPluginAll() {
         List<Plugin> pluginAll = pluginFactory.getPluginAll();
-        List<PluginVO> vos = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(pluginAll)) {
-            Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
-            vos.addAll(pluginAll.stream().map(plugin-> {
-                PluginVO vo = new PluginVO();
-                BeanUtils.copyProperties(plugin, vo);
-                vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
-                return vo;
-            }).collect(Collectors.toList()));
+        if (CollectionUtils.isEmpty(pluginAll)) {
+            return new ArrayList<>();
         }
-        return vos;
+        Map<String, List<String>> pluginClassNameMap = getPluginClassNameMap();
+        return pluginAll.stream().map(plugin -> {
+            PluginVO vo = toPluginVO(plugin);
+            vo.setMappingName(StringUtil.join(pluginClassNameMap.get(plugin.getClassName()), StringUtil.VERTICAL_LINE));
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    private PluginVO toPluginVO(Plugin plugin) {
+        PluginVO vo = new PluginVO();
+        BeanUtils.copyProperties(plugin, vo);
+        return vo;
     }
 
     @Override
@@ -110,7 +121,6 @@ public class PluginServiceImpl implements PluginService {
                     putPluginMap(map, plugin.getClassName(), m.getName());
                     continue;
                 }
-
                 AtomicBoolean pluginFound = new AtomicBoolean(false);
                 tableGroupProfile.pageScanTableGroups(m.getId(), ConfigConstant.PAGE_SIZE, page -> {
                     if (pluginFound.get() || CollectionUtils.isEmpty(page)) {

@@ -61,18 +61,17 @@ public class MappingController extends BaseController {
 
     @GetMapping("/page/{page}")
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id,
-                       @RequestParam(value = "exclude", required = false) Integer exclude,
                        @RequestParam(value = "detailStatus", required = false) String detailStatus,
                        @RequestParam(value = "tableGroupId", required = false) String tableGroupId,
                        @RequestParam(value = "status", required = false) String status) {
         if (StringUtil.equals("detail", page)) {
             model.put("mappingId", id);
-            model.put("mapping", mappingService.getMapping(id, 1));
+            model.put("mapping", mappingService.getMapping(id));
             model.put("detailStatus", detailStatus == null ? "" : detailStatus.trim());
             return "mapping/detail";
         }
         if (StringUtil.equals("events", page)) {
-            MappingVO mapping = mappingService.getMapping(id, 1);
+            MappingVO mapping = mappingService.getMapping(id);
             model.put("mappingId", id);
             model.put("mapping", mapping);
             model.put("metaId", mapping.getMetaId());
@@ -90,7 +89,7 @@ public class MappingController extends BaseController {
             model.put("dataStatus", dataStatus);
             return "mapping/events";
         }
-        model.put("mapping", mappingService.getMapping(id, exclude));
+        model.put("mapping", mappingService.getMapping(id));
         initConfig(model);
         return "mapping/" + page;
     }
@@ -109,7 +108,7 @@ public class MappingController extends BaseController {
     @ResponseBody
     public RestResult get(@RequestParam(value = "id") String id) {
         try {
-            return RestResult.restSuccess(mappingService.getMapping(id, 1));
+            return RestResult.restSuccess(mappingService.getMapping(id));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
