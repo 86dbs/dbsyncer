@@ -18,23 +18,31 @@
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://gitee.com/ghi/dbsyncer/blob/master/LICENSE)
 
 ## 🌈应用场景
-| 连接器        | 数据源            | 目标源 | 支持版本(包含以下)                     |
-|------------|----------------|---|--------------------------------|
-| MySQL      | ✔              |  ✔ | 5.7.19以上                       |
-| OceanBase  | ✔              |  ✔ | 3.x以上                        |
-| Oracle     | ✔              |  ✔ | 10g-19c                        |
-| SqlServer  | ✔              |  ✔ | 2008以上                         |
-| PostgreSQL | ✔              |  ✔ | 9.5.25以上                       |
-| ClickHouse | ✔              |  ✔ | 22.x+                       |
-| H2         | ✔              |  ✔ | 2.2.x                       |
-| Sqlite     | ✔              |  ✔ | 2以上                            |
-| Redis      | ✔              |  ✔ | 作为源（增量CDC）5.x ~ 7.x; <br/>作为目标 2.6+ |
-| ES         | ✔              |  ✔ | 6.0.0-8.15.3                   |
-| Kafka      | ✔              |  ✔ | 2.10-0.9.0.0以上                 |
-| File       | ✔              |  ✔ | *.txt, *.unl                   |
-| Http       | ✔              |  ✔ |                                |
-| SQL        | ✔              |  | 支持以上关系型数据库                     |
-| 后期计划    | Doris,Kingbase | |                                |
+| 连接器             | 数据源            | 目标源 | 支持版本(包含以下)                     |
+|-----------------|----------------|---|--------------------------------|
+| ClickHouse      | ✔              |  ✔ | 22.x+                       |
+| Dameng          | ✔              |  ✔ |                        |
+| Doris           | ✔              |  ✔ |                        |
+| DockDB          | ✔              |  ✔ |                        |
+| Elasticsearch   | ✔              |  ✔ | 6.0.0-8.15.3                   |
+| File            | ✔              |  ✔ | *.txt, *.unl                   |
+| H2              | ✔              |  ✔ | 2.2.x                       |
+| Http            | ✔              |  ✔ |                                |
+| Kafka           | ✔              |  ✔ | 2.10-0.9.0.0以上                 |
+| Kingbase        | ✔              |  ✔ |                        |
+| MongoDB         | ✔              |  ✔ |                        |
+| MySQL           | ✔              |  ✔ | 5.7.19以上                       |
+| OceanBase       | ✔              |  ✔ | 3.x以上                        |
+| OceanBaseOracle | ✔              |  ✔ |                         |
+| Oracle          | ✔              |  ✔ | 10g-19c                        |
+| PostgreSQL      | ✔              |  ✔ | 9.5.25以上                       |
+| Redis           | ✔              |  ✔ | 作为源（增量CDC）5.x ~ 7.x; <br/>作为目标 2.6+ |
+| RocketMQ        | ✔              |  ✔ |                                |
+| Sqlite          | ✔              |  ✔ | 2以上                            |
+| SqlServer       | ✔              |  ✔ | 2008以上                         |
+| StarRocks       | ✔              |  ✔ |                                |
+| TiDB            | ✔              |  ✔ |                                |
+| SQL             | ✔              |  | 支持以上关系型数据库                |
 
 ## ✨预览
 ![仪表盘](https://foruda.gitee.com/images/1769953561917318680/775e6928_376718.png "仪表盘")
@@ -59,10 +67,10 @@
 ```shell
 # 社区版
 docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:latest
-docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.2
+docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.3
 # 专业版
 docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
-docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.1.2
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.1.3
 ```
 
 * 运行命令
@@ -82,6 +90,9 @@ docker run -d \
   --log-opt max-file=7 \
   images.dbsyncer.cn/xhtb-dbs/dbsyncer:latest
 
+```
+
+```shell
 # 本地日志
 ls -la /opt/dbsyncer/logs
 
