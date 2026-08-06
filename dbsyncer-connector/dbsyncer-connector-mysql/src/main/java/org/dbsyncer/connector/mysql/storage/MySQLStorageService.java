@@ -661,7 +661,8 @@ public class MySQLStorageService extends AbstractStorageService {
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.CONNECTOR.getType()))
                 && tableExists(taskTable)
                 && tableExists(PREFIX_TABLE.concat(StorageEnum.TABLE_GROUP.getType()))
-                && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()));
+                && tableExists(PREFIX_TABLE.concat(StorageEnum.META.getType()))
+                && !columnExists(taskTable, "STATUS");
     }
 
     private boolean columnExists(String tableName, String columnName) {

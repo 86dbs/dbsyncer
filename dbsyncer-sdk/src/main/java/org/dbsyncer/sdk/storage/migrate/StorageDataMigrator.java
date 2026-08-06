@@ -183,6 +183,9 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.isBlank(json) ? "{}" : json);
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        // 历史 config 无角色列；与离线 SQL 迁移及 Connector 默认值一致，缺省均可作源/目标
+        p.put(ConfigConstant.CONNECTOR_IS_SOURCE, 1);
+        p.put(ConfigConstant.CONNECTOR_IS_TARGET, 1);
         storage.add(StorageEnum.CONNECTOR, p);
     }
 
