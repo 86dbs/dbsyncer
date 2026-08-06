@@ -21,27 +21,27 @@
 | 连接器             | 数据源            | 目标源 | 支持版本(包含以下)                     |
 |-----------------|----------------|---|--------------------------------|
 | ClickHouse      | ✔              |  ✔ | 22.x+                       |
-| Dameng          | ✔              |  ✔ |                        |
-| Doris           | ✔              |  ✔ |                        |
-| DockDB          | ✔              |  ✔ |                        |
+| Dameng          | ✔              |  ✔ | DM8                         |
+| Doris           | ✔              |  ✔ | 1.2.x以上                      |
+| DuckDB          | ✔              |  ✔ | 1.5.x                       |
 | Elasticsearch   | ✔              |  ✔ | 6.0.0-8.15.3                   |
 | File            | ✔              |  ✔ | *.txt, *.unl                   |
 | H2              | ✔              |  ✔ | 2.2.x                       |
-| Http            | ✔              |  ✔ |                                |
+| Http            | ✔              |  ✔ | HTTP/1.1                       |
 | Kafka           | ✔              |  ✔ | 2.10-0.9.0.0以上                 |
-| Kingbase        | ✔              |  ✔ |                        |
-| MongoDB         | ✔              |  ✔ |                        |
+| Kingbase        | ✔              |  ✔ | V8                          |
+| MongoDB         | ✔              |  ✔ | 4.2以上                         |
 | MySQL           | ✔              |  ✔ | 5.7.19以上                       |
 | OceanBase       | ✔              |  ✔ | 3.x以上                        |
-| OceanBaseOracle | ✔              |  ✔ |                         |
+| OceanBaseOracle | ✔              |  ✔ | 3.x以上                         |
 | Oracle          | ✔              |  ✔ | 10g-19c                        |
 | PostgreSQL      | ✔              |  ✔ | 9.5.25以上                       |
 | Redis           | ✔              |  ✔ | 作为源（增量CDC）5.x ~ 7.x; <br/>作为目标 2.6+ |
-| RocketMQ        | ✔              |  ✔ |                                |
+| RocketMQ        | ✔              |  ✔ | 4.9.x以上                        |
 | Sqlite          | ✔              |  ✔ | 2以上                            |
 | SqlServer       | ✔              |  ✔ | 2008以上                         |
-| StarRocks       | ✔              |  ✔ |                                |
-| TiDB            | ✔              |  ✔ |                                |
+| StarRocks       | ✔              |  ✔ | 2.5以上                          |
+| TiDB            | ✔              |  ✔ | 5.x以上                          |
 | SQL             | ✔              |  | 支持以上关系型数据库                |
 
 ## ✨预览
