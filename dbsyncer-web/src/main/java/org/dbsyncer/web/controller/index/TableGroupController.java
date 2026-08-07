@@ -39,7 +39,7 @@ public class TableGroupController extends BaseController {
     public String page(ModelMap model, @PathVariable("page") String page, @RequestParam(value = "id") String id) {
         TableGroup tableGroup = tableGroupService.getTableGroup(id);
         model.put("tableGroup", tableGroup);
-        String mappingId = tableGroup.getMappingId();
+        String mappingId = tableGroup.getTaskId();
         model.put("mapping", mappingService.getMapping(mappingId));
         initConfig(model);
         return "mapping/" + page;

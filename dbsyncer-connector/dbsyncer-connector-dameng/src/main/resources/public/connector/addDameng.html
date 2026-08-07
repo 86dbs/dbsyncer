@@ -19,17 +19,17 @@
             </div>
         </div>
         <div class="form-item">
-            <label class="form-label">数据库名<strong class="text-primary">*</strong></label>
+            <label class="form-label">实例名</label>
             <div class="form-control-area">
-                <input class="form-control" required maxlength="64" name="database" placeholder="DAMENG"
-                       type="text" th:value="${connector?.config?.database}?: 'DAMENG'"/>
+                <input class="form-control" maxlength="64" name="database" placeholder="可选，仅作备注，不写入连接串"
+                       type="text" th:value="${connector?.config?.database}"/>
             </div>
         </div>
         <div class="form-item">
             <label class="form-label">模式(Schema)</label>
             <div class="form-control-area">
-                <input class="form-control" maxlength="64" name="schema" placeholder="与用户名一致，可留空"
-                       type="text" th:value="${connector?.config?.schema}"/>
+                <input class="form-control" maxlength="64" name="schema" placeholder="默认与用户名相同，可留空"
+                       type="text" th:value="${connector?.config?.properties?.get('schema')}"/>
             </div>
         </div>
         <div class="form-item">
@@ -88,7 +88,8 @@
         <div class="form-item">
             <label class="form-label">说明</label>
             <div class="form-control-area text-xs text-muted">
-                达梦通过 JDBC 连接（默认端口 5236），兼容 Oracle 分页与 MERGE 写入；支持全量、定时增量与 LogMiner 日志增量（需开启归档日志）。
+                达梦 JDBC 连接串为 jdbc:dm://主机:端口（默认 5236），勿把实例名（如 DAMENG）当作模式名写入路径。
+                模式默认与用户名一致；兼容 Oracle 分页与 MERGE；支持全量、定时增量与 LogMiner 日志增量（需开启归档日志）。
             </div>
         </div>
     </div>

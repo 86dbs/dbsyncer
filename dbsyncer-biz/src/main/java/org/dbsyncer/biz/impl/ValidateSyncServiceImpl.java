@@ -3,14 +3,18 @@
  */
 package org.dbsyncer.biz.impl;
 
+import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.TableGroupService;
 import org.dbsyncer.biz.ValidateSyncService;
 import org.dbsyncer.biz.checker.impl.mapping.MappingChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.ValidateSyncTableGroupChecker;
+import org.dbsyncer.biz.task.ValidateSyncMatchTableTask;
 import org.dbsyncer.biz.vo.ValidateSyncTaskVO;
+import org.dbsyncer.common.dispatch.DispatchTaskService;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.CommonTaskTriggerEnum;
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -20,31 +24,37 @@ import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.TableGroupProfile;
+import org.dbsyncer.parser.TaskDetailProfile;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.enums.TaskDetailMetricEnum;
+import org.dbsyncer.parser.enums.TaskDetailStatusEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.model.TaskDetailQuery;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.SortEnum;
-import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
-import org.dbsyncer.sdk.filter.Query;
-import org.dbsyncer.sdk.model.CommonTask;
+import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.sdk.model.CommonTaskSnapshot;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.spi.TaskService;
 import org.dbsyncer.sdk.spi.ValidateSyncDetailService;
-import org.dbsyncer.sdk.storage.StorageService;
+import org.dbsyncer.sdk.util.TaskSnapshotUtil;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -72,6 +82,8 @@ import java.util.stream.Stream;
 @Service
 public class ValidateSyncServiceImpl implements ValidateSyncService {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
@@ -82,10 +94,19 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     private ValidateSyncDetailService validateSyncDetailService;
 
     @Resource
-    private StorageService storageService;
+    private ProfileComponent profileComponent;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private TaskProfile taskProfile;
+
+    @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
+    @Resource
+    private TaskDetailProfile taskDetailProfile;
 
     @Resource
     private TableGroupService tableGroupService;
@@ -104,6 +125,9 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Resource
     private ValidateSyncTableGroupChecker validateSyncTableGroupChecker;
+
+    @Resource
+    private DispatchTaskService dispatchTaskService;
 
     /**
      * 任务启停锁
@@ -138,35 +162,55 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
             task.setBatchNum(mapping.getBatchNum());
             task.setThreadNum(mapping.getThreadNum());
             // 复制表组列表
-            List<TableGroup> tableGroupAll = tableGroupService.getTableGroupAll(mappingId);
-            if (!CollectionUtils.isEmpty(tableGroupAll)) {
-                tableGroupAll.forEach(tableGroup -> {
+            tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, tableGroupAll -> {
+                if (CollectionUtils.isEmpty(tableGroupAll)) {
+                    return;
+                }
+                for (TableGroup tableGroup : tableGroupAll) {
+                    if (tableGroup == null) {
+                        continue;
+                    }
                     TableGroup newTable = deepCopy(tableGroup);
                     newTable.setId(String.valueOf(snowflakeIdWorker.nextId()));
-                    newTable.setMappingId(task.getId());
-                    profileComponent.addTableGroup(newTable);
-                });
-            }
+                    newTable.setTaskId(task.getId());
+                    tableGroupProfile.addTableGroup(newTable);
+                }
+            });
             // 合并任务公共字段
             mergeTaskColumn(task);
             String id = taskService.add(task);
+            taskProfile.createRunDetailTable(id);
+            validateSyncDetailService.syncTaskTableMetaDetails(id);
             preloadTemplate.reConnect(task);
             return id;
         } else {
+            Assert.hasText(params.get("sourceConnectorId"), "数据源不能为空");
+            Assert.hasText(params.get("targetConnectorId"), "目标源不能为空");
             task.setSourceConnectorId(params.get("sourceConnectorId"));
             task.setSourceDatabase(params.get("sourceDatabase"));
             task.setSourceSchema(params.get("sourceSchema"));
             task.setTargetConnectorId(params.get("targetConnectorId"));
             task.setTargetDatabase(params.get("targetDatabase"));
             task.setTargetSchema(params.get("targetSchema"));
-            // 先持久化再建连 才能拉去到所有表
+            // 先持久化再建连，才能拉取到所有表
             String id = taskService.add(task);
+            taskProfile.createRunDetailTable(id);
             preloadTemplate.reConnect(task);
-            refreshTables(id);
-            ValidateSyncTask validateSyncTask = taskService.get(id);
-            // 与 MappingServiceImpl 一致：勾选「匹配相似表」时仅走自动匹配，否则解析自定义表映射文本
+            ValidateSyncTask validateSyncTask = refreshTablesAndGet(id);
+            // 勾选「匹配相似表」时异步自动匹配，否则解析自定义表映射文本
             if (StringUtil.isNotBlank(params.get("autoMatchTable"))) {
-                matchSimilarTableGroups(validateSyncTask);
+                List<Table> sourceTables = validateSyncTask.getSourceTable();
+                List<Table> targetTables = validateSyncTask.getTargetTable();
+                if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
+                    throw new BizException("未获取到源库或目标库表列表，无法匹配相似表");
+                }
+                submitValidateSyncMatchTableTask(id);
+            } else {
+                String tableGroups = params.get("tableGroups");
+                if (StringUtil.isNotBlank(tableGroups)) {
+                    matchCustomizedTableGroups(validateSyncTask, tableGroups);
+                }
+                validateSyncDetailService.syncTaskTableMetaDetails(id);
             }
             return id;
         }
@@ -182,41 +226,79 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     /**
-     * 匹配相似表
-     *
+     * 提交异步匹配相似表任务
      */
-    private void matchSimilarTableGroups(ValidateSyncTask validateSyncTask) {
+    private void submitValidateSyncMatchTableTask(String taskId) {
+        ValidateSyncMatchTableTask task = new ValidateSyncMatchTableTask();
+        task.setTaskId(taskId);
+        task.setTaskService(taskService);
+        task.setValidateSyncService(this);
+        dispatchTaskService.execute(task);
+    }
+
+    /**
+     * 自定义配置表映射关系（与 MappingServiceImpl 文本格式一致）
+     */
+    private void matchCustomizedTableGroups(ValidateSyncTask validateSyncTask, String tableGroups) {
         List<Table> sourceTables = validateSyncTask.getSourceTable();
         List<Table> targetTables = validateSyncTask.getTargetTable();
         if (CollectionUtils.isEmpty(sourceTables) || CollectionUtils.isEmpty(targetTables)) {
-            return;
+            throw new BizException("未获取到源库或目标库表列表，无法解析表映射关系");
         }
-        // 同名目标表只保留首次出现，避免 toMap 在重名时抛异常
-        Map<String, Table> targetTableMap = new LinkedHashMap<>();
-        for (Table table : targetTables) {
+        Map<String, Table> sourceTableMap = toTableNameMap(sourceTables);
+        Map<String, Table> targetTableMap = toTableNameMap(targetTables);
+        String[] lines = StringUtil.split(tableGroups, StringUtil.BREAK_LINE);
+        // 数据源表|目标源表=源表字段A1*|目标字段A2*
+        for (String line : lines) {
+            if (StringUtil.isBlank(line)) {
+                continue;
+            }
+            String[] tableGroup = StringUtil.split(line, StringUtil.EQUAL);
+            String[] tableGroupNames = StringUtil.split(tableGroup[0], StringUtil.VERTICAL_LINE);
+            if (tableGroupNames.length != 2) {
+                continue;
+            }
+            Table sourceTable = sourceTableMap.get(tableGroupNames[0].toUpperCase(Locale.ROOT));
+            Table targetTable = targetTableMap.get(tableGroupNames[1].toUpperCase(Locale.ROOT));
+            if (sourceTable == null || targetTable == null) {
+                logger.warn("自定义表映射未找到表: {} >> {}", tableGroupNames[0], tableGroupNames[1]);
+                continue;
+            }
+            addMatchedTableGroup(validateSyncTask.getId(), sourceTable, targetTable,
+                    tableGroup.length == 2 ? tableGroup[1] : StringUtil.EMPTY);
+        }
+    }
+
+    private Map<String, Table> toTableNameMap(List<Table> tables) {
+        Map<String, Table> map = new LinkedHashMap<>();
+        for (Table table : tables) {
             if (table == null || StringUtil.isBlank(table.getName())) {
                 continue;
             }
-            targetTableMap.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
+            map.putIfAbsent(table.getName().toUpperCase(Locale.ROOT), table);
         }
+        return map;
+    }
 
-        for (Table sourceTable : sourceTables) {
-            if (StringUtil.isBlank(sourceTable.getName())) {
-                continue;
+    /**
+     * 单表匹配写入；失败只记日志，不中断其余表（对齐 MappingServiceImpl）
+     */
+    private boolean addMatchedTableGroup(String taskId, Table sourceTable, Table targetTable, String fieldMappings) {
+        try {
+            Map<String, String> params = new HashMap<>();
+            params.put("taskId", taskId);
+            params.put("sourceTable", sourceTable.getName());
+            params.put("targetTable", targetTable.getName());
+            params.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
+            params.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
+            if (StringUtil.isNotBlank(fieldMappings)) {
+                params.put("fieldMappings", fieldMappings);
             }
-            targetTableMap.computeIfPresent(sourceTable.getName().toUpperCase(Locale.ROOT), (k, targetTable) -> {
-                if (TableTypeEnum.isTable(targetTable.getType())) {
-                    Map<String, String> p = new HashMap<>();
-                    p.put("taskId", validateSyncTask.getId());
-                    p.put("sourceTable", sourceTable.getName());
-                    p.put("targetTable", targetTable.getName());
-                    // ValidateSyncTableGroupChecker 必填，与 Mapping 侧物理表映射一致
-                    p.put("sourceType", StringUtil.isNotBlank(sourceTable.getType()) ? sourceTable.getType() : TableTypeEnum.TABLE.getCode());
-                    p.put("targetType", StringUtil.isNotBlank(targetTable.getType()) ? targetTable.getType() : TableTypeEnum.TABLE.getCode());
-                    addTableGroup(p);
-                }
-                return targetTable;
-            });
+            addTableGroup(params);
+            return true;
+        } catch (Exception e) {
+            logger.error("添加表映射失败: {} >> {}, {}", sourceTable.getName(), targetTable.getName(), e.getMessage());
+            return false;
         }
     }
 
@@ -224,19 +306,41 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     public String edit(Map<String, String> params) {
         ValidateSyncTask task = taskService.get(params.get("id"));
         if (task == null) {
-            throw new IllegalArgumentException("Task not found");
+            throw new BizException("任务不存在");
         }
+        assertRunning(task.getId());
         checkTask(task, params);
-        resetTaskSnapshot(task);
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(task.getId());
-        if (!CollectionUtils.isEmpty(groupAll)) {
-            mappingChecker.sortTableGroup(groupAll, params);
-            for (TableGroup g : groupAll) {
-                validateSyncTableGroupChecker.mergeConfig(task, g);
-                profileComponent.editConfigModel(g);
+        taskProfile.clearRunData(task.getId());
+        taskProfile.resetRunProgress(task.getId());
+        String sortedIds = params.get("sortedTableGroupIds");
+        if (StringUtil.isNotBlank(sortedIds)) {
+            List<TableGroup> groupAll = new ArrayList<>();
+            tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+            if (!CollectionUtils.isEmpty(groupAll)) {
+                mappingChecker.sortTableGroup(groupAll, params);
+                for (TableGroup g : groupAll) {
+                    validateSyncTableGroupChecker.mergeConfig(task, g);
+                    profileComponent.editConfigModel(g);
+                }
             }
+        } else {
+            tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
+                    return;
+                }
+                for (TableGroup g : page) {
+                    if (g == null) {
+                        continue;
+                    }
+                    validateSyncTableGroupChecker.mergeConfig(task, g);
+                    profileComponent.editConfigModel(g);
+                }
+            });
         }
-        return taskService.edit(task);
+        String id = taskService.edit(task);
+        // 编辑会清空运行明细，按当前表映射与开启类型重新对齐明细
+        validateSyncDetailService.syncTaskTableMetaDetails(id);
+        return id;
     }
 
     @Override
@@ -247,30 +351,47 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
         newTask.setId(String.valueOf(snowflakeIdWorker.nextId()));
         newTask.setName(newTask.getName() + "(复制)");
-        newTask.setStatus(CommonTaskStatusEnum.READY.getCode());
         newTask.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
         newTask.setUpdateTime(System.currentTimeMillis());
-        resetTaskSnapshot(newTask);
         String newId = taskService.add(newTask);
+        // 深拷贝 table_group（关联已下沉到该表）
+        tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, sourceGroups -> {
+            if (CollectionUtils.isEmpty(sourceGroups)) {
+                return;
+            }
+            long now = System.currentTimeMillis();
+            for (TableGroup source : sourceGroups) {
+                if (source == null) {
+                    continue;
+                }
+                TableGroup copy = JsonUtil.jsonToObj(JsonUtil.objToJson(source), TableGroup.class);
+                if (copy == null) {
+                    continue;
+                }
+                copy.setId(String.valueOf(snowflakeIdWorker.nextId()));
+                copy.setTaskId(newId);
+                copy.setCreateTime(now);
+                copy.setUpdateTime(now);
+                tableGroupProfile.addTableGroup(copy);
+            }
+        });
         preloadTemplate.reConnect(newTask);
+        taskProfile.createRunDetailTable(newId);
+        validateSyncDetailService.syncTaskTableMetaDetails(newId);
         return newId;
     }
 
     @Override
     public String delete(String id) {
         assertRunning(id);
-        List<TableGroup> groupList = profileComponent.getTableGroupAll(id);
-        if (!CollectionUtils.isEmpty(groupList)) {
-            groupList.forEach(t -> profileComponent.removeTableGroup(t.getId()));
-        }
         taskService.delete(id);
         return "删除成功";
     }
 
     @Override
     public String start(String id) {
-        List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(id);
-        Assert.isTrue(!CollectionUtils.isEmpty(tableGroupList), "任务未配置表映射，无法启动");
+        Assert.isTrue(tableGroupProfile.getTableGroupCount(id) > 0, "任务未配置表映射，无法启动");
+        Assert.isTrue(!dispatchTaskService.isRunning(id), "表映射正在匹配中，请稍候再启动");
         taskService.start(id);
         return "启动成功";
     }
@@ -294,13 +415,23 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
                 ValidateSyncTask t = (ValidateSyncTask) task;
                 ValidateSyncTaskVO vo = convertTask2Vo(t);
                 if (vo != null) {
-                    long errorCount = countTaskDetail(t.getId());
+                    long errorCount = 0L;
+                    Meta taskMeta = metaProfile.getMetaByTaskId(t.getId(), TaskLevelEnum.TASK);
+                    if (taskMeta != null && taskMeta.getDiff() != null) {
+                        errorCount = taskMeta.getDiff().get();
+                    }
                     vo.setErrorCount(errorCount);
-                    List<TableGroup> tableGroupList = profileComponent.getSortedTableGroupAll(t.getId());
-                    int tableCount = tableGroupList.size();
+                    int tableCount = tableGroupProfile.getTableGroupCount(t.getId());
                     vo.setTotalTableCount(tableCount);
-                    vo.setCompletedTableCount(countCompletedTables(t, tableCount));
-                    vo.setProgress(calculateProgressPercent(t, tableCount));
+                    boolean roundDone = taskMeta != null && CommonTaskStatusEnum.isDone(taskMeta.getState());
+                    List<CommonTaskSnapshot> tableSnapshots = collectValidateTableSnapshots(t.getId());
+                    vo.setCompletedTableCount(countCompletedTables(roundDone, tableCount, tableSnapshots));
+                    vo.setProgress(calculateProgressPercent(roundDone, tableCount, tableSnapshots));
+                    if (taskMeta != null) {
+                        vo.setMetaState(taskMeta.getState());
+                        vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
+                        vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+                    }
                     list.add(vo);
                 }
             }
@@ -344,13 +475,21 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 已映射/已配置的表名
         Set<String> mappedTableNames;
         if (excludeMapped) {
-            mappedTableNames = tableGroupService.getTableGroupAll(id).stream()
-                    .map(g -> isSource ? g.getSourceTable() : g.getTargetTable())
-                    .filter(Objects::nonNull)
-                    .map(Table::getName)
-                    .filter(StringUtil::isNotBlank)
-                    .map(n -> n.toUpperCase(Locale.ROOT))
-                    .collect(Collectors.toSet());
+            mappedTableNames = new HashSet<>();
+            tableGroupProfile.pageScanTableGroups(id, ConfigConstant.PAGE_SIZE, page -> {
+                if (CollectionUtils.isEmpty(page)) {
+                    return;
+                }
+                for (TableGroup g : page) {
+                    if (g == null) {
+                        continue;
+                    }
+                    Table t = isSource ? g.getSourceTable() : g.getTargetTable();
+                    if (t != null && StringUtil.isNotBlank(t.getName())) {
+                        mappedTableNames.add(t.getName().toUpperCase(Locale.ROOT));
+                    }
+                }
+            });
         } else {
             mappedTableNames = Collections.emptySet();
         }
@@ -406,58 +545,54 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public Paging searchResult(Map<String, String> params) {
         String taskId = params.get("taskId");
-        Assert.hasText(taskId, "taskId is required.");
-        Query query = new Query(NumberUtil.toInt(params.get("pageNum"), 1), NumberUtil.toInt(params.get("pageSize"), 10));
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-
+        Assert.hasText(taskId, "任务ID不能为空");
+        int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
+        int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String detailStatus = StringUtil.trimToEmpty(params.get("detailStatus"));
-        if ("success".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.EQUAL, 0);
-        } else if ("fail".equalsIgnoreCase(detailStatus)) {
-            query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
-        }
-
-        query.setSelectFlied(getTaskDetailSelect());
-        query.addOrderBy(ConfigConstant.TASK_DIFF_TOTAL, SortEnum.DESC);
-        return storageService.query(query);
+        return taskDetailProfile.queryResults(TaskDetailQuery.of(taskId)
+                .setPage(pageNum, pageSize)
+                .setDetailStatus(TaskDetailStatusEnum.from(detailStatus))
+                .setStatusMetric(TaskDetailMetricEnum.DIFF));
     }
 
     @Override
-    public Object getValidateResultDetail(String id) {
-        Assert.hasText(id, "id is required.");
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
-        Paging paging = storageService.query(query);
-        if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
-            return null;
-        }
-        return paging.getData().iterator().next();
+    public Object getValidateResultDetail(String taskId, String id) {
+        Assert.hasText(taskId, "任务ID不能为空");
+        Assert.hasText(id, "明细ID不能为空");
+        return taskDetailProfile.getDetail(TaskDetailQuery.of(taskId).setDetailId(id));
     }
 
     @Override
-    public Object manualReviseDetail(String detailId) {
-        Assert.hasText(detailId, "id is required.");
-        return validateSyncDetailService.manualRevise(detailId);
+    public Object manualReviseDetail(String taskId, String detailId) {
+        Assert.hasText(taskId, "任务ID不能为空");
+        Assert.hasText(detailId, "明细ID不能为空");
+        return validateSyncDetailService.manualRevise(taskId, detailId);
     }
 
     @Override
     public String refreshTables(String id) {
+        refreshTablesAndGet(id);
+        return id;
+    }
+
+    /**
+     * 拉取并回写源/目标表列表，返回已刷新的任务对象（供创建后立即匹配使用）。
+     */
+    private ValidateSyncTask refreshTablesAndGet(String id) {
         ValidateSyncTask task = taskService.get(id);
         Assert.notNull(task, "The task id is invalid.");
         task.setSourceTable(updateConnectorTables(task, ConnectorInstanceUtil.SOURCE_SUFFIX));
         task.setTargetTable(updateConnectorTables(task, ConnectorInstanceUtil.TARGET_SUFFIX));
         taskService.edit(task);
-        return id;
+        return task;
     }
 
     @Override
     public String refreshFields(String id) {
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
-        ValidateSyncTask task = taskService.get(tableGroup.getMappingId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
         Assert.notNull(task, "The task id is invalid.");
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
@@ -475,43 +610,48 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         ValidateSyncTask task = taskService.get(taskId);
         assertRunning(task.getId());
         synchronized (LOCK) {
-            // table1, table2
-            String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
-            String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
-            int tableSize = sourceTableArray.length;
-            Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
+            try {
+                // table1, table2
+                String[] sourceTableArray = StringUtil.split(params.get("sourceTable"), StringUtil.VERTICAL_LINE);
+                String[] targetTableArray = StringUtil.split(params.get("targetTable"), StringUtil.VERTICAL_LINE);
+                int tableSize = sourceTableArray.length;
+                Assert.isTrue(tableSize == targetTableArray.length, "数据源表和目标源表关系必须为一组");
 
-            String id = null;
-            List<String> list = new ArrayList<>();
-            for (int i = 0; i < tableSize; i++) {
-                params.put("sourceTable", sourceTableArray[i]);
-                params.put("targetTable", targetTableArray[i]);
-                TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
-                validateSyncTableGroupChecker.mergeConfig(task, model);
-                log(LogType.TableGroupLog.INSERT, task, model);
-                int tableGroupCount = profileComponent.getTableGroupCount(taskId);
-                model.setIndex(tableGroupCount + 1);
-                id = profileComponent.addTableGroup(model);
-                list.add(id);
+                String id = null;
+                List<String> list = new ArrayList<>();
+                for (int i = 0; i < tableSize; i++) {
+                    params.put("sourceTable", sourceTableArray[i]);
+                    params.put("targetTable", targetTableArray[i]);
+                    TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkAddConfigModel(params);
+                    validateSyncTableGroupChecker.mergeConfig(task, model);
+                    log(LogType.TableGroupLog.INSERT, task, model);
+                    int tableGroupCount = tableGroupProfile.getTableGroupCount(taskId);
+                    model.setIndex(tableGroupCount + 1);
+                    id = tableGroupProfile.addTableGroup(model);
+                    list.add(id);
+                }
+                // 合并任务公共字段
+                mergeTaskColumn(task);
+                return 1 < tableSize ? String.valueOf(tableSize) : id;
+            } finally {
+                // 表映射变更后对齐明细
+                validateSyncDetailService.syncTaskTableMetaDetails(taskId);
             }
-            // 合并任务公共字段
-            mergeTaskColumn(task);
-            return 1 < tableSize ? String.valueOf(tableSize) : id;
         }
     }
 
     @Override
     public String editTableGroup(Map<String, String> params) {
         String tableGroupId = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(tableGroupId);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        ValidateSyncTask task = taskService.get(tableGroup.getMappingId());
+        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
         assertRunning(task.getId());
 
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);
         validateSyncTableGroupChecker.mergeConfig(task, model);
         log(LogType.TableGroupLog.UPDATE, task, tableGroup);
-        profileComponent.editTableGroup(model);
+        tableGroupProfile.editTableGroup(model);
         return tableGroupId;
     }
 
@@ -523,14 +663,16 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         assertRunning(taskId);
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {
-            TableGroup model = profileComponent.getTableGroup(id);
+            TableGroup model = tableGroupProfile.getTableGroup(id);
             log(LogType.TableGroupLog.DELETE, task, model);
-            profileComponent.removeTableGroup(id);
+            tableGroupProfile.removeTableGroup(id);
         });
         // 合并任务公共字段
         mergeTaskColumn(task);
         // 重置排序
         resetTableGroupAllIndex(taskId);
+        // 对齐删除已无表映射的明细
+        validateSyncDetailService.syncTaskTableMetaDetails(taskId);
         return taskId;
     }
 
@@ -545,38 +687,29 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         return tables;
     }
 
-    /**
-     * 获取有异常的数据
-     *
-     * @param taskId
-     * @return
-     */
-    private long countTaskDetail(String taskId) {
-        Query query = new Query(1, 1);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.addFilter(ConfigConstant.TASK_ID, taskId);
-        query.addFilter(ConfigConstant.TASK_DIFF_TOTAL, FilterEnum.GT, 0);
-        query.setType(StorageEnum.VALIDATE_SYNC_DETAIL);
-        query.setQueryTotal(true);
-        Paging paging = storageService.query(query);
-        return paging.getTotal();
-    }
-
     private void resetTableGroupAllIndex(String taskId) {
         synchronized (LOCK) {
-            List<TableGroup> list = profileComponent.getSortedTableGroupAll(taskId);
-            int size = list.size();
-            int i = size;
-            while (i > 0) {
-                TableGroup g = list.get(size - i);
-                g.setIndex(i);
+            List<String> orderedIds = new ArrayList<>();
+            tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, page -> {
+                for (TableGroup g : page) {
+                    if (g != null && StringUtil.isNotBlank(g.getId())) {
+                        orderedIds.add(g.getId());
+                    }
+                }
+            });
+            int i = orderedIds.size();
+            for (String groupId : orderedIds) {
+                TableGroup g = tableGroupProfile.getTableGroup(groupId);
+                if (g == null) {
+                    continue;
+                }
+                g.setIndex(i--);
                 profileComponent.editConfigModel(g);
-                i--;
             }
         }
     }
 
-    private ValidateSyncTaskVO convertTask2Vo(CommonTask task) {
+    private ValidateSyncTaskVO convertTask2Vo(ConfigModel task) {
         if (task == null) {
             return null;
         }
@@ -586,13 +719,18 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         Connector t = profileComponent.getConnector(validateSyncTask.getTargetConnectorId());
         ValidateSyncTaskVO vo = new ValidateSyncTaskVO(s, t);
         BeanUtils.copyProperties(task, vo);
+        Meta taskMeta = metaProfile.getMetaByTaskId(validateSyncTask.getId(), TaskLevelEnum.TASK);
+        if (taskMeta != null) {
+            vo.setMetaState(taskMeta.getState());
+            vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
+            vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+        }
         return vo;
     }
 
     private void checkTask(ValidateSyncTask task, Map<String, String> params) {
         if (StringUtil.isBlank(task.getId())) {
             task.setId(String.valueOf(snowflakeIdWorker.nextId()));
-            task.setStatus(CommonTaskStatusEnum.READY.getCode());
             task.setType(CommonTaskTypeEnum.VALIDATE_SYNC.name());
         }
         long now = Instant.now().toEpochMilli();
@@ -635,8 +773,6 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         task.setReadNum(NumberUtil.toInt(params.get("readNum"), task.getReadNum()));
         task.setBatchNum(NumberUtil.toInt(params.get("batchNum"), task.getBatchNum()));
         task.setThreadNum(NumberUtil.toInt(params.get("threadNum"), task.getThreadNum()));
-        task.getTableSnapshots().clear();
-        task.setProcessed(CommonTaskStepStatusEnum.PENDING.getCode());
     }
 
     private void log(LogType log, ValidateSyncTask task, TableGroup tableGroup) {
@@ -651,72 +787,67 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     }
 
     private void mergeTaskColumn(ValidateSyncTask task) {
-        List<TableGroup> groups = profileComponent.getTableGroupAll(task.getId());
         List<Field> sourceColumn = null;
-        for (TableGroup g : groups) {
-            sourceColumn = PickerUtil.pickCommonFields(sourceColumn, g.getSourceTable().getColumn());
+        final List<Field>[] holder = new List[]{sourceColumn};
+        tableGroupProfile.pageScanTableGroups(task.getId(), ConfigConstant.PAGE_SIZE, groups -> {
+            for (TableGroup g : groups) {
+                if (g == null || g.getSourceTable() == null || CollectionUtils.isEmpty(g.getSourceTable().getColumn())) {
+                    continue;
+                }
+                holder[0] = PickerUtil.pickCommonFields(holder[0], g.getSourceTable().getColumn());
+            }
+        });
+        task.setSourceColumn(holder[0]);
+    }
+
+    private List<CommonTaskSnapshot> collectValidateTableSnapshots(String taskId) {
+        List<String> ids = tableGroupProfile.listTableGroupIds(taskId);
+        if (CollectionUtils.isEmpty(ids)) {
+            return Collections.emptyList();
         }
-        task.setSourceColumn(sourceColumn);
+        Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(ids);
+        List<CommonTaskSnapshot> snapshots = new ArrayList<>(ids.size());
+        for (String groupId : ids) {
+            if (StringUtil.isBlank(groupId)) {
+                snapshots.add(null);
+                continue;
+            }
+            Meta meta = metaMap == null ? null : metaMap.get(groupId);
+            snapshots.add(meta == null ? null : TaskSnapshotUtil.readTableSnapshot(meta.getSnapshot()));
+        }
+        return snapshots;
     }
 
     /**
-     * 已完成表数：completed = (最小索引 - 1) + (快照中 status=1 的个数)
+     * 已完成表数：明细 Meta 快照中 status=已完成 的个数。
      */
-    private int countCompletedTables(ValidateSyncTask task, int totalSize) {
-        if (task.getProcessed() == null) {
-            return 0;
-        }
-        if (task.getProcessed() == 1) {
+    private int countCompletedTables(boolean roundDone, int totalSize, List<CommonTaskSnapshot> tableSnapshots) {
+        if (roundDone) {
             return totalSize;
         }
-        if (task.getTableSnapshots() == null || task.getTableSnapshots().isEmpty()) {
+        if (CollectionUtils.isEmpty(tableSnapshots) || totalSize <= 0) {
             return 0;
         }
-        int minIndex = task.getTableSnapshots().keySet().stream()
-                .min(Comparator.naturalOrder())
-                .orElse(0);
-        long doneCount = task.getTableSnapshots().values().stream()
-                .filter(snapshot -> snapshot != null && CommonTaskStepStatusEnum.isDone(snapshot.getStatus()))
+        long doneCount = tableSnapshots.stream()
+                .filter(snapshot -> snapshot != null && CommonTaskStatusEnum.isDone(snapshot.getStatus()))
                 .count();
-        long completed = Math.max(0, minIndex - 1L) + doneCount;
-        if (completed > totalSize) {
-            completed = totalSize;
-        }
-        return (int) completed;
+        return (int) Math.min(doneCount, totalSize);
     }
 
     /**
-     * 进度百分比计算：
-     * completed = (最小索引 - 1) + (快照中 status=1 的个数)
-     * progress = completed / 表总数 * 100
-     *
-     * @param task      校验任务
-     * @param totalSize 表总数
-     * @return 百分比（0~100）
+     * 进度百分比：completed / 表总数 * 100。
      */
-    private BigDecimal calculateProgressPercent(ValidateSyncTask task, int totalSize) {
-
-        if (task.getProcessed() == null) {
-            return null;
-        }
-        if (task.getProcessed() == 1) {
+    private BigDecimal calculateProgressPercent(boolean roundDone, int totalSize, List<CommonTaskSnapshot> tableSnapshots) {
+        if (roundDone) {
             return new BigDecimal("100.00");
         }
         if (totalSize <= 0) {
             return BigDecimal.ZERO;
         }
-        int completed = countCompletedTables(task, totalSize);
+        int completed = countCompletedTables(false, totalSize, tableSnapshots);
         return BigDecimal.valueOf(completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(totalSize), 2, RoundingMode.HALF_UP);
-    }
-
-    private void resetTaskSnapshot(ValidateSyncTask task) {
-        if (task == null) {
-            return;
-        }
-        task.setProcessed(0);
-        task.getTableSnapshots().clear();
     }
 
     protected void assertRunning(String taskId) {
@@ -725,20 +856,4 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         }
     }
 
-    private static Set<String> getTaskDetailSelect() {
-        Set<String> selectFiled = new HashSet<>();
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_ID);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_CREATE_TIME);
-        selectFiled.add(ConfigConstant.CONFIG_MODEL_TYPE);
-        selectFiled.add(ConfigConstant.TASK_ID);
-        selectFiled.add(ConfigConstant.TASK_STATUS);
-        selectFiled.add(ConfigConstant.TASK_SOURCE_TABLE_NAME);
-        selectFiled.add(ConfigConstant.DATA_TARGET_TABLE_NAME);
-        selectFiled.add(ConfigConstant.TASK_SOURCE_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_TARGET_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_DIFF_TOTAL);
-        selectFiled.add(ConfigConstant.TASK_FIXED_TOTAL);
-        return selectFiled;
-    }
 }

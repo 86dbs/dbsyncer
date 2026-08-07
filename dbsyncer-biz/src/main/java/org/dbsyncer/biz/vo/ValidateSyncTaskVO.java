@@ -12,7 +12,7 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
     // 连接器
     private final Connector sourceConnector;
     private final Connector targetConnector;
-    //错误数
+    // 错误数（任务级 Meta 累计差异行数）
     private long errorCount;
     //当前进度
     private BigDecimal progress;
@@ -20,6 +20,12 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
     private int totalTableCount;
     // 已完成表数
     private int completedTableCount;
+    /** 任务级 Meta.state（本轮业务态，含 DONE=3） */
+    private Integer metaState;
+    /** 本轮执行开始时间（任务级 Meta） */
+    private Long beginTime;
+    /** 本轮执行结束时间（任务级 Meta） */
+    private Long endTime;
 
     public ValidateSyncTaskVO(Connector sourceConnector, Connector targetConnector) {
         this.sourceConnector = sourceConnector;
@@ -64,5 +70,29 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
 
     public void setCompletedTableCount(int completedTableCount) {
         this.completedTableCount = completedTableCount;
+    }
+
+    public Integer getMetaState() {
+        return metaState;
+    }
+
+    public void setMetaState(Integer metaState) {
+        this.metaState = metaState;
+    }
+
+    public Long getBeginTime() {
+        return beginTime;
+    }
+
+    public void setBeginTime(Long beginTime) {
+        this.beginTime = beginTime;
+    }
+
+    public Long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
     }
 }

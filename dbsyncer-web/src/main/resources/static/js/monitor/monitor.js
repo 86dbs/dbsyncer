@@ -19,122 +19,6 @@ function showRetryDetail(metaId, messageId) {
     doLoader("/monitor/page/retry?metaId=" + metaId + "&messageId=" + messageId);
 }
 
-// 查看数据
-function bindQueryDataEvent() {
-    let pagination;
-    let metaSelect;
-    let statusSelect;
-    let searchInput;
-
-    function params() {
-        return {
-            "id": metaSelect.getValues()[0] || '',
-            "status": statusSelect.getValues()[0] || '',
-            "error": searchInput.getValue() || '',
-        }
-    }
-
-    // 搜索函数
-    function search() {
-        pagination.doSearch(params());
-    }
-
-    // 搜索框输入事件
-    searchInput = initSearch('searchData', search);
-
-    // 结果下拉（跳过初始化回调，避免初始化时触发搜索）
-    statusSelect = $('#searchDataStatus').dbSelect({
-        type: 'single',
-        onSelect: search
-    });
-
-    // 驱动下拉（跳过初始化回调，避免初始化时触发搜索）
-    metaSelect = $('#searchDataMeta').dbSelect({
-        type: 'single',
-        onSelect: search
-    });
-
-    function renderDataState(success) {
-        const state = {
-            0: {
-                class: 'badge-error',
-                text: '失败',
-            },
-            1: {
-                class: 'badge-success',
-                text: '成功',
-            }
-        };
-        const config = state[success];
-        return `<span class="badge ${config.class}">${config.text}</span>`;
-    }
-
-    function renderDataButton(row) {
-        const content = [];
-        content.push(`<button class="table-action-btn view" title="查看数据" onclick="showDataDetail('${row.id}')">
-                    <i class="fa fa-eye"></i>
-                </button>`);
-        // 如果失败，显示重试按钮
-        if (row.success === 0) {
-            let metaId = metaSelect.getValues()[0] || '';
-            content.push(`<button class="table-action-btn play" title="重试" onclick="showRetryDetail('${metaId}','${row.id}')">
-                            <i class="fa fa-refresh"></i>
-                        </button>`);
-        }
-        return content.join(' ');
-    }
-
-    // 初始化分页管理器
-    pagination = new PaginationManager({
-        requestUrl: '/monitor/queryData',
-        tableBodySelector: '#dataTableBody',
-        params: params(),
-        pageSize: 5,
-        showBoundaryButtons: true,
-        renderRow: function (d, index) {
-            return `
-                <tr>
-                    <td>${index}</td>
-                    <td>${d.targetTableName}</td>
-                    <td>${d.event}</td>
-                    <td>${renderDataState(d.success)}</td>
-                    <td>
-                        <span class="hover-underline cursor-pointer data-error">${d.error || ''}</span>
-                    </td>
-                    <td>${formatDate(d.createTime)}</td>
-                    <td>
-                        <div class="flex items-center">${renderDataButton(d)}</div>
-                        <span id="${d.id}" class="hidden">${escapeHtml(d.json || '')}</span>
-                    </td>
-                </tr>`;
-        },
-        refreshCompleted: function () {
-            showMessageDetail($('.data-error'), 'warning', '异常信息');
-        },
-        emptyHtml: '<td colspan="7" class="text-center"><i class="fa fa-exchange empty-icon"></i><p class="empty-text">暂无数据</p></td>'
-    });
-
-    $("#clearDataBtn").unbind('click').bind('click', function () {
-        showConfirm({
-            title: '确认清空数据？', icon: 'warning', size: 'large', confirmType: 'danger', onConfirm: function () {
-                doPoster("/monitor/clearData", {id: metaSelect.getValues()[0] || ''}, function (response) {
-                    if (response.success) {
-                        bootGrowl('清空数据成功!', 'success');
-                        search();
-                    } else {
-                        bootGrowl('清空数据失败: ' + response.message, 'danger');
-                    }
-                });
-            }
-        });
-    })
-    return {
-        search: function() {
-            pagination.doSearch(params(), pagination.currentPage);
-        }
-    }
-}
-
 // 将 JSON 对象转换为表格 HTML
 function jsonToTable(jsonObj) {
     let $content = '<table class="table">';
@@ -254,9 +138,46 @@ function bindQueryActuatorEvent() {
         pagination.doSearch(params());
     }
 
-    // 驱动下拉（跳过初始化回调，避免初始化时触发搜索）
+    // 驱动下拉（远程分页搜索，跳过初始化回调避免重复请求）
     metaSelect = $('#searchActuatorMeta').dbSelect({
         type: 'single',
+        remoteSearch: true,
+        pageSize: 50,
+        keywordDebounceMs: 300,
+        loadOptions: function (query, onSuccess, onError) {
+            doPoster('/monitor/queryMeta', {
+                pageNum: query.pageNum,
+                pageSize: query.pageSize,
+                searchKey: query.searchKey || ''
+            }, function (res) {
+                if (res.success === true) {
+                    const paging = res.data || {};
+                    const rows = Array.isArray(paging.data) ? paging.data : [];
+                    let converted = rows.map(function (row) {
+                        const name = row.mappingName || '';
+                        const model = row.model || '';
+                        return {
+                            label: name + ' (' + model + ')',
+                            value: row.id || ''
+                        };
+                    });
+                    if (Number(query.pageNum) === 1) {
+                        converted = [{ label: '无', value: '' }].concat(converted);
+                    }
+                    onSuccess({
+                        pageNum: paging.pageNum || query.pageNum,
+                        pageSize: paging.pageSize || query.pageSize,
+                        total: paging.total || 0,
+                        data: converted
+                    });
+                } else {
+                    bootGrowl(res.message || '加载驱动列表失败', 'danger');
+                    if (typeof onError === 'function') {
+                        onError();
+                    }
+                }
+            });
+        },
         onSelect: search
     });
 
@@ -582,14 +503,12 @@ $(function () {
     // 立即执行一次更新
     updateMonitorData();
 
-    const queryData = bindQueryDataEvent();
     const queryLog = bindQueryLogEvent();
     const queryActuator = bindQueryActuatorEvent();
 
     // 注册到全局定时刷新管理器
     PageRefreshManager.register(() => {
         updateMonitorData();
-        queryData.search();
         queryLog.search();
         queryActuator.search();
     });

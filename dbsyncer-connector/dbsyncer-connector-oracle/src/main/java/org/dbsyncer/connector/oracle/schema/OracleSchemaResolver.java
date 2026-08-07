@@ -63,6 +63,16 @@ public class OracleSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     @Override
     public ByteString serialize(Object value, Field field) {
+        if (value == null) {
+            return null;
+        }
+        // MERGE 写入会把 CLOB/TEXT 包成 OracleLobParameter；明细落库只需原文，避免二次 convert/serialize 报错
+        if (value instanceof OracleLobParameter) {
+            return ByteString.copyFromUtf8(value.toString());
+        }
+        if (value instanceof ByteString) {
+            return (ByteString) value;
+        }
         String type = value.getClass().getName();
         switch (type) {
             case "oracle.sql.TIMESTAMP":

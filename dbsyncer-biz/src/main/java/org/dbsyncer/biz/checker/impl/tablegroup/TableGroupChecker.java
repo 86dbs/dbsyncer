@@ -6,12 +6,13 @@ package org.dbsyncer.biz.checker.impl.tablegroup;
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.RepeatedTableGroupException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.TableGroup;
@@ -25,14 +26,12 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -60,6 +59,9 @@ public class TableGroupChecker extends AbstractChecker {
     @Resource
     private ProfileComponent profileComponent;
 
+    @Resource
+    private TableGroupProfile tableGroupProfile;
+
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
         logger.info("params:{}", params);
@@ -79,12 +81,14 @@ public class TableGroupChecker extends AbstractChecker {
         Mapping mapping = profileComponent.getMapping(mappingId);
         Assert.notNull(mapping, "mapping can not be null.");
 
-        // 检查是否存在重复映射关系
-        checkRepeatedTable(profileComponent.getTableGroupAll(mappingId), sourceTable, targetTable);
+        // 检查是否存在重复映射关系（批量新增可由 Service 预检后跳过）
+        if (!StringUtil.equals(params.get("skipRepeatedCheck"), Boolean.TRUE.toString())) {
+            checkRepeatedTable(mappingId, sourceTable, targetTable);
+        }
 
         // 获取连接器信息
         TableGroup tableGroup = new TableGroup();
-        tableGroup.setMappingId(mappingId);
+        tableGroup.setTaskId(mappingId);
         Table source = findTable(mapping.getSourceTable(), sourceTable, sourceType);
         Table target = findTable(mapping.getTargetTable(), targetTable, targetType);
         tableGroup.setSourceTable(updateTableColumn(mapping, ConnectorInstanceUtil.SOURCE_SUFFIX, sourceTablePK, source));
@@ -111,9 +115,9 @@ public class TableGroupChecker extends AbstractChecker {
         logger.info("params:{}", params);
         Assert.notEmpty(params, "TableGroupChecker check params is null.");
         String id = params.get(ConfigConstant.CONFIG_MODEL_ID);
-        TableGroup tableGroup = profileComponent.getTableGroup(id);
+        TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
         String fieldMappingJson = params.get("fieldMapping");
         Assert.hasText(fieldMappingJson, "TableGroupChecker check params fieldMapping is empty");
@@ -147,7 +151,7 @@ public class TableGroupChecker extends AbstractChecker {
      * 刷新表字段
      */
     public void refreshTableFields(TableGroup tableGroup) {
-        Mapping mapping = profileComponent.getMapping(tableGroup.getMappingId());
+        Mapping mapping = profileComponent.getMapping(tableGroup.getTaskId());
         Assert.notNull(mapping, "mapping can not be null.");
 
         Table sourceTable = tableGroup.getSourceTable();
@@ -205,16 +209,11 @@ public class TableGroupChecker extends AbstractChecker {
         return table;
     }
 
-    public void checkRepeatedTable(List<TableGroup> list, String sourceTable, String targetTable) {
-        if (!CollectionUtils.isEmpty(list)) {
-            for (TableGroup g : list) {
-                // 数据源表和目标表都存在
-                if (StringUtil.equals(sourceTable, g.getSourceTable().getName()) && StringUtil.equals(targetTable, g.getTargetTable().getName())) {
-                    final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
-                    logger.error(error);
-                    throw new RepeatedTableGroupException(error);
-                }
-            }
+    public void checkRepeatedTable(String mappingId, String sourceTable, String targetTable) {
+        if (tableGroupProfile.existsTableGroup(mappingId, sourceTable, targetTable)) {
+            final String error = String.format("映射关系已存在.%s > %s", sourceTable, targetTable);
+            logger.error(error);
+            throw new RepeatedTableGroupException(error);
         }
     }
 

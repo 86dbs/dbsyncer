@@ -5,24 +5,22 @@ package org.dbsyncer.biz.checker.impl.connector;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.spi.ConnectorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.Map;
 
 /**
@@ -55,6 +53,7 @@ public class ConnectorChecker extends AbstractChecker {
         connector.setConfig(config);
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+        applySourceTargetFlags(connector, params);
         // 校验并修改配置
         validateAndModifyConfig(config, params);
         // 连接并获取数据库列表
@@ -73,12 +72,24 @@ public class ConnectorChecker extends AbstractChecker {
         ConnectorConfig config = connector.getConfig();
         // 修改基本配置
         this.modifyConfigModel(connector, params);
+        applySourceTargetFlags(connector, params);
         // 校验并修改配置
         validateAndModifyConfig(config, params);
         // 获取数据库列表
         connectAndLoadDatabases(connector, config);
 
         return connector;
+    }
+
+    /**
+     * 解析并校验「可作为源 / 可作为目标」开关（至少开启一个）。
+     */
+    private void applySourceTargetFlags(Connector connector, Map<String, String> params) {
+        boolean isSource = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_SOURCE));
+        boolean isTarget = StringUtil.isNotBlank(params.get(ConfigConstant.CONNECTOR_IS_TARGET));
+        Assert.isTrue(isSource || isTarget, "至少开启「可作为源」或「可作为目标」之一");
+        connector.setIsSource(isSource);
+        connector.setIsTarget(isTarget);
     }
 
     /**

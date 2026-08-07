@@ -26,6 +26,7 @@ public final class WriteDeserializer extends WriteRowsEventDataDeserializer {
         super(tableMapEventByTableId);
     }
 
+    @Override
     protected byte[] deserializeJson(int meta, ByteArrayInputStream inputStream) throws IOException {
         return jsonBinaryDeserialize.deserializeJson(meta, inputStream);
     }

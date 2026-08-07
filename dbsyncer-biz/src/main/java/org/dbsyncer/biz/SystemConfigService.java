@@ -4,8 +4,8 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.SystemConfigVO;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.RsaVersion;
-import org.dbsyncer.parser.model.ConfigModel;
 import org.dbsyncer.parser.model.SystemConfig;
 
 import java.io.File;
@@ -64,11 +64,18 @@ public interface SystemConfigService {
     void checkFileSuffix(String filename);
 
     /**
-     * 更新配置
+     * 更新配置（仅支持 .zip）
      *
      * @param file
      */
     void refreshConfig(File file);
+
+    /**
+     * 粗估导出配置体积（字节），供列表页提示，避免全量序列化。
+     *
+     * @return 估算字节数
+     */
+    long estimateExportSize();
 
     /**
      * 获取水印信息

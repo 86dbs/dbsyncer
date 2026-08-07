@@ -49,6 +49,15 @@ public interface StorageService {
     void clear(StorageEnum type, String metaId);
 
     /**
+     * 确保分片表存在（仅建表结构，不写数据）。
+     * <p>用于配置导入预建 {@link StorageEnum#TASK_DETAIL} 等动态分表。
+     *
+     * @param type   存储类型
+     * @param metaId 分片键（TASK_DETAIL 为任务 ID）
+     */
+    void ensure(StorageEnum type, String metaId);
+
+    /**
      * 添加
      *
      * @param type
@@ -125,4 +134,21 @@ public interface StorageService {
      * @param ids
      */
     void removeBatch(StorageEnum type, String metaId, List<String> ids);
+
+    /**
+     * 原子增量更新（按列自增，如 COL = GREATEST(COL + ?, 0)），用于严格走库下的 Meta 计数；结果小于 0 时钳为 0
+     *
+     * @param type   存储类型
+     * @param id     记录主键
+     * @param deltas 列增量（key 为列 labelName，value 为增量值）
+     */
+    void increment(StorageEnum type, String id, Map<String, Long> deltas);
+
+    /**
+     * 执行原生查询 SQL（系统配置库）；{@link SqlQuery#isPaged()} 为 true 时带分页。
+     *
+     * @param query SQL 与可选分页参数
+     * @return 行列表，无结果时空列表
+     */
+    List<Map<String, Object>> queryList(SqlQuery query);
 }

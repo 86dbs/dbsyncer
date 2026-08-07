@@ -5,9 +5,8 @@ package org.dbsyncer.biz.checker.impl.user;
 
 import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.checker.AbstractChecker;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.parser.model.UserConfig;
-
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

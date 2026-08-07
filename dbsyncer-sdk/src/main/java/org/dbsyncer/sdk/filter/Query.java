@@ -29,6 +29,10 @@ public class Query {
      */
     private StorageEnum type;
 
+    /**
+     * 存储分片键。对 {@link StorageEnum#TASK_DETAIL} 为任务 ID（{@code dbsyncer_task_detail_{taskId}}）；
+     * 历史字段名 metaId 仍保留兼容，语义上等同 {@link #getTaskDetailShardId()} / {@link #setTaskDetailShardId(String)}。
+     */
     private String metaId;
 
     private BooleanFilter booleanFilter = new BooleanFilter();
@@ -78,6 +82,17 @@ public class Query {
         booleanFilter.add(new StringFilter(name, FilterEnum.LIKE, value, enableHighLightSearch));
     }
 
+    /**
+     * 字符串条件过滤(支持 EQUAL/IN/LIKE 等)。
+     *
+     * @param name       字段名
+     * @param filterEnum 运算符
+     * @param value      过滤值(IN 时为逗号拼接)
+     */
+    public void addFilter(String name, FilterEnum filterEnum, String value) {
+        booleanFilter.add(new StringFilter(name, filterEnum, value, false));
+    }
+
     public void addFilter(String name, int value) {
         booleanFilter.add(new IntFilter(name, value));
     }
@@ -100,6 +115,20 @@ public class Query {
 
     public void setMetaId(String metaId) {
         this.metaId = metaId;
+    }
+
+    /**
+     * 明细分表分片键（任务 ID），与 {@link #getMetaId()} 同字段。
+     */
+    public String getTaskDetailShardId() {
+        return metaId;
+    }
+
+    /**
+     * 设置明细分表分片键（任务 ID），与 {@link #setMetaId(String)} 同字段。
+     */
+    public void setTaskDetailShardId(String shardId) {
+        this.metaId = shardId;
     }
 
     public BooleanFilter getBooleanFilter() {

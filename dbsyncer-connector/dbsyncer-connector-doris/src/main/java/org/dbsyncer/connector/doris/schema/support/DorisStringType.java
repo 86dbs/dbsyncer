@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 public final class DorisStringType extends StringType {
 
     private enum TypeEnum {
-        STRING, JSON, HLL, BITMAP, ARRAY, MAP, STRUCT, IPV4, IPV6, VARIANT, AGG_STATE, QUANTILE_STATE;
+        STRING, VARCHAR, JSON, HLL, BITMAP, ARRAY, MAP, STRUCT, IPV4, IPV6, VARIANT, AGG_STATE, QUANTILE_STATE;
 
         public String getValue() {
             return name();
@@ -40,7 +41,8 @@ public final class DorisStringType extends StringType {
             return (String) val;
         }
         if (val instanceof byte[]) {
-            return new String((byte[]) val);
+            // MySQL BLOB 映射到 Doris STRING/VARCHAR 时按 Latin1 保真，便于与源 byte[] 语义比较
+            return new String((byte[]) val, StandardCharsets.ISO_8859_1);
         }
         return JsonUtil.objToJsonSafe(val);
     }
@@ -51,7 +53,7 @@ public final class DorisStringType extends StringType {
             return val;
         }
         if (val instanceof byte[]) {
-            return new String((byte[]) val);
+            return new String((byte[]) val, StandardCharsets.ISO_8859_1);
         }
         return JsonUtil.objToJsonSafe(val);
     }

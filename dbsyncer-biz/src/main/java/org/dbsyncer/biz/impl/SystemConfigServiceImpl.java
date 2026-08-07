@@ -3,31 +3,35 @@
  */
 package org.dbsyncer.biz.impl;
 
-import org.apache.commons.io.FileUtils;
+import org.dbsyncer.biz.ConfigExportService;
+import org.dbsyncer.biz.ConfigImportService;
 import org.dbsyncer.biz.SystemConfigService;
 import org.dbsyncer.biz.UserConfigService;
 import org.dbsyncer.biz.checker.Checker;
 import org.dbsyncer.biz.vo.SystemConfigVO;
 import org.dbsyncer.common.config.AppConfig;
 import org.dbsyncer.common.enums.FileSuffixEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.RsaVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.RSAUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
-import org.dbsyncer.parser.LogService;
-import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.TaskProfile;
+import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -48,6 +52,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private ProfileComponent profileComponent;
 
     @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
+    private TaskProfile taskProfile;
+
+    @Resource
     private PreloadTemplate preloadTemplate;
 
     @Resource
@@ -57,13 +67,16 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private Checker noticeConfigChecker;
 
     @Resource
-    private LogService logService;
-
-    @Resource
     private UserConfigService userConfigService;
 
     @Resource
     private AppConfig appConfig;
+
+    @Resource
+    private ConfigImportService configImportService;
+
+    @Resource
+    private ConfigExportService configExportService;
 
     @Override
     public String edit(Map<String, String> params) {
@@ -110,35 +123,36 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         list.add(getSystemConfig());
         list.add(userConfigService.getUserConfig());
         list.addAll(profileComponent.getConnectorAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(profileComponent.getMappingAll().stream().limit(5).collect(Collectors.toList()));
-        list.addAll(profileComponent.getMetaAll().stream().limit(5).collect(Collectors.toList()));
+        Paging<Mapping> mappingPaging = taskProfile.queryTasks(Mapping.class, 1, 5, null);
+        if (mappingPaging != null && !CollectionUtils.isEmpty(mappingPaging.getData())) {
+            list.addAll(mappingPaging.getData());
+        }
+        Paging<Meta> metaPaging = metaProfile.queryMeta(TaskLevelEnum.TASK.getCode(), 1, 5);
+        if (metaPaging != null && !CollectionUtils.isEmpty(metaPaging.getData())) {
+            list.addAll(metaPaging.getData());
+        }
         return list;
     }
 
     @Override
     public void checkFileSuffix(String filename) {
         Assert.hasText(filename, "the config filename is null.");
-        String suffix = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
+        String suffix = filename.substring(filename.lastIndexOf(".") + 1);
         FileSuffixEnum fileSuffix = FileSuffixEnum.getFileSuffix(suffix);
         Assert.notNull(fileSuffix, "Illegal file suffix");
-        Assert.isTrue(FileSuffixEnum.JSON == fileSuffix, String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。", filename, FileSuffixEnum.JSON.getName()));
+        boolean supported = FileSuffixEnum.ZIP == fileSuffix;
+        Assert.isTrue(supported, String.format("不正确的文件扩展名 \"%s\"，只支持 \"%s\" 的文件扩展名。",
+                filename, FileSuffixEnum.ZIP.getName()));
     }
 
     @Override
     public void refreshConfig(File file) {
-        Assert.notNull(file, "the config file is null.");
-        try {
-            List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-            if (!CollectionUtils.isEmpty(lines)) {
-                StringBuilder json = new StringBuilder();
-                lines.forEach(json::append);
-                preloadTemplate.reload(json.toString());
-            }
-        } catch (IOException e) {
-            logService.log(LogType.CacheLog.IMPORT_ERROR);
-        } finally {
-            FileUtils.deleteQuietly(file);
-        }
+        configImportService.importConfig(file);
+    }
+
+    @Override
+    public long estimateExportSize() {
+        return configExportService.estimateExportSize();
     }
 
     @Override

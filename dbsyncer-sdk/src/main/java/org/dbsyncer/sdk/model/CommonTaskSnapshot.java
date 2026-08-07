@@ -3,7 +3,7 @@
  */
 package org.dbsyncer.sdk.model;
 
-import org.dbsyncer.sdk.enums.CommonTaskStepStatusEnum;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.sdk.enums.DatabaseMigrationDetailTypeEnum;
 
 import java.io.Serializable;
@@ -23,7 +23,7 @@ public class CommonTaskSnapshot implements Serializable {
     /** 当前阶段编码 */
     private String step;
 
-    /** 当前阶段状态，见 {@link CommonTaskStepStatusEnum} */
+    /** 当前阶段状态，见 {@link CommonTaskStatusEnum} */
     private int status;
 
     /** 数据迁移分页游标 */

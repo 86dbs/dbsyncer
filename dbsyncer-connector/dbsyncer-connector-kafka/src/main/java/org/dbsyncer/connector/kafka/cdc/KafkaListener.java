@@ -6,6 +6,7 @@ package org.dbsyncer.connector.kafka.cdc;
 import org.dbsyncer.common.QueueOverflowException;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.connector.kafka.KafkaConnectorInstance;
 import org.dbsyncer.connector.kafka.util.KafkaMessageUtil;
 import org.dbsyncer.sdk.listener.AbstractListener;
@@ -222,18 +223,12 @@ public class KafkaListener extends AbstractListener<KafkaConnectorInstance> {
 
     final class Worker extends Thread {
 
-        int total = consumers.size();
-
         @Override
         public void run() {
             while (!isInterrupted() && connected) {
                 try {
-                    int offset = 0;
-                    do {
-                        List<ConsumerInfo> collect = consumers.stream().skip(offset).limit(consumerThreadSize).collect(Collectors.toList());
-                        BatchTaskUtil.execute(executor, collect, this::execute, logger);
-                        offset = offset + consumerThreadSize;
-                    } while (offset < total);
+                    TaskSplitUtil.split(consumers, consumerThreadSize, collect ->
+                            BatchTaskUtil.execute(executor, collect, this::execute, logger));
 
                     if (connected && !isInterrupted()) {
                         sleepInMills(10);

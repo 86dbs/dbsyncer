@@ -39,6 +39,35 @@
             <div class="connectorConfig">
                 <div th:replace="'connector/add'+${connector?.config?.connectorType} :: content"></div>
             </div>
+
+            <div class="grid grid-cols-2 mt-4">
+                <div class="form-item">
+                    <label class="form-label">数据源</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="isSource" type="checkbox" th:checked="${connector?.isSource != false}"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <label class="form-label">目标源</label>
+                    <div class="form-control-area">
+                        <label class="form-switch">
+                            <input name="isTarget" type="checkbox" th:checked="${connector?.isTarget != false}"/>
+                            <span class="switch-track">
+                                <span class="switch-option switch-option-on">Yes</span>
+                                <span class="switch-option switch-option-off">No</span>
+                                <span class="switch-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
         </form>
     </div>
 </div>
@@ -48,6 +77,12 @@ $(document).ready(function() {
     // 绑定保存按钮事件
     $('#connectorSubmitBtn').off('click').on('click', function() {
         const $form = $("#connectorModifyForm");
+        const isSource = $form.find('input[name="isSource"]').is(':checked');
+        const isTarget = $form.find('input[name="isTarget"]').is(':checked');
+        if (!isSource && !isTarget) {
+            bootGrowl("至少开启「可作为源」或「可作为目标」之一", "warning");
+            return;
+        }
         // 验证表单
         if (validateForm($form)) {
             // 显示提交状态

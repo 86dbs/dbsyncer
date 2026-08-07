@@ -10,10 +10,10 @@ import org.dbsyncer.connector.sqlserver.schema.SqlServerGeographyData;
 import org.dbsyncer.connector.sqlserver.schema.SqlServerGeometryData;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.StringType;
-
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKBReader;
+import org.springframework.util.StringUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -22,7 +22,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.util.StringUtils;
 
 /**
  * @Author 穿云
@@ -38,6 +37,7 @@ public final class SqlServerStringType extends StringType {
         NCHAR("nchar"),
         NVARCHAR("nvarchar"),
         TEXT("text"),
+        XML("xml"),
         N_TEXT("ntext"),
         HIERARCHY_ID("hierarchyid"),
         UNIQUE_IDENTIFIER("uniqueidentifier"),
@@ -102,6 +102,9 @@ public final class SqlServerStringType extends StringType {
 
         if (val instanceof java.util.Date) {
             return DateFormatUtil.dateToString((java.util.Date) val);
+        }
+        if (val instanceof String) {
+            return val.toString();
         }
         return throwUnsupportedException(val, field);
     }

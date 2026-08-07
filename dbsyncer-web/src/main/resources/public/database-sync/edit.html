@@ -37,12 +37,7 @@
                     <label class="form-label">
                         <i class="fa fa-database text-primary"></i> 源端<strong class="text-primary">*</strong>
                     </label>
-                    <select id="sourceConnectorId" class="form-control" th:disabled="${readOnly}">
-                        <option value="">请选择连接器</option>
-                        <option th:each="c : ${connectors}" th:value="${c?.id}"
-                                th:attr="data-connector-type=${c?.config?.connectorType}"
-                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
-                    </select>
+                    <select id="sourceConnectorId" class="form-control" th:disabled="${readOnly}"></select>
                 </div>
             </div>
 
@@ -75,12 +70,7 @@
                                     <div class="form-item mb-0">
                                         <label class="form-label">目标连接<strong class="text-primary">*</strong></label>
                                         <div class="form-control-area">
-                                            <select id="targetConnectorId" class="form-control" th:disabled="${readOnly}">
-                                                <option value="">请选择连接器</option>
-                                                <option th:each="c : ${connectors}" th:value="${c?.id}"
-                                                        th:attr="data-connector-type=${c?.config?.connectorType}"
-                                                        th:text="${c?.name + '(' + c?.config?.connectorType + ')'}"></option>
-                                            </select>
+                                            <select id="targetConnectorId" class="form-control" th:disabled="${readOnly}"></select>
                                         </div>
                                     </div>
                                     <div class="form-item mb-0">
@@ -119,7 +109,7 @@
                                     <tr>
                                         <th class="width50px">序号</th>
                                         <th>源表名</th>
-                                        <th>目标表名 <i class="fa fa-pencil text-tertiary"></i></th>
+                                        <th>目标表名<strong class="text-primary">*</strong> <i class="fa fa-pencil text-tertiary"></i></th>
                                         <th th:if="${!readOnly}" class="width80px">操作</th>
                                     </tr>
                                     </thead>

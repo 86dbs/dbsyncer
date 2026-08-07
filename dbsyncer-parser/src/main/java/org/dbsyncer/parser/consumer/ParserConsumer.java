@@ -5,6 +5,7 @@ package org.dbsyncer.parser.consumer;
 
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
@@ -26,14 +27,17 @@ import java.util.Map;
 public final class ParserConsumer implements Watcher {
 
     private final BufferActuatorRouter bufferActuatorRouter;
+    private final MetaProfile metaProfile;
     private final ProfileComponent profileComponent;
     private final PluginFactory pluginFactory;
     private final LogService logService;
     private final String metaId;
 
-    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, ProfileComponent profileComponent, PluginFactory pluginFactory, LogService logService, String metaId,
+    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, MetaProfile metaProfile, ProfileComponent profileComponent,
+                          PluginFactory pluginFactory, LogService logService, String metaId,
                           List<TableGroup> tableGroups) {
         this.bufferActuatorRouter = bufferActuatorRouter;
+        this.metaProfile = metaProfile;
         this.profileComponent = profileComponent;
         this.pluginFactory = pluginFactory;
         this.logService = logService;
@@ -54,7 +58,7 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public void flushEvent(Map<String, String> snapshot) {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         if (meta != null) {
             meta.setSnapshot(snapshot);
             profileComponent.editConfigModel(meta);
@@ -68,7 +72,7 @@ public final class ParserConsumer implements Watcher {
 
     @Override
     public long getMetaUpdateTime() {
-        Meta meta = profileComponent.getMeta(metaId);
+        Meta meta = metaProfile.getMeta(metaId);
         return meta != null ? meta.getUpdateTime() : 0L;
     }
 }

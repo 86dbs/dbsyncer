@@ -24,11 +24,7 @@
                     <label class="form-label">
                         <i class="fa fa-database text-primary"></i> 数据源<strong class="text-primary">*</strong>
                     </label>
-                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control">
-                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
-                                th:attr="data-connector-type=${c?.config?.connectorType}"
-                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                    </select>
+                    <select name="sourceConnectorId" id="sourceConnectorId" class="form-control"></select>
                 </div>
 
                 <!-- 目标源 -->
@@ -36,11 +32,7 @@
                     <label class="form-label">
                         <i class="fa fa-database text-success"></i> 目标源<strong class="text-primary">*</strong>
                     </label>
-                    <select name="targetConnectorId" id="targetConnectorId" class="form-control">
-                        <option th:each="c,s:${connectors}" th:value="${c?.id}"
-                                th:attr="data-connector-type=${c?.config?.connectorType}"
-                                th:text="${c?.name + '(' + c?.config?.connectorType + ')'}" />
-                    </select>
+                    <select name="targetConnectorId" id="targetConnectorId" class="form-control"></select>
                 </div>
             </div>
 
@@ -118,12 +110,28 @@
 </div>
 
 <script>
-    function isOracleConnector($connector, connectorId) {
-        if (!$connector || !connectorId) {
-            return false;
+    function resolveConnectorType($connector, connectorId) {
+        const fromSelect = typeof resolveConnectorTypeFromSelect === 'function'
+            ? resolveConnectorTypeFromSelect($connector, connectorId) : '';
+        if (fromSelect) {
+            return fromSelect;
         }
-        const type = $connector.find('option[value="' + connectorId + '"]').data('connector-type');
-        return type && String(type).toLowerCase() === 'oracle';
+        if (!$connector || !connectorId) {
+            return '';
+        }
+        const $option = $connector.find('option[value="' + connectorId + '"]');
+        if (!$option.length) {
+            return '';
+        }
+        const text = $option.text() || '';
+        const match = text.match(/\(([^()]+)\)\s*$/);
+        return match && match[1] ? match[1].trim() : '';
+    }
+
+    function isOracleConnector($connector, connectorId) {
+        const type = resolveConnectorType($connector, connectorId);
+        // 达梦 / OceanBaseOracle 与 Oracle 一样以 Schema(用户) 为命名空间，无独立库列表
+        return type && ['oracle', 'dameng', 'oceanbaseoracle'].indexOf(String(type).toLowerCase()) >= 0;
     }
 
     function toggleDatabaseFieldVisibility($database, hide) {
@@ -180,7 +188,7 @@
         });
     }
 
-    function initDBSelect($connector, $database, $schema) {
+    function initDBSelect($connector, $database, $schema, role) {
         // 为每个 select 组维护独立的连接器ID，避免上下文串用
         let currentConnectorId = null;
 
@@ -193,13 +201,13 @@
                 }
             }
         });
-        const connectorSelect = $connector.dbSelect({
-            type: 'single',
+        const connectorSelect = $connector.dbSelect(buildRemoteConnectorSelectOptions({
+            role: role,
             onSelect: function (connectorId) {
                 currentConnectorId = connectorId.length >= 1 ? connectorId[0] : '';
                 onConnectorChange(currentConnectorId, dbSelect, schemaSelect, $connector, $database);
             }
-        });
+        }));
 
         // 初始化：如果有默认选中的连接器，加载库列表
         const selected = connectorSelect.getValues();
@@ -210,8 +218,8 @@
     }
 
     $(document).ready(function() {
-        initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'));
-        initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'));
+        initDBSelect($('#sourceConnectorId'), $('#sourceDatabase'), $('#sourceSchema'), 'source');
+        initDBSelect($('#targetConnectorId'), $('#targetDatabase'), $('#targetSchema'), 'target');
 
         //保存
         $("#mappingSubmitBtn").click(function () {

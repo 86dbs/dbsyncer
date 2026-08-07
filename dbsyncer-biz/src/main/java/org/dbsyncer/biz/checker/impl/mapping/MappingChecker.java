@@ -6,13 +6,15 @@ package org.dbsyncer.biz.checker.impl.mapping;
 import org.dbsyncer.biz.checker.AbstractChecker;
 import org.dbsyncer.biz.checker.MappingConfigChecker;
 import org.dbsyncer.biz.checker.impl.tablegroup.TableGroupChecker;
+import org.dbsyncer.common.enums.TaskLevelEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.model.ConfigModel;
+import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
@@ -21,14 +23,13 @@ import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,9 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private TableGroupProfile tableGroupProfile;
 
     @Resource
     private Map<String, MappingConfigChecker> map;
@@ -161,9 +165,9 @@ public class MappingChecker extends AbstractChecker {
 
     public void addMeta(Mapping mapping) {
         Meta meta = new Meta();
-        meta.setMappingId(mapping.getId());
-
-        // 修改基本配置
+        // 任务级 Meta：taskId=任务ID，isTaskDetail=0；主键由 modifyConfigModel 生成雪花；明细分片靠 taskId
+        meta.setTaskId(mapping.getId());
+        meta.setIsTaskDetail(TaskLevelEnum.TASK.getCode());
         this.modifyConfigModel(meta, new HashMap<>());
 
         String id = profileComponent.addConfigModel(meta);
@@ -186,15 +190,88 @@ public class MappingChecker extends AbstractChecker {
     }
 
     private void batchMergeConfig(Mapping mapping, Map<String, String> params) {
-        List<TableGroup> groupAll = profileComponent.getTableGroupAll(mapping.getId());
-        if (!CollectionUtils.isEmpty(groupAll)) {
+        String sortedIds = params == null ? null : params.get("sortedTableGroupIds");
+        if (StringUtil.isNotBlank(sortedIds)) {
+            // 手动排序需要全集才能重排 index
+            List<TableGroup> groupAll = new ArrayList<>();
+            tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, groupAll::addAll);
+            if (CollectionUtils.isEmpty(groupAll)) {
+                return;
+            }
+            Map<String, Integer> indexBefore = snapshotIndexes(groupAll);
+            Map<String, Map<String, String>> commandBefore = snapshotCommands(groupAll);
             sortTableGroup(groupAll, params);
-            // 合并配置
             for (TableGroup g : groupAll) {
+                if (g == null) {
+                    continue;
+                }
                 tableGroupChecker.mergeConfig(mapping, g);
-                profileComponent.editConfigModel(g);
+                Integer oldIndex = indexBefore.get(g.getId());
+                boolean indexChanged = oldIndex == null || oldIndex != g.getIndex();
+                if (indexChanged || !commandEquals(commandBefore.get(g.getId()), g.getCommand())) {
+                    profileComponent.editConfigModel(g);
+                }
+            }
+            return;
+        }
+        // 无排序：按页合并，避免整表进内存；command 未变则跳过 UPDATE
+        tableGroupProfile.pageScanTableGroups(mapping.getId(), ConfigConstant.PAGE_SIZE, page -> {
+            if (CollectionUtils.isEmpty(page)) {
+                return;
+            }
+            for (TableGroup g : page) {
+                if (g == null) {
+                    continue;
+                }
+                Map<String, String> before = copyCommand(g.getCommand());
+                tableGroupChecker.mergeConfig(mapping, g);
+                if (!commandEquals(before, g.getCommand())) {
+                    profileComponent.editConfigModel(g);
+                }
+            }
+        });
+    }
+
+    private Map<String, Integer> snapshotIndexes(List<TableGroup> groups) {
+        Map<String, Integer> map = new HashMap<>(groups.size());
+        for (TableGroup g : groups) {
+            if (g != null && StringUtil.isNotBlank(g.getId())) {
+                map.put(g.getId(), g.getIndex());
             }
         }
+        return map;
+    }
+
+    private Map<String, Map<String, String>> snapshotCommands(List<TableGroup> groups) {
+        Map<String, Map<String, String>> map = new HashMap<>(groups.size());
+        for (TableGroup g : groups) {
+            if (g != null && StringUtil.isNotBlank(g.getId())) {
+                map.put(g.getId(), copyCommand(g.getCommand()));
+            }
+        }
+        return map;
+    }
+
+    private Map<String, String> copyCommand(Map<String, String> command) {
+        if (command == null || command.isEmpty()) {
+            return null;
+        }
+        return new HashMap<>(command);
+    }
+
+    private boolean commandEquals(Map<String, String> before, Map<String, String> after) {
+        if (before == after) {
+            return true;
+        }
+        boolean beforeEmpty = before == null || before.isEmpty();
+        boolean afterEmpty = after == null || after.isEmpty();
+        if (beforeEmpty && afterEmpty) {
+            return true;
+        }
+        if (beforeEmpty || afterEmpty) {
+            return false;
+        }
+        return before.equals(after);
     }
 
     public void sortTableGroup(List<TableGroup> groupAll, Map<String, String> params) {

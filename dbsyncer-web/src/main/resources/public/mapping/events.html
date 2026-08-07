@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
+<!-- 同步事件明细（承接原监控「查询数据」） -->
+<div class="form-container" id="mappingEventsPage"
+     th:attr="data-mapping-id=${mappingId},data-meta-id=${metaId},data-table-group-id=${tableGroupId}">
+    <div class="card-header">
+        <h3 class="card-title text-center">同步事件明细</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-6 items-end mb-4">
+            <div class="lg:col-span-2 form-item mb-0">
+                <label class="form-label">状态</label>
+                <select id="searchDataStatus" class="form-control">
+                    <option value="-1" th:selected="${dataStatus == null or dataStatus == '-1'}">全部</option>
+                    <option value="0" th:selected="${dataStatus == '0'}">失败</option>
+                    <option value="1" th:selected="${dataStatus == '1'}">成功</option>
+                </select>
+            </div>
+            <div class="lg:col-span-4 flex items-center justify-end">
+                <button id="clearDataBtn" type="button" class="btn btn-outline mr-2">
+                    清空当前表数据
+                </button>
+                <button type="button" class="btn btn-outline" onclick="backDetailPage()">
+                    <i class="fa fa-reply"></i> 返回详情
+                </button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>目标表</th>
+                <th>事件</th>
+                <th>结果</th>
+                <th>异常</th>
+                <th>时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+        </table>
+        <div class="blank-block"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/mapping/mapping-events.js}"></script>
+</html>

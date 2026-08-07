@@ -3,39 +3,33 @@
  */
 package org.dbsyncer.parser.impl;
 
+import org.dbsyncer.common.model.ConfigModel;
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.CacheService;
 import org.dbsyncer.parser.ParserException;
-import org.dbsyncer.parser.command.impl.PersistenceCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.enums.GroupStrategyEnum;
-import org.dbsyncer.parser.model.ConfigModel;
-import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.OperationConfig;
-import org.dbsyncer.parser.model.QueryConfig;
-import org.dbsyncer.parser.strategy.GroupStrategy;
+import org.dbsyncer.parser.model.UserConfig;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
+import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.storage.StorageService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 操作配置模板
+ * 通用配置存储模板（无领域编排；任务见 {@link org.dbsyncer.parser.TaskProfile}，
+ * 用户/连接器/表映射/Meta 见各自 Profile）。
  *
  * @author AE86
  * @version 1.0.0
@@ -44,107 +38,56 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public final class OperationTemplate {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     @Resource
     private StorageService storageService;
 
     @Resource
-    private CacheService cacheService;
-
-    public <T> List<T> queryAll(Class<T> valueType) {
-        try {
-            ConfigModel configModel = (ConfigModel) valueType.newInstance();
-            return queryAll(new QueryConfig<T>(configModel));
-        } catch (Exception e) {
-            throw new ParserException(e);
-        }
-    }
-
-    public <T> List<T> queryAll(QueryConfig<T> query) {
-        String groupId = getGroupId(query.getConfigModel(), query.getGroupStrategyEnum());
-        List<T> list = new ArrayList<>();
-
-        // 1. 获取 Group 对象，这是一个只读操作，安全
-        Object groupObj = cacheService.getCache().get(groupId);
-        if (groupObj != null) {
-            Group group = (Group) groupObj;
-
-            // 2. 遍历索引 ID，获取对应的值
-            // 为了保证最终返回列表的线程安全，依然使用 CopyOnWriteArrayList
-            List<T> result = new CopyOnWriteArrayList<>();
-            group.getIndex().parallelStream().forEach(id -> {
-                Object value = cacheService.getCache().get(id);
-                if (value != null) {
-                    result.add((T) value);
-                }
-            });
-            list = result;
-        }
-
-        return list;
-    }
-
-    public int queryCount(QueryConfig query) {
-        ConfigModel model = query.getConfigModel();
-        String groupId = getGroupId(model, query.getGroupStrategyEnum());
-        AtomicInteger count = new AtomicInteger();
-        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
-            Group group = (Group) v;
-            count.set(group.size());
-            return group;
-        });
-        return count.get();
-    }
+    private SnowflakeIdWorker snowflakeIdWorker;
 
     public <T> T queryObject(Class<T> clazz, String id) {
         if (StringUtil.isBlank(id)) {
             return null;
         }
-        return (T) cacheService.get(id, clazz);
+        StorageEnum type = ConfigModelUtil.getStorageEnum(newInstanceType(clazz));
+        Query query = new Query();
+        query.setType(type);
+        query.setPageNum(1);
+        query.setPageSize(1);
+        query.addFilter(ConfigConstant.CONFIG_MODEL_ID, id);
+        Paging paging = storageService.query(query);
+        List<Map> data = (List<Map>) paging.getData();
+        if (CollectionUtils.isEmpty(data)) {
+            return null;
+        }
+        return parseRow(data.get(0), clazz);
     }
 
     public String execute(OperationConfig config) {
-        // 1、解析配置
         ConfigModel model = config.getModel();
         Assert.notNull(model, "ConfigModel can not be null.");
-
-        // 2、持久化
-        Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
         CommandEnum cmd = config.getCommandEnum();
         Assert.notNull(cmd, "CommandEnum can not be null.");
-        cmd.getCommandExecutor().execute(new PersistenceCommand(storageService, params));
+        Assert.isTrue(!(model instanceof UserConfig), "UserConfig must go through UserProfile.syncUserConfig");
+        if (CommandEnum.OPR_ADD == cmd) {
+            if (StringUtil.isBlank(model.getId())) {
+                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            }
+        }
 
-        // 3、缓存
-        cache(model, config.getGroupStrategyEnum());
+        Map<String, Object> params = ConfigModelUtil.convertModelToMap(model);
+        StorageEnum type = ConfigModelUtil.getStorageEnum(model.getType());
+        if (CommandEnum.OPR_EDIT == cmd) {
+            storageService.edit(type, params);
+        } else {
+            storageService.add(type, params);
+        }
         return model.getId();
     }
 
-    public void cache(ConfigModel model, GroupStrategyEnum strategy) {
-        // 1、缓存
-        Assert.notNull(model, "ConfigModel can not be null.");
-        String id = model.getId();
-        cacheService.put(id, model);
-
-        // 2、分组
-        String groupId = getGroupId(model, strategy);
-        cacheService.getCache().compute(groupId, (k, v)-> {
-            Group group = (Group) v;
-            if (group == null) {
-                group = new Group();
-            }
-            if (!group.contains(id)) {
-                group.add(id);
-            }
-            return group;
-        });
-    }
-    
     /**
-     * 批量添加配置：单次存储批量写入，并按分组批量更新缓存。
+     * 批量添加配置：单次存储批量写入。
      */
-    public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum,
-                                     GroupStrategyEnum groupStrategyEnum) {
+    public List<String> executeBatch(List<? extends ConfigModel> models, CommandEnum commandEnum) {
         if (CollectionUtils.isEmpty(models)) {
             return Collections.emptyList();
         }
@@ -154,58 +97,80 @@ public final class OperationTemplate {
         List<Map> paramsList = new ArrayList<>(models.size());
         for (ConfigModel model : models) {
             Assert.notNull(model, "ConfigModel can not be null.");
+            if (StringUtil.isBlank(model.getId())) {
+                model.setId(String.valueOf(snowflakeIdWorker.nextId()));
+            }
             paramsList.add(ConfigModelUtil.convertModelToMap(model));
         }
-        storageService.addBatch(StorageEnum.CONFIG, null, paramsList);
-        cacheBatch(models, groupStrategyEnum);
+        StorageEnum type = ConfigModelUtil.getStorageEnum(models.get(0).getType());
+        storageService.addBatch(type, null, paramsList);
         return models.stream().map(ConfigModel::getId).collect(Collectors.toList());
-    }
-
-    private void cacheBatch(List<? extends ConfigModel> models, GroupStrategyEnum strategy) {
-        for (ConfigModel model : models) {
-            cacheService.put(model.getId(), model);
-        }
-        Map<String, List<ConfigModel>> grouped = models.stream()
-                .collect(Collectors.groupingBy(model -> getGroupId(model, strategy)));
-        grouped.forEach((groupId, groupModels) -> cacheService.getCache().compute(groupId, (k, v) -> {
-            Group group = (Group) v;
-            if (group == null) {
-                group = new Group();
-            }
-            for (ConfigModel model : groupModels) {
-                String id = model.getId();
-                if (!group.contains(id)) {
-                    group.add(id);
-                }
-            }
-            return group;
-        }));
     }
 
     public void remove(OperationConfig config) {
         String id = config.getId();
         Assert.hasText(id, "ID can not be empty.");
-        // 删除分组
-        ConfigModel model = cacheService.get(id, ConfigModel.class);
-        String groupId = getGroupId(model, config.getGroupStrategyEnum());
-        cacheService.getCache().computeIfPresent(groupId, (k, v)-> {
-            Group group = (Group) v;
-            group.remove(id);
-            return group.isEmpty() ? null : group;
-        });
-        cacheService.remove(id);
         storageService.remove(StorageEnum.CONFIG, id);
+        storageService.remove(StorageEnum.USER, id);
+        storageService.remove(StorageEnum.CONNECTOR, id);
+        storageService.remove(StorageEnum.TASK, id);
+        storageService.remove(StorageEnum.META, id);
     }
 
-    public String getGroupId(ConfigModel model, GroupStrategyEnum strategy) {
-        Assert.notNull(model, "ConfigModel can not be null.");
-        Assert.notNull(strategy, "GroupStrategyEnum can not be null.");
-        GroupStrategy groupStrategy = strategy.getGroupStrategy();
-        Assert.notNull(groupStrategy, "GroupStrategy can not be null.");
-
-        String groupId = groupStrategy.getGroupId(model);
-        Assert.hasText(groupId, "GroupId can not be empty.");
-        return groupId;
+    /**
+     * 按存储类型统计行数（仅 total，不拉明细）。
+     */
+    public int count(StorageEnum type, Query condition) {
+        Query query = new Query();
+        query.setType(type);
+        query.setQueryTotal(true);
+        query.setPageNum(1);
+        query.setPageSize(1);
+        if (condition != null) {
+            query.setBooleanFilter(condition.getBooleanFilter());
+        }
+        Paging paging = storageService.query(query);
+        return paging == null ? 0 : (int) paging.getTotal();
     }
 
+    /**
+     * 分页查询指定存储表，反序列化 json 列为模型。
+     */
+    public <T> List<T> queryList(StorageEnum type, Query condition, Class<T> clazz) {
+        List<T> result = new ArrayList<>();
+        Query query = new Query();
+        query.setType(type);
+        query.setPageSize(ConfigConstant.PAGE_SIZE);
+        if (condition != null) {
+            query.setBooleanFilter(condition.getBooleanFilter());
+        }
+        while (true) {
+            Paging paging = storageService.query(query);
+            if (paging == null || CollectionUtils.isEmpty(paging.getData())) {
+                break;
+            }
+            List<Map> data = (List<Map>) paging.getData();
+            for (Map row : data) {
+                T model = parseRow(row, clazz);
+                if (model != null) {
+                    result.add(model);
+                }
+            }
+            query.setPageNum(query.getPageNum() + 1);
+        }
+        return result;
+    }
+
+    private String newInstanceType(Class<?> clazz) {
+        try {
+            ConfigModel model = (ConfigModel) clazz.newInstance();
+            return model.getType();
+        } catch (Exception e) {
+            throw new ParserException(e);
+        }
+    }
+
+    private <T> T parseRow(Map row, Class<T> clazz) {
+        return ConfigModelUtil.parseFromRow(row, clazz);
+    }
 }

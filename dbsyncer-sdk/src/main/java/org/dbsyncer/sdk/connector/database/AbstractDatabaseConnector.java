@@ -140,6 +140,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             DatabaseMetaData metaData = conn.getMetaData();
             List<MetaInfo> metaInfos = new ArrayList<>();
             for (Table table : context.getTablePatterns()) {
+                // 未指定类型时按普通表处理，避免 TableTypeEnum type "null"
+                if (StringUtil.isBlank(table.getType())) {
+                    table.setType(TableTypeEnum.TABLE.getCode());
+                }
                 // 自定义SQL
                 if (TableTypeEnum.getTableType(table.getType()) == getExtendedTableType()) {
                     getMetaInfoWithSQL(databaseTemplate, metaInfos, catalog, schema, table);
@@ -417,6 +421,9 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     @Override
     public Map<String, String> getSourceCommand(CommandConfig commandConfig) {
         Table table = commandConfig.getTable();
+        if (StringUtil.isBlank(table.getType())) {
+            table.setType(TableTypeEnum.TABLE.getCode());
+        }
         TableTypeEnum tableType = TableTypeEnum.getTableType(table.getType());
         if (tableType == getExtendedTableType()) {
             return getSourceCommandWithSQL(commandConfig);

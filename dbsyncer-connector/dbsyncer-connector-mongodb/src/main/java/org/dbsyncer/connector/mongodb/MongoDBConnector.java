@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.connector.mongodb;
 
-import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -28,10 +27,15 @@ import org.dbsyncer.sdk.connector.AbstractConnector;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
-import org.dbsyncer.sdk.connector.DefaultMetaContext;
+import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
+import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.sdk.filter.AbstractFilter;
+import org.dbsyncer.sdk.filter.BooleanFilter;
+import org.dbsyncer.sdk.filter.impl.InFilter;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -184,10 +188,7 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
     public long getCount(MongoConnectorInstance connectorInstance, MetaContext metaContext) {
         Map<String, String> command = metaContext.getCommand();
         String databaseName = command.get(DATABASE);
-        String collectionName = command.get(SOURCE_COLLECTION);
-        if (metaContext instanceof DefaultMetaContext && ((DefaultMetaContext) metaContext).isTargetConnector()) {
-            collectionName = command.get(ConnectorConstant.TARGET_QUERY_COUNT);
-        }
+        String collectionName = resolveReadCollection(command, metaContext.isTargetConnector());
         if (StringUtil.isBlank(databaseName) || StringUtil.isBlank(collectionName)) {
             return 0L;
         }
@@ -198,9 +199,21 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
 
     @Override
     public Result reader(MongoConnectorInstance connectorInstance, ReaderContext context) {
+        // 订正校验场景：按 BooleanFilter（含主键 IN）查询
+        if (StringUtil.isNotBlank(context.getCommandKey())) {
+            return readByFilter(connectorInstance, context);
+        }
+        return readPage(connectorInstance, context);
+    }
+
+    /**
+     * 全量/分页读取
+     */
+    private Result readPage(MongoConnectorInstance connectorInstance, ReaderContext context) {
         Map<String, String> command = context.getCommand();
         String databaseName = command.get(DATABASE);
-        String collectionName = command.get(SOURCE_COLLECTION);
+        // 异构校验/读目标：合并 command 常仅有 TARGET_COLLECTION，需按读写侧解析集合名
+        String collectionName = resolveReadCollection(command, context.isTargetConnector());
         if (StringUtil.isBlank(databaseName) || StringUtil.isBlank(collectionName)) {
             throw new MongoDBException("MongoDB reader database or collection is empty.");
         }
@@ -215,6 +228,48 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
                 .sort(Sorts.ascending(primaryKey))
                 .projection(buildProjection(command.get(ConnectorConstant.OPERTION_QUERY)))
                 .skip(resolveSkip(context))
+                .limit(pageSize)
+                .iterator()) {
+            while (cursor.hasNext()) {
+                list.add(MongoUtil.toMap(cursor.next()));
+            }
+        }
+        return new Result(list);
+    }
+
+    /**
+     * 订正校验：按运行时 BooleanFilter（如主键 IN）批量读目标/源集合
+     */
+    private Result readByFilter(MongoConnectorInstance connectorInstance, ReaderContext context) {
+        Map<String, String> command = context.getCommand();
+        String databaseName = command.get(DATABASE);
+        String collectionName = command.get(context.getCommandKey());
+        if (StringUtil.isBlank(collectionName)) {
+            collectionName = resolveReadCollection(command, context.isTargetConnector());
+        }
+        if (StringUtil.isBlank(databaseName) || StringUtil.isBlank(collectionName)) {
+            throw new MongoDBException("MongoDB reader database or collection is empty.");
+        }
+        BooleanFilter booleanFilter = ((FullPluginContext) context).getFilter();
+        Bson filter = buildFilterToBson(booleanFilter);
+        if (filter == null) {
+            return new Result(Collections.emptyList());
+        }
+        MongoCollection<Document> collection = connectorInstance.getConnection()
+                .getDatabase(databaseName)
+                .getCollection(collectionName);
+        String projectionKey = context.isTargetConnector()
+                ? ConnectorConstant.OPERTION_QUERY_TARGET
+                : ConnectorConstant.OPERTION_QUERY;
+        String projectionFields = command.get(projectionKey);
+        // 历史 command 可能把集合名写在 QUERY_TARGET 上，不能当作字段投影
+        if (StringUtil.equals(projectionFields, collectionName)) {
+            projectionFields = null;
+        }
+        int pageSize = Math.max(context.getPageSize(), 1);
+        List<Map<String, Object>> list = new ArrayList<>(pageSize);
+        try (MongoCursor<Document> cursor = collection.find(filter)
+                .projection(buildProjection(projectionFields))
                 .limit(pageSize)
                 .iterator()) {
             while (cursor.hasNext()) {
@@ -250,6 +305,9 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
                     if (collection.deleteOne(filter).getDeletedCount() == 0) {
                         throw new MongoDBException("删除数据不存在");
                     }
+                } else if (context.isForceUpdate()) {
+                    // 覆盖写入：目标已存在主键时 insert 会 E11000，改为按主键 upsert
+                    collection.replaceOne(buildPkFilter(pkFields, row), document, upsertOptions);
                 } else if (StringUtil.equals(event, ConnectorConstant.OPERTION_INSERT)) {
                     collection.insertOne(document);
                 } else if (StringUtil.equals(event, ConnectorConstant.OPERTION_UPDATE)) {
@@ -276,6 +334,7 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
         Table table = commandConfig.getTable();
         command.put(SOURCE_COLLECTION, table.getName());
         command.put(DATABASE, resolveDatabaseName(commandConfig));
+        command.put(ConnectorConstant.OPERTION_QUERY_SOURCE_IN, table.getName());
         if (!CollectionUtils.isEmpty(table.getColumn())) {
             List<String> fieldNames = table.getColumn().stream().map(Field::getName).collect(Collectors.toList());
             command.put(ConnectorConstant.OPERTION_QUERY, StringUtil.join(fieldNames, StringUtil.COMMA));
@@ -294,7 +353,11 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
         command.put(TARGET_COLLECTION, table.getName());
         command.put(DATABASE, resolveDatabaseName(commandConfig));
         command.put(ConnectorConstant.TARGET_QUERY_COUNT, table.getName());
-        command.put(ConnectorConstant.OPERTION_QUERY_TARGET, table.getName());
+        command.put(ConnectorConstant.OPERTION_QUERY_TARGET_IN, table.getName());
+        if (!CollectionUtils.isEmpty(table.getColumn())) {
+            List<String> fieldNames = table.getColumn().stream().map(Field::getName).collect(Collectors.toList());
+            command.put(ConnectorConstant.OPERTION_QUERY_TARGET, StringUtil.join(fieldNames, StringUtil.COMMA));
+        }
         return command;
     }
 
@@ -312,6 +375,166 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
     @Override
     public SchemaResolver getSchemaResolver() {
         return schemaResolver;
+    }
+
+    /**
+     * 读集合名：源侧用 SOURCE_COLLECTION；目标侧/异构校验合并 command 时常仅有 TARGET_*。
+     */
+    private String resolveReadCollection(Map<String, String> command, boolean targetConnector) {
+        if (command == null) {
+            return null;
+        }
+        if (targetConnector) {
+            String collectionName = command.get(TARGET_COLLECTION);
+            if (StringUtil.isBlank(collectionName)) {
+                collectionName = command.get(ConnectorConstant.TARGET_QUERY_COUNT);
+            }
+            if (StringUtil.isBlank(collectionName)) {
+                collectionName = command.get(ConnectorConstant.OPERTION_QUERY_TARGET_IN);
+            }
+            return collectionName;
+        }
+        String collectionName = command.get(SOURCE_COLLECTION);
+        if (StringUtil.isBlank(collectionName)) {
+            collectionName = command.get(TARGET_COLLECTION);
+        }
+        return collectionName;
+    }
+
+    /**
+     * 根据 BooleanFilter 构建 Mongo 查询条件（对齐 ES buildFilterToQuery）
+     */
+    private Bson buildFilterToBson(BooleanFilter root) {
+        if (root == null) {
+            return null;
+        }
+        List<BooleanFilter> clauses = root.getClauses();
+        List<AbstractFilter> rootFilters = root.getFilters();
+        if (CollectionUtils.isEmpty(clauses) && CollectionUtils.isEmpty(rootFilters)) {
+            return null;
+        }
+        if (!CollectionUtils.isEmpty(rootFilters)) {
+            return combineFlatFilterList(rootFilters);
+        }
+        return combineFilters(clauses);
+    }
+
+    private Bson combineFilters(List<BooleanFilter> clauses) {
+        Bson acc = null;
+        for (BooleanFilter clauseBf : clauses) {
+            Bson clause = combineFlatFilterList(clauseBf.getFilters());
+            if (clause == null) {
+                continue;
+            }
+            if (acc == null) {
+                acc = clause;
+                continue;
+            }
+            OperationEnum op = clauseBf.getOperationEnum() != null ? clauseBf.getOperationEnum() : OperationEnum.AND;
+            if (op == OperationEnum.OR) {
+                acc = Filters.or(acc, clause);
+            } else {
+                acc = Filters.and(acc, clause);
+            }
+        }
+        return acc;
+    }
+
+    private Bson combineFlatFilterList(List<AbstractFilter> filters) {
+        if (CollectionUtils.isEmpty(filters)) {
+            return null;
+        }
+        Bson acc = null;
+        for (AbstractFilter p : filters) {
+            Bson q = convertFilterToBson(p);
+            if (q == null) {
+                continue;
+            }
+            if (acc == null) {
+                acc = q;
+                continue;
+            }
+            if (OperationEnum.isOr(p.getOperation())) {
+                acc = Filters.or(acc, q);
+            } else {
+                acc = Filters.and(acc, q);
+            }
+        }
+        return acc;
+    }
+
+    private Bson convertFilterToBson(AbstractFilter p) {
+        if (p instanceof InFilter) {
+            InFilter inList = (InFilter) p;
+            List<Object> raw = inList.getBindValues();
+            if (CollectionUtils.isEmpty(raw)) {
+                return null;
+            }
+            String field = p.getName();
+            List<Object> values = MongoUtil.expandQueryValues(field, raw);
+            if (values.isEmpty()) {
+                return null;
+            }
+            return Filters.in(field, values);
+        }
+        FilterEnum fe;
+        try {
+            fe = FilterEnum.getFilterEnum(p.getFilter());
+        } catch (Exception e) {
+            logger.warn("unsupported filter type: {}", p.getFilter());
+            return null;
+        }
+        String field = p.getName();
+        switch (fe) {
+            case EQUAL:
+                return buildValueMatchFilter(field, p.getValue());
+            case NOT_EQUAL:
+                return Filters.nor(buildValueMatchFilter(field, p.getValue()));
+            case GT:
+                return Filters.gt(field, MongoUtil.normalizeWriteValue(field, p.getValue()));
+            case LT:
+                return Filters.lt(field, MongoUtil.normalizeWriteValue(field, p.getValue()));
+            case GT_AND_EQUAL:
+                return Filters.gte(field, MongoUtil.normalizeWriteValue(field, p.getValue()));
+            case LT_AND_EQUAL:
+                return Filters.lte(field, MongoUtil.normalizeWriteValue(field, p.getValue()));
+            case IS_NULL:
+                return Filters.eq(field, null);
+            case IS_NOT_NULL:
+                return Filters.ne(field, null);
+            case IN:
+                return Filters.in(field, splitInValues(field, p.getValue()));
+            default:
+                logger.warn("unsupported FilterEnum for MongoDB: {}", fe);
+                return null;
+        }
+    }
+
+    /**
+     * 等值匹配：兼容 Number/String 主键类型差异
+     */
+    private Bson buildValueMatchFilter(String field, Object value) {
+        List<Object> values = MongoUtil.expandQueryValues(field, value);
+        if (values.isEmpty()) {
+            return Filters.eq(field, null);
+        }
+        if (values.size() == 1) {
+            return Filters.eq(field, values.get(0));
+        }
+        return Filters.in(field, values);
+    }
+
+    private List<Object> splitInValues(String field, String value) {
+        if (StringUtil.isBlank(value)) {
+            return Collections.emptyList();
+        }
+        List<Object> raw = new ArrayList<>();
+        for (String item : value.split(StringUtil.COMMA)) {
+            if (StringUtil.isNotBlank(item)) {
+                raw.add(item.trim());
+            }
+        }
+        return MongoUtil.expandQueryValues(field, raw);
     }
 
     private List<Field> buildFields(Document sample) {
@@ -385,15 +608,15 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
 
     private Bson buildPkFilter(List<Field> pkFields, Map row) {
         if (CollectionUtils.isEmpty(pkFields)) {
-            return Filters.eq(MongoDBConstant.ID_FIELD, MongoUtil.normalizeId(row.get(MongoDBConstant.ID_FIELD)));
+            return buildValueMatchFilter(MongoDBConstant.ID_FIELD, row.get(MongoDBConstant.ID_FIELD));
         }
         if (pkFields.size() == 1) {
             Field field = pkFields.get(0);
-            return Filters.eq(field.getName(), MongoUtil.normalizeWriteValue(field.getName(), row.get(field.getName())));
+            return buildValueMatchFilter(field.getName(), row.get(field.getName()));
         }
         List<Bson> filters = new ArrayList<>(pkFields.size());
         for (Field field : pkFields) {
-            filters.add(Filters.eq(field.getName(), MongoUtil.normalizeWriteValue(field.getName(), row.get(field.getName()))));
+            filters.add(buildValueMatchFilter(field.getName(), row.get(field.getName())));
         }
         return Filters.and(filters);
     }

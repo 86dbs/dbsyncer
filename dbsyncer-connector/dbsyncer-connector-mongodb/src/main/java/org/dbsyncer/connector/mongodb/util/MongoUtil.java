@@ -8,8 +8,10 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.mongodb.MongoDBException;
 import org.dbsyncer.connector.mongodb.config.MongoDBConfig;
@@ -18,10 +20,13 @@ import org.dbsyncer.connector.mongodb.constant.MongoDBConstant;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -125,12 +130,76 @@ public abstract class MongoUtil {
         return value;
     }
 
+    /**
+     * 查询条件值类型扩展：异构同步时 MySQL 整型主键常被 schema 写成 Mongo 字符串 _id，
+     * {@code $in:[625]} 匹配不到 {@code "_id":"625"}，需同时带上 Number/String 候选值。
+     */
+    public static List<Object> expandQueryValues(String fieldName, Object value) {
+        Set<Object> expanded = new LinkedHashSet<>();
+        appendQueryValueVariants(fieldName, value, expanded);
+        return new ArrayList<>(expanded);
+    }
+
+    /**
+     * 批量扩展 IN 列表中的每个绑定值。
+     */
+    public static List<Object> expandQueryValues(String fieldName, Collection<?> values) {
+        Set<Object> expanded = new LinkedHashSet<>();
+        if (values == null) {
+            return new ArrayList<>();
+        }
+        for (Object value : values) {
+            appendQueryValueVariants(fieldName, value, expanded);
+        }
+        return new ArrayList<>(expanded);
+    }
+
+    private static void appendQueryValueVariants(String fieldName, Object value, Set<Object> expanded) {
+        if (value == null) {
+            expanded.add(null);
+            return;
+        }
+        Object normalized = normalizeWriteValue(fieldName, value);
+        expanded.add(normalized);
+        if (normalized instanceof ObjectId) {
+            return;
+        }
+        if (normalized instanceof Number) {
+            Number number = (Number) normalized;
+            expanded.add(number.toString());
+            expanded.add(number.longValue());
+            int intValue = number.intValue();
+            if (number.longValue() == intValue) {
+                expanded.add(intValue);
+            }
+            return;
+        }
+        if (normalized instanceof String) {
+            String text = ((String) normalized).trim();
+            if (StringUtil.isBlank(text) || !NumberUtil.isCreatable(text)) {
+                return;
+            }
+            // 避免把合法 ObjectId 十六进制误解析成数字（normalizeId 已转 ObjectId 的不会走到这里）
+            if (text.indexOf('.') >= 0 || text.indexOf('e') >= 0 || text.indexOf('E') >= 0) {
+                return;
+            }
+            long longValue = NumberUtil.toLong(text);
+            expanded.add(longValue);
+            if (longValue >= Integer.MIN_VALUE && longValue <= Integer.MAX_VALUE) {
+                expanded.add((int) longValue);
+            }
+        }
+    }
+
     public static Object normalizeReadValue(Object value) {
         if (value instanceof ObjectId) {
             return value.toString();
         }
         if (value instanceof Decimal128) {
             return ((Decimal128) value).bigDecimalValue();
+        }
+        if (value instanceof Binary) {
+            return ((Binary) value).getData();
         }
         if (value instanceof Document) {
             return toMap((Document) value);
@@ -175,6 +244,9 @@ public abstract class MongoUtil {
         }
         if (value instanceof ObjectId) {
             return "objectId";
+        }
+        if (value instanceof Binary || value instanceof byte[]) {
+            return "binData";
         }
         if (value instanceof List) {
             return "array";

@@ -40,7 +40,8 @@ public class DispatchTaskServiceImpl implements DispatchTaskService {
                 t.destroy();
                 logger.warn("The dispatch task was terminated, {}", k);
             }
-            task.onDestroy(dispatchTask->active.remove(task.getUniqueId()));
+            // 按实例移除，避免同 uniqueId 替换任务后旧任务 finally 误删新任务
+            task.onDestroy(dispatchTask -> active.remove(task.getUniqueId(), dispatchTask));
             return task;
         }));
     }

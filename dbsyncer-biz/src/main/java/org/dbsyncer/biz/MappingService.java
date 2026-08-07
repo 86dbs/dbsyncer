@@ -47,7 +47,7 @@ public interface MappingService {
     String remove(String id);
 
     /**
-     * 获取驱动
+     * 获取驱动（不含全量表列表，表下拉请走 {@link #searchTables}）
      *
      * @param id
      * @return
@@ -64,28 +64,20 @@ public interface MappingService {
     MappingCustomTableVO getMappingCustomTable(String id, String type);
 
     /**
-     * 获取驱动
-     *
-     * @param id
-     * @param exclude 0-过滤已添加的表；1-显示所有表，包含已添加的表
-     * @return
-     */
-    MappingVO getMapping(String id, Integer exclude);
-
-    /**
-     * 获取所有驱动
-     *
-     * @return
-     */
-    List<MappingVO> getMappingAll();
-
-    /**
      * 分页搜索
      *
      * @param params
      * @return
      */
     Paging<MappingVO> search(Map<String, String> params);
+
+    /**
+     * 同步任务详情：按表映射汇总成功/失败数。
+     *
+     * @param params id=mappingId, detailStatus=fail|success|空, pageNum, pageSize
+     * @return 分页表映射汇总
+     */
+    Paging searchTableGroupResult(Map<String, String> params);
 
     /**
      * 启动驱动

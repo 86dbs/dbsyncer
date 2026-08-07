@@ -34,4 +34,29 @@ public final class MongoDBDoubleType extends DoubleType {
         }
         return throwUnsupportedException(val, field);
     }
+
+    @Override
+    public Object mergeValue(Object val, Field field) {
+        if (val instanceof String) {
+            return Double.parseDouble((String) val);
+        }
+        if (val instanceof Number) {
+            return val.toString();
+        }
+        return super.mergeValue(val, field);
+    }
+
+    @Override
+    protected Object convert(Object val, Field field) {
+        if (val instanceof Number) {
+            return ((Number) val).doubleValue();
+        }
+        if (val instanceof String) {
+            return Double.parseDouble((String) val);
+        }
+        if (val instanceof Boolean) {
+            return ((Boolean) val) ? 1.0d : 0.0d;
+        }
+        return throwUnsupportedException(val, field);
+    }
 }

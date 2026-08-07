@@ -40,11 +40,4 @@ public final class SqlServerDoubleType extends DoubleType {
     public Set<String> getSupportedTypeName() {
         return Arrays.stream(SqlServerDoubleType.TypeEnum.values()).map(SqlServerDoubleType.TypeEnum::getValue).collect(Collectors.toSet());
     }
-    @Override
-    protected  Object convert(Object val, Field field){
-        if (val instanceof Number) {
-            return ((Number) val).toString();
-        }
-        return throwUnsupportedException(val, field);
-    }
 }

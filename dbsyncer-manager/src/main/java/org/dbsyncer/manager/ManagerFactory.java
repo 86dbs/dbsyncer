@@ -1,17 +1,16 @@
 package org.dbsyncer.manager;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.manager.event.ClosedEvent;
+import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.enums.MetaEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.time.Instant;
 import java.util.Map;
 
@@ -27,11 +26,14 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     private ProfileComponent profileComponent;
 
     @Resource
+    private MetaProfile metaProfile;
+
+    @Resource
     private Map<String, Puller> map;
 
     @Override
     public void onApplicationEvent(ClosedEvent event) {
-        changeMetaState(event.getMetaId(), MetaEnum.READY);
+        changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
     }
 
     public void start(Mapping mapping) {
@@ -48,13 +50,13 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         Puller puller = getPuller(mapping);
 
         // 标记运行中
-        changeMetaState(mapping.getMetaId(), MetaEnum.RUNNING);
+        changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
 
         try {
             puller.start(mapping, autoRecovery);
         } catch (Exception e) {
             // rollback
-            changeMetaState(mapping.getMetaId(), MetaEnum.READY);
+            changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
             throw new ManagerException(e.getMessage());
         }
     }
@@ -64,14 +66,14 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
 
         // 标记停止中
         String metaId = mapping.getMetaId();
-        changeMetaState(metaId, MetaEnum.STOPPING);
+        changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
         puller.close(metaId);
     }
 
-    public void changeMetaState(String metaId, MetaEnum metaEnum) {
-        Meta meta = profileComponent.getMeta(metaId);
-        int code = metaEnum.getCode();
+    public void changeMetaState(String metaId, CommonTaskStatusEnum status) {
+        Meta meta = metaProfile.getMeta(metaId);
+        int code = status.getCode();
         if (null != meta && meta.getState() != code) {
             meta.setState(code);
             meta.setUpdateTime(Instant.now().toEpochMilli());

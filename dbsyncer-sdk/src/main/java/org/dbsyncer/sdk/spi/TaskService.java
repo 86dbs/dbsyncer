@@ -4,20 +4,21 @@
 package org.dbsyncer.sdk.spi;
 
 import org.dbsyncer.common.enums.CommonTaskTypeEnum;
+import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
-import org.dbsyncer.sdk.model.CommonTask;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 任务调度服务
+ * 任务调度服务（ValidateSync / DatabaseSync 等，持久化到 {@code dbsyncer_task}）。
+ * <p>运行态权威在 {@code dbsyncer_meta.STATE}；进程内防重入见 {@link #isRunning(String)}。</p>
  *
  * @author 穿云
  * @version 1.0.0
  * @date 2025-05-12 23:36
  */
-public interface TaskService<T extends CommonTask> {
+public interface TaskService<T extends ConfigModel> {
 
     /**
      * 新增
@@ -60,10 +61,10 @@ public interface TaskService<T extends CommonTask> {
      *
      * @return
      */
-    List<CommonTask> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum);
+    List<T> getTaskAll(CommonTaskTypeEnum commonTaskTypeEnum);
 
     /**
-     * 检查任务状态
+     * 检查任务是否在本进程执行中（内存集合，防重入）。
      *
      * @param taskId
      * @return
