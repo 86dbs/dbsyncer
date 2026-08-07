@@ -5,15 +5,14 @@ package org.dbsyncer.connector.oracle.schema.support;
 
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
+import org.dbsyncer.connector.oracle.schema.OracleBlobParameter;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.schema.support.BytesType;
-
-import oracle.sql.BLOB;
-
 import oracle.sql.BLOB;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +36,10 @@ public final class OracleBytesType extends BytesType {
         public String getValue() {
             return value;
         }
+
+        public static boolean isBlobType(String type) {
+            return type != null && type.trim().toUpperCase(Locale.ROOT).contains("BLOB");
+        }
     }
 
     @Override
@@ -46,11 +49,15 @@ public final class OracleBytesType extends BytesType {
 
     @Override
     protected byte[] getDefaultMergedVal(Field field) {
-        return new byte[0];
+        // SQL NULL 保持 null，勿归一成空数组，避免写入 EMPTY_BLOB 与校验误判
+        return null;
     }
 
     @Override
     protected byte[] merge(Object val, Field field) {
+        if (val instanceof OracleBlobParameter) {
+            return ((OracleBlobParameter) val).getValue();
+        }
         if (val instanceof byte[]) {
             return (byte[]) val;
         }
@@ -115,16 +122,32 @@ public final class OracleBytesType extends BytesType {
 
     @Override
     protected Object convert(Object val, Field field) {
+        if (val instanceof OracleBlobParameter) {
+            return val;
+        }
         if (val instanceof String) {
             String s = (String) val;
             if (s.startsWith("HEXTORAW(")) {
-                return StringUtil.hexStringToByteArray(s.replace("HEXTORAW('", "").replace("')", ""));
+                byte[] bytes = StringUtil.hexStringToByteArray(s.replace("HEXTORAW('", "").replace("')", ""));
+                return wrapBlobIfNeeded(bytes, field);
             }
             if ("EMPTY_BLOB()".equals(s)) {
-                return null;
+                // 空 BLOB 与 SQL NULL 区分：写入 EMPTY_BLOB，而非 setNull
+                return wrapBlobIfNeeded(new byte[0], field);
             }
-            return s.getBytes();
+            return wrapBlobIfNeeded(s.getBytes(), field);
         }
-        return super.convert(val, field);
+        Object converted = super.convert(val, field);
+        if (converted instanceof byte[]) {
+            return wrapBlobIfNeeded((byte[]) converted, field);
+        }
+        return converted;
+    }
+
+    private Object wrapBlobIfNeeded(byte[] bytes, Field field) {
+        if (TypeEnum.isBlobType(field == null ? null : field.getTypeName())) {
+            return new OracleBlobParameter(bytes);
+        }
+        return bytes;
     }
 }

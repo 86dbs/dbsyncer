@@ -25,7 +25,9 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.connector.oracle.schema.OracleBlobParameter;
 import org.dbsyncer.sdk.plugin.ReaderContext;
+import org.dbsyncer.sdk.schema.BindParameter;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.springframework.util.Assert;
@@ -571,6 +573,36 @@ public class OracleConnector extends AbstractDatabaseConnector {
             return "BINARY_DOUBLE";
         }
         return null;
+    }
+
+    /**
+     * 二进制列显式绑参：BLOB 走连接创建的 LOB，避免 MERGE 下 setObject(byte[]) 报 17004。
+     */
+    @Override
+    protected Object wrapBindParameter(Field field, Object val) {
+        if (val instanceof OracleBlobParameter) {
+            return val;
+        }
+        String type = field == null || StringUtil.isBlank(field.getTypeName())
+                ? StringUtil.EMPTY
+                : field.getTypeName().trim().toUpperCase(Locale.ROOT);
+        // SQL NULL → setNull(Types.BLOB)，避免 TYPE_UNKNOWN 绑参异常或落成空 BLOB
+        if (val == null && isBlobType(type)) {
+            return new OracleBlobParameter(null);
+        }
+        if (!(val instanceof byte[])) {
+            return val;
+        }
+        final byte[] bytes = (byte[]) val;
+        if (isBlobType(type)) {
+            return new OracleBlobParameter(bytes);
+        }
+        // RAW / LONG RAW
+        return (BindParameter) (ps, paramIndex, connection) -> ps.setBytes(paramIndex, bytes);
+    }
+
+    private static boolean isBlobType(String type) {
+        return StringUtil.isNotBlank(type) && type.contains("BLOB");
     }
 
     /**

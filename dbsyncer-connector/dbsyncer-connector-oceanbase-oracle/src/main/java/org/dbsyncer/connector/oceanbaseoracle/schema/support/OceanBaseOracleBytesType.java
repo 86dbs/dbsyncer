@@ -47,7 +47,7 @@ public final class OceanBaseOracleBytesType extends BytesType {
 
     @Override
     protected byte[] getDefaultMergedVal(Field field) {
-        return new byte[0];
+        return null;
     }
 
     @Override
@@ -97,7 +97,7 @@ public final class OceanBaseOracleBytesType extends BytesType {
                 return StringUtil.hexStringToByteArray(s.replace("HEXTORAW('", "").replace("')", ""));
             }
             if ("EMPTY_BLOB()".equals(s)) {
-                return null;
+                return new byte[0];
             }
             return s.getBytes();
         }

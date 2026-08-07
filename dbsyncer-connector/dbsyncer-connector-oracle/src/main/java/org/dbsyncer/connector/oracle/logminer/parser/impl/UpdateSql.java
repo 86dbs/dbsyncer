@@ -3,15 +3,12 @@
  */
 package org.dbsyncer.connector.oracle.logminer.parser.impl;
 
+import net.sf.jsqlparser.statement.update.Update;
+import net.sf.jsqlparser.statement.update.UpdateSet;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.logminer.parser.AbstractParser;
+import org.dbsyncer.connector.oracle.logminer.parser.OracleUnchangedValue;
 import org.dbsyncer.sdk.model.Field;
-
-import net.sf.jsqlparser.statement.update.Update;
-import net.sf.jsqlparser.statement.update.UpdateSet;
-
-import net.sf.jsqlparser.statement.update.Update;
-import net.sf.jsqlparser.statement.update.UpdateSet;
 
 import java.util.List;
 
@@ -22,7 +19,7 @@ import java.util.List;
  */
 public class UpdateSql extends AbstractParser {
 
-    private Update update;
+    private final Update update;
 
     public UpdateSql(Update update, List<Field> fields) {
         this.update = update;
@@ -34,6 +31,14 @@ public class UpdateSql extends AbstractParser {
         findColumn(update.getWhere());
         passerSet(update.getUpdateSets());
         return columnMapToData();
+    }
+
+    /**
+     * UPDATE redo 常为部分列；缺列用哨兵，写入前按主键回查，避免当 null 清空目标 LOB。
+     */
+    @Override
+    protected Object missingColumnValue() {
+        return OracleUnchangedValue.INSTANCE;
     }
 
     private void passerSet(List<UpdateSet> updateSets) {
