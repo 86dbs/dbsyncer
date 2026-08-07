@@ -49,8 +49,12 @@ public abstract class AbstractParser implements Parser {
         List<Object> data = new LinkedList<>();
         // 需要进行数据库类型
         for (Field field : fields) {
+            if (!columnMap.containsKey(field.getName())) {
+                // INSERT 缺列→null；UPDATE 缺列→哨兵（由子类 missingColumnValue 区分）
+                data.add(missingColumnValue());
+                continue;
+            }
             OracleColumnValue oracleColumnValue = new OracleColumnValue(columnMap.get(field.getName()));
-            // 无效空值
             if (oracleColumnValue.isNull()) {
                 data.add(null);
                 continue;
@@ -73,6 +77,13 @@ public abstract class AbstractParser implements Parser {
             }
         }
         return data;
+    }
+
+    /**
+     * redo 中未出现的列的占位值。UPDATE 需覆盖为 {@link OracleUnchangedValue}。
+     */
+    protected Object missingColumnValue() {
+        return null;
     }
 
     public void setFields(List<Field> fields) {
