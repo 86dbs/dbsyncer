@@ -9,6 +9,7 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.TaskDetailProfile;
 import org.dbsyncer.parser.model.TaskDetailQuery;
+import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.parser.util.TaskDetailQuerySupport;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.storage.SqlQuery;
@@ -16,12 +17,10 @@ import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.sdk.util.TaskDetailUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -135,16 +134,7 @@ public class TaskDetailProfileImpl implements TaskDetailProfile {
 
     private Map<String, Object> toDisplayRow(Map<String, Object> sqlRow) {
         // 先按忽略大小写读取驱动结果，再写出固定驼峰别名（避免 JSON 出现 TYPE/UPDATETIME）
-        Map<String, Object> src = new LinkedCaseInsensitiveMap<>();
-        if (sqlRow != null) {
-            src.putAll(sqlRow);
-        }
-        Map<String, Object> row = new LinkedHashMap<>();
-        for (String alias : SELECT_ALIASES) {
-            if (src.containsKey(alias)) {
-                row.put(alias, src.get(alias));
-            }
-        }
+        Map<String, Object> row = SqlResultRowUtil.toAliasRow(sqlRow, SELECT_ALIASES);
         TaskDetailUtil.mergeDetailRow(row);
 
         Object sourceTable = row.get("sourceTable");
