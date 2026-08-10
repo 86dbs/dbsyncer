@@ -62,7 +62,6 @@ import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -331,36 +330,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         int pageNum = NumberUtil.toInt(params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params.get("pageSize"), 10);
         String detailStatus = params.get("detailStatus");
-
-        if (StringUtil.isBlank(detailStatus)) {
-            Paging<TableGroup> groupPage = tableGroupProfile.queryTableGroup(mappingId, null, pageNum, pageSize);
-            Collection<TableGroup> groups = groupPage.getData();
-            Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(collectTableGroupIds(groups));
-            List<Map<String, Object>> rows = buildTableGroupResultRows(groups, metaMap, null);
-            rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get(ConfigConstant.MAPPING_RESULT_INDEX)))));
-            Paging paging = new Paging(pageNum, pageSize);
-            paging.setTotal(groupPage.getTotal());
-            paging.setData(rows);
-            return paging;
-        }
-
-        List<Map<String, Object>> rows = new ArrayList<>();
-        tableGroupProfile.pageScanTableGroups(mappingId, ConfigConstant.PAGE_SIZE, page -> {
-            if (CollectionUtils.isEmpty(page)) {
-                return;
-            }
-            Map<String, Meta> metaMap = metaProfile.getDetailMetaMap(collectTableGroupIds(page));
-            rows.addAll(buildTableGroupResultRows(page, metaMap, detailStatus));
-        });
-        rows.sort(Comparator.comparingInt(r -> NumberUtil.toInt(String.valueOf(r.get(ConfigConstant.MAPPING_RESULT_INDEX)))));
-
-        Paging paging = new Paging(pageNum, pageSize);
-        paging.setTotal(rows.size());
-        if (!CollectionUtils.isEmpty(rows)) {
-            int offset = (pageNum * pageSize) - pageSize;
-            paging.setData(rows.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
-        }
-        return paging;
+        return tableGroupProfile.queryTableGroupResults(mappingId, detailStatus, pageNum, pageSize);
     }
 
     @Override
@@ -626,51 +596,6 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
      */
     private void assertTableGroupExist(String mappingId) {
         Assert.isTrue(tableGroupProfile.getTableGroupCount(mappingId) > 0, "映射关系不能为空");
-    }
-
-    private List<String> collectTableGroupIds(Collection<TableGroup> groups) {
-        List<String> groupIds = new ArrayList<>();
-        if (CollectionUtils.isEmpty(groups)) {
-            return groupIds;
-        }
-        for (TableGroup group : groups) {
-            if (group != null && StringUtil.isNotBlank(group.getId())) {
-                groupIds.add(group.getId());
-            }
-        }
-        return groupIds;
-    }
-
-    private List<Map<String, Object>> buildTableGroupResultRows(Collection<TableGroup> groups, Map<String, Meta> metaMap, String detailStatus) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        if (CollectionUtils.isEmpty(groups)) {
-            return rows;
-        }
-        for (TableGroup group : groups) {
-            if (group == null || StringUtil.isBlank(group.getId())) {
-                continue;
-            }
-            Meta tableMeta = metaMap == null ? null : metaMap.get(group.getId());
-            long success = tableMeta != null && tableMeta.getSuccess() != null ? tableMeta.getSuccess().get() : 0L;
-            long fail = tableMeta != null && tableMeta.getFail() != null ? tableMeta.getFail().get() : 0L;
-            if (StringUtil.equals("fail", detailStatus) && fail <= 0) {
-                continue;
-            }
-            if (StringUtil.equals("success", detailStatus) && fail > 0) {
-                continue;
-            }
-            long updateTime = tableMeta != null ? tableMeta.getUpdateTime() : 0L;
-            Map<String, Object> row = new HashMap<>();
-            row.put(ConfigConstant.DATA_TABLE_GROUP_ID, group.getId());
-            row.put(ConfigConstant.MAPPING_RESULT_INDEX, group.getIndex());
-            row.put(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, group.getSourceTable() == null ? StringUtil.EMPTY : group.getSourceTable().getName());
-            row.put(ConfigConstant.TABLE_GROUP_TARGET_TABLE, group.getTargetTable() == null ? StringUtil.EMPTY : group.getTargetTable().getName());
-            row.put(ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL, success);
-            row.put(ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL, fail);
-            row.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, updateTime > 0 ? updateTime : group.getUpdateTime());
-            rows.add(row);
-        }
-        return rows;
     }
 
     /**

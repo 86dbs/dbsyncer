@@ -142,11 +142,6 @@ public class ConfigConstant {
     public static final String DATABASE_SYNC_DETAIL_FAIL_TOTAL = "failTotal";
 
     /**
-     * 驱动表映射运行结果行：TableGroup.index 模型字段（前端列表排序/展示）
-     */
-    public static final String MAPPING_RESULT_INDEX = "index";
-
-    /**
      * 内部分页加载默认分页大小
      */
     public static final int PAGE_SIZE= 1000;

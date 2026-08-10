@@ -78,6 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -130,6 +132,18 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
     private volatile PacketChannel channel;
     private volatile boolean connected;
     private volatile boolean connectedError;
+    /**
+     * 主动关闭后禁止自动重连；公开 connect() 会清回 false。
+     */
+    private volatile boolean stopped;
+    /**
+     * 保证同一时刻只有一个 keepalive 执行重连，避免 connect() 拉起的新线程再次进入重连导致双 dump。
+     */
+    private final AtomicBoolean reconnecting = new AtomicBoolean(false);
+    /**
+     * 连接代数：每次建连尝试在 openChannel 成功后递增；旧 worker/keepalive 迟到回调用 epoch/channel 识别并丢弃。
+     */
+    private final AtomicLong connectionEpoch = new AtomicLong(0);
     private Thread worker;
     private Thread keepAlive;
     private String workerThreadName;
@@ -177,48 +191,104 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
 
     @Override
     public void connect() throws Exception {
+        stopped = false;
+        connectInternal();
+    }
+
+    /**
+     * 建连实现；自动重连走此方法，保留 {@link #stopped} 语义。
+     */
+    private void connectInternal() throws Exception {
         try {
             connectLock.lock();
+            if (stopped) {
+                throw new IllegalStateException("BinaryLogRemoteClient is stopped");
+            }
             if (connected) {
                 throw new IllegalStateException("BinaryLogRemoteClient is already connected");
             }
-            setConfig();
-            openChannel();
-            connected = true;
-            // new keepalive thread
-            spawnKeepAliveThread();
-
-            // dump binary log
-            requestBinaryLogStream();
-            ensureEventDeserializerHasRequiredEDDs();
-
-            // new listen thread
-            spawnWorkerThread();
-            lifecycleListeners.forEach(listener->listener.onConnect(this));
+            try {
+                setConfig();
+                openChannel();
+                long epoch = connectionEpoch.incrementAndGet();
+                connected = true;
+                spawnKeepAliveThread(epoch);
+                requestBinaryLogStream();
+                ensureEventDeserializerHasRequiredEDDs();
+                spawnWorkerThread(epoch);
+                lifecycleListeners.forEach(listener -> listener.onConnect(this));
+            } catch (Exception e) {
+                rollbackConnectAttempt();
+                throw e;
+            }
         } finally {
             connectLock.unlock();
         }
     }
 
+    /**
+     * connect 半失败回滚：关掉已拉起的 channel / keepalive，避免 isConnected=true 但无 dump。
+     */
+    private void rollbackConnectAttempt() {
+        connected = false;
+        connectedError = false;
+        try {
+            closeChannel(channel);
+        } catch (IOException ex) {
+            logger.warn("Failed to close channel during connect rollback: {}", ex.getMessage());
+        }
+        channel = null;
+        Thread workerToStop = this.worker;
+        Thread keepAliveToStop = this.keepAlive;
+        this.worker = null;
+        this.keepAlive = null;
+        interruptIfOtherThread(workerToStop);
+        interruptIfOtherThread(keepAliveToStop);
+    }
+
     @Override
     public void disconnect() throws Exception {
-        if (connected) {
-            try {
-                connectLock.lock();
-                closeChannel(channel);
-                connected = false;
-                if (null != this.worker && !worker.isInterrupted()) {
-                    this.worker.interrupt();
-                    this.worker = null;
-                }
-                if (null != this.keepAlive && !keepAlive.isInterrupted()) {
-                    this.keepAlive.interrupt();
-                    this.keepAlive = null;
-                }
-                lifecycleListeners.forEach(listener->listener.onDisconnect(this));
-            } finally {
-                connectLock.unlock();
+        // 主动关闭：禁止后续自动重连，并打断可能正在 sleep/重试的 keepalive
+        stopped = true;
+        connectedError = false;
+        teardownConnection(true);
+    }
+
+    /**
+     * 自动重连前的拆除：不置 stopped，以便随后 connectInternal。
+     */
+    private void disconnectForReconnect() throws Exception {
+        teardownConnection(true);
+    }
+
+    private void teardownConnection(boolean fireDisconnectListener) throws Exception {
+        try {
+            connectLock.lock();
+            boolean wasConnected = connected;
+            // 先标记断开，避免关闭 socket 时旧 worker/keepalive 再把 connectedError 置回 true
+            connected = false;
+            closeChannel(channel);
+            channel = null;
+            Thread workerToStop = this.worker;
+            Thread keepAliveToStop = this.keepAlive;
+            this.worker = null;
+            this.keepAlive = null;
+            interruptIfOtherThread(workerToStop);
+            interruptIfOtherThread(keepAliveToStop);
+            if (wasConnected && fireDisconnectListener) {
+                lifecycleListeners.forEach(listener -> listener.onDisconnect(this));
             }
+        } finally {
+            connectLock.unlock();
+        }
+    }
+
+    /**
+     * 重连线程会调用 disconnectForReconnect()，不能 interrupt 自身，否则后续 sleep/重试会被打断。
+     */
+    private void interruptIfOtherThread(Thread thread) {
+        if (thread != null && thread != Thread.currentThread() && !thread.isInterrupted()) {
+            thread.interrupt();
         }
     }
 
@@ -324,8 +394,8 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         return false;
     }
 
-    private void listenForEventPackets(final PacketChannel channel) {
-        ByteArrayInputStream inputStream = channel.getInputStream();
+    private void listenForEventPackets(final PacketChannel listenChannel, final long epoch) {
+        ByteArrayInputStream inputStream = listenChannel.getInputStream();
         try {
             while (inputStream.peek() != -1) {
                 int packetLength = inputStream.readInteger(3);
@@ -351,7 +421,7 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
                 throw new EOFException("event data deserialization exception");
             }
         } catch (Exception e) {
-            notifyException(e);
+            notifyException(e, listenChannel, epoch);
         }
     }
 
@@ -678,68 +748,107 @@ public class BinaryLogRemoteClient implements BinaryLogClient {
         return serverId;
     }
 
-    private void spawnWorkerThread() {
-        this.worker = new Thread(()->listenForEventPackets(channel));
+    private void spawnWorkerThread(long epoch) {
+        final PacketChannel listenChannel = this.channel;
+        this.worker = new Thread(() -> listenForEventPackets(listenChannel, epoch));
         this.worker.setDaemon(false);
         this.workerThreadName = "binlog-parser-" + createClientId();
         this.worker.setName(workerThreadName);
         this.worker.start();
     }
 
-    private void spawnKeepAliveThread() {
+    private void spawnKeepAliveThread(long epoch) {
         String clientId = createClientId();
-        this.keepAlive = new Thread(()-> {
-            while (connected) {
+        final PacketChannel keepAliveChannel = this.channel;
+        Thread thread = new Thread(() -> {
+            while (connected && !stopped) {
                 if (connectedError) {
                     break;
                 }
                 try {
                     TimeUnit.SECONDS.sleep(5);
-                    channel.write(new PingCommand());
-                } catch (Exception e) {
-                    notifyException(e);
-                    break;
-                }
-            }
-            while (connectedError) {
-                try {
-                    logger.info("Trying to restore lost connection to {}}", createClientId());
-                    disconnect();
-                    connect();
-                    connectedError = false;
-                    if (connected) {
+                    if (!connected || stopped || connectedError) {
                         break;
                     }
+                    PacketChannel ch = channel;
+                    if (ch != null) {
+                        ch.write(new PingCommand());
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    notifyException(e, keepAliveChannel, epoch);
+                    break;
+                }
+            }
+            // 主动关闭或未抢到重连权则退出
+            if (stopped || !connectedError || !reconnecting.compareAndSet(false, true)) {
+                return;
+            }
+            try {
+                while (connectedError && !stopped) {
                     try {
-                        TimeUnit.SECONDS.sleep(5);
-                    } catch (InterruptedException ex) {
+                        logger.info("Trying to restore lost connection to {}", createClientId());
+                        disconnectForReconnect();
+                        if (stopped) {
+                            return;
+                        }
+                        // 必须在 connect 之前清标志，否则新 keepalive 一启动就会再次进入重连（双 dump / 同 serverId 互踢）
+                        connectedError = false;
+                        connectInternal();
+                        // 建连过程中 worker 可能已失败置位 connectedError；仅 connected 不足以视为重连成功
+                        if (connected && !connectedError) {
+                            return;
+                        }
+                        if (stopped) {
+                            return;
+                        }
+                        connectedError = true;
+                    } catch (Exception e) {
+                        if (stopped) {
+                            return;
+                        }
+                        connectedError = true;
                         logger.error(e.getMessage(), e);
+                        try {
+                            TimeUnit.SECONDS.sleep(5);
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                            logger.error(ex.getMessage(), ex);
+                            return;
+                        }
                     }
                 }
+            } finally {
+                reconnecting.set(false);
             }
         });
-        this.keepAlive.setDaemon(false);
-        this.keepAlive.setName("binlog-keepalive-" + clientId);
-        this.keepAlive.start();
+        this.keepAlive = thread;
+        thread.setDaemon(false);
+        thread.setName("binlog-keepalive-" + clientId);
+        thread.start();
     }
 
-    private void notifyException(Exception e) {
-        if (connected) {
-            logger.error(e.getMessage(), e);
-            if (e instanceof ServerException) {
-                ServerException serverException = (ServerException) e;
-                // 若binlog文件不存在（错误码1236），下次重连时回退到最新位置
-                if (serverException.getErrorCode() == 1236) {
-                    binlogFilename = null;
-                    binlogPosition = 0;
-                }
-            }
-            connectedError = true;
-            lifecycleListeners.forEach(listener->listener.onException(this, e));
+    private void notifyException(Exception e, PacketChannel eventChannel, long epoch) {
+        // 主动关闭或旧连接迟到回调：忽略，避免污染新连接状态（靠 epoch/channel 识别，勿用 reconnecting 抑制，否则新连接刚起来就失败会被吞掉）
+        if (stopped || !connected) {
+            return;
         }
+        if (epoch != connectionEpoch.get() || eventChannel == null || eventChannel != this.channel) {
+            return;
+        }
+        logger.error(e.getMessage(), e);
+        if (e instanceof ServerException) {
+            ServerException serverException = (ServerException) e;
+            // 若binlog文件不存在（错误码1236），下次重连时回退到最新位置
+            if (serverException.getErrorCode() == 1236) {
+                binlogFilename = null;
+                binlogPosition = 0;
+            }
+        }
+        connectedError = true;
+        lifecycleListeners.forEach(listener -> listener.onException(this, e));
     }
 
     @Override

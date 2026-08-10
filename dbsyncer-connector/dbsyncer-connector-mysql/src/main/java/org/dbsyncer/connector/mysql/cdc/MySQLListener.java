@@ -81,7 +81,8 @@ public class MySQLListener extends AbstractDatabaseListener {
     public void close() {
         try {
             connectLock.lock();
-            if (client != null && client.isConnected()) {
+            if (client != null) {
+                // 重连间隙 connected=false 时也要 disconnect，才能置 stopped 并打断 keepalive
                 client.disconnect();
             }
         } catch (Exception e) {

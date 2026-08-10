@@ -6,6 +6,7 @@ package org.dbsyncer.parser.impl;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
 import org.dbsyncer.parser.MetaProfile;
@@ -15,6 +16,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.OperationConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConfigModelUtil;
+import org.dbsyncer.parser.util.SqlResultRowUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
@@ -26,6 +28,7 @@ import org.dbsyncer.sdk.filter.impl.StringFilter;
 import org.dbsyncer.sdk.storage.SqlQuery;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -44,6 +47,30 @@ import java.util.function.Consumer;
  */
 @Component
 public class TableGroupProfileImpl implements TableGroupProfile {
+
+    private static final String RESULT_SELECT_COLUMNS =
+            "tg.ID AS tableGroupId, "
+                    + "tg.SOURCE_TABLE AS sourceTable, tg.TARGET_TABLE AS targetTable, "
+                    + "COALESCE(dm.SUCCESS, 0) AS successTotal, COALESCE(dm.FAIL, 0) AS failTotal, "
+                    + "COALESCE(dm.UPDATE_TIME, tg.UPDATE_TIME) AS updateTime";
+
+    private static final String RESULT_FROM_JOIN =
+            " FROM dbsyncer_table_group tg "
+                    + "LEFT JOIN dbsyncer_meta dm ON dm.TASK_ID = tg.ID AND dm.IS_TASK_DETAIL = 1 ";
+
+    private static final String RESULT_ORDER_SQL =
+            " ORDER BY COALESCE(dm.UPDATE_TIME, tg.UPDATE_TIME) DESC,"
+                    + " COALESCE(dm.FAIL, 0) DESC,"
+                    + " COALESCE(dm.SUCCESS, 0) DESC";
+
+    private static final String[] RESULT_SELECT_ALIASES = {
+            ConfigConstant.DATA_TABLE_GROUP_ID,
+            ConfigConstant.TABLE_GROUP_SOURCE_TABLE,
+            ConfigConstant.TABLE_GROUP_TARGET_TABLE,
+            ConfigConstant.DATABASE_SYNC_DETAIL_SUCCESS_TOTAL,
+            ConfigConstant.DATABASE_SYNC_DETAIL_FAIL_TOTAL,
+            ConfigConstant.CONFIG_MODEL_UPDATE_TIME
+    };
 
     @Resource
     private OperationTemplate operationTemplate;
@@ -120,12 +147,11 @@ public class TableGroupProfileImpl implements TableGroupProfile {
 
     @Override
     public Paging<TableGroup> queryTableGroup(String mappingId, String searchKey, int pageNum, int pageSize) {
-        Paging<TableGroup> empty = new Paging<>(Math.max(pageNum, 1), normalizePageSize(pageSize));
-        if (StringUtil.isBlank(mappingId)) {
-            return empty;
-        }
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         int safePageNum = Math.max(pageNum, 1);
-        int safePageSize = normalizePageSize(pageSize);
+        if (StringUtil.isBlank(mappingId)) {
+            return new Paging<>(safePageNum, safePageSize);
+        }
         Query query = new Query(safePageNum, safePageSize);
         query.setType(StorageEnum.TABLE_GROUP);
         query.addOrderBy(ConfigConstant.TABLE_GROUP_SORT_INDEX, SortEnum.DESC);
@@ -163,11 +189,63 @@ public class TableGroupProfileImpl implements TableGroupProfile {
     }
 
     @Override
+    public Paging queryTableGroupResults(String mappingId, String detailStatus, int pageNum, int pageSize) {
+        Assert.hasText(mappingId, "驱动ID不能为空");
+        int safePageNum = Math.max(pageNum, 1);
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
+
+        List<Object> args = new ArrayList<>();
+        String where = buildTableGroupResultWhere(mappingId, detailStatus, args);
+        long total = queryTableGroupResultCount(where, args);
+        Paging paging = new Paging(safePageNum, safePageSize);
+        paging.setTotal(total);
+        if (total <= 0) {
+            paging.setData(Collections.emptyList());
+            return paging;
+        }
+        String sql = "SELECT " + RESULT_SELECT_COLUMNS + RESULT_FROM_JOIN + where + RESULT_ORDER_SQL;
+        List<Map<String, Object>> rows = storageService.queryList(
+                SqlQuery.of(sql, args.toArray()).page(safePageNum, safePageSize));
+        List<Map<String, Object>> data = new ArrayList<>(rows == null ? 0 : rows.size());
+        if (!CollectionUtils.isEmpty(rows)) {
+            for (Map<String, Object> row : rows) {
+                data.add(SqlResultRowUtil.toAliasRow(row, RESULT_SELECT_ALIASES));
+            }
+        }
+        paging.setData(data);
+        return paging;
+    }
+
+    private String buildTableGroupResultWhere(String mappingId, String detailStatus, List<Object> args) {
+        StringBuilder where = new StringBuilder("WHERE tg.TASK_ID = ? ");
+        args.add(mappingId);
+        if (StringUtil.equals("fail", detailStatus)) {
+            where.append("AND COALESCE(dm.FAIL, 0) > 0 ");
+        } else if (StringUtil.equals("success", detailStatus)) {
+            where.append("AND COALESCE(dm.FAIL, 0) = 0 ");
+        }
+        return where.toString();
+    }
+
+    private long queryTableGroupResultCount(String where, List<Object> args) {
+        String sql = "SELECT COUNT(1) AS cnt " + RESULT_FROM_JOIN + where;
+        List<Map<String, Object>> rows = storageService.queryList(SqlQuery.of(sql, args.toArray()));
+        if (CollectionUtils.isEmpty(rows)) {
+            return 0L;
+        }
+        Object cnt = rows.get(0).get("cnt");
+        if (cnt == null) {
+            cnt = rows.get(0).values().iterator().next();
+        }
+        return NumberUtil.toLong(String.valueOf(cnt));
+    }
+
+    @Override
     public void pageScanTableGroups(String mappingId, int pageSize, Consumer<List<TableGroup>> pageConsumer) {
         if (StringUtil.isBlank(mappingId) || pageConsumer == null) {
             return;
         }
-        int safePageSize = normalizePageSize(pageSize);
+        int safePageSize = pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (true) {
             Paging<TableGroup> paging = queryTableGroup(mappingId, null, pageNum, safePageSize);
@@ -271,8 +349,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         return groupIds;
     }
 
-
-
     @Override
     public void addTableGroupBatchWithoutMeta(List<TableGroup> models) {
         if (CollectionUtils.isEmpty(models)) {
@@ -338,10 +414,6 @@ public class TableGroupProfileImpl implements TableGroupProfile {
         if (byRef != null && StringUtil.isNotBlank(byRef.getId())) {
             metaProfile.removeMeta(byRef.getId());
         }
-    }
-
-    private static int normalizePageSize(int pageSize) {
-        return pageSize > 0 ? pageSize : ConfigConstant.PAGE_SIZE;
     }
 
 }

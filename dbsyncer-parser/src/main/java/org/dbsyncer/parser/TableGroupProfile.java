@@ -62,6 +62,17 @@ public interface TableGroupProfile {
     Paging<TableGroup> queryTableGroup(String mappingId, String searchKey, int pageNum, int pageSize);
 
     /**
+     * 同步结果详情：table_group LEFT JOIN meta，库侧按更新时间/失败数/成功数降序分页。
+     *
+     * @param mappingId    驱动 ID
+     * @param detailStatus 可选；{@code fail} 仅失败、{@code success} 仅成功（fail=0），空则全部
+     * @param pageNum      页码（从 1 起）
+     * @param pageSize     每页条数
+     * @return 分页行（字段：tableGroupId / sourceTable / targetTable / successTotal / failTotal / updateTime）
+     */
+    Paging queryTableGroupResults(String mappingId, String detailStatus, int pageNum, int pageSize);
+
+    /**
      * 按页回调遍历任务下全部表映射（页内顺序为 sortIndex 降序）。
      *
      * @param mappingId    任务/驱动 ID
