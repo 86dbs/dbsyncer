@@ -310,8 +310,14 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         }
         List<MappingVO> rows = new ArrayList<>(paging.getData().size());
         for (Mapping mapping : paging.getData()) {
-            if (mapping != null) {
+            if (mapping == null) {
+                continue;
+            }
+            try {
                 rows.add(convertMapping2Vo(mapping));
+            } catch (Exception e) {
+                logger.error("转换驱动列表行失败, 已跳过. mappingId:{}, name:{}, metaId:{}, error:{}",
+                        mapping.getId(), mapping.getName(), mapping.getMetaId(), e.getMessage());
             }
         }
         result.setData(rows);
@@ -559,12 +565,12 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     }
 
     private MappingVO convertMapping2Vo(Mapping mapping) {
-        String model = mapping.getModel();
         Assert.notNull(mapping, "Mapping can not be null.");
+        String model = mapping.getModel();
 
-        // 元信息
-        Meta meta = metaProfile.getMeta(mapping.getMetaId());
-        Assert.notNull(meta, "Meta can not be null.");
+        // 元信息（历史数据可能出现 mapping.metaId 悬空，列表不应整页失败）
+        Meta meta = resolveMappingMeta(mapping);
+        Assert.notNull(meta, String.format("Meta can not be null. mappingId:%s, metaId:%s", mapping.getId(), mapping.getMetaId()));
         MetaVO metaVo = new MetaVO(ModelEnum.getModelEnum(model).getName(), mapping.getName());
         BeanUtils.copyProperties(meta, metaVo);
         metaVo.setCounting(dispatchTaskService.isRunning(mapping.getId()));
@@ -577,6 +583,21 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         vo.setSourceTable(null);
         vo.setTargetTable(null);
         return vo;
+    }
+
+    /**
+     * 获取驱动任务级 Meta；若 metaId 悬空则重建并回写 mapping。
+     */
+    private Meta resolveMappingMeta(Mapping mapping) {
+        String metaId = mapping.getMetaId();
+        Meta meta = StringUtil.isBlank(metaId) ? null : metaProfile.getMeta(metaId);
+        if (meta != null) {
+            return meta;
+        }
+        logger.warn("驱动 Meta 缺失，尝试重建. mappingId:{}, name:{}, metaId:{}", mapping.getId(), mapping.getName(), metaId);
+        mappingChecker.addMeta(mapping);
+        profileComponent.editConfigModel(mapping);
+        return metaProfile.getMeta(mapping.getMetaId());
     }
 
     /**
