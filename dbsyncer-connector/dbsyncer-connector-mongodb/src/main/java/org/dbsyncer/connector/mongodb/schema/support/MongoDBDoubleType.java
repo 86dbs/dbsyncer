@@ -36,17 +36,6 @@ public final class MongoDBDoubleType extends DoubleType {
     }
 
     @Override
-    public Object mergeValue(Object val, Field field) {
-        if (val instanceof String) {
-            return Double.parseDouble((String) val);
-        }
-        if (val instanceof Number) {
-            return val.toString();
-        }
-        return super.mergeValue(val, field);
-    }
-
-    @Override
     protected Object convert(Object val, Field field) {
         if (val instanceof Number) {
             return ((Number) val).doubleValue();
