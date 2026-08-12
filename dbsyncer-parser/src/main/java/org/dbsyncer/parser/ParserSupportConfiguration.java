@@ -7,7 +7,9 @@ import org.dbsyncer.common.enums.CommonTaskTypeEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.parser.flush.impl.DefaultBufferActuatorRouter;
 import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.spi.DatabaseSyncDetailService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
@@ -17,6 +19,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Primary;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -35,6 +38,7 @@ public class ParserSupportConfiguration {
     private ServiceFactory serviceFactory;
 
     @Bean
+    @Primary
     @ConditionalOnMissingBean
     @DependsOn(value = "serviceFactory")
     public TableGroupBufferActuatorService tableGroupBufferActuatorService() {
@@ -43,6 +47,22 @@ public class ParserSupportConfiguration {
             return service;
         }
         return new TableGroupBufferActuator();
+    }
+
+    @Bean(name = "partitionChannelActuator")
+    public TableGroupBufferActuator partitionChannelActuator() {
+        return new TableGroupBufferActuator();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @DependsOn(value = {"serviceFactory", "partitionChannelActuator"})
+    public BufferActuatorRouterService bufferActuatorRouterService() {
+        BufferActuatorRouterService service = serviceFactory.get(BufferActuatorRouterService.class);
+        if (service != null) {
+            return service;
+        }
+        return new DefaultBufferActuatorRouter();
     }
 
     @Bean

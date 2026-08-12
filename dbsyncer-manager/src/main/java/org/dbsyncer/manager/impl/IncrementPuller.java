@@ -20,7 +20,6 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.consumer.ParserConsumer;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.event.RefreshOffsetEvent;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -44,6 +43,7 @@ import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -75,7 +75,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
+    private BufferActuatorRouterService bufferActuatorRouter;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -249,7 +249,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
         if (null == listener) {
             throw new ManagerException(String.format("Unsupported listener type \"%s\".", connectorConfig.getConnectorType()));
         }
-        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, profileComponent, pluginFactory, logService, meta.getId(), list));
+        listener.register(new ParserConsumer(bufferActuatorRouter, metaProfile, profileComponent, pluginFactory, logService, meta.getId(),
+                list, mapping.getChannelSize()));
 
         // 默认定时抽取
         if (ListenerTypeEnum.isTiming(listenerType) && listener instanceof AbstractQuartzListener) {

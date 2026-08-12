@@ -6,11 +6,13 @@ package org.dbsyncer.web.controller.index;
 import org.dbsyncer.biz.DataSyncService;
 import org.dbsyncer.biz.MappingService;
 import org.dbsyncer.biz.model.DataSyncRequest;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.DataTypeEnum;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,9 @@ public class MappingController extends BaseController {
 
     @Resource
     private DataSyncService dataSyncService;
+
+    @Resource
+    private LicenseService licenseService;
 
     /**
      * 同步任务列表页面
@@ -91,6 +96,7 @@ public class MappingController extends BaseController {
         }
         model.put("mapping", mappingService.getMapping(id));
         initConfig(model);
+        initEditionInfo(model);
         return "mapping/" + page;
     }
 
@@ -282,5 +288,12 @@ public class MappingController extends BaseController {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
         }
+    }
+
+    private void initEditionInfo(ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
     }
 }

@@ -21,8 +21,11 @@ import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.parser.util.ChannelSizeUtil;
+import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -62,6 +65,9 @@ public class MappingChecker extends AbstractChecker {
 
     @Resource
     private ConnectorFactory connectorFactory;
+
+    @Resource
+    private LicenseService licenseService;
 
     @Override
     public ConfigModel checkAddConfigModel(Map<String, String> params) {
@@ -107,6 +113,7 @@ public class MappingChecker extends AbstractChecker {
         mapping.setBatchNum(NumberUtil.toInt(params.get("batchNum"), mapping.getBatchNum()));
         mapping.setThreadNum(NumberUtil.toInt(params.get("threadNum"), mapping.getThreadNum()));
         mapping.setForceUpdate(StringUtil.isNotBlank(params.get("forceUpdate")));
+        applyChannelSize(mapping, params);
 
         // 增量配置(日志/定时)
         String incrementStrategy = params.get("incrementStrategy");
@@ -128,6 +135,28 @@ public class MappingChecker extends AbstractChecker {
         batchMergeConfig(mapping, params);
 
         return mapping;
+    }
+
+    /**
+     * 仅专业版允许配置增量管道数；社区版忽略请求参数。
+     *
+     * @param mapping 驱动
+     * @param params  请求参数
+     */
+    private void applyChannelSize(Mapping mapping, Map<String, String> params) {
+        if (licenseService.getEditionEnum() == EditionEnum.COMMUNITY) {
+            return;
+        }
+        String raw = params.get("channelSize");
+        if (StringUtil.isBlank(raw)) {
+            if (!ChannelSizeUtil.isValid(mapping.getChannelSize())) {
+                mapping.setChannelSize(ChannelSizeUtil.DEFAULT_SIZE);
+            }
+            return;
+        }
+        int channelSize = NumberUtil.toInt(raw, ChannelSizeUtil.DEFAULT_SIZE);
+        Assert.isTrue(ChannelSizeUtil.isValid(channelSize), "增量管道数必须为1~64的2的幂");
+        mapping.setChannelSize(channelSize);
     }
 
     private void updateConnector(Map<String, String> params, Mapping mapping) {

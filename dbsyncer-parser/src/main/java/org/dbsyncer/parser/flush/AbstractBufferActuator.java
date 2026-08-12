@@ -204,6 +204,22 @@ public abstract class AbstractBufferActuator<Request extends BufferRequest, Resp
         return config.getBufferQueueCapacity();
     }
 
+    /**
+     * 队列为空且当前未持有消费锁（无 in-flight submit/process）时视为空闲。
+     * <p>DDL 入队栅栏应等待空闲，而不仅是 queue.isEmpty()。
+     *
+     * @return 空闲返回 true
+     */
+    public boolean isIdle() {
+        if (queue != null && !queue.isEmpty()) {
+            return false;
+        }
+        if (taskLock instanceof ReentrantLock) {
+            return !((ReentrantLock) taskLock).isLocked();
+        }
+        return taskLock == null;
+    }
+
     private void submit() {
         if (queue.isEmpty()) {
             return;

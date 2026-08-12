@@ -19,7 +19,6 @@ import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.base.ConnectorFactory;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
@@ -37,6 +36,7 @@ import org.dbsyncer.sdk.listener.event.RowChangedEvent;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
 import org.dbsyncer.sdk.schema.SchemaResolver;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class DataSyncServiceImpl implements DataSyncService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
+    private BufferActuatorRouterService bufferActuatorRouter;
 
     @Resource
     private ProfileComponent profileComponent;

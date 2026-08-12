@@ -73,6 +73,11 @@ public class Mapping extends AbstractConfigModel {
     // 表并发线程数（全量多表并行；单表内写串行；请按源/目标连接池大小调整）
     private int threadNum = 10;
 
+    /**
+     * 增量管道数（仅商业版生效；须为 1~64 的 2 的幂，默认 8）
+     */
+    private int channelSize = 8;
+
     // 覆盖写入
     private boolean forceUpdate = true;
 
@@ -204,6 +209,14 @@ public class Mapping extends AbstractConfigModel {
 
     public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
+    }
+
+    public int getChannelSize() {
+        return channelSize;
+    }
+
+    public void setChannelSize(int channelSize) {
+        this.channelSize = channelSize;
     }
 
     public boolean isForceUpdate() {

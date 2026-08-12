@@ -55,6 +55,13 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements T
         return threadPoolTaskExecutor;
     }
 
+    /**
+     * 启动表/管道执行器（clone 后调用）。
+     */
+    public void start() {
+        buildConfig();
+    }
+
     @Override
     protected void buildConfig() {
         super.setConfig(tableGroupBufferConfig);
