@@ -70,7 +70,7 @@ public class Mapping extends AbstractConfigModel {
     // 单次写入
     private int batchNum = 1000;
 
-    // 线程数
+    // 表并发线程数（全量多表并行；单表内写串行；请按源/目标连接池大小调整）
     private int threadNum = 10;
 
     // 覆盖写入

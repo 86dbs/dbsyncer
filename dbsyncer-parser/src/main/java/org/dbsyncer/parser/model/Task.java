@@ -1,5 +1,12 @@
+/**
+ * DBSyncer Copyright 2020-2026 All Rights Reserved.
+ */
 package org.dbsyncer.parser.model;
 
+/**
+ * 全量同步任务运行态。
+ * 父任务负责启停；子任务（按表）承载独立游标,委托父任务。
+ */
 public class Task {
 
     private String id;
@@ -16,9 +23,35 @@ public class Task {
 
     private long endTime;
 
+    /**
+     * 父任务（表级子任务时非空）
+     */
+    private Task parent;
+
+    /**
+     * 当前表映射 ID（表级子任务时非空）
+     */
+    private String tableGroupId;
+
     public Task(String id) {
         this.id = id;
         this.state = StateEnum.RUNNING;
+    }
+
+    /**
+     * 创建表级子任务：共享启停，独立游标。
+     *
+     * @param tableGroupId 表映射 ID
+     * @return 子任务
+     */
+    public Task createTableTask(String tableGroupId) {
+        Task child = new Task(this.id);
+        child.parent = this;
+        child.tableGroupId = tableGroupId;
+        child.beginTime = this.beginTime;
+        child.endTime = this.endTime;
+        child.pageIndex = 1;
+        return child;
     }
 
     public void stop() {
@@ -26,6 +59,9 @@ public class Task {
     }
 
     public boolean isRunning() {
+        if (parent != null) {
+            return parent.isRunning();
+        }
         return StateEnum.RUNNING == state;
     }
 
@@ -75,6 +111,18 @@ public class Task {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
+    }
+
+    public Task getParent() {
+        return parent;
+    }
+
+    public String getTableGroupId() {
+        return tableGroupId;
+    }
+
+    public void setTableGroupId(String tableGroupId) {
+        this.tableGroupId = tableGroupId;
     }
 
     public enum StateEnum {

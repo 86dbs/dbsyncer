@@ -18,6 +18,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.StorageRequest;
 import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.strategy.FlushStrategy;
+import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
@@ -148,8 +149,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
         if (success == 0 && fail == 0) {
             return;
         }
-        // 严格走库：按批 DB 原子增量，不再在内存 Meta 实例上累加
-        metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
+        // 与 FullPuller snapshot flush 共用锁，避免并发 editConfigModel 回写覆盖 DB 原子 success/fail
+        synchronized (MetaLockUtil.lock(writer.getMetaId())) {
+            metaProfile.incrementMeta(MetaIncrement.of(writer.getMetaId()).success(success).fail(fail));
+        }
         incrementTableMeta(writer.getTableGroupId(), success, fail);
     }
 

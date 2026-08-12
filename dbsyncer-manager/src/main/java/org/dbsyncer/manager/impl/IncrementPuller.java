@@ -27,6 +27,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.PickerUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.sdk.config.ListenerConfig;
@@ -204,6 +205,7 @@ public final class IncrementPuller extends AbstractPuller implements Application
         snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
         snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
         snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+        FullTableProgressUtil.clear(snapshot);
         meta.getSuccess().set(0);
         meta.getFail().set(0);
         profileComponent.editConfigModel(meta);

@@ -13,6 +13,7 @@ import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +139,8 @@ public final class FullIncrementPuller extends AbstractPuller {
         int pageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue());
         String cursor = snapshot.get(ParserEnum.CURSOR.getCode());
 
-        return tableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
+        return FullTableProgressUtil.hasIncomplete(snapshot)
+                || tableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
                 || pageIndex > ParserEnum.PAGE_INDEX.getDefaultValue()
                 || StringUtil.isNotBlank(cursor)
                 || processed > 0;
@@ -155,6 +157,7 @@ public final class FullIncrementPuller extends AbstractPuller {
         meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
         meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
         meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
+        FullTableProgressUtil.clear(meta.getSnapshot());
         profileComponent.editConfigModel(meta);
     }
 }
