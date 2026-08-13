@@ -37,6 +37,10 @@ public class ParserSupportConfiguration {
     @Resource
     private ServiceFactory serviceFactory;
 
+    /**
+     * 表执行器原型：开源回落 {@link TableGroupBufferActuator}，企业版 SPI 为 Plus。
+     * 路由 bind 时通过 {@link TableGroupBufferActuatorService#clone()} 派生每表/每管道实例。
+     */
     @Bean
     @Primary
     @ConditionalOnMissingBean
@@ -51,7 +55,7 @@ public class ParserSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = {"serviceFactory", "tableGroupBufferActuatorService"})
+    @DependsOn(value = "serviceFactory")
     public BufferActuatorRouterService bufferActuatorRouterService() {
         BufferActuatorRouterService service = serviceFactory.get(BufferActuatorRouterService.class);
         if (service != null) {
