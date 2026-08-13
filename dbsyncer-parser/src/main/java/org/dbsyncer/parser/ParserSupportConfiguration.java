@@ -49,14 +49,9 @@ public class ParserSupportConfiguration {
         return new TableGroupBufferActuator();
     }
 
-    @Bean(name = "partitionChannelActuator")
-    public TableGroupBufferActuator partitionChannelActuator() {
-        return new TableGroupBufferActuator();
-    }
-
     @Bean
     @ConditionalOnMissingBean
-    @DependsOn(value = {"serviceFactory", "partitionChannelActuator"})
+    @DependsOn(value = {"serviceFactory", "tableGroupBufferActuatorService"})
     public BufferActuatorRouterService bufferActuatorRouterService() {
         BufferActuatorRouterService service = serviceFactory.get(BufferActuatorRouterService.class);
         if (service != null) {
