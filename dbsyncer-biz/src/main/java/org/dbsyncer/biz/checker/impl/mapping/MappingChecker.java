@@ -18,10 +18,10 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.ChannelSizeUtil;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.parser.util.ChannelSizeUtil;
 import org.dbsyncer.sdk.enums.EditionEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -138,7 +138,7 @@ public class MappingChecker extends AbstractChecker {
     }
 
     /**
-     * 仅专业版允许配置增量管道数；社区版忽略请求参数。
+     * 增量管道数配置
      *
      * @param mapping 驱动
      * @param params  请求参数
