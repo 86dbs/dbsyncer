@@ -67,10 +67,10 @@
 ```shell
 # 社区版
 docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:latest
-docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.3
+docker pull images.dbsyncer.cn/xhtb-dbs/dbsyncer:2.1.4
 # 专业版
 docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:latest
-docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.1.3
+docker pull scxhtb-registry.cn-hangzhou.cr.aliyuncs.com/xhtb/dbsyncer-enterprise:2.1.4
 ```
 
 * 运行命令
