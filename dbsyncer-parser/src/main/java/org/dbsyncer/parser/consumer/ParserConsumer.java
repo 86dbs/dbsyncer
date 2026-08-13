@@ -3,11 +3,11 @@
  */
 package org.dbsyncer.parser.consumer;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.plugin.PluginFactory;
@@ -15,7 +15,9 @@ import org.dbsyncer.plugin.enums.ProcessEnum;
 import org.dbsyncer.sdk.listener.ChangedEvent;
 import org.dbsyncer.sdk.listener.QuartzListenerContext;
 import org.dbsyncer.sdk.listener.Watcher;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -26,24 +28,23 @@ import java.util.Map;
  */
 public final class ParserConsumer implements Watcher {
 
-    private final BufferActuatorRouter bufferActuatorRouter;
+    private final BufferActuatorRouterService bufferActuatorRouter;
     private final MetaProfile metaProfile;
     private final ProfileComponent profileComponent;
     private final PluginFactory pluginFactory;
     private final LogService logService;
     private final String metaId;
 
-    public ParserConsumer(BufferActuatorRouter bufferActuatorRouter, MetaProfile metaProfile, ProfileComponent profileComponent,
+    public ParserConsumer(BufferActuatorRouterService bufferActuatorRouter, MetaProfile metaProfile, ProfileComponent profileComponent,
                           PluginFactory pluginFactory, LogService logService, String metaId,
-                          List<TableGroup> tableGroups) {
+                          List<TableGroup> tableGroups, int channelSize) {
         this.bufferActuatorRouter = bufferActuatorRouter;
         this.metaProfile = metaProfile;
         this.profileComponent = profileComponent;
         this.pluginFactory = pluginFactory;
         this.logService = logService;
         this.metaId = metaId;
-        // 注册到路由服务中
-        bufferActuatorRouter.bind(metaId, tableGroups);
+        bufferActuatorRouter.bind(metaId, extractSourceTableNames(tableGroups), channelSize);
     }
 
     @Override
@@ -74,5 +75,20 @@ public final class ParserConsumer implements Watcher {
     public long getMetaUpdateTime() {
         Meta meta = metaProfile.getMeta(metaId);
         return meta != null ? meta.getUpdateTime() : 0L;
+    }
+
+    private List<String> extractSourceTableNames(List<TableGroup> tableGroups) {
+        List<String> tableNames = new ArrayList<>();
+        if (tableGroups == null) {
+            return tableNames;
+        }
+        for (TableGroup tableGroup : tableGroups) {
+            if (tableGroup == null || tableGroup.getSourceTable() == null
+                    || StringUtil.isBlank(tableGroup.getSourceTable().getName())) {
+                continue;
+            }
+            tableNames.add(tableGroup.getSourceTable().getName());
+        }
+        return tableNames;
     }
 }

@@ -26,10 +26,10 @@ import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
-import org.dbsyncer.parser.flush.impl.BufferActuatorRouter;
-import org.dbsyncer.parser.flush.impl.TableGroupBufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.model.BufferActuatorMetric;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -89,7 +89,7 @@ public class MetricReporter implements ScheduledTaskJob {
     private BufferActuator storageBufferActuator;
 
     @Resource
-    private BufferActuatorRouter bufferActuatorRouter;
+    private BufferActuatorRouterService bufferActuatorRouter;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -126,17 +126,18 @@ public class MetricReporter implements ScheduledTaskJob {
 
     public Paging<MetricResponse> queryActuator(String searchMetaId, String searchKey, int pageNum, int pageSize) {
         Paging<MetricResponse> paging = new Paging<>(pageNum, pageSize);
-        if (!CollectionUtils.isEmpty(bufferActuatorRouter.getRouter())) {
+        List<BufferActuatorMetric> metrics = bufferActuatorRouter.listMetrics();
+        if (!CollectionUtils.isEmpty(metrics)) {
             List<MetricResponseInfo> tableList = new ArrayList<>();
-            // 默认查所有表
-            if (StringUtil.isBlank(searchMetaId)) {
-                bufferActuatorRouter.getRouter().forEach((metaId, group)->getMetricResponseInfo(metaId, group, searchKey, tableList));
-            } else {
-                // 查指定驱动表
-                Map<String, TableGroupBufferActuator> group = bufferActuatorRouter.getRouter().get(searchMetaId);
-                if (group != null) {
-                    getMetricResponseInfo(searchMetaId, group, searchKey, tableList);
+            String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
+            for (BufferActuatorMetric metric : metrics) {
+                if (StringUtil.isNotBlank(searchMetaId) && !StringUtil.equals(searchMetaId, metric.getMetaId())) {
+                    continue;
                 }
+                if (StringUtil.isNotBlank(searchKey) && !StringUtil.contains(metric.getName(), searchKey)) {
+                    continue;
+                }
+                tableList.add(collect(metric, tableGroupCode));
             }
             if (!CollectionUtils.isEmpty(tableList)) {
                 int offset = (pageNum * pageSize) - pageSize;
@@ -148,26 +149,30 @@ public class MetricReporter implements ScheduledTaskJob {
         return paging;
     }
 
-    private void getMetricResponseInfo(String metaId, Map<String, TableGroupBufferActuator> group, String searchKey, List<MetricResponseInfo> tableList) {
-        Meta meta = metaProfile.getMeta(metaId);
-        Mapping mapping = profileComponent.getMapping(meta.getTaskId());
-        String tableGroupCode = BufferActuatorMetricEnum.TABLE_GROUP.getCode();
-        group.forEach((k, actuator)-> {
-            if (StringUtil.isNotBlank(searchKey)) {
-                if (StringUtil.contains(actuator.getTableName(), searchKey)) {
-                    tableList.add(collect(actuator, tableGroupCode, mapping.getName(), actuator.getTableName()));
-                }
-                return;
+    private MetricResponseInfo collect(BufferActuatorMetric metric, String code) {
+        Meta meta = metaProfile.getMeta(metric.getMetaId());
+        String group = StringUtil.EMPTY;
+        if (meta != null) {
+            Mapping mapping = profileComponent.getMapping(meta.getTaskId());
+            if (mapping != null) {
+                group = mapping.getName();
             }
-            tableList.add(collect(actuator, tableGroupCode, mapping.getName(), actuator.getTableName()));
-        });
+        }
+        MetricResponseInfo info = new MetricResponseInfo();
+        info.setQueueUp(metric.getQueueSize());
+        String msg = "堆积" + StringUtil.COLON + info.getQueueUp() + StringUtil.FORWARD_SLASH + metric.getQueueCapacity() + StringUtil.SPACE
+                + ThreadPoolMetricEnum.CORE_SIZE.getMetricName() + StringUtil.COLON + metric.getActiveCount() + StringUtil.FORWARD_SLASH
+                + metric.getMaxPoolSize() + StringUtil.SPACE + ThreadPoolMetricEnum.COMPLETED.getMetricName() + StringUtil.COLON
+                + metric.getCompletedTaskCount();
+        info.setResponse(new MetricResponse(code, group, metric.getName(), Collections.singletonList(new Sample(StatisticEnum.COUNT.getTagValueRepresentation(), msg))));
+        return info;
     }
 
     public AppReportMetric getAppReportMetric() {
         queryTime = LocalDateTime.now();
         // 堆积任务(通用执行器 + 表执行器)
-        report.setQueueUp(bufferActuatorRouter.getQueueSize().addAndGet(generalBufferActuator.getQueue().size()));
-        report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity().addAndGet(generalBufferActuator.getQueueCapacity()));
+        report.setQueueUp(bufferActuatorRouter.getQueueSize() + generalBufferActuator.getQueue().size());
+        report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity() + generalBufferActuator.getQueueCapacity());
         // 持久化任务
         report.setStorageQueueUp(storageBufferActuator.getQueue().size());
         report.setStorageQueueCapacity(storageBufferActuator.getQueueCapacity());

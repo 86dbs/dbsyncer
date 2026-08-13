@@ -38,6 +38,7 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.enums.ChangedEventTypeEnum;
+import org.dbsyncer.sdk.model.ChangedOffset;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
@@ -171,14 +172,36 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 break;
             case ROW:
                 pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
-                // 发布刷新增量点事件
-                applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+                if (shouldPublishOffsetRefresh(response)) {
+                    publishOffsetRefresh(response.getChangedOffset());
+                }
                 break;
             default:
                 break;
         }
         // 及时清空列表引用，便于 GC 回收，减轻 parser 侧 LinkedList 保留内存
         response.getDataList().clear();
+    }
+
+    /**
+     * 是否在本次 ROW pull 后立即刷位点。Plus 等多表合并场景可推迟到批末统一刷。
+     *
+     * @param response 写响应
+     * @return 立即刷返回 true
+     */
+    protected boolean shouldPublishOffsetRefresh(WriterResponse response) {
+        return true;
+    }
+
+    /**
+     * 发布增量位点刷新事件。
+     *
+     * @param changedOffset 位点
+     */
+    protected void publishOffsetRefresh(ChangedOffset changedOffset) {
+        if (changedOffset != null) {
+            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, changedOffset));
+        }
     }
 
     @Override
@@ -295,7 +318,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
-            applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, response.getChangedOffset()));
+            publishOffsetRefresh(response.getChangedOffset());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

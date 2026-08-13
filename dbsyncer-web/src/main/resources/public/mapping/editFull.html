@@ -4,7 +4,7 @@
 
 <div th:fragment="content" id="mapping_full">
     <!-- 配置表单 -->
-    <div class="grid grid-cols-3">
+    <div class="grid grid-cols-4">
         <!-- 批量读取 -->
         <div class="form-item">
             <label class="form-label">
@@ -31,10 +31,30 @@
         <div class="form-item">
             <label class="form-label">
                 线程数 <strong class="text-primary">*</strong>
+                <i class="fa fa-question-circle" title="全量同步时并行执行的表数量。请勿超过源/目标连接池大小"></i>
             </label>
             <div class="form-control-area">
                 <input th:value="${mapping?.threadNum}" type="number" name="threadNum" class="form-control" min="1" max="64"
                        required placeholder="1-64" />
+            </div>
+        </div>
+
+        <!-- 增量管道数（仅专业版） -->
+        <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
+            <label class="form-label">
+                增量管道数 <strong class="text-primary">*</strong>
+                <i class="fa fa-question-circle" title="按表名位运算分流到固定管道，须为2的幂，上限64。修改后需停止任务再启动生效"></i>
+            </label>
+            <div class="form-control-area">
+                <select name="channelSize" class="form-control" required>
+                    <option value="1" th:selected="${mapping?.channelSize == 1}">1</option>
+                    <option value="2" th:selected="${mapping?.channelSize == 2}">2</option>
+                    <option value="4" th:selected="${mapping?.channelSize == 4}">4</option>
+                    <option value="8" th:selected="${mapping?.channelSize == 8 or mapping?.channelSize == null}">8</option>
+                    <option value="16" th:selected="${mapping?.channelSize == 16}">16</option>
+                    <option value="32" th:selected="${mapping?.channelSize == 32}">32</option>
+                    <option value="64" th:selected="${mapping?.channelSize == 64}">64</option>
+                </select>
             </div>
         </div>
     </div>
