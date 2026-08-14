@@ -6,7 +6,6 @@ package org.dbsyncer.connector.oracle.logminer;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.oracle.OracleException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,8 +97,8 @@ public class LogMinerHelper {
 
     public static String logMinerViewQuery(String schema, String logMinerUser) {
         StringBuilder query = new StringBuilder();
-        // query.append("SELECT SCN, SQL_REDO, OPERATION_CODE, TIMESTAMP, XID, CSF, TABLE_NAME, SEG_OWNER, OPERATION, USERNAME ");
-        query.append("SELECT * ");
+        // 显式列：V$LOGMNR_CONTENTS 的 SQL_REDO/SQL_UNDO 均为 LONG，SELECT * 时 JDBC 不能可靠读取两列
+        query.append("SELECT SCN, SQL_REDO, OPERATION_CODE, TIMESTAMP, XID, CSF, TABLE_NAME, SEG_OWNER ");
         query.append("FROM V$LOGMNR_CONTENTS ");
         query.append("WHERE ");
         query.append("SCN >= ? AND SCN < ? ");
