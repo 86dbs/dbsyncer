@@ -80,7 +80,7 @@ public class OracleListener extends AbstractDatabaseListener {
                 try {
                     parseEvent(event);
                 } catch (JSQLParserException e) {
-                    logger.warn("不支持sql:{}", event.getRedoSql());
+                    logger.warn("不支持sql:{}", event.getRedoSql(), e);
                 } catch (Exception e) {
                     logger.error("解析sql异常:{}", event.getRedoSql(), e);
                 }

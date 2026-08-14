@@ -425,8 +425,14 @@ public class LogMiner {
         int csf = rs.getInt("CSF");
 
         while (csf == 1) {
-            rs.next();
-            redoBuilder.append(rs.getString("SQL_REDO"));
+            if (!rs.next()) {
+                break;
+            }
+            // 仅 SQL_UNDO 超长续行时本行 SQL_REDO 为 null，禁止 append(null) 写入字面量 "null"
+            String piece = rs.getString("SQL_REDO");
+            if (piece != null) {
+                redoBuilder.append(piece);
+            }
             csf = rs.getInt("CSF");
         }
 
