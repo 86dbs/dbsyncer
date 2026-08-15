@@ -172,9 +172,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 break;
             case ROW:
                 pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
-                if (shouldPublishOffsetRefresh(response)) {
-                    publishOffsetRefresh(response.getChangedOffset());
-                }
+                publishOffsetRefresh(response.getChangedOffset());
                 break;
             default:
                 break;
@@ -183,13 +181,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         response.getDataList().clear();
     }
 
-    /**
-     * 是否在本次 pull 后立即刷位点。Plus 等多表合并场景可推迟到连续水位推进。
-     *
-     * @param response 写响应
-     * @return 立即刷返回 true
-     */
-    protected boolean shouldPublishOffsetRefresh(WriterResponse response) {
+    protected boolean shouldPublishOffsetRefresh() {
         return true;
     }
 
@@ -199,6 +191,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * @param changedOffset 位点
      */
     protected void publishOffsetRefresh(ChangedOffset changedOffset) {
+        if (!shouldPublishOffsetRefresh()) {
+            return;
+        }
         if (changedOffset != null) {
             applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, changedOffset));
         }
@@ -233,15 +228,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 2、参数转换
         TableGroup tableGroup = tableGroupPicker.getTableGroup();
-        if (tableGroup.getSourceTable().getName().equals("pt_load_002")){
-            try {
-                logger.info("当前测试表开始");
-                Thread.sleep(30000);
-                logger.info("当前测试表结束");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 3、插件转换
@@ -327,9 +313,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
-            if (shouldPublishOffsetRefresh(response)) {
-                publishOffsetRefresh(response.getChangedOffset());
-            }
+            publishOffsetRefresh(response.getChangedOffset());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

@@ -25,8 +25,7 @@ public final class ChangedOffset {
     private Object position;
 
     /**
-     * 进程内连续序号，仅用于多管道水位；listener / snapshot 不持久化。
-     * <p>0 表示未发号。
+     * 同步连续序号
      */
     private long seq;
 
