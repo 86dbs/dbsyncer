@@ -172,7 +172,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 break;
             case ROW:
                 pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
-                publishOffsetRefresh(response.getChangedOffset());
+                if (shouldPublishOffsetRefresh()) {
+                    publishOffsetRefresh(response.getChangedOffset());
+                }
                 break;
             default:
                 break;
@@ -191,9 +193,6 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
      * @param changedOffset 位点
      */
     protected void publishOffsetRefresh(ChangedOffset changedOffset) {
-        if (!shouldPublishOffsetRefresh()) {
-            return;
-        }
         if (changedOffset != null) {
             applicationContext.publishEvent(new RefreshOffsetEvent(applicationContext, changedOffset));
         }
@@ -313,7 +312,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
-            publishOffsetRefresh(response.getChangedOffset());
+            if (shouldPublishOffsetRefresh()) {
+                publishOffsetRefresh(response.getChangedOffset());
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
