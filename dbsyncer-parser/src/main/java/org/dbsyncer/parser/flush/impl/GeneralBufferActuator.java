@@ -184,7 +184,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     /**
-     * 是否在本次 ROW pull 后立即刷位点。Plus 等多表合并场景可推迟到批末统一刷。
+     * 是否在本次 pull 后立即刷位点。Plus 等多表合并场景可推迟到连续水位推进。
      *
      * @param response 写响应
      * @return 立即刷返回 true
@@ -233,6 +233,15 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
 
         // 2、参数转换
         TableGroup tableGroup = tableGroupPicker.getTableGroup();
+        if (tableGroup.getSourceTable().getName().equals("pt_load_002")){
+            try {
+                logger.info("当前测试表开始");
+                Thread.sleep(30000);
+                logger.info("当前测试表结束");
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         ConvertUtil.convert(tableGroup.getConvert(), targetDataList);
 
         // 3、插件转换
@@ -318,7 +327,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
-            publishOffsetRefresh(response.getChangedOffset());
+            if (shouldPublishOffsetRefresh(response)) {
+                publishOffsetRefresh(response.getChangedOffset());
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
