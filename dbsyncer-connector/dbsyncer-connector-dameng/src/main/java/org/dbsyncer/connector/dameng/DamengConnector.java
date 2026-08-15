@@ -313,9 +313,11 @@ public final class DamengConnector extends OracleConnector {
                 result.getSuccessData().add(data.get(i));
                 continue;
             }
-            result.getFailData().add(data.get(i));
-            if (StringUtil.isBlank(result.getError())) {
-                result.getError().append("目标表数据可能").append(isInsert(event) ? "存在" : "不存在");
+            if (isInsert(event)) {
+                result.getFailData().add(data.get(i));
+                if (StringUtil.isBlank(result.getError())) {
+                    result.getError().append("目标表数据可能存在");
+                }
             }
         }
     }

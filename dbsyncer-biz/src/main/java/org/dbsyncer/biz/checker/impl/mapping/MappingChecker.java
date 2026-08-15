@@ -18,7 +18,6 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
-import org.dbsyncer.parser.util.ChannelSizeUtil;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.sdk.config.ListenerConfig;
 import org.dbsyncer.sdk.constant.ConfigConstant;
@@ -148,15 +147,7 @@ public class MappingChecker extends AbstractChecker {
             return;
         }
         String raw = params.get("channelSize");
-        if (StringUtil.isBlank(raw)) {
-            if (!ChannelSizeUtil.isValid(mapping.getChannelSize())) {
-                mapping.setChannelSize(ChannelSizeUtil.DEFAULT_SIZE);
-            }
-            return;
-        }
-        int channelSize = NumberUtil.toInt(raw, ChannelSizeUtil.DEFAULT_SIZE);
-        Assert.isTrue(ChannelSizeUtil.isValid(channelSize), "增量管道数必须为1~64的2的幂");
-        mapping.setChannelSize(channelSize);
+        mapping.setChannelSize(NumberUtil.toInt(raw));
     }
 
     private void updateConnector(Map<String, String> params, Mapping mapping) {

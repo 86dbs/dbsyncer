@@ -24,6 +24,11 @@ public final class ChangedOffset {
      */
     private Object position;
 
+    /**
+     * 同步连续序号
+     */
+    private long seq;
+
     public String getMetaId() {
         return metaId;
     }
@@ -46,5 +51,13 @@ public final class ChangedOffset {
 
     public void setPosition(Object position) {
         this.position = position;
+    }
+
+    public long getSeq() {
+        return seq;
+    }
+
+    public void setSeq(long seq) {
+        this.seq = seq;
     }
 }

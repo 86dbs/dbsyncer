@@ -172,7 +172,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
                 break;
             case ROW:
                 pickers.forEach(picker->distributeTableGroup(response, mapping, picker, picker.getTableGroup().getSourceTable().getColumn(), true));
-                if (shouldPublishOffsetRefresh(response)) {
+                if (shouldPublishOffsetRefresh()) {
                     publishOffsetRefresh(response.getChangedOffset());
                 }
                 break;
@@ -183,13 +183,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
         response.getDataList().clear();
     }
 
-    /**
-     * 是否在本次 ROW pull 后立即刷位点。Plus 等多表合并场景可推迟到批末统一刷。
-     *
-     * @param response 写响应
-     * @return 立即刷返回 true
-     */
-    protected boolean shouldPublishOffsetRefresh(WriterResponse response) {
+    protected boolean shouldPublishOffsetRefresh() {
         return true;
     }
 
@@ -318,7 +312,9 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             tableGroupProfile.editTableGroup(tableGroup);
 
             // 7.发布更新事件
-            publishOffsetRefresh(response.getChangedOffset());
+            if (shouldPublishOffsetRefresh()) {
+                publishOffsetRefresh(response.getChangedOffset());
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

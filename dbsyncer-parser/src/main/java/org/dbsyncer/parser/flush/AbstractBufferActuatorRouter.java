@@ -72,8 +72,6 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
                     TimeUnit.MILLISECONDS.sleep(10);
                 } catch (InterruptedException ex) {
                     logger.error(ex.getMessage(), ex);
-                    Thread.currentThread().interrupt();
-                    break;
                 }
             }
         }
