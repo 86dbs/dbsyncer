@@ -16,6 +16,7 @@ import org.dbsyncer.biz.vo.CpuVO;
 import org.dbsyncer.biz.vo.DiskSpaceVO;
 import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.biz.vo.MemoryVO;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -23,6 +24,7 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
@@ -100,8 +102,15 @@ public class MonitorController extends BaseController {
     @Resource
     private GBValueFormatter gbValueFormatter;
 
+    @Resource
+    private LicenseService licenseService;
+
     @RequestMapping("")
     public String index(HttpServletRequest request, ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
         return "monitor/list.html";
     }
 
