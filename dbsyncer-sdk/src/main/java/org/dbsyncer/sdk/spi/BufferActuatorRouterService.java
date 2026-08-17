@@ -23,7 +23,7 @@ public interface BufferActuatorRouterService {
      *
      * @param metaId           驱动 Meta ID
      * @param sourceTableNames 源表名列表
-     * @param channelSize      增量管道数（开源忽略；商业版须为 1~64 的 2 的幂）
+     * @param channelSize      执行器数（开源忽略；商业版须为 1~64 的 2 的幂）
      */
     void bind(String metaId, List<String> sourceTableNames, int channelSize);
 

@@ -137,7 +137,7 @@ public class MappingChecker extends AbstractChecker {
     }
 
     /**
-     * 增量管道数配置
+     * 执行器数配置
      *
      * @param mapping 驱动
      * @param params  请求参数
