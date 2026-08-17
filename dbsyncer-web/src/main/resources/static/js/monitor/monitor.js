@@ -120,7 +120,7 @@ function bindQueryLogEvent() {
     }
 }
 
-// 查看表执行器
+// 查看执行器
 function bindQueryActuatorEvent() {
     let pagination;
     let metaSelect;
@@ -129,7 +129,7 @@ function bindQueryActuatorEvent() {
     function params() {
         return {
             "id": metaSelect.getValues()[0] || '',
-            "name": searchInput.getValue() || '',
+            "name": (searchInput && searchInput.getValue()) || '',
         }
     }
 
@@ -182,7 +182,9 @@ function bindQueryActuatorEvent() {
     });
 
     // 搜索框输入事件
-    searchInput = initSearch('searchActuator', search);
+    if (document.getElementById('searchActuator')) {
+        searchInput = initSearch('searchActuator', search);
+    }
 
     // 初始化分页管理器
     pagination = new PaginationManager({

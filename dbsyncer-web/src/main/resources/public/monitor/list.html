@@ -89,7 +89,9 @@
                 <div class="lg:col-span-3">
                     <select id="searchActuatorMeta" class="form-control"></select>
                 </div>
-                <div id="searchActuator" class="lg:col-span-3 search-wrapper">
+                <!-- 社区版按表名搜索；商业版为固定管道(channel)，不展示表名搜索 -->
+                <div th:if="${editionInfo == null or editionInfo.edition eq 'community'}"
+                     id="searchActuator" class="lg:col-span-3 search-wrapper">
                     <i class="fa fa-search search-icon"></i>
                     <input class="search-input" type="text" maxlength="32" placeholder="搜索表关键字" />
                     <span class="search-clear" title="清除">
@@ -103,7 +105,7 @@
                 <thead>
                 <tr>
                     <th></th>
-                    <th>[驱动]数据源表</th>
+                    <th>同步任务</th>
                     <th>结果</th>
                 </tr>
                 </thead>
