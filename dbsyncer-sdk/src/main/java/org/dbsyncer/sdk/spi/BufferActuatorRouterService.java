@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 增量缓存执行器路由 SPI。
- * <p>开源：每表一执行器，超限走通用执行器；商业版：按表名位运算分流到固定管道。
+ * <p>开源：每表一执行器
  *
  * @author wuji
  * @version 1.0.0
@@ -23,7 +23,7 @@ public interface BufferActuatorRouterService {
      *
      * @param metaId           驱动 Meta ID
      * @param sourceTableNames 源表名列表
-     * @param channelSize      执行器数（开源忽略；商业版须为 1~64 的 2 的幂）
+     * @param channelSize      执行器数
      */
     void bind(String metaId, List<String> sourceTableNames, int channelSize);
 

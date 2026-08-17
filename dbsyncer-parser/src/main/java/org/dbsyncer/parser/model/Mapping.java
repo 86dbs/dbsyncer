@@ -74,7 +74,7 @@ public class Mapping extends AbstractConfigModel {
     private int threadNum = 10;
 
     /**
-     * 执行器数（仅商业版生效；须为 1~64 的 2 的幂，默认 8）
+     * 执行器数
      */
     private int channelSize = 8;
 
