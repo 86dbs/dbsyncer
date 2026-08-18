@@ -43,7 +43,13 @@ public class Meta extends ConfigModel {
     private AtomicLong diff;
     private AtomicLong fixed;
     private Map<String, String> snapshot;
+    /**
+     * 任务启动时间，落库列 START_TIME。
+     */
     private long beginTime;
+    /**
+     * 任务结束时间，不单独落库；读取时取 UPDATE_TIME。
+     */
     private long endTime;
 
     public Meta() {

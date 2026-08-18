@@ -111,6 +111,15 @@ public abstract class ConfigModelUtil {
         if (snapshot instanceof String && StringUtil.isNotBlank((String) snapshot)) {
             data.put(ConfigConstant.META_SNAPSHOT, JsonUtil.parseMap((String) snapshot));
         }
+        // START_TIME → beginTime；UPDATE_TIME → endTime（全量耗时）
+        Object startTime = data.get(ConfigConstant.META_START_TIME);
+        if (startTime != null) {
+            data.put("beginTime", startTime);
+        }
+        Object updateTime = data.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        if (updateTime != null) {
+            data.put("endTime", updateTime);
+        }
         Meta meta = JsonUtil.mapToObj(data, Meta.class);
         return meta == null ? new Meta() : meta;
     }
@@ -130,6 +139,7 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_ID, meta.getId());
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, meta.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, meta.getUpdateTime());
+        params.put(ConfigConstant.META_START_TIME, meta.getBeginTime());
         params.put(ConfigConstant.META_TASK_ID, meta.getTaskId());
         params.put(ConfigConstant.META_STATE, meta.getState());
         params.put(ConfigConstant.META_IS_TASK_DETAIL, meta.getIsTaskDetail());

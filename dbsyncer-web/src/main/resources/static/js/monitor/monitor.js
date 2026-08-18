@@ -120,7 +120,7 @@ function bindQueryLogEvent() {
     }
 }
 
-// 查看表执行器
+// 查看执行器（社区版可按表名关键字过滤；商业版仅按驱动筛选）
 function bindQueryActuatorEvent() {
     let pagination;
     let metaSelect;
@@ -129,7 +129,7 @@ function bindQueryActuatorEvent() {
     function params() {
         return {
             "id": metaSelect.getValues()[0] || '',
-            "name": searchInput.getValue() || '',
+            "name": (searchInput && searchInput.getValue()) || '',
         }
     }
 
@@ -181,8 +181,10 @@ function bindQueryActuatorEvent() {
         onSelect: search
     });
 
-    // 搜索框输入事件
-    searchInput = initSearch('searchActuator', search);
+    // 社区版才有表名搜索框；商业版 DOM 不存在
+    if (document.getElementById('searchActuator')) {
+        searchInput = initSearch('searchActuator', search);
+    }
 
     // 初始化分页管理器
     pagination = new PaginationManager({

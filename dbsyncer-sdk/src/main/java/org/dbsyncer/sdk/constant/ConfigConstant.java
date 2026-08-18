@@ -77,6 +77,10 @@ public class ConfigConstant {
      * 任务执行结果表(dbsyncer_meta)拆分列
      */
     public static final String META_TASK_ID = "taskId";
+    /**
+     * 任务启动时间（列 START_TIME），对应 Meta.beginTime
+     */
+    public static final String META_START_TIME = "startTime";
     public static final String META_STATE = "state";
     public static final String META_IS_TASK_DETAIL = "isTaskDetail";
     public static final String META_TOTAL = "total";

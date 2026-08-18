@@ -39,14 +39,14 @@
             </div>
         </div>
 
-        <!-- 增量管道数（仅专业版） -->
+        <!-- 执行器数（仅专业版） -->
         <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
             <label class="form-label">
-                增量管道数 <strong class="text-primary">*</strong>
+                执行器数 <strong class="text-primary">*</strong>
                 <i class="fa fa-question-circle" title="按表名位运算分流到固定管道，须为2的幂，上限64。修改后需停止任务再启动生效"></i>
             </label>
             <div class="form-control-area">
-                <select name="channelSize" class="form-control" required>
+                <select id="channelSize" name="channelSize" class="form-control" required>
                     <option value="1" th:selected="${mapping?.channelSize == 1}">1</option>
                     <option value="2" th:selected="${mapping?.channelSize == 2}">2</option>
                     <option value="4" th:selected="${mapping?.channelSize == 4}">4</option>
@@ -58,5 +58,13 @@
             </div>
         </div>
     </div>
+
+    <script>
+        $(document).ready(function () {
+            if ($('#channelSize').length) {
+                initSelect($('#channelSize'));
+            }
+        });
+    </script>
 </div>
 </html>

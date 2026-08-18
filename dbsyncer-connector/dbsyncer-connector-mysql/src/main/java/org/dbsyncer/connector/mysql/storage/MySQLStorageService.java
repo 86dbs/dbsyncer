@@ -601,7 +601,7 @@ public class MySQLStorageService extends AbstractStorageService {
 
         // 任务执行结果：严格按 dbsyncer_meta 拆分列(无 name/type/json)
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
-                ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
+                ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
                 ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
         List<Field> metaFields = builder.getFields();
@@ -760,6 +760,7 @@ public class MySQLStorageService extends AbstractStorageService {
             return;
         }
         if (StorageEnum.META.getType().equals(type)) {
+            addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间'");
             // 补齐与查询模式匹配的索引：getMetaByTaskId / getDetailMetaMap / clearRunData
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
@@ -882,6 +883,7 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CONFIG_MODEL_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.CONFIG_MODEL_CREATE_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CONFIG_MODEL_JSON, "LONGVARCHAR", Types.LONGVARCHAR),
                             new Field(ConfigConstant.CONNECTOR_IS_SOURCE, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.CONNECTOR_IS_TARGET, "INTEGER", Types.INTEGER),
