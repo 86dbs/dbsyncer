@@ -10,6 +10,8 @@ import org.dbsyncer.sdk.model.BufferActuatorMetric;
 import org.dbsyncer.sdk.spi.TableGroupBufferActuatorService;
 
 import javax.annotation.Resource;
+import org.dbsyncer.parser.flush.AbstractBufferActuator;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -123,5 +125,14 @@ public class DefaultBufferActuatorRouter extends AbstractBufferActuatorRouter {
         router.forEach((metaId, group) -> group.forEach((tableName, actuator) ->
                 metrics.add(toMetric(metaId, actuator.getTableName(), actuator))));
         return metrics;
+    }
+
+    @Override
+    protected List<AbstractBufferActuator> listBoundActuators(String metaId) {
+        Map<String, TableGroupBufferActuator> processor = router.get(metaId);
+        if (processor == null || processor.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return new ArrayList<>(processor.values());
     }
 }

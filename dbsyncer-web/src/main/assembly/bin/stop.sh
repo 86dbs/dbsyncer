@@ -1,32 +1,51 @@
 #!/bin/bash
-SCRIPT_DIR=$(cd $(dirname $0);pwd)
-APP_DIR=$(cd $SCRIPT_DIR/..;pwd)
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+DBS_HOME=$(cd "$SCRIPT_DIR/.."; pwd)
 # application.properties
-CONFIG_PATH=$APP_DIR'/conf/application.properties'
-if [ ! -f ${CONFIG_PATH} ]; then
-  echo "The conf/application.properties does't exist, please check it first!";
+CONFIG_PATH="$DBS_HOME/conf/application.properties"
+if [ ! -f "$CONFIG_PATH" ]; then
+  echo "The conf/application.properties doesn't exist, please check it first!"
   exit 1
 fi
 
-# kill thread
-PID=$APP_DIR/tmp.pid
-if [ -f ${PID} ]; then
-  pkill -f $PID
-  rm -f $PID
-fi
-sleep 0.3
-
-# kill process
-APP="org.dbsyncer.web.Application" 
-PROCESS="`ps -ef|grep java|grep ${APP}|awk '{print $2}'`"
-if [[ -n ${PROCESS} ]]; then
-  for p in ${PROCESS};
-  do
-    echo $p
-    kill ${p}
+# 仅停止本安装目录的实例，避免同机多实例互相误杀
+APP="org.dbsyncer.web.Application"
+list_instance_pids() {
+  local pid cmdline rest marker
+  marker="-Duser.dir=${DBS_HOME}"
+  for pid in $(pgrep -f "${APP}" 2>/dev/null); do
+    if [[ -r "/proc/${pid}/cmdline" ]]; then
+      cmdline=$(tr '\0' ' ' < "/proc/${pid}/cmdline")
+    else
+      cmdline=$(ps -p "${pid}" -o args= 2>/dev/null || true)
+    fi
+    rest="${cmdline#*"${marker}"}"
+    [[ "$rest" == "$cmdline" ]] && continue
+    if [[ -z "$rest" || "$rest" == [[:space:]]* ]]; then
+      echo "$pid"
+    fi
   done
-  echo 'Stop successfully!';
-  exit 1;
+}
+
+PIDS=$(list_instance_pids)
+PID_FILE="$DBS_HOME/tmp.pid"
+if [[ -z "$PIDS" && -f "$PID_FILE" ]]; then
+  OLD_PID=$(tr -d ' \t\r\n' < "$PID_FILE")
+  if [[ -n "$OLD_PID" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
+    PIDS="$OLD_PID"
+  fi
 fi
 
-echo 'The app already stopped.';
+if [[ -z "$PIDS" ]]; then
+  rm -f "$PID_FILE"
+  echo "The app already stopped."
+  exit 0
+fi
+
+for p in $PIDS; do
+  echo "$p"
+  kill "$p" 2>/dev/null || true
+done
+rm -f "$PID_FILE"
+sleep 0.3
+echo "Stop successfully!"

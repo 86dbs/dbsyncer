@@ -69,6 +69,16 @@ public interface TaskService<T extends ConfigModel> {
      * @param taskId
      * @return
      */
-    boolean isRunning(String taskId);
+    default boolean isRunning(String taskId) {
+        return false;
+    }
 
+    /**
+     * 按租约在本节点续跑（Follower 可调用，不再校验 Leader）。
+     *
+     * @param id 任务 ID
+     */
+    default void resumeAssigned(String id) {
+        start(id);
+    }
 }

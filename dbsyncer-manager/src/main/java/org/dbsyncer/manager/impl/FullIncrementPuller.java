@@ -15,6 +15,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -53,6 +54,9 @@ public final class FullIncrementPuller extends AbstractPuller {
     @Resource
     private LogService logService;
 
+    @Resource
+    private ClusterService clusterService;
+
     @Override
     public void start(Mapping mapping) {
         start(mapping, false);
@@ -75,6 +79,11 @@ public final class FullIncrementPuller extends AbstractPuller {
         incrementPuller.close(metaId);
     }
 
+    @Override
+    public boolean isActive(String metaId) {
+        return running.contains(metaId) || fullPuller.isActive(metaId) || incrementPuller.isActive(metaId);
+    }
+
     private void runFullIncrementSync(Mapping mapping, String metaId, boolean autoRecovery) {
         try {
             Meta meta = metaProfile.getMeta(metaId);
@@ -90,6 +99,13 @@ public final class FullIncrementPuller extends AbstractPuller {
                 return;
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
+            if (clusterService.isLeader()) {
+                clusterService.assignIncrementMapping(metaId);
+            }
+            if (!clusterService.hasValidLease(metaId) && !clusterService.tryAcquireLease(metaId)) {
+                logger.info("本节点未分配增量，跳过：{}", metaId);
+                return;
+            }
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {

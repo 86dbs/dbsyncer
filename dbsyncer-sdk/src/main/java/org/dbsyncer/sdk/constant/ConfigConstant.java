@@ -89,6 +89,36 @@ public class ConfigConstant {
     public static final String META_DIFF = "diff";
     public static final String META_FIXED = "fixed";
     public static final String META_SNAPSHOT = "snapshot";
+    /**
+     * 任务租约代数（围栏）
+     */
+    public static final String META_EPOCH = "epoch";
+    /**
+     * 租约持有节点 ID
+     */
+    public static final String META_LEASE_OWNER = "leaseOwner";
+    /**
+     * 租约过期时间（毫秒时间戳）
+     */
+    public static final String META_LEASE_EXPIRE_AT = "leaseExpireAt";
+
+    /**
+     * 集群节点表(dbsyncer_cluster_node)
+     */
+    public static final String CLUSTER_NODE = "cluster_node";
+    public static final String CLUSTER_CLUSTER_ID = "clusterId";
+    public static final String CLUSTER_NODE_ID = "nodeId";
+    public static final String CLUSTER_IP = "ip";
+    public static final String CLUSTER_HTTP_PORT = "httpPort";
+    public static final String CLUSTER_RAFT_PORT = "raftPort";
+    public static final String CLUSTER_RAFT_PEER_ID = "raftPeerId";
+    public static final String CLUSTER_WORKER_ID = "workerId";
+    public static final String CLUSTER_ROLE = "role";
+    public static final String CLUSTER_STATUS = "status";
+    public static final String CLUSTER_NETWORK_OK = "networkOk";
+    public static final String CLUSTER_TERM = "term";
+    public static final String CLUSTER_LAST_HEARTBEAT_TIME = "lastHeartbeatTime";
+    public static final String CLUSTER_START_TIME = "startTime";
 
     /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）

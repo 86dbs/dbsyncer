@@ -19,6 +19,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -116,5 +117,47 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
         if (actuator != null) {
             actuator.stop();
         }
+    }
+
+    /**
+     * 该驱动已绑定的执行器（不含通用执行器）。
+     *
+     * @param metaId 驱动 Meta ID
+     * @return 执行器列表
+     */
+    protected abstract List<AbstractBufferActuator> listBoundActuators(String metaId);
+
+    @Override
+    public boolean drainAndAwaitIdle(String metaId, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (true) {
+            if (isBoundIdle(metaId) && generalBufferActuator.isIdle()) {
+                return true;
+            }
+            if (System.currentTimeMillis() >= deadline) {
+                logger.warn("drain timeout, metaId={}, timeoutMs={}", metaId, timeoutMs);
+                return false;
+            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(e.getMessage(), e);
+                return false;
+            }
+        }
+    }
+
+    private boolean isBoundIdle(String metaId) {
+        List<AbstractBufferActuator> actuators = listBoundActuators(metaId);
+        if (actuators == null || actuators.isEmpty()) {
+            return true;
+        }
+        for (AbstractBufferActuator actuator : actuators) {
+            if (actuator != null && !actuator.isIdle()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

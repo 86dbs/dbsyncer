@@ -579,7 +579,8 @@ public class H2StorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
-                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT,
+                ConfigConstant.META_EPOCH, ConfigConstant.META_LEASE_OWNER, ConfigConstant.META_LEASE_EXPIRE_AT);
         List<Field> metaFields = builder.getFields();
 
         // 任务执行明细：按任务分表(无 TASK_ID 列，靠 TABLE_GROUP_ID 关联)
@@ -738,8 +739,10 @@ public class H2StorageService extends AbstractStorageService {
         // 任务执行明细按任务分表(每表数据量有限)，H2 索引名为 schema 全局唯一，分表间不再单独建二级索引
         if (StorageEnum.META.getType().equals(type)) {
             addColumnIfNotExist(table, "START_TIME", "BIGINT NOT NULL DEFAULT 0");
+            addColumnIfNotExist(table, "EPOCH", "BIGINT NOT NULL DEFAULT 0");
+            addColumnIfNotExist(table, "LEASE_OWNER", "VARCHAR(64)");
+            addColumnIfNotExist(table, "LEASE_EXPIRE_AT", "BIGINT NOT NULL DEFAULT 0");
             createIndexIfNotExist(table, "IDX_STATE_UPDATE_TIME", "`STATE`,`UPDATE_TIME`");
-            // 对齐 MySQL：按 TASK_ID + IS_TASK_DETAIL 查询/重置明细 Meta
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }
@@ -929,6 +932,9 @@ public class H2StorageService extends AbstractStorageService {
                             new Field(ConfigConstant.META_DIFF, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_FIXED, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_SNAPSHOT, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.META_EPOCH, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_LEASE_OWNER, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_LEASE_EXPIRE_AT, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),

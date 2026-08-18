@@ -603,7 +603,8 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
-                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT,
+                ConfigConstant.META_EPOCH, ConfigConstant.META_LEASE_OWNER, ConfigConstant.META_LEASE_EXPIRE_AT);
         List<Field> metaFields = builder.getFields();
 
         // 任务执行明细：按任务分表(无 TASK_ID 列，靠 TABLE_GROUP_ID 关联)
@@ -621,6 +622,14 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_CLUSTER_ID, ConfigConstant.CLUSTER_NODE_ID,
+                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT, ConfigConstant.CLUSTER_RAFT_PORT,
+                ConfigConstant.CLUSTER_RAFT_PEER_ID, ConfigConstant.CLUSTER_WORKER_ID, ConfigConstant.CLUSTER_ROLE,
+                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_NETWORK_OK, ConfigConstant.CLUSTER_TERM,
+                ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+                ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> clusterNodeFields = builder.getFields();
+
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
         tables.computeIfAbsent(StorageEnum.CONNECTOR.getType(), k -> new Executor(k, connectorFields, true, true));
@@ -629,6 +638,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
+        tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, true));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -761,7 +771,9 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         if (StorageEnum.META.getType().equals(type)) {
             addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间'");
-            // 补齐与查询模式匹配的索引：getMetaByTaskId / getDetailMetaMap / clearRunData
+            addColumnIfNotExist(table, "EPOCH", "bigint NOT NULL DEFAULT 0 COMMENT '租约代数'");
+            addColumnIfNotExist(table, "LEASE_OWNER", "varchar(64) DEFAULT NULL COMMENT '租约持有节点'");
+            addColumnIfNotExist(table, "LEASE_EXPIRE_AT", "bigint NOT NULL DEFAULT 0 COMMENT '租约过期时间'");
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }
@@ -901,6 +913,22 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.META_DIFF, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_FIXED, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_SNAPSHOT, "LONGVARCHAR", Types.LONGVARCHAR),
+                            new Field(ConfigConstant.META_EPOCH, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.META_LEASE_OWNER, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.META_LEASE_EXPIRE_AT, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_CLUSTER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_NODE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_IP, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_HTTP_PORT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_RAFT_PORT, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_RAFT_PEER_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.CLUSTER_WORKER_ID, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_ROLE, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_STATUS, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_NETWORK_OK, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.CLUSTER_TERM, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),

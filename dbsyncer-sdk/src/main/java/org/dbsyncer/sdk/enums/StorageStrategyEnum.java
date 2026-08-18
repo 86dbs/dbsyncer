@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.enums;
 
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.storage.Strategy;
+import org.dbsyncer.sdk.storage.strategy.ClusterNodeStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConfigStrategy;
 import org.dbsyncer.sdk.storage.strategy.ConnectorStrategy;
 import org.dbsyncer.sdk.storage.strategy.LogStrategy;
@@ -61,7 +62,12 @@ public enum StorageStrategyEnum {
     /**
      * 任务策略
      */
-    TASK(StorageEnum.TASK, new TaskStrategy());
+    TASK(StorageEnum.TASK, new TaskStrategy()),
+
+    /**
+     * 集群节点策略
+     */
+    CLUSTER_NODE(StorageEnum.CLUSTER_NODE, new ClusterNodeStrategy());
 
     private final StorageEnum type;
     private final Strategy strategy;

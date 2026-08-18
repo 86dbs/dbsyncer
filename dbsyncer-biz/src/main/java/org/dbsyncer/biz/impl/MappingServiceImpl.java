@@ -50,6 +50,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.storage.impl.SnowflakeIdWorker;
 import org.slf4j.Logger;
@@ -113,6 +114,9 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
 
     @Resource
     private ManagerFactory managerFactory;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Resource
     private ConnectorFactory connectorFactory;
@@ -349,6 +353,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
         clearMetaIfFinished(metaId);
 
         synchronized (LOCK) {
+            clusterService.assertLeaderWritable();
             assertRunning(metaId);
             Assert.isTrue(!dispatchTaskService.isRunning(id), "驱动表映射正在匹配或统计中，请稍候再启动");
             // 启动
@@ -363,6 +368,7 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     public String stop(String id) {
         Mapping mapping = assertMappingExist(id);
         synchronized (LOCK) {
+            clusterService.assertLeaderWritable();
             if (!isRunning(mapping.getMetaId())) {
                 throw new BizException("驱动已停止.");
             }

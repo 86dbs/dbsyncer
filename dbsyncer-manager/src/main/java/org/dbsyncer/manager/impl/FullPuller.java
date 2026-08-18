@@ -25,6 +25,7 @@ import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     @Resource
     private LogService logService;
 
+    @Resource
+    private ClusterService clusterService;
+
     private final Map<String, Task> map = new ConcurrentHashMap<>();
 
     @Override
@@ -113,6 +117,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             task.stop();
             return null;
         });
+    }
+
+    @Override
+    public boolean isActive(String metaId) {
+        return map.containsKey(metaId);
     }
 
     @Override
@@ -184,6 +193,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
         TableGroup tableGroup = work.tableGroup;
         String tableGroupId = tableGroup.getId();
+        if (!clusterService.isTableAssignedToLocal(tableGroupId)) {
+            return;
+        }
         int absoluteIndex = work.absoluteIndex;
 
         Meta meta = metaProfile.getMeta(parent.getId());

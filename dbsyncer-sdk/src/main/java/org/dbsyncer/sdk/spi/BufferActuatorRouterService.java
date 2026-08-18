@@ -62,4 +62,13 @@ public interface BufferActuatorRouterService {
      * @return 快照列表，无执行器时返回空列表
      */
     List<BufferActuatorMetric> listMetrics();
+
+    /**
+     * 排空指定驱动的写队列直至空闲或超时。
+     *
+     * @param metaId    驱动 Meta ID
+     * @param timeoutMs 超时毫秒
+     * @return true 已空闲；false 超时仍有积压
+     */
+    boolean drainAndAwaitIdle(String metaId, long timeoutMs);
 }

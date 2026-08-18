@@ -291,6 +291,9 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.META_DIFF, atomic(root, "diff"));
         p.put(ConfigConstant.META_FIXED, atomic(root, "fixed"));
         p.put(ConfigConstant.META_SNAPSHOT, snapshotJson);
+        p.put(ConfigConstant.META_EPOCH, 0L);
+        p.put(ConfigConstant.META_LEASE_OWNER, "");
+        p.put(ConfigConstant.META_LEASE_EXPIRE_AT, 0L);
         storage.add(StorageEnum.META, p);
     }
 
@@ -321,6 +324,9 @@ public abstract class StorageDataMigrator {
             p.put(ConfigConstant.META_DIFF, 0L);
             p.put(ConfigConstant.META_FIXED, 0L);
             p.put(ConfigConstant.META_SNAPSHOT, "{}");
+            p.put(ConfigConstant.META_EPOCH, 0L);
+            p.put(ConfigConstant.META_LEASE_OWNER, "");
+            p.put(ConfigConstant.META_LEASE_EXPIRE_AT, 0L);
             storage.add(StorageEnum.META, p);
         }
     }
@@ -469,6 +475,9 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.META_DIFF, 0L);
         p.put(ConfigConstant.META_FIXED, 0L);
         p.put(ConfigConstant.META_SNAPSHOT, "{}");
+        p.put(ConfigConstant.META_EPOCH, 0L);
+        p.put(ConfigConstant.META_LEASE_OWNER, "");
+        p.put(ConfigConstant.META_LEASE_EXPIRE_AT, 0L);
         storage.add(StorageEnum.META, p);
     }
 

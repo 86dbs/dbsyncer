@@ -6,6 +6,8 @@ import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.sdk.enums.ModelEnum;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -31,6 +33,9 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Resource
     private Map<String, Puller> map;
 
+    @Resource
+    private ClusterService clusterService;
+
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
@@ -48,6 +53,11 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      */
     public void start(Mapping mapping, boolean autoRecovery) {
         Puller puller = getPuller(mapping);
+        String metaId = mapping.getMetaId();
+        if (puller.isActive(metaId)) {
+            return;
+        }
+        prepareClusterStart(mapping);
 
         // 标记运行中
         changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
@@ -69,6 +79,39 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
         puller.close(metaId);
+        clusterService.releaseLease(metaId);
+    }
+
+    /**
+     * 本进程是否已启动该驱动。
+     *
+     * @param metaId Meta ID
+     * @return true 已启动
+     */
+    public boolean isLocalActive(String metaId) {
+        for (Puller puller : map.values()) {
+            if (puller.isActive(metaId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void prepareClusterStart(Mapping mapping) {
+        String metaId = mapping.getMetaId();
+        String model = mapping.getModel();
+        if (clusterService.isLeader()) {
+            if (ModelEnum.isFull(model)) {
+                clusterService.assignTableGroups(mapping.getId());
+            }
+            if (ModelEnum.isIncrement(model)) {
+                clusterService.assignIncrementMapping(metaId);
+            }
+        }
+        if (ModelEnum.isIncrement(model) && !clusterService.hasValidLease(metaId)
+                && !clusterService.tryAcquireLease(metaId)) {
+            throw new ManagerException("当前节点未分配该增量任务");
+        }
     }
 
     public void changeMetaState(String metaId, CommonTaskStatusEnum status) {

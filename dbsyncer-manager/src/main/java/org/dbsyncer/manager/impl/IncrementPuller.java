@@ -46,6 +46,7 @@ import org.dbsyncer.sdk.model.TableGroupQuartzCommand;
 import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -76,6 +77,9 @@ public final class IncrementPuller extends AbstractPuller implements Application
 
     @Resource
     private BufferActuatorRouterService bufferActuatorRouter;
+
+    @Value("${dbsyncer.cluster.drain-timeout-ms:30000}")
+    private long drainTimeoutMs;
 
     @Resource
     private ScheduledTaskService scheduledTaskService;
@@ -217,6 +221,11 @@ public final class IncrementPuller extends AbstractPuller implements Application
         map.compute(metaId, (k, listener) -> {
             if (listener != null) {
                 listener.close();
+                boolean drained = bufferActuatorRouter.drainAndAwaitIdle(metaId, drainTimeoutMs);
+                if (!drained) {
+                    logger.warn("增量队列排水超时, metaId={}", metaId);
+                }
+                listener.forceFlushEvent();
             }
             bufferActuatorRouter.unbind(metaId);
             tableGroupContext.clear(metaId);
@@ -224,6 +233,16 @@ public final class IncrementPuller extends AbstractPuller implements Application
             logger.info("关闭成功:{}", metaId);
             return null;
         });
+    }
+
+    /**
+     * 本进程是否正在跑该增量驱动。
+     *
+     * @param metaId Meta ID
+     * @return true 运行中
+     */
+    public boolean isActive(String metaId) {
+        return map.containsKey(metaId);
     }
 
     @Override
