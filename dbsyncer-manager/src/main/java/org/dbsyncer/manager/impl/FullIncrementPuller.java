@@ -88,7 +88,9 @@ public final class FullIncrementPuller extends AbstractPuller {
         try {
             Meta meta = metaProfile.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
-                //重启恢复是如果是增量阶段直接启动增量任务
+                if (!clusterService.isStandalone() && !clusterService.isLeader()) {
+                    return;
+                }
                 incrementPuller.start(mapping, autoRecovery);
                 return;
             }
@@ -98,12 +100,16 @@ public final class FullIncrementPuller extends AbstractPuller {
             if (!isRunning(metaId)) {
                 return;
             }
-            markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            if (clusterService.isLeader()) {
-                clusterService.assignIncrementMapping(metaId);
+            if (!clusterService.isStandalone() && !clusterService.isLeader()) {
+                logger.info("全量已完成，本节点不启动增量：{}", metaId);
+                return;
             }
+            if (incrementPuller.isActive(metaId)) {
+                return;
+            }
+            markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
             if (!clusterService.hasValidLease(metaId) && !clusterService.tryAcquireLease(metaId)) {
-                logger.info("本节点未分配增量，跳过：{}", metaId);
+                logger.info("本节点未持有增量租约，跳过：{}", metaId);
                 return;
             }
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());

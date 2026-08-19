@@ -4,7 +4,6 @@
 package org.dbsyncer.manager.deployment;
 
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.ClusterRoleEnum;
@@ -34,11 +33,9 @@ public final class StandaloneClusterService implements ClusterService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<LeaderLifecycleListener> listeners = new CopyOnWriteArrayList<>();
     private final MetaProfile metaProfile;
-    private final ProfileComponent profileComponent;
 
-    public StandaloneClusterService(MetaProfile metaProfile, ProfileComponent profileComponent) {
+    public StandaloneClusterService(MetaProfile metaProfile) {
         this.metaProfile = metaProfile;
-        this.profileComponent = profileComponent;
     }
 
     @Override
@@ -96,9 +93,7 @@ public final class StandaloneClusterService implements ClusterService {
         if (meta == null) {
             return;
         }
-        meta.setLeaseOwner(null);
-        meta.setLeaseExpireAt(0L);
-        profileComponent.editConfigModel(meta);
+        metaProfile.compareAndSetLease(meta.getId(), meta.getEpoch(), null, 0L);
     }
 
     @Override
@@ -136,10 +131,7 @@ public final class StandaloneClusterService implements ClusterService {
         if (meta == null) {
             throw new SdkException("任务运行态不存在: " + metaId);
         }
-        meta.setEpoch(meta.getEpoch() + 1);
-        meta.setLeaseOwner(ownerNodeId);
-        meta.setLeaseExpireAt(System.currentTimeMillis() + LEASE_TTL_MS);
-        profileComponent.editConfigModel(meta);
-        return true;
+        long expireAt = System.currentTimeMillis() + LEASE_TTL_MS;
+        return metaProfile.compareAndSetLease(meta.getId(), meta.getEpoch(), ownerNodeId, expireAt);
     }
 }

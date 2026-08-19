@@ -5,7 +5,6 @@ package org.dbsyncer.manager;
 
 import org.dbsyncer.manager.deployment.StandaloneProvider;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.DeploymentService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,8 +23,8 @@ public class ManagerSupportConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(DeploymentService.class)
-    public DeploymentService deploymentService(MetaProfile metaProfile, ProfileComponent profileComponent) {
-        return new StandaloneProvider(metaProfile, profileComponent);
+    public DeploymentService deploymentService(MetaProfile metaProfile) {
+        return new StandaloneProvider(metaProfile);
     }
 
     @Bean

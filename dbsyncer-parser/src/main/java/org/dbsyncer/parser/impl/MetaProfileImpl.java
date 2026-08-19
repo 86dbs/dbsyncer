@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -233,6 +234,30 @@ public class MetaProfileImpl implements MetaProfile {
     @Override
     public String updateMeta(Meta meta) {
         return operationTemplate.execute(new OperationConfig(meta, CommandEnum.OPR_EDIT));
+    }
+
+    @Override
+    public boolean compareAndSetLease(String metaId, long expectedEpoch, String ownerNodeId, long expireAt) {
+        if (StringUtil.isBlank(metaId)) {
+            return false;
+        }
+        Map<String, Object> params = new HashMap<>(4);
+        params.put(ConfigConstant.META_EPOCH, expectedEpoch + 1);
+        params.put(ConfigConstant.META_LEASE_OWNER, StringUtil.getIfBlank(ownerNodeId, StringUtil.EMPTY));
+        params.put(ConfigConstant.META_LEASE_EXPIRE_AT, expireAt);
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, System.currentTimeMillis());
+        return storageService.compareAndEdit(StorageEnum.META, metaId, params, ConfigConstant.META_EPOCH, expectedEpoch) > 0;
+    }
+
+    @Override
+    public boolean updateMetaState(String metaId, int state) {
+        if (StringUtil.isBlank(metaId)) {
+            return false;
+        }
+        Map<String, Object> params = new HashMap<>(2);
+        params.put(ConfigConstant.META_STATE, state);
+        params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, System.currentTimeMillis());
+        return storageService.compareAndEdit(StorageEnum.META, metaId, params, ConfigConstant.CONFIG_MODEL_ID, metaId) > 0;
     }
 
     @Override

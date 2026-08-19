@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.storage;
 
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.NullExecutorException;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -39,6 +40,14 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     protected abstract void batchDelete(StorageEnum type, String sharding, List<String> ids);
 
     protected abstract void batchIncrement(StorageEnum type, String sharding, String id, Map<String, Long> deltas);
+
+    /**
+     * 条件更新实现。
+     *
+     * @return 影响行数
+     */
+    protected abstract int compareAndUpdate(StorageEnum type, String sharding, String id, Map params,
+                                           String casField, Object casValue);
 
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
@@ -169,6 +178,18 @@ public abstract class AbstractStorageService implements StorageService, Disposab
             batchIncrement(type, getSharding(type, null), id, deltas);
         } catch (NullExecutorException e) {
             // 存储表不存在或已删除，请重试
+        }
+    }
+
+    @Override
+    public int compareAndEdit(StorageEnum type, String id, Map params, String casField, Object casValue) {
+        if (type == null || StringUtil.isBlank(id) || CollectionUtils.isEmpty(params) || StringUtil.isBlank(casField)) {
+            return 0;
+        }
+        try {
+            return compareAndUpdate(type, getSharding(type, null), id, params, casField, casValue);
+        } catch (NullExecutorException e) {
+            return 0;
         }
     }
 

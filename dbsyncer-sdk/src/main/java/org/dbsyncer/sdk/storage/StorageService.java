@@ -145,6 +145,18 @@ public interface StorageService {
     void increment(StorageEnum type, String id, Map<String, Long> deltas);
 
     /**
+     * 条件更新：仅当 {@code casField=casValue} 时写入 {@code params} 中的列，避免整行覆盖。
+     *
+     * @param type     存储类型
+     * @param id       记录主键
+     * @param params   待更新列（key 为 labelName）
+     * @param casField 条件列 labelName
+     * @param casValue 条件列期望值
+     * @return 影响行数，0 表示条件不匹配
+     */
+    int compareAndEdit(StorageEnum type, String id, Map params, String casField, Object casValue);
+
+    /**
      * 执行原生查询 SQL（系统配置库）；{@link SqlQuery#isPaged()} 为 true 时带分页。
      *
      * @param query SQL 与可选分页参数

@@ -4,7 +4,6 @@
 package org.dbsyncer.manager.deployment;
 
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.DeploymentService;
 
@@ -19,8 +18,8 @@ public final class StandaloneProvider implements DeploymentService {
 
     private final StandaloneClusterService clusterService;
 
-    public StandaloneProvider(MetaProfile metaProfile, ProfileComponent profileComponent) {
-        this.clusterService = new StandaloneClusterService(metaProfile, profileComponent);
+    public StandaloneProvider(MetaProfile metaProfile) {
+        this.clusterService = new StandaloneClusterService(metaProfile);
     }
 
     @Override

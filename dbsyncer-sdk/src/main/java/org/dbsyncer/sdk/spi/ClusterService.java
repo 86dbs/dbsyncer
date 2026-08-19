@@ -137,6 +137,16 @@ public interface ClusterService {
     }
 
     /**
+     * 任务下全部 TableGroup 是否已完成。单机恒 true。
+     *
+     * @param taskId 任务/Mapping ID
+     * @return true 全部完成
+     */
+    default boolean areAllTablesDone(String taskId) {
+        return true;
+    }
+
+    /**
      * Leader 将增量 Mapping 分配到一台在线节点。单机空操作。
      *
      * @param metaId 任务级 Meta ID

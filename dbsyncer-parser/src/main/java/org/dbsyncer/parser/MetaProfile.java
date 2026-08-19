@@ -94,6 +94,26 @@ public interface MetaProfile {
     String updateMeta(Meta meta);
 
     /**
+     * 按 epoch CAS 更新租约三列，成功则 epoch+1。
+     *
+     * @param metaId        Meta 主键
+     * @param expectedEpoch 期望代数
+     * @param ownerNodeId   新持有者，空表示释放
+     * @param expireAt      过期时间；释放时为 0
+     * @return true 更新成功
+     */
+    boolean compareAndSetLease(String metaId, long expectedEpoch, String ownerNodeId, long expireAt);
+
+    /**
+     * 仅更新 Meta.state，不覆盖租约与 snapshot。
+     *
+     * @param metaId Meta 主键
+     * @param state  目标状态
+     * @return true 更新成功
+     */
+    boolean updateMetaState(String metaId, int state);
+
+    /**
      * 批量更新 Meta（就地重置进度等场景，避免删插放大）。
      */
     void updateMetaBatch(List<Meta> metas);

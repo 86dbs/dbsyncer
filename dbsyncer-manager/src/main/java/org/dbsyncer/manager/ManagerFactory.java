@@ -1,14 +1,18 @@
 package org.dbsyncer.manager;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
+import org.dbsyncer.manager.impl.PreloadTemplate;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -36,6 +40,10 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Resource
     private ClusterService clusterService;
 
+    @Resource
+    @Lazy
+    private PreloadTemplate preloadTemplate;
+
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
@@ -58,15 +66,19 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
             return;
         }
         prepareClusterStart(mapping);
+        // Follower 本进程连接池没有 Mapping 级实例（连接只在 Leader 增改 Mapping 时建立）
+        preloadTemplate.reConnect(mapping);
 
-        // 标记运行中
-        changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.RUNNING);
+        Meta current = metaProfile.getMeta(metaId);
+        boolean alreadyRunning = current != null && current.getState() == CommonTaskStatusEnum.RUNNING.getCode();
+        changeMetaState(metaId, CommonTaskStatusEnum.RUNNING);
 
         try {
             puller.start(mapping, autoRecovery);
         } catch (Exception e) {
-            // rollback
-            changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
+            if (!alreadyRunning) {
+                changeMetaState(metaId, CommonTaskStatusEnum.READY);
+            }
             throw new ManagerException(e.getMessage());
         }
     }
@@ -80,6 +92,20 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
 
         puller.close(metaId);
         clusterService.releaseLease(metaId);
+    }
+
+    /**
+     * 仅停止本进程 Puller，不改集群任务状态。
+     *
+     * @param mapping 驱动
+     */
+    public void stopLocal(Mapping mapping) {
+        Puller puller = getPuller(mapping);
+        String metaId = mapping.getMetaId();
+        puller.close(metaId);
+        if (clusterService.hasValidLease(metaId)) {
+            clusterService.releaseLease(metaId);
+        }
     }
 
     /**
@@ -100,18 +126,29 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     private void prepareClusterStart(Mapping mapping) {
         String metaId = mapping.getMetaId();
         String model = mapping.getModel();
-        if (clusterService.isLeader()) {
-            if (ModelEnum.isFull(model)) {
-                clusterService.assignTableGroups(mapping.getId());
-            }
-            if (ModelEnum.isIncrement(model)) {
-                clusterService.assignIncrementMapping(metaId);
-            }
+        Meta meta = metaProfile.getMeta(metaId);
+        boolean incrementPhase = isIncrementPhase(meta, model);
+        if (clusterService.isLeader() && ModelEnum.isFull(model) && !incrementPhase) {
+            clusterService.assignTableGroups(mapping.getId());
         }
-        if (ModelEnum.isIncrement(model) && !clusterService.hasValidLease(metaId)
-                && !clusterService.tryAcquireLease(metaId)) {
+        if (!ModelEnum.isIncrement(model) && !incrementPhase) {
+            return;
+        }
+        if (!clusterService.isStandalone() && !clusterService.isLeader()) {
             throw new ManagerException("当前节点未分配该增量任务");
         }
+        if (!clusterService.hasValidLease(metaId) && !clusterService.tryAcquireLease(metaId)) {
+            throw new ManagerException("当前节点未分配该增量任务");
+        }
+    }
+
+    private boolean isIncrementPhase(Meta meta, String model) {
+        if (meta == null || !StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model)) {
+            return false;
+        }
+        String phase = meta.getSnapshot() == null ? null
+                : meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
+        return ModelEnum.isIncrement(phase);
     }
 
     public void changeMetaState(String metaId, CommonTaskStatusEnum status) {

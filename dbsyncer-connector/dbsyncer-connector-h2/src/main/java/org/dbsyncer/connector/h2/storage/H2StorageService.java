@@ -269,6 +269,49 @@ public class H2StorageService extends AbstractStorageService {
         connectorInstance.execute(databaseTemplate -> databaseTemplate.batchUpdate(sql.toString(), batchArgs));
     }
 
+    @Override
+    protected int compareAndUpdate(StorageEnum type, String sharding, String id, Map params, String casField, Object casValue) {
+        if (CollectionUtils.isEmpty(params) || StringUtil.isBlank(id) || StringUtil.isBlank(casField)) {
+            return 0;
+        }
+        final Executor executor = getExecutor(type, sharding);
+        if (executor == null) {
+            return 0;
+        }
+        StringBuilder sql = new StringBuilder("UPDATE ").append(connector.buildWithQuotation(executor.getTable())).append(" SET ");
+        List<Object> args = new ArrayList<>();
+        boolean hasColumn = false;
+        for (Object keyObj : params.keySet()) {
+            String key = keyObj == null ? null : String.valueOf(keyObj);
+            if (StringUtil.isBlank(key) || StringUtil.equals(key, ConfigConstant.CONFIG_MODEL_ID)) {
+                continue;
+            }
+            String column = resolveColumn(executor, key);
+            if (column == null) {
+                continue;
+            }
+            if (hasColumn) {
+                sql.append(", ");
+            }
+            sql.append(connector.buildWithQuotation(column)).append(" = ?");
+            args.add(params.get(keyObj));
+            hasColumn = true;
+        }
+        if (!hasColumn) {
+            return 0;
+        }
+        String casColumn = resolveColumn(executor, casField);
+        if (casColumn == null) {
+            return 0;
+        }
+        sql.append(" WHERE ").append(connector.buildWithQuotation(ConfigConstant.CONFIG_MODEL_ID.toUpperCase())).append(" = ?");
+        args.add(id);
+        sql.append(" AND ").append(connector.buildWithQuotation(casColumn)).append(" = ?");
+        args.add(casValue);
+        Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql.toString(), args.toArray()));
+        return rows == null ? 0 : rows;
+    }
+
     private String resolveColumn(Executor executor, String labelName) {
         for (Field field : executor.getFields()) {
             if (field.getLabelName().equals(labelName)) {

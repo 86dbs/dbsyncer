@@ -4,17 +4,20 @@
 package org.dbsyncer.manager.deployment;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.ManagerFactory;
 import org.dbsyncer.parser.MetaProfile;
+import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -25,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.Map;
 
 /**
  * 按租约在本节点拉起/停掉 Mapping；升主时接管 RUNNING 任务。
@@ -54,6 +58,9 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
     private TableGroupProfile tableGroupProfile;
 
     @Resource
+    private ProfileComponent profileComponent;
+
+    @Resource
     private ScheduledTaskService scheduledTaskService;
 
     @PostConstruct
@@ -80,6 +87,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
             for (Mapping mapping : mappings) {
                 if (clusterService.isLeader()) {
                     reassign(mapping);
+                    tryCompleteFull(mapping);
                 }
                 dispatchOne(mapping);
             }
@@ -98,9 +106,6 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         if (ModelEnum.isFull(model) && !isIncrementPhase(meta, model)) {
             clusterService.assignTableGroups(mapping.getId());
         }
-        if (ModelEnum.isIncrement(model) || isIncrementPhase(meta, model)) {
-            clusterService.assignIncrementMapping(meta.getId());
-        }
     }
 
     private void dispatchOne(Mapping mapping) {
@@ -111,7 +116,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         Meta meta = metaProfile.getMeta(metaId);
         if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
             if (managerFactory.isLocalActive(metaId)) {
-                managerFactory.close(mapping);
+                managerFactory.stopLocal(mapping);
             }
             return;
         }
@@ -122,7 +127,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
             return;
         }
         if (!shouldRun && active) {
-            managerFactory.close(mapping);
+            managerFactory.stopLocal(mapping);
         }
     }
 
@@ -140,9 +145,47 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         }
         String model = mapping.getModel();
         if (ModelEnum.isIncrement(model) || isIncrementPhase(meta, model)) {
-            return clusterService.hasValidLease(meta.getId());
+            return clusterService.isLeader();
         }
-        return clusterService.isLeader() || hasAssignedTable(mapping.getId());
+        if (clusterService.areAllTablesDone(mapping.getId())) {
+            return false;
+        }
+        return hasIncompleteAssignedTable(mapping.getId()) || managerFactory.isLocalActive(meta.getId());
+    }
+
+    private void tryCompleteFull(Mapping mapping) {
+        if (mapping == null || StringUtil.isBlank(mapping.getMetaId()) || clusterService.isStandalone()) {
+            return;
+        }
+        Meta meta = metaProfile.getMeta(mapping.getMetaId());
+        if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
+            return;
+        }
+        String model = mapping.getModel();
+        if (!ModelEnum.isFull(model) || isIncrementPhase(meta, model)) {
+            return;
+        }
+        if (!clusterService.areAllTablesDone(mapping.getId())) {
+            return;
+        }
+        if (StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model)) {
+            markIncrementPhase(meta);
+            return;
+        }
+        managerFactory.changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
+    }
+
+    private void markIncrementPhase(Meta meta) {
+        if (meta.getSnapshot() == null) {
+            return;
+        }
+        meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), ModelEnum.INCREMENT.getCode());
+        meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
+        meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
+        meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
+        FullTableProgressUtil.clear(meta.getSnapshot());
+        meta.setUpdateTime(System.currentTimeMillis());
+        profileComponent.editConfigModel(meta);
     }
 
     private boolean isIncrementPhase(Meta meta, String model) {
@@ -154,11 +197,19 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         return ModelEnum.isIncrement(phase);
     }
 
-    private boolean hasAssignedTable(String taskId) {
+    private boolean hasIncompleteAssignedTable(String taskId) {
+        Meta taskMeta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+        Map<String, String> snapshot = taskMeta == null ? null : taskMeta.getSnapshot();
         final boolean[] hit = {false};
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
             for (TableGroup group : groups) {
-                if (group != null && clusterService.isTableAssignedToLocal(group.getId())) {
+                if (group == null || hit[0] || !clusterService.isTableAssignedToLocal(group.getId())) {
+                    continue;
+                }
+                Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
+                boolean done = FullTableProgressUtil.isDone(snapshot, group.getId())
+                        || (detail != null && detail.getState() == CommonTaskStatusEnum.DONE.getCode());
+                if (!done) {
                     hit[0] = true;
                 }
             }

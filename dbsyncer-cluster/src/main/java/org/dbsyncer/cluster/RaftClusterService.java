@@ -14,7 +14,6 @@ import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.option.NodeOptions;
 import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
 import com.alipay.sofa.jraft.rpc.RpcServer;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
@@ -22,10 +21,10 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ClusterNodeStatusEnum;
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -49,6 +47,7 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -73,9 +72,6 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
     private NetworkProbe networkProbe;
     @Resource
     private MetaProfile metaProfile;
-    @Resource
-    @Lazy
-    private ProfileComponent profileComponent;
     @Resource
     private TableGroupProfile tableGroupProfile;
     @Resource
@@ -220,9 +216,7 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
         if (meta == null || !StringUtil.equals(getLocalNodeId(), meta.getLeaseOwner())) {
             return;
         }
-        meta.setLeaseOwner(null);
-        meta.setLeaseExpireAt(0L);
-        profileComponent.editConfigModel(meta);
+        metaProfile.compareAndSetLease(meta.getId(), meta.getEpoch(), null, 0L);
     }
 
     @Override
@@ -234,13 +228,7 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
     @Override
     public boolean isTableAssignedToLocal(String tableGroupId) {
         Meta detail = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
-        if (detail == null) {
-            return isLeader();
-        }
-        if (StringUtil.isBlank(detail.getLeaseOwner()) || isLeaseFree(detail)) {
-            return isLeader();
-        }
-        return StringUtil.equals(getLocalNodeId(), detail.getLeaseOwner());
+        return ClusterLeasePolicy.assignedToLocal(detail, getLocalNodeId(), System.currentTimeMillis());
     }
 
     @Override
@@ -252,12 +240,36 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
         if (CollectionUtils.isEmpty(online)) {
             return;
         }
+        Meta taskMeta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+        Map<String, String> snapshot = taskMeta == null ? null : taskMeta.getSnapshot();
         final int[] cursor = {0};
         tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
             for (TableGroup group : groups) {
-                assignOneTable(group, online, cursor);
+                assignOneTable(group, online, cursor, snapshot);
             }
         });
+    }
+
+    @Override
+    public boolean areAllTablesDone(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return true;
+        }
+        Meta taskMeta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+        Map<String, String> snapshot = taskMeta == null ? null : taskMeta.getSnapshot();
+        final boolean[] allDone = {true};
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
+            for (TableGroup group : groups) {
+                if (group == null || StringUtil.isBlank(group.getId()) || !allDone[0]) {
+                    continue;
+                }
+                Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
+                if (!ClusterLeasePolicy.tableDone(detail, FullTableProgressUtil.isDone(snapshot, group.getId()))) {
+                    allDone[0] = false;
+                }
+            }
+        });
+        return allDone[0];
     }
 
     @Override
@@ -584,16 +596,23 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
         return status != null && StringUtil.contains(status.getErrorMsg(), "already exists");
     }
 
-    private void assignOneTable(TableGroup group, List<ClusterNode> online, int[] cursor) {
+    private void assignOneTable(TableGroup group, List<ClusterNode> online, int[] cursor, Map<String, String> snapshot) {
         if (group == null || StringUtil.isBlank(group.getId())) {
             return;
         }
         Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
-        if (detail == null || detail.getState() == CommonTaskStatusEnum.DONE.getCode()) {
+        if (detail == null) {
             return;
         }
-        if (hasLiveOwner(detail, online)) {
+        if (ClusterLeasePolicy.tableDone(detail, FullTableProgressUtil.isDone(snapshot, group.getId()))) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (ClusterLeasePolicy.shouldRenew(detail, hasLiveOwner(detail, online), now)) {
             persistLease(detail, detail.getLeaseOwner());
+            return;
+        }
+        if (!ClusterLeasePolicy.shouldReassign(detail, now)) {
             return;
         }
         String owner = online.get(cursor[0] % online.size()).getNodeId();
@@ -602,20 +621,26 @@ public class RaftClusterService implements DeploymentService, ClusterService, Sc
     }
 
     private boolean persistLease(Meta meta, String ownerNodeId) {
-        meta.setEpoch(meta.getEpoch() + 1);
+        if (meta == null || StringUtil.isBlank(meta.getId())) {
+            return false;
+        }
+        long expectedEpoch = meta.getEpoch();
+        long expireAt = System.currentTimeMillis() + properties.getLeaseTtlMs();
+        if (!metaProfile.compareAndSetLease(meta.getId(), expectedEpoch, ownerNodeId, expireAt)) {
+            return false;
+        }
+        meta.setEpoch(expectedEpoch + 1);
         meta.setLeaseOwner(ownerNodeId);
-        meta.setLeaseExpireAt(System.currentTimeMillis() + properties.getLeaseTtlMs());
-        profileComponent.editConfigModel(meta);
+        meta.setLeaseExpireAt(expireAt);
         return true;
     }
 
     private boolean isLeaseOwnedByLocal(Meta meta) {
-        return StringUtil.equals(getLocalNodeId(), meta.getLeaseOwner())
-                && meta.getLeaseExpireAt() > System.currentTimeMillis();
+        return ClusterLeasePolicy.assignedToLocal(meta, getLocalNodeId(), System.currentTimeMillis());
     }
 
     private boolean isLeaseFree(Meta meta) {
-        return StringUtil.isBlank(meta.getLeaseOwner()) || meta.getLeaseExpireAt() <= System.currentTimeMillis();
+        return ClusterLeasePolicy.leaseFree(meta, System.currentTimeMillis());
     }
 
     private boolean hasLiveOwner(Meta meta, List<ClusterNode> online) {

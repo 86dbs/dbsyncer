@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
@@ -58,6 +60,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
      */
     private static final Executor SYNC_WRITE_EXECUTOR = Runnable::run;
 
+    private static final long CLUSTER_WAIT_MS = 2000L;
+
     @Resource
     private ParserComponent parserComponent;
 
@@ -80,7 +84,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void start(Mapping mapping) {
-        Thread worker = new Thread(() -> runSync(mapping, true));
+        boolean publishClosed = clusterService.isStandalone();
+        Thread worker = new Thread(() -> runSync(mapping, publishClosed));
         worker.setName("full-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
@@ -136,7 +141,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
         Meta meta = metaProfile.getMeta(task.getId());
         Map<String, String> snapshot = meta.getSnapshot();
-        // 旧版单游标断点：绝对表序下标（用于无 tableProgress 时跳过已完成表）
         int legacyTableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()),
                 ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         int legacyPageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()),
@@ -148,7 +152,28 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 || StringUtil.isNotBlank(legacyCursor));
 
         flush(task);
+        if (clusterService.isStandalone()) {
+            scanAssignedPages(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex, legacyCursor);
+        } else {
+            runUntilClusterComplete(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex,
+                    legacyCursor);
+        }
+        finishTask(task);
+    }
 
+    private void runUntilClusterComplete(Task task, Mapping mapping, boolean useLegacyBreakpoint,
+                                         int legacyTableGroupIndex, int legacyPageIndex, String legacyCursor) {
+        while (task.isRunning()) {
+            scanAssignedPages(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex, legacyCursor);
+            if (!task.isRunning() || clusterService.areAllTablesDone(mapping.getId())) {
+                return;
+            }
+            sleepWait(task);
+        }
+    }
+
+    private void scanAssignedPages(Task task, Mapping mapping, boolean useLegacyBreakpoint, int legacyTableGroupIndex,
+                                   int legacyPageIndex, String legacyCursor) {
         int pageSize = ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (task.isRunning()) {
@@ -162,26 +187,34 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             for (int j = 0; j < page.size(); j++) {
                 works.add(new TableWork(pageStartIndex + j, page.get(j)));
             }
-
             int threadNum = Math.max(1, mapping.getThreadNum());
             BatchTaskUtil.executeBySlice(works, works.size(), threadNum, (slice, executor) ->
                     BatchTaskUtil.executeWithAwait(slice, executor, work ->
                             syncOneTable(task, mapping, work, useLegacyBreakpoint, legacyTableGroupIndex,
                                     legacyPageIndex, legacyCursor), logger), logger);
-
-            if (!task.isRunning() || page.size() < pageSize) {
-                break;
-            }
             pageNum++;
         }
+    }
 
+    private void sleepWait(Task task) {
+        try {
+            Thread.sleep(CLUSTER_WAIT_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            task.stop();
+        }
+    }
+
+    private void finishTask(Task task) {
         task.setEndTime(Instant.now().toEpochMilli());
         task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
         task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
         task.setCursors(null);
-        if (task.isRunning()) {
+        if (task.isRunning() && clusterService.isStandalone()) {
             clearFullProgress(task);
-        } else {
+            return;
+        }
+        if (!task.isRunning()) {
             flush(task);
         }
     }
@@ -278,6 +311,15 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             meta.setUpdateTime(Instant.now().toEpochMilli());
             profileComponent.editConfigModel(meta);
         }
+        markTableDetailDone(tableGroupId);
+    }
+
+    private void markTableDetailDone(String tableGroupId) {
+        Meta detail = metaProfile.getMetaByTaskId(tableGroupId, TaskLevelEnum.TASK_DETAIL);
+        if (detail == null || detail.getState() == CommonTaskStatusEnum.DONE.getCode()) {
+            return;
+        }
+        metaProfile.updateMetaState(detail.getId(), CommonTaskStatusEnum.DONE.getCode());
     }
 
     private void clearFullProgress(Task task) {
