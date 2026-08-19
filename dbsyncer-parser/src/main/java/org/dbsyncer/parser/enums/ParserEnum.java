@@ -30,6 +30,11 @@ public enum ParserEnum {
     TABLE_PROGRESS("tableProgress", 0),
 
     /**
+     * 表内 range 计划（JSON：tableGroupId -> [itemId...]）
+     */
+    TABLE_RANGE_PLAN("tableRangePlan", 0),
+
+    /**
      * 全量+增量阶段: full(全量中) / increment(增量中)
      */
     FULL_INCREMENT_PHASE("fullIncrementPhase", 0);

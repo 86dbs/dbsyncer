@@ -62,11 +62,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
 
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
-        // 不记录全量数据, 只记录增量同步数据, 将异常记录到系统日志中
+        // 全量计数改由 FullPuller 在进度 CAS 成功后累加，避免改派重跑导致 success 翻倍
         if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
-            // 不记录全量数据，只统计成功失败总数
-            refreshTotal(result);
-
             if (!CollectionUtils.isEmpty(result.getFailData())) {
                 logger.error(result.getError().toString());
                 LogType logType = LogType.TableGroupLog.FULL_FAILED;
@@ -75,12 +72,12 @@ public final class FlushStrategyImpl implements FlushStrategy {
             return;
         }
 
-        flush(result, targetSchemaResolver, targetFieldMap);
+        flush(result, targetSchemaResolver, targetFieldMap, false);
     }
 
     @Override
     public void flushIncrementData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
-        flush(result, targetSchemaResolver, targetFieldMap);
+        flush(result, targetSchemaResolver, targetFieldMap, true);
     }
 
     private void asyncWrite(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean success, List<Map> data, String error) {
@@ -178,8 +175,10 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
     }
 
-    private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap) {
-        refreshTotal(result);
+    private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean count) {
+        if (count) {
+            refreshTotal(result);
+        }
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         // 是否写失败数据

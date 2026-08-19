@@ -66,6 +66,34 @@ public class ClusterController extends BaseController {
     }
 
     /**
+     * 拉取指定节点的 WorkItem 派工（免登录，供 Follower 围栏续约）。
+     */
+    @GetMapping("/assignments")
+    @ResponseBody
+    public RestResult assignments(@RequestParam("nodeId") String nodeId) {
+        try {
+            return RestResult.restSuccess(clusterManagerService.listAssignments(nodeId));
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 任务分片汇总（Leader 内存视图，需登录）。
+     */
+    @GetMapping("/assignments/all")
+    @ResponseBody
+    public RestResult assignmentsAll() {
+        try {
+            return RestResult.restSuccess(clusterManagerService.listTaskShards());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
      * 节点分页。
      */
     @PostMapping("/query")

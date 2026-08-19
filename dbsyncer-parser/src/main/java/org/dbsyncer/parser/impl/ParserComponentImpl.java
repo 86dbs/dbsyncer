@@ -38,6 +38,8 @@ import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
+import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +84,9 @@ public class ParserComponentImpl implements ParserComponent {
 
     @Resource
     private RsaManager rsaManager;
+
+    @Resource
+    private ClusterService clusterService;
 
     @Override
     public List<MetaInfo> getMetaInfo(DefaultConnectorServiceContext context) {
@@ -136,7 +141,7 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     @Override
-    public void execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor) {
+    public boolean execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor) {
         final String metaId = task.getId();
         final String sourceConnectorId = mapping.getSourceConnectorId();
         final String targetConnectorId = mapping.getTargetConnectorId();
@@ -168,7 +173,7 @@ public class ParserComponentImpl implements ParserComponent {
         context.setBatchSize(mapping.getBatchNum());
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
-        context.setForceUpdate(mapping.isForceUpdate());
+        context.setForceUpdate(clusterService.isStandalone() ? mapping.isForceUpdate() : true);
         context.setSourceTable(group.getSourceTable());
         context.setTargetTable(group.getTargetTable());
         context.setTargetFields(picker.getTargetFields());
@@ -185,7 +190,7 @@ public class ParserComponentImpl implements ParserComponent {
         for (; ; ) {
             if (!task.isRunning()) {
                 logger.warn("任务被中止:{}", metaId);
-                break;
+                return false;
             }
 
             // 1、获取数据源数据
@@ -196,7 +201,7 @@ public class ParserComponentImpl implements ParserComponent {
             List<Map> source = reader.getSuccessData();
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
-                break;
+                return true;
             }
 
             // 2、映射字段
@@ -210,15 +215,30 @@ public class ParserComponentImpl implements ParserComponent {
             context.setTargetList(target);
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
+            String itemId = StringUtil.isNotBlank(task.getTableGroupId()) ? task.getTableGroupId() : tableGroup.getId();
+            if (!clusterService.assertWritable(itemId)) {
+                logger.warn("generation 围栏失效，停止本表写入: {}", itemId);
+                return false;
+            }
+
             // 5、写入目标源
             Result result = writeBatch(context, executor);
 
-            // 6、更新结果
+            // 6、更新结果（进度 CAS 成功后再累加 success，避免改派重跑双计）
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
-            result.setTableGroupId(tableGroup.getId());
+            result.setWorkItemId(itemId);
+            result.setTableGroupId(WorkItemIds.tableGroupIdOf(itemId));
             result.setTargetTableGroupName(tTableName);
-            flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap);
+            if (!flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap)) {
+                logger.warn("进度刷盘失败，停止本工作项以免漏计/双计: {}", itemId);
+                return false;
+            }
+
+            if (!clusterService.assertWritable(itemId)) {
+                logger.warn("generation 围栏失效，本页已刷盘，等待重新派工: {}", itemId);
+                return false;
+            }
 
             // 7、同步完成后通知插件做后置处理
             pluginFactory.process(context, ProcessEnum.AFTER);
@@ -290,16 +310,17 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     /**
-     * 更新缓存
+     * 更新进度与计数；失败返回 false（本页已写入目标，由 UPSERT + 续跑保证正确性）。
      */
-    private void flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
+    private boolean flush(Task task, Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         result.setMetaId(task.getId());
         result.setEvent(ConnectorConstant.OPERTION_INSERT);
-        flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
-
-        // 发布刷新事件给FullExtractor
         task.setEndTime(Instant.now().toEpochMilli());
-        applicationContext.publishEvent(new FullRefreshEvent(applicationContext, task));
+        FullRefreshEvent event = new FullRefreshEvent(applicationContext, task, result);
+        applicationContext.publishEvent(event);
+        // 明细/失败日志仍走原策略（不再在此处累加 Meta 计数）
+        flushStrategy.flushFullData(result, targetSchemaResolver, targetFieldMap);
+        return event.isProgressCommitted();
     }
 
     /**

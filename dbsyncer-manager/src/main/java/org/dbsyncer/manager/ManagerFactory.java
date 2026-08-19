@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -89,7 +88,6 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
         puller.close(metaId);
-        clusterService.releaseLease(metaId);
     }
 
     /**
@@ -101,9 +99,6 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         Puller puller = getPuller(mapping);
         String metaId = mapping.getMetaId();
         puller.close(metaId);
-        if (clusterService.hasValidLease(metaId)) {
-            clusterService.releaseLease(metaId);
-        }
     }
 
     /**
@@ -133,10 +128,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
             return;
         }
         if (!clusterService.isStandalone() && !clusterService.isLeader()) {
-            throw new ManagerException("当前节点未分配该增量任务");
-        }
-        if (!clusterService.hasValidLease(metaId) && !clusterService.tryAcquireLease(metaId)) {
-            throw new ManagerException("当前节点未分配该增量任务");
+            throw new ManagerException("当前节点不是 Leader，增量仅在 Leader 执行");
         }
     }
 
@@ -153,9 +145,8 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         Meta meta = metaProfile.getMeta(metaId);
         int code = status.getCode();
         if (null != meta && meta.getState() != code) {
-            meta.setState(code);
-            meta.setUpdateTime(Instant.now().toEpochMilli());
-            profileComponent.editConfigModel(meta);
+            // 只改 STATE，避免整行回写覆盖并发 increment 的 success/fail
+            metaProfile.updateMetaState(metaId, code);
         }
     }
 

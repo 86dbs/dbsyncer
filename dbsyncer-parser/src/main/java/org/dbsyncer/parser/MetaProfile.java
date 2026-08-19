@@ -6,6 +6,7 @@ package org.dbsyncer.parser;
 import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.TableSyncProgress;
 import org.dbsyncer.sdk.model.MetaIncrement;
 
 import java.io.IOException;
@@ -94,24 +95,63 @@ public interface MetaProfile {
     String updateMeta(Meta meta);
 
     /**
-     * 按 epoch CAS 更新租约三列，成功则 epoch+1。
+     * 合并单表进度：乐观锁 CAS（按 updateTime）+ 单调前进校验，避免多节点整行互盖。
      *
-     * @param metaId        Meta 主键
-     * @param expectedEpoch 期望代数
-     * @param ownerNodeId   新持有者，空表示释放
-     * @param expireAt      过期时间；释放时为 0
-     * @return true 更新成功
+     * @param metaId       任务级 Meta 主键
+     * @param tableGroupId 表映射 ID / WorkItem ID
+     * @param progress     候选进度（含 generation）
+     * @return true 已合并；false 被拒绝或冲突耗尽
      */
-    boolean compareAndSetLease(String metaId, long expectedEpoch, String ownerNodeId, long expireAt);
+    boolean mergeTableProgress(String metaId, String tableGroupId, TableSyncProgress progress);
 
     /**
-     * 仅更新 Meta.state，不覆盖租约与 snapshot。
+     * 合并进度并在同一条 CAS 中累加 success/fail，避免进度已推进而计数未落盘。
+     *
+     * @param metaId       任务级 Meta 主键
+     * @param tableGroupId 表映射 ID / WorkItem ID
+     * @param progress     候选进度
+     * @param successDelta 本页成功条数
+     * @param failDelta    本页失败条数
+     * @return true 已合并
+     */
+    boolean mergeTableProgress(String metaId, String tableGroupId, TableSyncProgress progress,
+                               long successDelta, long failDelta);
+
+    /**
+     * 仅更新 Meta.state，不覆盖 snapshot。
      *
      * @param metaId Meta 主键
      * @param state  目标状态
      * @return true 更新成功
      */
     boolean updateMetaState(String metaId, int state);
+
+    /**
+     * 仅当 START_TIME 仍为 0 时写入启动时间，不触碰 success/snapshot。
+     *
+     * @param metaId    Meta 主键
+     * @param startTime 启动时间毫秒
+     * @return true 已写入或无需写入
+     */
+    boolean ensureStartTime(String metaId, long startTime);
+
+    /**
+     * 将表内 range 计划 CAS 写入 SNAPSHOT；已有计划则保持不变。不覆盖 success/fail。
+     *
+     * @param metaId       任务级 Meta 主键
+     * @param tableGroupId 表映射 ID
+     * @param itemIds      完整 range item 列表
+     * @return true 已写入或已存在
+     */
+    boolean mergeRangePlan(String metaId, String tableGroupId, List<String> itemIds);
+
+    /**
+     * 将 total 对齐为 success+fail（全量结束后消除 COUNT 预估偏差）。
+     *
+     * @param metaId Meta 主键
+     * @return true 已对齐或无需对齐
+     */
+    boolean alignMetaTotalToProcessed(String metaId);
 
     /**
      * 批量更新 Meta（就地重置进度等场景，避免删插放大）。

@@ -6,12 +6,13 @@ package org.dbsyncer.sdk.spi;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.ClusterRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
+import org.dbsyncer.sdk.model.WorkItemAssignment;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 集群控制面：选主、租约、任务分配。单机实现恒为 Leader。
+ * 集群控制面：选主、WorkItem 派工与围栏。单机实现恒为 Leader。
  *
  * @author wuji
  * @version 1.0.0
@@ -85,40 +86,6 @@ public interface ClusterService {
     void assertLeaderWritable();
 
     /**
-     * 抢占任务租约（本节点为 owner）。
-     *
-     * @param metaId Meta 主键
-     * @return true 持有租约
-     */
-    boolean tryAcquireLease(String metaId);
-
-    /**
-     * 将租约分配给指定节点（仅 Leader）。
-     *
-     * @param metaId       Meta 主键
-     * @param ownerNodeId  目标节点
-     * @return true 分配成功
-     */
-    default boolean assignLease(String metaId, String ownerNodeId) {
-        return tryAcquireLease(metaId);
-    }
-
-    /**
-     * 释放本节点持有的租约。
-     *
-     * @param metaId Meta 主键
-     */
-    void releaseLease(String metaId);
-
-    /**
-     * 本节点是否持有未过期租约。
-     *
-     * @param metaId Meta 主键
-     * @return true 持有
-     */
-    boolean hasValidLease(String metaId);
-
-    /**
      * 表级工作是否分配给本节点。单机恒 true。
      *
      * @param tableGroupId 表映射 ID
@@ -129,7 +96,55 @@ public interface ClusterService {
     }
 
     /**
-     * Leader 将未完成表均分到在线节点。单机空操作。
+     * 拉取指定节点当前 Assignment（仅 Leader 有权威视图；Follower 本地实现可转发）。
+     *
+     * @param nodeId 节点 ID
+     * @return 分配列表
+     */
+    default List<WorkItemAssignment> listAssignments(String nodeId) {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 写目标库 / 刷 Meta 前围栏：本节点仍持有该 item 的最新 generation。
+     *
+     * @param itemId 工作项 ID（Phase1 为 tableGroupId）
+     * @return true 允许产生副作用
+     */
+    default boolean assertWritable(String itemId) {
+        return true;
+    }
+
+    /**
+     * 本节点当前持有的 item generation；未持有时为 0。
+     *
+     * @param itemId 工作项 ID
+     * @return generation
+     */
+    default long getLocalGeneration(String itemId) {
+        return 0L;
+    }
+
+    /**
+     * 本节点当前 Assignment 快照（含整表与 range item）。
+     *
+     * @return 分配列表
+     */
+    default List<WorkItemAssignment> listLocalAssignments() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Leader 全部 Assignment 快照（排障 / 任务分片详情）。
+     *
+     * @return 分配列表；非 Leader 为空
+     */
+    default List<WorkItemAssignment> listAllAssignments() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Leader 将未完成表粘滞派工到在线节点。单机空操作。
      *
      * @param taskId 任务/Mapping ID
      */
@@ -144,14 +159,6 @@ public interface ClusterService {
      */
     default boolean areAllTablesDone(String taskId) {
         return true;
-    }
-
-    /**
-     * Leader 将增量 Mapping 分配到一台在线节点。单机空操作。
-     *
-     * @param metaId 任务级 Meta ID
-     */
-    default void assignIncrementMapping(String metaId) {
     }
 
     /**

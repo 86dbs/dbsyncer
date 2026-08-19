@@ -946,21 +946,26 @@ function isFullPhaseInProgress(meta, snapshot) {
 
 // 全量同步进度展示（全量 / 全量+增量全量阶段共用）
 function renderFullPhaseSyncResult(meta) {
+    const RUNNING = 1;
+    const STOPPING = 2;
+    const isActive = meta.state === RUNNING || meta.state === STOPPING;
     const total = Number(meta.total) || 0;
     const success = Number(meta.success) || 0;
     const processed = success + (Number(meta.fail) || 0);
-    const isFullInProgress = total > 0 && processed < total;
+    // 仅运行中展示未完成进度条；结束后以实际处理条数为准，避免 COUNT 预估导致卡在 99.x%
+    const isFullInProgress = isActive && total > 0 && processed < total;
     const content = [];
 
     content.push('<div class="sync-result text-xs">');
     if (meta.counting) {
         content.push(`<div class="text-tertiary">正在统计表总数...</div>`);
     } else {
-        content.push(`<div>总数: ${formatCount(total)}</div>`);
+        const displayTotal = (!isActive && processed > 0) ? Math.max(total, processed) : total;
+        content.push(`<div>总数: ${formatCount(displayTotal)}</div>`);
         if (isFullInProgress) {
             content.push(renderMiniProgressBar(processed, total));
             content.push(`<div>全量进度: ${formatCount(processed)} / ${formatCount(total)} (${formatPercent(processed / total, 1)})</div>`);
-        } else if (total === 0) {
+        } else if (total === 0 && isActive) {
             content.push(`<div class="text-tertiary">等待全量任务启动...</div>`);
         }
     }

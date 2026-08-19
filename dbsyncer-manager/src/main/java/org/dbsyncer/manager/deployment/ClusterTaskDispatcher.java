@@ -168,8 +168,10 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         if (!clusterService.areAllTablesDone(mapping.getId())) {
             return;
         }
+        metaProfile.alignMetaTotalToProcessed(mapping.getMetaId());
         if (StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model)) {
-            markIncrementPhase(meta);
+            Meta latest = metaProfile.getMeta(mapping.getMetaId());
+            markIncrementPhase(latest != null ? latest : meta);
             return;
         }
         managerFactory.changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
@@ -207,7 +209,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
                     continue;
                 }
                 Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
-                boolean done = FullTableProgressUtil.isDone(snapshot, group.getId())
+                boolean done = FullTableProgressUtil.isTableFullyDone(snapshot, group.getId())
                         || (detail != null && detail.getState() == CommonTaskStatusEnum.DONE.getCode());
                 if (!done) {
                     hit[0] = true;

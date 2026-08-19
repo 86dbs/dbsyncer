@@ -4,8 +4,11 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ClusterNodeVO;
+import org.dbsyncer.biz.vo.TaskShardSummaryVO;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.sdk.model.WorkItemAssignment;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -52,4 +55,19 @@ public interface ClusterManagerService {
      * @return 节点
      */
     ClusterNodeVO current();
+
+    /**
+     * 查询指定节点的 WorkItem 派工（Leader 权威视图）。
+     *
+     * @param nodeId 节点 ID
+     * @return 派工列表
+     */
+    List<WorkItemAssignment> listAssignments(String nodeId);
+
+    /**
+     * 按任务汇总当前分片派工（仅 Leader 有数据）。
+     *
+     * @return 任务分片汇总
+     */
+    List<TaskShardSummaryVO> listTaskShards();
 }

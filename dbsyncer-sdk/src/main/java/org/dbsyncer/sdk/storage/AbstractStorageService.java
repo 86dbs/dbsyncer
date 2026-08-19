@@ -44,10 +44,11 @@ public abstract class AbstractStorageService implements StorageService, Disposab
     /**
      * 条件更新实现。
      *
+     * @param increments 原子累加列，可为 null
      * @return 影响行数
      */
     protected abstract int compareAndUpdate(StorageEnum type, String sharding, String id, Map params,
-                                           String casField, Object casValue);
+                                           Map<String, Long> increments, String casField, Object casValue);
 
     protected String getSharding(StorageEnum type, String collectionId) {
         Assert.notNull(type, "StorageEnum type can not be null.");
@@ -183,11 +184,20 @@ public abstract class AbstractStorageService implements StorageService, Disposab
 
     @Override
     public int compareAndEdit(StorageEnum type, String id, Map params, String casField, Object casValue) {
-        if (type == null || StringUtil.isBlank(id) || CollectionUtils.isEmpty(params) || StringUtil.isBlank(casField)) {
+        return compareAndEdit(type, id, params, null, casField, casValue);
+    }
+
+    @Override
+    public int compareAndEdit(StorageEnum type, String id, Map params, Map<String, Long> increments,
+                              String casField, Object casValue) {
+        if (type == null || StringUtil.isBlank(id) || StringUtil.isBlank(casField)) {
+            return 0;
+        }
+        if (CollectionUtils.isEmpty(params) && CollectionUtils.isEmpty(increments)) {
             return 0;
         }
         try {
-            return compareAndUpdate(type, getSharding(type, null), id, params, casField, casValue);
+            return compareAndUpdate(type, getSharding(type, null), id, params, increments, casField, casValue);
         } catch (NullExecutorException e) {
             return 0;
         }

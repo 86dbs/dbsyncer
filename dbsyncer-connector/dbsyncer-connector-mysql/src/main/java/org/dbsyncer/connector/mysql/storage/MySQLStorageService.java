@@ -270,8 +270,12 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
-    protected int compareAndUpdate(StorageEnum type, String sharding, String id, Map params, String casField, Object casValue) {
-        if (CollectionUtils.isEmpty(params) || StringUtil.isBlank(id) || StringUtil.isBlank(casField)) {
+    protected int compareAndUpdate(StorageEnum type, String sharding, String id, Map params,
+                                   Map<String, Long> increments, String casField, Object casValue) {
+        if (StringUtil.isBlank(id) || StringUtil.isBlank(casField)) {
+            return 0;
+        }
+        if (CollectionUtils.isEmpty(params) && CollectionUtils.isEmpty(increments)) {
             return 0;
         }
         final Executor executor = getExecutor(type, sharding);
@@ -281,21 +285,44 @@ public class MySQLStorageService extends AbstractStorageService {
         StringBuilder sql = new StringBuilder("UPDATE ").append(connector.buildWithQuotation(executor.getTable())).append(" SET ");
         List<Object> args = new ArrayList<>();
         boolean hasColumn = false;
-        for (Object keyObj : params.keySet()) {
-            String key = keyObj == null ? null : String.valueOf(keyObj);
-            if (StringUtil.isBlank(key) || StringUtil.equals(key, ConfigConstant.CONFIG_MODEL_ID)) {
-                continue;
+        if (!CollectionUtils.isEmpty(params)) {
+            for (Object keyObj : params.keySet()) {
+                String key = keyObj == null ? null : String.valueOf(keyObj);
+                if (StringUtil.isBlank(key) || StringUtil.equals(key, ConfigConstant.CONFIG_MODEL_ID)) {
+                    continue;
+                }
+                String column = resolveColumn(executor, key);
+                if (column == null) {
+                    continue;
+                }
+                if (hasColumn) {
+                    sql.append(", ");
+                }
+                sql.append(connector.buildWithQuotation(column)).append(" = ?");
+                args.add(params.get(keyObj));
+                hasColumn = true;
             }
-            String column = resolveColumn(executor, key);
-            if (column == null) {
-                continue;
+        }
+        if (!CollectionUtils.isEmpty(increments)) {
+            for (Map.Entry<String, Long> entry : increments.entrySet()) {
+                if (entry.getValue() == null || entry.getValue() == 0L) {
+                    continue;
+                }
+                if (!CollectionUtils.isEmpty(params) && params.containsKey(entry.getKey())) {
+                    continue;
+                }
+                String column = resolveColumn(executor, entry.getKey());
+                if (column == null) {
+                    continue;
+                }
+                if (hasColumn) {
+                    sql.append(", ");
+                }
+                String quotation = connector.buildWithQuotation(column);
+                sql.append(quotation).append(" = GREATEST(").append(quotation).append(" + ?, 0)");
+                args.add(entry.getValue());
+                hasColumn = true;
             }
-            if (hasColumn) {
-                sql.append(", ");
-            }
-            sql.append(connector.buildWithQuotation(column)).append(" = ?");
-            args.add(params.get(keyObj));
-            hasColumn = true;
         }
         if (!hasColumn) {
             return 0;
@@ -646,8 +673,7 @@ public class MySQLStorageService extends AbstractStorageService {
         builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME,
                 ConfigConstant.META_START_TIME, ConfigConstant.META_TASK_ID, ConfigConstant.META_STATE, ConfigConstant.META_IS_TASK_DETAIL,
                 ConfigConstant.META_TOTAL, ConfigConstant.META_SUCCESS, ConfigConstant.META_FAIL,
-                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT,
-                ConfigConstant.META_EPOCH, ConfigConstant.META_LEASE_OWNER, ConfigConstant.META_LEASE_EXPIRE_AT);
+                ConfigConstant.META_DIFF, ConfigConstant.META_FIXED, ConfigConstant.META_SNAPSHOT);
         List<Field> metaFields = builder.getFields();
 
         // 任务执行明细：按任务分表(无 TASK_ID 列，靠 TABLE_GROUP_ID 关联)
@@ -814,9 +840,6 @@ public class MySQLStorageService extends AbstractStorageService {
         }
         if (StorageEnum.META.getType().equals(type)) {
             addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间'");
-            addColumnIfNotExist(table, "EPOCH", "bigint NOT NULL DEFAULT 0 COMMENT '租约代数'");
-            addColumnIfNotExist(table, "LEASE_OWNER", "varchar(64) DEFAULT NULL COMMENT '租约持有节点'");
-            addColumnIfNotExist(table, "LEASE_EXPIRE_AT", "bigint NOT NULL DEFAULT 0 COMMENT '租约过期时间'");
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }
@@ -956,9 +979,6 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.META_DIFF, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_FIXED, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.META_SNAPSHOT, "LONGVARCHAR", Types.LONGVARCHAR),
-                            new Field(ConfigConstant.META_EPOCH, "BIGINT", Types.BIGINT),
-                            new Field(ConfigConstant.META_LEASE_OWNER, "VARCHAR", Types.VARCHAR),
-                            new Field(ConfigConstant.META_LEASE_EXPIRE_AT, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_CLUSTER_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.CLUSTER_NODE_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.CLUSTER_IP, "VARCHAR", Types.VARCHAR),

@@ -89,18 +89,6 @@ public class ConfigConstant {
     public static final String META_DIFF = "diff";
     public static final String META_FIXED = "fixed";
     public static final String META_SNAPSHOT = "snapshot";
-    /**
-     * 任务租约代数（围栏）
-     */
-    public static final String META_EPOCH = "epoch";
-    /**
-     * 租约持有节点 ID
-     */
-    public static final String META_LEASE_OWNER = "leaseOwner";
-    /**
-     * 租约过期时间（毫秒时间戳）
-     */
-    public static final String META_LEASE_EXPIRE_AT = "leaseExpireAt";
 
     /**
      * 集群节点表(dbsyncer_cluster_node)

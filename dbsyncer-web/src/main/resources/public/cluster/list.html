@@ -12,14 +12,14 @@
             <i class="fa fa-sitemap"></i> 什么是集群？
         </h4>
         <p class="text-sm text-secondary mb-3">
-            集群将多台 DBSyncer 组成高可用部署，通过<strong>选主</strong>与<strong>任务租约</strong>协同工作。单节点故障时由其他节点接管，全量同步可按表分摊到多节点并行执行：
+            集群将多台 DBSyncer 组成高可用部署，通过<strong>选主</strong>与<strong>Leader 内存派工</strong>协同工作。单节点故障时由其他节点接管，全量同步可按表/分片分摊到多节点并行执行：
         </p>
         <ul class="text-sm text-secondary mb-3 pl-4">
             <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>高可用选主</strong>：自动选举 Leader，配置变更集中在主节点
             </li>
-            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>表级均摊</strong>：全量任务按表分配到在线节点，提升吞吐
+            <li class="mb-1"><i class="fa fa-angle-right text-info"></i> <strong>粘滞分片</strong>：全量任务按表/PK range 派到在线节点，提升吞吐
             </li>
-            <li><i class="fa fa-angle-right text-info"></i> <strong>故障续跑</strong>：节点掉线后租约过期再改派，已完成表不重跑</li>
+            <li><i class="fa fa-angle-right text-info"></i> <strong>故障续跑</strong>：节点掉线立即改派 generation，已完成分片不重跑</li>
         </ul>
         <p class="text-sm text-secondary">
             适用于：生产多机部署、任务水平扩展、主备切换运维等场景。
@@ -74,6 +74,32 @@
             <tbody id="clusterTableBody"></tbody>
         </table>
         <div class="blank-block"></div>
+    </div>
+
+    <div class="card-header mt-6" th:if="${clusterEnabled}">
+        <h3 class="card-title text-center">任务分片</h3>
+    </div>
+    <div class="card-body" th:if="${clusterEnabled}">
+        <p class="text-sm text-secondary mb-3">
+            来自 Leader 内存派工视图；TPS/堆积指标后续接入监控。非 Leader 节点请到主节点查看。
+        </p>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>任务 ID</th>
+                <th>分片数</th>
+                <th>节点分布</th>
+                <th>generation</th>
+                <th>TPS</th>
+                <th>堆积</th>
+            </tr>
+            </thead>
+            <tbody id="shardTableBody">
+            <tr>
+                <td colspan="6" class="text-center text-secondary">加载中...</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -149,6 +175,40 @@
         });
     }
 
+    function renderShardRows(list) {
+        if (!list || list.length === 0) {
+            return '<tr><td colspan="6" class="text-center text-secondary">暂无运行中的分片</td></tr>';
+        }
+        return list.map(function (item) {
+            return `<tr>
+                <td>${escapeHtml(item.taskId || '')}</td>
+                <td>${item.shardCount || 0}</td>
+                <td>${escapeHtml(item.nodeDistribution || '-')}</td>
+                <td>${item.maxGeneration || 0}</td>
+                <td>-</td>
+                <td>-</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function loadTaskShards() {
+        const $body = $('#shardTableBody');
+        if (!$body.length) {
+            return;
+        }
+        if (!currentIsLeader) {
+            $body.html('<tr><td colspan="6" class="text-center text-secondary">请到 Leader 查看任务分片</td></tr>');
+            return;
+        }
+        doGetter('/cluster/assignments/all', {}, function (res) {
+            if (res.success === true) {
+                $body.html(renderShardRows(res.data || []));
+            } else {
+                $body.html(`<tr><td colspan="6" class="text-center text-secondary">${escapeHtml(res.message || '加载失败')}</td></tr>`);
+            }
+        });
+    }
+
     $(document).ready(function () {
         window.backIndexPage = function () {
             doLoader('/cluster/list');
@@ -171,6 +231,7 @@
             renderRow: renderClusterRow,
             storageKey: 'cluster-list'
         });
+        loadTaskShards();
     });
 </script>
 </html>

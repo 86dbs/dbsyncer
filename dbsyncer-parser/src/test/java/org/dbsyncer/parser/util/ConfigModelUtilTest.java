@@ -33,27 +33,11 @@ public class ConfigModelUtilTest {
 
         Assert.assertEquals(1000L, params.get(ConfigConstant.META_START_TIME));
         Assert.assertEquals(4000L, params.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME));
-        Assert.assertEquals(0L, params.get(ConfigConstant.META_EPOCH));
-        Assert.assertEquals("", params.get(ConfigConstant.META_LEASE_OWNER));
-        Assert.assertEquals(0L, params.get(ConfigConstant.META_LEASE_EXPIRE_AT));
         Assert.assertNull(params.get("beginTime"));
         Assert.assertNull(params.get("endTime"));
-    }
-
-    @Test
-    public void convertMetaPersistsLeaseFields() {
-        Meta meta = new Meta();
-        meta.setId("m1");
-        meta.setTaskId("t1");
-        meta.setEpoch(3L);
-        meta.setLeaseOwner("10.0.0.1:18686");
-        meta.setLeaseExpireAt(9L);
-
-        Map<String, Object> params = ConfigModelUtil.convertModelToMap(meta);
-
-        Assert.assertEquals(3L, params.get(ConfigConstant.META_EPOCH));
-        Assert.assertEquals("10.0.0.1:18686", params.get(ConfigConstant.META_LEASE_OWNER));
-        Assert.assertEquals(9L, params.get(ConfigConstant.META_LEASE_EXPIRE_AT));
+        Assert.assertNull(params.get("epoch"));
+        Assert.assertNull(params.get("leaseOwner"));
+        Assert.assertNull(params.get("leaseExpireAt"));
     }
 
     @Test

@@ -51,18 +51,6 @@ public class Meta extends ConfigModel {
      * 任务结束时间，不单独落库；读取时取 UPDATE_TIME。
      */
     private long endTime;
-    /**
-     * 租约代数（围栏）
-     */
-    private long epoch;
-    /**
-     * 租约持有节点 ID
-     */
-    private String leaseOwner;
-    /**
-     * 租约过期时间（毫秒）
-     */
-    private long leaseExpireAt;
 
     public Meta() {
         super.setType(ConfigConstant.META);
@@ -88,9 +76,6 @@ public class Meta extends ConfigModel {
         this.snapshot = new HashMap<>();
         this.beginTime = 0L;
         this.endTime = 0L;
-        this.epoch = 0L;
-        this.leaseOwner = null;
-        this.leaseExpireAt = 0L;
     }
 
     public String getTaskId() {
@@ -183,29 +168,5 @@ public class Meta extends ConfigModel {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
-    }
-
-    public long getEpoch() {
-        return epoch;
-    }
-
-    public void setEpoch(long epoch) {
-        this.epoch = epoch;
-    }
-
-    public String getLeaseOwner() {
-        return leaseOwner;
-    }
-
-    public void setLeaseOwner(String leaseOwner) {
-        this.leaseOwner = leaseOwner;
-    }
-
-    public long getLeaseExpireAt() {
-        return leaseExpireAt;
-    }
-
-    public void setLeaseExpireAt(long leaseExpireAt) {
-        this.leaseExpireAt = leaseExpireAt;
     }
 }

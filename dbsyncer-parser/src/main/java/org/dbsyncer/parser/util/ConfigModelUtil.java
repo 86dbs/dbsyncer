@@ -149,9 +149,6 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.META_DIFF, meta.getDiff() == null ? 0L : meta.getDiff().get());
         params.put(ConfigConstant.META_FIXED, meta.getFixed() == null ? 0L : meta.getFixed().get());
         params.put(ConfigConstant.META_SNAPSHOT, JsonUtil.objToJson(meta.getSnapshot() == null ? new HashMap<>() : meta.getSnapshot()));
-        params.put(ConfigConstant.META_EPOCH, meta.getEpoch());
-        params.put(ConfigConstant.META_LEASE_OWNER, StringUtil.getIfBlank(meta.getLeaseOwner(), StringUtil.EMPTY));
-        params.put(ConfigConstant.META_LEASE_EXPIRE_AT, meta.getLeaseExpireAt());
         return params;
     }
 

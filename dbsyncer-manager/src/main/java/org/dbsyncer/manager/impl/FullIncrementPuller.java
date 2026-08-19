@@ -108,10 +108,6 @@ public final class FullIncrementPuller extends AbstractPuller {
                 return;
             }
             markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-            if (!clusterService.hasValidLease(metaId) && !clusterService.tryAcquireLease(metaId)) {
-                logger.info("本节点未持有增量租约，跳过：{}", metaId);
-                return;
-            }
             logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
             incrementPuller.start(mapping, autoRecovery);
         } catch (Exception e) {

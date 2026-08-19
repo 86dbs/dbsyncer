@@ -157,6 +157,19 @@ public interface StorageService {
     int compareAndEdit(StorageEnum type, String id, Map params, String casField, Object casValue);
 
     /**
+     * 条件更新，并可在同一条 SQL 内原子累加计数（进度与 success 同事务，避免改派漏计/双计）。
+     *
+     * @param type        存储类型
+     * @param id          记录主键
+     * @param params      待更新列
+     * @param increments  列增量（可为 null）
+     * @param casField    条件列
+     * @param casValue    条件列期望值
+     * @return 影响行数
+     */
+    int compareAndEdit(StorageEnum type, String id, Map params, Map<String, Long> increments, String casField, Object casValue);
+
+    /**
      * 执行原生查询 SQL（系统配置库）；{@link SqlQuery#isPaged()} 为 true 时带分页。
      *
      * @param query SQL 与可选分页参数

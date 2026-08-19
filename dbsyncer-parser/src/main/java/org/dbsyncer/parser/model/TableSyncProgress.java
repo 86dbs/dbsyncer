@@ -27,6 +27,11 @@ public class TableSyncProgress {
      */
     private boolean done;
 
+    /**
+     * 写入时持有的派工 generation；用于拒绝过期写（非调度权威）。
+     */
+    private long generation;
+
     public int getPageIndex() {
         return pageIndex;
     }
@@ -49,5 +54,13 @@ public class TableSyncProgress {
 
     public void setDone(boolean done) {
         this.done = done;
+    }
+
+    public long getGeneration() {
+        return generation;
+    }
+
+    public void setGeneration(long generation) {
+        this.generation = generation;
     }
 }
