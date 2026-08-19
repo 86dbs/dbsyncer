@@ -9,6 +9,7 @@ import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.DeploymentService;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.sdk.spi.ServiceFactory;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,9 +44,31 @@ public class ManagerSupportConfiguration {
         return new StandaloneProvider(metaProfile);
     }
 
+    /**
+     * 仅暴露 {@link ClusterService} 类型，不触发目标实例的二次 {@code @PostConstruct}。
+     *
+     * @param deploymentService 部署门面
+     * @return FactoryBean
+     */
     @Bean
     @ConditionalOnMissingBean(ClusterService.class)
-    public ClusterService clusterService(DeploymentService deploymentService) {
-        return deploymentService.getClusterService();
+    public FactoryBean<ClusterService> clusterService(DeploymentService deploymentService) {
+        ClusterService target = deploymentService.getClusterService();
+        return new FactoryBean<ClusterService>() {
+            @Override
+            public ClusterService getObject() {
+                return target;
+            }
+
+            @Override
+            public Class<?> getObjectType() {
+                return ClusterService.class;
+            }
+
+            @Override
+            public boolean isSingleton() {
+                return true;
+            }
+        };
     }
 }

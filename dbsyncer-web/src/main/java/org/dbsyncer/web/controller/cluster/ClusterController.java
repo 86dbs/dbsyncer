@@ -4,7 +4,9 @@
 package org.dbsyncer.web.controller.cluster;
 
 import org.dbsyncer.biz.ClusterManagerService;
+import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +39,18 @@ public class ClusterController extends BaseController {
     @Resource
     private ClusterManagerService clusterManagerService;
 
+    @Resource
+    private LicenseService licenseService;
+
     /**
      * 集群列表页。
      */
     @GetMapping("/list")
     public String list(ModelMap model) {
+        EditionInfoVO editionInfo = new EditionInfoVO();
+        editionInfo.setEdition(licenseService.getEditionEnum().getCode());
+        editionInfo.setEditionName(licenseService.getEditionEnum().getMessage());
+        model.put("editionInfo", editionInfo);
         model.put("clusterEnabled", clusterManagerService.isClusterEnabled());
         model.put("current", clusterManagerService.current());
         return "cluster/list";

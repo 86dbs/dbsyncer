@@ -3,7 +3,7 @@ package org.dbsyncer.manager;
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
-import org.dbsyncer.manager.impl.PreloadTemplate;
+import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
@@ -12,7 +12,6 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -41,8 +40,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     private ClusterService clusterService;
 
     @Resource
-    @Lazy
-    private PreloadTemplate preloadTemplate;
+    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Override
     public void onApplicationEvent(ClosedEvent event) {
@@ -67,7 +65,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         }
         prepareClusterStart(mapping);
         // Follower 本进程连接池没有 Mapping 级实例（连接只在 Leader 增改 Mapping 时建立）
-        preloadTemplate.reConnect(mapping);
+        connectorInstanceBinder.bind(mapping);
 
         Meta current = metaProfile.getMeta(metaId);
         boolean alreadyRunning = current != null && current.getState() == CommonTaskStatusEnum.RUNNING.getCode();

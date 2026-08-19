@@ -27,7 +27,6 @@ import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.plugin.PluginFactory;
 import org.dbsyncer.plugin.impl.DingTalkNoticeService;
 import org.dbsyncer.plugin.impl.HttpNoticeService;
@@ -91,6 +90,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private ConnectorFactory connectorFactory;
+
+    @Resource
+    private ConnectorInstanceBinder connectorInstanceBinder;
 
     @Resource
     private PluginFactory pluginFactory;
@@ -289,27 +291,17 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     public void reConnect(Mapping mapping) {
-        reConnect(mapping.getId(), mapping.getSourceConnectorId(), mapping.getSourceDatabase(), mapping.getSourceSchema(),
-                mapping.getTargetConnectorId(), mapping.getTargetDatabase(), mapping.getTargetSchema());
+        connectorInstanceBinder.bind(mapping);
     }
 
     public void reConnect(ValidateSyncTask task) {
-        //源作为查询，目标也需要作为查询 生成sql语句
-        reConnect(task.getId(), task.getSourceConnectorId(), task.getSourceDatabase(), task.getSourceSchema(),
-                task.getTargetConnectorId(), task.getTargetDatabase(), task.getTargetSchema());
-
+        connectorInstanceBinder.bind(task);
     }
 
     public void reConnect(String uniqueId, String sourceConnectorId, String sourceDatabase, String sourceSchema,
                           String targetConnectorId, String targetDatabase, String targetSchema) {
-        String sourceInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, sourceConnectorId, ConnectorInstanceUtil.SOURCE_SUFFIX);
-        String targetInstanceId = ConnectorInstanceUtil.buildConnectorInstanceId(uniqueId, targetConnectorId, ConnectorInstanceUtil.TARGET_SUFFIX);
-        Connector connector = profileComponent.getConnector(sourceConnectorId);
-        ConnectorInstance instance = connectorFactory.connect(sourceInstanceId, connector.getConfig(), sourceDatabase, sourceSchema);
-        Assert.notNull(instance, "Source connector instance can not null");
-        connector = profileComponent.getConnector(targetConnectorId);
-        instance = connectorFactory.connect(targetInstanceId, connector.getConfig(), targetDatabase, targetSchema);
-        Assert.notNull(instance, "Target connector instance can not null");
+        connectorInstanceBinder.bind(uniqueId, sourceConnectorId, sourceDatabase, sourceSchema,
+                targetConnectorId, targetDatabase, targetSchema);
     }
 
     private void reload(Map<String, Map> map, CommandEnum commandEnum) {
