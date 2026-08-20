@@ -1,0 +1,79 @@
+/**
+ * 页内 Tab（集群管理等）
+ */
+
+.page-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-tab {
+  position: relative;
+  padding: var(--spacing-sm) var(--spacing-xs);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  line-height: var(--line-height-md);
+  transition: color var(--transition-fast);
+}
+
+.page-tab:hover {
+  color: var(--text-primary);
+}
+
+.page-tab.is-active {
+  color: var(--success-color);
+}
+
+.page-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background-color: var(--success-color);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.page-tab-panel {
+  display: none;
+}
+
+.page-tab-panel.is-active {
+  display: block;
+}
+
+/* 任务详情汇总 */
+.stat-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.stat-summary-item {
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-tertiary);
+  border-radius: var(--radius-lg);
+}
+
+.stat-summary-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-summary-value {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: var(--line-height-sm);
+}
