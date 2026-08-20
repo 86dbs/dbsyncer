@@ -120,7 +120,7 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
         // .anyRequest().permitAll()
         // .and().logout().permitAll();
 
-        http.csrf().disable().authorizeRequests().antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**", "/cluster/ping", "/cluster/assignments", "/cluster/metrics").permitAll().anyRequest().authenticated().and()
+        http.csrf().disable().authorizeRequests().antMatchers("/css/**", "/js/**", "/img/**", "/plugins/**", "/index/version.json", "/openapi/**", "/cluster/ping", "/cluster/assignments", "/cluster/metrics", "/sso/consume").permitAll().anyRequest().authenticated().and()
                 .formLogin().loginProcessingUrl(LOGIN).loginPage(LOGIN_PAGE).successHandler(loginSuccessHandler()).failureHandler(loginFailHandler()).permitAll().and().logout().permitAll()
                 .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler()).and().sessionManagement().sessionFixation().migrateSession()
                 .maximumSessions(MAXIMUM_SESSIONS);

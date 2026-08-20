@@ -112,6 +112,15 @@
         return String(value);
     }
 
+    function buildSsoConsoleUrl(item) {
+        if (!item || !item.ip || !item.httpPort) {
+            return '';
+        }
+        // 禁止把 http:// 放进 query：Spring StrictHttpFirewall 会因 // 直接 400
+        var target = item.ip + ':' + item.httpPort;
+        return '/sso/redirect?target=' + encodeURIComponent(target) + '&redirect=' + encodeURIComponent('/');
+    }
+
     function renderClusterRow(item) {
         var networkText = item.networkOk ? '正常' : '异常';
         var networkClass = item.networkOk ? 'text-success' : 'text-error';
@@ -122,10 +131,18 @@
         var memory = m && m.reachable ? formatUsedTotal(m.memoryUsed, m.memoryTotal, 'G') : '-';
         var threads = m && m.reachable ? formatDash(m.threadLive) : '-';
         var disk = m && m.reachable ? formatUsedTotal(m.diskUsed, m.diskTotal, 'G') : '-';
-        var actions = '-';
+        var buttons = [];
+        if (clusterEnabled && !item.local) {
+            var consoleUrl = buildSsoConsoleUrl(item);
+            if (consoleUrl) {
+                buttons.push(
+                    '<a class="table-action-btn view" title="打开控制台" href="'
+                    + consoleUrl + '"><i class="fa fa-external-link"></i></a>'
+                );
+            }
+        }
         if (clusterEnabled && currentIsLeader && !item.local) {
             var nodeId = escapeHtml(item.id || '');
-            var buttons = [];
             if (item.status === 1 && !item.leader) {
                 buttons.push(
                     '<button type="button" class="table-action-btn view" title="切换为Leader" data-id="'
@@ -138,10 +155,10 @@
                     + nodeId + '" data-action="remove">删除</button>'
                 );
             }
-            if (buttons.length > 0) {
-                actions = '<div class="flex items-center">' + buttons.join('') + '</div>';
-            }
         }
+        var actions = buttons.length > 0
+            ? '<div class="flex items-center">' + buttons.join('') + '</div>'
+            : '-';
         return '<tr>'
             + '<td>' + escapeHtml(name) + localMark + '</td>'
             + '<td>' + escapeHtml(item.roleName || '') + '</td>'

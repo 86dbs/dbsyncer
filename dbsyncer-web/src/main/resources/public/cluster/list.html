@@ -49,7 +49,8 @@
             <span th:unless="${current.leader}">
                 <span th:if="${current.leaderHttpUrl}">
                     ，请到 Leader 操作：
-                    <a class="text-primary hover-underline" th:href="${current.leaderHttpUrl}"
+                    <a class="text-primary hover-underline"
+                       th:href="@{/sso/redirect(target=${#strings.substringAfter(current.leaderHttpUrl, '://')},redirect='/')}"
                        th:text="${current.leaderHttpUrl}">-</a>
                 </span>
             </span>
@@ -59,35 +60,13 @@
         </div>
 
         <div class="page-tabs" id="clusterPageTabs" th:if="${clusterEnabled}">
-            <button type="button" class="page-tab is-active" data-tab="info">集群信息</button>
-            <button type="button" class="page-tab" data-tab="task">任务详情</button>
+            <button type="button" class="page-tab is-active" data-tab="task">任务详情</button>
+            <button type="button" class="page-tab" data-tab="info">集群信息</button>
         </div>
 
         <div id="clusterTabPanels">
-            <!-- 集群信息 -->
-            <div class="page-tab-panel is-active" id="clusterTab-info">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>集群名称</th>
-                        <th>角色</th>
-                        <th>状态</th>
-                        <th>网络</th>
-                        <th>IP</th>
-                        <th>CPU</th>
-                        <th>内存</th>
-                        <th>线程数</th>
-                        <th>磁盘使用率</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody id="clusterTableBody"></tbody>
-                </table>
-                <div class="blank-block"></div>
-            </div>
-
-            <!-- 任务详情 -->
-            <div class="page-tab-panel" id="clusterTab-task" th:if="${clusterEnabled}">
+            <!-- 任务详情（默认） -->
+            <div class="page-tab-panel is-active" id="clusterTab-task" th:if="${clusterEnabled}">
                 <div class="stat-summary">
                     <div class="stat-summary-item">
                         <div class="stat-summary-label">TPS总计</div>
@@ -120,6 +99,29 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- 集群信息 -->
+            <div id="clusterTab-info"
+                 th:class="${clusterEnabled} ? 'page-tab-panel' : 'page-tab-panel is-active'">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>集群名称</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>网络</th>
+                        <th>IP</th>
+                        <th>CPU</th>
+                        <th>内存</th>
+                        <th>线程数</th>
+                        <th>磁盘使用率</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="clusterTableBody"></tbody>
+                </table>
+                <div class="blank-block"></div>
             </div>
         </div>
     </div>

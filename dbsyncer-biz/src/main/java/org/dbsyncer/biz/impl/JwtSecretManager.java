@@ -11,7 +11,7 @@ import org.dbsyncer.common.model.JwtSecretConfig;
 import org.dbsyncer.common.model.JwtSecretVersion;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
 
 import org.slf4j.Logger;
@@ -66,7 +66,7 @@ public class JwtSecretManager {
     private SystemConfigService systemConfigService;
 
     @Resource
-    private ProfileComponent profileComponent;
+    private SystemConfigProfile systemConfigProfile;
 
     /**
      * 默认密钥长度（字节数）
@@ -133,6 +133,43 @@ public class JwtSecretManager {
     }
 
     /**
+     * 使用当前密钥签名任意载荷（如 Web SSO 票据）。
+     *
+     * @param payload 载荷
+     * @return JWT
+     */
+    public String signPayload(Object payload) throws NoSuchAlgorithmException, InvalidKeyException {
+        JwtSecretConfig config = getJwtSecretConfig();
+        List<JwtSecretVersion> secrets = config.getSecrets();
+        Assert.isTrue(!CollectionUtils.isEmpty(secrets), "JWT密钥未初始化");
+        String secret = secrets.get(secrets.size() - 1).getSecret();
+        return JwtUtil.signPayload(payload, secret);
+    }
+
+    /**
+     * 验签并解析载荷（支持密钥轮换；不校验过期）。
+     *
+     * @param token JWT
+     * @param type  载荷类型
+     * @param <T>   载荷类型
+     * @return 载荷，失败返回 null
+     */
+    public <T> T verifyPayload(String token, Class<T> type) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (StringUtil.isBlank(token) || type == null) {
+            return null;
+        }
+        JwtSecretConfig config = getJwtSecretConfig();
+        for (int i = config.getSecrets().size() - 1; i >= 0; i--) {
+            JwtSecretVersion version = config.getSecrets().get(i);
+            T payload = JwtUtil.verifyPayload(token, version.getSecret(), type);
+            if (payload != null) {
+                return payload;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 从系统配置中获取JWT密钥配置
      *
      * @return JWT密钥配置，如果不存在返回null
@@ -152,9 +189,22 @@ public class JwtSecretManager {
      * 生成新的JWT密钥并保存
      * 如果存在旧密钥，会将其添加到历史密钥Map中，实现平滑轮换
      * 会自动清理过旧的历史密钥，只保留最近N个版本
+     * <p>
+     * 首次初始化走 {@link SystemConfigProfile#saveSystemConfig}，避免 Follower 因
+     * Leader 写保护无法签发 Web SSO / OpenAPI Token。
      */
     private synchronized void generateAndSaveSecret(SystemConfig systemConfig) {
         try {
+            // 并发下以最新配置为准，避免重复生成
+            SystemConfig latest = systemConfigService.getSystemConfig();
+            if (latest != null) {
+                JwtSecretConfig existing = latest.getJwtSecretConfig();
+                if (existing != null && !CollectionUtils.isEmpty(existing.getSecrets())) {
+                    systemConfig.setJwtSecretConfig(existing);
+                    return;
+                }
+            }
+
             JwtSecretConfig config = systemConfig.getJwtSecretConfig();
             if (config == null) {
                 config = new JwtSecretConfig();
@@ -179,9 +229,9 @@ public class JwtSecretManager {
             // 清理过旧的历史密钥，只保留最近N个版本
             cleanupOldVersions(versions);
 
-            // 保存到系统配置
+            // 保存到系统配置（跳过 Leader 写校验，保证 Follower 也能完成首次密钥初始化）
             systemConfig.setJwtSecretConfig(config);
-            profileComponent.editConfigModel(systemConfig);
+            systemConfigProfile.saveSystemConfig(systemConfig);
             logger.info("生成新的JWT密钥成功，版本: {}，历史密钥数量: {}", newVersion, versions.size());
         } catch (Exception e) {
             logger.error("生成并保存JWT密钥失败", e);
