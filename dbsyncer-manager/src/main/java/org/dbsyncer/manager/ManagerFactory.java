@@ -5,7 +5,6 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
@@ -25,9 +24,6 @@ import java.util.Map;
  */
 @Component
 public class ManagerFactory implements ApplicationListener<ClosedEvent> {
-
-    @Resource
-    private ProfileComponent profileComponent;
 
     @Resource
     private MetaProfile metaProfile;

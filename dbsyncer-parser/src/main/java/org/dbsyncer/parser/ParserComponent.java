@@ -47,13 +47,12 @@ public interface ParserComponent {
     Map<String, String> getCommand(ValidateSyncTask task, TableGroup tableGroup);
 
     /**
-     * 全量同步。
+     * 全量同步
      *
-     * @param task       运行态任务
-     * @param mapping    驱动
-     * @param tableGroup 表映射（可含 range 过滤）
-     * @param executor   写执行器
-     * @return true 已读空完整结束；false 被停止或围栏中断（不可标 done）
+     * @param task
+     * @param mapping
+     * @param tableGroup
+     * @param executor
      */
     boolean execute(Task task, Mapping mapping, TableGroup tableGroup, Executor executor);
 

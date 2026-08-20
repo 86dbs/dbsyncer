@@ -281,6 +281,7 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        // TODO 设计字段是否能统一
         p.put(ConfigConstant.META_START_TIME, num(root, "beginTime", num(root, "startTime", 0)));
         p.put(ConfigConstant.META_TASK_ID, first(val(root, "taskId"), val(root, "mappingId"), id));
         p.put(ConfigConstant.META_STATE, (int) num(root, "state", 0));

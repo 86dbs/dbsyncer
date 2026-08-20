@@ -8,6 +8,7 @@ import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.connector.file.cdc.FileListener;
 import org.dbsyncer.connector.file.column.FileResolver;
@@ -167,10 +168,10 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             if (shard != null && shard.getCapability() == ShardSupportEnum.OFFSET) {
                 String start = shard.payload(ShardSpec.KEY_OFFSET_START);
                 String end = shard.payload(ShardSpec.KEY_OFFSET_END);
-                if (org.dbsyncer.common.util.NumberUtil.isCreatable(start)
-                        && org.dbsyncer.common.util.NumberUtil.isCreatable(end)) {
-                    shardFrom = org.dbsyncer.common.util.NumberUtil.toLong(start);
-                    shardTo = org.dbsyncer.common.util.NumberUtil.toLong(end);
+                if (NumberUtil.isCreatable(start)
+                        && NumberUtil.isCreatable(end)) {
+                    shardFrom = NumberUtil.toLong(start);
+                    shardTo = NumberUtil.toLong(end);
                 }
             }
             int pageFrom = (context.getPageIndex() - 1) * context.getPageSize();

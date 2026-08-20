@@ -10,7 +10,6 @@ import org.dbsyncer.sdk.connector.database.Database;
 import org.dbsyncer.sdk.connector.database.DatabaseConnectorInstance;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.model.shard.ShardPlan;
 import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
 import org.dbsyncer.sdk.model.shard.ShardPlans;
@@ -20,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

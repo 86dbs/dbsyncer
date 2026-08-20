@@ -19,8 +19,6 @@ import org.springframework.core.env.Environment;
 import javax.annotation.Resource;
 
 /**
- * 部署装配：商业集群 SPI 优先，缺省单机。
- *
  * @author AE86
  * @version 1.0.0
  * @date 2023-11-19 23:29
@@ -44,12 +42,6 @@ public class ManagerSupportConfiguration {
         return new StandaloneProvider(metaProfile);
     }
 
-    /**
-     * 仅暴露 {@link ClusterService} 类型，不触发目标实例的二次 {@code @PostConstruct}。
-     *
-     * @param deploymentService 部署门面
-     * @return FactoryBean
-     */
     @Bean
     @ConditionalOnMissingBean(ClusterService.class)
     public FactoryBean<ClusterService> clusterService(DeploymentService deploymentService) {

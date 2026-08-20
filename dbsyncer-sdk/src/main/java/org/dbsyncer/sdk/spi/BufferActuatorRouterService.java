@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * 增量缓存执行器路由 SPI。
- * <p>开源：每表一执行器，超限走通用执行器；商业版：按表名位运算分流到固定管道。
  *
  * @author wuji
  * @version 1.0.0
@@ -19,25 +18,25 @@ import java.util.List;
 public interface BufferActuatorRouterService {
 
     /**
-     * 绑定驱动的增量执行器。
+     * 绑定同步任务的增量执行器。
      *
-     * @param metaId           驱动 Meta ID
+     * @param metaId           同步任务 Meta ID
      * @param sourceTableNames 源表名列表
-     * @param channelSize      增量管道数（开源忽略；商业版须为 1~64 的 2 的幂）
+     * @param channelSize      执行器数
      */
     void bind(String metaId, List<String> sourceTableNames, int channelSize);
 
     /**
-     * 解绑并停止该驱动下的执行器。
+     * 解绑并停止该同步任务下的执行器。
      *
-     * @param metaId 驱动 Meta ID
+     * @param metaId 同步任务 Meta ID
      */
     void unbind(String metaId);
 
     /**
      * 投递增量变更事件。
      *
-     * @param metaId 驱动 Meta ID
+     * @param metaId 同步任务 Meta ID
      * @param event  变更事件
      */
     void execute(String metaId, ChangedEvent event);
@@ -64,9 +63,9 @@ public interface BufferActuatorRouterService {
     List<BufferActuatorMetric> listMetrics();
 
     /**
-     * 排空指定驱动的写队列直至空闲或超时。
+     * 排空指定同步任务的写队列直至空闲或超时。
      *
-     * @param metaId    驱动 Meta ID
+     * @param metaId    同步任务Meta ID
      * @param timeoutMs 超时毫秒
      * @return true 已空闲；false 超时仍有积压
      */
