@@ -197,7 +197,7 @@ public abstract class FullTableProgressUtil {
             return result;
         }
         for (String key : load(snapshot).keySet()) {
-            if (WorkItemIds.isRange(key) && WorkItemIds.belongsToTable(key, tableGroupId)) {
+            if (WorkItemIds.isShard(key) && WorkItemIds.belongsToTable(key, tableGroupId)) {
                 result.add(key);
             }
         }

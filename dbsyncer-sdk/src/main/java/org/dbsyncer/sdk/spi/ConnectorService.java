@@ -17,6 +17,8 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.shard.ShardPlan;
+import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -106,6 +108,21 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 分页获取数据源数据
      */
     Result reader(I connectorInstance, ReaderContext context);
+
+    /**
+     * 规划表内切片。默认整表（不切）；关系库/文档库等可覆盖。
+     * <p>调度层只消费 itemId；方言与过滤由连接器在 {@link #reader} 中按 context.shard 处理。
+     *
+     * @param connectorInstance 已建立的连接实例
+     * @param request           切片请求
+     * @return 切片计划；空或单段 WHOLE 表示不切
+     */
+    default ShardPlan planShards(I connectorInstance, ShardPlanRequest request) {
+        if (request == null || StringUtil.isBlank(request.getTableGroupId())) {
+            return ShardPlan.wholeTable();
+        }
+        return ShardPlan.wholeTable(request.getTableGroupId());
+    }
 
     /**
      * 批量写入目标源数据

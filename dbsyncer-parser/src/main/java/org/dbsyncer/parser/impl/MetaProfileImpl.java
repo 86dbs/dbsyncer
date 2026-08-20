@@ -360,7 +360,9 @@ public class MetaProfileImpl implements MetaProfile {
             return false;
         }
         long finished = meta.getSuccess().get() + meta.getFail().get();
-        if (finished <= 0 || meta.getTotal().get() == finished) {
+        long total = meta.getTotal().get();
+        // 仅抬升：finished <= total 时不动，避免提前结束把总数改小
+        if (finished <= 0L || finished <= total) {
             return true;
         }
         Map<String, Object> params = new HashMap<>(2);

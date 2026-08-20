@@ -28,12 +28,8 @@ import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.FilterEnum;
-import org.dbsyncer.sdk.enums.OperationEnum;
-import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaIncrement;
-import org.dbsyncer.sdk.model.WorkItemAssignment;
-import org.dbsyncer.sdk.model.WorkItemIds;
+import org.dbsyncer.sdk.model.shard.ConnectorShardSupport;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -45,7 +41,6 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +65,16 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     private static final long CLUSTER_WAIT_MS = 2000L;
 
+    /**
+     * 单切片连续失败退避上限。
+     */
+    private static final long ITEM_FAIL_BACKOFF_MAX_MS = 60_000L;
+
+    /**
+     * 单切片首次失败退避。
+     */
+    private static final long ITEM_FAIL_BACKOFF_BASE_MS = 1_000L;
+
     @Resource
     private ParserComponent parserComponent;
 
@@ -89,6 +94,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private ClusterService clusterService;
 
     private final Map<String, Task> map = new ConcurrentHashMap<>();
+
+    /**
+     * itemId -> 连续失败退避状态（进程内，重启清空）。
+     */
+    private final Map<String, ItemFailState> itemFailStates = new ConcurrentHashMap<>();
 
     @Override
     public void start(Mapping mapping) {
@@ -117,11 +127,23 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
         } finally {
             map.remove(metaId);
-            if (publishClosed) {
+            if (publishClosed || shouldPublishClosedAfterStop(metaId)) {
                 publishClosedEvent(metaId);
             }
             logger.info("结束全量同步：{}, {}", metaId, mapping.getName());
         }
+    }
+
+    /**
+     * 集群下正常跑完由 {@code ClusterTaskDispatcher.tryCompleteFull} 置 READY；
+     * 用户停止后 Meta 为 STOPPING，Worker 退出时须发 ClosedEvent，否则会一直停在「停止中」。
+     */
+    private boolean shouldPublishClosedAfterStop(String metaId) {
+        if (StringUtil.isBlank(metaId) || clusterService.isStandalone()) {
+            return false;
+        }
+        Meta meta = metaProfile.getMeta(metaId);
+        return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
     }
 
     @Override
@@ -240,7 +262,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
         TableGroup tableGroup = work.tableGroup;
         String tableGroupId = tableGroup.getId();
-        List<String> itemIds = resolveLocalItems(tableGroupId);
+        List<String> itemIds = ConnectorShardSupport.resolveLocalItems(clusterService, tableGroupId);
         if (CollectionUtils.isEmpty(itemIds)) {
             return;
         }
@@ -277,7 +299,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             return;
         }
 
-        TableGroup execGroup = prepareExecTableGroup(mapping, tableGroup, itemId);
+        TableGroup execGroup = tableGroup;
         Task tableTask = parent.createTableTask(itemId);
         TableSyncProgress progress = FullTableProgressUtil.getOrInit(snapshot, itemId);
         if (useLegacyBreakpoint && StringUtil.equals(itemId, tableGroupId)
@@ -292,94 +314,75 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
 
         try {
+            if (!awaitItemRetryWindow(parent, itemId)) {
+                return;
+            }
             if (!clusterService.assertWritable(itemId)) {
                 logger.warn("generation 围栏失效，停止写表: {}", itemId);
                 return;
             }
             boolean completed = parserComponent.execute(tableTask, mapping, execGroup, SYNC_WRITE_EXECUTOR);
             if (completed && parent.isRunning()) {
+                clearItemFailState(itemId);
                 markItemDone(parent, itemId, tableGroupId);
             }
         } catch (Exception e) {
-            logger.error("全量同步表失败: {} -> {}, item={}, {}",
+            ItemFailState failState = onItemFail(itemId);
+            logger.error("全量同步表失败: {} -> {}, item={}, consecutive={}, nextRetryMs={}, {}",
                     tableGroup.getSourceTable() != null ? tableGroup.getSourceTable().getName() : tableGroupId,
                     tableGroup.getTargetTable() != null ? tableGroup.getTargetTable().getName() : tableGroupId,
-                    itemId, e.getMessage(), e);
+                    itemId, failState.consecutive, Math.max(0L, failState.nextRetryAtMs - System.currentTimeMillis()),
+                    e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
         }
     }
 
-    private List<String> resolveLocalItems(String tableGroupId) {
-        if (clusterService.isStandalone()) {
-            return Collections.singletonList(tableGroupId);
-        }
-        List<String> items = new ArrayList<>();
-        for (WorkItemAssignment assignment : clusterService.listLocalAssignments()) {
-            if (assignment != null && WorkItemIds.belongsToTable(assignment.getItemId(), tableGroupId)) {
-                items.add(assignment.getItemId());
+    /**
+     * 失败切片退避：未到重试时间则等待（可被停止打断）。
+     *
+     * @return false 任务已停止
+     */
+    private boolean awaitItemRetryWindow(Task parent, String itemId) {
+        for (;;) {
+            if (!parent.isRunning()) {
+                return false;
+            }
+            ItemFailState state = itemFailStates.get(itemId);
+            if (state == null) {
+                return true;
+            }
+            long waitMs = state.nextRetryAtMs - System.currentTimeMillis();
+            if (waitMs <= 0L) {
+                return true;
+            }
+            try {
+                Thread.sleep(Math.min(waitMs, 1000L));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                parent.stop();
+                return false;
             }
         }
-        return items;
     }
 
-    private TableGroup prepareExecTableGroup(Mapping mapping, TableGroup source, String itemId) {
-        WorkItemIds.Range range = WorkItemIds.parse(itemId);
-        if (range == null) {
-            return source;
-        }
-        List<String> pks = PrimaryKeyUtil.findTablePrimaryKeys(source.getSourceTable());
-        if (CollectionUtils.isEmpty(pks) || pks.size() != 1) {
-            return source;
-        }
-        TableGroup copy = copyTableGroup(source);
-        List<Filter> filters = new ArrayList<>();
-        if (!CollectionUtils.isEmpty(source.getFilter())) {
-            for (Filter filter : source.getFilter()) {
-                if (filter == null) {
-                    continue;
-                }
-                Filter cloned = new Filter();
-                cloned.setName(filter.getName());
-                cloned.setOperation(filter.getOperation());
-                cloned.setFilter(filter.getFilter());
-                cloned.setValue(filter.getValue());
-                filters.add(cloned);
-            }
-        }
-        filters.add(buildPkBoundFilter(pks.get(0), FilterEnum.GT_AND_EQUAL.getName(), String.valueOf(range.getFromInclusive())));
-        filters.add(buildPkBoundFilter(pks.get(0), FilterEnum.LT_AND_EQUAL.getName(), String.valueOf(range.getToInclusive())));
-        copy.setFilter(filters);
-        copy.setCommand(parserComponent.getCommand(mapping, copy));
-        return copy;
+    private ItemFailState onItemFail(String itemId) {
+        ItemFailState state = itemFailStates.computeIfAbsent(itemId, k -> new ItemFailState());
+        state.consecutive++;
+        int shift = Math.min(Math.max(state.consecutive - 1, 0), 5);
+        long delay = Math.min(ITEM_FAIL_BACKOFF_MAX_MS, ITEM_FAIL_BACKOFF_BASE_MS << shift);
+        state.nextRetryAtMs = System.currentTimeMillis() + delay;
+        return state;
     }
 
-    private static Filter buildPkBoundFilter(String pkName, String filterOp, String value) {
-        Filter filter = new Filter();
-        filter.setName(pkName);
-        filter.setOperation(OperationEnum.AND.getName());
-        filter.setFilter(filterOp);
-        filter.setValue(value);
-        return filter;
+    private void clearItemFailState(String itemId) {
+        if (StringUtil.isNotBlank(itemId)) {
+            itemFailStates.remove(itemId);
+        }
     }
 
-    private static TableGroup copyTableGroup(TableGroup source) {
-        TableGroup copy = new TableGroup();
-        copy.setId(source.getId());
-        copy.setTaskId(source.getTaskId());
-        copy.setIndex(source.getIndex());
-        copy.setSourceConnectorId(source.getSourceConnectorId());
-        copy.setTargetConnectorId(source.getTargetConnectorId());
-        copy.setSourceDatabase(source.getSourceDatabase());
-        copy.setTargetDatabase(source.getTargetDatabase());
-        copy.setSourceSchema(source.getSourceSchema());
-        copy.setTargetSchema(source.getTargetSchema());
-        copy.setSourceTable(source.getSourceTable());
-        copy.setTargetTable(source.getTargetTable());
-        copy.setFieldMapping(source.getFieldMapping());
-        copy.setPlugin(source.getPlugin());
-        copy.setPluginExtInfo(source.getPluginExtInfo());
-        copy.setConvert(source.getConvert());
-        return copy;
+    private static final class ItemFailState {
+        private int consecutive;
+        private long nextRetryAtMs;
     }
 
     private boolean flush(Task task, Result result) {
@@ -499,12 +502,13 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     private void refreshMetaTotals(Meta meta, Task task, boolean completed) {
         long finished = meta.getSuccess().get() + meta.getFail().get();
+        long total = meta.getTotal().get();
         if (completed) {
-            // COUNT(*) 仅作运行中预估；结束后以实际处理条数为准，避免进度卡在 99.x%
-            if (finished > 0) {
+            // 仅抬升：禁止把总数改小（切片提前结束时会把 6000万改成 1000万掩盖漏数）
+            if (finished > total) {
                 meta.getTotal().set(finished);
             }
-        } else if (meta.getTotal().get() < finished) {
+        } else if (total < finished) {
             meta.getTotal().set(finished);
         }
         Task root = task.getParent() != null ? task.getParent() : task;

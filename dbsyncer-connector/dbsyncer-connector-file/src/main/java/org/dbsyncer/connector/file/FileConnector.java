@@ -3,6 +3,8 @@
  */
 package org.dbsyncer.connector.file;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -19,20 +21,21 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
+import org.dbsyncer.sdk.enums.ShardSupportEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.shard.ShardPlan;
+import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
+import org.dbsyncer.sdk.model.shard.ShardPlans;
+import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ConnectorService;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -158,17 +161,35 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             final char separator = command.get(FILE_SEPARATOR).charAt(0);
             reader = new FileReader(command.get(FILE_PATH));
             LineIterator lineIterator = IOUtils.lineIterator(reader);
-            int from = (context.getPageIndex() - 1) * context.getPageSize();
-            int to = from + context.getPageSize();
+            long shardFrom = 0L;
+            long shardTo = Long.MAX_VALUE;
+            ShardSpec shard = context.getShard();
+            if (shard != null && shard.getCapability() == ShardSupportEnum.OFFSET) {
+                String start = shard.payload(ShardSpec.KEY_OFFSET_START);
+                String end = shard.payload(ShardSpec.KEY_OFFSET_END);
+                if (org.dbsyncer.common.util.NumberUtil.isCreatable(start)
+                        && org.dbsyncer.common.util.NumberUtil.isCreatable(end)) {
+                    shardFrom = org.dbsyncer.common.util.NumberUtil.toLong(start);
+                    shardTo = org.dbsyncer.common.util.NumberUtil.toLong(end);
+                }
+            }
+            int pageFrom = (context.getPageIndex() - 1) * context.getPageSize();
+            int pageTo = pageFrom + context.getPageSize();
+            long absoluteFrom = shardFrom + pageFrom;
+            long absoluteTo = Math.min(shardFrom + pageTo - 1, shardTo);
             AtomicLong count = new AtomicLong();
             while (lineIterator.hasNext()) {
-                if (count.get() >= from && count.get() < to) {
+                long line = count.get();
+                if (line > shardTo) {
+                    break;
+                }
+                if (line >= absoluteFrom && line <= absoluteTo) {
                     list.add(fileResolver.parseMap(fields, separator, lineIterator.next()));
                 } else {
                     lineIterator.next();
                 }
                 count.addAndGet(1);
-                if (count.get() >= to) {
+                if (line >= absoluteTo) {
                     break;
                 }
             }
@@ -179,6 +200,37 @@ public final class FileConnector extends AbstractConnector implements ConnectorS
             IOUtils.closeQuietly(reader);
         }
         return new Result(list);
+    }
+
+    @Override
+    public ShardPlan planShards(FileConnectorInstance connectorInstance, ShardPlanRequest request) {
+        if (request == null || StringUtil.isBlank(request.getTableGroupId()) || connectorInstance == null) {
+            return ShardPlan.wholeTable();
+        }
+        try {
+            FileConfig config = connectorInstance.getConfig();
+            String fileDir = config == null ? null : config.getFileDir();
+            String tableName = request.getSourceTable() == null ? null : request.getSourceTable().getName();
+            if (StringUtil.isBlank(fileDir) || StringUtil.isBlank(tableName)) {
+                return ShardPlan.wholeTable(request.getTableGroupId());
+            }
+            File file = new File(fileDir, tableName);
+            if (!file.isFile()) {
+                return ShardPlan.wholeTable(request.getTableGroupId());
+            }
+            long total = 0L;
+            try (FileReader fr = new FileReader(file)) {
+                LineIterator it = IOUtils.lineIterator(fr);
+                while (it.hasNext()) {
+                    it.next();
+                    total++;
+                }
+            }
+            return ShardPlans.offsetByRows(request.getTableGroupId(), total, request.suggestedRangeChunk());
+        } catch (Exception e) {
+            logger.warn("文件切片失败，回退整表: {}", e.getMessage());
+            return ShardPlan.wholeTable(request.getTableGroupId());
+        }
     }
 
     @Override

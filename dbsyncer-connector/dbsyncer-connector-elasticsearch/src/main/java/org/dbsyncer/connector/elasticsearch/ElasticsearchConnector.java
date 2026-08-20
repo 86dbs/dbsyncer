@@ -27,6 +27,7 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
+import org.dbsyncer.sdk.enums.ShardSupportEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -36,6 +37,10 @@ import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.shard.ShardPlan;
+import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
+import org.dbsyncer.sdk.model.shard.ShardPlans;
+import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -309,6 +314,7 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         Map<String, String> command = context.getCommand();
         SearchSourceBuilder builder = new SearchSourceBuilder();
         genSearchSourceBuilder(builder, command, context.isTargetConnector());
+        applyShardFilter(builder, context.getShard());
         builder.timeout(TimeValue.timeValueSeconds(connectorInstance.getConfig().getTimeoutSeconds()));
         PrimaryKeyUtil.findTablePrimaryKeys(table).forEach(pk -> builder.sort(pk, SortOrder.ASC));
 
@@ -322,6 +328,44 @@ public final class ElasticsearchConnector extends AbstractConnector implements C
         String index = context.isTargetConnector() ? command.get(_TARGET_INDEX) : command.get(_SOURCE_INDEX);
 
         return searchResult(connectorInstance, context, index, builder);
+    }
+
+    @Override
+    public ShardPlan planShards(ESConnectorInstance connectorInstance, ShardPlanRequest request) {
+        if (request == null || StringUtil.isBlank(request.getTableGroupId())) {
+            return ShardPlan.wholeTable();
+        }
+        return ShardPlans.hashMod(request.getTableGroupId(), "_id", request.suggestedHashMod());
+    }
+
+    private void applyShardFilter(SearchSourceBuilder builder, ShardSpec shard) {
+        if (builder == null || shard == null || shard.isWhole() || shard.getCapability() != ShardSupportEnum.HASH_MOD) {
+            return;
+        }
+        String modText = shard.payload(ShardSpec.KEY_MOD);
+        String indexText = shard.payload(ShardSpec.KEY_INDEX);
+        if (!org.dbsyncer.common.util.NumberUtil.isCreatable(modText)
+                || !org.dbsyncer.common.util.NumberUtil.isCreatable(indexText)) {
+            return;
+        }
+        int mod = org.dbsyncer.common.util.NumberUtil.toInt(modText);
+        int index = org.dbsyncer.common.util.NumberUtil.toInt(indexText);
+        if (mod <= 1 || index < 0 || index >= mod) {
+            return;
+        }
+        Map<String, Object> params = new java.util.HashMap<>(2);
+        params.put("mod", mod);
+        params.put("index", index);
+        org.elasticsearch.script.Script script = new org.elasticsearch.script.Script(
+                org.elasticsearch.script.ScriptType.INLINE, "painless",
+                "doc['_id'].size()==0 ? false : Math.floorMod(doc['_id'].value.hashCode(), params.mod) == params.index",
+                params);
+        org.elasticsearch.index.query.QueryBuilder shardQuery = QueryBuilders.scriptQuery(script);
+        if (builder.query() == null) {
+            builder.query(shardQuery);
+            return;
+        }
+        builder.query(QueryBuilders.boolQuery().must(builder.query()).filter(shardQuery));
     }
 
     private Result searchResult(ESConnectorInstance connectorInstance, ReaderContext context, String index, SearchSourceBuilder builder) throws IOException {

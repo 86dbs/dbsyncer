@@ -5,7 +5,6 @@ package org.dbsyncer.parser.impl;
 
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.rsa.RsaManager;
-import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.TaskSplitUtil;
@@ -35,11 +34,13 @@ import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.model.WorkItemIds;
+import org.dbsyncer.sdk.model.shard.ConnectorShardSupport;
+import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
-import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.sdk.model.WorkItemIds;
+import org.dbsyncer.sdk.spi.ConnectorService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,6 +180,11 @@ public class ParserComponentImpl implements ParserComponent {
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
+        String itemId = StringUtil.isNotBlank(task.getTableGroupId()) ? task.getTableGroupId() : tableGroup.getId();
+        ShardSpec shard = WorkItemIds.toShardSpec(itemId);
+        if (shard != null) {
+            context.setShard(ConnectorShardSupport.enrichPk(shard, group.getSourceTable()));
+        }
         setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         ConnectorService targetConnector = connectorFactory.getConnectorService(context.getTargetConnectorInstance().getConfig());
@@ -192,7 +198,6 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.warn("任务被中止:{}", metaId);
                 return false;
             }
-
             // 1、获取数据源数据
             context.setArgs(new ArrayList<>());
             context.setCursors(task.getCursors());
@@ -215,7 +220,6 @@ public class ParserComponentImpl implements ParserComponent {
             context.setTargetList(target);
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
-            String itemId = StringUtil.isNotBlank(task.getTableGroupId()) ? task.getTableGroupId() : tableGroup.getId();
             if (!clusterService.assertWritable(itemId)) {
                 logger.warn("generation 围栏失效，停止本表写入: {}", itemId);
                 return false;

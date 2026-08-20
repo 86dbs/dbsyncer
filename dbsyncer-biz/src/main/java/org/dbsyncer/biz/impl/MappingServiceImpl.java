@@ -16,6 +16,7 @@ import org.dbsyncer.biz.vo.MappingVO;
 import org.dbsyncer.biz.vo.MetaVO;
 import org.dbsyncer.biz.vo.TableVO;
 import org.dbsyncer.common.dispatch.DispatchTaskService;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.model.ConfigModel;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.rsa.RsaManager;
@@ -39,6 +40,7 @@ import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.ConnectorServiceContextUtil;
+import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.plugin.model.MappingStopContent;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.connector.ConfigValidator;
@@ -47,6 +49,7 @@ import org.dbsyncer.sdk.connector.DefaultConnectorServiceContext;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
+import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
@@ -704,12 +707,39 @@ public class MappingServiceImpl extends BaseServiceImpl implements MappingServic
     private void clearMetaIfFinished(String metaId) {
         Meta meta = metaProfile.getMeta(metaId);
         Assert.notNull(meta, "Mapping meta can not be null.");
-        // 完成任务则重置状态
-        if (meta.getTotal().get() <= (meta.getSuccess().get() + meta.getFail().get())) {
-            meta.getFail().set(0);
-            meta.getSuccess().set(0);
-            profileComponent.editConfigModel(meta);
+        long finished = meta.getSuccess().get() + meta.getFail().get();
+        long total = meta.getTotal().get();
+        boolean finishedRun = total > 0L && total <= finished;
+        // 进度已全部 done，但成功数仍小于总数 → 假完成（切片误标完成）
+        boolean falseComplete = total > 0L && finished < total
+                && !FullTableProgressUtil.isEmpty(meta.getSnapshot())
+                && !FullTableProgressUtil.hasIncomplete(meta.getSnapshot());
+        if (!finishedRun && !falseComplete) {
+            return;
         }
+        meta.getFail().set(0);
+        meta.getSuccess().set(0);
+        FullTableProgressUtil.clear(meta.getSnapshot());
+        profileComponent.editConfigModel(meta);
+        resetTableDetailsToReady(meta.getTaskId());
+    }
+
+    private void resetTableDetailsToReady(String taskId) {
+        if (StringUtil.isBlank(taskId)) {
+            return;
+        }
+        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
+            for (TableGroup group : groups) {
+                if (group == null || StringUtil.isBlank(group.getId())) {
+                    continue;
+                }
+                Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
+                if (detail != null && detail.getState() == CommonTaskStatusEnum.DONE.getCode()
+                        && StringUtil.isNotBlank(detail.getId())) {
+                    metaProfile.updateMetaState(detail.getId(), CommonTaskStatusEnum.READY.getCode());
+                }
+            }
+        });
     }
 
     private void saveCustomTable(Mapping mapping, Map<String, String> params) {

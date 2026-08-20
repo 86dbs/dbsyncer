@@ -117,6 +117,10 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
             if (managerFactory.isLocalActive(metaId)) {
                 managerFactory.stopLocal(mapping);
+            } else if (meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode()
+                    && (clusterService.isStandalone() || clusterService.isLeader())) {
+                // Worker 已退出但未发 ClosedEvent（历史版本/竞态）时，Leader 收口停止中
+                managerFactory.changeMetaState(metaId, CommonTaskStatusEnum.READY);
             }
             return;
         }
