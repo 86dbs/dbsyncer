@@ -8,6 +8,8 @@ import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
+import org.dbsyncer.web.monitor.ClusterNodeMetricAggregator;
+import org.dbsyncer.web.monitor.LocalNodeMetricProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -42,6 +44,12 @@ public class ClusterController extends BaseController {
     @Resource
     private LicenseService licenseService;
 
+    @Resource
+    private LocalNodeMetricProvider localNodeMetricProvider;
+
+    @Resource
+    private ClusterNodeMetricAggregator clusterNodeMetricAggregator;
+
     /**
      * 集群列表页。
      */
@@ -66,6 +74,20 @@ public class ClusterController extends BaseController {
     }
 
     /**
+     * 本机运行指标（免登录，供集群内节点互拉）。
+     */
+    @GetMapping("/metrics")
+    @ResponseBody
+    public RestResult metrics() {
+        try {
+            return RestResult.restSuccess(localNodeMetricProvider.snapshot());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
      * 拉取指定节点的 WorkItem 派工（免登录，供 Follower 围栏续约）。
      */
     @GetMapping("/assignments")
@@ -87,6 +109,20 @@ public class ClusterController extends BaseController {
     public RestResult assignmentsAll() {
         try {
             return RestResult.restSuccess(clusterManagerService.listTaskShards());
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 聚合各节点运行指标（本机直采 + 远端 HTTP）。
+     */
+    @GetMapping("/nodes/metrics")
+    @ResponseBody
+    public RestResult nodesMetrics() {
+        try {
+            return RestResult.restSuccess(clusterNodeMetricAggregator.collectAll());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
@@ -147,7 +183,10 @@ public class ClusterController extends BaseController {
             Map<String, Object> data = new HashMap<>();
             data.put("clusterEnabled", clusterManagerService.isClusterEnabled());
             data.put("current", clusterManagerService.current());
-            data.put("nodes", clusterManagerService.query(new HashMap<>()).getData());
+            Map<String, String> query = new HashMap<>();
+            query.put("pageNum", "1");
+            query.put("pageSize", "1000");
+            data.put("nodes", clusterManagerService.query(query).getData());
             return RestResult.restSuccess(data);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);

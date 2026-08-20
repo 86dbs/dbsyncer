@@ -42,5 +42,17 @@
             <artifactId>junit</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- 本地/专业版联调：企业 SPI（整库、校验、Plus 等） -->
+        <dependency>
+            <groupId>com.scxhtb</groupId>
+            <artifactId>dbsyncer-platform</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+<!--         本地/专业版联调：Raft 集群实现（ServiceRegister → DeploymentService）-->
+        <dependency>
+            <groupId>com.scxhtb</groupId>
+            <artifactId>dbsyncer-cluster</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 </project>

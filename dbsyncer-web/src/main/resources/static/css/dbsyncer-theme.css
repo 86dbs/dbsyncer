@@ -26,6 +26,7 @@
 @import url('./components/radio.css');
 @import url('./components/checkbox.css');
 @import url('./components/picker.css');
+@import url('./components/tabs.css');
 
 /* 解决 Chrome "Slow network detected" */
 @font-face {

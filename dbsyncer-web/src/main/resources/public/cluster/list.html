@@ -43,195 +43,93 @@
         <h3 class="card-title text-center">集群管理</h3>
     </div>
     <div class="card-body">
-        <div class="grid grid-cols-6 items-center mb-4">
-            <div class="lg:col-span-4">
-                <span th:if="${clusterEnabled}">
-                    当前节点：<strong th:text="${current.id}">-</strong>
-                    ，角色：<strong th:text="${current.roleName}">-</strong>
-                    <span th:unless="${current.leader}">
-                        <span th:if="${current.leaderHttpUrl}">
-                            ，请到 Leader 操作：<a class="text-primary hover-underline" th:href="${current.leaderHttpUrl}" th:text="${current.leaderHttpUrl}">-</a>
-                        </span>
-                    </span>
+        <div class="mb-4 text-sm text-secondary" th:if="${clusterEnabled}">
+            当前节点：<strong class="text-primary" th:text="${current.id}">-</strong>
+            ，角色：<strong th:text="${current.roleName}">-</strong>
+            <span th:unless="${current.leader}">
+                <span th:if="${current.leaderHttpUrl}">
+                    ，请到 Leader 操作：
+                    <a class="text-primary hover-underline" th:href="${current.leaderHttpUrl}"
+                       th:text="${current.leaderHttpUrl}">-</a>
                 </span>
-                <span th:unless="${clusterEnabled}">当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确保已授权产品码 ClusterService。</span>
-            </div>
+            </span>
+        </div>
+        <div class="mb-4 text-sm text-secondary" th:unless="${clusterEnabled}">
+            当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确保已授权产品码 ClusterService。
         </div>
 
-        <table class="table">
-            <thead>
-            <tr>
-                <th>节点</th>
-                <th>HTTP</th>
-                <th>Raft</th>
-                <th>角色</th>
-                <th>状态</th>
-                <th>网络</th>
-                <th>心跳</th>
-                <th>操作</th>
-            </tr>
-            </thead>
-            <tbody id="clusterTableBody"></tbody>
-        </table>
-        <div class="blank-block"></div>
-    </div>
+        <div class="page-tabs" id="clusterPageTabs" th:if="${clusterEnabled}">
+            <button type="button" class="page-tab is-active" data-tab="info">集群信息</button>
+            <button type="button" class="page-tab" data-tab="task">任务详情</button>
+        </div>
 
-    <div class="card-header mt-6" th:if="${clusterEnabled}">
-        <h3 class="card-title text-center">任务分片</h3>
-    </div>
-    <div class="card-body" th:if="${clusterEnabled}">
-        <p class="text-sm text-secondary mb-3">
-            来自 Leader 内存派工视图；TPS/堆积指标后续接入监控。非 Leader 节点请到主节点查看。
-        </p>
-        <table class="table">
-            <thead>
-            <tr>
-                <th>任务 ID</th>
-                <th>分片数</th>
-                <th>节点分布</th>
-                <th>generation</th>
-                <th>TPS</th>
-                <th>堆积</th>
-            </tr>
-            </thead>
-            <tbody id="shardTableBody">
-            <tr>
-                <td colspan="6" class="text-center text-secondary">加载中...</td>
-            </tr>
-            </tbody>
-        </table>
+        <div id="clusterTabPanels">
+            <!-- 集群信息 -->
+            <div class="page-tab-panel is-active" id="clusterTab-info">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>集群名称</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>网络</th>
+                        <th>IP</th>
+                        <th>CPU</th>
+                        <th>内存</th>
+                        <th>线程数</th>
+                        <th>磁盘使用率</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="clusterTableBody"></tbody>
+                </table>
+                <div class="blank-block"></div>
+            </div>
+
+            <!-- 任务详情 -->
+            <div class="page-tab-panel" id="clusterTab-task" th:if="${clusterEnabled}">
+                <div class="stat-summary">
+                    <div class="stat-summary-item">
+                        <div class="stat-summary-label">TPS总计</div>
+                        <div class="stat-summary-value" id="clusterTpsTotal">-</div>
+                    </div>
+                    <div class="stat-summary-item">
+                        <div class="stat-summary-label">分片任务总计</div>
+                        <div class="stat-summary-value" id="clusterShardTotal">-</div>
+                    </div>
+                    <div class="stat-summary-item">
+                        <div class="stat-summary-label">增量任务总计</div>
+                        <div class="stat-summary-value" id="clusterIncTotal">-</div>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>节点名称</th>
+                        <th>角色</th>
+                        <th>分片任务数(全量)</th>
+                        <th>增量任务数</th>
+                        <th>TPS</th>
+                        <th>堆积</th>
+                        <th>持久化</th>
+                    </tr>
+                    </thead>
+                    <tbody id="taskDetailTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center text-secondary">加载中...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
+<script th:if="${editionInfo.edition ne 'community'}" th:src="@{/js/cluster/cluster-list.js}"></script>
 <script th:if="${editionInfo.edition ne 'community'}" th:inline="javascript">
-    const clusterEnabled = [[${clusterEnabled}]];
-    const currentIsLeader = [[${current.leader}]];
-
-    function renderClusterRow(item) {
-        const networkText = item.networkOk ? '通' : '不通';
-        const localMark = item.local ? ' (本机)' : '';
-        const heartbeat = item.lastHeartbeatTime ? formatDate(item.lastHeartbeatTime) : '-';
-        let actions = '-';
-        if (clusterEnabled && currentIsLeader && !item.local) {
-            const nodeId = escapeHtml(item.id || '');
-            const removeBtn = `<button type="button" class="table-action-btn delete" title="移除" data-id="${nodeId}" data-action="remove">
-                    <i class="fa fa-trash"></i>
-                </button>`;
-            if (item.status === 1 && !item.leader) {
-                actions = `<div class="flex items-center">
-                <button type="button" class="table-action-btn view" title="切换为Leader" data-id="${nodeId}" data-action="transfer">
-                    <i class="fa fa-flag"></i>
-                </button>
-                ${removeBtn}
-            </div>`;
-            } else {
-                actions = `<div class="flex items-center">${removeBtn}</div>`;
-            }
-        }
-        return `<tr>
-            <td>${escapeHtml(item.id || '')}${localMark}</td>
-            <td>${escapeHtml(item.ip || '')}:${item.httpPort || ''}</td>
-            <td>${item.raftPort || ''}</td>
-            <td>${escapeHtml(item.roleName || '')}</td>
-            <td>${escapeHtml(item.statusName || '')}</td>
-            <td>${networkText}</td>
-            <td>${heartbeat}</td>
-            <td>${actions}</td>
-        </tr>`;
-    }
-
-    function transferNode(id) {
-        showConfirm({
-            title: '确定将该节点切换为 Leader？',
-            icon: 'warning',
-            onConfirm: function () {
-                doPoster('/cluster/transfer', {id: id}, function (res) {
-                    if (res.success === true) {
-                        bootGrowl('已发起切换', 'success');
-                        doLoader('/cluster/list');
-                    } else {
-                        bootGrowl(res.message || '切换失败', 'danger');
-                    }
-                });
-            }
-        });
-    }
-
-    function removeClusterNode(id) {
-        showConfirm({
-            title: '确定移除该节点？',
-            icon: 'warning',
-            confirmType: 'danger',
-            onConfirm: function () {
-                doPoster('/cluster/remove', {id: id}, function (res) {
-                    if (res.success === true) {
-                        bootGrowl('已移除', 'success');
-                        doLoader('/cluster/list');
-                    } else {
-                        bootGrowl(res.message || '移除失败', 'danger');
-                    }
-                });
-            }
-        });
-    }
-
-    function renderShardRows(list) {
-        if (!list || list.length === 0) {
-            return '<tr><td colspan="6" class="text-center text-secondary">暂无运行中的分片</td></tr>';
-        }
-        return list.map(function (item) {
-            return `<tr>
-                <td>${escapeHtml(item.taskId || '')}</td>
-                <td>${item.shardCount || 0}</td>
-                <td>${escapeHtml(item.nodeDistribution || '-')}</td>
-                <td>${item.maxGeneration || 0}</td>
-                <td>-</td>
-                <td>-</td>
-            </tr>`;
-        }).join('');
-    }
-
-    function loadTaskShards() {
-        const $body = $('#shardTableBody');
-        if (!$body.length) {
-            return;
-        }
-        if (!currentIsLeader) {
-            $body.html('<tr><td colspan="6" class="text-center text-secondary">请到 Leader 查看任务分片</td></tr>');
-            return;
-        }
-        doGetter('/cluster/assignments/all', {}, function (res) {
-            if (res.success === true) {
-                $body.html(renderShardRows(res.data || []));
-            } else {
-                $body.html(`<tr><td colspan="6" class="text-center text-secondary">${escapeHtml(res.message || '加载失败')}</td></tr>`);
-            }
-        });
-    }
-
-    $(document).ready(function () {
-        window.backIndexPage = function () {
-            doLoader('/cluster/list');
-        };
-        $('#clusterTableBody').on('click', '.table-action-btn', function () {
-            const $btn = $(this);
-            const id = $btn.attr('data-id');
-            const action = $btn.attr('data-action');
-            if (action === 'transfer') {
-                transferNode(id);
-                return;
-            }
-            if (action === 'remove') {
-                removeClusterNode(id);
-            }
-        });
-        new PaginationManager({
-            requestUrl: '/cluster/query',
-            tableBodySelector: '#clusterTableBody',
-            renderRow: renderClusterRow,
-            storageKey: 'cluster-list'
-        });
-        loadTaskShards();
+    initClusterList({
+        clusterEnabled: [[${clusterEnabled}]],
+        currentIsLeader: [[${current.leader}]]
     });
 </script>
 </html>
