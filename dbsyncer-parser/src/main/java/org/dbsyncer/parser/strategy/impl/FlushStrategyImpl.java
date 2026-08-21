@@ -175,8 +175,8 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
     }
 
-    private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean count) {
-        if (count) {
+    private void flush(Result result, SchemaResolver schemaResolver, Map<String, Field> targetFieldMap, boolean refreshTotal) {
+        if (refreshTotal) {
             refreshTotal(result);
         }
 

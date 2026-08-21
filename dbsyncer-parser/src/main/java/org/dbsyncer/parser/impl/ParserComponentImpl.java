@@ -35,8 +35,6 @@ import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
 import org.dbsyncer.sdk.model.WorkItemIds;
-import org.dbsyncer.sdk.model.shard.ConnectorShardSupport;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -174,17 +172,12 @@ public class ParserComponentImpl implements ParserComponent {
         context.setBatchSize(mapping.getBatchNum());
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
-        context.setForceUpdate(clusterService.isStandalone() ? mapping.isForceUpdate() : true);
+        context.setForceUpdate(mapping.isForceUpdate());
         context.setSourceTable(group.getSourceTable());
         context.setTargetTable(group.getTargetTable());
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
-        String itemId = StringUtil.isNotBlank(task.getTableGroupId()) ? task.getTableGroupId() : tableGroup.getId();
-        ShardSpec shard = WorkItemIds.toShardSpec(itemId);
-        if (shard != null) {
-            context.setShard(ConnectorShardSupport.enrichPk(shard, group.getSourceTable()));
-        }
         setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         ConnectorService targetConnector = connectorFactory.getConnectorService(context.getTargetConnectorInstance().getConfig());
@@ -198,6 +191,7 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.warn("任务被中止:{}", metaId);
                 return false;
             }
+
             // 1、获取数据源数据
             context.setArgs(new ArrayList<>());
             context.setCursors(task.getCursors());
@@ -220,27 +214,16 @@ public class ParserComponentImpl implements ParserComponent {
             context.setTargetList(target);
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，停止本表写入: {}", itemId);
-                return false;
-            }
-
             // 5、写入目标源
             Result result = writeBatch(context, executor);
 
-            // 6、更新结果（进度 CAS 成功后再累加 success，避免改派重跑双计）
+            // 6、更新结果
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
-            result.setWorkItemId(itemId);
-            result.setTableGroupId(WorkItemIds.tableGroupIdOf(itemId));
+            result.setTableGroupId(tableGroup.getId());
             result.setTargetTableGroupName(tTableName);
             if (!flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap)) {
-                logger.warn("进度刷盘失败，停止本工作项以免漏计/双计: {}", itemId);
-                return false;
-            }
-
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，本页已刷盘，等待重新派工: {}", itemId);
+                logger.warn("进度刷盘失败，停止本工作项以免漏计/双计");
                 return false;
             }
 

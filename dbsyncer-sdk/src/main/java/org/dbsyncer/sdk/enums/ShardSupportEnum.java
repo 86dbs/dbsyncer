@@ -10,6 +10,7 @@ package org.dbsyncer.sdk.enums;
  * @version 1.0.0
  * @date 2026-08-20
  */
+@Deprecated
 public enum ShardSupportEnum {
 
     /**

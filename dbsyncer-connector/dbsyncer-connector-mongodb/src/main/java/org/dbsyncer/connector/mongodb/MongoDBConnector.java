@@ -32,7 +32,6 @@ import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
-import org.dbsyncer.sdk.enums.ShardSupportEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.filter.AbstractFilter;
 import org.dbsyncer.sdk.filter.BooleanFilter;
@@ -41,10 +40,6 @@ import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.shard.ShardPlan;
-import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
-import org.dbsyncer.sdk.model.shard.ShardPlans;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -227,10 +222,6 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
                 .getCollection(collectionName);
         String primaryKey = resolvePrimaryKey(context.getSourceTable());
         Bson filter = buildCursorFilter(primaryKey, context.getCursors());
-        Bson shardFilter = buildShardFilter(context.getShard(), primaryKey);
-        if (shardFilter != null) {
-            filter = Filters.and(filter, shardFilter);
-        }
         int pageSize = context.getPageSize();
         List<Map<String, Object>> list = new ArrayList<>(pageSize);
         try (MongoCursor<Document> cursor = collection.find(filter)
@@ -585,37 +576,6 @@ public final class MongoDBConnector extends AbstractConnector implements Connect
             return MongoDBConstant.ID_FIELD;
         }
         return primaryKeys.get(0);
-    }
-
-    @Override
-    public ShardPlan planShards(MongoConnectorInstance connectorInstance, ShardPlanRequest request) {
-        if (request == null || StringUtil.isBlank(request.getTableGroupId())) {
-            return ShardPlan.wholeTable();
-        }
-        String pk = resolvePrimaryKey(request.getSourceTable());
-        return ShardPlans.hashMod(request.getTableGroupId(), pk, request.suggestedHashMod());
-    }
-
-    private Bson buildShardFilter(ShardSpec shard, String primaryKey) {
-        if (shard == null || shard.isWhole() || shard.getCapability() != ShardSupportEnum.HASH_MOD) {
-            return null;
-        }
-        String modText = shard.payload(ShardSpec.KEY_MOD);
-        String indexText = shard.payload(ShardSpec.KEY_INDEX);
-        if (!org.dbsyncer.common.util.NumberUtil.isCreatable(modText)
-                || !org.dbsyncer.common.util.NumberUtil.isCreatable(indexText)) {
-            return null;
-        }
-        int mod = org.dbsyncer.common.util.NumberUtil.toInt(modText);
-        int index = org.dbsyncer.common.util.NumberUtil.toInt(indexText);
-        if (mod <= 1 || index < 0 || index >= mod) {
-            return null;
-        }
-        String field = StringUtil.getIfBlank(shard.payload(ShardSpec.KEY_PK), primaryKey);
-        Document expr = new Document("$eq", java.util.Arrays.asList(
-                new Document("$mod", java.util.Arrays.asList(new Document("$toHashedIndexKey", "$" + field), mod)),
-                index));
-        return Filters.expr(expr);
     }
 
     private int resolveSkip(ReaderContext context) {

@@ -2,7 +2,7 @@ CREATE TABLE `dbsyncer_meta` (
   `ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '唯一ID',
   `CREATE_TIME` bigint NOT NULL COMMENT '创建时间',
   `UPDATE_TIME` bigint NOT NULL COMMENT '修改时间',
-  `START_TIME` bigint NOT NULL DEFAULT 0 COMMENT '任务启动时间',
+  `START_TIME` bigint NOT NULL COMMENT '任务启动时间',
   `TASK_ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '任务ID/table_group_id',
   `STATE` tinyint NOT NULL DEFAULT 0 COMMENT '任务状态，0-未执行;1-运行中;2-停止中;3-已完成;',
   `IS_TASK_DETAIL` tinyint NOT NULL DEFAULT 1 COMMENT '是否任务明细, 0-否 1-是',

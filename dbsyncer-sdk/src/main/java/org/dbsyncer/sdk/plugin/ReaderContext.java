@@ -4,7 +4,6 @@
 package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
 
 import java.util.List;
 
@@ -27,14 +26,5 @@ public interface ReaderContext extends BaseContext {
 
     default String getCommandKey(){
         return StringUtil.EMPTY;
-    }
-
-    /**
-     * 当前工作项切片；整表或未设置为 null。
-     *
-     * @return 切片规格
-     */
-    default ShardSpec getShard() {
-        return null;
     }
 }

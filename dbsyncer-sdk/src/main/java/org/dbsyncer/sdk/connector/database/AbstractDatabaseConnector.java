@@ -16,7 +16,6 @@ import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
 import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.connector.database.ds.SimpleConnection;
-import org.dbsyncer.sdk.connector.database.shard.DatabaseShardPlanner;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.constant.DatabaseConstant;
@@ -33,8 +32,6 @@ import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.shard.ShardPlan;
-import org.dbsyncer.sdk.model.shard.ShardPlanRequest;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -288,10 +285,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
         String querySql;
         String queryKey = context.getCommandKey();
-        boolean pageQuery = false;
-        boolean supportedCursor = false;
         if (StringUtil.isBlank(queryKey)) {
-            supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
+            boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
             if (context.isTargetConnector()) {
                 queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR : ConnectorConstant.OPERTION_QUERY_TARGET;
             } else {
@@ -299,7 +294,7 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             querySql = context.getCommand().get(queryKey);
             Assert.hasText(querySql, "查询语句不能为空.");
-            pageQuery = true;
+            Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
         } else {
             FullPluginContext full = (FullPluginContext) context;
             String condition = buildQueryCondition(full.getFilter(), context.getArgs());
@@ -307,35 +302,11 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             Assert.hasText(querySql, "查询语句不能为空.");
             querySql = buildTargetReaderSql(querySql, condition);
         }
-        Field pkField = DatabaseShardPlanner.singlePk(context.getSourceTable());
-        // 切片条件插在 ORDER BY/LIMIT 前；占位符须与 SQL 顺序一致：
-        // 游标 WHERE ? → 切片 ? → LIMIT/OFFSET ?
-        // （若切片参数先入参，第 2 页起条件错乱，读空后被误标完成）
-        if (pageQuery && supportedCursor) {
-            Object[] cursorArgs = buildCursorArgs(context.getCursors());
-            if (cursorArgs != null) {
-                Collections.addAll(context.getArgs(), cursorArgs);
-            }
-            querySql = DatabaseShardPlanner.appendShardCondition(this, querySql, context.getShard(),
-                    context.getArgs(), pkField);
-            appendPageCursorTailArgs(context, cursorArgs == null ? 0 : cursorArgs.length);
-        } else {
-            querySql = DatabaseShardPlanner.appendShardCondition(this, querySql, context.getShard(),
-                    context.getArgs(), pkField);
-            if (pageQuery) {
-                Collections.addAll(context.getArgs(), getPageArgs(context));
-            }
-        }
         final String finalQuerySql = querySql;
         // 3、执行SQL
         List<Map<String, Object>> list = connectorInstance.execute(databaseTemplate -> databaseTemplate.queryForList(finalQuerySql, context.getArgs().toArray()));
         // 4、返回结果集
         return new Result(list);
-    }
-
-    @Override
-    public ShardPlan planShards(DatabaseConnectorInstance connectorInstance, ShardPlanRequest request) {
-        return DatabaseShardPlanner.plan(this, connectorInstance, request);
     }
 
     @Override
@@ -763,22 +734,6 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         return cursorArgs;
-    }
-
-    /**
-     * 追加各方言 getPageCursorArgs 中游标条件之后的分页尾参（LIMIT/OFFSET 等）。
-     *
-     * @param context          读上下文
-     * @param cursorArgsLength 已写入的游标条件参数个数
-     */
-    private void appendPageCursorTailArgs(ReaderContext context, int cursorArgsLength) {
-        Object[] pageCursorArgs = getPageCursorArgs(context);
-        if (pageCursorArgs == null || pageCursorArgs.length <= cursorArgsLength) {
-            return;
-        }
-        for (int i = cursorArgsLength; i < pageCursorArgs.length; i++) {
-            context.getArgs().add(pageCursorArgs[i]);
-        }
     }
 
     /**

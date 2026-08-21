@@ -21,7 +21,7 @@ public class Result<T> {
     private final StringBuffer error = new StringBuffer();
 
     /**
-     * 驱动表映射关系ID（table_group.id，用于明细关联）
+     * 同步任务表映射关系ID（table_group.id，用于明细关联）
      */
     private String tableGroupId;
 

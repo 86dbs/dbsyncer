@@ -102,8 +102,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void start(Mapping mapping) {
-        boolean publishClosed = clusterService.isStandalone();
-        Thread worker = new Thread(() -> runSync(mapping, publishClosed));
+        Thread worker = new Thread(() -> runSync(mapping, clusterService.isStandalone()));
         worker.setName("full-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
@@ -161,7 +160,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void onApplicationEvent(FullRefreshEvent event) {
-        if (event == null || event.getTask() == null) {
+        if (event.getTask() == null) {
             return;
         }
         boolean committed = flush(event.getTask(), event.getResult());
@@ -226,6 +225,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             for (int j = 0; j < page.size(); j++) {
                 works.add(new TableWork(pageStartIndex + j, page.get(j)));
             }
+
             int threadNum = Math.max(1, mapping.getThreadNum());
             BatchTaskUtil.executeBySlice(works, works.size(), threadNum, (slice, executor) ->
                     BatchTaskUtil.executeWithAwait(slice, executor, work ->
@@ -252,7 +252,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         if (task.isRunning() && clusterService.isStandalone()) {
             clearFullProgress(task);
         }
-        // 停止时不再整行 editConfigModel：会覆盖并发 SUCCESS/SNAPSHOT（切主/停节点双计根因之一）
     }
 
     private void syncOneTable(Task parent, Mapping mapping, TableWork work, boolean useLegacyBreakpoint,

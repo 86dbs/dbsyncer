@@ -108,35 +108,6 @@ public class MySQLConnector extends AbstractDatabaseConnector {
     }
 
     @Override
-    public boolean supportsHashModShard() {
-        return true;
-    }
-
-    @Override
-    public String buildHashModCondition(org.dbsyncer.sdk.model.shard.ShardSpec shard, List<Object> args, Field pkField) {
-        if (shard == null || args == null) {
-            return null;
-        }
-        String pk = StringUtil.getIfBlank(shard.payload(org.dbsyncer.sdk.model.shard.ShardSpec.KEY_PK),
-                pkField == null ? null : pkField.getName());
-        String modText = shard.payload(org.dbsyncer.sdk.model.shard.ShardSpec.KEY_MOD);
-        String indexText = shard.payload(org.dbsyncer.sdk.model.shard.ShardSpec.KEY_INDEX);
-        if (StringUtil.isBlank(pk)
-                || !org.dbsyncer.common.util.NumberUtil.isCreatable(modText)
-                || !org.dbsyncer.common.util.NumberUtil.isCreatable(indexText)) {
-            return null;
-        }
-        int mod = org.dbsyncer.common.util.NumberUtil.toInt(modText);
-        int index = org.dbsyncer.common.util.NumberUtil.toInt(indexText);
-        if (mod <= 1 || index < 0 || index >= mod) {
-            return null;
-        }
-        args.add(mod);
-        args.add(index);
-        return "MOD(CRC32(" + buildWithQuotation(pk) + "), ?) = ?";
-    }
-
-    @Override
     public String buildCreateDatabaseSql(String databaseName, String schemaName) {
         if (StringUtil.isBlank(databaseName)) {
             return StringUtil.EMPTY;
