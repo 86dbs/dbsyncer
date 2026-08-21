@@ -4,7 +4,7 @@
 package org.dbsyncer.sdk.model;
 
 /**
- * 缓存执行器监控快照（表执行器或增量管道）。
+ * 缓存执行器监控快照。
  *
  * @author wuji
  * @version 1.0.0
@@ -18,7 +18,7 @@ public class BufferActuatorMetric {
     private String metaId;
 
     /**
-     * 展示名：开源为源表名，商业版为管道名
+     * 展示名
      */
     private String name;
 

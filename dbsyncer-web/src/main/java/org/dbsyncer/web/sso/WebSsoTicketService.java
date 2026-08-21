@@ -7,14 +7,15 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.web.monitor.LocalNodeMetricProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -41,6 +42,9 @@ public class WebSsoTicketService {
      */
     private static final long TICKET_TTL_MS = 30_000L;
 
+    @Value("${server.ssl.enabled:false}")
+    private boolean sslEnabled;
+
     @Resource
     private JwtSecretManager jwtSecretManager;
 
@@ -57,7 +61,7 @@ public class WebSsoTicketService {
      *
      * @param username 用户名
      * @param roleCode 角色
-     * @param target   目标节点，推荐 {@code ip:port}；也兼容 {@code http://ip:port}
+     * @param target   目标节点，推荐 {@code ip:port}；也兼容 {@code http(s)://ip:port}
      * @return JWT 票据
      */
     public String issue(String username, String roleCode, String target) {
@@ -138,7 +142,7 @@ public class WebSsoTicketService {
     }
 
     /**
-     * 规范化为 {@code http://ip:port}（无尾斜杠）。
+     * 规范化为 {@code http(s)://ip:port}（无尾斜杠；协议跟随 {@code server.ssl.enabled}）。
      *
      * @param target 目标 URL
      * @return 根地址
@@ -151,7 +155,7 @@ public class WebSsoTicketService {
         }
         String ip = host.substring(0, idx);
         int port = Integer.parseInt(host.substring(idx + 1));
-        return LocalNodeMetricProvider.buildHttpUrl(ip, port);
+        return NetUtil.buildWebRootUrl(ip, port, sslEnabled);
     }
 
     /**

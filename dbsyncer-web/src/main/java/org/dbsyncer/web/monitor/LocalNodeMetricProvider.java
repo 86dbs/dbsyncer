@@ -15,7 +15,7 @@ import org.dbsyncer.biz.vo.MemoryVO;
 import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
-import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.monitor.ValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
@@ -23,6 +23,7 @@ import org.dbsyncer.web.controller.monitor.impl.GBValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.MemoryValueFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -64,6 +65,9 @@ public class LocalNodeMetricProvider {
     private final MemoryVO memory = new MemoryVO();
     private final DiskSpaceVO disk = new DiskSpaceVO();
     private long[] prevTicks = processor.getSystemCpuLoadTicks();
+
+    @Value("${server.ssl.enabled:false}")
+    private boolean sslEnabled;
 
     @Resource
     private MonitorService monitorService;
@@ -285,16 +289,13 @@ public class LocalNodeMetricProvider {
     }
 
     /**
-     * 节点 HTTP 根地址。
+     * 本节点协议下的 Web 根地址（跟随 {@code server.ssl.enabled}）。
      *
      * @param ip       IP
      * @param httpPort 端口
-     * @return 如 http://ip:port；非法时为空
+     * @return 如 http(s)://ip:port；非法时为空
      */
-    public static String buildHttpUrl(String ip, int httpPort) {
-        if (StringUtil.isBlank(ip) || httpPort <= 0) {
-            return StringUtil.EMPTY;
-        }
-        return "http://" + ip + ":" + httpPort;
+    public String buildHttpUrl(String ip, int httpPort) {
+        return NetUtil.buildWebRootUrl(ip, httpPort, sslEnabled);
     }
 }

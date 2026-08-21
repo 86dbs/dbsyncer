@@ -51,7 +51,7 @@ public interface ClusterService {
     /**
      * Leader 的 HTTP 访问地址，供 Follower 提示跳转。
      *
-     * @return 如 TODO url可能是https http://ip:port，未知时为空
+     * @return 如 {@code http(s)://ip:port}（协议跟随 {@code server.ssl.enabled}），未知时为空
      */
     String getLeaderHttpUrl();
 

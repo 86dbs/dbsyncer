@@ -39,11 +39,11 @@
             </div>
         </div>
 
-        <!-- 执行器数（仅专业版） -->
+        <!-- 执行器数 -->
         <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
             <label class="form-label">
                 执行器数 <strong class="text-primary">*</strong>
-                <i class="fa fa-question-circle" title="按表名位运算分流到固定管道，须为2的幂，上限64。修改后需停止任务再启动生效"></i>
+                <i class="fa fa-question-circle" title="须为 1~64 的 2 的幂；修改后需停止任务再启动生效"></i>
             </label>
             <div class="form-control-area">
                 <select id="channelSize" name="channelSize" class="form-control" required>

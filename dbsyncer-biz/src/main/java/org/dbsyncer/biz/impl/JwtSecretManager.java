@@ -13,14 +13,12 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.model.SystemConfig;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -229,7 +227,7 @@ public class JwtSecretManager {
             // 清理过旧的历史密钥，只保留最近N个版本
             cleanupOldVersions(versions);
 
-            // 保存到系统配置（跳过 Leader 写校验，保证 Follower 也能完成首次密钥初始化）
+            // 保存到系统配置
             systemConfig.setJwtSecretConfig(config);
             systemConfigProfile.saveSystemConfig(systemConfig);
             logger.info("生成新的JWT密钥成功，版本: {}，历史密钥数量: {}", newVersion, versions.size());

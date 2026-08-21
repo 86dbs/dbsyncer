@@ -7,6 +7,7 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
+import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
@@ -14,6 +15,7 @@ import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,7 +87,7 @@ public abstract class StorageDataMigrator {
             return;
         }
         for (Map<String, Object> row : query("SELECT * FROM " + q(T_CONFIG))) {
-            switch (val(row, "type", "TYPE")) {
+            switch (val(row, "type")) {
                 case ConfigConstant.USER:
                     migrateUser(row);
                     break;
@@ -117,7 +119,7 @@ public abstract class StorageDataMigrator {
     }
 
     private void migrateUser(Map<String, Object> row) {
-        String json = val(row, "json", "JSON");
+        String json = val(row, "json");
         if (StringUtil.isBlank(json)) {
             return;
         }
@@ -138,8 +140,8 @@ public abstract class StorageDataMigrator {
             return;
         }
         long now = System.currentTimeMillis();
-        long createTime = num(row, "createTime", "CREATE_TIME", now);
-        long updateTime = num(row, "updateTime", "UPDATE_TIME", now);
+        long createTime = num(row, now, "createTime");
+        long updateTime = num(row, now, "updateTime");
         for (Map user : users) {
             if (user == null) {
                 continue;
@@ -154,8 +156,8 @@ public abstract class StorageDataMigrator {
             }
             Map<String, Object> p = new HashMap<>();
             p.put(ConfigConstant.CONFIG_MODEL_ID, id);
-            p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(user, "createTime", createTime));
-            p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(user, "updateTime", updateTime));
+            p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(user, createTime, "createTime"));
+            p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(user, updateTime, "updateTime"));
             p.put(ConfigConstant.USER_USERNAME, username);
             p.put(ConfigConstant.USER_PASSWORD, val(user, "password"));
             p.put(ConfigConstant.USER_NICKNAME, first(val(user, "nickname"), username));
@@ -167,22 +169,22 @@ public abstract class StorageDataMigrator {
     }
 
     private void migrateConnector(Map<String, Object> row) {
-        String id = val(row, "id", "ID");
+        String id = val(row, "id");
         if (StringUtil.isBlank(id) || existsId(T_CONNECTOR, id)) {
             return;
         }
-        String json = val(row, "json", "JSON");
+        String json = val(row, "json");
         Map root = StringUtil.isBlank(json) ? new HashMap() : JsonUtil.parseMap(json);
         if (root == null) {
             root = new HashMap();
         }
         Map<String, Object> p = new HashMap<>();
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(row, "name", "NAME"), val(root, "name"), id));
-        p.put(ConfigConstant.CONFIG_MODEL_TYPE, resolveConnectorType(root, val(row, "type", "TYPE")));
+        p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(row, "name"), val(root, "name"), id));
+        p.put(ConfigConstant.CONFIG_MODEL_TYPE, resolveConnectorType(root, val(row, "type")));
         p.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.isBlank(json) ? "{}" : json);
-        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
-        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, System.currentTimeMillis(), "createTime"));
+        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, System.currentTimeMillis(), "updateTime"));
         // 历史 config 无角色列；与离线 SQL 迁移及 Connector 默认值一致，缺省均可作源/目标
         p.put(ConfigConstant.CONNECTOR_IS_SOURCE, 1);
         p.put(ConfigConstant.CONNECTOR_IS_TARGET, 1);
@@ -209,31 +211,31 @@ public abstract class StorageDataMigrator {
     }
 
     private void migrateTask(Map<String, Object> row, String defaultType) {
-        String id = val(row, "id", "ID");
+        String id = val(row, "id");
         if (StringUtil.isBlank(id) || existsId(T_TASK, id)) {
             return;
         }
-        String json = rewriteMappingId(val(row, "json", "JSON"));
-        String type = first(val(row, "type", "TYPE"), defaultType);
+        String json = rewriteMappingId(val(row, "json"));
+        String type = first(val(row, "type"), defaultType);
         if (StringUtil.isBlank(type) || ConfigConstant.MAPPING.equals(type)) {
             type = ConfigConstant.MAPPING;
         }
         Map<String, Object> p = new HashMap<>();
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(row, "name", "NAME"), id));
+        p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(row, "name"), id));
         p.put(ConfigConstant.CONFIG_MODEL_TYPE, type);
         p.put(ConfigConstant.CONFIG_MODEL_JSON, StringUtil.isBlank(json) ? "{}" : json);
-        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
-        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, System.currentTimeMillis(), "createTime"));
+        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, System.currentTimeMillis(), "updateTime"));
         storage.add(StorageEnum.TASK, p);
     }
 
     private void migrateTableGroup(Map<String, Object> row) {
-        String id = val(row, "id", "ID");
+        String id = val(row, "id");
         if (StringUtil.isBlank(id) || existsId(T_TABLE_GROUP, id)) {
             return;
         }
-        String json = val(row, "json", "JSON");
+        String json = val(row, "json");
         Map root = StringUtil.isBlank(json) ? new HashMap() : JsonUtil.parseMap(json);
         if (root == null) {
             root = new HashMap();
@@ -244,10 +246,10 @@ public abstract class StorageDataMigrator {
         String targetTable = tableName(root.get("targetTable"));
         Map<String, Object> p = new HashMap<>();
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
-        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
+        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, System.currentTimeMillis(), "createTime"));
+        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, System.currentTimeMillis(), "updateTime"));
         p.put(ConfigConstant.TABLE_GROUP_TASK_ID, taskId);
-        p.put(ConfigConstant.TABLE_GROUP_SORT_INDEX, (int) num(root, "index", 0));
+        p.put(ConfigConstant.TABLE_GROUP_SORT_INDEX, (int) num(root, 0, "index"));
         p.put(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, blank(val(root, "sourceConnectorId")));
         p.put(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID, blank(val(root, "targetConnectorId")));
         p.put(ConfigConstant.TABLE_GROUP_SOURCE_DATABASE, blank(val(root, "sourceDatabase")));
@@ -256,19 +258,19 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.TABLE_GROUP_TARGET_SCHEMA, blank(val(root, "targetSchema")));
         p.put(ConfigConstant.TABLE_GROUP_SOURCE_TABLE, blank(sourceTable));
         p.put(ConfigConstant.TABLE_GROUP_TARGET_TABLE, blank(targetTable));
-        p.put(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL, num(root, "sourceTotal", 0));
-        p.put(ConfigConstant.TABLE_GROUP_TARGET_TOTAL, num(root, "targetTotal", 0));
+        p.put(ConfigConstant.TABLE_GROUP_SOURCE_TOTAL, num(root, 0, "sourceTotal"));
+        p.put(ConfigConstant.TABLE_GROUP_TARGET_TOTAL, num(root, 0, "targetTotal"));
         p.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJsonSafe(root));
         storage.add(StorageEnum.TABLE_GROUP, p);
         ensureDetailMeta(id);
     }
 
     private void migrateMeta(Map<String, Object> row) {
-        String id = val(row, "id", "ID");
+        String id = val(row, "id");
         if (StringUtil.isBlank(id) || existsId(T_META, id)) {
             return;
         }
-        String json = val(row, "json", "JSON");
+        String json = val(row, "json");
         Map root = StringUtil.isBlank(json) ? new HashMap(row) : JsonUtil.parseMap(json);
         if (root == null) {
             root = new HashMap(row);
@@ -279,13 +281,12 @@ public abstract class StorageDataMigrator {
                 : snapshot != null ? JsonUtil.objToJsonSafe(snapshot) : "{}";
         Map<String, Object> p = new HashMap<>();
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
-        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, "createTime", "CREATE_TIME", System.currentTimeMillis()));
-        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, "updateTime", "UPDATE_TIME", System.currentTimeMillis()));
-        // TODO 设计字段是否能统一
-        p.put(ConfigConstant.META_START_TIME, num(root, "beginTime", num(root, "startTime", 0)));
+        p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, System.currentTimeMillis(), "createTime"));
+        p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, System.currentTimeMillis(), "updateTime"));
+        p.put(ConfigConstant.META_START_TIME, num(root, 0, "beginTime", "startTime"));
         p.put(ConfigConstant.META_TASK_ID, first(val(root, "taskId"), val(root, "mappingId"), id));
-        p.put(ConfigConstant.META_STATE, (int) num(root, "state", 0));
-        p.put(ConfigConstant.META_IS_TASK_DETAIL, (int) num(root, "isTaskDetail", 0));
+        p.put(ConfigConstant.META_STATE, (int) num(root, 0, "state"));
+        p.put(ConfigConstant.META_IS_TASK_DETAIL, (int) num(root, 0, "isTaskDetail"));
         p.put(ConfigConstant.META_TOTAL, atomic(root, "total"));
         p.put(ConfigConstant.META_SUCCESS, atomic(root, "success"));
         p.put(ConfigConstant.META_FAIL, atomic(root, "fail"));
@@ -301,11 +302,11 @@ public abstract class StorageDataMigrator {
             return;
         }
         for (Map<String, Object> row : query("SELECT " + q("ID") + "," + q("STATUS") + " FROM " + q(T_TASK))) {
-            String taskId = val(row, "id", "ID");
+            String taskId = val(row, "id");
             if (StringUtil.isBlank(taskId) || hasTaskMeta(taskId)) {
                 continue;
             }
-            int old = (int) num(row, "status", "STATUS", 0);
+            int old = (int) num(row, 0, "status");
             int state = (old == 2 || old == 3) ? 3 : 0;
             long now = System.currentTimeMillis();
             Map<String, Object> p = new HashMap<>();
@@ -331,8 +332,8 @@ public abstract class StorageDataMigrator {
             return;
         }
         for (Map<String, Object> task : query("SELECT * FROM " + q(T_TASK))) {
-            String taskId = val(task, "id", "ID");
-            String json = val(task, "json", "JSON");
+            String taskId = val(task, "id");
+            String json = val(task, "json");
             if (StringUtil.isBlank(taskId) || StringUtil.isBlank(json)) {
                 continue;
             }
@@ -374,7 +375,7 @@ public abstract class StorageDataMigrator {
                         continue;
                     }
                     sort++;
-                    insertTableGroup(taskId, sort, sc, tc, sd, td, ss, ts, st, tt, (int) num(tm, "index", sort));
+                    insertTableGroup(taskId, sort, sc, tc, sd, td, ss, ts, st, tt, (int) num(tm, sort, "index"));
                     changed = true;
                 }
                 mapping.remove("tableMappings");
@@ -383,10 +384,10 @@ public abstract class StorageDataMigrator {
             if (changed) {
                 Map<String, Object> p = new HashMap<>();
                 p.put(ConfigConstant.CONFIG_MODEL_ID, taskId);
-                p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(task, "name", "NAME"), taskId));
-                p.put(ConfigConstant.CONFIG_MODEL_TYPE, first(val(task, "type", "TYPE"), ConfigConstant.MAPPING));
+                p.put(ConfigConstant.CONFIG_MODEL_NAME, first(val(task, "name"), taskId));
+                p.put(ConfigConstant.CONFIG_MODEL_TYPE, first(val(task, "type"), ConfigConstant.MAPPING));
                 p.put(ConfigConstant.CONFIG_MODEL_JSON, JsonUtil.objToJsonSafe(root));
-                p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(task, "createTime", "CREATE_TIME", System.currentTimeMillis()));
+                p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(task, System.currentTimeMillis(), "createTime"));
                 p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, System.currentTimeMillis());
                 storage.edit(StorageEnum.TASK, p);
             }
@@ -444,7 +445,7 @@ public abstract class StorageDataMigrator {
             return;
         }
         for (Map<String, Object> row : query("SELECT " + q("ID") + " FROM " + q(T_TABLE_GROUP))) {
-            String tableGroupId = val(row, "id", "ID");
+            String tableGroupId = val(row, "id");
             if (StringUtil.isNotBlank(tableGroupId)) {
                 ensureDetailMeta(tableGroupId);
             }
@@ -478,7 +479,7 @@ public abstract class StorageDataMigrator {
             return;
         }
         for (Map<String, Object> task : query("SELECT " + q("ID") + " FROM " + q(T_TASK))) {
-            String taskId = val(task, "id", "ID");
+            String taskId = val(task, "id");
             if (StringUtil.isBlank(taskId)) {
                 continue;
             }
@@ -583,7 +584,33 @@ public abstract class StorageDataMigrator {
 
     private List<Map<String, Object>> query(String sql, Object... args) {
         List<Map<String, Object>> rows = rawQuery(sql, args);
-        return rows == null ? Collections.emptyList() : rows;
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> normalized = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            normalized.add(normalizeRow(row));
+        }
+        return normalized;
+    }
+
+    /**
+     * JDBC 列名统一为小驼峰（CREATE_TIME→createTime）；无下划线键保留原样并用大小写不敏感 Map（ID/id 均可取）。
+     */
+    private static Map<String, Object> normalizeRow(Map<String, Object> row) {
+        if (row == null || row.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> out = new LinkedCaseInsensitiveMap<>(row.size());
+        row.forEach((key, value) -> {
+            String keyStr = key == null ? StringUtil.EMPTY : String.valueOf(key);
+            if (keyStr.contains(StringUtil.UNDERLINE)) {
+                out.put(UnderlineToCamelUtils.underlineToCamel(keyStr.toLowerCase(), true), value);
+            } else {
+                out.put(keyStr, value);
+            }
+        });
+        return out;
     }
 
     private long count(String sql, Object... args) {
@@ -624,14 +651,19 @@ public abstract class StorageDataMigrator {
         return StringUtil.EMPTY;
     }
 
-    private static long num(Map<?, ?> map, String key, long def) {
-        return num(map, key, null, def);
-    }
-
-    private static long num(Map<?, ?> map, String k1, String k2, long def) {
-        Object v = map == null ? null : map.get(k1);
-        if (v == null && k2 != null && map != null) {
-            v = map.get(k2);
+    private static long num(Map<?, ?> map, long def, String... keys) {
+        if (map == null || keys == null) {
+            return def;
+        }
+        Object v = null;
+        for (String key : keys) {
+            if (key == null) {
+                continue;
+            }
+            v = map.get(key);
+            if (v != null) {
+                break;
+            }
         }
         if (v instanceof Number) {
             return ((Number) v).longValue();

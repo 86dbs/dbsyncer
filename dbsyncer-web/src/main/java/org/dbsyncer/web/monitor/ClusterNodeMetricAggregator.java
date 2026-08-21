@@ -11,6 +11,7 @@ import org.dbsyncer.biz.vo.TaskShardSummaryVO;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
@@ -130,13 +131,14 @@ public class ClusterNodeMetricAggregator {
 
     @SuppressWarnings("unchecked")
     private ClusterNodeMetricVO pullRemote(ClusterNodeVO node) {
-        String base = LocalNodeMetricProvider.buildHttpUrl(node.getIp(), node.getHttpPort());
+        String base = localNodeMetricProvider.buildHttpUrl(node.getIp(), node.getHttpPort());
         if (StringUtil.isBlank(base)) {
             return unreachable(node);
         }
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(base + "/cluster/metrics").openConnection();
+            NetUtil.applyInsecureSslIfNeeded(connection);
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
             connection.setReadTimeout(READ_TIMEOUT_MS);

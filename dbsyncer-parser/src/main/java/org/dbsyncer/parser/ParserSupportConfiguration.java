@@ -38,8 +38,8 @@ public class ParserSupportConfiguration {
     private ServiceFactory serviceFactory;
 
     /**
-     * 表执行器原型：开源回落 {@link TableGroupBufferActuator}，企业版 SPI 为 Plus。
-     * 路由 bind 时通过 {@link TableGroupBufferActuatorService#clone()} 派生每表/每管道实例。
+     * 表执行器原型：优先 SPI，缺省回落 {@link TableGroupBufferActuator}。
+     * 路由 bind 时通过 {@link TableGroupBufferActuatorService#clone()} 派生实例。
      */
     @Bean
     @Primary

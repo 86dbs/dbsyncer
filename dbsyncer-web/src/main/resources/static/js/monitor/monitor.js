@@ -120,7 +120,7 @@ function bindQueryLogEvent() {
     }
 }
 
-// 查看执行器（社区版可按表名关键字过滤；商业版仅按驱动筛选）
+// 查看执行器（可按表名关键字过滤）
 function bindQueryActuatorEvent() {
     let pagination;
     let metaSelect;
@@ -181,7 +181,7 @@ function bindQueryActuatorEvent() {
         onSelect: search
     });
 
-    // 社区版才有表名搜索框；商业版 DOM 不存在
+    // 表名搜索框存在时才读取关键字
     if (document.getElementById('searchActuator')) {
         searchInput = initSearch('searchActuator', search);
     }
