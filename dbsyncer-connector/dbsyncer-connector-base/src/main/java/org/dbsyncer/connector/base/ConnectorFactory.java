@@ -6,6 +6,7 @@ package org.dbsyncer.connector.base;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.config.CommandConfig;
 import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.AbstractConnector;
@@ -124,16 +125,26 @@ public class ConnectorFactory implements DisposableBean {
     }
 
     /**
-     * 检查连接配置是否可用
+     * 检查连接配置是否可用。
+     * <p>本机连接池无实例时先建连再探测（集群 Follower 上常见：连接器在 Leader 新增后本机尚未入池）。
      *
-     * @param instanceId
-     * @param config
-     * @return
+     * @param instanceId 实例 ID（通常为连接器配置 ID）
+     * @param config     连接配置
+     * @return true 可用
      */
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");
         Assert.notNull(config, "ConnectorConfig can not be null.");
         ConnectorInstance instance = pool.get(instanceId);
+        if (instance == null) {
+            try {
+                connect(instanceId, config, StringUtil.EMPTY, StringUtil.EMPTY);
+                instance = pool.get(instanceId);
+            } catch (Exception e) {
+                logger.warn("连接器未入池且建连失败, id={}, err={}", instanceId, e.getMessage());
+                return false;
+            }
+        }
         if (instance != null) {
             return getConnectorService(config).isAlive(instance);
         }

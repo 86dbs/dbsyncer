@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -85,7 +86,9 @@ public class ValidateSyncController extends BaseController {
             model.put("tableGroup", tableGroup);
             model.put("task", validateSyncService.get(tableGroup.getTaskId()));
         } else {
-            model.put("task", validateSyncService.get(id));
+            ValidateSyncTaskVO task = validateSyncService.get(id);
+            Assert.notNull(task, "任务不存在");
+            model.put("task", task);
         }
         initConditionConfig(model);
         return "validate-sync/" + page;

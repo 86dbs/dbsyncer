@@ -49,14 +49,6 @@
         <div class="mb-4 text-sm text-secondary" th:if="${clusterEnabled}">
             当前节点：<strong class="text-primary" th:text="${current.id}">-</strong>
             ，角色：<strong th:text="${current.roleName}">-</strong>
-            <span th:unless="${current.leader}">
-                <span th:if="${current.leaderHttpUrl}">
-                    ，请到 Leader 操作：
-                    <a class="text-primary hover-underline"
-                       th:href="@{/sso/redirect(target=${#strings.substringAfter(current.leaderHttpUrl, '://')},redirect='/')}"
-                       th:text="${current.leaderHttpUrl}">-</a>
-                </span>
-            </span>
         </div>
         <div class="mb-4 text-sm text-secondary" th:unless="${clusterEnabled}">
             当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确保已授权产品码 ClusterService。

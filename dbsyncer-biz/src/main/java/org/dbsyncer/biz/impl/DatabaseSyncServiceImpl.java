@@ -103,9 +103,23 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
 
     @Override
     public DatabaseSyncTaskVO get(String id) {
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = resolveTask(id);
         Assert.notNull(task, "任务不存在");
         return convertTask2Vo(task);
+    }
+
+    /**
+     * 先缓存后存储，避免 Follower 写代理创建后本地缓存为空。
+     */
+    private DatabaseSyncTask resolveTask(String id) {
+        if (StringUtil.isBlank(id)) {
+            return null;
+        }
+        DatabaseSyncTask task = taskService.get(id);
+        if (task != null) {
+            return task;
+        }
+        return taskProfile.getTask(id, DatabaseSyncTask.class);
     }
 
     @Override
@@ -149,7 +163,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     public String edit(Map<String, String> params) {
         String id = params.get("id");
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = resolveTask(id);
         Assert.notNull(task, "任务不存在");
         if (taskService.isRunning(id)) {
             throw new BizException("任务正在运行，请先停止");
@@ -213,7 +227,7 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
     @Override
     public String start(String id) {
         Assert.hasText(id, "任务 ID 不能为空");
-        DatabaseSyncTask task = taskService.get(id);
+        DatabaseSyncTask task = resolveTask(id);
         Assert.notNull(task, "任务不存在");
         if (CollectionUtils.isEmpty(task.getDatabaseMappings())) {
             throw new BizException("任务未配置库映射，无法启动");

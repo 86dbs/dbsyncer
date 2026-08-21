@@ -6,6 +6,10 @@ import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.SHA1Util;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.model.UserInfo;
+import org.dbsyncer.sdk.spi.ClusterService;
+import org.dbsyncer.web.cluster.ClusterProxyAuthFilter;
+import org.dbsyncer.web.cluster.ClusterWriteProxyFilter;
+import org.dbsyncer.web.cluster.ClusterWriteProxyService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +26,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 import javax.annotation.Resource;
@@ -65,6 +71,12 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
 
     @Resource
     private UserConfigService userConfigService;
+
+    @Resource
+    private ClusterService clusterService;
+
+    @Resource
+    private ClusterWriteProxyService clusterWriteProxyService;
 
     /**
      * 是否重置管理员密码
@@ -124,6 +136,8 @@ public class WebAppConfig extends WebSecurityConfigurerAdapter implements Authen
                 .formLogin().loginProcessingUrl(LOGIN).loginPage(LOGIN_PAGE).successHandler(loginSuccessHandler()).failureHandler(loginFailHandler()).permitAll().and().logout().permitAll()
                 .invalidateHttpSession(true).deleteCookies("JSESSIONID").logoutSuccessHandler(logoutHandler()).and().sessionManagement().sessionFixation().migrateSession()
                 .maximumSessions(MAXIMUM_SESSIONS);
+        http.addFilterBefore(new ClusterProxyAuthFilter(clusterWriteProxyService), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new ClusterWriteProxyFilter(clusterService, clusterWriteProxyService), FilterSecurityInterceptor.class);
     }
 
     @Override

@@ -113,7 +113,10 @@ public class ClusterNodeMetricAggregator {
             vo = pullRemote(node);
         }
         fillIdentity(vo, node);
-        vo.setFullShardCount(shardByNode.getOrDefault(node.getId(), 0));
+        // Leader 有权威派工视图时覆盖；Follower 保留各节点 /metrics 自报的本机分片数
+        if (!shardByNode.isEmpty()) {
+            vo.setFullShardCount(shardByNode.getOrDefault(node.getId(), 0));
+        }
         return vo;
     }
 
@@ -184,6 +187,7 @@ public class ClusterNodeMetricAggregator {
     private Map<String, Integer> resolveFullShardCounts() {
         Map<String, Integer> counts = new LinkedHashMap<>();
         if (!clusterService.isLeader()) {
+            // Follower 无权威派工内存；分片数改由各节点 metrics.fullShardCount 汇总
             return counts;
         }
         try {

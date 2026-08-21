@@ -136,7 +136,28 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public ValidateSyncTaskVO get(String id) {
-        return convertTask2Vo(taskService.get(id));
+        return convertTask2Vo(resolveTask(id));
+    }
+
+    /**
+     * 解析任务：先走 TaskService 缓存，未命中再读存储（Follower 经写代理创建后本地缓存可能为空）。
+     *
+     * @param id 任务 ID
+     * @return 任务；不存在为 null
+     */
+    private ValidateSyncTask resolveTask(String id) {
+        if (StringUtil.isBlank(id)) {
+            return null;
+        }
+        ValidateSyncTask task = taskService.get(id);
+        if (task != null) {
+            return task;
+        }
+        task = taskProfile.getTask(id, ValidateSyncTask.class);
+        if (task != null) {
+            logger.info("订正校验任务缓存未命中，已从存储加载: {}", id);
+        }
+        return task;
     }
 
     @Override
@@ -304,7 +325,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String edit(Map<String, String> params) {
-        ValidateSyncTask task = taskService.get(params.get("id"));
+        ValidateSyncTask task = resolveTask(params.get("id"));
         if (task == null) {
             throw new BizException("任务不存在");
         }
@@ -345,7 +366,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public String copy(String id) {
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = resolveTask(id);
         Assert.notNull(task, "Task not found");
         String json = JsonUtil.objToJson(task);
         ValidateSyncTask newTask = JsonUtil.jsonToObj(json, ValidateSyncTask.class);
@@ -443,7 +464,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public Paging<TableGroup> searchTableGroup(Map<String, String> params) {
         String id = params.get("id");
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = resolveTask(id);
         if (task == null) {
             return null;
         }
@@ -465,7 +486,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         // 是否过滤已配置的表（exclude=1 表示不过滤）
         boolean excludeMapped = NumberUtil.toInt(params.get("exclude"), 0) != 1;
 
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = resolveTask(id);
         Assert.notNull(task, "task not found.");
 
         boolean isSource = !"target".equals(type);
@@ -531,7 +552,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
 
     @Override
     public Object result(String id) {
-        return taskService.get(id);
+        return resolveTask(id);
     }
 
     @Override
@@ -579,7 +600,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
      * 拉取并回写源/目标表列表，返回已刷新的任务对象（供创建后立即匹配使用）。
      */
     private ValidateSyncTask refreshTablesAndGet(String id) {
-        ValidateSyncTask task = taskService.get(id);
+        ValidateSyncTask task = resolveTask(id);
         Assert.notNull(task, "The task id is invalid.");
         task.setSourceTable(updateConnectorTables(task, ConnectorInstanceUtil.SOURCE_SUFFIX));
         task.setTargetTable(updateConnectorTables(task, ConnectorInstanceUtil.TARGET_SUFFIX));
@@ -592,7 +613,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         TableGroup tableGroup = tableGroupProfile.getTableGroup(id);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
 
-        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
+        ValidateSyncTask task = resolveTask(tableGroup.getTaskId());
         Assert.notNull(task, "The task id is invalid.");
         Table sourceTable = tableGroup.getSourceTable();
         Table targetTable = tableGroup.getTargetTable();
@@ -607,7 +628,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     @Override
     public String addTableGroup(Map<String, String> params) {
         String taskId = params.get("taskId");
-        ValidateSyncTask task = taskService.get(taskId);
+        ValidateSyncTask task = resolveTask(taskId);
         assertRunning(task.getId());
         synchronized (LOCK) {
             try {
@@ -645,7 +666,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
         String tableGroupId = params.get(ConfigConstant.CONFIG_MODEL_ID);
         TableGroup tableGroup = tableGroupProfile.getTableGroup(tableGroupId);
         Assert.notNull(tableGroup, "Can not find tableGroup.");
-        ValidateSyncTask task = taskService.get(tableGroup.getTaskId());
+        ValidateSyncTask task = resolveTask(tableGroup.getTaskId());
         assertRunning(task.getId());
 
         TableGroup model = (TableGroup) validateSyncTableGroupChecker.checkEditConfigModel(params);
@@ -659,7 +680,7 @@ public class ValidateSyncServiceImpl implements ValidateSyncService {
     public String removeTableGroup(String taskId, String ids) {
         Assert.hasText(taskId, "Task id can not be null");
         Assert.hasText(ids, "TableGroup ids can not be null");
-        ValidateSyncTask task = taskService.get(taskId);
+        ValidateSyncTask task = resolveTask(taskId);
         assertRunning(taskId);
         // 批量删除表
         Stream.of(StringUtil.split(ids, ",")).parallel().forEach(id -> {

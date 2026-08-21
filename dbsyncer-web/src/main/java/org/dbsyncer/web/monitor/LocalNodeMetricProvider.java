@@ -138,6 +138,13 @@ public class LocalNodeMetricProvider {
         } catch (Exception e) {
             logger.warn("采集应用指标失败: {}", e.getMessage());
         }
+        // 本机派工数：供 Follower 聚合页展示（Leader 侧仍会用权威视图覆盖）
+        try {
+            List<?> local = clusterService.listLocalAssignments();
+            vo.setFullShardCount(local == null ? 0 : local.size());
+        } catch (Exception e) {
+            logger.debug("采集本机分片数失败: {}", e.getMessage());
+        }
         return vo;
     }
 

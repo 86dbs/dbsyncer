@@ -112,8 +112,8 @@
                 <label>行数据</label>
 
                 <input type="checkbox" name="enableSchema" value="true"
-                       th:disabled="${schemaUnsupported}"
-                       th:checked="${!schemaUnsupported and task?.enableSchema}" />
+                       th:disabled="${schemaUnsupported == true}"
+                       th:checked="${task != null ? (schemaUnsupported != true and task.enableSchema) : false}" />
                 <label>表结构</label>
 <!--                <input type="checkbox" name="enableIndex" value="true" th:checked="${task?.enableIndex}" />-->
 <!--                <label>索引</label>-->
