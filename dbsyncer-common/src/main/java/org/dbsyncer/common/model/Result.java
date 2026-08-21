@@ -21,14 +21,9 @@ public class Result<T> {
     private final StringBuffer error = new StringBuffer();
 
     /**
-     * 同步任务表映射关系ID（table_group.id，用于明细关联）
+     * 同步任务表映射关系ID
      */
     private String tableGroupId;
-
-    /**
-     * 工作项 ID（整表为 tableGroupId；range 为 tableGroupId#from#to，用于围栏与进度）
-     */
-    private String workItemId;
 
     /**
      * 目标表名称
@@ -90,14 +85,6 @@ public class Result<T> {
 
     public void setTableGroupId(String tableGroupId) {
         this.tableGroupId = tableGroupId;
-    }
-
-    public String getWorkItemId() {
-        return workItemId;
-    }
-
-    public void setWorkItemId(String workItemId) {
-        this.workItemId = workItemId;
     }
 
     public String getTargetTableGroupName() {

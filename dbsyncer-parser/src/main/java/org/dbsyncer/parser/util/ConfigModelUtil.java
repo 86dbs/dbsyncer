@@ -111,15 +111,6 @@ public abstract class ConfigModelUtil {
         if (snapshot instanceof String && StringUtil.isNotBlank((String) snapshot)) {
             data.put(ConfigConstant.META_SNAPSHOT, JsonUtil.parseMap((String) snapshot));
         }
-        // START_TIME → beginTime；UPDATE_TIME → endTime（全量耗时）
-        Object startTime = data.get(ConfigConstant.META_START_TIME);
-        if (startTime != null) {
-            data.put("beginTime", startTime);
-        }
-        Object updateTime = data.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
-        if (updateTime != null) {
-            data.put("endTime", updateTime);
-        }
         Meta meta = JsonUtil.mapToObj(data, Meta.class);
         return meta == null ? new Meta() : meta;
     }

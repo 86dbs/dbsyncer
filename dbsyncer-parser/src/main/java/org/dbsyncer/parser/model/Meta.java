@@ -46,11 +46,11 @@ public class Meta extends ConfigModel {
     /**
      * 任务启动时间，落库列 START_TIME。
      */
-    private long beginTime;
+    private long startTime;
     /**
      * 任务结束时间，不单独落库；读取时取 UPDATE_TIME。
      */
-    private long endTime;
+    private long updateTime;
 
     public Meta() {
         super.setType(ConfigConstant.META);
@@ -154,19 +154,20 @@ public class Meta extends ConfigModel {
         this.snapshot = snapshot;
     }
 
-    public long getBeginTime() {
-        return beginTime;
+    public long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(long beginTime) {
-        this.beginTime = beginTime;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 
-    public long getEndTime() {
-        return endTime;
+    @Override
+    public long getUpdateTime() {
+        return updateTime;
     }
 
-    public void setEndTime(long endTime) {
-        this.endTime = endTime;
+    public void setUpdateTime(long updateTime) {
+        this.updateTime = updateTime;
     }
 }

@@ -4,7 +4,6 @@
 package org.dbsyncer.manager.deployment;
 
 import org.dbsyncer.common.enums.CommonTaskStatusEnum;
-import org.dbsyncer.common.enums.TaskLevelEnum;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
 import org.dbsyncer.common.scheduled.ScheduledTaskService;
 import org.dbsyncer.common.util.StringUtil;
@@ -16,7 +15,6 @@ import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.ModelEnum;
@@ -28,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 按租约在本节点拉起/停掉 Mapping；升主时接管 RUNNING 任务。
@@ -139,7 +136,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         try {
             managerFactory.start(mapping, true);
         } catch (Exception e) {
-            logger.debug("本节点未拉起驱动 metaId={}, err={}", metaId, e.getMessage());
+            logger.debug("本节点未拉起同步任务 metaId={}, err={}", metaId, e.getMessage());
         }
     }
 
@@ -154,7 +151,8 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         if (clusterService.areAllTablesDone(mapping.getId())) {
             return false;
         }
-        return hasIncompleteAssignedTable(mapping.getId()) || managerFactory.isLocalActive(meta.getId());
+        return /*hasIncompleteAssignedTable(mapping.getId()) || */
+                managerFactory.isLocalActive(meta.getId());
     }
 
     private void tryCompleteFull(Mapping mapping) {
@@ -203,23 +201,23 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         return ModelEnum.isIncrement(phase);
     }
 
-    private boolean hasIncompleteAssignedTable(String taskId) {
-        Meta taskMeta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
-        Map<String, String> snapshot = taskMeta == null ? null : taskMeta.getSnapshot();
-        final boolean[] hit = {false};
-        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
-            for (TableGroup group : groups) {
-                if (group == null || hit[0] || !clusterService.isTableAssignedToLocal(group.getId())) {
-                    continue;
-                }
-                Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
-                boolean done = FullTableProgressUtil.isTableFullyDone(snapshot, group.getId())
-                        || (detail != null && detail.getState() == CommonTaskStatusEnum.DONE.getCode());
-                if (!done) {
-                    hit[0] = true;
-                }
-            }
-        });
-        return hit[0];
-    }
+//    private boolean hasIncompleteAssignedTable(String taskId) {
+//        Meta taskMeta = metaProfile.getMetaByTaskId(taskId, TaskLevelEnum.TASK);
+//        Map<String, String> snapshot = taskMeta == null ? null : taskMeta.getSnapshot();
+//        final boolean[] hit = {false};
+//        tableGroupProfile.pageScanTableGroups(taskId, ConfigConstant.PAGE_SIZE, groups -> {
+//            for (TableGroup group : groups) {
+//                if (group == null || hit[0] || !clusterService.isTableAssignedToLocal(group.getId())) {
+//                    continue;
+//                }
+//                Meta detail = metaProfile.getMetaByTaskId(group.getId(), TaskLevelEnum.TASK_DETAIL);
+//                boolean done = FullTableProgressUtil.isTableFullyDone(snapshot, group.getId())
+//                        || (detail != null && detail.getState() == CommonTaskStatusEnum.DONE.getCode());
+//                if (!done) {
+//                    hit[0] = true;
+//                }
+//            }
+//        });
+//        return hit[0];
+//    }
 }

@@ -16,10 +16,10 @@ import org.dbsyncer.sdk.spi.DeploymentService;
  */
 public final class StandaloneProvider implements DeploymentService {
 
-    private final StandaloneClusterService clusterService;
+    private final StandaloneService clusterService;
 
     public StandaloneProvider(MetaProfile metaProfile) {
-        this.clusterService = new StandaloneClusterService(metaProfile);
+        this.clusterService = new StandaloneService(metaProfile);
     }
 
     @Override
