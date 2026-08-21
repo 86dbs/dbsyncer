@@ -19,6 +19,10 @@ public class TaskShardSummaryVO {
      */
     private String nodeDistribution;
     private long maxGeneration;
+    /**
+     * true 表示整增量任务级派工（itemId=taskId），计入增量任务数而非全量分片数。
+     */
+    private boolean incrementTask;
 
     public String getTaskId() {
         return taskId;
@@ -50,5 +54,13 @@ public class TaskShardSummaryVO {
 
     public void setMaxGeneration(long maxGeneration) {
         this.maxGeneration = maxGeneration;
+    }
+
+    public boolean isIncrementTask() {
+        return incrementTask;
+    }
+
+    public void setIncrementTask(boolean incrementTask) {
+        this.incrementTask = incrementTask;
     }
 }

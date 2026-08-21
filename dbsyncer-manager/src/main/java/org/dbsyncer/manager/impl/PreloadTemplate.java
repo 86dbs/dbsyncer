@@ -22,6 +22,7 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
+import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
@@ -34,6 +35,7 @@ import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -275,9 +277,16 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        if (!clusterService.isLeader()) {
-                            logger.info("非 Leader，跳过恢复驱动, taskId={}", mapping.getId());
-                            continue;
+                        if (!clusterService.isStandalone()) {
+                            if (isIncrementMapping(mapping, meta)) {
+                                if (!clusterService.isIncrementAssignedToLocal(mapping.getId())) {
+                                    logger.info("增量未分配到本节点，跳过恢复驱动, taskId={}", mapping.getId());
+                                    continue;
+                                }
+                            } else if (!clusterService.isLeader()) {
+                                logger.info("非 Leader，跳过恢复驱动, taskId={}", mapping.getId());
+                                continue;
+                            }
                         }
                         managerFactory.start(mapping, true);
                     } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
@@ -292,6 +301,22 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     public void reConnect(Mapping mapping) {
         connectorInstanceBinder.bind(mapping);
+    }
+
+    private boolean isIncrementMapping(Mapping mapping, Meta meta) {
+        if (mapping == null) {
+            return false;
+        }
+        String model = mapping.getModel();
+        if (ModelEnum.isIncrement(model)) {
+            return true;
+        }
+        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model) || meta == null) {
+            return false;
+        }
+        String phase = meta.getSnapshot() == null ? null
+                : meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
+        return ModelEnum.isIncrement(phase);
     }
 
     public void reConnect(ValidateSyncTask task) {

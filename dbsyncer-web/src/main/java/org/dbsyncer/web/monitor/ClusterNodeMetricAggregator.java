@@ -82,7 +82,8 @@ public class ClusterNodeMetricAggregator {
             return empty;
         }
         Map<String, Integer> shardByNode = resolveFullShardCounts();
-        List<ClusterNodeMetricVO> metrics = BatchTaskUtil.submit(nodes, node -> pullOne(node, shardByNode),
+        Map<String, Integer> incByNode = resolveIncrementalCounts();
+        List<ClusterNodeMetricVO> metrics = BatchTaskUtil.submit(nodes, node -> pullOne(node, shardByNode, incByNode),
                 Math.min(PULL_CONCURRENCY, Math.max(1, nodes.size())), logger);
         ClusterMetricsOverviewVO overview = new ClusterMetricsOverviewVO();
         double totalTps = 0D;
@@ -105,7 +106,8 @@ public class ClusterNodeMetricAggregator {
         return overview;
     }
 
-    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> shardByNode) {
+    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> shardByNode,
+                                        Map<String, Integer> incByNode) {
         ClusterNodeMetricVO vo;
         if (node.isLocal()) {
             vo = localNodeMetricProvider.snapshot();
@@ -113,9 +115,12 @@ public class ClusterNodeMetricAggregator {
             vo = pullRemote(node);
         }
         fillIdentity(vo, node);
-        // Leader 有权威派工视图时覆盖；Follower 保留各节点 /metrics 自报的本机分片数
+        // Leader 有权威派工视图时覆盖；Follower 保留各节点 /metrics 自报
         if (!shardByNode.isEmpty()) {
             vo.setFullShardCount(shardByNode.getOrDefault(node.getId(), 0));
+        }
+        if (!incByNode.isEmpty()) {
+            vo.setIncrementalCount(incByNode.getOrDefault(node.getId(), 0));
         }
         return vo;
     }
@@ -185,9 +190,17 @@ public class ClusterNodeMetricAggregator {
     }
 
     private Map<String, Integer> resolveFullShardCounts() {
+        return resolveAssignmentCounts(false);
+    }
+
+    private Map<String, Integer> resolveIncrementalCounts() {
+        return resolveAssignmentCounts(true);
+    }
+
+    private Map<String, Integer> resolveAssignmentCounts(boolean incrementTask) {
         Map<String, Integer> counts = new LinkedHashMap<>();
         if (!clusterService.isLeader()) {
-            // Follower 无权威派工内存；分片数改由各节点 metrics.fullShardCount 汇总
+            // Follower 无权威派工内存；改由各节点 metrics 自报汇总
             return counts;
         }
         try {
@@ -196,7 +209,10 @@ public class ClusterNodeMetricAggregator {
                 return counts;
             }
             for (TaskShardSummaryVO item : shards) {
-                String dist = item == null ? null : item.getNodeDistribution();
+                if (item == null || item.isIncrementTask() != incrementTask) {
+                    continue;
+                }
+                String dist = item.getNodeDistribution();
                 if (StringUtil.isBlank(dist) || StringUtil.equals("-", dist)) {
                     continue;
                 }
@@ -223,7 +239,7 @@ public class ClusterNodeMetricAggregator {
                 }
             }
         } catch (Exception e) {
-            logger.warn("汇总分片数失败: {}", e.getMessage());
+            logger.warn("汇总派工数失败(increment={}): {}", incrementTask, e.getMessage());
         }
         return counts;
     }

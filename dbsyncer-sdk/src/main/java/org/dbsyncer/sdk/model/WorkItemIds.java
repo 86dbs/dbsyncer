@@ -120,6 +120,17 @@ public final class WorkItemIds {
     }
 
     /**
+     * 是否为任务级整项（增量 Mapping 派工：itemId 与 taskId 相同，不拆表）。
+     *
+     * @param taskId 任务 ID
+     * @param itemId 工作项 ID
+     * @return true 任务级
+     */
+    public static boolean isTaskLevelItem(String taskId, String itemId) {
+        return StringUtil.isNotBlank(taskId) && StringUtil.equals(taskId, itemId);
+    }
+
+    /**
      * 解析数值闭区间 range；非 RANGE 返回 null。
      *
      * @param itemId 工作项 ID

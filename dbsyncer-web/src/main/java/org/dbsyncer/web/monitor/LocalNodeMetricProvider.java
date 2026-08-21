@@ -16,6 +16,8 @@ import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NetUtil;
+import org.dbsyncer.sdk.model.WorkItemAssignment;
+import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.monitor.ValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
@@ -138,10 +140,25 @@ public class LocalNodeMetricProvider {
         } catch (Exception e) {
             logger.warn("采集应用指标失败: {}", e.getMessage());
         }
-        // 本机派工数：供 Follower 聚合页展示（Leader 侧仍会用权威视图覆盖）
+        // 本机派工：全量分片与增量整任务分开计数
         try {
-            List<?> local = clusterService.listLocalAssignments();
-            vo.setFullShardCount(local == null ? 0 : local.size());
+            List<WorkItemAssignment> local = clusterService.listLocalAssignments();
+            int full = 0;
+            int inc = 0;
+            if (local != null) {
+                for (WorkItemAssignment a : local) {
+                    if (a == null) {
+                        continue;
+                    }
+                    if (WorkItemIds.isTaskLevelItem(a.getTaskId(), a.getItemId())) {
+                        inc++;
+                    } else {
+                        full++;
+                    }
+                }
+            }
+            vo.setFullShardCount(full);
+            vo.setIncrementalCount(inc);
         } catch (Exception e) {
             logger.debug("采集本机分片数失败: {}", e.getMessage());
         }

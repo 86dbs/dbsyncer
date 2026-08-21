@@ -12,6 +12,7 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.ClusterNodeStatusEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.model.WorkItemAssignment;
+import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -101,6 +102,9 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
                 created.setTaskId(id);
                 return created;
             });
+            if (WorkItemIds.isTaskLevelItem(item.getTaskId(), item.getItemId())) {
+                vo.setIncrementTask(true);
+            }
             vo.setShardCount(vo.getShardCount() + 1);
             if (item.getGeneration() > vo.getMaxGeneration()) {
                 vo.setMaxGeneration(item.getGeneration());

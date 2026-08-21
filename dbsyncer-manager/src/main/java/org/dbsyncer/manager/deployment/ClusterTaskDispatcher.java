@@ -103,7 +103,11 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
             return;
         }
         String model = mapping.getModel();
-        if (ModelEnum.isFull(model) && !isIncrementPhase(meta, model)) {
+        if (ModelEnum.isIncrement(model) || isIncrementPhase(meta, model)) {
+            clusterService.assignIncrementMapping(mapping.getId());
+            return;
+        }
+        if (ModelEnum.isFull(model)) {
             clusterService.assignTableGroups(mapping.getId());
         }
     }
@@ -149,7 +153,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         }
         String model = mapping.getModel();
         if (ModelEnum.isIncrement(model) || isIncrementPhase(meta, model)) {
-            return clusterService.isLeader();
+            return clusterService.isIncrementAssignedToLocal(mapping.getId());
         }
         if (clusterService.areAllTablesDone(mapping.getId())) {
             return false;
@@ -176,6 +180,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         if (StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model)) {
             Meta latest = metaProfile.getMeta(mapping.getMetaId());
             markIncrementPhase(latest != null ? latest : meta);
+            clusterService.assignIncrementMapping(mapping.getId());
             return;
         }
         managerFactory.changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);

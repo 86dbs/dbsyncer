@@ -152,6 +152,24 @@ public interface ClusterService {
     }
 
     /**
+     * Leader 将整增量 Mapping 粘滞派工到一台在线节点（不拆表）。单机空操作。
+     *
+     * @param mappingId 驱动/Mapping ID
+     */
+    default void assignIncrementMapping(String mappingId) {
+    }
+
+    /**
+     * 增量 Mapping 是否分配给本节点执行。单机恒 true。
+     *
+     * @param mappingId 驱动/Mapping ID
+     * @return true 应在本节点拉起 Listener
+     */
+    default boolean isIncrementAssignedToLocal(String mappingId) {
+        return true;
+    }
+
+    /**
      * 任务下全部 TableGroup 是否已完成。单机恒 true。
      *
      * @param taskId 任务/Mapping ID
