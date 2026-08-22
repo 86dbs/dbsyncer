@@ -170,6 +170,14 @@ public interface ClusterService {
     }
 
     /**
+     * Leader 清除某任务的全部派工（停止/完成/非 RUNNING 时调用）。单机空操作。
+     *
+     * @param taskId 任务/Mapping ID
+     */
+    default void clearTaskAssignments(String taskId) {
+    }
+
+    /**
      * 任务下全部 TableGroup 是否已完成。单机恒 true。
      *
      * @param taskId 任务/Mapping ID

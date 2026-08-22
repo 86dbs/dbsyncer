@@ -100,6 +100,8 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
         }
         Meta meta = metaProfile.getMeta(mapping.getMetaId());
         if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
+            // 未运行/已结束：清掉残留派工，避免集群页仍显示分片/增量数
+            clusterService.clearTaskAssignments(mapping.getId());
             return;
         }
         String model = mapping.getModel();
@@ -183,6 +185,7 @@ public class ClusterTaskDispatcher implements LeaderLifecycleListener, Scheduled
             clusterService.assignIncrementMapping(mapping.getId());
             return;
         }
+        clusterService.clearTaskAssignments(mapping.getId());
         managerFactory.changeMetaState(mapping.getMetaId(), CommonTaskStatusEnum.READY);
     }
 

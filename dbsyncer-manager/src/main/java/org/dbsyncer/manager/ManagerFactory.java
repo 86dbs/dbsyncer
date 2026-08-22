@@ -40,6 +40,10 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
     @Override
     public void onApplicationEvent(ClosedEvent event) {
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
+        Meta meta = metaProfile.getMeta(event.getMetaId());
+        if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
+            clusterService.clearTaskAssignments(meta.getTaskId());
+        }
     }
 
     public void start(Mapping mapping) {
@@ -75,6 +79,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         } catch (Exception e) {
             if (!alreadyRunning) {
                 changeMetaState(metaId, CommonTaskStatusEnum.READY);
+                clusterService.clearTaskAssignments(mapping.getId());
             }
             throw new ManagerException(e.getMessage());
         }
@@ -88,6 +93,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
         puller.close(metaId);
+        clusterService.clearTaskAssignments(mapping.getId());
     }
 
     /**
