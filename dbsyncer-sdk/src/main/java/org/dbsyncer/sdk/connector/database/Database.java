@@ -11,7 +11,6 @@ import org.dbsyncer.sdk.enums.SqlBuilderEnum;
 import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.PageSql;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
 import org.dbsyncer.sdk.plugin.ReaderContext;
 
 import java.util.List;
@@ -77,9 +76,6 @@ public interface Database {
 
     /**
      * 追加主键和参数占位符
-     *
-     * @param sql
-     * @param primaryKeys
      */
     default void appendPrimaryKeys(StringBuilder sql, List<String> primaryKeys) {
         if (CollectionUtils.isEmpty(primaryKeys)) {
@@ -91,33 +87,21 @@ public interface Database {
 
     /**
      * 获取分页SQL
-     *
-     * @param config
-     * @return
      */
     String getPageSql(PageSql config);
 
     /**
      * 获取分页参数
-     *
-     * @param context
-     * @return
      */
     Object[] getPageArgs(ReaderContext context);
 
     /**
      * 获取游标分页SQL
-     *
-     * @param pageSql
-     * @return
      */
     String getPageCursorSql(PageSql pageSql);
 
     /**
      * 获取游标分页参数
-     *
-     * @param context
-     * @return
      */
     Object[] getPageCursorArgs(ReaderContext context);
 
@@ -193,34 +177,8 @@ public interface Database {
 
     /**
      * 替换ddl语句中的catalog
-     *
-     * @param connectorInstance
-     * @param alter
-     * @return
      */
     default String buildAlterCatalog(DatabaseConnectorInstance connectorInstance, Alter alter) {
         return alter.toString();
-    }
-
-    /**
-     * 是否支持将 HASH_MOD 切片条件下推到 SQL（如 CRC32(pk)%N）。
-     * <p>不支持时字符串/UUID 主键不做表内切分，避免每节点扫全表。
-     *
-     * @return true 可下推
-     */
-    default boolean supportsHashModShard() {
-        return false;
-    }
-
-    /**
-     * 构建 HASH_MOD 过滤条件，并向 args 追加参数。
-     *
-     * @param shard   切片
-     * @param args    参数列表
-     * @param pkField 主键字段（可无 name 时从 shard.payload 取）
-     * @return SQL 片段；无法构建返回 null
-     */
-    default String buildHashModCondition(ShardSpec shard, List<Object> args, Field pkField) {
-        return null;
     }
 }

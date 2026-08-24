@@ -22,14 +22,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @version 1.0.0
  * @date 2026-08-18
  */
-public final class StandaloneClusterService implements ClusterService {
+public final class StandaloneService implements ClusterService {
 
     public static final String NODE_ID = "standalone";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<LeaderLifecycleListener> listeners = new CopyOnWriteArrayList<>();
 
-    public StandaloneClusterService(MetaProfile metaProfile) {
+    public StandaloneService(MetaProfile metaProfile) {
         // metaProfile 保留构造参数以兼容既有注入，单机派工不再依赖租约列
     }
 

@@ -5,7 +5,6 @@ package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Table;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
 
 import java.util.List;
 import java.util.Map;
@@ -38,8 +37,6 @@ public abstract class AbstractBaseContext implements ReaderContext {
     private int pageIndex;
 
     private int pageSize;
-
-    private ShardSpec shard;
 
     @Override
     public ConnectorInstance getSourceConnectorInstance() {
@@ -113,14 +110,5 @@ public abstract class AbstractBaseContext implements ReaderContext {
 
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
-    }
-
-    @Override
-    public ShardSpec getShard() {
-        return shard;
-    }
-
-    public void setShard(ShardSpec shard) {
-        this.shard = shard;
     }
 }

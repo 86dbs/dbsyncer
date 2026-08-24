@@ -6,13 +6,12 @@ package org.dbsyncer.sdk.spi;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.ClusterRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
-import org.dbsyncer.sdk.model.WorkItemAssignment;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 集群控制面：选主、WorkItem 派工与围栏。单机实现恒为 Leader。
+ * 集群控制服务
  *
  * @author wuji
  * @version 1.0.0
@@ -96,16 +95,6 @@ public interface ClusterService {
     }
 
     /**
-     * 拉取指定节点当前 Assignment（仅 Leader 有权威视图；Follower 本地实现可转发）。
-     *
-     * @param nodeId 节点 ID
-     * @return 分配列表
-     */
-    default List<WorkItemAssignment> listAssignments(String nodeId) {
-        return Collections.emptyList();
-    }
-
-    /**
      * 写目标库 / 刷 Meta 前围栏：本节点仍持有该 item 的最新 generation。
      *
      * @param itemId 工作项 ID（Phase1 为 tableGroupId）
@@ -123,24 +112,6 @@ public interface ClusterService {
      */
     default long getLocalGeneration(String itemId) {
         return 0L;
-    }
-
-    /**
-     * 本节点当前 Assignment 快照（含整表与 range item）。
-     *
-     * @return 分配列表
-     */
-    default List<WorkItemAssignment> listLocalAssignments() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Leader 全部 Assignment 快照（排障 / 任务分片详情）。
-     *
-     * @return 分配列表；非 Leader 为空
-     */
-    default List<WorkItemAssignment> listAllAssignments() {
-        return Collections.emptyList();
     }
 
     /**

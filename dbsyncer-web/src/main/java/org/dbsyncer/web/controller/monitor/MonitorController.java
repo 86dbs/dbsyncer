@@ -252,8 +252,7 @@ public class MonitorController extends BaseController {
         metricResponse.setMetricName(metricEnum.getMetricName());
         if (!CollectionUtils.isEmpty(metric.getMeasurements())) {
             List<Sample> measurements = new ArrayList<>();
-            metric.getMeasurements().forEach(s ->
-                    measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
+            metric.getMeasurements().forEach(s->measurements.add(new Sample(s.getStatistic().getTagValueRepresentation(), s.getValue())));
             metricResponse.setMeasurements(measurements);
         }
         return metricResponse;

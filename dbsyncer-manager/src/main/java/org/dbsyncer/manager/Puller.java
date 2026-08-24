@@ -19,7 +19,7 @@ public interface Puller {
     void close(String metaId);
 
     /**
-     * 本进程是否已启动该驱动。
+     * 本进程是否已启动该同步任务。
      *
      * @param metaId Meta ID
      * @return true 运行中

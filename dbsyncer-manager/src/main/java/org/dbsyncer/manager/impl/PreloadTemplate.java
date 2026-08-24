@@ -39,10 +39,9 @@ import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.notice.MessageService;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.TaskService;
-import org.dbsyncer.sdk.notice.MessageService;
-import org.dbsyncer.sdk.storage.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -98,9 +97,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private PluginFactory pluginFactory;
-
-    @Resource
-    private StorageService storageService;
 
     @Resource
     private MessageService messageService;

@@ -122,7 +122,7 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
     /**
      * 该同步任务已绑定的执行器（不含通用执行器）。
      *
-     * @param metaId 驱动 Meta ID
+     * @param metaId 同步任务 Meta ID
      * @return 执行器列表
      */
     protected abstract List<AbstractBufferActuator> listBoundActuators(String metaId);
