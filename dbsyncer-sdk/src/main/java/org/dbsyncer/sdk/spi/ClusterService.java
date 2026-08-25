@@ -3,21 +3,37 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.ClusterRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
+import org.dbsyncer.sdk.model.WorkItemAssignment;
+import org.dbsyncer.sdk.model.WorkItemIds;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 集群控制服务
+ * 集群控制服务：节点角色、工作项派工与围栏。单机实现恒为 Leader。
  *
  * @author wuji
  * @version 1.0.0
  * @date 2026-08-18
  */
 public interface ClusterService {
+
+    /**
+     * 当前运行时是否启用集群能力（授权、开关、存储等门控）。默认 false。
+     *
+     * @param licenseService 许可证服务，可空
+     * @param clusterEnabled 配置开关 {@code dbsyncer.cluster.enabled}
+     * @param storageType    存储类型 {@code dbsyncer.storage.type}
+     * @return true 使用本实现作为集群控制面
+     */
+    default boolean isClusterRuntime(LicenseService licenseService, boolean clusterEnabled, String storageType) {
+        return false;
+    }
 
     /**
      * 是否单机部署。
@@ -95,9 +111,19 @@ public interface ClusterService {
     }
 
     /**
-     * 写目标库 / 刷 Meta 前围栏：本节点仍持有该 item 的最新 generation。
+     * 拉取指定节点当前 Assignment（仅 Leader 有权威视图；Follower 本地实现可转发）。
      *
-     * @param itemId 工作项 ID（Phase1 为 tableGroupId）
+     * @param nodeId 节点 ID
+     * @return 分配列表
+     */
+    default List<WorkItemAssignment> listAssignments(String nodeId) {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 写目标库 / 刷 Meta 前围栏：本节点仍持有该工作项的最新 generation。
+     *
+     * @param itemId 工作项 ID（整表为 tableGroupId，拆分项见 {@link WorkItemIds}）
      * @return true 允许产生副作用
      */
     default boolean assertWritable(String itemId) {
@@ -112,6 +138,60 @@ public interface ClusterService {
      */
     default long getLocalGeneration(String itemId) {
         return 0L;
+    }
+
+    /**
+     * 本节点当前 Assignment 快照（含整表与拆分工作项）。
+     *
+     * @return 分配列表
+     */
+    default List<WorkItemAssignment> listLocalAssignments() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 本节点应执行的表内工作项 ID；单机恒为整表。
+     *
+     * @param tableGroupId 表映射 ID
+     * @return itemId 列表
+     */
+    default List<String> resolveLocalWorkItems(String tableGroupId) {
+        if (StringUtil.isBlank(tableGroupId)) {
+            return Collections.emptyList();
+        }
+        if (isStandalone()) {
+            return Collections.singletonList(tableGroupId);
+        }
+        List<String> items = new ArrayList<>();
+        for (WorkItemAssignment assignment : listLocalAssignments()) {
+            if (assignment != null && WorkItemIds.belongsToTable(assignment.getItemId(), tableGroupId)) {
+                items.add(assignment.getItemId());
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Leader 全部 Assignment 快照（排障 / 工作项详情）。
+     *
+     * @return 分配列表；非 Leader 为空
+     */
+    default List<WorkItemAssignment> listAllAssignments() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * 启动 Mapping 前准备派工，并返回本机是否应拉起 Puller。
+     * <p>默认恒 true（单机）。集群实现：Leader 按全量/增量派工；全量阶段各节点可拉起，
+     * 增量阶段仅派工到本机的节点返回 true。
+     *
+     * @param mappingId      驱动/Mapping ID
+     * @param model          同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
+     * @param incrementPhase 是否已进入增量阶段（全量+增量切换后）
+     * @return true 本机应执行 puller.start
+     */
+    default boolean prepareMappingStart(String mappingId, String model, boolean incrementPhase) {
+        return true;
     }
 
     /**

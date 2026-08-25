@@ -36,7 +36,7 @@ public class ClusterNodeMetricVO {
     private double tps;
     private long queueUp;
     private long storageQueueUp;
-    private int fullShardCount;
+    private int fullWorkItemCount;
     private int incrementalCount;
 
     public String getNodeId() {
@@ -191,12 +191,12 @@ public class ClusterNodeMetricVO {
         this.storageQueueUp = storageQueueUp;
     }
 
-    public int getFullShardCount() {
-        return fullShardCount;
+    public int getFullWorkItemCount() {
+        return fullWorkItemCount;
     }
 
-    public void setFullShardCount(int fullShardCount) {
-        this.fullShardCount = fullShardCount;
+    public void setFullWorkItemCount(int fullWorkItemCount) {
+        this.fullWorkItemCount = fullWorkItemCount;
     }
 
     public int getIncrementalCount() {

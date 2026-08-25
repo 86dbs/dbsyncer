@@ -276,8 +276,9 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
                             vo.setErrorCount(taskMeta.getFail().get());
                         }
                         vo.setMetaState(taskMeta.getState());
-                        vo.setBeginTime(taskMeta.getBeginTime() > 0 ? taskMeta.getBeginTime() : null);
-                        vo.setEndTime(taskMeta.getEndTime() > 0 ? taskMeta.getEndTime() : null);
+                        vo.setStartTime(taskMeta.getStartTime() > 0 ? taskMeta.getStartTime() : null);
+                        vo.setEndTime(taskMeta.getUpdateTime() != null && taskMeta.getUpdateTime() > 0
+                                ? taskMeta.getUpdateTime() : null);
                     }
                     list.add(vo);
                 }

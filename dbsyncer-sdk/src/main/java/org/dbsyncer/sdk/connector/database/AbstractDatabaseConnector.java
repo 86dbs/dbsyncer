@@ -257,6 +257,104 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
+    public Object[] readCursor(DatabaseConnectorInstance connectorInstance, FullPluginContext context) {
+        if (connectorInstance == null || context == null || context.getSourceTable() == null) {
+            return null;
+        }
+        List<Field> pkFields = PrimaryKeyUtil.findPrimaryKeyFields(context.getSourceTable().getColumn());
+        if (!PrimaryKeyUtil.isSupportedCursor(pkFields)) {
+            return null;
+        }
+        Map<String, String> command = context.getCommand();
+        if (CollectionUtils.isEmpty(command)) {
+            logger.warn("读取游标失败：command 为空 table={}", context.getSourceTable().getName());
+            return null;
+        }
+        context.setPageSize(1);
+        context.setPageIndex(Math.max(1, context.getPageIndex()));
+        final int pkCount = pkFields.size();
+
+        Object[] after = context.getCursors();
+        boolean hasAfter = after != null && after.length > 0 && after[0] != null;
+        if (hasAfter && after.length != pkCount) {
+            logger.warn("读取游标失败：游标列数与主键不一致 table={}, cursors={}, pks={}",
+                    context.getSourceTable().getName(), after.length, pkCount);
+            return null;
+        }
+
+        String sql;
+        Object[] args;
+        if (hasAfter) {
+            context.setSupportedCursor(true);
+            sql = command.get(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR);
+            if (StringUtil.isBlank(sql)) {
+                logger.warn("读取游标失败：缺少 {}，请重新保存表映射以刷新 command table={}",
+                        ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR, context.getSourceTable().getName());
+                return null;
+            }
+            args = buildReadCursorArgsWithAfter(context, after);
+        } else {
+            sql = command.get(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY);
+            if (StringUtil.isBlank(sql)) {
+                logger.warn("读取游标失败：缺少 {}，请重新保存表映射以刷新 command table={}",
+                        ConnectorConstant.OPERTION_QUERY_CURSOR_KEY, context.getSourceTable().getName());
+                return null;
+            }
+            args = getPageArgs(context);
+        }
+        if (StringUtil.isBlank(sql) || args == null) {
+            return null;
+        }
+        try {
+            return connectorInstance.execute(template -> template.query(sql, args, rs -> {
+                if (!rs.next()) {
+                    return null;
+                }
+                Object[] values = new Object[pkCount];
+                for (int i = 0; i < pkCount; i++) {
+                    Object value = rs.getObject(i + 1);
+                    if (value == null) {
+                        return null;
+                    }
+                    values[i] = value;
+                }
+                return values;
+            }));
+        } catch (Exception e) {
+            logger.warn("读取游标失败 table={}, err={}", context.getSourceTable().getName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 游标起点后取点：pageIndex=1 用 {@link #getPageCursorArgs}；
+     * pageIndex&gt;1 时拼接 {@code buildCursorArgs + getPageArgs}，
+     * 要求该方言游标 SQL 尾部占位与 OFFSET 分页一致（LIMIT/OFFSET、BETWEEN 等）。
+     */
+    private Object[] buildReadCursorArgsWithAfter(FullPluginContext context, Object[] after) {
+        if (context.getPageIndex() <= 1) {
+            return getPageCursorArgs(context);
+        }
+        if (!supportsCursorWindowOffset()) {
+            return null;
+        }
+        Object[] cursorArgs = buildCursorArgs(after);
+        Object[] pageArgs = getPageArgs(context);
+        if (cursorArgs == null || pageArgs == null) {
+            return null;
+        }
+        Object[] args = new Object[cursorArgs.length + pageArgs.length];
+        System.arraycopy(cursorArgs, 0, args, 0, cursorArgs.length);
+        System.arraycopy(pageArgs, 0, args, cursorArgs.length, pageArgs.length);
+        return args;
+    }
+
+    @Override
+    public boolean supportsCursorWindowOffset() {
+        return true;
+    }
+
+    @Override
     public long getCount(DatabaseConnectorInstance connectorInstance, MetaContext metaContext) {
         Map<String, String> command = metaContext.getCommand();
         if (CollectionUtils.isEmpty(command)) {
@@ -285,8 +383,10 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     public Result reader(DatabaseConnectorInstance connectorInstance, ReaderContext context) {
         String querySql;
         String queryKey = context.getCommandKey();
+        boolean pageQuery = false;
+        boolean supportedCursor = false;
         if (StringUtil.isBlank(queryKey)) {
-            boolean supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
+            supportedCursor = context.isSupportedCursor() && context.getCursors() != null && context.getCursors().length > 0;
             if (context.isTargetConnector()) {
                 queryKey = supportedCursor ? ConnectorConstant.OPERTION_QUERY_TARGET_CURSOR : ConnectorConstant.OPERTION_QUERY_TARGET;
             } else {
@@ -294,13 +394,23 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             }
             querySql = context.getCommand().get(queryKey);
             Assert.hasText(querySql, "查询语句不能为空.");
-            Collections.addAll(context.getArgs(), supportedCursor ? getPageCursorArgs(context) : getPageArgs(context));
+            pageQuery = true;
         } else {
             FullPluginContext full = (FullPluginContext) context;
             String condition = buildQueryCondition(full.getFilter(), context.getArgs());
             querySql = context.getCommand().get(queryKey);
             Assert.hasText(querySql, "查询语句不能为空.");
             querySql = buildTargetReaderSql(querySql, condition);
+        }
+        // 游标 WHERE ? → LIMIT/OFFSET ?（分片起始由 page cursor 表达）
+        if (pageQuery && supportedCursor) {
+            Object[] cursorArgs = buildCursorArgs(context.getCursors());
+            if (cursorArgs != null) {
+                Collections.addAll(context.getArgs(), cursorArgs);
+            }
+            appendPageCursorTailArgs(context, cursorArgs == null ? 0 : cursorArgs.length);
+        } else if (pageQuery) {
+            Collections.addAll(context.getArgs(), getPageArgs(context));
         }
         final String finalQuerySql = querySql;
         // 3、执行SQL
@@ -460,9 +570,29 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         buildSql(map, SqlBuilderEnum.QUERY_CURSOR, buildSqlConfig);
         // 记录实际参与游标的主键列表，用于全量同步时获取游标占位符
         map.put(ConnectorConstant.CURSOR_PK_NAMES, StringUtil.join(primaryKeys, StringUtil.COMMA));
+        // 仅定位键 SQL（供 readCursor 复用，含过滤条件）
+        appendCursorKeyCommands(map, schema, tableName, table, queryFilterSql);
         // 获取查询总数SQL
         map.put(SqlBuilderEnum.QUERY_COUNT.getName(), getQueryCountSql(buildSqlConfig));
         return map;
+    }
+
+    /**
+     * 生成仅定位键的 OFFSET / 游标分页 SQL，写入 command（与 QUERY_CURSOR 相同主键集合，支持复合主键）。
+     */
+    private void appendCursorKeyCommands(Map<String, String> map, String schema, String tableName,
+                                         Table table, String queryFilterSql) {
+        List<Field> pkFields = PrimaryKeyUtil.findPrimaryKeyFields(table.getColumn());
+        if (!PrimaryKeyUtil.isSupportedCursor(pkFields)) {
+            return;
+        }
+        List<String> cursorPks = pkFields.stream().map(Field::getName).collect(Collectors.toList());
+        SqlBuilderConfig cursorKeyConfig = new SqlBuilderConfig(this, schema, tableName, cursorPks, pkFields, queryFilterSql);
+        map.put(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY, SqlBuilderEnum.QUERY.getSqlBuilder().buildSql(cursorKeyConfig));
+        String cursorKeyCursorSql = SqlBuilderEnum.QUERY_CURSOR.getSqlBuilder().buildSql(cursorKeyConfig);
+        if (StringUtil.isNotBlank(cursorKeyCursorSql)) {
+            map.put(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR, cursorKeyCursorSql);
+        }
     }
 
     private Map<String, String> getSourceCommandWithSQL(CommandConfig commandConfig) {
@@ -734,6 +864,22 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
         }
 
         return cursorArgs;
+    }
+
+    /**
+     * 追加各方言 getPageCursorArgs 中游标条件之后的分页尾参（LIMIT/OFFSET 等）。
+     *
+     * @param context          读上下文
+     * @param cursorArgsLength 已写入的游标条件参数个数
+     */
+    private void appendPageCursorTailArgs(ReaderContext context, int cursorArgsLength) {
+        Object[] pageCursorArgs = getPageCursorArgs(context);
+        if (pageCursorArgs == null || pageCursorArgs.length <= cursorArgsLength) {
+            return;
+        }
+        for (int i = cursorArgsLength; i < pageCursorArgs.length; i++) {
+            context.getArgs().add(pageCursorArgs[i]);
+        }
     }
 
     /**

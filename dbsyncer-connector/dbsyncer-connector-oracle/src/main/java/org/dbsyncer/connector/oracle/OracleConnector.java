@@ -329,6 +329,14 @@ public class OracleConnector extends AbstractDatabaseConnector {
         return newCursors;
     }
 
+    /**
+     * Oracle 游标 SQL 仅 ROWNUM 截断，不支持窗口内 OFFSET。
+     */
+    @Override
+    public boolean supportsCursorWindowOffset() {
+        return false;
+    }
+
     @Override
     public String buildModifyColumnsSql(DatabaseConnectorInstance targetInstance, ValidateSyncTask task,
                                         String targetTableName, List<Field> sourceDefinitions,

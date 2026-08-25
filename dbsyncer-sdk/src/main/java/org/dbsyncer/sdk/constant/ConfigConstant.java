@@ -78,7 +78,7 @@ public class ConfigConstant {
      */
     public static final String META_TASK_ID = "taskId";
     /**
-     * 任务启动时间（列 START_TIME），对应 Meta.beginTime
+     * 任务开始时间（列 START_TIME），对应 Meta.startTime
      */
     public static final String META_START_TIME = "startTime";
     public static final String META_STATE = "state";

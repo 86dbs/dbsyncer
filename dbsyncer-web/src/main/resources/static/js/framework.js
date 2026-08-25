@@ -854,8 +854,8 @@ function formatCount(value) {
 }
 
 // 追加耗时信息
-function formatElapsedDuration(beginTime, endTime) {
-    const begin = Number(beginTime);
+function formatElapsedDuration(startTime, endTime) {
+    const begin = Number(startTime);
     const end = Number(endTime);
     if (!begin || !end || end <= begin) {
         return '';
@@ -875,7 +875,7 @@ function formatElapsedDuration(beginTime, endTime) {
 }
 
 function appendElapsedTime(content, meta) {
-    const text = formatElapsedDuration(meta.beginTime, meta.endTime);
+    const text = formatElapsedDuration(meta.startTime, meta.updateTime);
     if (!text) {
         return;
     }

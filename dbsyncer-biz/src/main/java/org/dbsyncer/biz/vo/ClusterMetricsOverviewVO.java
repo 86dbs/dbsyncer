@@ -16,7 +16,7 @@ import java.util.List;
 public class ClusterMetricsOverviewVO {
 
     private double totalTps;
-    private long totalFullShards;
+    private long totalFullWorkItems;
     private long totalIncremental;
     private List<ClusterNodeMetricVO> nodes = new ArrayList<>();
 
@@ -28,12 +28,12 @@ public class ClusterMetricsOverviewVO {
         this.totalTps = totalTps;
     }
 
-    public long getTotalFullShards() {
-        return totalFullShards;
+    public long getTotalFullWorkItems() {
+        return totalFullWorkItems;
     }
 
-    public void setTotalFullShards(long totalFullShards) {
-        this.totalFullShards = totalFullShards;
+    public void setTotalFullWorkItems(long totalFullWorkItems) {
+        this.totalFullWorkItems = totalFullWorkItems;
     }
 
     public long getTotalIncremental() {

@@ -68,6 +68,16 @@ public class ConnectorConstant {
     public static final String CURSOR_PK_NAMES = "CURSOR_PK_NAMES";
 
     /**
+     * 仅定位键 OFFSET 分页查询（用于读取游标点）
+     */
+    public static final String OPERTION_QUERY_CURSOR_KEY = "QUERY_CURSOR_KEY";
+
+    /**
+     * 仅定位键游标分页查询（用于读取游标点）
+     */
+    public static final String OPERTION_QUERY_CURSOR_KEY_CURSOR = "QUERY_CURSOR_KEY_CURSOR";
+
+    /**
      * 查询过滤条件
      */
     public static final String OPERTION_QUERY_FILTER = "QUERY_FILTER";

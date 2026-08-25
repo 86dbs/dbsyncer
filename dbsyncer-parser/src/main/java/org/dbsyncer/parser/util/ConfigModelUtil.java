@@ -130,7 +130,7 @@ public abstract class ConfigModelUtil {
         params.put(ConfigConstant.CONFIG_MODEL_ID, meta.getId());
         params.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, meta.getCreateTime());
         params.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, meta.getUpdateTime());
-        params.put(ConfigConstant.META_START_TIME, meta.getBeginTime());
+        params.put(ConfigConstant.META_START_TIME, meta.getStartTime());
         params.put(ConfigConstant.META_TASK_ID, meta.getTaskId());
         params.put(ConfigConstant.META_STATE, meta.getState());
         params.put(ConfigConstant.META_IS_TASK_DETAIL, meta.getIsTaskDetail());

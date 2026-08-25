@@ -211,12 +211,12 @@
     function updateTaskSummary(overview) {
         if (!overview) {
             $('#clusterTpsTotal').text('-');
-            $('#clusterShardTotal').text('-');
+            $('#clusterWorkItemTotal').text('-');
             $('#clusterIncTotal').text('-');
             return;
         }
         $('#clusterTpsTotal').text(formatDash(overview.totalTps));
-        $('#clusterShardTotal').text(formatDash(overview.totalFullShards));
+        $('#clusterWorkItemTotal').text(formatDash(overview.totalFullWorkItems));
         $('#clusterIncTotal').text(formatDash(overview.totalIncremental));
     }
 
@@ -239,7 +239,7 @@
             return '<tr>'
                 + '<td>' + escapeHtml(name) + '</td>'
                 + '<td>' + escapeHtml(item.roleName || '') + '</td>'
-                + '<td>' + formatDash(item.fullShardCount) + '</td>'
+                + '<td>' + formatDash(item.fullWorkItemCount) + '</td>'
                 + '<td>' + formatDash(item.incrementalCount) + '</td>'
                 + '<td>' + tps + '</td>'
                 + '<td>' + queue + '</td>'

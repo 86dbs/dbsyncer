@@ -78,6 +78,23 @@ public abstract class PrimaryKeyUtil {
     }
 
     /**
+     * 返回单列主键字段；复合主键或不存在时返回 null。
+     *
+     * @param table 表
+     * @return 单列 PK
+     */
+    public static Field findSinglePrimaryKey(Table table) {
+        if (table == null) {
+            return null;
+        }
+        List<Field> pks = findPrimaryKeyFields(table.getColumn());
+        if (CollectionUtils.isEmpty(pks) || pks.size() != 1) {
+            return null;
+        }
+        return pks.get(0);
+    }
+
+    /**
      * 游标主键必须为可比较类型（数字、字符、日期时间等），否则会导致分页失效
      * 
      * <p>支持的类型：

@@ -9,7 +9,6 @@ import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.model.Result;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
@@ -28,8 +27,11 @@ import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
 import org.dbsyncer.parser.util.MetaLockUtil;
 import org.dbsyncer.sdk.constant.ConfigConstant;
+import org.dbsyncer.sdk.model.Field;
 import org.dbsyncer.sdk.model.MetaIncrement;
-import org.dbsyncer.sdk.model.shard.ConnectorShardSupport;
+import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.WorkItemIds;
+import org.dbsyncer.sdk.model.workitem.WorkBound;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.util.PrimaryKeyUtil;
 import org.slf4j.Logger;
@@ -171,38 +173,24 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         Meta meta = metaProfile.getMeta(task.getId());
         Assert.notNull(meta, "检查meta为空.");
         long now = Instant.now().toEpochMilli();
-        // 切主/本节点重拉起时保留原 beginTime，避免耗时被重置、整行回写冲掉 SUCCESS/SNAPSHOT
-        long beginTime = meta.getBeginTime() > 0L ? meta.getBeginTime() : now;
-        task.setBeginTime(beginTime);
+        // 切主/本节点重拉起时保留原 startTime，避免耗时被重置、整行回写冲掉 SUCCESS/SNAPSHOT
+        long startTime = meta.getStartTime() > 0L ? meta.getStartTime() : now;
+        task.setStartTime(startTime);
         task.setEndTime(now);
-        if (meta.getBeginTime() <= 0L) {
-            metaProfile.ensureStartTime(task.getId(), beginTime);
+        if (meta.getStartTime() <= 0L) {
+            metaProfile.ensureStartTime(task.getId(), startTime);
         }
-
-        Map<String, String> snapshot = meta.getSnapshot();
-        int legacyTableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()),
-                ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        int legacyPageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()),
-                ParserEnum.PAGE_INDEX.getDefaultValue());
-        String legacyCursor = snapshot.get(ParserEnum.CURSOR.getCode());
-        boolean useLegacyBreakpoint = FullTableProgressUtil.isEmpty(snapshot)
-                && (legacyTableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
-                || legacyPageIndex > ParserEnum.PAGE_INDEX.getDefaultValue()
-                || StringUtil.isNotBlank(legacyCursor));
-
         if (clusterService.isStandalone()) {
-            scanAssignedPages(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex, legacyCursor);
+            scanAssignedPages(task, mapping);
         } else {
-            runUntilClusterComplete(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex,
-                    legacyCursor);
+            runUntilClusterComplete(task, mapping);
         }
         finishTask(task);
     }
 
-    private void runUntilClusterComplete(Task task, Mapping mapping, boolean useLegacyBreakpoint,
-                                         int legacyTableGroupIndex, int legacyPageIndex, String legacyCursor) {
+    private void runUntilClusterComplete(Task task, Mapping mapping) {
         while (task.isRunning()) {
-            scanAssignedPages(task, mapping, useLegacyBreakpoint, legacyTableGroupIndex, legacyPageIndex, legacyCursor);
+            scanAssignedPages(task, mapping);
             if (!task.isRunning() || clusterService.areAllTablesDone(mapping.getId())) {
                 return;
             }
@@ -210,8 +198,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
     }
 
-    private void scanAssignedPages(Task task, Mapping mapping, boolean useLegacyBreakpoint, int legacyTableGroupIndex,
-                                   int legacyPageIndex, String legacyCursor) {
+    private void scanAssignedPages(Task task, Mapping mapping) {
         int pageSize = ConfigConstant.PAGE_SIZE;
         int pageNum = 1;
         while (task.isRunning()) {
@@ -220,17 +207,14 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 break;
             }
             List<TableGroup> page = new ArrayList<>(paging.getData());
-            int pageStartIndex = (pageNum - 1) * pageSize;
             List<TableWork> works = new ArrayList<>(page.size());
-            for (int j = 0; j < page.size(); j++) {
-                works.add(new TableWork(pageStartIndex + j, page.get(j)));
+            for (TableGroup group : page) {
+                works.add(new TableWork(group));
             }
-
             int threadNum = Math.max(1, mapping.getThreadNum());
             BatchTaskUtil.executeBySlice(works, works.size(), threadNum, (slice, executor) ->
                     BatchTaskUtil.executeWithAwait(slice, executor, work ->
-                            syncOneTable(task, mapping, work, useLegacyBreakpoint, legacyTableGroupIndex,
-                                    legacyPageIndex, legacyCursor), logger), logger);
+                            syncOneTable(task, mapping, work), logger), logger);
             pageNum++;
         }
     }
@@ -246,36 +230,27 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     private void finishTask(Task task) {
         task.setEndTime(Instant.now().toEpochMilli());
-        task.setTableGroupIndex(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        task.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
         task.setCursors(null);
         if (task.isRunning() && clusterService.isStandalone()) {
             clearFullProgress(task);
         }
     }
 
-    private void syncOneTable(Task parent, Mapping mapping, TableWork work, boolean useLegacyBreakpoint,
-                              int legacyTableGroupIndex, int legacyPageIndex, String legacyCursor) {
+    private void syncOneTable(Task parent, Mapping mapping, TableWork work) {
         if (!parent.isRunning()) {
             return;
         }
         TableGroup tableGroup = work.tableGroup;
         String tableGroupId = tableGroup.getId();
-        List<String> itemIds = ConnectorShardSupport.resolveLocalItems(clusterService, tableGroupId);
+        //获取本机WorkItems
+        List<String> itemIds = clusterService.resolveLocalWorkItems(tableGroupId);
         if (CollectionUtils.isEmpty(itemIds)) {
             return;
         }
-        int absoluteIndex = work.absoluteIndex;
 
         Meta meta = metaProfile.getMeta(parent.getId());
         Map<String, String> snapshot = meta.getSnapshot();
         if (FullTableProgressUtil.isTableFullyDone(snapshot, tableGroupId)) {
-            return;
-        }
-        // 旧断点：绝对下标之前的表视为已完成并跳过（仅整表语义）
-        if (useLegacyBreakpoint && absoluteIndex < legacyTableGroupIndex
-                && itemIds.size() == 1 && StringUtil.equals(itemIds.get(0), tableGroupId)) {
-            markItemDone(parent, tableGroupId, tableGroupId);
             return;
         }
 
@@ -283,14 +258,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             if (!parent.isRunning()) {
                 return;
             }
-            syncOneItem(parent, mapping, tableGroup, itemId, useLegacyBreakpoint, absoluteIndex,
-                    legacyTableGroupIndex, legacyPageIndex, legacyCursor);
+            syncOneItem(parent, mapping, tableGroup, itemId);
         }
     }
 
-    private void syncOneItem(Task parent, Mapping mapping, TableGroup tableGroup, String itemId,
-                             boolean useLegacyBreakpoint, int absoluteIndex, int legacyTableGroupIndex,
-                             int legacyPageIndex, String legacyCursor) {
+    private void syncOneItem(Task parent, Mapping mapping, TableGroup tableGroup, String itemId) {
         String tableGroupId = tableGroup.getId();
         Meta meta = metaProfile.getMeta(parent.getId());
         Map<String, String> snapshot = meta.getSnapshot();
@@ -301,16 +273,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         TableGroup execGroup = tableGroup;
         Task tableTask = parent.createTableTask(itemId);
         TableSyncProgress progress = FullTableProgressUtil.getOrInit(snapshot, itemId);
-        if (useLegacyBreakpoint && StringUtil.equals(itemId, tableGroupId)
-                && absoluteIndex == legacyTableGroupIndex
-                && progress.getPageIndex() == ParserEnum.PAGE_INDEX.getDefaultValue()
-                && StringUtil.isBlank(progress.getCursor())) {
-            tableTask.setPageIndex(legacyPageIndex);
-            tableTask.setCursors(PrimaryKeyUtil.getLastCursors(legacyCursor));
-        } else {
-            tableTask.setPageIndex(progress.getPageIndex() > 0 ? progress.getPageIndex() : ParserEnum.PAGE_INDEX.getDefaultValue());
-            tableTask.setCursors(PrimaryKeyUtil.getLastCursors(progress.getCursor()));
-        }
+        tableTask.setPageIndex(progress.getPageIndex() > 0 ? progress.getPageIndex() : ParserEnum.PAGE_INDEX.getDefaultValue());
+        tableTask.setCursors(resolveItemStartCursors(itemId, progress.getCursor(), tableGroup.getSourceTable()));
+        tableTask.setProcessed(Math.max(0L, progress.getProcessed()));
 
         try {
             if (!awaitItemRetryWindow(parent, itemId)) {
@@ -333,6 +298,54 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                     itemId, failState.consecutive, Math.max(0L, failState.nextRetryAtMs - System.currentTimeMillis()),
                     e.getMessage(), e);
             logService.log(LogType.SystemLog.ERROR, e.getMessage());
+        }
+    }
+
+    /**
+     * 项内续跑用进度游标；无进度时用 CURSOR_BATCH 的排他起始游标（走 pk &gt; from 分页）。
+     */
+    private static Object[] resolveItemStartCursors(String itemId, String progressCursor, Table sourceTable) {
+        int expectedPkCount = countSupportedCursorPks(sourceTable);
+        Object[] cursors = PrimaryKeyUtil.getLastCursors(progressCursor);
+        if (cursors != null && cursors.length > 0) {
+            assertCursorColumnCount(itemId, cursors, expectedPkCount);
+            return cursors;
+        }
+        if (!WorkItemIds.isCursorBatch(itemId)) {
+            return cursors;
+        }
+        WorkBound bound = WorkItemIds.toWorkBound(itemId);
+        if (bound == null) {
+            return cursors;
+        }
+        String from = bound.getFrom();
+        if (StringUtil.isBlank(from)) {
+            return cursors;
+        }
+        Object[] fromCursors = PrimaryKeyUtil.getLastCursors(from);
+        if (fromCursors == null || fromCursors.length == 0) {
+            return cursors;
+        }
+        assertCursorColumnCount(itemId, fromCursors, expectedPkCount);
+        return fromCursors;
+    }
+
+    private static int countSupportedCursorPks(Table sourceTable) {
+        if (sourceTable == null) {
+            return 0;
+        }
+        List<Field> pkFields = PrimaryKeyUtil.findPrimaryKeyFields(sourceTable.getColumn());
+        if (CollectionUtils.isEmpty(pkFields) || !PrimaryKeyUtil.isSupportedCursor(pkFields)) {
+            return 0;
+        }
+        return pkFields.size();
+    }
+
+    private static void assertCursorColumnCount(String itemId, Object[] cursors, int expectedPkCount) {
+        if (expectedPkCount > 0 && cursors != null && cursors.length != expectedPkCount) {
+            throw new IllegalStateException(String.format(
+                    "CURSOR_BATCH 起始游标列数不匹配 itemId=%s, expected=%d, actual=%d",
+                    itemId, expectedPkCount, cursors.length));
         }
     }
 
@@ -399,6 +412,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 TableSyncProgress progress = new TableSyncProgress();
                 progress.setPageIndex(task.getPageIndex());
                 progress.setCursor(StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
+                progress.setProcessed(Math.max(0L, task.getProcessed()));
                 progress.setDone(false);
                 progress.setGeneration(clusterService.getLocalGeneration(itemId));
                 long successDelta = result == null || result.getSuccessData() == null ? 0L : result.getSuccessData().size();
@@ -452,6 +466,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             TableSyncProgress progress = new TableSyncProgress();
             progress.setPageIndex(ParserEnum.PAGE_INDEX.getDefaultValue());
             progress.setCursor(StringUtil.EMPTY);
+            progress.setProcessed(0L);
             progress.setDone(true);
             progress.setGeneration(clusterService.getLocalGeneration(itemId));
             if (!metaProfile.mergeTableProgress(parent.getId(), itemId, progress)) {
@@ -482,15 +497,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
             refreshMetaTotals(meta, task, true);
-            meta.setBeginTime(task.getBeginTime());
-            meta.setEndTime(task.getEndTime());
+            meta.setStartTime(task.getStartTime());
             meta.setUpdateTime(Instant.now().toEpochMilli());
             Map<String, String> snapshot = meta.getSnapshot();
             FullTableProgressUtil.clear(snapshot);
-            snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
-            snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
-            snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(),
-                    String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
+            FullTableProgressUtil.removeLegacyTaskBreakpointKeys(snapshot);
             profileComponent.editConfigModel(meta);
         }
     }
@@ -511,8 +522,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             meta.getTotal().set(finished);
         }
         Task root = task.getParent() != null ? task.getParent() : task;
-        meta.setBeginTime(root.getBeginTime());
-        meta.setEndTime(root.getEndTime());
+        meta.setStartTime(root.getStartTime());
+        meta.setUpdateTime(root.getEndTime());
     }
 
     private Object metaLock(String metaId) {
@@ -520,14 +531,12 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     /**
-     * 带绝对下标的表任务（用于旧断点兼容）。
+     * 表任务包装。
      */
     private static final class TableWork {
-        private final int absoluteIndex;
         private final TableGroup tableGroup;
 
-        private TableWork(int absoluteIndex, TableGroup tableGroup) {
-            this.absoluteIndex = absoluteIndex;
+        private TableWork(TableGroup tableGroup) {
             this.tableGroup = tableGroup;
         }
     }

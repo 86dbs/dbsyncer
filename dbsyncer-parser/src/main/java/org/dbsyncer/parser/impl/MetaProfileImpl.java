@@ -307,7 +307,7 @@ public class MetaProfileImpl implements MetaProfile {
             return false;
         }
         Meta meta = getMeta(metaId);
-        if (meta == null || meta.getBeginTime() > 0L) {
+        if (meta == null || meta.getStartTime() > 0L) {
             return true;
         }
         Map<String, Object> params = new HashMap<>(2);
@@ -318,7 +318,7 @@ public class MetaProfileImpl implements MetaProfile {
             return true;
         }
         Meta latest = getMeta(metaId);
-        return latest != null && latest.getBeginTime() > 0L;
+        return latest != null && latest.getStartTime() > 0L;
     }
 
     @Override

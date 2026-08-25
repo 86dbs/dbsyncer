@@ -23,7 +23,7 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
     /** 任务级 Meta.state（本轮业务态，含 DONE=3） */
     private Integer metaState;
     /** 本轮执行开始时间（任务级 Meta） */
-    private Long beginTime;
+    private Long startTime;
     /** 本轮执行结束时间（任务级 Meta） */
     private Long endTime;
 
@@ -80,12 +80,12 @@ public final class ValidateSyncTaskVO extends ValidateSyncTask {
         this.metaState = metaState;
     }
 
-    public Long getBeginTime() {
-        return beginTime;
+    public Long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(Long beginTime) {
-        this.beginTime = beginTime;
+    public void setStartTime(Long startTime) {
+        this.startTime = startTime;
     }
 
     public Long getEndTime() {

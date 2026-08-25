@@ -4,23 +4,23 @@
 package org.dbsyncer.biz.vo;
 
 /**
- * 任务分片汇总（Leader 内存 Assignment 视图）。
+ * 任务工作项汇总（Leader 内存 Assignment 视图）。
  *
  * @author wuji
  * @version 1.0.0
  * @date 2026-08-19
  */
-public class TaskShardSummaryVO {
+public class TaskWorkItemSummaryVO {
 
     private String taskId;
-    private int shardCount;
+    private int workItemCount;
     /**
      * 节点分布，如 nodeA:3, nodeB:2
      */
     private String nodeDistribution;
     private long maxGeneration;
     /**
-     * true 表示整增量任务级派工（itemId=taskId），计入增量任务数而非全量分片数。
+     * true 表示整增量任务级派工（itemId=taskId），计入增量任务数而非全量工作项数。
      */
     private boolean incrementTask;
 
@@ -32,12 +32,12 @@ public class TaskShardSummaryVO {
         this.taskId = taskId;
     }
 
-    public int getShardCount() {
-        return shardCount;
+    public int getWorkItemCount() {
+        return workItemCount;
     }
 
-    public void setShardCount(int shardCount) {
-        this.shardCount = shardCount;
+    public void setWorkItemCount(int workItemCount) {
+        this.workItemCount = workItemCount;
     }
 
     public String getNodeDistribution() {

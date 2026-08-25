@@ -5,17 +5,20 @@ package org.dbsyncer.sdk.model;
 
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.enums.ShardSupportEnum;
-import org.dbsyncer.sdk.model.shard.ShardSpec;
+import org.dbsyncer.sdk.enums.WorkBoundType;
+import org.dbsyncer.sdk.model.workitem.WorkBound;
 
-import java.util.Collections;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
- * WorkItem ID 约定：
+ * 工作项 ID 约定：
  * <ul>
  *   <li>整表：{@code tableGroupId}</li>
- *   <li>数值 RANGE：{@code tableGroupId#from#to}</li>
- *   <li>HASH：{@code tableGroupId#h#mod#index}</li>
+ *   <li>游标分批：{@code tableGroupId#cb#startCursor#budget}（startCursor 经 URL 编码，可空；
+ *       复合主键为逗号拼接后整体编码，与进度游标格式一致；budget 为正整数行预算；start 表示排他游标）</li>
  *   <li>OFFSET：{@code tableGroupId#o#start#end}</li>
  *   <li>PARTITION（解析预留）：{@code tableGroupId#p#id}</li>
  * </ul>
@@ -27,35 +30,25 @@ import java.util.Collections;
 public final class WorkItemIds {
 
     private static final char SEP = '#';
-    private static final String MARK_HASH = "#h#";
     private static final String MARK_OFFSET = "#o#";
     private static final String MARK_PARTITION = "#p#";
+    private static final String MARK_CURSOR_BATCH = "#cb#";
+    private static final String UTF_8 = StandardCharsets.UTF_8.name();
 
     private WorkItemIds() {
     }
 
     /**
-     * 组装数值 range itemId。
-     *
-     * @param tableGroupId  表映射 ID
-     * @param fromInclusive 下界（含）
-     * @param toInclusive   上界（含）
-     * @return itemId
-     */
-    public static String rangeOf(String tableGroupId, long fromInclusive, long toInclusive) {
-        return tableGroupId + SEP + fromInclusive + SEP + toInclusive;
-    }
-
-    /**
-     * HASH 取模 itemId。
+     * 游标分批 itemId：排他起始游标 + 行预算。
      *
      * @param tableGroupId 表映射 ID
-     * @param mod          模数
-     * @param index        桶下标
+     * @param startCursor  排他起始游标文本；空表示表头
+     * @param rowBudget    本项最多读取行数（须 &gt; 0）
      * @return itemId
      */
-    public static String hashOf(String tableGroupId, int mod, int index) {
-        return tableGroupId + MARK_HASH + mod + SEP + index;
+    public static String cursorBatchOf(String tableGroupId, String startCursor, long rowBudget) {
+        long budget = Math.max(1L, rowBudget);
+        return tableGroupId + MARK_CURSOR_BATCH + encode(startCursor) + SEP + budget;
     }
 
     /**
@@ -71,28 +64,28 @@ public final class WorkItemIds {
     }
 
     /**
-     * 是否为表内切片 item（非整表）。
+     * 是否为带边界的拆分工作项（非整表）。
      *
      * @param itemId 工作项 ID
-     * @return true 切片
+     * @return true 已拆分
      */
-    public static boolean isShard(String itemId) {
-        return parseShard(itemId) != null;
+    public static boolean isSplitItem(String itemId) {
+        return parseBound(itemId) != null;
     }
 
     /**
-     * 是否 range item。
+     * 是否游标分批工作项。
      *
      * @param itemId 工作项 ID
-     * @return true range
+     * @return true 游标分批
      */
-    public static boolean isRange(String itemId) {
-        ShardRef ref = parseShard(itemId);
-        return ref != null && ref.getCapability() == ShardSupportEnum.RANGE;
+    public static boolean isCursorBatch(String itemId) {
+        BoundRef ref = parseBound(itemId);
+        return ref != null && ref.getType() == WorkBoundType.CURSOR_BATCH;
     }
 
     /**
-     * 解析所属表映射 ID（整表或切片）。
+     * 解析所属表映射 ID（整表或拆分项）。
      *
      * @param itemId 工作项 ID
      * @return tableGroupId；非法为空
@@ -101,7 +94,7 @@ public final class WorkItemIds {
         if (StringUtil.isBlank(itemId)) {
             return StringUtil.EMPTY;
         }
-        ShardRef ref = parseShard(itemId);
+        BoundRef ref = parseBound(itemId);
         return ref == null ? itemId : ref.getTableGroupId();
     }
 
@@ -131,171 +124,137 @@ public final class WorkItemIds {
     }
 
     /**
-     * 解析数值闭区间 range；非 RANGE 返回 null。
-     *
-     * @param itemId 工作项 ID
-     * @return Range 或 null
-     */
-    public static Range parse(String itemId) {
-        ShardRef ref = parseShard(itemId);
-        if (ref == null || ref.getCapability() != ShardSupportEnum.RANGE) {
-            return null;
-        }
-        if (!NumberUtil.isCreatable(ref.getPart1()) || !NumberUtil.isCreatable(ref.getPart2())) {
-            return null;
-        }
-        long from = NumberUtil.toLong(ref.getPart1());
-        long to = NumberUtil.toLong(ref.getPart2());
-        if (to < from) {
-            return null;
-        }
-        return new Range(ref.getTableGroupId(), from, to);
-    }
-
-    /**
-     * 从 itemId 还原可执行的 ShardSpec（无 pk 时由连接器再用表元数据补）。
+     * 从 itemId 还原可执行边界（无 pk 时由执行侧再用表元数据补）。
      *
      * @param itemId 工作项
-     * @return ShardSpec；整表或无法解析为 null
+     * @return 边界；整表或无法解析为 null
      */
-    public static ShardSpec toShardSpec(String itemId) {
-        ShardRef ref = parseShard(itemId);
+    public static WorkBound toWorkBound(String itemId) {
+        BoundRef ref = parseBound(itemId);
         if (ref == null) {
             return null;
         }
-        switch (ref.getCapability()) {
-            case RANGE:
-                return ShardSpec.range(itemId, null, ref.getPart1(), ref.getPart2());
-            case HASH_MOD:
-                if (!NumberUtil.isCreatable(ref.getPart1()) || !NumberUtil.isCreatable(ref.getPart2())) {
+        switch (ref.getType()) {
+            case CURSOR_BATCH:
+                if (!NumberUtil.isCreatable(ref.getPart2()) || !isPlainBudgetToken(ref.getPart2())) {
                     return null;
                 }
-                return ShardSpec.hashMod(itemId, null,
-                        NumberUtil.toInt(ref.getPart1()), NumberUtil.toInt(ref.getPart2()));
+                return WorkBound.cursorBatch(itemId, null, ref.getPart1(), NumberUtil.toLong(ref.getPart2()));
             case OFFSET:
                 if (!NumberUtil.isCreatable(ref.getPart1()) || !NumberUtil.isCreatable(ref.getPart2())) {
                     return null;
                 }
-                return ShardSpec.offset(itemId, NumberUtil.toLong(ref.getPart1()), NumberUtil.toLong(ref.getPart2()));
+                return WorkBound.offset(itemId, NumberUtil.toLong(ref.getPart1()), NumberUtil.toLong(ref.getPart2()));
             case PARTITION:
-                return new ShardSpec(itemId, ShardSupportEnum.PARTITION,
-                        Collections.singletonMap(ShardSpec.KEY_PARTITION_ID, ref.getPart1()));
+                return WorkBound.partition(itemId, ref.getPart1());
             default:
                 return null;
         }
     }
 
     /**
-     * 解析切片引用。
+     * 解析工作项边界引用。
      *
      * @param itemId 工作项
-     * @return 切片；整表或非法为 null
+     * @return 引用；整表或非法为 null
      */
-    public static ShardRef parseShard(String itemId) {
+    public static BoundRef parseBound(String itemId) {
         if (StringUtil.isBlank(itemId)) {
             return null;
         }
-        ShardRef typed = parseTyped(itemId, MARK_HASH, ShardSupportEnum.HASH_MOD, true);
+        BoundRef typed = parseTyped(itemId, MARK_CURSOR_BATCH, WorkBoundType.CURSOR_BATCH, true, true);
         if (typed != null) {
             return typed;
         }
-        typed = parseTyped(itemId, MARK_OFFSET, ShardSupportEnum.OFFSET, true);
+        typed = parseTyped(itemId, MARK_OFFSET, WorkBoundType.OFFSET, true, false);
         if (typed != null) {
             return typed;
         }
-        typed = parseTyped(itemId, MARK_PARTITION, ShardSupportEnum.PARTITION, false);
-        if (typed != null) {
-            return typed;
-        }
-        return parseNumericRange(itemId);
+        return parseTyped(itemId, MARK_PARTITION, WorkBoundType.PARTITION, false, false);
     }
 
-    private static ShardRef parseTyped(String itemId, String mark, ShardSupportEnum capability, boolean twoParts) {
+    private static boolean isPlainBudgetToken(String token) {
+        if (StringUtil.isBlank(token)) {
+            return false;
+        }
+        for (int i = 0; i < token.length(); i++) {
+            char c = token.charAt(i);
+            if (c < '0' || c > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static BoundRef parseTyped(String itemId, String mark, WorkBoundType type,
+                                       boolean twoParts, boolean decodeParts) {
         int idx = itemId.lastIndexOf(mark);
         if (idx <= 0) {
             return null;
         }
         String tableGroupId = itemId.substring(0, idx);
         String rest = itemId.substring(idx + mark.length());
-        if (StringUtil.isBlank(tableGroupId) || StringUtil.isBlank(rest)) {
+        if (StringUtil.isBlank(tableGroupId)) {
             return null;
         }
         if (!twoParts) {
-            return new ShardRef(tableGroupId, capability, rest, StringUtil.EMPTY);
+            if (StringUtil.isBlank(rest)) {
+                return null;
+            }
+            return new BoundRef(tableGroupId, type, rest, StringUtil.EMPTY);
         }
         int split = rest.lastIndexOf(SEP);
-        if (split <= 0 || split >= rest.length() - 1) {
+        if (split < 0 || split >= rest.length() - 1) {
             return null;
         }
-        return new ShardRef(tableGroupId, capability, rest.substring(0, split), rest.substring(split + 1));
+        String part1 = rest.substring(0, split);
+        String part2 = rest.substring(split + 1);
+        if (decodeParts) {
+            part1 = decode(part1);
+            if (!(type == WorkBoundType.CURSOR_BATCH && isPlainBudgetToken(part2))) {
+                part2 = decode(part2);
+            }
+        }
+        if (StringUtil.isBlank(part2)) {
+            return null;
+        }
+        return new BoundRef(tableGroupId, type, part1, part2);
     }
 
-    private static ShardRef parseNumericRange(String itemId) {
-        int last = itemId.lastIndexOf(SEP);
-        if (last <= 0) {
-            return null;
+    private static String encode(String raw) {
+        if (raw == null || raw.isEmpty()) {
+            return StringUtil.EMPTY;
         }
-        int mid = itemId.lastIndexOf(SEP, last - 1);
-        if (mid <= 0) {
-            return null;
+        try {
+            return URLEncoder.encode(raw, UTF_8);
+        } catch (UnsupportedEncodingException e) {
+            return raw;
         }
-        String tableGroupId = itemId.substring(0, mid);
-        String fromText = itemId.substring(mid + 1, last);
-        String toText = itemId.substring(last + 1);
-        if (StringUtil.isBlank(tableGroupId) || !NumberUtil.isCreatable(fromText) || !NumberUtil.isCreatable(toText)) {
-            return null;
-        }
-        long from = NumberUtil.toLong(fromText);
-        long to = NumberUtil.toLong(toText);
-        if (to < from) {
-            return null;
-        }
-        return new ShardRef(tableGroupId, ShardSupportEnum.RANGE, fromText, toText);
     }
 
-    /**
-     * 数值主键闭区间。
-     */
-    public static final class Range {
-        private final String tableGroupId;
-        private final long fromInclusive;
-        private final long toInclusive;
-
-        public Range(String tableGroupId, long fromInclusive, long toInclusive) {
-            this.tableGroupId = tableGroupId;
-            this.fromInclusive = fromInclusive;
-            this.toInclusive = toInclusive;
+    private static String decode(String encoded) {
+        if (encoded == null || encoded.isEmpty()) {
+            return StringUtil.EMPTY;
         }
-
-        public String getTableGroupId() {
-            return tableGroupId;
-        }
-
-        public long getFromInclusive() {
-            return fromInclusive;
-        }
-
-        public long getToInclusive() {
-            return toInclusive;
-        }
-
-        public String toItemId() {
-            return rangeOf(tableGroupId, fromInclusive, toInclusive);
+        try {
+            return URLDecoder.decode(encoded, UTF_8);
+        } catch (UnsupportedEncodingException e) {
+            return encoded;
         }
     }
 
     /**
-     * 切片解析中间结果。
+     * 工作项边界解析中间结果。
      */
-    public static final class ShardRef {
+    public static final class BoundRef {
         private final String tableGroupId;
-        private final ShardSupportEnum capability;
+        private final WorkBoundType type;
         private final String part1;
         private final String part2;
 
-        public ShardRef(String tableGroupId, ShardSupportEnum capability, String part1, String part2) {
+        public BoundRef(String tableGroupId, WorkBoundType type, String part1, String part2) {
             this.tableGroupId = tableGroupId;
-            this.capability = capability;
+            this.type = type;
             this.part1 = part1;
             this.part2 = part2;
         }
@@ -304,8 +263,8 @@ public final class WorkItemIds {
             return tableGroupId;
         }
 
-        public ShardSupportEnum getCapability() {
-            return capability;
+        public WorkBoundType getType() {
+            return type;
         }
 
         public String getPart1() {

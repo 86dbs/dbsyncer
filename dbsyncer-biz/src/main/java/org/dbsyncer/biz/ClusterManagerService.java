@@ -4,7 +4,7 @@
 package org.dbsyncer.biz;
 
 import org.dbsyncer.biz.vo.ClusterNodeVO;
-import org.dbsyncer.biz.vo.TaskShardSummaryVO;
+import org.dbsyncer.biz.vo.TaskWorkItemSummaryVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.sdk.model.WorkItemAssignment;
 
@@ -65,9 +65,9 @@ public interface ClusterManagerService {
     List<WorkItemAssignment> listAssignments(String nodeId);
 
     /**
-     * 按任务汇总当前分片派工（仅 Leader 有数据）。
+     * 按任务汇总当前工作项派工（仅 Leader 有数据）。
      *
-     * @return 任务分片汇总
+     * @return 任务工作项汇总
      */
-    List<TaskShardSummaryVO> listTaskShards();
+    List<TaskWorkItemSummaryVO> listTaskWorkItems();
 }

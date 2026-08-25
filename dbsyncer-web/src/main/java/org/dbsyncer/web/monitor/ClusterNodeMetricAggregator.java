@@ -7,7 +7,7 @@ import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
 import org.dbsyncer.biz.vo.ClusterNodeVO;
-import org.dbsyncer.biz.vo.TaskShardSummaryVO;
+import org.dbsyncer.biz.vo.TaskWorkItemSummaryVO;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
@@ -81,13 +81,13 @@ public class ClusterNodeMetricAggregator {
             empty.setTotalTps(local.getTps());
             return empty;
         }
-        Map<String, Integer> shardByNode = resolveFullShardCounts();
+        Map<String, Integer> workItemByNode = resolveFullWorkItemCounts();
         Map<String, Integer> incByNode = resolveIncrementalCounts();
-        List<ClusterNodeMetricVO> metrics = BatchTaskUtil.submit(nodes, node -> pullOne(node, shardByNode, incByNode),
+        List<ClusterNodeMetricVO> metrics = BatchTaskUtil.submit(nodes, node -> pullOne(node, workItemByNode, incByNode),
                 Math.min(PULL_CONCURRENCY, Math.max(1, nodes.size())), logger);
         ClusterMetricsOverviewVO overview = new ClusterMetricsOverviewVO();
         double totalTps = 0D;
-        long totalShards = 0L;
+        long totalWorkItems = 0L;
         long totalInc = 0L;
         for (ClusterNodeMetricVO item : metrics) {
             if (item == null) {
@@ -97,16 +97,16 @@ public class ClusterNodeMetricAggregator {
             if (item.isReachable()) {
                 totalTps += item.getTps();
             }
-            totalShards += item.getFullShardCount();
+            totalWorkItems += item.getFullWorkItemCount();
             totalInc += item.getIncrementalCount();
         }
         overview.setTotalTps(Math.floor(totalTps));
-        overview.setTotalFullShards(totalShards);
+        overview.setTotalFullWorkItems(totalWorkItems);
         overview.setTotalIncremental(totalInc);
         return overview;
     }
 
-    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> shardByNode,
+    private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> workItemByNode,
                                         Map<String, Integer> incByNode) {
         ClusterNodeMetricVO vo;
         if (node.isLocal()) {
@@ -116,8 +116,8 @@ public class ClusterNodeMetricAggregator {
         }
         fillIdentity(vo, node);
         // Leader 有权威派工视图时覆盖；Follower 保留各节点 /metrics 自报
-        if (!shardByNode.isEmpty()) {
-            vo.setFullShardCount(shardByNode.getOrDefault(node.getId(), 0));
+        if (!workItemByNode.isEmpty()) {
+            vo.setFullWorkItemCount(workItemByNode.getOrDefault(node.getId(), 0));
         }
         if (!incByNode.isEmpty()) {
             vo.setIncrementalCount(incByNode.getOrDefault(node.getId(), 0));
@@ -189,7 +189,7 @@ public class ClusterNodeMetricAggregator {
         return vo;
     }
 
-    private Map<String, Integer> resolveFullShardCounts() {
+    private Map<String, Integer> resolveFullWorkItemCounts() {
         return resolveAssignmentCounts(false);
     }
 
@@ -204,11 +204,11 @@ public class ClusterNodeMetricAggregator {
             return counts;
         }
         try {
-            List<TaskShardSummaryVO> shards = clusterManagerService.listTaskShards();
-            if (CollectionUtils.isEmpty(shards)) {
+            List<TaskWorkItemSummaryVO> summaries = clusterManagerService.listTaskWorkItems();
+            if (CollectionUtils.isEmpty(summaries)) {
                 return counts;
             }
-            for (TaskShardSummaryVO item : shards) {
+            for (TaskWorkItemSummaryVO item : summaries) {
                 if (item == null || item.isIncrementTask() != incrementTask) {
                     continue;
                 }

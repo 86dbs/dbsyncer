@@ -10,17 +10,17 @@ package org.dbsyncer.parser.enums;
 public enum ParserEnum {
 
     /**
-     * 游标
+     * 游标（分片内页进度的历史 snapshot 键）。
      */
     CURSOR("cursor", 0),
 
     /**
-     * 页数
+     * 页码（分片内页进度的历史 snapshot 键）。
      */
     PAGE_INDEX("pageIndex", 1),
 
     /**
-     * 执行的表映射关系索引
+     * 表映射索引（历史 snapshot 键）。
      */
     TABLE_GROUP_INDEX("tableGroupIndex", 0),
 

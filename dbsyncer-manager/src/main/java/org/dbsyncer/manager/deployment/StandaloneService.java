@@ -8,8 +8,6 @@ import org.dbsyncer.sdk.enums.ClusterRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.LeaderLifecycleListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +24,6 @@ public final class StandaloneService implements ClusterService {
 
     public static final String NODE_ID = "standalone";
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final List<LeaderLifecycleListener> listeners = new CopyOnWriteArrayList<>();
 
     public StandaloneService(MetaProfile metaProfile) {
@@ -76,19 +73,6 @@ public final class StandaloneService implements ClusterService {
     public void addLeaderListener(LeaderLifecycleListener listener) {
         if (listener != null) {
             listeners.add(listener);
-        }
-    }
-
-    /**
-     * 单机启动后通知一次升主（供任务恢复挂钩）。
-     */
-    public void notifyStandaloneLeader() {
-        for (LeaderLifecycleListener listener : listeners) {
-            try {
-                listener.onLeaderStart(1L);
-            } catch (Exception e) {
-                logger.error("单机 Leader 回调失败: {}", e.getMessage(), e);
-            }
         }
     }
 }

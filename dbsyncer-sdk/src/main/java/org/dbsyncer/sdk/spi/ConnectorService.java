@@ -11,12 +11,15 @@ import org.dbsyncer.sdk.config.DDLConfig;
 import org.dbsyncer.sdk.connector.ConfigValidator;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.connector.ConnectorServiceContext;
+import org.dbsyncer.sdk.connector.FullPluginContext;
 import org.dbsyncer.sdk.enums.ListenerTypeEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
 import org.dbsyncer.sdk.listener.Listener;
 import org.dbsyncer.sdk.model.ConnectorConfig;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.workitem.WorkPlan;
+import org.dbsyncer.sdk.model.workitem.WorkPlanRequest;
 import org.dbsyncer.sdk.plugin.MetaContext;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.plugin.ReaderContext;
@@ -106,6 +109,45 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
      * 分页获取数据源数据
      */
     Result reader(I connectorInstance, ReaderContext context);
+
+    /**
+     * 读取一条游标数据（仅定位键/主键列，不读业务列）。
+     * <p>约定：{@code command} 含 {@code QUERY_CURSOR_KEY} / {@code QUERY_CURSOR_KEY_CURSOR}（定位键可复合）；
+     * {@code pageSize=1}，{@code pageIndex} 表示起点后第几条（从 1 起）；
+     * {@code cursors} 非空时为排他起点并开启游标分页。默认不支持返回 {@code null}。
+     *
+     * @param connectorInstance 连接实例
+     * @param context           全量上下文（表、command、游标、分页）
+     * @return 定位键列值（单列或多列）；无数据或不支持为 {@code null}
+     */
+    default Object[] readCursor(I connectorInstance, FullPluginContext context) {
+        return null;
+    }
+
+    /**
+     * 游标条件之后是否还支持按 pageIndex 做窗口内 OFFSET（用于一次取「起点后第 N 条」）。
+     * <p>LIMIT/OFFSET 类方言一般为 true；仅 ROWNUM 截断的游标 SQL 应为 false。
+     *
+     * @return true 支持
+     */
+    default boolean supportsCursorWindowOffset() {
+        return false;
+    }
+
+    /**
+     * 规划表内工作项。默认整表（不拆）。
+     * <p>调度层只消费 itemId；边界由连接器在 {@link #reader} 中按 context.workBound 处理。
+     *
+     * @param connectorInstance 已建立的连接实例
+     * @param request           规划请求
+     * @return 工作项计划；空或单段 WHOLE 表示不拆
+     */
+    default WorkPlan planWorkItems(I connectorInstance, WorkPlanRequest request) {
+        if (request == null || StringUtil.isBlank(request.getTableGroupId())) {
+            return WorkPlan.wholeTable();
+        }
+        return WorkPlan.wholeTable(request.getTableGroupId());
+    }
 
     /**
      * 批量写入目标源数据

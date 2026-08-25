@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Meta 启动时间落库与耗时映射。
+ * Meta 开始时间落库与耗时映射。
  *
  * @author wuji
  * @version 1.0.0
@@ -21,27 +21,23 @@ import java.util.Map;
 public class ConfigModelUtilTest {
 
     @Test
-    public void convertMetaPersistsBeginTimeAsStartTime() {
+    public void convertMetaPersistsStartTime() {
         Meta meta = new Meta();
         meta.setId("m1");
         meta.setTaskId("t1");
-        meta.setBeginTime(1000L);
-        meta.setEndTime(5000L);
+        meta.setStartTime(1000L);
         meta.setUpdateTime(4000L);
 
         Map<String, Object> params = ConfigModelUtil.convertModelToMap(meta);
 
-        Assert.assertEquals(1000L, params.get(ConfigConstant.META_START_TIME));
-        Assert.assertEquals(4000L, params.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME));
+        Assert.assertEquals(1000L, ((Number) params.get(ConfigConstant.META_START_TIME)).longValue());
+        Assert.assertEquals(4000L, ((Number) params.get(ConfigConstant.CONFIG_MODEL_UPDATE_TIME)).longValue());
         Assert.assertNull(params.get("beginTime"));
         Assert.assertNull(params.get("endTime"));
-        Assert.assertNull(params.get("epoch"));
-        Assert.assertNull(params.get("leaseOwner"));
-        Assert.assertNull(params.get("leaseExpireAt"));
     }
 
     @Test
-    public void parseMetaMapsStartTimeAndUpdateTimeToDuration() {
+    public void parseMetaMapsStartTimeAndUpdateTime() {
         Map<String, Object> row = new HashMap<>();
         row.put(ConfigConstant.CONFIG_MODEL_ID, "m1");
         row.put(ConfigConstant.META_TASK_ID, "t1");
@@ -56,7 +52,7 @@ public class ConfigModelUtilTest {
 
         Meta meta = ConfigModelUtil.parseFromRow(row, Meta.class);
 
-        Assert.assertEquals(1000L, meta.getBeginTime());
-        Assert.assertEquals(4000L, meta.getEndTime());
+        Assert.assertEquals(1000L, meta.getStartTime());
+        Assert.assertEquals(4000L, meta.getUpdateTime().longValue());
     }
 }

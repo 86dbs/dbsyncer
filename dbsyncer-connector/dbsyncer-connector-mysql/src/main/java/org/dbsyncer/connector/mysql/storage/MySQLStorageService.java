@@ -839,7 +839,7 @@ public class MySQLStorageService extends AbstractStorageService {
             return;
         }
         if (StorageEnum.META.getType().equals(type)) {
-            addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL COMMENT '任务启动时间'");
+            addColumnIfNotExist(table, "START_TIME", "bigint NOT NULL COMMENT '任务开始时间'");
             createIndexIfNotExist(table, "IDX_TASK_IS_DETAIL", "`TASK_ID`,`IS_TASK_DETAIL`");
             return;
         }

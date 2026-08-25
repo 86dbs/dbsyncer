@@ -34,6 +34,10 @@ import org.dbsyncer.sdk.model.Filter;
 import org.dbsyncer.sdk.model.MetaInfo;
 import org.dbsyncer.sdk.model.Table;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
+import org.dbsyncer.sdk.model.WorkItemIds;
+import org.dbsyncer.sdk.model.workitem.WorkBound;
+import org.dbsyncer.sdk.model.workitem.WorkBoundSupport;
+import org.dbsyncer.sdk.enums.WorkBoundType;
 import org.dbsyncer.sdk.plugin.PluginContext;
 import org.dbsyncer.sdk.schema.SchemaResolver;
 import org.dbsyncer.sdk.spi.ClusterService;
@@ -171,12 +175,22 @@ public class ParserComponentImpl implements ParserComponent {
         context.setBatchSize(mapping.getBatchNum());
         context.setPlugin(group.getPlugin());
         context.setPluginExtInfo(group.getPluginExtInfo());
-        context.setForceUpdate(mapping.isForceUpdate());
+        context.setForceUpdate(clusterService.isStandalone() ? mapping.isForceUpdate() : true);
         context.setSourceTable(group.getSourceTable());
         context.setTargetTable(group.getTargetTable());
         context.setTargetFields(picker.getTargetFields());
         context.setSupportedCursor(enableCursor);
         context.setPageSize(mapping.getReadNum());
+        String itemId = StringUtil.isNotBlank(task.getTableGroupId()) ? task.getTableGroupId() : tableGroup.getId();
+        WorkBound bound = WorkItemIds.toWorkBound(itemId);
+        if (bound != null) {
+            context.setWorkBound(WorkBoundSupport.enrichPk(bound, group.getSourceTable()));
+        }
+        long rowBudget = resolveRowBudget(bound);
+        long processed = Math.max(0L, task.getProcessed());
+        if (rowBudget > 0L && processed >= rowBudget) {
+            return true;
+        }
         setRsaConfig(context);
         ConnectorService sourceConnector = connectorFactory.getConnectorService(context.getSourceConnectorInstance().getConfig());
         ConnectorService targetConnector = connectorFactory.getConnectorService(context.getTargetConnectorInstance().getConfig());
@@ -190,7 +204,10 @@ public class ParserComponentImpl implements ParserComponent {
                 logger.warn("任务被中止:{}", metaId);
                 return false;
             }
-
+            if (rowBudget > 0L && processed >= rowBudget) {
+                logger.info("完成全量同步工作项(行预算):{}, item={}, budget={}", metaId, itemId, rowBudget);
+                return true;
+            }
             // 1、获取数据源数据
             context.setArgs(new ArrayList<>());
             context.setCursors(task.getCursors());
@@ -200,6 +217,15 @@ public class ParserComponentImpl implements ParserComponent {
             if (CollectionUtils.isEmpty(source)) {
                 logger.info("完成全量同步任务:{}, [{}] >> [{}]", metaId, sTableName, tTableName);
                 return true;
+            }
+            if (rowBudget > 0L) {
+                long remain = rowBudget - processed;
+                if (remain <= 0L) {
+                    return true;
+                }
+                if (source.size() > remain) {
+                    source = new ArrayList<>(source.subList(0, (int) remain));
+                }
             }
 
             // 2、映射字段
@@ -213,16 +239,29 @@ public class ParserComponentImpl implements ParserComponent {
             context.setTargetList(target);
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
+            if (!clusterService.assertWritable(itemId)) {
+                logger.warn("generation 围栏失效，停止本表写入: {}", itemId);
+                return false;
+            }
+
             // 5、写入目标源
             Result result = writeBatch(context, executor);
 
-            // 6、更新结果
+            // 6、更新结果（进度 CAS 成功后再累加 success，避免改派重跑双计）
+            processed += source.size();
+            task.setProcessed(processed);
             task.setPageIndex(task.getPageIndex() + 1);
             task.setCursors(PrimaryKeyUtil.getLastCursors(source, primaryKeys));
-            result.setTableGroupId(tableGroup.getId());
+            result.setWorkItemId(itemId);
+            result.setTableGroupId(WorkItemIds.tableGroupIdOf(itemId));
             result.setTargetTableGroupName(tTableName);
             if (!flush(task, result, targetConnector.getSchemaResolver(), targetFieldMap)) {
-                logger.warn("进度刷盘失败，停止本工作项以免漏计/双计");
+                logger.warn("进度刷盘失败，停止本工作项以免漏计/双计: {}", itemId);
+                return false;
+            }
+
+            if (!clusterService.assertWritable(itemId)) {
+                logger.warn("generation 围栏失效，本页已刷盘，等待重新派工: {}", itemId);
                 return false;
             }
 
@@ -236,7 +275,19 @@ public class ParserComponentImpl implements ParserComponent {
             if (context.getTargetList() != null) {
                 context.getTargetList().clear();
             }
+
+            if (rowBudget > 0L && processed >= rowBudget) {
+                logger.info("完成全量同步工作项(行预算):{}, item={}, budget={}", metaId, itemId, rowBudget);
+                return true;
+            }
         }
+    }
+
+    private static long resolveRowBudget(WorkBound bound) {
+        if (bound == null || bound.getType() != WorkBoundType.CURSOR_BATCH) {
+            return 0L;
+        }
+        return Math.max(0L, bound.getRowBudget());
     }
 
     @Override

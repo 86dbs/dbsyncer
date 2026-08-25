@@ -3,7 +3,6 @@
  */
 package org.dbsyncer.manager.impl;
 
-import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.AbstractPuller;
 import org.dbsyncer.parser.LogService;
@@ -144,11 +143,10 @@ public final class FullIncrementPuller extends AbstractPuller {
     }
 
     /**
-     * 全量阶段未完成时，从 snapshot 断点恢复，避免重置进度后 success 重复累加
+     * 全量阶段未完成时，从 tableProgress 断点恢复，避免重置进度后 success 重复累加。
      */
     private boolean shouldResumeFullPhase(Meta meta) {
         String phase = getFullIncrementPhase(meta);
-        //如果是空直接表示全量增量都没有跑
         if (StringUtil.isBlank(phase)) {
             return false;
         }
@@ -157,31 +155,18 @@ public final class FullIncrementPuller extends AbstractPuller {
         if (total > 0 && processed >= total) {
             return false;
         }
-
         Map<String, String> snapshot = meta.getSnapshot();
-        int tableGroupIndex = NumberUtil.toInt(snapshot.get(ParserEnum.TABLE_GROUP_INDEX.getCode()), ParserEnum.TABLE_GROUP_INDEX.getDefaultValue());
-        int pageIndex = NumberUtil.toInt(snapshot.get(ParserEnum.PAGE_INDEX.getCode()), ParserEnum.PAGE_INDEX.getDefaultValue());
-        String cursor = snapshot.get(ParserEnum.CURSOR.getCode());
-
-        return FullTableProgressUtil.hasIncomplete(snapshot)
-                || tableGroupIndex > ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()
-                || pageIndex > ParserEnum.PAGE_INDEX.getDefaultValue()
-                || StringUtil.isNotBlank(cursor)
-                || processed > 0;
+        return FullTableProgressUtil.hasIncomplete(snapshot) || processed > 0;
     }
 
     /**
-     * 标记状态
+     * 标记全量+增量阶段并清理全量进度。
      */
     private void markFullIncrementPhase(String metaId, String phase) {
         Meta meta = metaProfile.getMeta(metaId);
         meta.getSnapshot().put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), phase);
-
-        //清除全量标记
-        meta.getSnapshot().remove(ParserEnum.PAGE_INDEX.getCode());
-        meta.getSnapshot().remove(ParserEnum.CURSOR.getCode());
-        meta.getSnapshot().remove(ParserEnum.TABLE_GROUP_INDEX.getCode());
         FullTableProgressUtil.clear(meta.getSnapshot());
+        FullTableProgressUtil.removeLegacyTaskBreakpointKeys(meta.getSnapshot());
         profileComponent.editConfigModel(meta);
     }
 }

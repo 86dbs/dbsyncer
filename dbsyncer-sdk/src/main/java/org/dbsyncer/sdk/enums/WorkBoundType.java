@@ -4,32 +4,26 @@
 package org.dbsyncer.sdk.enums;
 
 /**
- * 连接器表内切片能力。
+ * 工作项边界类型（Leader 规划、Worker 按边界执行）。
  *
  * @author wuji
  * @version 1.0.0
- * @date 2026-08-20
+ * @date 2026-08-25
  */
-@Deprecated
-public enum ShardSupportEnum {
+public enum WorkBoundType {
 
     /**
-     * 不切分，整表一个 WorkItem
+     * 整表一个工作项，无额外边界
      */
     NONE,
 
     /**
-     * 主键/排序键闭区间
+     * 游标分批：排他起始游标 + 行预算
      */
-    RANGE,
+    CURSOR_BATCH,
 
     /**
-     * 哈希取模
-     */
-    HASH_MOD,
-
-    /**
-     * 文件/流字节或行偏移
+     * 字节/行偏移区间
      */
     OFFSET,
 

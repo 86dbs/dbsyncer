@@ -5,7 +5,7 @@ package org.dbsyncer.biz.impl;
 
 import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.ClusterNodeVO;
-import org.dbsyncer.biz.vo.TaskShardSummaryVO;
+import org.dbsyncer.biz.vo.TaskWorkItemSummaryVO;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -86,26 +86,26 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     }
 
     @Override
-    public List<TaskShardSummaryVO> listTaskShards() {
+    public List<TaskWorkItemSummaryVO> listTaskWorkItems() {
         List<WorkItemAssignment> all = clusterService.listAllAssignments();
         if (all == null || all.isEmpty()) {
             return Collections.emptyList();
         }
-        Map<String, TaskShardSummaryVO> byTask = new LinkedHashMap<>();
+        Map<String, TaskWorkItemSummaryVO> byTask = new LinkedHashMap<>();
         Map<String, Map<String, Integer>> nodeCounts = new LinkedHashMap<>();
         for (WorkItemAssignment item : all) {
             if (item == null || StringUtil.isBlank(item.getTaskId())) {
                 continue;
             }
-            TaskShardSummaryVO vo = byTask.computeIfAbsent(item.getTaskId(), id -> {
-                TaskShardSummaryVO created = new TaskShardSummaryVO();
+            TaskWorkItemSummaryVO vo = byTask.computeIfAbsent(item.getTaskId(), id -> {
+                TaskWorkItemSummaryVO created = new TaskWorkItemSummaryVO();
                 created.setTaskId(id);
                 return created;
             });
             if (WorkItemIds.isTaskLevelItem(item.getTaskId(), item.getItemId())) {
                 vo.setIncrementTask(true);
             }
-            vo.setShardCount(vo.getShardCount() + 1);
+            vo.setWorkItemCount(vo.getWorkItemCount() + 1);
             if (item.getGeneration() > vo.getMaxGeneration()) {
                 vo.setMaxGeneration(item.getGeneration());
             }
@@ -113,8 +113,8 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
             nodeCounts.computeIfAbsent(item.getTaskId(), k -> new LinkedHashMap<>())
                     .merge(nodeId, 1, Integer::sum);
         }
-        List<TaskShardSummaryVO> result = new ArrayList<>(byTask.values());
-        for (TaskShardSummaryVO vo : result) {
+        List<TaskWorkItemSummaryVO> result = new ArrayList<>(byTask.values());
+        for (TaskWorkItemSummaryVO vo : result) {
             Map<String, Integer> counts = nodeCounts.get(vo.getTaskId());
             if (counts == null || counts.isEmpty()) {
                 vo.setNodeDistribution("-");

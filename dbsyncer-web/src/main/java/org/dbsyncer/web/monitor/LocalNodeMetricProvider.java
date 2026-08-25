@@ -140,7 +140,7 @@ public class LocalNodeMetricProvider {
         } catch (Exception e) {
             logger.warn("采集应用指标失败: {}", e.getMessage());
         }
-        // 本机派工：全量分片与增量整任务分开计数
+        // 本机派工：全量工作项与增量整任务分开计数
         try {
             List<WorkItemAssignment> local = clusterService.listLocalAssignments();
             int full = 0;
@@ -157,10 +157,10 @@ public class LocalNodeMetricProvider {
                     }
                 }
             }
-            vo.setFullShardCount(full);
+            vo.setFullWorkItemCount(full);
             vo.setIncrementalCount(inc);
         } catch (Exception e) {
-            logger.debug("采集本机分片数失败: {}", e.getMessage());
+            logger.debug("采集本机工作项数失败: {}", e.getMessage());
         }
         return vo;
     }

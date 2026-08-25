@@ -141,8 +141,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 Listener listener = map.computeIfAbsent(metaId, k -> {
                     logger.info("开始增量同步：{}, {}", metaId, mapping.getName());
                     long now = Instant.now().toEpochMilli();
-                    meta.setBeginTime(now);
-                    meta.setEndTime(now);
+                    meta.setStartTime(now);
+                    meta.setUpdateTime(now);
                     profileComponent.editConfigModel(meta);
                     tableGroupContext.put(mapping, list);
                     return buildListener(mapping, connector, targetConnector, list, meta);
@@ -206,10 +206,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
         Map<String, String> snapshot = meta.getSnapshot();
         snapshot.putAll(listener.captureSnapshot());
         snapshot.put(ParserEnum.FULL_INCREMENT_PHASE.getCode(), ModelEnum.FULL.getCode());
-        snapshot.put(ParserEnum.PAGE_INDEX.getCode(), String.valueOf(ParserEnum.PAGE_INDEX.getDefaultValue()));
-        snapshot.put(ParserEnum.CURSOR.getCode(), StringUtil.EMPTY);
-        snapshot.put(ParserEnum.TABLE_GROUP_INDEX.getCode(), String.valueOf(ParserEnum.TABLE_GROUP_INDEX.getDefaultValue()));
         FullTableProgressUtil.clear(snapshot);
+        FullTableProgressUtil.removeLegacyTaskBreakpointKeys(snapshot);
         meta.getSuccess().set(0);
         meta.getFail().set(0);
         profileComponent.editConfigModel(meta);

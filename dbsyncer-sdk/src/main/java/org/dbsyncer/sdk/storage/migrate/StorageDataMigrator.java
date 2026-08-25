@@ -7,8 +7,8 @@ import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.common.util.UUIDUtil;
+import org.dbsyncer.common.util.UnderlineToCamelUtils;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.enums.StorageEnum;
 import org.dbsyncer.sdk.enums.TableTypeEnum;
@@ -283,7 +283,7 @@ public abstract class StorageDataMigrator {
         p.put(ConfigConstant.CONFIG_MODEL_ID, id);
         p.put(ConfigConstant.CONFIG_MODEL_CREATE_TIME, num(row, System.currentTimeMillis(), "createTime"));
         p.put(ConfigConstant.CONFIG_MODEL_UPDATE_TIME, num(row, System.currentTimeMillis(), "updateTime"));
-        p.put(ConfigConstant.META_START_TIME, num(root, 0, "beginTime", "startTime"));
+        p.put(ConfigConstant.META_START_TIME, num(root, 0, "startTime"));
         p.put(ConfigConstant.META_TASK_ID, first(val(root, "taskId"), val(root, "mappingId"), id));
         p.put(ConfigConstant.META_STATE, (int) num(root, 0, "state"));
         p.put(ConfigConstant.META_IS_TASK_DETAIL, (int) num(root, 0, "isTaskDetail"));

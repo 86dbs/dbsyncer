@@ -5,6 +5,7 @@ package org.dbsyncer.sdk.plugin;
 
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.model.Table;
+import org.dbsyncer.sdk.model.workitem.WorkBound;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,8 @@ public abstract class AbstractBaseContext implements ReaderContext {
     private int pageIndex;
 
     private int pageSize;
+
+    private WorkBound workBound;
 
     @Override
     public ConnectorInstance getSourceConnectorInstance() {
@@ -110,5 +113,14 @@ public abstract class AbstractBaseContext implements ReaderContext {
 
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    @Override
+    public WorkBound getWorkBound() {
+        return workBound;
+    }
+
+    public void setWorkBound(WorkBound workBound) {
+        this.workBound = workBound;
     }
 }

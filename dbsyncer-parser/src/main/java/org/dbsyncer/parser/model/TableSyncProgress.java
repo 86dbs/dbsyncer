@@ -32,6 +32,11 @@ public class TableSyncProgress {
      */
     private long generation;
 
+    /**
+     * 本工作项已读取/同步行数（游标分批 rowBudget 续跑用）。
+     */
+    private long processed;
+
     public int getPageIndex() {
         return pageIndex;
     }
@@ -62,5 +67,13 @@ public class TableSyncProgress {
 
     public void setGeneration(long generation) {
         this.generation = generation;
+    }
+
+    public long getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(long processed) {
+        this.processed = processed;
     }
 }

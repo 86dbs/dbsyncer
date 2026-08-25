@@ -13,13 +13,11 @@ public class Task {
 
     private StateEnum state;
 
-    private int tableGroupIndex;
-
     private int pageIndex;
 
     private Object[] cursors;
 
-    private long beginTime;
+    private long startTime;
 
     private long endTime;
 
@@ -32,6 +30,11 @@ public class Task {
      * 当前表映射 ID（表级子任务时非空）
      */
     private String tableGroupId;
+
+    /**
+     * 本工作项已处理行数（游标分批预算续跑）。
+     */
+    private long processed;
 
     public Task(String id) {
         this.id = id;
@@ -48,7 +51,7 @@ public class Task {
         Task child = new Task(this.id);
         child.parent = this;
         child.tableGroupId = tableGroupId;
-        child.beginTime = this.beginTime;
+        child.startTime = this.startTime;
         child.endTime = this.endTime;
         child.pageIndex = 1;
         return child;
@@ -73,14 +76,6 @@ public class Task {
         this.id = id;
     }
 
-    public int getTableGroupIndex() {
-        return tableGroupIndex;
-    }
-
-    public void setTableGroupIndex(int tableGroupIndex) {
-        this.tableGroupIndex = tableGroupIndex;
-    }
-
     public int getPageIndex() {
         return pageIndex;
     }
@@ -97,12 +92,12 @@ public class Task {
         this.cursors = cursors;
     }
 
-    public long getBeginTime() {
-        return beginTime;
+    public long getStartTime() {
+        return startTime;
     }
 
-    public void setBeginTime(long beginTime) {
-        this.beginTime = beginTime;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 
     public long getEndTime() {
@@ -123,6 +118,14 @@ public class Task {
 
     public void setTableGroupId(String tableGroupId) {
         this.tableGroupId = tableGroupId;
+    }
+
+    public long getProcessed() {
+        return processed;
+    }
+
+    public void setProcessed(long processed) {
+        this.processed = processed;
     }
 
     public enum StateEnum {

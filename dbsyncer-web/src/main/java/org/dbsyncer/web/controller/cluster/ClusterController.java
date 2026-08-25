@@ -102,13 +102,13 @@ public class ClusterController extends BaseController {
     }
 
     /**
-     * 任务分片汇总（Leader 内存视图，需登录）。
+     * 任务工作项汇总（Leader 内存视图，需登录）。
      */
     @GetMapping("/assignments/all")
     @ResponseBody
     public RestResult assignmentsAll() {
         try {
-            return RestResult.restSuccess(clusterManagerService.listTaskShards());
+            return RestResult.restSuccess(clusterManagerService.listTaskWorkItems());
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());
