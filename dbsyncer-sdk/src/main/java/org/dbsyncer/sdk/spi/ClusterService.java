@@ -195,7 +195,7 @@ public interface ClusterService {
     }
 
     /**
-     * Leader 将未完成表粘滞派工到在线节点。单机空操作。
+     * Leader 将未完成表派工到在线节点。单机空操作。
      *
      * @param taskId 任务/Mapping ID
      */
@@ -203,7 +203,7 @@ public interface ClusterService {
     }
 
     /**
-     * Leader 将整增量 Mapping 粘滞派工到一台在线节点（不拆表）。单机空操作。
+     * Leader 将整增量 Mapping 派工到一台在线节点（不拆表）。单机空操作。
      *
      * @param mappingId 驱动/Mapping ID
      */

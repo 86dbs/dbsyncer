@@ -4,7 +4,7 @@
 package org.dbsyncer.sdk.enums;
 
 /**
- * 集群节点 Raft 角色
+ * 集群节点角色
  *
  * @author wuji
  * @version 1.0.0

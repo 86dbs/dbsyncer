@@ -56,7 +56,7 @@ public class TableGroupBufferActuator extends GeneralBufferActuator implements T
     }
 
     /**
-     * 启动表/管道执行器（clone 后调用）。
+     * 启动表执行器（clone 后调用）。
      */
     public void start() {
         buildConfig();

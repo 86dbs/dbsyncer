@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 开源增量路由：每张源表一个执行器，超过上限后走通用执行器。
+ * 默认增量路由：每张源表一个执行器，超过上限后走通用执行器。
  *
  * @author wuji
  * @version 1.0.0

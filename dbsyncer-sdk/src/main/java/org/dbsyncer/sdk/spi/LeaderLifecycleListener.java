@@ -15,14 +15,14 @@ public interface LeaderLifecycleListener {
     /**
      * 本节点成为 Leader。
      *
-     * @param term Raft term
+     * @param term 选举任期
      */
     void onLeaderStart(long term);
 
     /**
      * 本节点不再是 Leader。
      *
-     * @param term 卸任时的 term
+     * @param term 卸任时的任期
      */
     void onLeaderStop(long term);
 }

@@ -109,7 +109,7 @@ public abstract class AbstractBufferActuatorRouter implements BufferActuatorRout
     }
 
     /**
-     * 停止表/管道执行器。
+     * 停止表执行器。
      *
      * @param actuator 执行器
      */
