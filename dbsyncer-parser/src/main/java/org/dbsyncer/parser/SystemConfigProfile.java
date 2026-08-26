@@ -14,9 +14,16 @@ import org.dbsyncer.parser.model.SystemConfig;
 public interface SystemConfigProfile {
 
     /**
-     * 获取系统配置（无则 null）。
+     * 获取系统配置（库中无记录时返回内存默认，避免热路径 NPE）。
      */
     SystemConfig getSystemConfig();
+
+    /**
+     * 库中是否已有系统配置行。
+     *
+     * @return true 已持久化
+     */
+    boolean existsPersisted();
 
     /**
      * 保存系统配置（新增或更新）。

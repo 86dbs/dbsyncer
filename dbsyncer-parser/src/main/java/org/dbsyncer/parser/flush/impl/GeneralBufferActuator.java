@@ -23,6 +23,7 @@ import org.dbsyncer.parser.flush.AbstractBufferActuator;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.TableGroupPicker;
 import org.dbsyncer.parser.model.WriterRequest;
@@ -136,7 +137,7 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
             response.setTypeEnum(request.getTypeEnum());
             response.setSql(request.getSql());
             response.setMerged(true);
-        } else if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
+        } else if (isPrintTraceInfo() && StringUtil.isNotBlank(request.getTraceId())) {
             logger.info("traceId:{} merge into traceId:{}", request.getTraceId(), response.getTraceId());
         }
     }
@@ -268,9 +269,10 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void setRsaConfig(IncrementPluginContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig != null && systemConfig.isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 
@@ -342,10 +344,15 @@ public class GeneralBufferActuator extends AbstractBufferActuator<WriterRequest,
     }
 
     private void printTraceInfo(WriterResponse response) {
-        if (profileComponent.getSystemConfig().isEnablePrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
+        if (isPrintTraceInfo() && StringUtil.isNotBlank(response.getTraceId())) {
             logger.info("traceId:{}, tableName:{}, event:{}, offset:{}, row:{}", response.getTraceId(), response.getTableName(), response.getEvent(), JsonUtil
                     .objToJson(response.getChangedOffset()), response.getDataList());
         }
+    }
+
+    private boolean isPrintTraceInfo() {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        return systemConfig != null && systemConfig.isEnablePrintTraceInfo();
     }
 
 }

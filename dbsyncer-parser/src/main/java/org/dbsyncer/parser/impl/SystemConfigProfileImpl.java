@@ -38,12 +38,46 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
     @Resource
     private SnowflakeIdWorker snowflakeIdWorker;
 
+    /**
+     * 库中尚无系统配置时的本机回退（不落库）。
+     */
+    private volatile SystemConfig memoryDefault;
+
     @Override
     public SystemConfig getSystemConfig() {
         Query condition = new Query();
         condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
         List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
-        return CollectionUtils.isEmpty(list) ? null : list.get(0);
+        if (!CollectionUtils.isEmpty(list)) {
+            return list.get(0);
+        }
+        return memoryDefaultOrCreate();
+    }
+
+    @Override
+    public boolean existsPersisted() {
+        Query condition = new Query();
+        condition.addFilter(ConfigConstant.CONFIG_MODEL_TYPE, ConfigConstant.SYSTEM);
+        List<SystemConfig> list = operationTemplate.queryList(StorageEnum.CONFIG, condition, SystemConfig.class);
+        return !CollectionUtils.isEmpty(list);
+    }
+
+    private SystemConfig memoryDefaultOrCreate() {
+        SystemConfig local = memoryDefault;
+        if (local != null) {
+            return local;
+        }
+        synchronized (this) {
+            if (memoryDefault == null) {
+                SystemConfig created = new SystemConfig();
+                created.setName("系统配置");
+                long now = System.currentTimeMillis();
+                created.setCreateTime(now);
+                created.setUpdateTime(now);
+                memoryDefault = created;
+            }
+            return memoryDefault;
+        }
     }
 
     @Override
@@ -76,6 +110,7 @@ public class SystemConfigProfileImpl implements SystemConfigProfile {
             return;
         }
         storageService.remove(StorageEnum.CONFIG, id);
+        memoryDefault = null;
     }
 
     @Override

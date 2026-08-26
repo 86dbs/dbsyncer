@@ -15,6 +15,7 @@ import org.dbsyncer.parser.event.FullRefreshEvent;
 import org.dbsyncer.parser.model.FieldMapping;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.model.Task;
 import org.dbsyncer.parser.strategy.FlushStrategy;
@@ -340,9 +341,10 @@ public class ParserComponentImpl implements ParserComponent {
     }
 
     private void setRsaConfig(FullPluginContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig != null && systemConfig.isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 

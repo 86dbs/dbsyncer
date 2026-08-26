@@ -11,6 +11,7 @@ import org.dbsyncer.parser.ParserComponent;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.model.Mapping;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.PickerUtil;
@@ -107,9 +108,10 @@ public abstract class AbstractCountTask extends AbstractDispatchTask {
     }
 
     private void setRsaConfig(DefaultMetaContext context) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig != null && systemConfig.isEnableOpenAPI()) {
             context.setRsaManager(rsaManager);
-            context.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            context.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 }

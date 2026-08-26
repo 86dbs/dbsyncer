@@ -4,6 +4,7 @@ import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
+import org.dbsyncer.parser.MappingRuntimeService;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
@@ -23,7 +24,7 @@ import java.util.Map;
  * @date 2019/9/16 23:59
  */
 @Component
-public class ManagerFactory implements ApplicationListener<ClosedEvent> {
+public class ManagerFactory implements MappingRuntimeService, ApplicationListener<ClosedEvent> {
 
     @Resource
     private MetaProfile metaProfile;
@@ -56,6 +57,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      * @param mapping      驱动
      * @param autoRecovery 是否为服务重启自动恢复（true 时对 CDC 监听启动失败按配置重试）
      */
+    @Override
     public void start(Mapping mapping, boolean autoRecovery) {
         Puller puller = getPuller(mapping);
         String metaId = mapping.getMetaId();
@@ -100,6 +102,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      *
      * @param mapping 驱动
      */
+    @Override
     public void stopLocal(Mapping mapping) {
         Puller puller = getPuller(mapping);
         String metaId = mapping.getMetaId();
@@ -112,6 +115,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
      * @param metaId Meta ID
      * @return true 已启动
      */
+    @Override
     public boolean isLocalActive(String metaId) {
         for (Puller puller : map.values()) {
             if (puller.isActive(metaId)) {
@@ -130,6 +134,7 @@ public class ManagerFactory implements ApplicationListener<ClosedEvent> {
         return ModelEnum.isIncrement(phase);
     }
 
+    @Override
     public void changeMetaState(String metaId, CommonTaskStatusEnum status) {
         Meta meta = metaProfile.getMeta(metaId);
         int code = status.getCode();

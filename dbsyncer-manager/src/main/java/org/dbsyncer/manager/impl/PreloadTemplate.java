@@ -18,6 +18,7 @@ import org.dbsyncer.parser.LogService;
 import org.dbsyncer.parser.LogType;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
+import org.dbsyncer.parser.SystemConfigProfile;
 import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
@@ -76,6 +77,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     @Resource
     private ProfileComponent profileComponent;
+
+    @Resource
+    private SystemConfigProfile systemConfigProfile;
 
     @Resource
     private TableGroupProfile tableGroupProfile;
@@ -185,23 +189,28 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
-     * 启动时若无系统配置则写入默认行，避免后续 getSystemConfig() 为空 NPE。
+     * 启动时若库中无系统配置则尝试落库默认行；非 Leader 无法落库时依赖 {@link SystemConfigProfile} 内存默认。
      *
-     * @return 已有或新建的系统配置
+     * @return 已有或默认的系统配置（非 null）
      */
     private SystemConfig initSystemConfigIfAbsent() {
-        SystemConfig systemConfig = profileComponent.getSystemConfig();
-        if (systemConfig != null) {
-            return systemConfig;
+        if (systemConfigProfile.existsPersisted()) {
+            return profileComponent.getSystemConfig();
         }
-        systemConfig = new SystemConfig();
-        systemConfig.setName("系统配置");
-        long now = System.currentTimeMillis();
-        systemConfig.setCreateTime(now);
-        systemConfig.setUpdateTime(now);
-        profileComponent.addConfigModel(systemConfig);
-        logger.warn("No system config found, created default system config");
-        return systemConfig;
+        if (clusterService.isStandalone() || clusterService.isLeader()) {
+            try {
+                SystemConfig systemConfig = new SystemConfig();
+                systemConfig.setName("系统配置");
+                long now = System.currentTimeMillis();
+                systemConfig.setCreateTime(now);
+                systemConfig.setUpdateTime(now);
+                profileComponent.addConfigModel(systemConfig);
+                logger.warn("No system config found, created default system config");
+            } catch (Exception e) {
+                logger.warn("创建默认系统配置失败，使用内存默认: {}", e.getMessage());
+            }
+        }
+        return profileComponent.getSystemConfig();
     }
 
     /**

@@ -63,7 +63,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
     @Override
     public void flushFullData(Result result, SchemaResolver targetSchemaResolver, Map<String, Field> targetFieldMap) {
         // 全量计数改由 FullPuller 在进度 CAS 成功后累加，避免改派重跑导致 success 翻倍
-        if (!profileComponent.getSystemConfig().isEnableStorageWriteFull()) {
+        // 无系统配置时按默认值（不写全量明细）处理，避免 NPE
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig == null || !systemConfig.isEnableStorageWriteFull()) {
             if (!CollectionUtils.isEmpty(result.getFailData())) {
                 logger.error(result.getError().toString());
                 LogType logType = LogType.TableGroupLog.FULL_FAILED;
@@ -181,6 +183,9 @@ public final class FlushStrategyImpl implements FlushStrategy {
         }
 
         SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig == null) {
+            return;
+        }
         // 是否写失败数据
         if (systemConfig.isEnableStorageWriteFail() && !CollectionUtils.isEmpty(result.getFailData())) {
             final String error = StringUtil.substring(result.getError().toString(), 0, systemConfig.getMaxStorageErrorLength());

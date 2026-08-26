@@ -117,10 +117,10 @@ public class ConfigImportServiceImpl implements ConfigImportService {
     }
 
     /**
-     * 导入后若无系统配置则补默认行，避免增量启动等路径 getSystemConfig() 为空 NPE。
+     * 导入后若无系统配置则补默认行，避免增量启动等路径缺少持久化系统配置。
      */
     private void ensureSystemConfig() {
-        if (systemConfigProfile.getSystemConfig() != null) {
+        if (systemConfigProfile.existsPersisted()) {
             return;
         }
         SystemConfig config = new SystemConfig();

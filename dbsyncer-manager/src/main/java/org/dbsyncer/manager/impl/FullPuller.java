@@ -136,7 +136,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     }
 
     /**
-     * 集群下正常跑完由 {@code ClusterTaskDispatcher.tryCompleteFull} 置 READY；
+     * 集群下正常跑完由集群控制面收口置 READY；
      * 用户停止后 Meta 为 STOPPING，Worker 退出时须发 ClosedEvent，否则会一直停在「停止中」。
      */
     private boolean shouldPublishClosedAfterStop(String metaId) {

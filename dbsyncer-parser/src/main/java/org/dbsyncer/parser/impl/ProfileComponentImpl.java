@@ -151,7 +151,7 @@ public class ProfileComponentImpl implements ProfileComponent {
             taskProfile.deleteTask(id);
             return;
         }
-        SystemConfig systemConfig = systemConfigProfile.getSystemConfig();
+        SystemConfig systemConfig = systemConfigProfile.existsPersisted() ? systemConfigProfile.getSystemConfig() : null;
         if (systemConfig != null && id.equals(systemConfig.getId())) {
             systemConfigProfile.removeSystemConfig(id);
             return;

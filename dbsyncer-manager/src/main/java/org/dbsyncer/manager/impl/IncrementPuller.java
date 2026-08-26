@@ -24,6 +24,7 @@ import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.Picker;
+import org.dbsyncer.parser.model.SystemConfig;
 import org.dbsyncer.parser.model.TableGroup;
 import org.dbsyncer.parser.util.ConnectorInstanceUtil;
 import org.dbsyncer.parser.util.FullTableProgressUtil;
@@ -313,9 +314,10 @@ public final class IncrementPuller extends AbstractPuller implements Application
     }
 
     private void setRsaConfig(AbstractListener listener) {
-        if (profileComponent.getSystemConfig().isEnableOpenAPI()) {
+        SystemConfig systemConfig = profileComponent.getSystemConfig();
+        if (systemConfig != null && systemConfig.isEnableOpenAPI()) {
             listener.setRsaManager(rsaManager);
-            listener.setRsaConfig(profileComponent.getSystemConfig().getRsaConfig());
+            listener.setRsaConfig(systemConfig.getRsaConfig());
         }
     }
 
