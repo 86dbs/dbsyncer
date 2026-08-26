@@ -42,11 +42,12 @@ public final class MySQLTimestampType extends TimestampType {
     @Override
     protected Object convert(Object val, Field field) {
         if (isDatetime(field)) {
+            int fsp = resolveFractionalSeconds(field);
             if (val instanceof Timestamp) {
-                return DateFormatUtil.timestampToString((Timestamp) val);
+                return DateFormatUtil.timestampToString((Timestamp) val, DateFormatUtil.getDatetimeFormatter(fsp));
             }
             if (val instanceof LocalDateTime) {
-                return ((LocalDateTime) val).format(DateFormatUtil.YYYY_MM_DD_HH_MM_SS);
+                return ((LocalDateTime) val).format(DateFormatUtil.getDatetimeFormatter(fsp));
             }
         }
         if (val instanceof String) {
@@ -59,5 +60,20 @@ public final class MySQLTimestampType extends TimestampType {
 
     private boolean isDatetime(Field field) {
         return StringUtil.equalsIgnoreCase(TypeEnum.DATETIME.name(), field.getTypeName());
+    }
+
+    /**
+     * 解析 DATETIME 小数秒精度
+     */
+    private int resolveFractionalSeconds(Field field) {
+        int ratio = field.getRatio();
+        if (ratio > 0) {
+            return Math.min(6, ratio);
+        }
+        int columnSize = field.getColumnSize();
+        if (columnSize > 19) {
+            return Math.min(6, columnSize - 20);
+        }
+        return 0;
     }
 }

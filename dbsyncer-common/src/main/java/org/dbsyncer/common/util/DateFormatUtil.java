@@ -46,6 +46,11 @@ public abstract class DateFormatUtil {
     public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS);
     public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS_SSS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS_SSS);
     public static final DateTimeFormatter YYYY_MM_DD_HH_MM_SS_SSSSSS = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_HH_MM_SS_SSSSSS);
+
+    /**
+     * 时间带精度格式
+     */
+    private static final DateTimeFormatter[] DATETIME_FSP_FORMATTERS = buildDatetimeFspFormatters();
     /* 带时区格式 */
     public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_XXX = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_XXX);
     public static final DateTimeFormatter YYYY_MM_DD_T_HH_MM_SS_SSS_XXX = DateTimeFormatter.ofPattern(PATTERN_YYYY_MM_DD_T_HH_MM_SS_SSS_XXX);
@@ -117,6 +122,33 @@ public abstract class DateFormatUtil {
 
     public static String timestampToString(Timestamp timestamp, DateTimeFormatter formatter) {
         return timestamp.toLocalDateTime().format(formatter);
+    }
+
+    /**
+     * 获取带小数秒精度的日期时间格式化器。
+     *
+     * @param fsp 小数秒位数，取值 0~6
+     */
+    public static DateTimeFormatter getDatetimeFormatter(int fsp) {
+        if (fsp <= 0) {
+            return DATETIME_FSP_FORMATTERS[0];
+        }
+        if (fsp >= 6) {
+            return DATETIME_FSP_FORMATTERS[6];
+        }
+        return DATETIME_FSP_FORMATTERS[fsp];
+    }
+
+    private static DateTimeFormatter[] buildDatetimeFspFormatters() {
+        DateTimeFormatter[] formatters = new DateTimeFormatter[7];
+        formatters[0] = YYYY_MM_DD_HH_MM_SS;
+        for (int i = 1; i <= 6; i++) {
+            formatters[i] = new DateTimeFormatterBuilder()
+                    .appendPattern(PATTERN_YYYY_MM_DD_HH_MM_SS)
+                    .appendFraction(ChronoField.NANO_OF_SECOND, i, i, true)
+                    .toFormatter();
+        }
+        return formatters;
     }
 
     public static LocalTime stringToLocalTime(String s) {
