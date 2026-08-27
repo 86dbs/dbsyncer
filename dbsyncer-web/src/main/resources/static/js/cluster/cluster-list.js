@@ -128,7 +128,7 @@
     function initCharts() {
         charts.cpu = initLineChart('clusterCpuChart', 'CPU', 'rgba(82, 196, 26, 1)', false);
         charts.memory = initLineChart('clusterMemoryChart', '内存', 'rgba(24, 144, 255, 1)', true);
-        charts.queue = initLineChart('clusterQueueChart', '堆积数', 'rgba(250, 173, 20, 1)', false);
+        charts.queue = initLineChart('clusterQueueChart', '堆积', 'rgba(250, 173, 20, 1)', false);
         charts.tps = initLineChart('clusterTpsChart', 'TPS', 'rgba(245, 108, 108, 1)', false);
     }
 
@@ -204,7 +204,7 @@
         updateLineChart(charts.memory, [], []);
         updateLineChart(charts.queue, [], []);
         updateLineChart(charts.tps, [], []);
-        $('#clusterTpsTitle').text('执行器TPS');
+        $('#clusterTpsTitle').text('TPS');
     }
 
     function formatNodeOptionLabel(item) {
@@ -291,7 +291,7 @@
         updateLineChart(charts.queue, history.queue.name.slice(), history.queue.value.slice());
         updateLineChart(charts.tps, history.tps.name.slice(), history.tps.value.slice());
         var avg = averageTps(history.tps.value);
-        $('#clusterTpsTitle').text(avg > 0 ? ('执行器TPS, 平均:' + avg + '/秒') : '执行器TPS');
+        $('#clusterTpsTitle').text(avg > 0 ? ('TPS, 平均:' + avg + '/秒') : 'TPS');
     }
 
     function loadLocalCharts() {
@@ -312,8 +312,8 @@
             if (r.tps) {
                 updateLineChart(charts.tps, r.tps.name || [], r.tps.value || []);
                 var title = r.tps.average > 0
-                    ? ('执行器TPS, 平均:' + r.tps.average + '/秒')
-                    : '执行器TPS';
+                    ? ('TPS, 平均:' + r.tps.average + '/秒')
+                    : 'TPS';
                 $('#clusterTpsTitle').text(title);
             }
         });

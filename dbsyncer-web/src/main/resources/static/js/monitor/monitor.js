@@ -227,7 +227,7 @@ $(function () {
     Chart.defaults.color = '#8c8c8c';
     
     /**
-     * 初始化仪表盘图表（堆积数据、持久化）
+     * 初始化仪表盘图表（堆积、持久化）
      */
     function initGaugeChart(canvasId, label, maxValue) {
         const ctx = document.getElementById(canvasId);
@@ -382,7 +382,7 @@ $(function () {
      */
     function initCharts() {
         // 仪表盘图表
-        charts.queue = initGaugeChart('queueChart', '堆积数据', 320000);
+        charts.queue = initGaugeChart('queueChart', '堆积', 320000);
         charts.storage = initGaugeChart('storageChart', '持久化', 50000);
         
         // 折线图
@@ -480,7 +480,7 @@ $(function () {
                 const r = response.data;
                 // 更新折线图数据
                 updateLineChart(charts.tps, r.tps.name, r.tps.value);
-                $("#tps").text(r.tps.average > 0 ? '执行器TPS, 平均:'+ r.tps.average + '/秒' : '执行器TPS');
+                $("#tps").text(r.tps.average > 0 ? 'TPS, 平均:'+ r.tps.average + '/秒' : 'TPS');
                 updateLineChart(charts.cpu, r.cpu.name, r.cpu.value);
                 updateLineChart(charts.memory, r.memory.name, r.memory.value);
                 // 更新仪表盘

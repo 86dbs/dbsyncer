@@ -49,6 +49,22 @@
     <div class="cluster-chart-row">
         <div class="card">
             <div class="card-header">
+                <h3 class="card-title text-center" id="clusterTpsTitle">TPS</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterTpsChart" height="160"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">堆积</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterQueueChart" height="160"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
                 <h3 class="card-title text-center">CPU(%)</h3>
             </div>
             <div class="card-body">
@@ -63,33 +79,14 @@
                 <canvas id="clusterMemoryChart" height="160"></canvas>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title text-center">堆积数</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="clusterQueueChart" height="160"></canvas>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title text-center" id="clusterTpsTitle">执行器TPS</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="clusterTpsChart" height="160"></canvas>
-            </div>
-        </div>
     </div>
 </div>
 
 <!-- 集群管理 -->
 <div th:if="${editionInfo.edition ne 'community'}" class="form-container">
-    <div class="card-header">
-        <h3 class="card-title text-center">集群管理</h3>
-    </div>
     <div class="card-body">
         <div class="mb-4 text-sm text-secondary" th:unless="${clusterEnabled}">
-            当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确保已授权产品码 ClusterService。
+            当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储。
         </div>
 
         <div class="stat-summary" th:if="${clusterEnabled}">
@@ -98,7 +95,7 @@
                 <div class="stat-summary-value" id="clusterTpsTotal">-</div>
             </div>
             <div class="stat-summary-item">
-                <div class="stat-summary-label">全量工作项总计</div>
+                <div class="stat-summary-label">全量分片总计</div>
                 <div class="stat-summary-value" id="clusterWorkItemTotal">-</div>
             </div>
             <div class="stat-summary-item">
@@ -110,19 +107,19 @@
         <table class="table">
             <thead>
             <tr>
-                <th>集群名称</th>
+                <th>节点</th>
                 <th>角色</th>
                 <th>状态</th>
                 <th>网络</th>
-                <th>全量工作项数</th>
-                <th>增量任务数</th>
+                <th>全量分片</th>
+                <th>增量任务</th>
                 <th>TPS</th>
                 <th>堆积</th>
                 <th>持久化</th>
                 <th>CPU</th>
                 <th>内存</th>
                 <th>线程数</th>
-                <th>磁盘使用率</th>
+                <th>磁盘</th>
                 <th>操作</th>
             </tr>
             </thead>
