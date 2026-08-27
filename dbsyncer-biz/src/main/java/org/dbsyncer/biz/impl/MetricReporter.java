@@ -11,6 +11,8 @@ import org.dbsyncer.biz.model.DashboardMetric;
 import org.dbsyncer.biz.model.MetricResponse;
 import org.dbsyncer.biz.model.MetricResponseInfo;
 import org.dbsyncer.biz.model.Sample;
+import org.dbsyncer.biz.vo.HistoryStackVO;
+import org.dbsyncer.biz.vo.QueueUpVO;
 import org.dbsyncer.biz.vo.SyncTrendStackVO;
 import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.metric.Bucket;
@@ -113,6 +115,8 @@ public class MetricReporter implements ScheduledTaskJob {
     @PostConstruct
     private void init() {
         scheduledTaskService.start(5000, this);
+        // 堆积数按秒采样，与 TPS 同为近 1 分钟 60 槽
+        scheduledTaskService.start("metric-queue-sample", 1000, this::sampleQueueUp);
     }
 
     public List<MetricResponse> getMetricInfo() {
@@ -171,14 +175,26 @@ public class MetricReporter implements ScheduledTaskJob {
     public AppReportMetric getAppReportMetric() {
         queryTime = LocalDateTime.now();
         // 堆积任务(通用执行器 + 表执行器)
-        report.setQueueUp(bufferActuatorRouter.getQueueSize() + generalBufferActuator.getQueue().size());
+        long queueUp = bufferActuatorRouter.getQueueSize() + generalBufferActuator.getQueue().size();
+        report.setQueueUp(queueUp);
         report.setQueueCapacity(bufferActuatorRouter.getQueueCapacity() + generalBufferActuator.getQueueCapacity());
+        // 同步写入当前秒，避免仅依赖定时采样出现空点
+        timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_QUEUE).set(queueUp);
+        report.setQueue(getOneMinQueueUp());
         // 持久化任务
         report.setStorageQueueUp(storageBufferActuator.getQueue().size());
         report.setStorageQueueCapacity(storageBufferActuator.getQueueCapacity());
         // 执行器TPS
         report.setTps(getOneMinBufferActuatorRate());
         return report;
+    }
+
+    /**
+     * 按秒采样执行器堆积数。
+     */
+    private void sampleQueueUp() {
+        long queueUp = bufferActuatorRouter.getQueueSize() + generalBufferActuator.getQueue().size();
+        timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_QUEUE).set(queueUp);
     }
 
     public DashboardMetric getMappingReportMetric() {
@@ -305,14 +321,29 @@ public class MetricReporter implements ScheduledTaskJob {
      * @return
      */
     public TpsVO getOneMinBufferActuatorRate() {
-        Bucket[] buckets = timeRegistry.meter(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS).getBucketAll();
         TpsVO vo = new TpsVO();
+        fillOneMinBuckets(TimeRegistry.GENERAL_BUFFER_ACTUATOR_TPS, vo);
+        return vo;
+    }
+
+    /**
+     * 获取执行器堆积数近 1 分钟时序
+     *
+     * @return 堆积时序
+     */
+    public QueueUpVO getOneMinQueueUp() {
+        QueueUpVO vo = new QueueUpVO();
+        fillOneMinBuckets(TimeRegistry.GENERAL_BUFFER_ACTUATOR_QUEUE, vo);
+        return vo;
+    }
+
+    private void fillOneMinBuckets(String metricName, HistoryStackVO vo) {
+        Bucket[] buckets = timeRegistry.meter(metricName).getBucketAll();
         Instant now = Instant.now();
         long oneMin = now.minus(1, ChronoUnit.MINUTES).toEpochMilli();
-        // 只显示1分钟内
         Map<String, Long> map = new HashMap<>();
-        Stream.of(buckets).filter(b->b.getTime() >= oneMin).sorted(Comparator.comparing(Bucket::getTime))
-                .forEach(b->map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.HH_MM_SS), b.get()));
+        Stream.of(buckets).filter(b -> b.getTime() >= oneMin).sorted(Comparator.comparing(Bucket::getTime))
+                .forEach(b -> map.put(DateFormatUtil.timestampToString(new Timestamp(b.getTime()), DateFormatUtil.HH_MM_SS), b.get()));
         for (int i = 0; i < buckets.length; i++) {
             long milli = now.minus(buckets.length - i, ChronoUnit.SECONDS).toEpochMilli();
             String key = DateFormatUtil.timestampToString(new Timestamp(milli), DateFormatUtil.HH_MM_SS);
@@ -320,7 +351,6 @@ public class MetricReporter implements ScheduledTaskJob {
             vo.addValue(map.getOrDefault(key, 0L));
         }
         vo.setAverage(Math.floor(map.values().stream().mapToInt(Long::intValue).average().orElse(0)));
-        return vo;
     }
 
     /**

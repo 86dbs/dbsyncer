@@ -4,25 +4,46 @@
 (function (window) {
     'use strict';
 
+    /** 近 1 分钟：监控刷新 5s，取最近 12 个点 */
+    var ONE_MIN_POINTS = 12;
+    var charts = {
+        cpu: null,
+        memory: null,
+        queue: null,
+        tps: null
+    };
+    var chartHistoryByNode = {};
+
     var clusterEnabled = false;
     var currentIsLeader = false;
+    var currentNodeId = '';
+    var selectedChartNodeId = '';
+    var chartNodeSelect = null;
+    var skipChartNodeSelectEvent = false;
     var pagination = null;
     var metricsByNodeId = {};
-    var metricsOverview = null;
 
     function initClusterList(options) {
         options = options || {};
         clusterEnabled = options.clusterEnabled === true;
         currentIsLeader = options.currentIsLeader === true;
+        currentNodeId = options.currentNodeId || '';
+        selectedChartNodeId = currentNodeId;
         metricsByNodeId = {};
-        metricsOverview = null;
+        chartHistoryByNode = {};
+        chartNodeSelect = null;
+        skipChartNodeSelectEvent = false;
 
         window.backIndexPage = function () {
             doLoader('/cluster/list');
         };
 
-        bindTabs();
         bindClusterActions();
+        destroyCharts();
+        if (clusterEnabled) {
+            initCharts();
+            bindChartNodeSelect();
+        }
 
         pagination = new PaginationManager({
             requestUrl: '/cluster/query',
@@ -39,22 +60,261 @@
         }
     }
 
-    function bindTabs() {
-        var $tabs = $('#clusterPageTabs');
-        if (!$tabs.length) {
+    function destroyCharts() {
+        Object.keys(charts).forEach(function (key) {
+            if (charts[key] && typeof charts[key].destroy === 'function') {
+                charts[key].destroy();
+            }
+            charts[key] = null;
+        });
+    }
+
+    function initLineChart(canvasId, label, color, solidFill) {
+        if (typeof Chart === 'undefined') {
+            return null;
+        }
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            return null;
+        }
+        var bgColor = solidFill ? color.replace('1)', '0.6)') : color.replace('1)', '0.1)');
+        return new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: label,
+                    data: [],
+                    borderColor: color,
+                    backgroundColor: bgColor,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        grid: {display: false},
+                        ticks: {maxTicksLimit: 6}
+                    },
+                    y: {
+                        display: true,
+                        beginAtZero: true,
+                        grid: {color: 'rgba(0, 0, 0, 0.05)'}
+                    }
+                },
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12
+                    }
+                }
+            }
+        });
+    }
+
+    function initCharts() {
+        charts.cpu = initLineChart('clusterCpuChart', 'CPU', 'rgba(82, 196, 26, 1)', false);
+        charts.memory = initLineChart('clusterMemoryChart', '内存', 'rgba(24, 144, 255, 1)', true);
+        charts.queue = initLineChart('clusterQueueChart', '堆积数', 'rgba(250, 173, 20, 1)', false);
+        charts.tps = initLineChart('clusterTpsChart', 'TPS', 'rgba(245, 108, 108, 1)', false);
+    }
+
+    function updateLineChart(chart, labels, data) {
+        if (!chart) {
             return;
         }
-        $tabs.on('click', '.page-tab', function () {
-            var tab = $(this).attr('data-tab');
-            if (!tab) {
+        chart.data.labels = labels || [];
+        chart.data.datasets[0].data = data || [];
+        chart.update('none');
+    }
+
+    function takeLast(list, size) {
+        if (!list || !list.length) {
+            return [];
+        }
+        if (list.length <= size) {
+            return list.slice();
+        }
+        return list.slice(list.length - size);
+    }
+
+    function pad2(n) {
+        return n < 10 ? '0' + n : String(n);
+    }
+
+    function nowTimeLabel() {
+        var d = new Date();
+        return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+    }
+
+    function ensureNodeHistory(nodeId) {
+        if (!chartHistoryByNode[nodeId]) {
+            chartHistoryByNode[nodeId] = {
+                cpu: {name: [], value: []},
+                memory: {name: [], value: []},
+                queue: {name: [], value: []},
+                tps: {name: [], value: []}
+            };
+        }
+        return chartHistoryByNode[nodeId];
+    }
+
+    function pushHistoryPoint(history, value) {
+        history.name.push(nowTimeLabel());
+        history.value.push(Number(value) || 0);
+        while (history.name.length > ONE_MIN_POINTS) {
+            history.name.shift();
+            history.value.shift();
+        }
+    }
+
+    function memoryToMb(metric) {
+        if (!metric || metric.memoryUsed === null || metric.memoryUsed === undefined || metric.memoryUsed === '') {
+            return 0;
+        }
+        return Number(metric.memoryUsed) * 1024;
+    }
+
+    function averageTps(values) {
+        if (!values || !values.length) {
+            return 0;
+        }
+        var sum = 0;
+        values.forEach(function (item) {
+            sum += Number(item) || 0;
+        });
+        return Math.floor(sum / values.length);
+    }
+
+    function clearCharts() {
+        updateLineChart(charts.cpu, [], []);
+        updateLineChart(charts.memory, [], []);
+        updateLineChart(charts.queue, [], []);
+        updateLineChart(charts.tps, [], []);
+        $('#clusterTpsTitle').text('执行器TPS');
+    }
+
+    function formatNodeOptionLabel(item) {
+        var name = item.name || item.nodeId || '';
+        return item.local ? (name + ' (本机)') : name;
+    }
+
+    function refreshChartNodeSelect(nodes) {
+        if (!chartNodeSelect || !nodes || !nodes.length) {
+            return;
+        }
+        var prev = selectedChartNodeId;
+        var data = [];
+        nodes.forEach(function (item) {
+            if (!item || !item.nodeId) {
                 return;
             }
-            $tabs.find('.page-tab').removeClass('is-active');
-            $(this).addClass('is-active');
-            $('#clusterTabPanels .page-tab-panel').removeClass('is-active');
-            $('#clusterTab-' + tab).addClass('is-active');
-            if (tab === 'task') {
-                renderTaskDetails();
+            data.push({
+                label: formatNodeOptionLabel(item),
+                value: item.nodeId
+            });
+        });
+        if (!data.length) {
+            return;
+        }
+        if (prev && metricsByNodeId[prev]) {
+            selectedChartNodeId = prev;
+        } else if (currentNodeId && metricsByNodeId[currentNodeId]) {
+            selectedChartNodeId = currentNodeId;
+        } else {
+            selectedChartNodeId = data[0].value;
+        }
+        skipChartNodeSelectEvent = true;
+        chartNodeSelect.setData(data);
+        chartNodeSelect.setValues([selectedChartNodeId], true);
+        skipChartNodeSelectEvent = false;
+    }
+
+    function bindChartNodeSelect() {
+        var $sel = $('#clusterChartNodeSelect');
+        if (!$sel.length || typeof $sel.dbSelect !== 'function') {
+            return;
+        }
+        var existing = $sel.data('dbSelect');
+        if (existing && typeof existing.destroy === 'function') {
+            existing.destroy();
+        }
+        chartNodeSelect = $sel.dbSelect({
+            type: 'single',
+            onSelect: function (values) {
+                if (skipChartNodeSelectEvent) {
+                    return;
+                }
+                selectedChartNodeId = (values && values[0]) || '';
+                loadCharts();
+            }
+        });
+    }
+
+    function loadCharts() {
+        if (!clusterEnabled || !selectedChartNodeId) {
+            return;
+        }
+        var metric = metricsByNodeId[selectedChartNodeId];
+        if (metric && metric.local) {
+            loadLocalCharts();
+            return;
+        }
+        if (metric && metric.reachable) {
+            loadRemoteCharts(metric);
+            return;
+        }
+        clearCharts();
+    }
+
+    function loadRemoteCharts(metric) {
+        var history = ensureNodeHistory(selectedChartNodeId);
+        pushHistoryPoint(history.cpu, metric.cpuPercent);
+        pushHistoryPoint(history.memory, memoryToMb(metric));
+        pushHistoryPoint(history.queue, metric.queueUp);
+        pushHistoryPoint(history.tps, Math.floor(metric.tps || 0));
+        updateLineChart(charts.cpu, history.cpu.name.slice(), history.cpu.value.slice());
+        updateLineChart(charts.memory, history.memory.name.slice(), history.memory.value.slice());
+        updateLineChart(charts.queue, history.queue.name.slice(), history.queue.value.slice());
+        updateLineChart(charts.tps, history.tps.name.slice(), history.tps.value.slice());
+        var avg = averageTps(history.tps.value);
+        $('#clusterTpsTitle').text(avg > 0 ? ('执行器TPS, 平均:' + avg + '/秒') : '执行器TPS');
+    }
+
+    function loadLocalCharts() {
+        doGetter('/monitor/metric', {}, function (res) {
+            if (res.success !== true || !res.data) {
+                return;
+            }
+            var r = res.data;
+            if (r.cpu) {
+                updateLineChart(charts.cpu, takeLast(r.cpu.name, ONE_MIN_POINTS), takeLast(r.cpu.value, ONE_MIN_POINTS));
+            }
+            if (r.memory) {
+                updateLineChart(charts.memory, takeLast(r.memory.name, ONE_MIN_POINTS), takeLast(r.memory.value, ONE_MIN_POINTS));
+            }
+            if (r.queue) {
+                updateLineChart(charts.queue, r.queue.name || [], r.queue.value || []);
+            }
+            if (r.tps) {
+                updateLineChart(charts.tps, r.tps.name || [], r.tps.value || []);
+                var title = r.tps.average > 0
+                    ? ('执行器TPS, 平均:' + r.tps.average + '/秒')
+                    : '执行器TPS';
+                $('#clusterTpsTitle').text(title);
             }
         });
     }
@@ -112,6 +372,13 @@
         return String(value);
     }
 
+    function formatMetric(m, getter) {
+        if (!m || !m.reachable) {
+            return '-';
+        }
+        return getter(m);
+    }
+
     function buildSsoConsoleUrl(item) {
         if (!item || !item.ip || !item.httpPort) {
             return '';
@@ -127,20 +394,26 @@
         var name = item.name || item.id || '';
         var localMark = item.local ? ' (本机)' : '';
         var m = metricOf(item.id);
+        var fullWorkItems = formatMetric(m, function (metric) {
+            return formatDash(metric.fullWorkItemCount);
+        });
+        var incremental = formatMetric(m, function (metric) {
+            return formatDash(metric.incrementalCount);
+        });
+        var tps = formatMetric(m, function (metric) {
+            return formatDash(Math.floor(metric.tps || 0));
+        });
+        var queueUp = formatMetric(m, function (metric) {
+            return formatDash(metric.queueUp);
+        });
+        var storageQueueUp = formatMetric(m, function (metric) {
+            return formatDash(metric.storageQueueUp);
+        });
         var cpu = m && m.reachable ? formatPercent(m.cpuPercent) : '-';
         var memory = m && m.reachable ? formatUsedTotal(m.memoryUsed, m.memoryTotal, 'G') : '-';
         var threads = m && m.reachable ? formatDash(m.threadLive) : '-';
         var disk = m && m.reachable ? formatUsedTotal(m.diskUsed, m.diskTotal, 'G') : '-';
         var buttons = [];
-        if (clusterEnabled && !item.local) {
-            var consoleUrl = buildSsoConsoleUrl(item);
-            if (consoleUrl) {
-                buttons.push(
-                    '<a class="table-action-btn view" title="打开控制台" href="'
-                    + consoleUrl + '"><i class="fa fa-external-link"></i></a>'
-                );
-            }
-        }
         if (clusterEnabled && currentIsLeader && !item.local) {
             var nodeId = escapeHtml(item.id || '');
             if (item.status === 1 && !item.leader) {
@@ -159,12 +432,24 @@
         var actions = buttons.length > 0
             ? '<div class="flex items-center">' + buttons.join('') + '</div>'
             : '-';
+        var nameHtml = escapeHtml(name);
+        if (clusterEnabled && !item.local) {
+            var consoleUrl = buildSsoConsoleUrl(item);
+            if (consoleUrl) {
+                nameHtml = '<a class="text-primary hover-underline" title="打开控制台" href="'
+                    + consoleUrl + '">' + nameHtml + '</a>';
+            }
+        }
         return '<tr>'
-            + '<td>' + escapeHtml(name) + localMark + '</td>'
+            + '<td>' + nameHtml + localMark + '</td>'
             + '<td>' + escapeHtml(item.roleName || '') + '</td>'
             + '<td>' + escapeHtml(item.statusName || '') + '</td>'
             + '<td class="' + networkClass + '">' + networkText + '</td>'
-            + '<td>' + escapeHtml(item.ip || '-') + '</td>'
+            + '<td>' + fullWorkItems + '</td>'
+            + '<td>' + incremental + '</td>'
+            + '<td>' + tps + '</td>'
+            + '<td>' + queueUp + '</td>'
+            + '<td>' + storageQueueUp + '</td>'
             + '<td>' + cpu + '</td>'
             + '<td>' + memory + '</td>'
             + '<td>' + threads + '</td>'
@@ -215,38 +500,9 @@
             $('#clusterIncTotal').text('-');
             return;
         }
-        $('#clusterTpsTotal').text(formatDash(overview.totalTps));
+        $('#clusterTpsTotal').text(formatDash(Math.floor(overview.totalTps || 0)));
         $('#clusterWorkItemTotal').text(formatDash(overview.totalFullWorkItems));
         $('#clusterIncTotal').text(formatDash(overview.totalIncremental));
-    }
-
-    function renderTaskDetails() {
-        var $body = $('#taskDetailTableBody');
-        if (!$body.length) {
-            return;
-        }
-        if (!metricsOverview || !metricsOverview.nodes || metricsOverview.nodes.length === 0) {
-            $body.html('<tr><td colspan="7" class="text-center text-secondary">暂无节点指标</td></tr>');
-            updateTaskSummary(metricsOverview);
-            return;
-        }
-        updateTaskSummary(metricsOverview);
-        var rows = metricsOverview.nodes.map(function (item) {
-            var name = item.name || item.nodeId || '';
-            var tps = item.reachable ? formatDash(Math.floor(item.tps || 0)) : '-';
-            var queue = item.reachable ? formatDash(item.queueUp) : '-';
-            var storage = item.reachable ? formatDash(item.storageQueueUp) : '-';
-            return '<tr>'
-                + '<td>' + escapeHtml(name) + '</td>'
-                + '<td>' + escapeHtml(item.roleName || '') + '</td>'
-                + '<td>' + formatDash(item.fullWorkItemCount) + '</td>'
-                + '<td>' + formatDash(item.incrementalCount) + '</td>'
-                + '<td>' + tps + '</td>'
-                + '<td>' + queue + '</td>'
-                + '<td>' + storage + '</td>'
-                + '</tr>';
-        }).join('');
-        $body.html(rows);
     }
 
     function loadNodeMetrics(refreshTable) {
@@ -257,26 +513,21 @@
                 }
                 return;
             }
-            metricsOverview = res.data || {};
             metricsByNodeId = {};
-            var nodes = metricsOverview.nodes || [];
+            var overview = res.data || {};
+            var nodes = overview.nodes || [];
             nodes.forEach(function (item) {
                 if (item && item.nodeId) {
                     metricsByNodeId[item.nodeId] = item;
                 }
             });
-            if (refreshTable && pagination && typeof pagination.doSearch === 'function') {
-                pagination.doSearch({}, pagination.currentPage || 1);
-            } else if (pagination && typeof pagination.doSearch === 'function') {
-                // 定时刷新：仅在集群信息 Tab 可见时重绘当前页
-                if ($('#clusterTab-info').hasClass('is-active')) {
-                    pagination.doSearch({}, pagination.currentPage || 1);
-                }
+            if (clusterEnabled) {
+                refreshChartNodeSelect(nodes);
+                loadCharts();
             }
-            if ($('#clusterTab-task').hasClass('is-active')) {
-                renderTaskDetails();
-            } else {
-                updateTaskSummary(metricsOverview);
+            updateTaskSummary(overview);
+            if (pagination && typeof pagination.doSearch === 'function') {
+                pagination.doSearch({}, pagination.currentPage || 1);
             }
         });
     }

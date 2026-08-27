@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.sdk.spi;
 
+import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
 import org.dbsyncer.sdk.enums.ClusterRoleEnum;
@@ -12,7 +13,9 @@ import org.dbsyncer.sdk.model.WorkItemIds;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 集群控制服务：节点角色、工作项派工与围栏。单机实现恒为 Leader。
@@ -83,6 +86,33 @@ public interface ClusterService {
      * @return 节点，单机为空列表
      */
     List<ClusterNode> listNodes();
+
+    /**
+     * 分页查询集群节点。顺序固定为创建时间升序、节点 ID 升序（不按心跳更新时间排序）。
+     * <p>默认基于 {@link #listNodes()} 内存分页；存储侧可覆盖为库表分页。
+     *
+     * @param pageNum  页码（从 1 起）
+     * @param pageSize 每页条数
+     * @return 分页结果
+     */
+    default Paging<ClusterNode> queryNodes(int pageNum, int pageSize) {
+        int safePageNum = Math.max(1, pageNum);
+        int safePageSize = Math.max(1, pageSize);
+        List<ClusterNode> source = listNodes();
+        List<ClusterNode> all = new ArrayList<>(source == null ? Collections.emptyList() : source);
+        all.sort(Comparator
+                .comparingLong(ClusterNode::getCreateTime)
+                .thenComparing(n -> StringUtil.getIfBlank(n.getNodeId(), StringUtil.EMPTY), String::compareTo));
+        Paging<ClusterNode> paging = new Paging<>(safePageNum, safePageSize);
+        paging.setTotal(all.size());
+        int offset = (safePageNum - 1) * safePageSize;
+        if (offset >= all.size()) {
+            paging.setData(Collections.emptyList());
+            return paging;
+        }
+        paging.setData(all.stream().skip(offset).limit(safePageSize).collect(Collectors.toList()));
+        return paging;
+    }
 
     /**
      * 在线节点。

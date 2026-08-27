@@ -18,6 +18,11 @@ public final class TimeRegistry {
 
     public static final String GENERAL_BUFFER_ACTUATOR_TPS = "general.buffer.actuator.tps";
 
+    /**
+     * 执行器堆积数（近 1 分钟按秒采样）。
+     */
+    public static final String GENERAL_BUFFER_ACTUATOR_QUEUE = "general.buffer.actuator.queue";
+
     private Map<String, TimeMetric> metricMap = new ConcurrentHashMap<>();
 
     public TimeMetric meter(String name) {

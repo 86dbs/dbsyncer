@@ -77,3 +77,27 @@
   color: var(--text-primary);
   line-height: var(--line-height-sm);
 }
+
+/* 集群页监控图表 */
+.cluster-chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.cluster-chart-toolbar .dbsyncer-select {
+  width: 20rem;
+  max-width: 100%;
+}
+
+.cluster-chart-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.cluster-chart-row .card-body {
+  height: 10rem;
+  position: relative;
+}

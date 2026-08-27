@@ -7,6 +7,7 @@ import org.dbsyncer.biz.vo.CpuVO;
 import org.dbsyncer.biz.vo.DiskSpaceVO;
 import org.dbsyncer.biz.vo.MemoryVO;
 import org.dbsyncer.biz.vo.MetricResponseVO;
+import org.dbsyncer.biz.vo.QueueUpVO;
 import org.dbsyncer.biz.vo.TpsVO;
 
 import java.util.List;
@@ -14,9 +15,14 @@ import java.util.List;
 public class AppReportMetric {
 
     /**
-     * 待处理数
+     * 待处理数（当前瞬时值）
      */
     private long queueUp;
+
+    /**
+     * 待处理数近 1 分钟时序
+     */
+    private QueueUpVO queue;
 
     /**
      * 队列长度
@@ -52,6 +58,14 @@ public class AppReportMetric {
 
     public void setQueueUp(long queueUp) {
         this.queueUp = queueUp;
+    }
+
+    public QueueUpVO getQueue() {
+        return queue;
+    }
+
+    public void setQueue(QueueUpVO queue) {
+        this.queue = queue;
     }
 
     public long getQueueCapacity() {

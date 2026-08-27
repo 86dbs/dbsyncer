@@ -7,6 +7,7 @@ import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.ClusterNodeVO;
 import org.dbsyncer.biz.vo.TaskWorkItemSummaryVO;
 import org.dbsyncer.common.model.Paging;
+import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.NumberUtil;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.ClusterNodeStatusEnum;
@@ -47,11 +48,14 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     public Paging<ClusterNodeVO> query(Map<String, String> params) {
         int pageNum = NumberUtil.toInt(params == null ? null : params.get("pageNum"), 1);
         int pageSize = NumberUtil.toInt(params == null ? null : params.get("pageSize"), 10);
-        List<ClusterNodeVO> all = clusterService.listNodes().stream().map(this::toVO).collect(Collectors.toList());
+        Paging<ClusterNode> source = clusterService.queryNodes(pageNum, pageSize);
         Paging<ClusterNodeVO> paging = new Paging<>(pageNum, pageSize);
-        paging.setTotal(all.size());
-        int offset = (pageNum * pageSize) - pageSize;
-        paging.setData(all.stream().skip(offset).limit(pageSize).collect(Collectors.toList()));
+        paging.setTotal(source.getTotal());
+        if (CollectionUtils.isEmpty(source.getData())) {
+            paging.setData(Collections.emptyList());
+            return paging;
+        }
+        paging.setData(source.getData().stream().map(this::toVO).collect(Collectors.toList()));
         return paging;
     }
 

@@ -24,6 +24,16 @@ public final class Bucket {
         longAdder.add(count);
     }
 
+    /**
+     * 覆盖当前槽位值（用于瞬时指标采样，如堆积数）。
+     *
+     * @param count 当前值
+     */
+    public void set(long count) {
+        longAdder.reset();
+        longAdder.add(count);
+    }
+
     public long get() {
         return longAdder.sum();
     }

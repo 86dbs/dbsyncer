@@ -40,85 +40,95 @@
     </p>
 </div>
 
+<!-- 近 1 分钟指标 -->
+<div th:if="${editionInfo.edition ne 'community' and clusterEnabled}" class="mb-5">
+    <div class="cluster-chart-toolbar">
+        <span class="text-sm text-secondary">当前节点</span>
+        <select id="clusterChartNodeSelect" class="form-control" aria-label="切换监控节点"></select>
+    </div>
+    <div class="cluster-chart-row">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">CPU(%)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterCpuChart" height="160"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">内存(MB)</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterMemoryChart" height="160"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center">堆积数</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterQueueChart" height="160"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title text-center" id="clusterTpsTitle">执行器TPS</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="clusterTpsChart" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 集群管理 -->
 <div th:if="${editionInfo.edition ne 'community'}" class="form-container">
     <div class="card-header">
         <h3 class="card-title text-center">集群管理</h3>
     </div>
     <div class="card-body">
-        <div class="mb-4 text-sm text-secondary" th:if="${clusterEnabled}">
-            当前节点：<strong class="text-primary" th:text="${current.id}">-</strong>
-            ，角色：<strong th:text="${current.roleName}">-</strong>
-        </div>
         <div class="mb-4 text-sm text-secondary" th:unless="${clusterEnabled}">
             当前为单机模式。开启集群请配置 dbsyncer.cluster.enabled=true，使用 MySQL 存储，并确保已授权产品码 ClusterService。
         </div>
 
-        <div class="page-tabs" id="clusterPageTabs" th:if="${clusterEnabled}">
-            <button type="button" class="page-tab is-active" data-tab="task">任务详情</button>
-            <button type="button" class="page-tab" data-tab="info">集群信息</button>
-        </div>
-
-        <div id="clusterTabPanels">
-            <!-- 任务详情（默认） -->
-            <div class="page-tab-panel is-active" id="clusterTab-task" th:if="${clusterEnabled}">
-                <div class="stat-summary">
-                    <div class="stat-summary-item">
-                        <div class="stat-summary-label">TPS总计</div>
-                        <div class="stat-summary-value" id="clusterTpsTotal">-</div>
-                    </div>
-                    <div class="stat-summary-item">
-                        <div class="stat-summary-label">全量工作项总计</div>
-                        <div class="stat-summary-value" id="clusterWorkItemTotal">-</div>
-                    </div>
-                    <div class="stat-summary-item">
-                        <div class="stat-summary-label">增量任务总计</div>
-                        <div class="stat-summary-value" id="clusterIncTotal">-</div>
-                    </div>
-                </div>
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>节点名称</th>
-                        <th>角色</th>
-                        <th>全量工作项数</th>
-                        <th>增量任务数</th>
-                        <th>TPS</th>
-                        <th>堆积</th>
-                        <th>持久化</th>
-                    </tr>
-                    </thead>
-                    <tbody id="taskDetailTableBody">
-                    <tr>
-                        <td colspan="7" class="text-center text-secondary">加载中...</td>
-                    </tr>
-                    </tbody>
-                </table>
+        <div class="stat-summary" th:if="${clusterEnabled}">
+            <div class="stat-summary-item">
+                <div class="stat-summary-label">TPS总计</div>
+                <div class="stat-summary-value" id="clusterTpsTotal">-</div>
             </div>
-
-            <!-- 集群信息 -->
-            <div id="clusterTab-info"
-                 th:class="${clusterEnabled} ? 'page-tab-panel' : 'page-tab-panel is-active'">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th>集群名称</th>
-                        <th>角色</th>
-                        <th>状态</th>
-                        <th>网络</th>
-                        <th>IP</th>
-                        <th>CPU</th>
-                        <th>内存</th>
-                        <th>线程数</th>
-                        <th>磁盘使用率</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody id="clusterTableBody"></tbody>
-                </table>
-                <div class="blank-block"></div>
+            <div class="stat-summary-item">
+                <div class="stat-summary-label">全量工作项总计</div>
+                <div class="stat-summary-value" id="clusterWorkItemTotal">-</div>
+            </div>
+            <div class="stat-summary-item">
+                <div class="stat-summary-label">增量任务总计</div>
+                <div class="stat-summary-value" id="clusterIncTotal">-</div>
             </div>
         </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>集群名称</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>网络</th>
+                <th>全量工作项数</th>
+                <th>增量任务数</th>
+                <th>TPS</th>
+                <th>堆积</th>
+                <th>持久化</th>
+                <th>CPU</th>
+                <th>内存</th>
+                <th>线程数</th>
+                <th>磁盘使用率</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody id="clusterTableBody"></tbody>
+        </table>
+        <div class="blank-block"></div>
     </div>
 </div>
 
@@ -126,7 +136,8 @@
 <script th:if="${editionInfo.edition ne 'community'}" th:inline="javascript">
     initClusterList({
         clusterEnabled: [[${clusterEnabled}]],
-        currentIsLeader: [[${current.leader}]]
+        currentIsLeader: [[${current.leader}]],
+        currentNodeId: [[${current.id}]]
     });
 </script>
 </html>

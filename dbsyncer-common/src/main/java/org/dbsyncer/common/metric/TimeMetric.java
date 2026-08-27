@@ -103,6 +103,40 @@ public class TimeMetric {
         }
     }
 
+    /**
+     * 写入当前时间片的瞬时值（覆盖，非累加）。
+     *
+     * @param count 当前值
+     */
+    public void set(long count) {
+        long passTime = System.currentTimeMillis();
+        if (passTime - latestPassedTime < slice) {
+            buckets[position].set(count);
+            return;
+        }
+
+        if (enterNextBucketLock.isLocked() && passTime - latestPassedTime < timeSliceUsed) {
+            buckets[position].set(count);
+            return;
+        }
+
+        try {
+            enterNextBucketLock.lock();
+            if (passTime - latestPassedTime < slice) {
+                buckets[position].set(count);
+                return;
+            }
+
+            position = position + 1 >= bucketSize ? 0 : position + 1;
+            Bucket nextBucket = buckets[position];
+            nextBucket.reset(passTime);
+            nextBucket.set(count);
+            latestPassedTime = passTime;
+        } finally {
+            enterNextBucketLock.unlock();
+        }
+    }
+
     public Bucket[] getBucketAll() {
         return buckets;
     }

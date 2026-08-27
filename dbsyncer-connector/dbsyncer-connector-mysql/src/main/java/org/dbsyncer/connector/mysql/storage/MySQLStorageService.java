@@ -707,7 +707,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.TASK_DETAIL.getType(), k -> new Executor(k, taskDetailFields, false, false));
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
-        tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, true));
+        tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
