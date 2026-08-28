@@ -3,6 +3,7 @@
  */
 package org.dbsyncer.manager.impl;
 
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.config.IncrementRecoveryConfig;
 import org.dbsyncer.common.rsa.RsaManager;
 import org.dbsyncer.common.scheduled.ScheduledTaskJob;
@@ -151,6 +152,8 @@ public final class IncrementPuller extends AbstractPuller implements Application
                 startListener(mapping, metaId, listener, autoRecovery);
             } catch (Exception e) {
                 close(metaId);
+                // start 异步失败时 Meta 多为 RUNNING，close 不会发 ClosedEvent，需显式收口 READY
+                publishClosedEvent(metaId);
                 logService.log(LogType.TableGroupLog.INCREMENT_FAILED, String.format("启动驱动失败：[%s], %s", mapping.getName(), e.getMessage()));
                 logger.error("运行异常，结束增量同步：{}", metaId, e);
             }
@@ -228,10 +231,27 @@ public final class IncrementPuller extends AbstractPuller implements Application
             }
             bufferActuatorRouter.unbind(metaId);
             tableGroupContext.clear(metaId);
-            publishClosedEvent(metaId);
+            // 仅用户停止（Meta=STOPPING）时发 ClosedEvent 收口 READY。
+            if (shouldPublishClosedAfterStop(metaId)) {
+                publishClosedEvent(metaId);
+            }
             logger.info("关闭成功:{}", metaId);
             return null;
         });
+    }
+
+    /**
+     * 用户停止后 Meta 为 STOPPING，需 ClosedEvent 收口；集群所有权迁移的 stopLocal 不发。
+     *
+     * @param metaId Meta ID
+     * @return true 应发布 ClosedEvent
+     */
+    private boolean shouldPublishClosedAfterStop(String metaId) {
+        if (StringUtil.isBlank(metaId)) {
+            return false;
+        }
+        Meta meta = metaProfile.getMeta(metaId);
+        return meta != null && meta.getState() == CommonTaskStatusEnum.STOPPING.getCode();
     }
 
     /**

@@ -202,7 +202,6 @@ public class JwtSecretManager {
                     return;
                 }
             }
-
             JwtSecretConfig config = systemConfig.getJwtSecretConfig();
             if (config == null) {
                 config = new JwtSecretConfig();

@@ -25,7 +25,6 @@ import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;

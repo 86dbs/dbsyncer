@@ -257,8 +257,8 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
     }
 
     @Override
-    public Object[] readCursor(DatabaseConnectorInstance connectorInstance, FullPluginContext context) {
-        if (connectorInstance == null || context == null || context.getSourceTable() == null) {
+    public Object[] readCursor(DatabaseConnectorInstance connectorInstance, FullPluginContext context, long batchSize) {
+        if (batchSize <= 0L || connectorInstance == null || context == null || context.getSourceTable() == null) {
             return null;
         }
         List<Field> pkFields = PrimaryKeyUtil.findPrimaryKeyFields(context.getSourceTable().getColumn());
@@ -266,62 +266,63 @@ public abstract class AbstractDatabaseConnector extends AbstractConnector implem
             return null;
         }
         Map<String, String> command = context.getCommand();
+        String tableName = context.getSourceTable().getName();
         if (CollectionUtils.isEmpty(command)) {
-            logger.warn("读取游标失败：command 为空 table={}", context.getSourceTable().getName());
+            logger.warn("读取游标失败：command 为空 table={}", tableName);
             return null;
         }
-        context.setPageSize(1);
-        context.setPageIndex(Math.max(1, context.getPageIndex()));
         final int pkCount = pkFields.size();
-
         Object[] after = context.getCursors();
         boolean hasAfter = after != null && after.length > 0 && after[0] != null;
         if (hasAfter && after.length != pkCount) {
             logger.warn("读取游标失败：游标列数与主键不一致 table={}, cursors={}, pks={}",
-                    context.getSourceTable().getName(), after.length, pkCount);
+                    tableName, after.length, pkCount);
             return null;
         }
 
-        String sql;
-        Object[] args;
+        boolean tailOnly = batchSize > 1L;
+        int pageSize = tailOnly ? (batchSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) batchSize) : 1;
+        int pageIndex = tailOnly ? 1 : Math.max(1, context.getPageIndex());
+        context.setPageSize(pageSize);
+        context.setPageIndex(pageIndex);
+
+        String opKey;
         if (hasAfter) {
             context.setSupportedCursor(true);
-            sql = command.get(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR);
-            if (StringUtil.isBlank(sql)) {
-                logger.warn("读取游标失败：缺少 {}，请重新保存表映射以刷新 command table={}",
-                        ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR, context.getSourceTable().getName());
-                return null;
-            }
-            args = buildReadCursorArgsWithAfter(context, after);
+            opKey = ConnectorConstant.OPERTION_QUERY_CURSOR_KEY_CURSOR;
         } else {
-            sql = command.get(ConnectorConstant.OPERTION_QUERY_CURSOR_KEY);
-            if (StringUtil.isBlank(sql)) {
-                logger.warn("读取游标失败：缺少 {}，请重新保存表映射以刷新 command table={}",
-                        ConnectorConstant.OPERTION_QUERY_CURSOR_KEY, context.getSourceTable().getName());
-                return null;
-            }
-            args = getPageArgs(context);
+            opKey = ConnectorConstant.OPERTION_QUERY_CURSOR_KEY;
         }
-        if (StringUtil.isBlank(sql) || args == null) {
+        String sql = command.get(opKey);
+        if (StringUtil.isBlank(sql)) {
+            logger.warn("读取游标失败：缺少 {}，请重新保存表映射以刷新 command table={}", opKey, tableName);
+            return null;
+        }
+        Object[] args = hasAfter ? buildReadCursorArgsWithAfter(context, after) : getPageArgs(context);
+        if (args == null) {
             return null;
         }
         try {
             return connectorInstance.execute(template -> template.query(sql, args, rs -> {
-                if (!rs.next()) {
-                    return null;
-                }
-                Object[] values = new Object[pkCount];
-                for (int i = 0; i < pkCount; i++) {
-                    Object value = rs.getObject(i + 1);
-                    if (value == null) {
-                        return null;
+                Object[] last = null;
+                while (rs.next()) {
+                    Object[] values = new Object[pkCount];
+                    for (int i = 0; i < pkCount; i++) {
+                        Object value = rs.getObject(i + 1);
+                        if (value == null) {
+                            return null;
+                        }
+                        values[i] = value;
                     }
-                    values[i] = value;
+                    last = values;
+                    if (!tailOnly) {
+                        return last;
+                    }
                 }
-                return values;
+                return last;
             }));
         } catch (Exception e) {
-            logger.warn("读取游标失败 table={}, err={}", context.getSourceTable().getName(), e.getMessage());
+            logger.warn("读取游标失败 table={}, err={}", tableName, e.getMessage());
             return null;
         }
     }

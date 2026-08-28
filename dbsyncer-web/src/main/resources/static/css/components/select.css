@@ -450,6 +450,14 @@
   }
 }
 
+/* 表单内下拉：面板与触发器同宽 */
+.form-control-area > .dbsyncer-select .dbsyncer-select-dropdown {
+  left: 0;
+  right: 0;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .dbsyncer-select-dropdown {

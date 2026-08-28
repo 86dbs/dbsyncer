@@ -80,6 +80,11 @@ public class SystemConfigChecker extends AbstractChecker {
         SystemConfig systemConfig = profileComponent.getSystemConfig();
         Assert.notNull(systemConfig, "配置文件为空.");
         BeanUtil.mapToBean(newParams, systemConfig);
+        if (params.containsKey("workItemPlanPageSize")) {
+            Assert.isTrue(systemConfig.getWorkItemPlanPageSize() >= 10000
+                            && systemConfig.getWorkItemPlanPageSize() <= 200000,
+                    "全量批次支持的范围[10000-200000].");
+        }
         // 修改 API 密钥配置
         saveApiKeyConfig(systemConfig, params);
         // 修改RSA配置

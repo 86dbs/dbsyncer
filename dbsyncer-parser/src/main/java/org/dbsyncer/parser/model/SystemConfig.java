@@ -75,6 +75,11 @@ public class SystemConfig extends ConfigModel {
     private int maxBufferActuatorSize = 50;
 
     /**
+     * 全量规划批次大小（行）
+     */
+    private int workItemPlanPageSize = 10000;
+
+    /**
      * 是否打印trace信息（false-关闭; true-开启）
      */
     private boolean enablePrintTraceInfo;
@@ -187,6 +192,14 @@ public class SystemConfig extends ConfigModel {
 
     public void setMaxBufferActuatorSize(int maxBufferActuatorSize) {
         this.maxBufferActuatorSize = maxBufferActuatorSize;
+    }
+
+    public int getWorkItemPlanPageSize() {
+        return workItemPlanPageSize;
+    }
+
+    public void setWorkItemPlanPageSize(int workItemPlanPageSize) {
+        this.workItemPlanPageSize = workItemPlanPageSize;
     }
 
     public boolean isEnablePrintTraceInfo() {

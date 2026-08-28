@@ -105,6 +105,21 @@ select.form-control.is-invalid,
   min-width: 0;
 }
 
+/* 多列表单网格：标签置顶，控件占满列宽（避免 120px 标签挤占下拉宽度） */
+.form-grid-compact > .form-item {
+  grid-template-columns: 1fr;
+  row-gap: 6px;
+  min-width: 0;
+}
+
+.form-grid-compact > .form-item .form-label {
+  text-align: left;
+}
+
+.form-grid-compact > .form-item .form-control-area {
+  overflow: visible;
+}
+
 @media (max-width: 768px) {
   .form-item {
     grid-template-columns: 1fr;

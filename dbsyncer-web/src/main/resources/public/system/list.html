@@ -74,6 +74,16 @@
                                name="maxBufferActuatorSize" th:value="${config?.maxBufferActuatorSize}"/>
                     </div>
                 </div>
+                <div th:if="${editionInfo != null and editionInfo.edition ne 'community'}" class="form-item">
+                    <label class="form-label">全量规划批次<strong class="text-primary">*</strong>
+                        <i class="fa fa-question-circle"
+                           title="集群全量规划批次，可手动调整批次分片大小"></i>
+                    </label>
+                    <div class="form-control-area">
+                        <input type="number" class="form-control" min="1000" max="200000" required
+                               name="workItemPlanPageSize" th:value="${config?.workItemPlanPageSize}"/>
+                    </div>
+                </div>
                 <div class="form-item">
                     <label class="form-label">同步数据过期时间(天)<strong class="text-primary">*</strong></label>
                     <div class="form-control-area">

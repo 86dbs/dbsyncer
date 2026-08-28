@@ -126,11 +126,11 @@ public class ConnectorFactory implements DisposableBean {
 
     /**
      * 检查连接配置是否可用。
-     * <p>本机连接池无实例时先建连再探测（集群 Follower 上常见：连接器在 Leader 新增后本机尚未入池）。
+     * 本机连接池无实例时先建连再探测（集群 Follower 上常见：连接器在 Leader 新增后本机尚未入池）。
      *
-     * @param instanceId 实例 ID（通常为连接器配置 ID）
-     * @param config     连接配置
-     * @return true 可用
+     * @param instanceId
+     * @param config
+     * @return
      */
     public boolean isAlive(String instanceId, ConnectorConfig config) {
         Assert.hasText(instanceId, "ConnectorConfigId can not be null.");

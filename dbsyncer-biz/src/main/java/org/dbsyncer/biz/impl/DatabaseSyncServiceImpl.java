@@ -112,9 +112,6 @@ public class DatabaseSyncServiceImpl implements DatabaseSyncService {
      * 先缓存后存储，避免 Follower 写代理创建后本地缓存为空。
      */
     private DatabaseSyncTask resolveTask(String id) {
-        if (StringUtil.isBlank(id)) {
-            return null;
-        }
         DatabaseSyncTask task = taskService.get(id);
         if (task != null) {
             return task;

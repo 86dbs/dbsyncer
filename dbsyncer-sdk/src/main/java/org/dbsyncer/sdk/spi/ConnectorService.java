@@ -111,17 +111,29 @@ public interface ConnectorService<I extends ConnectorInstance, C extends Connect
     Result reader(I connectorInstance, ReaderContext context);
 
     /**
-     * 读取一条游标数据（仅定位键/主键列，不读业务列）。
-     * <p>约定：{@code command} 含 {@code QUERY_CURSOR_KEY} / {@code QUERY_CURSOR_KEY_CURSOR}（定位键可复合）；
-     * {@code pageSize=1}，{@code pageIndex} 表示起点后第几条（从 1 起）；
-     * {@code cursors} 非空时为排他起点并开启游标分页。默认不支持返回 {@code null}。
+     * 读取游标定位键（仅主键列，不读业务列）。
+     * <p>约定：{@code command} 含 {@code QUERY_CURSOR_KEY} / {@code QUERY_CURSOR_KEY_CURSOR}；
+     * {@code cursors} 非空时为排他起点并开启游标分页。
+     * <ul>
+     *   <li>{@code batchSize == 1}：返回窗口内第一条主键，{@code pageIndex} 表示起点后第几条（从 1 起）</li>
+     *   <li>{@code batchSize > 1}：扫描窗口内所有行并返回最后一条主键（用于分片规划取批尾）</li>
+     * </ul>
+     * 默认不支持返回 {@code null}。
      *
      * @param connectorInstance 连接实例
      * @param context           全量上下文（表、command、游标、分页）
-     * @return 定位键列值（单列或多列）；无数据或不支持为 {@code null}
+     * @param batchSize         窗口行数（至少 1）
+     * @return 定位键列值；无数据或不支持为 {@code null}
+     */
+    default Object[] readCursor(I connectorInstance, FullPluginContext context, long batchSize) {
+        return null;
+    }
+
+    /**
+     * 读取一条游标定位键，等价于 {@link #readCursor(I, FullPluginContext, long) readCursor(..., 1)}。
      */
     default Object[] readCursor(I connectorInstance, FullPluginContext context) {
-        return null;
+        return readCursor(connectorInstance, context, 1L);
     }
 
     /**

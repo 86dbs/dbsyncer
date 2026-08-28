@@ -15,6 +15,7 @@ import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.biz.vo.QueueUpVO;
 import org.dbsyncer.biz.vo.SyncTrendStackVO;
 import org.dbsyncer.biz.vo.TpsVO;
+import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.common.metric.Bucket;
 import org.dbsyncer.common.metric.TimeRegistry;
 import org.dbsyncer.common.model.Paging;
@@ -26,12 +27,9 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.parser.MetaProfile;
 import org.dbsyncer.parser.ProfileComponent;
 import org.dbsyncer.parser.TaskProfile;
-import org.dbsyncer.common.enums.CommonTaskStatusEnum;
 import org.dbsyncer.parser.flush.BufferActuator;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.sdk.model.BufferActuatorMetric;
-import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.constant.ConfigConstant;
 import org.dbsyncer.sdk.constant.ConnectorConstant;
 import org.dbsyncer.sdk.enums.FilterEnum;
@@ -40,6 +38,8 @@ import org.dbsyncer.sdk.filter.BooleanFilter;
 import org.dbsyncer.sdk.filter.Query;
 import org.dbsyncer.sdk.filter.impl.IntFilter;
 import org.dbsyncer.sdk.filter.impl.LongFilter;
+import org.dbsyncer.sdk.model.BufferActuatorMetric;
+import org.dbsyncer.sdk.spi.BufferActuatorRouterService;
 import org.dbsyncer.sdk.storage.StorageService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
 import org.slf4j.Logger;
@@ -115,7 +115,7 @@ public class MetricReporter implements ScheduledTaskJob {
     @PostConstruct
     private void init() {
         scheduledTaskService.start(5000, this);
-        // 堆积数按秒采样，与 TPS 同为近 1 分钟 60 槽
+        // 堆积数按秒采样
         scheduledTaskService.start("metric-queue-sample", 1000, this::sampleQueueUp);
     }
 
