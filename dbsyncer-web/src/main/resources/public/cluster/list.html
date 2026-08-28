@@ -40,12 +40,8 @@
     </p>
 </div>
 
-<!-- 近 1 分钟指标 -->
+<!-- 近 1 分钟指标（集群聚合） -->
 <div th:if="${editionInfo.edition ne 'community' and clusterEnabled}" class="mb-5">
-    <div class="cluster-chart-toolbar">
-        <span class="text-sm text-secondary">当前节点</span>
-        <select id="clusterChartNodeSelect" class="form-control" aria-label="切换监控节点"></select>
-    </div>
     <div class="cluster-chart-row">
         <div class="card">
             <div class="card-header">
@@ -65,18 +61,10 @@
         </div>
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title text-center">CPU(%)</h3>
+                <h3 class="card-title text-center">全量分片</h3>
             </div>
             <div class="card-body">
-                <canvas id="clusterCpuChart" height="160"></canvas>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title text-center">内存(MB)</h3>
-            </div>
-            <div class="card-body">
-                <canvas id="clusterMemoryChart" height="160"></canvas>
+                <canvas id="clusterWorkItemChart" height="160"></canvas>
             </div>
         </div>
     </div>
@@ -90,14 +78,6 @@
         </div>
 
         <div class="stat-summary" th:if="${clusterEnabled}">
-            <div class="stat-summary-item">
-                <div class="stat-summary-label">TPS总计</div>
-                <div class="stat-summary-value" id="clusterTpsTotal">-</div>
-            </div>
-            <div class="stat-summary-item">
-                <div class="stat-summary-label">全量分片任务</div>
-                <div class="stat-summary-value" id="clusterWorkItemTotal">-</div>
-            </div>
             <div class="stat-summary-item">
                 <div class="stat-summary-label">增量任务总计</div>
                 <div class="stat-summary-value" id="clusterIncTotal">-</div>

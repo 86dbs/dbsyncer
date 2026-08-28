@@ -292,4 +292,14 @@ public interface ClusterService {
     default void removeNode(String nodeId) {
         throw new SdkException("单机模式不支持移除节点");
     }
+
+    /**
+     * 修改节点展示名称。
+     *
+     * @param nodeId 节点 ID
+     * @param name   展示名称
+     */
+    default void updateNodeName(String nodeId, String name) {
+        throw new SdkException("单机模式不支持修改节点名称");
+    }
 }

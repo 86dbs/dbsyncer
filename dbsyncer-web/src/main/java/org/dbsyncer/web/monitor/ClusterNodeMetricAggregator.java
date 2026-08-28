@@ -7,9 +7,11 @@ import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.ClusterMetricsOverviewVO;
 import org.dbsyncer.biz.vo.ClusterNodeMetricVO;
 import org.dbsyncer.biz.vo.ClusterNodeVO;
+import org.dbsyncer.biz.vo.HistoryStackVO;
 import org.dbsyncer.biz.vo.TaskWorkItemSummaryVO;
 import org.dbsyncer.common.util.BatchTaskUtil;
 import org.dbsyncer.common.util.CollectionUtils;
+import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
@@ -46,6 +48,11 @@ public class ClusterNodeMetricAggregator {
     private static final int CONNECT_TIMEOUT_MS = 2000;
     private static final int READ_TIMEOUT_MS = 3000;
     private static final int PULL_CONCURRENCY = 8;
+    private static final int CHART_HISTORY_COUNT = 12;
+
+    private final HistoryStackVO chartTps = new HistoryStackVO();
+    private final HistoryStackVO chartQueue = new HistoryStackVO();
+    private final HistoryStackVO chartFullWorkItems = new HistoryStackVO();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -78,7 +85,11 @@ public class ClusterNodeMetricAggregator {
             local.setName(local.getNodeId());
             local.setRoleName(clusterService.getRole().name());
             empty.setNodes(Collections.singletonList(local));
-            empty.setTotalTps(local.getTps());
+            empty.setTotalTps(Math.floor(local.getTps()));
+            empty.setTotalQueue(local.getQueueUp());
+            empty.setTotalFullWorkItems(local.getFullWorkItemCount());
+            empty.setTotalIncremental(local.getIncrementalCount());
+            recordChartMetrics(empty);
             return empty;
         }
         Map<String, Integer> workItemByNode = resolveFullWorkItemCounts();
@@ -87,6 +98,7 @@ public class ClusterNodeMetricAggregator {
                 Math.min(PULL_CONCURRENCY, Math.max(1, nodes.size())), logger);
         ClusterMetricsOverviewVO overview = new ClusterMetricsOverviewVO();
         double totalTps = 0D;
+        long totalQueue = 0L;
         long totalWorkItems = 0L;
         long totalInc = 0L;
         for (ClusterNodeMetricVO item : metrics) {
@@ -96,14 +108,61 @@ public class ClusterNodeMetricAggregator {
             overview.getNodes().add(item);
             if (item.isReachable()) {
                 totalTps += item.getTps();
+                totalQueue += item.getQueueUp();
             }
             totalWorkItems += item.getFullWorkItemCount();
             totalInc += item.getIncrementalCount();
         }
         overview.setTotalTps(Math.floor(totalTps));
+        overview.setTotalQueue(totalQueue);
         overview.setTotalFullWorkItems(totalWorkItems);
         overview.setTotalIncremental(totalInc);
+        recordChartMetrics(overview);
         return overview;
+    }
+
+    private void recordChartMetrics(ClusterMetricsOverviewVO overview) {
+        pushChartPoint(chartTps, overview.getTotalTps());
+        pushChartPoint(chartQueue, overview.getTotalQueue());
+        pushChartPoint(chartFullWorkItems, overview.getTotalFullWorkItems());
+        fillChartHistory(overview);
+    }
+
+    private void fillChartHistory(ClusterMetricsOverviewVO overview) {
+        overview.setTps(snapshotHistory(chartTps));
+        overview.setQueue(snapshotHistory(chartQueue));
+        overview.setFullWorkItems(snapshotHistory(chartFullWorkItems));
+    }
+
+    private void pushChartPoint(HistoryStackVO history, double value) {
+        history.addName(DateFormatUtil.getCurrentTime());
+        history.addValue(value);
+        while (history.getName().size() > CHART_HISTORY_COUNT) {
+            history.getName().remove(0);
+            history.getValue().remove(0);
+        }
+        history.setAverage(average(history.getValue()));
+    }
+
+    private HistoryStackVO snapshotHistory(HistoryStackVO source) {
+        HistoryStackVO snapshot = new HistoryStackVO();
+        snapshot.setName(new ArrayList<>(source.getName()));
+        snapshot.setValue(new ArrayList<>(source.getValue()));
+        snapshot.setAverage(source.getAverage());
+        return snapshot;
+    }
+
+    private double average(List<Object> values) {
+        if (CollectionUtils.isEmpty(values)) {
+            return 0D;
+        }
+        double sum = 0D;
+        for (Object value : values) {
+            if (value instanceof Number) {
+                sum += ((Number) value).doubleValue();
+            }
+        }
+        return Math.floor(sum / values.size());
     }
 
     private ClusterNodeMetricVO pullOne(ClusterNodeVO node, Map<String, Integer> workItemByNode,

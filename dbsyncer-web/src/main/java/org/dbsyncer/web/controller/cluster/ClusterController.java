@@ -174,6 +174,21 @@ public class ClusterController extends BaseController {
     }
 
     /**
+     * 修改节点展示名称。
+     */
+    @PostMapping("/edit")
+    @ResponseBody
+    public RestResult edit(@RequestParam("id") String id, @RequestParam("name") String name) {
+        try {
+            clusterManagerService.updateNodeName(id, name);
+            return RestResult.restSuccess("已保存");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
      * 运维状态 JSON。
      */
     @GetMapping("/status.json")

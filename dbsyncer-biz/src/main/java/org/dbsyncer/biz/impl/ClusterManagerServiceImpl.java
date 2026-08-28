@@ -90,6 +90,15 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     }
 
     @Override
+    public void updateNodeName(String nodeId, String name) {
+        Assert.hasText(nodeId, "节点ID不能为空");
+        Assert.hasText(name, "节点名称不能为空");
+        String trimmed = StringUtil.trim(name);
+        Assert.isTrue(trimmed.length() <= 64, "节点名称长度不能超过64");
+        clusterService.updateNodeName(nodeId, trimmed);
+    }
+
+    @Override
     public List<TaskWorkItemSummaryVO> listTaskWorkItems() {
         List<WorkItemAssignment> all = clusterService.listAllAssignments();
         if (all == null || all.isEmpty()) {

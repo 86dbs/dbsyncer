@@ -70,4 +70,12 @@ public interface ClusterManagerService {
      * @return 任务工作项汇总
      */
     List<TaskWorkItemSummaryVO> listTaskWorkItems();
+
+    /**
+     * 修改节点展示名称。
+     *
+     * @param nodeId 节点 ID
+     * @param name   展示名称
+     */
+    void updateNodeName(String nodeId, String name);
 }

@@ -16,8 +16,12 @@ import java.util.List;
 public class ClusterMetricsOverviewVO {
 
     private double totalTps;
+    private long totalQueue;
     private long totalFullWorkItems;
     private long totalIncremental;
+    private HistoryStackVO tps;
+    private HistoryStackVO queue;
+    private HistoryStackVO fullWorkItems;
     private List<ClusterNodeMetricVO> nodes = new ArrayList<>();
 
     public double getTotalTps() {
@@ -26,6 +30,14 @@ public class ClusterMetricsOverviewVO {
 
     public void setTotalTps(double totalTps) {
         this.totalTps = totalTps;
+    }
+
+    public long getTotalQueue() {
+        return totalQueue;
+    }
+
+    public void setTotalQueue(long totalQueue) {
+        this.totalQueue = totalQueue;
     }
 
     public long getTotalFullWorkItems() {
@@ -42,6 +54,30 @@ public class ClusterMetricsOverviewVO {
 
     public void setTotalIncremental(long totalIncremental) {
         this.totalIncremental = totalIncremental;
+    }
+
+    public HistoryStackVO getTps() {
+        return tps;
+    }
+
+    public void setTps(HistoryStackVO tps) {
+        this.tps = tps;
+    }
+
+    public HistoryStackVO getQueue() {
+        return queue;
+    }
+
+    public void setQueue(HistoryStackVO queue) {
+        this.queue = queue;
+    }
+
+    public HistoryStackVO getFullWorkItems() {
+        return fullWorkItems;
+    }
+
+    public void setFullWorkItems(HistoryStackVO fullWorkItems) {
+        this.fullWorkItems = fullWorkItems;
     }
 
     public List<ClusterNodeMetricVO> getNodes() {
