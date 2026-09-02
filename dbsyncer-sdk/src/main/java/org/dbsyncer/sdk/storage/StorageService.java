@@ -176,4 +176,12 @@ public interface StorageService {
      * @return 行列表，无结果时空列表
      */
     List<Map<String, Object>> queryList(SqlQuery query);
+
+    /**
+     * 执行原生更新 SQL（INSERT/UPDATE/DELETE/DDL）。
+     *
+     * @param query SQL 与绑定参数
+     * @return 影响行数
+     */
+    int executeUpdate(SqlQuery query);
 }

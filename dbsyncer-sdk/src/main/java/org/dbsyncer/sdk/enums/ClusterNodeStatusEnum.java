@@ -4,7 +4,7 @@
 package org.dbsyncer.sdk.enums;
 
 /**
- * 集群节点存活/入群状态（与角色分离）。
+ * 集群节点在线状态。
  *
  * @author wuji
  * @version 1.0.0
@@ -12,11 +12,8 @@ package org.dbsyncer.sdk.enums;
  */
 public enum ClusterNodeStatusEnum {
 
-    JOINING(0),
-    ONLINE(1),
-    UNREACHABLE(2),
-    OFFLINE(3),
-    LEAVING(4);
+    OFFLINE(0),
+    ONLINE(1);
 
     private final int code;
 

@@ -36,13 +36,6 @@ public interface ClusterManagerService {
     Paging<ClusterNodeVO> query(Map<String, String> params);
 
     /**
-     * 转让 Leader。
-     *
-     * @param nodeId 目标节点
-     */
-    void transferLeadership(String nodeId);
-
-    /**
      * 移除节点。
      *
      * @param nodeId 节点
@@ -57,7 +50,7 @@ public interface ClusterManagerService {
     ClusterNodeVO current();
 
     /**
-     * 查询指定节点的 WorkItem 派工（Leader 权威视图）。
+     * 查询指定节点的工作项（本期无全局派工视图，返回空列表）。
      *
      * @param nodeId 节点 ID
      * @return 派工列表
@@ -65,7 +58,7 @@ public interface ClusterManagerService {
     List<WorkItemAssignment> listAssignments(String nodeId);
 
     /**
-     * 按任务汇总当前工作项派工（仅 Leader 有数据）。
+     * 按任务汇总当前工作项（本期返回空列表）。
      *
      * @return 任务工作项汇总
      */

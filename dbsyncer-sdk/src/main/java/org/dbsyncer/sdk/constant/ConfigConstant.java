@@ -109,6 +109,16 @@ public class ConfigConstant {
     public static final String CLUSTER_START_TIME = "startTime";
 
     /**
+     * 任务调度表(dbsyncer_task_schedule)
+     */
+    public static final String SCHEDULE_INITIATOR_NODE_ID = "initiatorNodeId";
+    public static final String SCHEDULE_SCHEDULER_NODE_ID = "schedulerNodeId";
+    public static final String SCHEDULE_SCHEDULER_EPOCH = "schedulerEpoch";
+    public static final String SCHEDULE_SCHEDULER_START_TIME = "schedulerStartTime";
+    public static final String SCHEDULE_ERROR_MSG = "errorMsg";
+    public static final String SCHEDULE_TASK_TYPE = "taskType";
+
+    /**
      * 任务级 Meta.SNAPSHOT 内键：整库迁移库映射 status 摘要 JSON（不含表级 tables）
      */
     public static final String META_SNAPSHOT_DATABASE = "databaseSnapshots";

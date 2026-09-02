@@ -217,6 +217,17 @@ public abstract class AbstractStorageService implements StorageService, Disposab
         }
     }
 
+    @Override
+    public int executeUpdate(SqlQuery query) {
+        Assert.notNull(query, "SqlQuery can not be null.");
+        Assert.hasText(query.getSql(), "sql can not be empty.");
+        try {
+            return update(query.getSql(), query.getArgs());
+        } catch (NullExecutorException e) {
+            return 0;
+        }
+    }
+
     /**
      * 原生 SQL 查询。
      */
@@ -226,6 +237,15 @@ public abstract class AbstractStorageService implements StorageService, Disposab
      * 原生 SQL 分页查询（由实现类按方言追加 LIMIT）。
      */
     protected abstract List<Map<String, Object>> selectList(String sql, int pageNum, int pageSize, Object[] args);
+
+    /**
+     * 原生 SQL 更新。
+     *
+     * @param sql  SQL
+     * @param args 绑定参数
+     * @return 影响行数
+     */
+    protected abstract int update(String sql, Object[] args);
 
     private List<Map> newArrayList(Map params) {
         List<Map> list = new ArrayList<>();

@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 public class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     /**
-     * 规范化 PostgreSQL 类型名：去除 schema 前缀（如 "public"."geometry" -> geometry）和引号，并转小写。
+     * 规范化 PostgreSQL 类型名：去除 schema 前缀（如 "public"."geometry" -> geometry）、引号和长度/精度，并转小写。
      *
      * @param typeName 原始类型名
      * @return 规范化后的类型名
@@ -52,6 +52,9 @@ public class PostgreSQLSchemaResolver extends AbstractDatabaseSchemaResolver {
         }
         // 去除引号
         typeName = typeName.replace("\"", "").replace("'", "").trim();
+        // 去掉长度/精度，如 varchar(255) → varchar
+        typeName = typeName.replaceAll("\\(\\s*\\d+\\s*(?:,\\s*\\d+\\s*)?\\)", "");
+        typeName = typeName.replaceAll("\\s+", " ").trim();
         return typeName.toLowerCase();
     }
 

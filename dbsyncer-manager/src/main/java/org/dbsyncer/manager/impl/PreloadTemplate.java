@@ -23,7 +23,6 @@ import org.dbsyncer.parser.TableGroupProfile;
 import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.command.impl.PreloadCommand;
 import org.dbsyncer.parser.enums.CommandEnum;
-import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Connector;
 import org.dbsyncer.parser.model.Group;
 import org.dbsyncer.parser.model.Mapping;
@@ -36,7 +35,6 @@ import org.dbsyncer.plugin.impl.MailNoticeService;
 import org.dbsyncer.plugin.impl.WeChatNoticeService;
 import org.dbsyncer.sdk.connector.ConnectorInstance;
 import org.dbsyncer.sdk.constant.ConfigConstant;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.enums.NoticeChannelEnum;
 import org.dbsyncer.sdk.model.NoticeConfig;
 import org.dbsyncer.sdk.model.ValidateSyncTask;
@@ -189,7 +187,7 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
     }
 
     /**
-     * 启动时若库中无系统配置则尝试落库默认行；非 Leader 无法落库时依赖 {@link SystemConfigProfile} 内存默认。
+     * 启动时若库中无系统配置则尝试落库默认行。
      *
      * @return 已有或默认的系统配置（非 null）
      */
@@ -197,18 +195,16 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
         if (systemConfigProfile.existsPersisted()) {
             return profileComponent.getSystemConfig();
         }
-        if (clusterService.isStandalone() || clusterService.isLeader()) {
-            try {
-                SystemConfig systemConfig = new SystemConfig();
-                systemConfig.setName("系统配置");
-                long now = System.currentTimeMillis();
-                systemConfig.setCreateTime(now);
-                systemConfig.setUpdateTime(now);
-                profileComponent.addConfigModel(systemConfig);
-                logger.warn("No system config found, created default system config");
-            } catch (Exception e) {
-                logger.warn("创建默认系统配置失败，使用内存默认: {}", e.getMessage());
-            }
+        try {
+            SystemConfig systemConfig = new SystemConfig();
+            systemConfig.setName("系统配置");
+            long now = System.currentTimeMillis();
+            systemConfig.setCreateTime(now);
+            systemConfig.setUpdateTime(now);
+            profileComponent.addConfigModel(systemConfig);
+            logger.warn("No system config found, created default system config");
+        } catch (Exception e) {
+            logger.warn("创建默认系统配置失败，使用内存默认: {}", e.getMessage());
         }
         return profileComponent.getSystemConfig();
     }
@@ -282,16 +278,9 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
                     reConnect(mapping);
                     // 恢复驱动状态（自动恢复：CDC 监听启动失败时按配置重试）
                     if (CommonTaskStatusEnum.RUNNING.getCode() == meta.getState()) {
-                        if (!clusterService.isStandalone()) {
-                            if (isIncrementMapping(mapping, meta)) {
-                                if (!clusterService.isIncrementAssignedToLocal(mapping.getId())) {
-                                    logger.info("增量未分配到本节点，跳过恢复驱动, taskId={}", mapping.getId());
-                                    continue;
-                                }
-                            } else if (!clusterService.isLeader()) {
-                                logger.info("非 Leader，跳过恢复驱动, taskId={}", mapping.getId());
-                                continue;
-                            }
+                        if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
+                            logger.info("任务未分配到本节点，跳过恢复驱动, taskId={}", mapping.getId());
+                            continue;
                         }
                         managerFactory.start(mapping, true);
                     } else if (CommonTaskStatusEnum.STOPPING.getCode() == meta.getState()) {
@@ -306,22 +295,6 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
 
     public void reConnect(Mapping mapping) {
         connectorInstanceBinder.bind(mapping);
-    }
-
-    private boolean isIncrementMapping(Mapping mapping, Meta meta) {
-        if (mapping == null) {
-            return false;
-        }
-        String model = mapping.getModel();
-        if (ModelEnum.isIncrement(model)) {
-            return true;
-        }
-        if (!StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model) || meta == null) {
-            return false;
-        }
-        String phase = meta.getSnapshot() == null ? null
-                : meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
-        return ModelEnum.isIncrement(phase);
     }
 
     public void reConnect(ValidateSyncTask task) {
@@ -423,8 +396,8 @@ public final class PreloadTemplate implements ApplicationListener<ContextRefresh
             if (meta == null || meta.getState() != CommonTaskStatusEnum.RUNNING.getCode()) {
                 continue;
             }
-            if (!clusterService.isLeader()) {
-                logger.info("非 Leader，跳过恢复任务, taskId={}", task.getId());
+            if (!clusterService.isTaskAssignedToLocal(task.getId())) {
+                logger.info("任务未分配到本节点，跳过恢复任务, taskId={}", task.getId());
                 continue;
             }
             try {

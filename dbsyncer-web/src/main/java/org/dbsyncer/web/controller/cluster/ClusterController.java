@@ -6,6 +6,7 @@ package org.dbsyncer.web.controller.cluster;
 import org.dbsyncer.biz.ClusterManagerService;
 import org.dbsyncer.biz.vo.EditionInfoVO;
 import org.dbsyncer.biz.vo.RestResult;
+import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.sdk.spi.LicenseService;
 import org.dbsyncer.web.controller.BaseController;
 import org.dbsyncer.web.monitor.ClusterNodeMetricAggregator;
@@ -50,6 +51,9 @@ public class ClusterController extends BaseController {
     @Resource
     private ClusterNodeMetricAggregator clusterNodeMetricAggregator;
 
+    @Resource
+    private ClusterService clusterService;
+
     /**
      * 集群列表页。
      */
@@ -62,6 +66,42 @@ public class ClusterController extends BaseController {
         model.put("clusterEnabled", clusterManagerService.isClusterEnabled());
         model.put("current", clusterManagerService.current());
         return "cluster/list";
+    }
+
+    /**
+     * 内部拉起本机执行器。
+     */
+    @PostMapping("/internal/execute")
+    @ResponseBody
+    public RestResult executeLocal(@RequestParam("taskId") String taskId, @RequestParam("epoch") int epoch) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部执行接口");
+            }
+            boolean ok = clusterService.executeLocal(taskId, epoch);
+            return ok ? RestResult.restSuccess("ok") : RestResult.restFail("本机不是该任务的调度节点");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
+    }
+
+    /**
+     * 内部停止本机执行器。
+     */
+    @PostMapping("/internal/stop")
+    @ResponseBody
+    public RestResult stopLocal(@RequestParam("taskId") String taskId) {
+        try {
+            if (clusterService.isStandalone()) {
+                return RestResult.restFail("单机不支持内部停止接口");
+            }
+            clusterService.stopExecuteLocal(taskId);
+            return RestResult.restSuccess("ok");
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage(), e);
+            return RestResult.restFail(e.getMessage());
+        }
     }
 
     /**
@@ -150,8 +190,7 @@ public class ClusterController extends BaseController {
     @ResponseBody
     public RestResult transfer(@RequestParam("id") String id) {
         try {
-            clusterManagerService.transferLeadership(id);
-            return RestResult.restSuccess("已发起切换");
+            return RestResult.restFail("不支持切换节点");
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             return RestResult.restFail(e.getMessage());

@@ -13,15 +13,12 @@ import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.enums.ClusterNodeStatusEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
 import org.dbsyncer.sdk.model.WorkItemAssignment;
-import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -60,12 +57,6 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     }
 
     @Override
-    public void transferLeadership(String nodeId) {
-        Assert.hasText(nodeId, "节点ID不能为空");
-        clusterService.transferLeadership(nodeId);
-    }
-
-    @Override
     public void removeNode(String nodeId) {
         Assert.hasText(nodeId, "节点ID不能为空");
         clusterService.removeNode(nodeId);
@@ -75,18 +66,14 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     public ClusterNodeVO current() {
         ClusterNodeVO vo = new ClusterNodeVO();
         vo.setId(clusterService.getLocalNodeId());
-        vo.setLeader(clusterService.isLeader());
-        vo.setRoleName(clusterService.getRole().name());
         vo.setLocal(true);
-        vo.setLeaderHttpUrl(clusterService.getLeaderHttpUrl());
         return vo;
     }
 
     @Override
     public List<WorkItemAssignment> listAssignments(String nodeId) {
         Assert.hasText(nodeId, "节点ID不能为空");
-        List<WorkItemAssignment> list = clusterService.listAssignments(nodeId);
-        return list == null ? Collections.emptyList() : list;
+        return Collections.emptyList();
     }
 
     @Override
@@ -100,44 +87,7 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
 
     @Override
     public List<TaskWorkItemSummaryVO> listTaskWorkItems() {
-        List<WorkItemAssignment> all = clusterService.listAllAssignments();
-        if (all == null || all.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Map<String, TaskWorkItemSummaryVO> byTask = new LinkedHashMap<>();
-        Map<String, Map<String, Integer>> nodeCounts = new LinkedHashMap<>();
-        for (WorkItemAssignment item : all) {
-            if (item == null || StringUtil.isBlank(item.getTaskId())) {
-                continue;
-            }
-            TaskWorkItemSummaryVO vo = byTask.computeIfAbsent(item.getTaskId(), id -> {
-                TaskWorkItemSummaryVO created = new TaskWorkItemSummaryVO();
-                created.setTaskId(id);
-                return created;
-            });
-            if (WorkItemIds.isTaskLevelItem(item.getTaskId(), item.getItemId())) {
-                vo.setIncrementTask(true);
-            }
-            vo.setWorkItemCount(vo.getWorkItemCount() + 1);
-            if (item.getGeneration() > vo.getMaxGeneration()) {
-                vo.setMaxGeneration(item.getGeneration());
-            }
-            String nodeId = StringUtil.getIfBlank(item.getNodeId(), "-");
-            nodeCounts.computeIfAbsent(item.getTaskId(), k -> new LinkedHashMap<>())
-                    .merge(nodeId, 1, Integer::sum);
-        }
-        List<TaskWorkItemSummaryVO> result = new ArrayList<>(byTask.values());
-        for (TaskWorkItemSummaryVO vo : result) {
-            Map<String, Integer> counts = nodeCounts.get(vo.getTaskId());
-            if (counts == null || counts.isEmpty()) {
-                vo.setNodeDistribution("-");
-                continue;
-            }
-            vo.setNodeDistribution(counts.entrySet().stream()
-                    .map(e -> e.getKey() + ":" + e.getValue())
-                    .collect(Collectors.joining(", ")));
-        }
-        return result;
+        return Collections.emptyList();
     }
 
     private ClusterNodeVO toVO(ClusterNode node) {
@@ -147,11 +97,8 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
         vo.setIp(node.getIp());
         vo.setHttpPort(node.getHttpPort());
         vo.setRaftPort(node.getRaftPort());
-        vo.setWorkerId(node.getWorkerId());
+        vo.setWorkerId(NumberUtil.toInt(node.getId(), node.getWorkerId()));
         vo.setRole(node.getRole());
-        boolean leader = StringUtil.equals(clusterService.getLeaderId(), node.getNodeId());
-        vo.setLeader(leader);
-        vo.setRoleName(leader ? "Leader" : "Follower");
         vo.setStatus(node.getStatus());
         vo.setStatusName(statusName(node.getStatus()));
         vo.setNetworkOk(node.getNetworkOk() == 1);
@@ -165,14 +112,8 @@ public class ClusterManagerServiceImpl implements ClusterManagerService {
     private String statusName(int status) {
         ClusterNodeStatusEnum e = ClusterNodeStatusEnum.fromCode(status);
         switch (e) {
-            case JOINING:
-                return "加入中";
             case ONLINE:
                 return "在线";
-            case UNREACHABLE:
-                return "网络不通";
-            case LEAVING:
-                return "退出中";
             default:
                 return "离线";
         }

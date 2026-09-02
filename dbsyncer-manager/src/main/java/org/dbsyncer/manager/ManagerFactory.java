@@ -6,10 +6,8 @@ import org.dbsyncer.manager.event.ClosedEvent;
 import org.dbsyncer.manager.impl.ConnectorInstanceBinder;
 import org.dbsyncer.parser.MappingRuntimeService;
 import org.dbsyncer.parser.MetaProfile;
-import org.dbsyncer.parser.enums.ParserEnum;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
-import org.dbsyncer.sdk.enums.ModelEnum;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -43,7 +41,7 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
         changeMetaState(event.getMetaId(), CommonTaskStatusEnum.READY);
         Meta meta = metaProfile.getMeta(event.getMetaId());
         if (meta != null && StringUtil.isNotBlank(meta.getTaskId())) {
-            clusterService.clearTaskAssignments(meta.getTaskId());
+            clusterService.clearTaskSchedule(meta.getTaskId());
         }
     }
 
@@ -66,24 +64,35 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
         }
         Meta current = metaProfile.getMeta(metaId);
         boolean alreadyRunning = current != null && current.getState() == CommonTaskStatusEnum.RUNNING.getCode();
-        boolean runLocal = clusterService.prepareMappingStart(mapping.getId(), mapping.getModel(),
-                isIncrementPhase(current, mapping.getModel()));
-        // 全局状态先置 RUNNING，便于非本机 owner 的节点经派工后再拉起
+        boolean runLocal = clusterService.prepareTaskStart(mapping.getId(), mapping.getModel());
         changeMetaState(metaId, CommonTaskStatusEnum.RUNNING);
         if (!runLocal) {
             return;
         }
-        // Follower 本进程连接池没有 Mapping 级实例（连接只在 Leader 增改 Mapping 时建立）
         connectorInstanceBinder.bind(mapping);
         try {
             puller.start(mapping, autoRecovery);
         } catch (Exception e) {
             if (!alreadyRunning) {
                 changeMetaState(metaId, CommonTaskStatusEnum.READY);
-                clusterService.clearTaskAssignments(mapping.getId());
+                clusterService.clearTaskSchedule(mapping.getId());
             }
             throw new ManagerException(e.getMessage());
         }
+    }
+
+    @Override
+    public void startLocal(Mapping mapping, boolean autoRecovery) {
+        Puller puller = getPuller(mapping);
+        String metaId = mapping.getMetaId();
+        if (puller.isActive(metaId)) {
+            return;
+        }
+        if (!clusterService.assertTaskWritable(mapping.getId())) {
+            return;
+        }
+        connectorInstanceBinder.bind(mapping);
+        puller.start(mapping, autoRecovery);
     }
 
     public void close(Mapping mapping) {
@@ -94,7 +103,7 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
         changeMetaState(metaId, CommonTaskStatusEnum.STOPPING);
 
         puller.close(metaId);
-        clusterService.clearTaskAssignments(mapping.getId());
+        clusterService.clearTaskSchedule(mapping.getId());
     }
 
     /**
@@ -123,15 +132,6 @@ public class ManagerFactory implements MappingRuntimeService, ApplicationListene
             }
         }
         return false;
-    }
-
-    private boolean isIncrementPhase(Meta meta, String model) {
-        if (meta == null || !StringUtil.equals(ModelEnum.FULLINCREMENT.getCode(), model)) {
-            return false;
-        }
-        String phase = meta.getSnapshot() == null ? null
-                : meta.getSnapshot().get(ParserEnum.FULL_INCREMENT_PHASE.getCode());
-        return ModelEnum.isIncrement(phase);
     }
 
     @Override

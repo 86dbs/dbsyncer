@@ -25,7 +25,6 @@ import org.dbsyncer.parser.TaskProfile;
 import org.dbsyncer.parser.model.Mapping;
 import org.dbsyncer.parser.model.Meta;
 import org.dbsyncer.parser.model.SystemConfig;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -78,9 +77,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Resource
     private ConfigExportService configExportService;
 
-    @Resource
-    private ClusterService clusterService;
-
     @Override
     public String edit(Map<String, String> params) {
         ConfigModel model = systemConfigChecker.checkEditConfigModel(params);
@@ -116,11 +112,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             if (config != null && StringUtil.isNotBlank(config.getId())) {
                 return config;
             }
-            // 仅单机/Leader 落库；Follower 使用内存默认，避免 assertLeaderWritable 失败
-            if (clusterService.isStandalone() || clusterService.isLeader()) {
-                return (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
-            }
-            return config != null ? config : profileComponent.getSystemConfig();
+            // 无配置时落库默认行
+            return (SystemConfig) systemConfigChecker.checkAddConfigModel(new HashMap<>());
         }
     }
 

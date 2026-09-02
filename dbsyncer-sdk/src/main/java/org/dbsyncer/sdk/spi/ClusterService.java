@@ -6,10 +6,7 @@ package org.dbsyncer.sdk.spi;
 import org.dbsyncer.common.model.Paging;
 import org.dbsyncer.common.util.StringUtil;
 import org.dbsyncer.sdk.SdkException;
-import org.dbsyncer.sdk.enums.ClusterRoleEnum;
 import org.dbsyncer.sdk.model.ClusterNode;
-import org.dbsyncer.sdk.model.WorkItemAssignment;
-import org.dbsyncer.sdk.model.WorkItemIds;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +15,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 集群控制服务：节点角色、工作项派工与围栏。单机实现恒为 Leader。
+ * 集群控制服务：节点身份、在线列表、任务级调度。
+ * <p>无全局 Leader。任意节点可写配置、启动任务；启动节点选出 Scheduler，调度权在任务上。
+ * 单机：是否本机恒 true，调度方法空操作。
  *
  * @author wuji
  * @version 1.0.0
@@ -46,39 +45,11 @@ public interface ClusterService {
     boolean isStandalone();
 
     /**
-     * 本节点是否 Leader。
-     *
-     * @return true Leader
-     */
-    boolean isLeader();
-
-    /**
      * 本节点 ID。
      *
      * @return 节点 ID
      */
     String getLocalNodeId();
-
-    /**
-     * 当前 Leader 节点 ID，未知时为空。
-     *
-     * @return Leader ID
-     */
-    String getLeaderId();
-
-    /**
-     * Leader 的 HTTP 访问地址，供 Follower 提示跳转。
-     *
-     * @return 如 {@code http(s)://ip:port}（协议跟随 {@code server.ssl.enabled}），未知时为空
-     */
-    String getLeaderHttpUrl();
-
-    /**
-     * 本节点角色。
-     *
-     * @return 角色
-     */
-    ClusterRoleEnum getRole();
 
     /**
      * 集群节点列表。
@@ -88,7 +59,7 @@ public interface ClusterService {
     List<ClusterNode> listNodes();
 
     /**
-     * 分页查询集群节点。顺序固定为创建时间升序、节点 ID 升序（不按心跳更新时间排序）。
+     * 分页查询集群节点。顺序固定为创建时间升序、节点 ID 升序。
      * <p>默认基于 {@link #listNodes()} 内存分页；存储侧可覆盖为库表分页。
      *
      * @param pageNum  页码（从 1 起）
@@ -124,164 +95,62 @@ public interface ClusterService {
     }
 
     /**
-     * 非 Leader 写配置时抛错。
+     * 启动任务：选出 Scheduler、写入调度并通知目标节点。
+     * <p>全量+增量从启动起即绑定同一 Scheduler，切增量不再二次分配。
      *
-     * @throws SdkException 当前不是 Leader
+     * @param taskId 任务 / Mapping ID
+     * @param model  同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
+     * @return true 本机是 Scheduler，应拉起对应 Puller
      */
-    void assertLeaderWritable();
+    default boolean prepareTaskStart(String taskId, String model) {
+        return true;
+    }
 
     /**
-     * 表级工作是否分配给本节点。单机恒 true。
+     * 本机是否为该任务的 Scheduler。单机恒 true。
      *
-     * @param tableGroupId 表映射 ID
+     * @param taskId 任务 / Mapping ID
      * @return true 应在本节点执行
      */
-    default boolean isTableAssignedToLocal(String tableGroupId) {
+    default boolean isTaskAssignedToLocal(String taskId) {
         return true;
     }
 
     /**
-     * 拉取指定节点当前 Assignment（仅 Leader 有权威视图；Follower 本地实现可转发）。
+     * 停止任务调度：置空 Scheduler 并通知原节点 stopLocal。单机空操作。
      *
-     * @param nodeId 节点 ID
-     * @return 分配列表
+     * @param taskId 任务 / Mapping ID
      */
-    default List<WorkItemAssignment> listAssignments(String nodeId) {
-        return Collections.emptyList();
+    default void clearTaskSchedule(String taskId) {
     }
 
     /**
-     * 写目标库 / 刷 Meta 前围栏：本节点仍持有该工作项的最新 generation。
+     * 本机围栏：该任务是否仍应由本机执行（节点与 epoch 仍匹配）。单机恒 true。
      *
-     * @param itemId 工作项 ID（整表为 tableGroupId，拆分项见 {@link WorkItemIds}）
-     * @return true 允许产生副作用
+     * @param taskId 任务 / Mapping ID
+     * @return true 允许本机继续执行
      */
-    default boolean assertWritable(String itemId) {
+    default boolean assertTaskWritable(String taskId) {
         return true;
     }
 
     /**
-     * 本节点当前持有的 item generation；未持有时为 0。
+     * 内部拉起：校验本机仍持有该任务后启动执行器。单机默认 true。
      *
-     * @param itemId 工作项 ID
-     * @return generation
+     * @param taskId 任务 / Mapping ID
+     * @param epoch  调度代数
+     * @return true 已拉起或本机无需执行
      */
-    default long getLocalGeneration(String itemId) {
-        return 0L;
-    }
-
-    /**
-     * 本节点当前 Assignment 快照（含整表与拆分工作项）。
-     *
-     * @return 分配列表
-     */
-    default List<WorkItemAssignment> listLocalAssignments() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * 本节点应执行的表内工作项 ID；单机恒为整表。
-     *
-     * @param tableGroupId 表映射 ID
-     * @return itemId 列表
-     */
-    default List<String> resolveLocalWorkItems(String tableGroupId) {
-        if (StringUtil.isBlank(tableGroupId)) {
-            return Collections.emptyList();
-        }
-        if (isStandalone()) {
-            return Collections.singletonList(tableGroupId);
-        }
-        List<String> items = new ArrayList<>();
-        for (WorkItemAssignment assignment : listLocalAssignments()) {
-            if (assignment != null && WorkItemIds.belongsToTable(assignment.getItemId(), tableGroupId)) {
-                items.add(assignment.getItemId());
-            }
-        }
-        return items;
-    }
-
-    /**
-     * Leader 全部 Assignment 快照（排障 / 工作项详情）。
-     *
-     * @return 分配列表；非 Leader 为空
-     */
-    default List<WorkItemAssignment> listAllAssignments() {
-        return Collections.emptyList();
-    }
-
-    /**
-     * 启动 Mapping 前准备派工，并返回本机是否应拉起 Puller。
-     * <p>默认恒 true（单机）。集群实现：Leader 按全量/增量派工；全量阶段各节点可拉起，
-     * 增量阶段仅派工到本机的节点返回 true。
-     *
-     * @param mappingId      驱动/Mapping ID
-     * @param model          同步方式（{@link org.dbsyncer.sdk.enums.ModelEnum} code）
-     * @param incrementPhase 是否已进入增量阶段（全量+增量切换后）
-     * @return true 本机应执行 puller.start
-     */
-    default boolean prepareMappingStart(String mappingId, String model, boolean incrementPhase) {
+    default boolean executeLocal(String taskId, int epoch) {
         return true;
     }
 
     /**
-     * Leader 将未完成表派工到在线节点。单机空操作。
+     * 内部停止：仅停本机执行器，不改调度行。
      *
-     * @param taskId 任务/Mapping ID
+     * @param taskId 任务 / Mapping ID
      */
-    default void assignTableGroups(String taskId) {
-    }
-
-    /**
-     * Leader 将整增量 Mapping 派工到一台在线节点（不拆表）。单机空操作。
-     *
-     * @param mappingId 驱动/Mapping ID
-     */
-    default void assignIncrementMapping(String mappingId) {
-    }
-
-    /**
-     * 增量 Mapping 是否分配给本节点执行。单机恒 true。
-     *
-     * @param mappingId 驱动/Mapping ID
-     * @return true 应在本节点拉起 Listener
-     */
-    default boolean isIncrementAssignedToLocal(String mappingId) {
-        return true;
-    }
-
-    /**
-     * Leader 清除某任务的全部派工（停止/完成/非 RUNNING 时调用）。单机空操作。
-     *
-     * @param taskId 任务/Mapping ID
-     */
-    default void clearTaskAssignments(String taskId) {
-    }
-
-    /**
-     * 任务下全部 TableGroup 是否已完成。单机恒 true。
-     *
-     * @param taskId 任务/Mapping ID
-     * @return true 全部完成
-     */
-    default boolean areAllTablesDone(String taskId) {
-        return true;
-    }
-
-    /**
-     * 注册 Leader 升降监听。
-     *
-     * @param listener 监听器
-     */
-    void addLeaderListener(LeaderLifecycleListener listener);
-
-    /**
-     * 手动转让 Leader。
-     *
-     * @param targetNodeId 目标节点 ID
-     */
-    default void transferLeadership(String targetNodeId) {
-        throw new SdkException("单机模式不支持切换节点");
+    default void stopExecuteLocal(String taskId) {
     }
 
     /**

@@ -34,10 +34,15 @@ import java.util.stream.Stream;
 public final class OceanBaseSchemaResolver extends AbstractDatabaseSchemaResolver {
 
     /**
-     * 规范化类型名：转大写
+     * 规范化类型名：转大写并去掉长度/精度括号。
      */
     public static String normalizeTypeName(String typeName) {
-        return typeName.trim().toUpperCase(Locale.ROOT);
+        if (typeName == null) {
+            return null;
+        }
+        String normalized = typeName.trim().toUpperCase(Locale.ROOT);
+        normalized = normalized.replaceAll("\\(\\s*\\d+\\s*(?:,\\s*\\d+\\s*)?\\)", "");
+        return normalized.replaceAll("\\s+", " ").trim();
     }
 
     @Override

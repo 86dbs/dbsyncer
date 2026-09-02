@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
 import javax.annotation.Resource;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,7 +66,6 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
      */
     private static final Executor SYNC_WRITE_EXECUTOR = Runnable::run;
 
-    private static final long CLUSTER_WAIT_MS = 2000L;
 
     /**
      * 单切片连续失败退避上限。
@@ -104,7 +104,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     @Override
     public void start(Mapping mapping) {
-        Thread worker = new Thread(() -> runSync(mapping, clusterService.isStandalone()));
+        Thread worker = new Thread(() -> runSync(mapping, true));
         worker.setName("full-worker-" + mapping.getId());
         worker.setDaemon(false);
         worker.start();
@@ -180,22 +180,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         if (meta.getStartTime() <= 0L) {
             metaProfile.ensureStartTime(task.getId(), startTime);
         }
-        if (clusterService.isStandalone()) {
-            scanAssignedPages(task, mapping);
-        } else {
-            runUntilClusterComplete(task, mapping);
-        }
+        scanAssignedPages(task, mapping);
         finishTask(task);
-    }
-
-    private void runUntilClusterComplete(Task task, Mapping mapping) {
-        while (task.isRunning()) {
-            scanAssignedPages(task, mapping);
-            if (!task.isRunning() || clusterService.areAllTablesDone(mapping.getId())) {
-                return;
-            }
-            sleepWait(task);
-        }
     }
 
     private void scanAssignedPages(Task task, Mapping mapping) {
@@ -219,19 +205,10 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         }
     }
 
-    private void sleepWait(Task task) {
-        try {
-            Thread.sleep(CLUSTER_WAIT_MS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            task.stop();
-        }
-    }
-
     private void finishTask(Task task) {
         task.setEndTime(Instant.now().toEpochMilli());
         task.setCursors(null);
-        if (task.isRunning() && clusterService.isStandalone()) {
+        if (task.isRunning()) {
             clearFullProgress(task);
         }
     }
@@ -243,7 +220,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
         TableGroup tableGroup = work.tableGroup;
         String tableGroupId = tableGroup.getId();
         //获取本机WorkItems
-        List<String> itemIds = clusterService.resolveLocalWorkItems(tableGroupId);
+        List<String> itemIds = Collections.singletonList(tableGroupId);
         if (CollectionUtils.isEmpty(itemIds)) {
             return;
         }
@@ -281,8 +258,8 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             if (!awaitItemRetryWindow(parent, itemId)) {
                 return;
             }
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，停止写表: {}", itemId);
+            if (!clusterService.assertTaskWritable(mapping.getId())) {
+                logger.warn("调度围栏失效，停止写表: {}", itemId);
                 return;
             }
             boolean completed = parserComponent.execute(tableTask, mapping, execGroup, SYNC_WRITE_EXECUTOR);
@@ -400,12 +377,12 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
     private boolean flush(Task task, Result result) {
         synchronized (metaLock(task.getId())) {
             String itemId = task.getTableGroupId();
-            if (StringUtil.isNotBlank(itemId) && !clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，跳过进度与计数: {}", itemId);
-                return false;
-            }
             Meta meta = metaProfile.getMeta(task.getId());
             Assert.notNull(meta, "检查meta为空.");
+            if (StringUtil.isNotBlank(itemId) && !clusterService.assertTaskWritable(meta.getTaskId())) {
+                logger.warn("调度围栏失效，跳过进度与计数: {}", itemId);
+                return false;
+            }
             refreshMetaTotals(meta, task);
 
             if (StringUtil.isNotBlank(itemId)) {
@@ -414,7 +391,7 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
                 progress.setCursor(StringUtil.getIfBlank(StringUtil.join(task.getCursors(), StringUtil.COMMA), StringUtil.EMPTY));
                 progress.setProcessed(Math.max(0L, task.getProcessed()));
                 progress.setDone(false);
-                progress.setGeneration(clusterService.getLocalGeneration(itemId));
+                progress.setGeneration(0L);
                 long successDelta = result == null || result.getSuccessData() == null ? 0L : result.getSuccessData().size();
                 long failDelta = result == null || result.getFailData() == null ? 0L : result.getFailData().size();
                 if (!metaProfile.mergeTableProgress(task.getId(), itemId, progress, successDelta, failDelta)) {
@@ -459,8 +436,9 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
 
     private void markItemDone(Task parent, String itemId, String tableGroupId) {
         synchronized (metaLock(parent.getId())) {
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，跳过完成标记: {}", itemId);
+            Meta meta = metaProfile.getMeta(parent.getId());
+            if (meta != null && !clusterService.assertTaskWritable(meta.getTaskId())) {
+                logger.warn("调度围栏失效，跳过完成标记: {}", itemId);
                 return;
             }
             TableSyncProgress progress = new TableSyncProgress();
@@ -468,12 +446,11 @@ public final class FullPuller extends AbstractPuller implements ApplicationListe
             progress.setCursor(StringUtil.EMPTY);
             progress.setProcessed(0L);
             progress.setDone(true);
-            progress.setGeneration(clusterService.getLocalGeneration(itemId));
+            progress.setGeneration(0L);
             if (!metaProfile.mergeTableProgress(parent.getId(), itemId, progress)) {
                 logger.warn("完成标记被拒绝: {}", itemId);
                 return;
             }
-            Meta meta = metaProfile.getMeta(parent.getId());
             if (meta != null) {
                 refreshMetaTotals(meta, parent);
             }

@@ -146,6 +146,21 @@ public class SnowflakeIdWorker {
         this.id = id;
     }
 
+    /**
+     * 用集群节点自增主键重置机器号，并清空毫秒内序列与上次时间戳，避免换号后 ID 冲突。
+     *
+     * @param workerId 节点表 {@code ID}，取值 0~31
+     */
+    public synchronized void reset(long workerId) {
+        long maxWorkerId = ~(-1L << workerIdBits);
+        if (workerId < 0 || workerId > maxWorkerId) {
+            throw new CommonException(String.format("Snowflake worker id must be in 0~%d, actual %d", maxWorkerId, workerId));
+        }
+        this.id = workerId;
+        this.sequence = 0L;
+        this.lastTimestamp = -1L;
+    }
+
     public long getDataCenterId() {
         return dataCenterId;
     }

@@ -45,7 +45,11 @@ public enum StorageEnum {
     /**
      * 集群节点
      */
-    CLUSTER_NODE("cluster_node");
+    CLUSTER_NODE("cluster_node"),
+    /**
+     * 任务调度
+     */
+    TASK_SCHEDULE("task_schedule");
 
     private final String type;
 

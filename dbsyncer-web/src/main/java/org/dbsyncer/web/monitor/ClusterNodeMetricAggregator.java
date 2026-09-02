@@ -15,7 +15,6 @@ import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.JsonUtil;
 import org.dbsyncer.common.util.NetUtil;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -57,9 +56,6 @@ public class ClusterNodeMetricAggregator {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource
-    private ClusterService clusterService;
-
-    @Resource
     private ClusterManagerService clusterManagerService;
 
     @Resource
@@ -83,7 +79,7 @@ public class ClusterNodeMetricAggregator {
             ClusterMetricsOverviewVO empty = new ClusterMetricsOverviewVO();
             ClusterNodeMetricVO local = localNodeMetricProvider.snapshot();
             local.setName(local.getNodeId());
-            local.setRoleName(clusterService.getRole().name());
+            local.setRoleName("");
             empty.setNodes(Collections.singletonList(local));
             empty.setTotalTps(Math.floor(local.getTps()));
             empty.setTotalQueue(local.getQueueUp());
@@ -258,10 +254,6 @@ public class ClusterNodeMetricAggregator {
 
     private Map<String, Integer> resolveAssignmentCounts(boolean incrementTask) {
         Map<String, Integer> counts = new LinkedHashMap<>();
-        if (!clusterService.isLeader()) {
-            // Follower 无权威派工内存；改由各节点 metrics 自报汇总
-            return counts;
-        }
         try {
             List<TaskWorkItemSummaryVO> summaries = clusterManagerService.listTaskWorkItems();
             if (CollectionUtils.isEmpty(summaries)) {

@@ -26,9 +26,7 @@ import org.dbsyncer.sdk.enums.FilterEnum;
 import org.dbsyncer.sdk.enums.OperationEnum;
 import org.dbsyncer.sdk.enums.QuartzFilterEnum;
 import org.dbsyncer.sdk.enums.StorageEnum;
-import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.storage.enums.StorageDataStatusEnum;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -63,10 +61,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Resource
     private TableGroupProfile tableGroupProfile;
 
-    @Resource
-    @Lazy
-    private ClusterService clusterService;
-
     @Override
     public Connector parseConnector(String json) {
         return connectorProfile.parseConnector(json);
@@ -79,7 +73,6 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public String addConfigModel(ConfigModel model) {
-        assertLeaderWritable(model);
         if (model instanceof UserConfig) {
             return userProfile.syncUserConfig((UserConfig) model);
         }
@@ -103,7 +96,6 @@ public class ProfileComponentImpl implements ProfileComponent {
 
     @Override
     public String editConfigModel(ConfigModel model) {
-        assertLeaderWritable(model);
         if (model instanceof UserConfig) {
             return userProfile.syncUserConfig((UserConfig) model);
         }
@@ -134,7 +126,6 @@ public class ProfileComponentImpl implements ProfileComponent {
             metaProfile.removeMeta(id);
             return;
         }
-        clusterService.assertLeaderWritable();
         if (connectorProfile.getConnector(id) != null) {
             connectorProfile.removeConnector(id);
             return;
@@ -211,13 +202,6 @@ public class ProfileComponentImpl implements ProfileComponent {
     @Override
     public List<StorageDataStatusEnum> getStorageDataStatusEnumAll() {
         return Arrays.asList(StorageDataStatusEnum.values());
-    }
-
-    private void assertLeaderWritable(ConfigModel model) {
-        if (model instanceof Meta) {
-            return;
-        }
-        clusterService.assertLeaderWritable();
     }
 
 }

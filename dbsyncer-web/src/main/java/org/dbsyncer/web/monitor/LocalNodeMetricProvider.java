@@ -16,8 +16,6 @@ import org.dbsyncer.biz.vo.TpsVO;
 import org.dbsyncer.common.util.CollectionUtils;
 import org.dbsyncer.common.util.DateFormatUtil;
 import org.dbsyncer.common.util.NetUtil;
-import org.dbsyncer.sdk.model.WorkItemAssignment;
-import org.dbsyncer.sdk.model.WorkItemIds;
 import org.dbsyncer.sdk.spi.ClusterService;
 import org.dbsyncer.web.controller.monitor.ValueFormatter;
 import org.dbsyncer.web.controller.monitor.impl.CpuValueFormatter;
@@ -118,7 +116,7 @@ public class LocalNodeMetricProvider {
         ClusterNodeMetricVO vo = new ClusterNodeMetricVO();
         vo.setNodeId(clusterService.getLocalNodeId());
         vo.setLocal(true);
-        vo.setLeader(clusterService.isLeader());
+        vo.setLeader(false);
         vo.setReachable(true);
         vo.setCpuPercent(cpu.getTotalPercent() == null ? BigDecimal.ZERO : cpu.getTotalPercent());
         vo.setMemoryUsed(memory.getSysUsed());
@@ -142,23 +140,8 @@ public class LocalNodeMetricProvider {
         }
         // 本机派工：全量工作项与增量整任务分开计数
         try {
-            List<WorkItemAssignment> local = clusterService.listLocalAssignments();
-            int full = 0;
-            int inc = 0;
-            if (local != null) {
-                for (WorkItemAssignment a : local) {
-                    if (a == null) {
-                        continue;
-                    }
-                    if (WorkItemIds.isTaskLevelItem(a.getTaskId(), a.getItemId())) {
-                        inc++;
-                    } else {
-                        full++;
-                    }
-                }
-            }
-            vo.setFullWorkItemCount(full);
-            vo.setIncrementalCount(inc);
+            vo.setFullWorkItemCount(0);
+            vo.setIncrementalCount(0);
         } catch (Exception e) {
             logger.debug("采集本机工作项数失败: {}", e.getMessage());
         }

@@ -120,6 +120,20 @@ public class MySQLStorageService extends AbstractStorageService {
     }
 
     @Override
+    protected int update(String sql, Object[] args) {
+        try {
+            Integer rows = connectorInstance.execute(databaseTemplate -> databaseTemplate.update(sql, args));
+            return rows == null ? 0 : rows;
+        } catch (Exception e) {
+            if (isTableMissing(e)) {
+                logger.debug("update skip missing table: {}", e.getMessage());
+                return 0;
+            }
+            throw new MySQLException(e.getMessage(), e);
+        }
+    }
+
+    @Override
     protected Paging select(String sharding, Query query) {
         Paging paging = new Paging(query.getPageNum(), query.getPageSize());
         // 读路径：分表不存在时不建表，避免错误 shardId 产生孤儿表
@@ -691,13 +705,17 @@ public class MySQLStorageService extends AbstractStorageService {
                 ConfigConstant.CONFIG_MODEL_JSON, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> taskFields = builder.getFields();
 
-        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_CLUSTER_ID, ConfigConstant.CLUSTER_NODE_ID,
-                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT, ConfigConstant.CLUSTER_RAFT_PORT,
-                ConfigConstant.CLUSTER_RAFT_PEER_ID, ConfigConstant.CLUSTER_WORKER_ID, ConfigConstant.CLUSTER_ROLE,
-                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_NETWORK_OK, ConfigConstant.CLUSTER_TERM,
-                ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.CLUSTER_NODE_ID,
+                ConfigConstant.CONFIG_MODEL_NAME, ConfigConstant.CLUSTER_IP, ConfigConstant.CLUSTER_HTTP_PORT,
+                ConfigConstant.CLUSTER_STATUS, ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, ConfigConstant.CLUSTER_START_TIME,
                 ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
         List<Field> clusterNodeFields = builder.getFields();
+
+        builder.build(ConfigConstant.CONFIG_MODEL_ID, ConfigConstant.TASK_ID, ConfigConstant.SCHEDULE_TASK_TYPE,
+                ConfigConstant.SCHEDULE_INITIATOR_NODE_ID, ConfigConstant.SCHEDULE_SCHEDULER_NODE_ID,
+                ConfigConstant.SCHEDULE_SCHEDULER_EPOCH, ConfigConstant.SCHEDULE_SCHEDULER_START_TIME,
+                ConfigConstant.SCHEDULE_ERROR_MSG, ConfigConstant.CONFIG_MODEL_CREATE_TIME, ConfigConstant.CONFIG_MODEL_UPDATE_TIME);
+        List<Field> taskScheduleFields = builder.getFields();
 
         tables.computeIfAbsent(StorageEnum.CONFIG.getType(), k -> new Executor(k, configFields, true, true));
         tables.computeIfAbsent(StorageEnum.USER.getType(), k -> new Executor(k, userFields, true, true));
@@ -708,6 +726,7 @@ public class MySQLStorageService extends AbstractStorageService {
         tables.computeIfAbsent(StorageEnum.LOG.getType(), k -> new Executor(k, logFields, true, false));
         tables.computeIfAbsent(StorageEnum.TASK.getType(), k -> new Executor(k, taskFields, true, true));
         tables.computeIfAbsent(StorageEnum.CLUSTER_NODE.getType(), k -> new Executor(k, clusterNodeFields, true, false));
+        tables.computeIfAbsent(StorageEnum.TASK_SCHEDULE.getType(), k -> new Executor(k, taskScheduleFields, true, false));
         // 建表前：新拆表齐全且 task 无 STATUS → 新版本跳过数据升级
         boolean newStorageSchema = isNewStorageSchema();
         // 创建表
@@ -847,6 +866,64 @@ public class MySQLStorageService extends AbstractStorageService {
             // STATUS 列须在数据迁移后删除，见 dropTaskStatusColumnIfPresent()
             createIndexIfNotExist(table, "IDX_UPDATE_TIME", "`UPDATE_TIME`");
             createIndexIfNotExist(table, "IDX_TYPE_UPDATE_TIME", "`TYPE`,`UPDATE_TIME`");
+            return;
+        }
+        if (StorageEnum.CLUSTER_NODE.getType().equals(type)) {
+            migrateClusterNodeTable(table);
+        }
+    }
+
+    /**
+     * 将旧集群节点表升级为仅在线状态与心跳字段。
+     *
+     * @param table 已带前缀的表名
+     */
+    private void migrateClusterNodeTable(String table) {
+        if (columnExists(table, "CLUSTER_ID")) {
+            executeSql(String.format(
+                    "UPDATE `%s` SET `STATUS` = CASE WHEN `STATUS` = 1 THEN 1 ELSE 0 END", table));
+            dropIndexIfExists(table, "UK_CLUSTER_NODE");
+            dropIndexIfExists(table, "UK_CLUSTER_WORKER");
+            dropIndexIfExists(table, "IDX_CLUSTER_STATUS");
+            dropColumnIfExists(table, "CLUSTER_ID");
+            dropColumnIfExists(table, "RAFT_PORT");
+            dropColumnIfExists(table, "RAFT_PEER_ID");
+            dropColumnIfExists(table, "WORKER_ID");
+            dropColumnIfExists(table, "ROLE");
+            dropColumnIfExists(table, "NETWORK_OK");
+            dropColumnIfExists(table, "TERM");
+            createUniqueIndexIfNotExist(table, "UK_CLUSTER_NODE", "`NODE_ID`");
+            createIndexIfNotExist(table, "IDX_CLUSTER_STATUS", "`STATUS`");
+        }
+        createIndexIfNotExist(table, "IDX_CLUSTER_HEARTBEAT", "`LAST_HEARTBEAT_TIME`");
+    }
+
+    /**
+     * 列存在则删除。
+     */
+    private void dropColumnIfExists(String table, String columnName) {
+        if (!columnExists(table, columnName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("ALTER TABLE `%s` DROP COLUMN `%s`", table, columnName));
+            logger.info("已删除 {}.{}", table, columnName);
+        } catch (Exception e) {
+            logger.warn("删除 {}.{} 失败: {}", table, columnName, e.getMessage());
+        }
+    }
+
+    /**
+     * 唯一索引不存在则创建。
+     */
+    private void createUniqueIndexIfNotExist(String table, String indexName, String indexColumns) {
+        if (indexExists(table, indexName)) {
+            return;
+        }
+        try {
+            executeSql(String.format("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s)", table, indexName, indexColumns));
+        } catch (Exception e) {
+            logger.warn("创建唯一索引 {} on {} 失败: {}", indexName, table, e.getMessage());
         }
     }
 
@@ -992,6 +1069,12 @@ public class MySQLStorageService extends AbstractStorageService {
                             new Field(ConfigConstant.CLUSTER_TERM, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_LAST_HEARTBEAT_TIME, "BIGINT", Types.BIGINT),
                             new Field(ConfigConstant.CLUSTER_START_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.SCHEDULE_INITIATOR_NODE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.SCHEDULE_SCHEDULER_NODE_ID, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.SCHEDULE_SCHEDULER_EPOCH, "INTEGER", Types.INTEGER),
+                            new Field(ConfigConstant.SCHEDULE_SCHEDULER_START_TIME, "BIGINT", Types.BIGINT),
+                            new Field(ConfigConstant.SCHEDULE_ERROR_MSG, "VARCHAR", Types.VARCHAR),
+                            new Field(ConfigConstant.SCHEDULE_TASK_TYPE, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.TABLE_GROUP_SORT_INDEX, "INTEGER", Types.INTEGER),
                             new Field(ConfigConstant.TABLE_GROUP_SOURCE_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),
                             new Field(ConfigConstant.TABLE_GROUP_TARGET_CONNECTOR_ID, "VARCHAR", Types.VARCHAR),

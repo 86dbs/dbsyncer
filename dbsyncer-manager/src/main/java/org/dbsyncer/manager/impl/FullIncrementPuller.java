@@ -87,7 +87,7 @@ public final class FullIncrementPuller extends AbstractPuller {
         try {
             Meta meta = metaProfile.getMeta(metaId);
             if (ModelEnum.isIncrement(getFullIncrementPhase(meta))) {
-                if (!clusterService.isStandalone() && !clusterService.isIncrementAssignedToLocal(mapping.getId())) {
+                if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
                     return;
                 }
                 incrementPuller.start(mapping, autoRecovery);
@@ -99,14 +99,11 @@ public final class FullIncrementPuller extends AbstractPuller {
             if (!isRunning(metaId)) {
                 return;
             }
-            if (clusterService.isLeader()) {
-                markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
-                clusterService.assignIncrementMapping(mapping.getId());
-            }
-            if (!clusterService.isStandalone() && !clusterService.isIncrementAssignedToLocal(mapping.getId())) {
+            if (!clusterService.isTaskAssignedToLocal(mapping.getId())) {
                 logger.info("全量已完成，本节点不启动增量：{}", metaId);
                 return;
             }
+            markFullIncrementPhase(metaId, ModelEnum.INCREMENT.getCode());
             if (incrementPuller.isActive(metaId)) {
                 return;
             }

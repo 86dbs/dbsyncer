@@ -81,4 +81,12 @@ public interface TaskService<T extends ConfigModel> {
     default void resumeAssigned(String id) {
         start(id);
     }
+
+    /**
+     * 仅停止本进程执行，不改调度行。
+     *
+     * @param id 任务 ID
+     */
+    default void stopLocal(String id) {
+    }
 }

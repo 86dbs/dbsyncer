@@ -7,9 +7,7 @@ import org.dbsyncer.biz.BizException;
 import org.dbsyncer.biz.impl.JwtSecretManager;
 import org.dbsyncer.biz.model.WebSsoTicket;
 import org.dbsyncer.common.util.StringUtil;
-import org.dbsyncer.common.util.UUIDUtil;
 import org.dbsyncer.sdk.spi.ClusterService;
-import org.dbsyncer.web.sso.WebSsoTicketService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +26,11 @@ public class ClusterWriteProxyService {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterWriteProxyService.class);
 
-    private static final long TICKET_TTL_MS = 30_000L;
-
     @Resource
     private JwtSecretManager jwtSecretManager;
 
     @Resource
     private ClusterService clusterService;
-
-    @Resource
-    private WebSsoTicketService webSsoTicketService;
 
     /**
      * 为当前用户签发指向 Leader 的代理票据。
@@ -47,31 +40,7 @@ public class ClusterWriteProxyService {
      * @return JWT
      */
     public String issueForLeader(String username, String roleCode) {
-        if (StringUtil.isBlank(username)) {
-            throw new BizException("代理鉴权用户为空");
-        }
-        String leaderUrl = clusterService.getLeaderHttpUrl();
-        if (StringUtil.isBlank(leaderUrl)) {
-            throw new BizException("当前无可用 Leader");
-        }
-        String targetHost = resolveHost(leaderUrl);
-        if (!webSsoTicketService.isAllowedTarget(targetHost)) {
-            throw new BizException("Leader 不在集群白名单中");
-        }
-        long now = System.currentTimeMillis();
-        WebSsoTicket ticket = new WebSsoTicket();
-        ticket.setUsername(username);
-        ticket.setRoleCode(StringUtil.getIfBlank(roleCode, StringUtil.EMPTY));
-        ticket.setJti(UUIDUtil.getUUID());
-        ticket.setTargetHost(targetHost);
-        ticket.setIat(now);
-        ticket.setExp(now + TICKET_TTL_MS);
-        try {
-            return jwtSecretManager.signPayload(ticket);
-        } catch (Exception e) {
-            logger.error("签发写代理票据失败", e);
-            throw new BizException("签发写代理票据失败");
-        }
+        throw new BizException("无全局 Leader，不支持写代理");
     }
 
     /**
@@ -103,16 +72,5 @@ public class ClusterWriteProxyService {
             logger.warn("写代理票据校验失败: {}", e.getMessage());
             return null;
         }
-    }
-
-    private String resolveHost(String leaderUrl) {
-        String trimmed = leaderUrl.trim();
-        int scheme = trimmed.indexOf("://");
-        String hostPort = scheme >= 0 ? trimmed.substring(scheme + 3) : trimmed;
-        int slash = hostPort.indexOf('/');
-        if (slash >= 0) {
-            hostPort = hostPort.substring(0, slash);
-        }
-        return hostPort;
     }
 }

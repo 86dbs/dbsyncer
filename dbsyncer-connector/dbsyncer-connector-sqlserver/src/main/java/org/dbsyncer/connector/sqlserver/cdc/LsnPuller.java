@@ -76,7 +76,7 @@ public class LsnPuller {
                         }
                     }
                     TimeUnit.MILLISECONDS.sleep(DEFAULT_POLL_INTERVAL_MILLIS);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     logger.error("异常", e);
                     try {
                         TimeUnit.SECONDS.sleep(1);

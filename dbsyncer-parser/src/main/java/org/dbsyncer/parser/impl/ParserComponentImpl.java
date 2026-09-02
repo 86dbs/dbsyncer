@@ -240,8 +240,8 @@ public class ParserComponentImpl implements ParserComponent {
             context.setTargetList(target);
             pluginFactory.process(context, ProcessEnum.CONVERT);
 
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，停止本表写入: {}", itemId);
+            if (!clusterService.assertTaskWritable(mapping.getId())) {
+                logger.warn("调度围栏失效，停止本表写入: {}", itemId);
                 return false;
             }
 
@@ -261,8 +261,8 @@ public class ParserComponentImpl implements ParserComponent {
                 return false;
             }
 
-            if (!clusterService.assertWritable(itemId)) {
-                logger.warn("generation 围栏失效，本页已刷盘，等待重新派工: {}", itemId);
+            if (!clusterService.assertTaskWritable(mapping.getId())) {
+                logger.warn("调度围栏失效，本页已刷盘，等待重新调度: {}", itemId);
                 return false;
             }
 

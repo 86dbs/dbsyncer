@@ -24,6 +24,14 @@ public interface MappingRuntimeService {
     void start(Mapping mapping, boolean autoRecovery);
 
     /**
+     * 仅本机拉起 Puller，不走启动派工。
+     *
+     * @param mapping      驱动
+     * @param autoRecovery 是否自动恢复
+     */
+    void startLocal(Mapping mapping, boolean autoRecovery);
+
+    /**
      * 仅停止本进程 Puller，不改集群任务状态。
      *
      * @param mapping 驱动
