@@ -250,9 +250,6 @@
             ? '<div class="flex items-center">' + buttons.join('') + '</div>'
             : '-';
         var nameHtml = escapeHtml(name);
-        if (item.leader) {
-            nameHtml = '<i class="fa fa-star text-warning" title="Leader"></i> ' + nameHtml;
-        }
         if (clusterEnabled && !item.local) {
             var consoleUrl = buildSsoConsoleUrl(item);
             if (consoleUrl) {
